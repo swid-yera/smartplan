@@ -7,7 +7,7 @@ export const Footer: FC<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDi
 	...props
 }) => {
 	return (
-		<footer className={cn('text-center text-sm text-gray-500 py-8 border-t', className)} {...props}>
+		<footer className={cn('text-center text-sm text-gray-500 py-8 border-t mt-10', className)} {...props}>
 			<p>© 2025 Система управления учебными планами. Все права защищены.</p>
 		</footer>
 	)

@@ -17,14 +17,15 @@
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"allowSyntheticDefaultImports": true,
-		"jsx": "preserve",
+		"jsx": "react-jsx",
 		"jsxImportSource": "react",
 		"incremental": true,
 		"baseUrl": "src",
 		"paths": {
 			"@/*": ["./src/*"],
-			// export * from * file in index.ts
+			// export * from file
 			"@ui": ["components/ui/index.ts"],
+			"@components": ["components/index.ts"],
 			"@layout": ["components/layout/index.ts"],
 			"@hoc": ["hoc/index.ts"],
 			"@contexts": ["contexts/index.ts"],
@@ -36,8 +37,12 @@
 			"@hooks": ["hooks/index.ts"],
 			"@providers": ["providers/index.ts"]
 		},
-		"plugins": [{ "name": "next" }]
+		"plugins": [
+			{
+				"name": "next"
+			}
+		]
 	},
-	"include": ["svgr.d.ts", "next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+	"include": ["svgr.d.ts", "next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
 	"exclude": ["node_modules"]
 }

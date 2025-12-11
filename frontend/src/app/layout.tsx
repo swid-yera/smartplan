@@ -26,8 +26,9 @@ export default function RootLayout({
 				<ThemeProvider>
 					<SidebarProvider defaultOpen suppressHydrationWarning>
 						<ASidebar />
-						<SidebarInset>
+						<SidebarInset className='flex flex-col justify-between'>
 							{children}
+
 							<Footer />
 						</SidebarInset>
 					</SidebarProvider>
