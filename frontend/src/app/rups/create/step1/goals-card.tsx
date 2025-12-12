@@ -14,7 +14,7 @@ import {
 } from '@ui'
 import type { UseFormReturn } from 'react-hook-form'
 
-import type { FormData } from './page'
+import type { FormData } from './step1'
 
 interface GoalsCardProps {
 	form: UseFormReturn<FormData>

@@ -1,6 +1,0 @@
-export * from './basic-data-card'
-export * from './exploration-note-card'
-export * from './goals-card'
-export * from './internet-resources'
-export * from './requisites-card'
-export * from './technical-resources'

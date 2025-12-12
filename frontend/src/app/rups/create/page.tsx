@@ -1,112 +1,72 @@
 'use client'
 
+import { type JSX } from 'react'
+
 import type { NextPage } from 'next'
 
-import * as z from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Form } from '@ui'
-import { useForm } from 'react-hook-form'
+import { Tabs, TabsContent } from '@ui'
 
-import {
-	BasicDataCard,
-	ExplorationNoteCard,
-	GoalsCard,
-	InternetResourcesCard,
-	RequisitesCard,
-	TechnicalResourcesCard,
-} from './step1'
-import { StepHeader } from './step-header'
-import { StepIndicator } from './step-indicator'
+import { Step1 } from './step1/step1'
+import { Step2 } from './step2/step2'
+import { Step3 } from './step3/step3'
+import { Step4 } from './step4/step4'
+import { TabHeader } from './tab-header'
+import { TabIndicator } from './tab-indicator'
 
 const Page: NextPage = () => {
-	const form = useForm<z.infer<typeof formSchema>>({
-		resolver: zodResolver(formSchema),
-		defaultValues: {
-			title: '',
-			year: '',
-			group: '',
-			course: undefined,
-			studyForm: '',
-			explorationNote: '',
-			goals: '',
-			prerequisites: [''],
-			postrequisites: [''],
-			internetResources: [''],
-			technicalResources: [''],
-		},
-	})
-
-	const onSave = (values: z.infer<typeof formSchema>) => {
-		console.log('save', values)
-	}
-
 	return (
-		<Form {...form}>
-			<form className='mx-auto px-5 mt-5 w-full space-y-5' onSubmit={form.handleSubmit(onSave)}>
-				<StepIndicator currentStep={1} steps={steps} />
+		<Tabs className='w-full mx-auto px-4 py-6 space-y-4' defaultValue={tabs[0].id}>
+			{/* step tab indicator */}
+			<TabIndicator steps={tabs} />
 
-				<StepHeader />
-
-				<div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]'>
-					<BasicDataCard form={form} />
-					<ExplorationNoteCard form={form} />
-				</div>
-
-				<div className='grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)]'>
-					<GoalsCard form={form} />
-					<RequisitesCard form={form} />
-				</div>
-
-				<div className='grid md:grid-cols-2 gap-4'>
-					<InternetResourcesCard form={form} />
-					<TechnicalResourcesCard form={form} />
-				</div>
-			</form>
-		</Form>
+			{tabs.map((tab) => (
+				<TabsContent key={tab.id} value={tab.id}>
+					<TabHeader tab={tab} />
+					{tab.content}
+				</TabsContent>
+			))}
+		</Tabs>
 	)
 }
 
 // steps
-export interface IStep {
-	id: number
+export interface ITab {
+	id: string
 	title: string
+	fullTitle: string
 	description: string
+	content: JSX.Element
 }
 
-const steps: IStep[] = [
+const tabs: ITab[] = [
 	{
-		id: 1,
-		title: 'Создание нового рабочего учебного плана',
+		id: '1',
+		title: 'Основные данные',
+		fullTitle: 'Создание нового рабочего учебного плана',
 		description: 'Базовые данные, пояснительная записка, цели и задачи',
+		content: <Step1 />,
 	},
 	{
-		id: 2,
-		title: 'Метаданные, материалы и ресурсы',
+		id: '2',
+		title: 'Метаданные',
+		fullTitle: 'Метаданные, материалы и ресурсы',
 		description: 'Метаданные, технические материалы и учебно методические ресурсы',
+		content: <Step2 />,
 	},
 	{
-		id: 3,
-		title: 'Разделы/Дисциплины учебной рабочей программы',
-		description: 'Добавьте ',
+		id: '3',
+		title: 'Распределение часов',
+		fullTitle: 'Распределение часов по семестру',
+		description: 'Добавьте дисциплины и распределите кредиты по семестрам',
+		content: <Step3 />,
+	},
+	{
+		id: '4',
+		title: 'Содержание',
+		fullTitle: 'Содержание учебной рабочей программы',
+		description: 'Добавьте темы занятий для каждой дисциплины',
+		content: <Step4 />,
 	},
 ]
-
-// form scheme
-const formSchema = z.object({
-	title: z.string().min(1, 'Наименование РУП обязательно'),
-	year: z.string().min(9, 'Учебный год обязателен'),
-	group: z.string().min(1, 'Группа обязательна'),
-	course: z.number().min(1).max(4).optional(),
-	studyForm: z.string().min(1, 'Форма обучения обязательна'),
-	explorationNote: z.string().optional(),
-	goals: z.string().optional(),
-	prerequisites: z.array(z.string()).optional(),
-	postrequisites: z.array(z.string()).optional(),
-
-	internetResources: z.array(z.string()).optional(),
-	technicalResources: z.array(z.string()).optional(),
-})
-
-export type FormData = z.infer<typeof formSchema>
 
 export default Page

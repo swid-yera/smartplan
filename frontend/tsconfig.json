@@ -20,22 +20,21 @@
 		"jsx": "react-jsx",
 		"jsxImportSource": "react",
 		"incremental": true,
-		"baseUrl": "src",
 		"paths": {
 			"@/*": ["./src/*"],
 			// export * from file
-			"@ui": ["components/ui/index.ts"],
-			"@components": ["components/index.ts"],
-			"@layout": ["components/layout/index.ts"],
-			"@hoc": ["hoc/index.ts"],
-			"@contexts": ["contexts/index.ts"],
-			"@types": ["shared/types/index.ts"],
-			"@services": ["services/index.ts"],
-			"@lib": ["lib/index.ts"],
-			"@utils": ["utils/index.ts"],
-			"@helpers": ["helpers/index.ts"],
-			"@hooks": ["hooks/index.ts"],
-			"@providers": ["providers/index.ts"]
+			"@ui": ["./src/components/ui/index.ts"],
+			"@components": ["./src/components/index.ts"],
+			"@layout": ["./src/components/layout/index.ts"],
+			"@hoc": ["./src/hoc/index.ts"],
+			"@contexts": ["./src/contexts/index.ts"],
+			"@types": ["./src/shared/types/index.ts"],
+			"@services": ["./src/services/index.ts"],
+			"@lib": ["./src/lib/index.ts"],
+			"@utils": ["./src/utils/index.ts"],
+			"@helpers": ["./src/helpers/index.ts"],
+			"@hooks": ["./src/hooks/index.ts"],
+			"@providers": ["./src/providers/index.ts"]
 		},
 		"plugins": [
 			{

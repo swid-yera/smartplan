@@ -31,6 +31,11 @@ export interface ICredits {
 	individualCredits: number
 }
 
+export enum RupTypeEnum {
+	PRACTICE = 'практический',
+	THEORY = 'теоретический',
+}
+
 export interface IRup {
 	id: number
 	title: string
@@ -40,7 +45,9 @@ export interface IRup {
 	explorationNote: IRupExplorationNote
 	developersName: string[]
 	years: string
+	type: RupTypeEnum
 
+	disciplines: IDiscipline[]
 	group: IGroup
 	methodist: IUser
 	department: IUser
@@ -65,14 +72,20 @@ export interface IRupExplorationNote {
 }
 
 // discipline
-export type SemestersType = Record<number, { theoryCredits: number; practiceCredits: number }>
+export interface ISemester {
+	semester: number
+	credits: number // TODO:
+	theoryCredits: number
+	practiceCredits: number
+	individualCredits: number
+}
 
 export interface IDiscipline {
 	name: string
 	code: string
 	totalCredits: number
-	credits: ICredits
-	semesters: SemestersType
+	semesters: ISemester[]
+	topics: ITopics[]
 }
 
 // topics
@@ -82,15 +95,8 @@ export enum TopicTypeEnum {
 	Combined = 'комбинированный',
 }
 
-export interface ITopicHours {
-	theoryHours: number
-	practiceHours: number
-	individualHours: number
-}
-
 export interface ITopics {
 	name: string
 	type: TopicTypeEnum
-	totalHours: number
-	hours: ITopicHours
+	hours: 2 | 6
 }

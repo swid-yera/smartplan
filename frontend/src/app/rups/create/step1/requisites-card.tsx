@@ -1,15 +1,16 @@
 'use client'
 
 import { Button, Card, CardContent, CardHeader, CardTitle, FormField, FormItem, FormLabel, Input, Separator } from '@ui'
+import { Trash } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
-import type { FormData } from './page'
+import type { FormData } from './step1'
 
-interface RequisitesCardProps {
+interface IProps {
 	form: UseFormReturn<FormData>
 }
 
-export function RequisitesCard({ form }: RequisitesCardProps) {
+export function RequisitesCard({ form }: IProps) {
 	return (
 		<Card>
 			<CardHeader>
@@ -90,7 +91,7 @@ export function RequisitesCard({ form }: RequisitesCardProps) {
 											}}
 										/>
 										<Button
-											size='sm'
+											size='icon'
 											type='button'
 											variant='outline'
 											onClick={() => {
@@ -100,7 +101,7 @@ export function RequisitesCard({ form }: RequisitesCardProps) {
 												field.onChange(newValue)
 											}}
 										>
-											Удалить
+											<Trash />
 										</Button>
 									</div>
 								))}

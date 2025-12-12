@@ -1,6 +1,6 @@
 'use client'
 
-import { StudyFormEnum } from '@types'
+import { RupTypeEnum, StudyFormEnum } from '@types'
 import {
 	Card,
 	CardContent,
@@ -17,11 +17,13 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Separator,
 } from '@ui'
 import { Info } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
-import type { FormData } from '../page'
+import { groupData } from '../mock.data'
+import type { FormData } from './step1'
 
 interface BasicDataCardProps {
 	form: UseFormReturn<FormData>
@@ -49,29 +51,55 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 					)}
 				/>
 
-				<FormField
-					control={form.control}
-					name='year'
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Год обучения</FormLabel>
-							<FormControl>
-								<Select onValueChange={field.onChange} {...field}>
-									<SelectTrigger className='w-full'>
-										<SelectValue placeholder='Выберите начало года' />
-									</SelectTrigger>
-									<SelectContent position='popper'>
-										{['2025-2026', '2024-2025'].map((studyYears) => (
-											<SelectItem key={studyYears} value={studyYears}>
-												{studyYears}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</FormControl>
-						</FormItem>
-					)}
-				/>
+				<div className='grid grid-cols-2 gap-5'>
+					<FormField
+						control={form.control}
+						name='type'
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Тип РУП</FormLabel>
+								<FormControl>
+									<Select onValueChange={field.onChange} {...field}>
+										<SelectTrigger className='w-full'>
+											<SelectValue placeholder='Теоретическая или практическая' />
+										</SelectTrigger>
+										<SelectContent position='popper'>
+											{Object.keys(RupTypeEnum).map((rupType) => (
+												<SelectItem key={rupType} value={rupType}>
+													{RupTypeEnum[rupType]}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</FormControl>
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name='year'
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Год обучения</FormLabel>
+								<FormControl>
+									<Select onValueChange={field.onChange} {...field}>
+										<SelectTrigger className='w-full'>
+											<SelectValue placeholder='Выберите начало года' />
+										</SelectTrigger>
+										<SelectContent position='popper'>
+											{['2025-2026', '2024-2025'].map((studyYears) => (
+												<SelectItem key={studyYears} value={studyYears}>
+													{studyYears}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</FormControl>
+							</FormItem>
+						)}
+					/>
+				</div>
 
 				<div className='grid grid-cols-2 gap-5'>
 					<FormField
@@ -83,7 +111,7 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 								<FormControl>
 									<Select onValueChange={field.onChange} {...field}>
 										<SelectTrigger className='w-full'>
-											<SelectValue placeholder='Очная, заочная' />
+											<SelectValue placeholder='Очная или заочная' />
 										</SelectTrigger>
 										<SelectContent position='popper'>
 											{Object.keys(StudyFormEnum).map((studyForm) => (
@@ -100,20 +128,31 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 
 					<FormField
 						control={form.control}
-						name='group'
+						name='groupId'
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>Выберите группу</FormLabel>
 								<FormControl>
-									<Select onValueChange={field.onChange} {...field}>
+									<Select
+										onValueChange={(value) => {
+											const group = groupData.find((group) => group.id === Number(value))
+
+											form.setValue('groupSpecialty', group?.specialty)
+											form.setValue('groupQualification', group?.qualification)
+
+											field.onChange(value)
+										}}
+										{...field}
+									>
 										<SelectTrigger className='w-full'>
 											<SelectValue placeholder='Выбрать группу' />
 										</SelectTrigger>
 										<SelectContent position='popper'>
-											<SelectItem value='WEB24-A'>WEB24-А</SelectItem>
-											<SelectItem value='WEB24-B'>WEB24-Б</SelectItem>
-											<SelectItem value='WEB23-A'>WEB23-А</SelectItem>
-											<SelectItem value='WEB23-B'>WEB23-Б</SelectItem>
+											{groupData.map((group) => (
+												<SelectItem key={group.id} value={String(group.id)}>
+													{group.name}
+												</SelectItem>
+											))}
 										</SelectContent>
 									</Select>
 								</FormControl>
@@ -122,10 +161,41 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 					/>
 				</div>
 
-				<p className='text-sm text-primary text-balance'>
+				<p className='text-sm text-primary text-balance mt-2'>
 					<Info className='inline mr-2' />
 					Информация о квалификации и специальности автоматический получиться от типа группы
 				</p>
+
+				{/* qualification & specialty */}
+				<div className='grid grid-cols-2 gap-5'>
+					<FormField
+						control={form.control}
+						name='groupSpecialty'
+						render={({ field: { value } }) => (
+							<FormItem className='content-start'>
+								<FormLabel>Специальность</FormLabel>
+								<Separator />
+								<FormControl className='text-muted-foreground'>
+									<p>{!value ? 'Группа не выбрана' : value}</p>
+								</FormControl>
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name='groupQualification'
+						render={({ field: { value } }) => (
+							<FormItem className='content-start'>
+								<FormLabel>Квалификация</FormLabel>
+								<Separator />
+								<FormControl className='text-muted-foreground'>
+									<p>{!value ? 'Группа не выбрана' : value}</p>
+								</FormControl>
+							</FormItem>
+						)}
+					/>
+				</div>
 			</CardContent>
 		</Card>
 	)
