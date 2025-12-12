@@ -32,7 +32,10 @@ const formSchema = z.object({
 					z.object({
 						name: z.string(), // Allow empty name as in mock data
 						type: z.string().min(1, 'Тип занятия не может быть пустым'),
-						hours: z.number().nonnegative('Часы не могут быть отрицательными'),
+						totalHours: z.number().nonnegative('Часы не могут быть отрицательными'),
+						theoryHours: z.number().nonnegative('Часы не могут быть отрицательными'),
+						practiceHours: z.number().nonnegative('Часы не могут быть отрицательными'),
+						individualHours: z.number().nonnegative('Часы не могут быть отрицательными'),
 					}),
 				)
 				.min(1, 'У дисциплины должен быть как минимум одна тема'),

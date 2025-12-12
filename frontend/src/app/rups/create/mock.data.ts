@@ -34,9 +34,20 @@ export const disciplineData: IDiscipline[] = [
 		totalCredits: 6,
 		topics: [
 			{
-				hours: 2,
 				name: '',
 				type: TopicTypeEnum.Theoretical,
+				totalHours: 2,
+				theoryHours: 2,
+				practiceHours: 0,
+				individualHours: 0,
+			},
+			{
+				name: '',
+				type: TopicTypeEnum.Theoretical,
+				totalHours: 2,
+				theoryHours: 2,
+				practiceHours: 0,
+				individualHours: 0,
 			},
 		],
 		semesters: [
@@ -104,9 +115,20 @@ export const disciplineData: IDiscipline[] = [
 		totalCredits: 6,
 		topics: [
 			{
-				hours: 2,
 				name: '',
-				type: TopicTypeEnum.Theoretical,
+				type: TopicTypeEnum.Practical,
+				totalHours: 2,
+				theoryHours: 2,
+				practiceHours: 0,
+				individualHours: 0,
+			},
+			{
+				name: '',
+				type: TopicTypeEnum.Practical,
+				totalHours: 2,
+				theoryHours: 2,
+				practiceHours: 0,
+				individualHours: 0,
 			},
 		],
 		semesters: [

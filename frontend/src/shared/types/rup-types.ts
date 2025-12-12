@@ -98,5 +98,8 @@ export enum TopicTypeEnum {
 export interface ITopics {
 	name: string
 	type: TopicTypeEnum
-	hours: 2 | 6
+	totalHours: number
+	theoryHours: number
+	practiceHours: number
+	individualHours: number
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
+import { cn } from '@lib'
+import { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -35,10 +37,10 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ui'
-import { Plus, Trash } from 'lucide-react'
+import { ChevronDown, Plus, Trash } from 'lucide-react'
 import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
 
-import { RupTypeEnum } from '@/shared/types'
+import { formatCredits, formatHours } from '@/helpers'
 
 import type { FormData } from './step4'
 
@@ -48,34 +50,57 @@ interface IProps {
 
 const newTopic = {
 	name: '',
-	type: 'Theoretical', // Corresponds to TopicTypeEnum.Theoretical
-	hours: 0,
+	type: TopicTypeEnum.Theoretical,
+	totalHours: 0,
+	theoryHours: 0,
+	practiceHours: 0,
+	individualHours: 0,
+}
+
+const RUP_TYPE_HOURS_CONFIG = {
+	[RupTypeEnum.THEORY]: { totalHours: 2, theoryHours: 2, practiceHours: 0, individualHours: 0 },
+	[RupTypeEnum.PRACTICE]: { totalHours: 6, theoryHours: 0, practiceHours: 4, individualHours: 2 },
 }
 
 export function TopicsCard({ form }: IProps) {
 	const rupType = useWatch({ control: form.control, name: 'rupType' })
 	const disciplines = useWatch({ control: form.control, name: 'disciplines' })
 
+	// This effect updates the hours for all topics when the global RUP type changes.
+	// It does not run on every change to `disciplines` to avoid performance issues and infinite loops.
 	useEffect(() => {
-		const newHours = rupType === RupTypeEnum.THEORY ? 2 : 6
+		if (!rupType) return
 
-		disciplines.forEach((discipline, disciplineIndex) => {
+		const newHours = RUP_TYPE_HOURS_CONFIG[rupType as RupTypeEnum]
+		const currentDisciplines = form.getValues('disciplines')
+
+		currentDisciplines.forEach((discipline, disciplineIndex) => {
 			discipline.topics.forEach((topic, topicIndex) => {
-				if (topic.hours !== newHours) {
-					form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.hours`, newHours)
-				}
+				form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.totalHours`, newHours.totalHours)
+				form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.theoryHours`, newHours.theoryHours)
+				form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours`, newHours.practiceHours)
+				form.setValue(
+					`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours`,
+					newHours.individualHours,
+				)
 			})
 		})
-	}, [rupType, disciplines, form])
-
-	const disciplines = useWatch({ control: form.control, name: 'disciplines' })
+	}, [rupType, form])
 
 	const total = {
-		hours: 0,
+		totalHours: 0,
+		theoryHours: 0,
+		practiceHours: 0,
+		individualHours: 0,
 	}
 
 	disciplines.forEach((discipline) => {
-		total.hours += discipline.topics.reduce((sum, topic) => sum + (topic.hours || 0), 0)
+		discipline.topics.forEach((topic) => {
+			total.totalHours += topic.totalHours || 0
+			total.theoryHours += topic.theoryHours || 0
+			total.practiceHours += topic.practiceHours || 0
+			total.individualHours += topic.individualHours || 0
+		})
 	})
 
 	return (
@@ -84,50 +109,46 @@ export function TopicsCard({ form }: IProps) {
 				<CardTitle>Содержание учебной рабочей программы</CardTitle>
 				<CardDescription>Добавьте темы занятий для каждой дисциплины.</CardDescription>
 			</CardHeader>
-			<CardContent>
-				<div className='overflow-x-auto'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className='w-8'>№</TableHead>
-								<TableHead className='w-[30%]'>Раздел / Результаты обучения</TableHead>
-								<TableHead className='w-[40%]'>Темы занятий</TableHead>
-								<TableHead>Часы</TableHead>
-								<TableHead>Тип занятия</TableHead>
-								<TableHead>Действия</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{disciplines.map((discipline, disciplineIndex) => (
-								<DisciplineTopics
-									key={discipline.code}
-									form={form}
-									disciplineIndex={disciplineIndex}
-									rupType={rupType}
-								/>
-							))}
-						</TableBody>
-						<TableFooter>
-							<TableRow>
-								<TableCell colSpan={3} className='text-right font-bold text-base'>
-									ИТОГО ПО МОДУЛЮ:
-								</TableCell>
-								<TableCell className='font-bold text-center text-base'>{total.hours}</TableCell>
-								<TableCell colSpan={2}></TableCell>
-							</TableRow>
-						</TableFooter>
-					</Table>
+			<CardContent className='space-y-4'>
+				{disciplines.map((discipline, disciplineIndex) => (
+					<DisciplineBlock key={discipline.code} disciplineIndex={disciplineIndex} form={form} rupType={rupType} />
+				))}
+				<div className='flex justify-end items-center pt-4 pr-6 space-x-4'>
+					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
+						<p className='font-medium'>Должно быть часов:</p>
+						<p className='font-bold text-2xl'>{disciplines.reduce((sum, d) => sum + d.totalCredits, 0) * 24}</p>
+
+						<p className='font-medium'>В данный момент:</p>
+						<div
+							className={cn(
+								'font-bold text-right text-2xl',
+								total.totalHours !== disciplines.reduce((sum, d) => sum + d.totalCredits, 0) * 24 &&
+									'text-destructive',
+							)}
+						>
+							<p>{total.totalHours}</p>
+							<p className='text-xs font-normal text-muted-foreground'>
+								(Теория: {total.theoryHours} / Практика: {total.practiceHours} / Самост: {total.individualHours}
+								)
+							</p>
+						</div>
+					</div>
 				</div>
 			</CardContent>
 		</Card>
 	)
 }
 
-function DisciplineTopics({
+function DisciplineBlock({
 	form,
 	disciplineIndex,
 	rupType,
-}: { form: UseFormReturn<FormData>; disciplineIndex: number; rupType: string }) {
+}: {
+	form: UseFormReturn<FormData>
+	disciplineIndex: number
+	rupType: string
+}) {
+	const [isCollapsed, setIsCollapsed] = useState(false)
 	const {
 		fields: topicFields,
 		append,
@@ -142,39 +163,106 @@ function DisciplineTopics({
 	const discipline = useWatch({ control: form.control, name: `disciplines.${disciplineIndex}` })
 
 	const sectionTotal = {
-		hours: 0,
+		totalHours: 0,
+		theoryHours: 0,
+		practiceHours: 0,
+		individualHours: 0,
 	}
 
-	sectionTotal.hours = discipline.topics.reduce((sum, topic) => sum + (topic.hours || 0), 0)
+	discipline.topics.forEach((topic) => {
+		sectionTotal.totalHours += topic.totalHours || 0
+		sectionTotal.theoryHours += topic.theoryHours || 0
+		sectionTotal.practiceHours += topic.practiceHours || 0
+		sectionTotal.individualHours += topic.individualHours || 0
+	})
+
+	const hasError = sectionTotal.totalHours !== 24
 
 	return (
-		<>
-			{topicFields.map((topicField, topicIndex) => (
-				<TopicRow
-					key={topicField.id}
-					form={form}
-					disciplineIndex={disciplineIndex}
-					topicIndex={topicIndex}
-					isFirst={topicIndex === 0}
-					rupType={rupType}
-					setTopicToDelete={setTopicToDelete}
-				/>
-			))}
-			<TableRow className='bg-muted/50 hover:bg-muted/50'>
-				<TableCell colSpan={3} className='text-right font-bold'>
+		<div className='border rounded-lg'>
+			{/* Discipline Header */}
+			<div className='flex items-center p-4 bg-muted/40 rounded-t-lg'>
+				<div className='font-semibold pr-4'>{discipline.code}</div>
+				<div className='flex-1 font-medium text-left'>{discipline.name}</div>
+				<div className='flex items-center space-x-2'>
 					<Button
 						size='sm'
+						type='button'
 						variant='ghost'
-						onClick={() => append({ ...newTopic, hours: rupType === RupTypeEnum.THEORY ? 2 : 6 })}
+						onClick={() =>
+							append({
+								...newTopic,
+								totalHours: rupType === RupTypeEnum.THEORY ? 2 : 6,
+								theoryHours: rupType === RupTypeEnum.THEORY ? 2 : 0,
+								practiceHours: rupType === RupTypeEnum.THEORY ? 0 : 4,
+								individualHours: rupType === RupTypeEnum.THEORY ? 0 : 2,
+							})
+						}
 					>
 						<Plus className='h-4 w-4 mr-2' />
 						Добавить тему
 					</Button>
-					<span className='ml-4'>ВСЕГО ПО РАЗДЕЛУ:</span>
-				</TableCell>
-				<TableCell className='font-bold text-center'>{sectionTotal.hours}</TableCell>
-				<TableCell colSpan={2}></TableCell>
-			</TableRow>
+					<Button size='sm' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
+						<ChevronDown />
+						{isCollapsed ? 'Показать' : 'Скрыть'}
+					</Button>
+				</div>
+			</div>
+
+			{/* Topics Table */}
+			{!isCollapsed && (
+				<div className='p-4'>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead className='w-16 text-center'>№</TableHead>
+								<TableHead>Темы занятий</TableHead>
+								<TableHead className='w-20 text-center'>Всего</TableHead>
+								<TableHead className='w-20 text-center'>Теория</TableHead>
+								<TableHead className='w-20 text-center'>Практика</TableHead>
+								<TableHead className='w-20 text-center'>Самост.</TableHead>
+								<TableHead className='w-48'>Тип занятия</TableHead>
+								<TableHead className='w-24'>Действия</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{topicFields.map((topicField, topicIndex) => (
+								<TopicRow
+									key={topicField.id}
+									disciplineIndex={disciplineIndex}
+									form={form}
+									rupType={rupType}
+									setTopicToDelete={setTopicToDelete}
+									topicIndex={topicIndex}
+								/>
+							))}
+						</TableBody>
+						<TableFooter>
+							<TableRow>
+								<TableCell className='text-right font-bold' colSpan={2}>
+									Итого по разделу:
+								</TableCell>
+								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
+									{sectionTotal.totalHours}
+								</TableCell>
+								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
+									{sectionTotal.theoryHours}
+								</TableCell>
+								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
+									{sectionTotal.practiceHours}
+								</TableCell>
+								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
+									{sectionTotal.individualHours}
+								</TableCell>
+								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
+									{formatHours(sectionTotal.totalHours)} ={' '}
+									{formatCredits(Number((sectionTotal.totalHours / 24).toFixed(3)))}
+								</TableCell>
+							</TableRow>
+						</TableFooter>
+					</Table>
+				</div>
+			)}
 
 			<AlertDialog open={topicToDelete !== null} onOpenChange={(isOpen) => !isOpen && setTopicToDelete(null)}>
 				<AlertDialogContent>
@@ -196,7 +284,7 @@ function DisciplineTopics({
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-		</>
+		</div>
 	)
 }
 
@@ -204,39 +292,68 @@ function TopicRow({
 	form,
 	disciplineIndex,
 	topicIndex,
-	isFirst,
 	rupType,
 	setTopicToDelete,
 }: {
 	form: UseFormReturn<FormData>
 	disciplineIndex: number
 	topicIndex: number
-	isFirst: boolean
 	rupType: string
 	setTopicToDelete: (index: number | null) => void
 }) {
-	const discipline = useWatch({ control: form.control, name: `disciplines.${disciplineIndex}` })
+	const topic = useWatch({
+		control: form.control,
+		name: `disciplines.${disciplineIndex}.topics.${topicIndex}`,
+	})
+
+	// This effect updates the hours for a single topic when its type changes.
+	useEffect(() => {
+		let newTotalHours = 0,
+			newTheoryHours = 0,
+			newPracticeHours = 0,
+			newIndividualHours = 0
+
+		// Determine hours based on the topic's specific type
+		switch (topic.type) {
+			case TopicTypeEnum.Theoretical:
+			case TopicTypeEnum.Combined:
+				newTotalHours = 2
+				newTheoryHours = 2
+				newPracticeHours = 0
+				newIndividualHours = 0
+				break
+			case TopicTypeEnum.Practical:
+				newTotalHours = 6
+				newTheoryHours = 0
+				newPracticeHours = 4
+				newIndividualHours = 2
+				break
+		}
+
+		// Only update form values if they have actually changed to prevent an infinite loop
+		if (
+			topic.totalHours !== newTotalHours ||
+			topic.theoryHours !== newTheoryHours ||
+			topic.practiceHours !== newPracticeHours ||
+			topic.individualHours !== newIndividualHours
+		) {
+			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.totalHours`, newTotalHours)
+			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.theoryHours`, newTheoryHours)
+			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours`, newPracticeHours)
+			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours`, newIndividualHours)
+		}
+	}, [topic.type, disciplineIndex, topicIndex, form])
 
 	return (
 		<TableRow>
-			{isFirst ? (
-				<>
-					<TableCell className='align-top' rowSpan={discipline.topics.length}>
-						{disciplineIndex + 1}
-					</TableCell>
-					<TableCell className='align-top' rowSpan={discipline.topics.length}>
-						<p className='font-semibold'>{discipline.code}</p>
-						<p className='text-muted-foreground'>{discipline.name}</p>
-					</TableCell>
-				</>
-			) : null}
+			<TableCell className='align-top font-medium text-center'>{topicIndex + 1}</TableCell>
 			<TableCell className='align-top'>
 				<FormField
 					control={form.control}
 					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name`}
 					render={({ field }) => (
 						<FormItem>
-							<FormControl>
+							<FormControl className='min-w-[200px]'>
 								<Input placeholder='Название темы' {...field} />
 							</FormControl>
 							<FormMessage />
@@ -244,10 +361,13 @@ function TopicRow({
 					)}
 				/>
 			</TableCell>
-			<TableCell className='align-top'>
-				<p className='w-20 mx-auto text-center font-medium'>
-					{rupType === RupTypeEnum.THEORY ? 2 : 6}
-				</p>
+			<TableCell className='align-top text-center font-medium'>
+				<p>{topic.totalHours}</p>
+			</TableCell>
+			<TableCell className='align-top text-center font-medium'>{topic.theoryHours}</TableCell>
+			<TableCell className='align-top text-center font-medium'>{topic.practiceHours}</TableCell>
+			<TableCell className='align-top text-center font-medium'>
+				<p>{topic.individualHours}</p>
 			</TableCell>
 			<TableCell className='align-top'>
 				<FormField
@@ -255,7 +375,7 @@ function TopicRow({
 					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.type`}
 					render={({ field }) => (
 						<FormItem>
-							<Select onValueChange={field.onChange} defaultValue={field.value}>
+							<Select defaultValue={field.value} onValueChange={field.onChange}>
 								<FormControl>
 									<SelectTrigger>
 										<SelectValue placeholder='Тип' />
@@ -263,10 +383,10 @@ function TopicRow({
 								</FormControl>
 								<SelectContent>
 									{rupType === RupTypeEnum.THEORY && (
-										<SelectItem value='Theoretical'>Теоретическая</SelectItem>
+										<SelectItem value={TopicTypeEnum.Theoretical}>Теоретическая</SelectItem>
 									)}
-									<SelectItem value='Practical'>Практическая</SelectItem>
-									<SelectItem value='Combined'>Комбинированная</SelectItem>
+									<SelectItem value={TopicTypeEnum.Practical}>Практическая</SelectItem>
+									<SelectItem value={TopicTypeEnum.Combined}>Комбинированная</SelectItem>
 								</SelectContent>
 							</Select>
 							<FormMessage />
