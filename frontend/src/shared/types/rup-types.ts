@@ -5,7 +5,7 @@ export enum RupStatus {
 }
 
 export interface IGroup {
-	id: number
+	id: string
 	name: string
 	specialty: string
 	qualification: string
@@ -32,8 +32,8 @@ export interface ICredits {
 }
 
 export enum RupTypeEnum {
-	PRACTICE = 'практический',
-	THEORY = 'теоретический',
+	PRACTICE = 'Учебно производственная практика',
+	THEORY = 'Теоретическая',
 }
 
 export interface IRup {

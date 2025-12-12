@@ -86,10 +86,10 @@ export const AiGenerateButton: FC<AiGenerateButtonProps> = ({
 			{open && (
 				<div className='fixed inset-0 z-50 flex items-start justify-center px-4 py-8'>
 					{/* overlay */}
-					<div aria-hidden className='absolute inset-0 bg-black/40' onClick={() => setOpen(false)} />
+					<div aria-hidden className='absolute inset-0 bg-background/40' onClick={() => setOpen(false)} />
 
 					{/* dialog */}
-					<div className='relative z-10 w-full max-w-lg bg-white rounded-lg shadow-lg border p-5'>
+					<div className='relative z-10 w-full max-w-lg bg-card rounded-lg shadow-lg border p-5'>
 						<div className='flex items-end justify-between mb-4'>
 							<h3 className='text-md font-semibold'>ИИ-генерация текста</h3>
 							<Button type='button' variant='outline' onClick={() => setOpen(false)}>
@@ -122,7 +122,7 @@ export const AiGenerateButton: FC<AiGenerateButtonProps> = ({
 							</div>
 
 							<div className='space-y-2'>
-								<label className='block text-xs font-medium text-slate-600 mb-1'>Результат</label>
+								<label className='block text-xs font-medium text-muted-foreground mb-1'>Результат</label>
 								<Textarea
 									className='w-full rounded-lg border px-3 py-2 text-sm'
 									placeholder='Сгенерированный текст отобразится здесь. Вы можете отредактировать его перед вставкой.'
@@ -130,7 +130,7 @@ export const AiGenerateButton: FC<AiGenerateButtonProps> = ({
 									value={result}
 									onChange={(e) => setResult(e.target.value)}
 								/>
-								<p className='text-xs text-slate-400 mt-2'>
+								<p className='text-xs text-accent-foreground mt-2'>
 									Текст сгенерирован ИИ и требует проверки преподавателем.
 								</p>
 								{error && <p className='text-xs text-red-500 mt-2'>Ошибка: {error}</p>}

@@ -23,8 +23,6 @@ const formSchema = z.object({
 	postrequisites: z.array(z.string()).optional(),
 	// group
 	groupId: z.string().min(9, 'Учебный год обязателен'),
-	groupSpecialty: z.string().optional(),
-	groupQualification: z.string().optional(),
 })
 
 export type FormData = z.infer<typeof formSchema>
@@ -44,8 +42,6 @@ export const Step1: FC = () => {
 			postrequisites: [''],
 			// group
 			groupId: '',
-			groupSpecialty: '',
-			groupQualification: '',
 		},
 	})
 
