@@ -4,7 +4,7 @@ export const disciplineData: IDiscipline[] = [
 	{
 		code: 'РО5.6',
 		name: 'Тестировка Postgresql',
-		totalCredits: 6,
+		totalCredits: 1,
 		topics: [
 			{
 				name: '',
@@ -85,7 +85,7 @@ export const disciplineData: IDiscipline[] = [
 	{
 		code: 'РО5.7',
 		name: 'Практика Postgresql',
-		totalCredits: 6,
+		totalCredits: 1,
 		topics: [
 			{
 				name: '',

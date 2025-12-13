@@ -1,5 +1,7 @@
 'use client'
 
+import React from 'react'
+
 import { RupTypeEnum, StudyFormEnum } from '@types'
 import {
 	Button,
@@ -8,25 +10,34 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	Input,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from '@ui'
-import { Info } from 'lucide-react'
+import { Check, ChevronsUpDown, Info } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
-import { groupData } from '../mock.data'
+import { cn } from '@/lib'
+
 import type { FormData } from './step1'
 
 interface BasicDataCardProps {
@@ -34,11 +45,6 @@ interface BasicDataCardProps {
 }
 
 export function BasicDataCard({ form }: BasicDataCardProps) {
-	const watchedGroupId = form.watch('groupId')
-	const selectedGroup = groupData.find((group) => group.id == watchedGroupId)
-	const specialty = selectedGroup?.specialty ?? 'Группа не выбрана'
-	const qualification = selectedGroup?.qualification ?? 'Группа не выбрана'
-
 	return (
 		<Card>
 			<CardHeader>
@@ -69,12 +75,10 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 								<FormLabel>
 									Тип модуля
 									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button size='icon-sm' type='button' variant='ghost'>
-												<Info />
-											</Button>
+										<TooltipTrigger type='button'>
+											<Info size='14' />
 										</TooltipTrigger>
-										<TooltipContent>
+										<TooltipContent side='top'>
 											{[
 												{
 													type: RupTypeEnum.PRACTICE,
@@ -86,7 +90,9 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 												},
 											].map((item) => (
 												<p key={item.type} className='text-sm'>
-													<span className='font-bold'>{item.type}:</span> {item.desc}
+													<span className='font-bold'>{item.type}:</span>
+													<br />
+													{item.desc}
 												</p>
 											))}
 										</TooltipContent>
@@ -112,32 +118,6 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 
 					<FormField
 						control={form.control}
-						name='year'
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Год обучения</FormLabel>
-								<FormControl>
-									<Select onValueChange={field.onChange} {...field}>
-										<SelectTrigger className='w-full'>
-											<SelectValue placeholder='Выберите начало года' />
-										</SelectTrigger>
-										<SelectContent position='popper'>
-											{['2025-2026', '2024-2025'].map((studyYears) => (
-												<SelectItem key={studyYears} value={studyYears}>
-													{studyYears}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</FormControl>
-							</FormItem>
-						)}
-					/>
-				</div>
-
-				<div className='grid grid-cols-2 gap-5'>
-					<FormField
-						control={form.control}
 						name='studyForm'
 						render={({ field }) => (
 							<FormItem>
@@ -159,61 +139,97 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 							</FormItem>
 						)}
 					/>
-
-					<FormField
-						control={form.control}
-						name='groupId'
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Выберите группу</FormLabel>
-								<FormControl>
-									<Select
-										value={field.value}
-										onValueChange={(value) => {
-											field.onChange(value)
-										}}
-									>
-										<SelectTrigger className='w-full'>
-											<SelectValue placeholder='Выбрать группу' />
-										</SelectTrigger>
-										<SelectContent position='popper'>
-											{groupData.map((group) => (
-												<SelectItem key={group.id} value={group.id}>
-													{group.name}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</FormControl>
-							</FormItem>
-						)}
-					/>
 				</div>
 
-				<p className='text-sm text-primary text-balance mt-6'>
-					<Info className='inline mr-2' />
-					Информация о квалификации и специальности автоматический получиться от типа группы
-				</p>
-
-				{/* qualification & specialty */}
+				{/* requisites */}
 				<div className='grid grid-cols-2 gap-5'>
-					<div className='space-y-2'>
-						<FormLabel>Специальность</FormLabel>
-						<Separator />
-						<div className='pt-2 text-muted-foreground'>
-							<p>{specialty}</p>
-						</div>
-					</div>
-
-					<div className='space-y-2'>
-						<FormLabel>Квалификация</FormLabel>
-						<Separator />
-						<div className='pt-2 text-muted-foreground'>
-							<p>{qualification}</p>
-						</div>
-					</div>
+					<RequisiteField form={form} label='Пререквизиты' type='prerequisites' />
+					<RequisiteField form={form} label='Постреквизиты' type='postrequisites' />
 				</div>
 			</CardContent>
 		</Card>
+	)
+}
+
+// requisite field
+type RequisiteType = 'prerequisites' | 'postrequisites'
+
+interface RequisiteFieldProps {
+	form: UseFormReturn<FormData>
+	type: RequisiteType
+	label: string
+}
+
+// mock data
+const modules = [
+	{ value: 'Основы программирования', label: 'Основы программирования' },
+	{ value: 'Базы данных', label: 'Базы данных' },
+	{ value: 'Веб-технологии', label: 'Веб-технологии' },
+	{ value: 'Алгоритмы и структуры данных', label: 'Алгоритмы и структуры данных' },
+	{ value: 'Компьютерные сети', label: 'Компьютерные сети' },
+]
+
+function RequisiteField({ form, type, label }: RequisiteFieldProps) {
+	const [open, setOpen] = React.useState(false)
+
+	const otherType = type === 'prerequisites' ? 'postrequisites' : 'prerequisites'
+	const otherValue = form.watch(otherType)
+
+	const availableModules = modules.filter((module) => module.value !== otherValue)
+
+	return (
+		<FormField
+			control={form.control}
+			name={type}
+			render={({ field }) => (
+				<FormItem className='flex flex-col'>
+					<FormLabel>{label}</FormLabel>
+					<Popover open={open} onOpenChange={setOpen}>
+						<PopoverTrigger asChild>
+							<FormControl>
+								<Button
+									className={cn('w-full justify-between', !field.value && 'text-muted-foreground')}
+									role='combobox'
+									variant='outline'
+								>
+									{field.value
+										? modules.find((module) => module.value === field.value)?.label
+										: 'Выбрать модуль...'}
+									<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+								</Button>
+							</FormControl>
+						</PopoverTrigger>
+						<PopoverContent align='center' className='w-[--radix-popover-trigger-width] p-0'>
+							<Command>
+								<CommandInput placeholder='Поиск модуля...' />
+								<CommandList>
+									<CommandEmpty>Модуль не найден.</CommandEmpty>
+									<CommandGroup>
+										{availableModules.map((module) => (
+											<CommandItem
+												key={module.value}
+												value={module.label}
+												onSelect={() => {
+													form.setValue(type, module.value)
+													setOpen(false)
+												}}
+											>
+												<Check
+													className={cn(
+														'mr-2 h-4 w-4',
+														module.value === field.value ? 'opacity-100' : 'opacity-0',
+													)}
+												/>
+												{module.label}
+											</CommandItem>
+										))}
+									</CommandGroup>
+								</CommandList>
+							</Command>
+						</PopoverContent>
+					</Popover>
+				</FormItem>
+			)}
+		/>
 	)
 }

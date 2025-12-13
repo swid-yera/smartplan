@@ -35,6 +35,7 @@ const formSchema = z.object({
 		.array(
 			z.object({
 				value: z.string().min(1, 'Ресурс не может быть пустым'),
+				link: z.string().optional(),
 			}),
 		)
 		.optional(),
@@ -42,6 +43,7 @@ const formSchema = z.object({
 		.array(
 			z.object({
 				value: z.string().min(1, 'Материал не может быть пустым'),
+				link: z.string().optional(),
 			}),
 		)
 		.optional(),

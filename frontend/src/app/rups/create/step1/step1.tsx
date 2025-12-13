@@ -8,21 +8,20 @@ import z from 'zod'
 import { BasicDataCard } from './basic-data-card'
 import { ExplorationNoteCard } from './exploration-note-card'
 import { GoalsCard } from './goals-card'
-import { RequisitesCard } from './requisites-card'
+import { GroupCard } from './group-card'
 
 // form scheme
 const formSchema = z.object({
 	title: z.string().min(1, 'Наименование РУП обязательно'),
 	year: z.string().min(9, 'Учебный год обязателен').max(9, 'Учебный год обязателен'),
 	type: z.string().min(1, 'Тип РУП обязателен'),
-	course: z.number().min(1).max(4).optional(),
+	course: z.string().min(1, 'Курс обязателен'),
 	studyForm: z.string().min(1, 'Форма обучения обязательна'),
-	explorationNote: z.string().optional(),
-	goals: z.string().optional(),
-	prerequisites: z.array(z.string()).optional(),
-	postrequisites: z.array(z.string()).optional(),
-	// group
-	groupId: z.string().min(9, 'Учебный год обязателен'),
+	explorationNote: z.string().optional(), // This should probably be a string for a text area
+	goals: z.string().optional(), // This should probably be a string for a text area
+	prerequisites: z.string().optional(),
+	postrequisites: z.string().optional(),
+	groupId: z.string().min(1, 'Группа обязательна'),
 })
 
 export type FormData = z.infer<typeof formSchema>
@@ -34,13 +33,12 @@ export const Step1: FC = () => {
 			title: '',
 			year: '',
 			type: '',
-			course: undefined,
+			course: '1',
 			studyForm: '',
 			explorationNote: '',
 			goals: '',
-			prerequisites: [''],
-			postrequisites: [''],
-			// group
+			prerequisites: '',
+			postrequisites: '',
 			groupId: '',
 		},
 	})
@@ -57,9 +55,9 @@ export const Step1: FC = () => {
 					<ExplorationNoteCard form={form} />
 				</div>
 
-				<div className='grid gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)]'>
+				<div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)]'>
 					<GoalsCard form={form} />
-					<RequisitesCard form={form} />
+					<GroupCard form={form} />
 				</div>
 
 				<Button size='lg' type='submit' variant='default'>
