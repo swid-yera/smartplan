@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import type { FC, KeyboardEvent } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button, Form } from '@ui'
@@ -16,12 +16,12 @@ const formSchema = z.object({
 		z.object({
 			code: z.string().min(1, 'Код не может быть пустым'),
 			name: z.string().min(1, 'Название не может быть пустым'),
-			totalCredits: z.number().nonnegative('Количество часов не может быть отрицательным'),
+			totalHours: z.number().nonnegative('Количество часов не может быть отрицательным'),
 			semesters: z
 				.array(
 					z.object({
 						semester: z.number().positive('Номер семестра должен быть положительным'),
-						credits: z.number().nonnegative('Количество кредитов не может быть отрицательным'),
+						hours: z.number().nonnegative('Количество часов не может быть отрицательным'),
 					}),
 				)
 				.min(1, 'У дисциплины должен быть как минимум один семестр'),
@@ -39,13 +39,20 @@ export const Step3: FC = () => {
 		},
 	})
 
+	const handleKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {
+		// Prevent form submission on "Enter" key press in input fields
+		if (e.key === 'Enter' && (e.target as HTMLElement).tagName.toLowerCase() === 'input') {
+			e.preventDefault()
+		}
+	}
+
 	const onSave = (values: z.infer<typeof formSchema>) => {
 		console.log('save', values)
 	}
 
 	return (
 		<Form {...form}>
-			<form className='w-full space-y-5' onSubmit={form.handleSubmit(onSave)}>
+			<form className='w-full space-y-5' onKeyDown={handleKeyDown} onSubmit={form.handleSubmit(onSave)}>
 				<DisciplineCard form={form} />
 
 				<Button size='lg' type='submit' variant='default'>

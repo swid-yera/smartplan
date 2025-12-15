@@ -2,7 +2,6 @@
 
 import React from 'react'
 
-import { RupTypeEnum, StudyFormEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -20,6 +19,7 @@ import {
 	FormField,
 	FormItem,
 	FormLabel,
+	FormMessage,
 	Input,
 	Popover,
 	PopoverContent,
@@ -37,6 +37,7 @@ import { Check, ChevronsUpDown, Info } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { cn } from '@/lib'
+import { RupModuleTypeEnum, StudyFormEnum } from '@/shared/types'
 
 import type { FormData } from './step1'
 
@@ -49,7 +50,7 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 		<Card>
 			<CardHeader>
 				<CardTitle>Общие сведения</CardTitle>
-				<CardDescription>Основные данные рабочего учебного плана.</CardDescription>
+				<CardDescription>Основные данные модуля рабочего учебного плана.</CardDescription>
 			</CardHeader>
 
 			<CardContent className='space-y-3 text-sm'>
@@ -62,6 +63,7 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 							<FormControl>
 								<Input placeholder='Введите называние модуля' {...field} />
 							</FormControl>
+							<FormMessage />
 						</FormItem>
 					)}
 				/>
@@ -81,15 +83,15 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 										<TooltipContent side='top'>
 											{[
 												{
-													type: RupTypeEnum.PRACTICE,
+													type: RupModuleTypeEnum.PRACTICE,
 													desc: 'Для каждой темы будет считаться по 6 часа',
 												},
 												{
-													type: RupTypeEnum.THEORY,
+													type: RupModuleTypeEnum.THEORY,
 													desc: 'Для каждой темы будет считаться по 2 часа',
 												},
 											].map((item) => (
-												<p key={item.type} className='text-sm'>
+												<p key={item.type}>
 													<span className='font-bold'>{item.type}:</span>
 													<br />
 													{item.desc}
@@ -104,14 +106,15 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 											<SelectValue placeholder='Теоретическая или практическая' />
 										</SelectTrigger>
 										<SelectContent position='popper'>
-											{Object.keys(RupTypeEnum).map((rupType) => (
+											{Object.keys(RupModuleTypeEnum).map((rupType) => (
 												<SelectItem key={rupType} value={rupType}>
-													{RupTypeEnum[rupType]}
+													{RupModuleTypeEnum[rupType]}
 												</SelectItem>
 											))}
 										</SelectContent>
 									</Select>
 								</FormControl>
+								<FormMessage />
 							</FormItem>
 						)}
 					/>
@@ -136,6 +139,7 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 										</SelectContent>
 									</Select>
 								</FormControl>
+								<FormMessage />
 							</FormItem>
 						)}
 					/>
@@ -228,6 +232,7 @@ function RequisiteField({ form, type, label }: RequisiteFieldProps) {
 							</Command>
 						</PopoverContent>
 					</Popover>
+					<FormMessage />
 				</FormItem>
 			)}
 		/>

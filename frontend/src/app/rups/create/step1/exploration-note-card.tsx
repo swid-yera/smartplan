@@ -10,6 +10,7 @@ import {
 	FormControl,
 	FormField,
 	FormItem,
+	FormMessage,
 	Textarea,
 } from '@ui'
 import type { UseFormReturn } from 'react-hook-form'
@@ -47,6 +48,7 @@ export function ExplorationNoteCard({ form }: ExplorationNoteCardProps) {
 							<FormControl>
 								<Textarea rows={8} {...field} />
 							</FormControl>
+							<FormMessage />
 						</FormItem>
 					)}
 				/>

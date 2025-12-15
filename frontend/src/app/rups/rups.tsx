@@ -2,12 +2,12 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import type { IRup } from '@types'
+import type { IRupModule } from '@types'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@ui'
 import { Badge } from 'lucide-react'
 
 interface IRupsProps {
-	rups: IRup[]
+	rups: IRupModule[]
 }
 
 export const Rups: FC<IRupsProps> = ({ rups }) => {

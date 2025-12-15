@@ -1,6 +1,6 @@
 'use client'
 
-import * as React from 'react'
+import React from 'react'
 
 import { cn } from '@lib'
 import {
@@ -20,6 +20,7 @@ import {
 	FormField,
 	FormItem,
 	FormLabel,
+	FormMessage,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -28,10 +29,11 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
 } from '@ui'
-import { Check, ChevronsUpDown, Info } from 'lucide-react'
+import { Check, ChevronsUpDown } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
+
+import { formatCourseFromYearAndGroupName } from '@/helpers'
 
 import { groupData } from '../mock.data'
 import type { FormData } from './step1'
@@ -43,15 +45,29 @@ interface GroupCardProps {
 export function GroupCard({ form }: GroupCardProps) {
 	const [open, setOpen] = React.useState(false)
 	const watchedGroupId = form.watch('groupId')
+	const watchedYear = form.watch('year')
+
 	const selectedGroup = groupData.find((group) => group.id == watchedGroupId)
 	const specialty = selectedGroup?.specialty ?? 'Группа не выбрана'
 	const qualification = selectedGroup?.qualification ?? 'Группа не выбрана'
+	const course =
+		selectedGroup?.name && watchedYear
+			? formatCourseFromYearAndGroupName(selectedGroup.name, watchedYear)
+			: 'Группа или год обучения не выбраны'
+
+	const isCourseError = typeof course === 'string'
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Группа</CardTitle>
-				<CardDescription>Выберите группу и проверьте специальность и квалификацию.</CardDescription>
+				<CardDescription>
+					Выберите группу и проверьте специальность и квалификацию.
+					<span className='text-primary'>
+						Информация о квалификации и специальности автоматически получиться от типа группы. Информация о курсе
+						получится от года обучения.
+					</span>
+				</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4 text-sm'>
 				<div className='grid grid-cols-2 gap-5'>
@@ -88,6 +104,7 @@ export function GroupCard({ form }: GroupCardProps) {
 															value={group.name}
 															onSelect={() => {
 																form.setValue('groupId', group.id)
+																form.setValue('year', '') // Reset year on group change
 																setOpen(false)
 															}}
 														>
@@ -105,6 +122,7 @@ export function GroupCard({ form }: GroupCardProps) {
 										</Command>
 									</PopoverContent>
 								</Popover>
+								<FormMessage />
 							</FormItem>
 						)}
 					/>
@@ -115,61 +133,35 @@ export function GroupCard({ form }: GroupCardProps) {
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>Год обучения</FormLabel>
-								<Select value={field.value} onValueChange={field.onChange}>
+								<Select disabled={!watchedGroupId} value={field.value} onValueChange={field.onChange}>
 									<SelectTrigger>
 										<SelectValue placeholder='Выберите год' />
 									</SelectTrigger>
 									<SelectContent>
-										{['2025-2026', '2024-2025'].map((studyYears) => (
+										{['2026-2027', '2025-2026', '2024-2025', '2023-2024', '2022-2023'].map((studyYears) => (
 											<SelectItem key={studyYears} value={studyYears}>
 												{studyYears}
 											</SelectItem>
 										))}
 									</SelectContent>
 								</Select>
+								<FormMessage />
 							</FormItem>
 						)}
 					/>
+				</div>
 
-					<FormField
-						control={form.control}
-						name='course'
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Год обучения</FormLabel>
-								<Select value={String(field.value)} onValueChange={field.onChange}>
-									<SelectTrigger>
-										<SelectValue placeholder='Выберите год' />
-									</SelectTrigger>
-									<SelectContent>
-										{[1, 2, 3, 4].map((courses) => (
-											<SelectItem key={courses} value={String(courses)}>
-												{courses}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</FormItem>
-						)}
-					/>
+				<div>
+					<p>Специальность</p>
+					<p>{specialty}</p>
 				</div>
-				<p className='text-sm text-primary text-balance'>
-					<Info className='inline mr-2' />
-					Информация о квалификации и специальности автоматически получиться от типа группы
-				</p>
-				<div className='space-y-2'>
-					<FormLabel>Специальность</FormLabel>
-					<Separator />
-					<div className='pt-2'>
-						<p>{specialty}</p>
-					</div>
+				<div>
+					<p>Квалификация</p>
+					<p>{qualification}</p>
 				</div>
-				<div className='space-y-2'>
-					<FormLabel>Квалификация</FormLabel>
-					<Separator />
-					<div className='pt-2'>
-						<p>{qualification}</p>
-					</div>
+				<div>
+					<p>Курс</p>
+					<p className={cn({ 'text-destructive': isCourseError })}>{course}</p>
 				</div>
 			</CardContent>
 		</Card>

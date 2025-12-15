@@ -1,9 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
+import {
+	DndContext,
+	type DragEndEvent,
+	KeyboardSensor,
+	MouseSensor,
+	TouchSensor,
+	closestCenter,
+	useSensor,
+	useSensors,
+} from '@dnd-kit/core'
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@lib'
-import { RupTypeEnum, TopicTypeEnum } from '@types'
+import { RupModuleTypeEnum, TopicTypeEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -22,7 +35,6 @@ import {
 	FormControl,
 	FormField,
 	FormItem,
-	FormMessage,
 	Input,
 	Select,
 	SelectContent,
@@ -36,11 +48,16 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
 } from '@ui'
-import { ChevronDown, Plus, Trash } from 'lucide-react'
+import { ChevronDown, GripVertical, Info, Plus, Trash } from 'lucide-react'
 import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
 
-import { formatCredits, formatHours } from '@/helpers'
+import { EditableHourCell } from '@/components/editable-hour-cell'
+import { formatHours } from '@/helpers'
 
 import type { FormData } from './step4'
 
@@ -50,28 +67,30 @@ interface IProps {
 
 const newTopic = {
 	name: '',
-	type: TopicTypeEnum.Theoretical,
+	type: TopicTypeEnum.SNZ,
 	totalHours: 0,
 	theoryHours: 0,
 	practiceHours: 0,
 	individualHours: 0,
+	srspHours: 0,
+	srsHours: 0,
 }
 
 const RUP_TYPE_HOURS_CONFIG = {
-	[RupTypeEnum.THEORY]: { totalHours: 2, theoryHours: 2, practiceHours: 0, individualHours: 0 },
-	[RupTypeEnum.PRACTICE]: { totalHours: 6, theoryHours: 0, practiceHours: 4, individualHours: 2 },
+	[RupModuleTypeEnum.THEORY]: { totalHours: 2, theoryHours: 2, practiceHours: 0, individualHours: 0 },
+	[RupModuleTypeEnum.PRACTICE]: { totalHours: 6, theoryHours: 0, practiceHours: 4, individualHours: 2 },
 }
 
 export function TopicsCard({ form }: IProps) {
-	const rupType = useWatch({ control: form.control, name: 'rupType' })
-	const disciplines = useWatch({ control: form.control, name: 'disciplines' })
+	const rupModuleType = useWatch({ control: form.control, name: 'rupModuleType' }) ?? ''
+	const disciplines = useWatch({ control: form.control, name: 'disciplines' }) ?? ''
 
 	// This effect updates the hours for all topics when the global RUP type changes.
 	// It does not run on every change to `disciplines` to avoid performance issues and infinite loops.
 	useEffect(() => {
-		if (!rupType) return
+		if (!rupModuleType) return
 
-		const newHours = RUP_TYPE_HOURS_CONFIG[rupType as RupTypeEnum]
+		const newHours = RUP_TYPE_HOURS_CONFIG[rupModuleType as RupModuleTypeEnum]
 		const currentDisciplines = form.getValues('disciplines')
 
 		currentDisciplines.forEach((discipline, disciplineIndex) => {
@@ -85,13 +104,15 @@ export function TopicsCard({ form }: IProps) {
 				)
 			})
 		})
-	}, [rupType, form])
+	}, [rupModuleType, form])
 
 	const total = {
 		totalHours: 0,
 		theoryHours: 0,
 		practiceHours: 0,
 		individualHours: 0,
+		srspHours: 0,
+		srsHours: 0,
 	}
 
 	disciplines.forEach((discipline) => {
@@ -100,6 +121,8 @@ export function TopicsCard({ form }: IProps) {
 			total.theoryHours += topic.theoryHours || 0
 			total.practiceHours += topic.practiceHours || 0
 			total.individualHours += topic.individualHours || 0
+			total.srspHours += topic.srspHours || 0
+			total.srsHours += topic.srsHours || 0
 		})
 	})
 
@@ -111,25 +134,30 @@ export function TopicsCard({ form }: IProps) {
 			</CardHeader>
 			<CardContent className='space-y-4'>
 				{disciplines.map((discipline, disciplineIndex) => (
-					<DisciplineBlock key={discipline.code} disciplineIndex={disciplineIndex} form={form} rupType={rupType} />
+					<DisciplineBlock
+						key={discipline.code}
+						disciplineIndex={disciplineIndex}
+						form={form}
+						rupModuleType={rupModuleType}
+					/>
 				))}
 				<div className='flex justify-end items-center pt-4 pr-6 space-x-4'>
 					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
-						<p className='font-medium'>Должно быть часов:</p>
-						<p className='font-bold text-2xl'>{disciplines.reduce((sum, d) => sum + d.totalCredits, 0) * 24}</p>
+						<p className='font-medium'>Заявлено часов:</p>
+						<p className='font-bold text-2xl'>{disciplines.reduce((sum, d) => sum + d.totalHours, 0)}</p>
 
-						<p className='font-medium'>В данный момент:</p>
+						<p className='font-medium'>Текущие общие часы:</p>
 						<div
 							className={cn(
 								'font-bold text-right text-2xl',
-								total.totalHours !== disciplines.reduce((sum, d) => sum + d.totalCredits, 0) * 24 &&
+								total.totalHours !== disciplines.reduce((sum, d) => sum + d.totalHours, 0) &&
 									'text-destructive',
 							)}
 						>
 							<p>{total.totalHours}</p>
 							<p className='text-xs font-normal text-muted-foreground'>
-								(Теория: {total.theoryHours} / Практика: {total.practiceHours} / Самост: {total.individualHours}
-								)
+								(Теория: {total.theoryHours} / Практика: {total.practiceHours} / Индивид:{' '}
+								{total.individualHours} / СРСП: {total.srspHours} / СРС: {total.srsHours})
 							</p>
 						</div>
 					</div>
@@ -142,22 +170,24 @@ export function TopicsCard({ form }: IProps) {
 function DisciplineBlock({
 	form,
 	disciplineIndex,
-	rupType,
+	rupModuleType,
 }: {
 	form: UseFormReturn<FormData>
 	disciplineIndex: number
-	rupType: string
+	rupModuleType: string
 }) {
 	const [isCollapsed, setIsCollapsed] = useState(false)
+	const tableFooterRef = useRef<HTMLTableSectionElement>(null)
 	const {
 		fields: topicFields,
 		append,
+		move,
 		remove,
 	} = useFieldArray({
 		control: form.control,
-		name: `disciplines.${disciplineIndex}.topics`,
+		name: `disciplines.${disciplineIndex}.topics` as const,
+		keyName: 'key', // Use 'key' instead of 'id' to avoid conflicts with dnd-kit
 	})
-
 	const [topicToDelete, setTopicToDelete] = useState<number | null>(null)
 
 	const discipline = useWatch({ control: form.control, name: `disciplines.${disciplineIndex}` })
@@ -167,6 +197,8 @@ function DisciplineBlock({
 		theoryHours: 0,
 		practiceHours: 0,
 		individualHours: 0,
+		srspHours: 0,
+		srsHours: 0,
 	}
 
 	discipline.topics.forEach((topic) => {
@@ -174,31 +206,38 @@ function DisciplineBlock({
 		sectionTotal.theoryHours += topic.theoryHours || 0
 		sectionTotal.practiceHours += topic.practiceHours || 0
 		sectionTotal.individualHours += topic.individualHours || 0
+		sectionTotal.srspHours += topic.srspHours || 0
+		sectionTotal.srsHours += topic.srsHours || 0
 	})
 
-	const hasError = sectionTotal.totalHours !== 24
+	const hasError = sectionTotal.totalHours !== discipline.totalHours
+
+	const onAddNewTopic = () => {
+		append(newTopic, { shouldFocus: true })
+		setIsCollapsed(false)
+	}
+
+	const sensors = useSensors(useSensor(MouseSensor, {}), useSensor(TouchSensor, {}), useSensor(KeyboardSensor))
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event
+
+		if (active && over && active.id !== over.id) {
+			const oldIndex = topicFields.findIndex((topic) => topic.key === active.id)
+			const newIndex = topicFields.findIndex((topic) => topic.key === over.id)
+
+			move(oldIndex, newIndex)
+		}
+	}
 
 	return (
-		<div className='border rounded-lg'>
+		<div className='border rounded-lg rounded-t-none'>
 			{/* Discipline Header */}
-			<div className='flex items-center p-4 bg-muted/40 rounded-t-lg'>
+			<div className='flex items-center p-4 bg-accent z-10 sticky top-0'>
 				<div className='font-semibold pr-4'>{discipline.code}</div>
 				<div className='flex-1 font-medium text-left'>{discipline.name}</div>
 				<div className='flex items-center space-x-2'>
-					<Button
-						size='sm'
-						type='button'
-						variant='ghost'
-						onClick={() =>
-							append({
-								...newTopic,
-								totalHours: rupType === RupTypeEnum.THEORY ? 2 : 6,
-								theoryHours: rupType === RupTypeEnum.THEORY ? 2 : 0,
-								practiceHours: rupType === RupTypeEnum.THEORY ? 0 : 4,
-								individualHours: rupType === RupTypeEnum.THEORY ? 0 : 2,
-							})
-						}
-					>
+					<Button size='sm' type='button' variant='ghost' onClick={() => onAddNewTopic()}>
 						<Plus className='h-4 w-4 mr-2' />
 						Добавить тему
 					</Button>
@@ -211,57 +250,97 @@ function DisciplineBlock({
 
 			{/* Topics Table */}
 			{!isCollapsed && (
-				<div className='p-4'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className='w-16 text-center'>№</TableHead>
-								<TableHead>Темы занятий</TableHead>
-								<TableHead className='w-20 text-center'>Всего</TableHead>
-								<TableHead className='w-20 text-center'>Теория</TableHead>
-								<TableHead className='w-20 text-center'>Практика</TableHead>
-								<TableHead className='w-20 text-center'>Самост.</TableHead>
-								<TableHead className='w-48'>Тип занятия</TableHead>
-								<TableHead className='w-24'>Действия</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{topicFields.map((topicField, topicIndex) => (
-								<TopicRow
-									key={topicField.id}
-									disciplineIndex={disciplineIndex}
-									form={form}
-									rupType={rupType}
-									setTopicToDelete={setTopicToDelete}
-									topicIndex={topicIndex}
-								/>
-							))}
-						</TableBody>
-						<TableFooter>
-							<TableRow>
-								<TableCell className='text-right font-bold' colSpan={2}>
-									Итого по разделу:
-								</TableCell>
-								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
-									{sectionTotal.totalHours}
-								</TableCell>
-								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
-									{sectionTotal.theoryHours}
-								</TableCell>
-								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
-									{sectionTotal.practiceHours}
-								</TableCell>
-								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
-									{sectionTotal.individualHours}
-								</TableCell>
-								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
-									{formatHours(sectionTotal.totalHours)} ={' '}
-									{formatCredits(Number((sectionTotal.totalHours / 24).toFixed(3)))}
-								</TableCell>
-							</TableRow>
-						</TableFooter>
-					</Table>
-				</div>
+				<DndContext
+					collisionDetection={closestCenter}
+					modifiers={[restrictToVerticalAxis]}
+					sensors={sensors}
+					onDragEnd={handleDragEnd}
+				>
+					<div className='p-4'>
+						<Table>
+							<TableHeader>
+								<TableRow className='*:p-2'>
+									<TableHead className='w-12 text-center'>№</TableHead>
+									<TableHead>Темы занятий</TableHead>
+									<TableHead className='w-20 text-center'>Всего</TableHead>
+									<TableHead className='w-20 text-center'>Теория</TableHead>
+									<TableHead className='w-20 text-center'>Практика</TableHead>
+									<TableHead className='w-20 text-center'>Индивидуальная</TableHead>
+									<TableHead className='w-20 text-center'>
+										<TooltipProvider>
+											<Tooltip>
+												<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
+													СРСП <Info className='w-3 h-3' />
+												</TooltipTrigger>
+												<TooltipContent>
+													<p>Самостоятельная работа студента с преподавателем</p>
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
+									</TableHead>
+									<TableHead className='w-20 text-center'>
+										<TooltipProvider>
+											<Tooltip>
+												<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
+													СРС <Info className='w-3 h-3' />
+												</TooltipTrigger>
+												<TooltipContent>
+													<p>Самостоятельная работа студента</p>
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
+									</TableHead>
+									<TableHead className='w-48 text-end'>Тип занятия</TableHead>
+									<TableHead className='w-12' />
+								</TableRow>
+							</TableHeader>
+
+							<SortableContext
+								items={topicFields.map((field) => field.key)}
+								strategy={verticalListSortingStrategy}
+							>
+								<TableBody>
+									{topicFields.map((topicField, topicIndex) => (
+										<TopicRow
+											key={topicField.key}
+											disciplineIndex={disciplineIndex}
+											form={form}
+											id={topicField.key}
+											rupModuleType={rupModuleType}
+											setTopicToDelete={setTopicToDelete}
+											topicIndex={topicIndex}
+										/>
+									))}
+								</TableBody>
+							</SortableContext>
+
+							<TableFooter ref={tableFooterRef}>
+								<TableRow>
+									<TableCell
+										className={cn('text-right font-bold', hasError && 'text-destructive')}
+										colSpan={2}
+									>
+										Итого по разделу:
+									</TableCell>
+									<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
+										{formatHours(sectionTotal.totalHours)}
+									</TableCell>
+									<TableCell className='font-bold text-center'>{sectionTotal.theoryHours}ч</TableCell>
+									<TableCell className='font-bold text-center'>{sectionTotal.practiceHours}ч</TableCell>
+									<TableCell className='font-bold text-center'>{sectionTotal.individualHours}ч</TableCell>
+									<TableCell className='font-bold text-center'>{sectionTotal.srspHours}ч</TableCell>
+									<TableCell className='font-bold text-center'>{sectionTotal.srsHours}ч</TableCell>
+									<TableCell
+										className={cn('text-right font-bold', hasError && 'text-destructive')}
+										colSpan={2}
+									>
+										Заявлено: {formatHours(discipline.totalHours)}
+									</TableCell>
+								</TableRow>
+							</TableFooter>
+						</Table>
+					</div>
+				</DndContext>
 			)}
 
 			<AlertDialog open={topicToDelete !== null} onOpenChange={(isOpen) => !isOpen && setTopicToDelete(null)}>
@@ -288,26 +367,49 @@ function DisciplineBlock({
 	)
 }
 
-function TopicRow({
+const TopicRow = ({
 	form,
+	id,
 	disciplineIndex,
 	topicIndex,
-	rupType,
+	rupModuleType,
 	setTopicToDelete,
 }: {
 	form: UseFormReturn<FormData>
+	id: string
 	disciplineIndex: number
 	topicIndex: number
-	rupType: string
+	rupModuleType: string
 	setTopicToDelete: (index: number | null) => void
-}) {
+}) => {
 	const topic = useWatch({
 		control: form.control,
 		name: `disciplines.${disciplineIndex}.topics.${topicIndex}`,
 	})
 
+	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		opacity: isDragging ? 0.8 : 1,
+		zIndex: isDragging ? 1 : 0,
+		position: 'relative' as const,
+	}
+
 	// This effect updates the hours for a single topic when its type changes.
 	useEffect(() => {
+		if (!topic) return
+
+		// determine counting hours 2 or 6, depends at rup module type
+		let countingHours: 2 | 6 = 2
+
+		if (rupModuleType === RupModuleTypeEnum.THEORY) {
+			countingHours = 2
+		} else if (rupModuleType === RupModuleTypeEnum.PRACTICE) {
+			countingHours = 6
+		}
+
 		let newTotalHours = 0,
 			newTheoryHours = 0,
 			newPracticeHours = 0,
@@ -315,18 +417,23 @@ function TopicRow({
 
 		// Determine hours based on the topic's specific type
 		switch (topic.type) {
-			case TopicTypeEnum.Theoretical:
+			case TopicTypeEnum.SNZ:
+				newTotalHours = countingHours
+				newTheoryHours = 0
+				newPracticeHours = 0
+				newIndividualHours = countingHours
+				break
 			case TopicTypeEnum.Combined:
-				newTotalHours = 2
-				newTheoryHours = 2
+				newTotalHours = countingHours
+				newTheoryHours = countingHours
 				newPracticeHours = 0
 				newIndividualHours = 0
 				break
 			case TopicTypeEnum.Practical:
-				newTotalHours = 6
+				newTotalHours = countingHours
 				newTheoryHours = 0
-				newPracticeHours = 4
-				newIndividualHours = 2
+				newPracticeHours = countingHours
+				newIndividualHours = 0
 				break
 		}
 
@@ -342,12 +449,19 @@ function TopicRow({
 			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours`, newPracticeHours)
 			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours`, newIndividualHours)
 		}
-	}, [topic.type, disciplineIndex, topicIndex, form])
+	}, [topic?.type])
 
 	return (
-		<TableRow>
-			<TableCell className='align-top font-medium text-center'>{topicIndex + 1}</TableCell>
-			<TableCell className='align-top'>
+		<TableRow ref={setNodeRef} style={style} {...attributes}>
+			<TableCell className='align-middle font-medium text-center w-24'>
+				<div className='flex items-center justify-center gap-2'>
+					<button className='cursor-grab' type='button' {...listeners}>
+						<GripVertical className='h-4 w-4 text-muted-foreground' />
+					</button>
+					<span>{topicIndex + 1}</span>
+				</div>
+			</TableCell>
+			<TableCell className='align-middle'>
 				<FormField
 					control={form.control}
 					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name`}
@@ -356,45 +470,45 @@ function TopicRow({
 							<FormControl className='min-w-[200px]'>
 								<Input placeholder='Название темы' {...field} />
 							</FormControl>
-							<FormMessage />
 						</FormItem>
 					)}
 				/>
 			</TableCell>
-			<TableCell className='align-top text-center font-medium'>
-				<p>{topic.totalHours}</p>
+			<TableCell className='align-middle text-center font-bold'>
+				<p>{topic.totalHours}ч</p>
 			</TableCell>
-			<TableCell className='align-top text-center font-medium'>{topic.theoryHours}</TableCell>
-			<TableCell className='align-top text-center font-medium'>{topic.practiceHours}</TableCell>
-			<TableCell className='align-top text-center font-medium'>
-				<p>{topic.individualHours}</p>
+			<TableCell className='align-middle text-center font-medium'>{topic.theoryHours}ч</TableCell>
+			<TableCell className='align-middle text-center font-medium'>{topic.practiceHours}ч</TableCell>
+			<TableCell className='align-middle text-center font-medium'>
+				<p>{topic.individualHours}ч</p>
 			</TableCell>
-			<TableCell className='align-top'>
+			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours`} form={form} />
+			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours`} form={form} />
+			<TableCell className='align-middle'>
 				<FormField
 					control={form.control}
 					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.type`}
 					render={({ field }) => (
 						<FormItem>
-							<Select defaultValue={field.value} onValueChange={field.onChange}>
-								<FormControl>
-									<SelectTrigger>
-										<SelectValue placeholder='Тип' />
+							<FormControl>
+								<Select defaultValue={field.value} onValueChange={field.onChange}>
+									<SelectTrigger className='w-full'>
+										<SelectValue placeholder='Тип занятия' />
 									</SelectTrigger>
-								</FormControl>
-								<SelectContent>
-									{rupType === RupTypeEnum.THEORY && (
-										<SelectItem value={TopicTypeEnum.Theoretical}>Теоретическая</SelectItem>
-									)}
-									<SelectItem value={TopicTypeEnum.Practical}>Практическая</SelectItem>
-									<SelectItem value={TopicTypeEnum.Combined}>Комбинированная</SelectItem>
-								</SelectContent>
-							</Select>
-							<FormMessage />
+									<SelectContent>
+										{rupModuleType === RupModuleTypeEnum.THEORY && (
+											<SelectItem value={TopicTypeEnum.SNZ}>СНЗ</SelectItem>
+										)}
+										<SelectItem value={TopicTypeEnum.Practical}>Практическая</SelectItem>
+										<SelectItem value={TopicTypeEnum.Combined}>Комбинированная</SelectItem>
+									</SelectContent>
+								</Select>
+							</FormControl>
 						</FormItem>
 					)}
 				/>
 			</TableCell>
-			<TableCell className='align-top'>
+			<TableCell className='align-middle'>
 				<Button size='icon' type='button' variant='ghost' onClick={() => setTopicToDelete(topicIndex)}>
 					<Trash className='h-4 w-4' />
 				</Button>
@@ -402,3 +516,5 @@ function TopicRow({
 		</TableRow>
 	)
 }
+
+TopicRow.displayName = 'TopicRow'

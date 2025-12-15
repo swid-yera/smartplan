@@ -1,22 +1,9 @@
-export enum RupStatus {
+import type { IGroup, IUser } from './global-types'
+
+export enum RupModuleStatus {
 	DRAFT = 'Черновик',
 	IN_REVIEW = 'На согласовании',
 	APPROVED = 'утверждён',
-}
-
-export interface IGroup {
-	id: string
-	name: string
-	specialty: string
-	qualification: string
-}
-
-export interface IUser {
-	name: string
-	secondName: string
-	roles: string[] // TODO:
-	phone: string
-	email: string
 }
 
 // rup
@@ -25,33 +12,33 @@ export enum StudyFormEnum {
 	FullTime = 'очная',
 }
 
-export interface ICredits {
-	theoryCredits: number
-	practiceCredits: number
-	individualCredits: number
+export interface IHours {
+	theoryHours: number
+	practiceHours: number
+	individualHours: number
 }
 
-export enum RupTypeEnum {
+export enum RupModuleTypeEnum {
 	PRACTICE = 'Учебно производственная практика',
 	THEORY = 'Теоретическая',
 }
 
-export interface IRup {
+export interface IRupModule {
 	id: number
 	title: string
 	studyForm: StudyFormEnum
-	totalCredits: number
-	credits: ICredits
-	explorationNote: IRupExplorationNote
+	totalHours: number
+	hours: IHours
+	explorationNote: IRupModuleExplorationNote
 	developersName: string[]
 	years: string
-	type: RupTypeEnum
+	type: RupModuleTypeEnum
 
 	disciplines: IDiscipline[]
 	group: IGroup
 	methodist: IUser
 	department: IUser
-	status: RupStatus
+	status: RupModuleStatus
 }
 
 // rup exploration note
@@ -60,12 +47,12 @@ export interface IResources {
 	link: string
 }
 
-export interface IRupExplorationNote {
+export interface IRupModuleExplorationNote {
 	according: string
 	goals: string
 	competencies: string
-	prerequisites: IRup
-	postrequisites: IRup
+	prerequisites: IRupModule
+	postrequisites: IRupModule
 	internetResources: IResources[]
 	technicalResources: IResources[]
 	contacts: IUser[]
@@ -74,23 +61,23 @@ export interface IRupExplorationNote {
 // discipline
 export interface ISemester {
 	semester: number
-	credits: number // TODO:
-	theoryCredits: number
-	practiceCredits: number
-	individualCredits: number
+	totalHours: number
+	theoryHours: number
+	practiceHours: number
+	individualHours: number
 }
 
 export interface IDiscipline {
 	name: string
 	code: string
-	totalCredits: number
+	totalHours: number
 	semesters: ISemester[]
 	topics: ITopics[]
 }
 
 // topics
 export enum TopicTypeEnum {
-	Theoretical = 'теоретическое',
+	SNZ = 'СНЗ',
 	Practical = 'практическое',
 	Combined = 'комбинированный',
 }
@@ -102,4 +89,6 @@ export interface ITopics {
 	theoryHours: number
 	practiceHours: number
 	individualHours: number
+	SRSP: number
+	SRS: number
 }

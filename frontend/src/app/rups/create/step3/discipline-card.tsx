@@ -33,7 +33,8 @@ import {
 import { Info, Trash } from 'lucide-react'
 import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
 
-import { formatCredits, formatHours } from '@/helpers'
+import { EditableHourCell } from '@/components/editable-hour-cell'
+import { formatHours } from '@/helpers'
 
 import type { FormData } from './step3'
 
@@ -61,10 +62,10 @@ export function DisciplineCard({ form }: IProps) {
 	const newDiscipline = {
 		code: '',
 		name: '',
-		totalCredits: 0,
+		totalHours: 0,
 		semesters: Array.from({ length: 8 }, (_, i) => ({
 			semester: i + 1,
-			credits: 0,
+			hours: 0,
 		})),
 	}
 
@@ -72,7 +73,7 @@ export function DisciplineCard({ form }: IProps) {
 
 	disciplines.forEach((discipline) => {
 		discipline.semesters.forEach((semester, i) => {
-			semesterTotals[i] += semester.credits || 0
+			semesterTotals[i] += semester.hours || 0
 		})
 	})
 
@@ -83,15 +84,14 @@ export function DisciplineCard({ form }: IProps) {
 					Распределение часов по семестру, создание разделов/дисциплин учебной рабочей программы
 				</CardTitle>
 				<CardDescription>
-					Распределение часов по семестру используя кредиты , создание разделов/дисциплин и высчитывания общее
-					количество часов в учебном плане
+					Распределение часов по семестру, создание разделов/дисциплин и высчитывания общее количество часов в
+					учебном плане
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<p className='text-sm text-primary text-balance mt-2'>
 					<Info className='inline mr-2' />
-					Часы по семестрам считаются в кредитах, 1 кредит = 24 часа
-					<br />- Каждая дисциплина должна иметь минимум один семестр
+					Часы по семестрам считаются в академических часах. Каждая дисциплина должна иметь минимум один семестр.
 				</p>
 
 				<div className='overflow-x-auto'>
@@ -139,19 +139,13 @@ export function DisciplineCard({ form }: IProps) {
 							<TableRow>
 								<TableCell className='text-left font-bold'>Всего по модулю:</TableCell>
 								<TableCell className='text-right font-bold'>
-									{(() => {
-										const disciplinesCredits = disciplines
-											.map((discipline) => discipline.totalCredits)
-											.reduce((a, b) => a + b, 0)
-
-										return `${formatCredits(disciplinesCredits)} = ${formatHours(disciplinesCredits * 24)} `
-									})()}
+									{formatHours(
+										disciplines.map((discipline) => discipline.totalHours).reduce((a, b) => a + b, 0),
+									)}
 								</TableCell>
-								{semesterTotals.map((totalCredits, i) => (
+								{semesterTotals.map((totalHours, i) => (
 									<TableCell key={i} className='text-center font-bold border-r last:border-r-0'>
-										<p>
-											{totalCredits} = {totalCredits * 24}ч
-										</p>
+										<p>{totalHours}ч</p>
 									</TableCell>
 								))}
 							</TableRow>
@@ -204,23 +198,23 @@ function DisciplineRow({
 		name: `disciplines.${disciplineIndex}.semesters`,
 	})
 
-	const totalCredits = watchedSemesters.reduce((acc, sem) => acc + (sem.credits || 0), 0)
+	const totalHours = watchedSemesters.reduce((acc, sem) => acc + (sem.hours || 0), 0)
 
 	useEffect(() => {
 		// Update the form state silently so it's available on submission
-		if (form.getValues(`disciplines.${disciplineIndex}.totalCredits`) !== totalCredits) {
-			form.setValue(`disciplines.${disciplineIndex}.totalCredits`, totalCredits, {
+		if (form.getValues(`disciplines.${disciplineIndex}.totalHours`) !== totalHours) {
+			form.setValue(`disciplines.${disciplineIndex}.totalHours`, totalHours, {
 				shouldValidate: true,
 				shouldDirty: true,
 			})
 		}
-	}, [totalCredits, disciplineIndex, form])
+	}, [totalHours, disciplineIndex, form])
 
 	return (
 		<TableRow className='*:border-border [&>:not(:last-child)]:border-r'>
 			<TableCell>
 				<div className='space-y-2'>
-					<div className='flex items-start gap-2'>
+					<div className='flex items-start gap-2 min-w-64'>
 						<div className='grow'>
 							<FormField
 								control={form.control}
@@ -250,7 +244,7 @@ function DisciplineRow({
 						render={({ field }) => (
 							<FormItem>
 								<FormControl>
-									<Input placeholder='Название' {...field} />
+									<Input placeholder='Название дисциплины' {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -260,30 +254,14 @@ function DisciplineRow({
 			</TableCell>
 			<TableCell className='align-middle text-center'>
 				{/* Displaying as text instead of an input */}
-				<p className='w-24 mx-auto font-medium'>{formatCredits(totalCredits)}</p>
+				<p className='w-24 mx-auto font-medium'>{formatHours(totalHours)}</p>
 			</TableCell>
 			{Array.from({ length: 8 }).map((_, semesterIndex) => (
-				<TableCell key={semesterIndex} className='align-top text-center'>
-					<FormField
-						control={form.control}
-						name={`disciplines.${disciplineIndex}.semesters.${semesterIndex}.credits`}
-						render={({ field }) => (
-							<FormItem>
-								<FormControl>
-									<Input
-										className='w-16 mx-auto'
-										min='0'
-										placeholder='0'
-										type='number'
-										{...field}
-										onChange={(e) => field.onChange(Math.max(0, parseInt(e.target.value, 10) || 0))}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-				</TableCell>
+				<EditableHourCell
+					key={semesterIndex}
+					fieldName={`disciplines.${disciplineIndex}.semesters.${semesterIndex}.hours`}
+					form={form}
+				/>
 			))}
 		</TableRow>
 	)

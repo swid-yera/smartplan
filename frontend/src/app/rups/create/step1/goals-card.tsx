@@ -10,6 +10,7 @@ import {
 	FormControl,
 	FormField,
 	FormItem,
+	FormMessage,
 	Textarea,
 } from '@ui'
 import type { UseFormReturn } from 'react-hook-form'
@@ -40,6 +41,7 @@ export function GoalsCard({ form }: GoalsCardProps) {
 							<FormControl>
 								<Textarea rows={8} {...field} />
 							</FormControl>
+							<FormMessage />
 						</FormItem>
 					)}
 				/>
