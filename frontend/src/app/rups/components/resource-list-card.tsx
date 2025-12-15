@@ -15,35 +15,42 @@ import {
 	Input,
 } from '@ui'
 import { Trash } from 'lucide-react'
-import type { Control, FieldArrayWithId } from 'react-hook-form'
+import {
+	type ArrayPath,
+	type FieldValues,
+	type Path,
+	type PathValue,
+	useFieldArray,
+	useFormContext,
+} from 'react-hook-form'
 
-import type { FormData } from './step2'
+type ResourceListValues = FieldValues & {
+	[key: string]: { value: string }[] | undefined
+}
 
-interface ResourceListCardProps {
-	control: Control<FormData>
-	name: 'internetResources' | 'technicalResources'
+interface ResourceListCardProps<T extends ResourceListValues> {
+	name: ArrayPath<T>
 	title: string
 	description: React.ReactNode
 	label: string
 	placeholder: string
 	buttonText: string
-	fields: FieldArrayWithId<FormData, 'internetResources' | 'technicalResources'>[]
-	append: (value: { value: string }) => void
-	remove: (index: number) => void
 }
 
-export function ResourceListCard({
-	control,
+export function ResourceListCard<T extends ResourceListValues>({
 	name,
 	title,
 	description,
 	label,
 	placeholder,
 	buttonText,
-	fields,
-	append,
-	remove,
-}: ResourceListCardProps) {
+}: ResourceListCardProps<T>) {
+	const { control } = useFormContext<T>()
+	const { fields, append, remove } = useFieldArray({
+		control,
+		name,
+	})
+
 	return (
 		<Card>
 			<CardHeader>
@@ -60,7 +67,7 @@ export function ResourceListCard({
 								<div className='pt-2'>{index + 1}.</div>
 								<FormField
 									control={control}
-									name={`${name}.${index}.value`}
+									name={`${name}.${index}.value` as Path<T>}
 									render={({ field }) => (
 										<FormItem className='w-full'>
 											<FormControl>
@@ -82,7 +89,7 @@ export function ResourceListCard({
 						size='sm'
 						type='button'
 						variant='outline'
-						onClick={() => append({ value: '' })}
+						onClick={() => append({ value: '' } as PathValue<T, ArrayPath<T>>)}
 					>
 						{buttonText}
 					</Button>

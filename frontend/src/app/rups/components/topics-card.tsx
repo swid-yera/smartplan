@@ -54,15 +54,35 @@ import {
 	TooltipTrigger,
 } from '@ui'
 import { ChevronDown, GripVertical, Info, Plus, Trash } from 'lucide-react'
-import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
+import {
+	type ArrayPath,
+	type FieldValues,
+	type Path,
+	type PathValue,
+	useFieldArray,
+	useFormContext,
+	useWatch,
+} from 'react-hook-form'
 
 import { EditableHourCell } from '@/components/editable-hour-cell'
 import { formatHours } from '@/helpers'
 
-import type { FormData } from './step4'
+type Topic = {
+	name: string
+	type: string
+	totalHours: number
+	theoryHours: number
+	practiceHours: number
+	individualHours: number
+	srspHours?: number
+	srsHours?: number
+}
 
-interface IProps {
-	form: UseFormReturn<FormData>
+type Discipline = {
+	code: string
+	name: string
+	totalHours: number
+	topics: Topic[]
 }
 
 const newTopic = {
@@ -76,31 +96,51 @@ const newTopic = {
 	srsHours: 0,
 }
 
-const RUP_TYPE_HOURS_CONFIG = {
-	[RupModuleTypeEnum.THEORY]: { totalHours: 2, theoryHours: 2, practiceHours: 0, individualHours: 0 },
-	[RupModuleTypeEnum.PRACTICE]: { totalHours: 6, theoryHours: 0, practiceHours: 4, individualHours: 2 },
+type TopicsCardValues = FieldValues & {
+	type: string
+	disciplines: Discipline[]
 }
 
-export function TopicsCard({ form }: IProps) {
-	const rupModuleType = useWatch({ control: form.control, name: 'rupModuleType' }) ?? ''
-	const disciplines = useWatch({ control: form.control, name: 'disciplines' }) ?? ''
+const RUP_TYPE_HOURS_CONFIG = {
+	[RupModuleTypeEnum.THEORY]: { totalHours: 2, theoryHours: 2, practiceHours: 0, individualHours: 0 },
+	[RupModuleTypeEnum.PRACTICE]: { totalHours: 6, theoryHours: 0, practiceHours: 6, individualHours: 0 },
+}
+
+export function TopicsCard<T extends TopicsCardValues>() {
+	const form = useFormContext<T>()
+
+	const rupModuleType = useWatch({ control: form.control, name: 'type' as Path<T> }) ?? ''
+	const disciplines = (useWatch({ control: form.control, name: 'disciplines' as Path<T> }) ?? []) as Discipline[]
 
 	// This effect updates the hours for all topics when the global RUP type changes.
 	// It does not run on every change to `disciplines` to avoid performance issues and infinite loops.
 	useEffect(() => {
 		if (!rupModuleType) return
 
-		const newHours = RUP_TYPE_HOURS_CONFIG[rupModuleType as RupModuleTypeEnum]
-		const currentDisciplines = form.getValues('disciplines')
+		const newHours = RUP_TYPE_HOURS_CONFIG[rupModuleType as keyof typeof RUP_TYPE_HOURS_CONFIG]
+		// Add a guard to ensure newHours is defined before proceeding.
+
+		if (!newHours) return
+
+		const currentDisciplines = form.getValues('disciplines' as Path<T>) as Discipline[]
 
 		currentDisciplines.forEach((discipline, disciplineIndex) => {
 			discipline.topics.forEach((topic, topicIndex) => {
-				form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.totalHours`, newHours.totalHours)
-				form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.theoryHours`, newHours.theoryHours)
-				form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours`, newHours.practiceHours)
 				form.setValue(
-					`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours`,
-					newHours.individualHours,
+					`disciplines.${disciplineIndex}.topics.${topicIndex}.totalHours` as Path<T>,
+					newHours.totalHours as PathValue<T, Path<T>>,
+				)
+				form.setValue(
+					`disciplines.${disciplineIndex}.topics.${topicIndex}.theoryHours` as Path<T>,
+					newHours.theoryHours as PathValue<T, Path<T>>,
+				)
+				form.setValue(
+					`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours` as Path<T>,
+					newHours.practiceHours as PathValue<T, Path<T>>,
+				)
+				form.setValue(
+					`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours` as Path<T>,
+					newHours.individualHours as PathValue<T, Path<T>>,
 				)
 			})
 		})
@@ -134,12 +174,7 @@ export function TopicsCard({ form }: IProps) {
 			</CardHeader>
 			<CardContent className='space-y-4'>
 				{disciplines.map((discipline, disciplineIndex) => (
-					<DisciplineBlock
-						key={discipline.code}
-						disciplineIndex={disciplineIndex}
-						form={form}
-						rupModuleType={rupModuleType}
-					/>
+					<DisciplineBlock key={discipline.code} disciplineIndex={disciplineIndex} rupModuleType={rupModuleType} />
 				))}
 				<div className='flex justify-end items-center pt-4 pr-6 space-x-4'>
 					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
@@ -167,15 +202,14 @@ export function TopicsCard({ form }: IProps) {
 	)
 }
 
-function DisciplineBlock({
-	form,
+function DisciplineBlock<T extends TopicsCardValues>({
 	disciplineIndex,
 	rupModuleType,
 }: {
-	form: UseFormReturn<FormData>
 	disciplineIndex: number
 	rupModuleType: string
 }) {
+	const form = useFormContext<T>()
 	const [isCollapsed, setIsCollapsed] = useState(false)
 	const tableFooterRef = useRef<HTMLTableSectionElement>(null)
 	const {
@@ -185,12 +219,12 @@ function DisciplineBlock({
 		remove,
 	} = useFieldArray({
 		control: form.control,
-		name: `disciplines.${disciplineIndex}.topics` as const,
+		name: `disciplines.${disciplineIndex}.topics` as ArrayPath<T>,
 		keyName: 'key', // Use 'key' instead of 'id' to avoid conflicts with dnd-kit
 	})
 	const [topicToDelete, setTopicToDelete] = useState<number | null>(null)
 
-	const discipline = useWatch({ control: form.control, name: `disciplines.${disciplineIndex}` })
+	const discipline = useWatch({ control: form.control, name: `disciplines.${disciplineIndex}` as Path<T> })
 
 	const sectionTotal = {
 		totalHours: 0,
@@ -213,7 +247,7 @@ function DisciplineBlock({
 	const hasError = sectionTotal.totalHours !== discipline.totalHours
 
 	const onAddNewTopic = () => {
-		append(newTopic, { shouldFocus: true })
+		append(newTopic as PathValue<T, ArrayPath<T>>, { shouldFocus: true })
 		setIsCollapsed(false)
 	}
 
@@ -304,7 +338,6 @@ function DisciplineBlock({
 										<TopicRow
 											key={topicField.key}
 											disciplineIndex={disciplineIndex}
-											form={form}
 											id={topicField.key}
 											rupModuleType={rupModuleType}
 											setTopicToDelete={setTopicToDelete}
@@ -367,25 +400,24 @@ function DisciplineBlock({
 	)
 }
 
-const TopicRow = ({
-	form,
+const TopicRow = <T extends TopicsCardValues>({
 	id,
 	disciplineIndex,
 	topicIndex,
 	rupModuleType,
 	setTopicToDelete,
 }: {
-	form: UseFormReturn<FormData>
 	id: string
 	disciplineIndex: number
 	topicIndex: number
 	rupModuleType: string
 	setTopicToDelete: (index: number | null) => void
 }) => {
+	const form = useFormContext<T>()
 	const topic = useWatch({
-		control: form.control,
-		name: `disciplines.${disciplineIndex}.topics.${topicIndex}`,
-	})
+		control: form.control, // useWatch gets control from context, but being explicit is fine
+		name: `disciplines.${disciplineIndex}.topics.${topicIndex}` as Path<T>,
+	}) as Topic
 
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 
@@ -404,9 +436,9 @@ const TopicRow = ({
 		// determine counting hours 2 or 6, depends at rup module type
 		let countingHours: 2 | 6 = 2
 
-		if (rupModuleType === RupModuleTypeEnum.THEORY) {
+		if (rupModuleType == RupModuleTypeEnum.THEORY) {
 			countingHours = 2
-		} else if (rupModuleType === RupModuleTypeEnum.PRACTICE) {
+		} else if (rupModuleType == RupModuleTypeEnum.PRACTICE) {
 			countingHours = 6
 		}
 
@@ -444,10 +476,22 @@ const TopicRow = ({
 			topic.practiceHours !== newPracticeHours ||
 			topic.individualHours !== newIndividualHours
 		) {
-			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.totalHours`, newTotalHours)
-			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.theoryHours`, newTheoryHours)
-			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours`, newPracticeHours)
-			form.setValue(`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours`, newIndividualHours)
+			form.setValue(
+				`disciplines.${disciplineIndex}.topics.${topicIndex}.totalHours` as Path<T>,
+				newTotalHours as PathValue<T, Path<T>>,
+			)
+			form.setValue(
+				`disciplines.${disciplineIndex}.topics.${topicIndex}.theoryHours` as Path<T>,
+				newTheoryHours as PathValue<T, Path<T>>,
+			)
+			form.setValue(
+				`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours` as Path<T>,
+				newPracticeHours as PathValue<T, Path<T>>,
+			)
+			form.setValue(
+				`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours` as Path<T>,
+				newIndividualHours as PathValue<T, Path<T>>,
+			)
 		}
 	}, [topic?.type])
 
@@ -464,7 +508,7 @@ const TopicRow = ({
 			<TableCell className='align-middle'>
 				<FormField
 					control={form.control}
-					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name`}
+					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name` as Path<T>}
 					render={({ field }) => (
 						<FormItem>
 							<FormControl className='min-w-[200px]'>
@@ -482,12 +526,18 @@ const TopicRow = ({
 			<TableCell className='align-middle text-center font-medium'>
 				<p>{topic.individualHours}ч</p>
 			</TableCell>
-			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours`} form={form} />
-			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours`} form={form} />
+			<EditableHourCell
+				fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours` as Path<T>}
+				form={form}
+			/>
+			<EditableHourCell
+				fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours` as Path<T>}
+				form={form}
+			/>
 			<TableCell className='align-middle'>
 				<FormField
 					control={form.control}
-					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.type`}
+					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.type` as Path<T>}
 					render={({ field }) => (
 						<FormItem>
 							<FormControl>
@@ -500,7 +550,9 @@ const TopicRow = ({
 											<SelectItem value={TopicTypeEnum.SNZ}>СНЗ</SelectItem>
 										)}
 										<SelectItem value={TopicTypeEnum.Practical}>Практическая</SelectItem>
-										<SelectItem value={TopicTypeEnum.Combined}>Комбинированная</SelectItem>
+										{rupModuleType === RupModuleTypeEnum.THEORY && (
+											<SelectItem value={TopicTypeEnum.Combined}>Комбинированная</SelectItem>
+										)}
 									</SelectContent>
 								</Select>
 							</FormControl>

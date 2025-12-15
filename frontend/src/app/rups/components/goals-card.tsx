@@ -13,15 +13,15 @@ import {
 	FormMessage,
 	Textarea,
 } from '@ui'
-import type { UseFormReturn } from 'react-hook-form'
+import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 
-import type { FormData } from './step1'
-
-interface GoalsCardProps {
-	form: UseFormReturn<FormData>
+type GoalsValues = FieldValues & {
+	goals?: string
 }
 
-export function GoalsCard({ form }: GoalsCardProps) {
+export function GoalsCard<T extends GoalsValues>() {
+	const form = useFormContext<T>()
+
 	return (
 		<Card>
 			<CardHeader>
@@ -31,12 +31,15 @@ export function GoalsCard({ form }: GoalsCardProps) {
 			<CardContent className='space-y-2'>
 				<FormField
 					control={form.control}
-					name='goals'
+					name={'goals' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
 							<div className='flex justify-between items-end'>
 								<span className='text-xs'>Цель и задачи</span>
-								<AiGenerateButton defaultType='goals' onGenerated={(t) => form.setValue('goals', t)} />
+								<AiGenerateButton
+									defaultType='goals'
+									onGenerated={(t) => form.setValue('goals' as Path<T>, t as PathValue<T, Path<T>>)}
+								/>
 							</div>
 							<FormControl>
 								<Textarea rows={8} {...field} />

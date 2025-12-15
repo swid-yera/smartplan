@@ -15,19 +15,27 @@ import {
 	Input,
 } from '@ui'
 import { Trash } from 'lucide-react'
-import { type ControllerRenderProps, type UseFormReturn, useFieldArray } from 'react-hook-form'
+import {
+	type ArrayPath,
+	type ControllerRenderProps,
+	type FieldValues,
+	type Path,
+	type PathValue,
+	useFieldArray,
+	useFormContext,
+} from 'react-hook-form'
 import { PatternFormat } from 'react-number-format'
 
-import type { FormData } from './step2'
-
-interface IProps {
-	form: UseFormReturn<FormData>
+type ContactsValues = FieldValues & {
+	contacts: { name: string; phone: string; email: string }[]
 }
 
-export function ContactsCard({ form }: IProps) {
+export function ContactsCard<T extends ContactsValues>() {
+	const form = useFormContext<T>()
+
 	const { fields, append, remove } = useFieldArray({
 		control: form.control,
-		name: 'contacts',
+		name: 'contacts' as ArrayPath<T>,
 	})
 
 	return (
@@ -50,7 +58,7 @@ export function ContactsCard({ form }: IProps) {
 						<div key={field.id} className='grid grid-cols-[1fr_1fr_1fr_auto] gap-4 items-start'>
 							<FormField
 								control={form.control}
-								name={`contacts.${index}.name`}
+								name={`contacts.${index}.name` as Path<T>}
 								render={({ field }) => (
 									<FormItem>
 										<FormControl>
@@ -62,7 +70,7 @@ export function ContactsCard({ form }: IProps) {
 							/>
 							<FormField
 								control={form.control}
-								name={`contacts.${index}.phone`}
+								name={`contacts.${index}.phone` as Path<T>}
 								render={({ field }) => (
 									<FormItem>
 										<PhoneInput field={field} />
@@ -72,7 +80,7 @@ export function ContactsCard({ form }: IProps) {
 							/>
 							<FormField
 								control={form.control}
-								name={`contacts.${index}.email`}
+								name={`contacts.${index}.email` as Path<T>}
 								render={({ field }) => (
 									<FormItem>
 										<FormControl>
@@ -88,7 +96,11 @@ export function ContactsCard({ form }: IProps) {
 						</div>
 					))}
 				</div>
-				<Button type='button' variant='outline' onClick={() => append({ name: '', phone: '', email: '' })}>
+				<Button
+					type='button'
+					variant='outline'
+					onClick={() => append({ name: '', phone: '', email: '' } as PathValue<T, ArrayPath<T>>)}
+				>
 					Добавить педагога
 				</Button>
 			</CardContent>
@@ -96,7 +108,7 @@ export function ContactsCard({ form }: IProps) {
 	)
 }
 
-function PhoneInput({ field }: { field: ControllerRenderProps<FormData, `contacts.${number}.phone`> }) {
+function PhoneInput<T extends ContactsValues>({ field }: { field: ControllerRenderProps<T, Path<T>> }) {
 	return (
 		<FormControl>
 			<PatternFormat

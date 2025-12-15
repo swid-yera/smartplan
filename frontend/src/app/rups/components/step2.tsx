@@ -2,7 +2,7 @@ import type { FC } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button, Form } from '@ui'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import z from 'zod'
 
 import { ContactsCard } from './contacts-card'
@@ -29,7 +29,7 @@ const formSchema = z.object({
 				email: z.string().min(1, 'Email не может быть пустым').email('Неверный формат email адреса'),
 			}),
 		)
-		.optional(),
+		.min(1, 'Добавьте как минимум одного педагога'),
 	// resources
 	internetResources: z
 		.array(
@@ -68,18 +68,6 @@ export const Step2: FC = () => {
 		},
 	})
 
-	const {
-		fields: internetResourceFields,
-		append: appendInternetResource,
-		remove: removeInternetResource,
-	} = useFieldArray({ control: form.control, name: 'internetResources' })
-
-	const {
-		fields: technicalResourceFields,
-		append: appendTechnicalResource,
-		remove: removeTechnicalResource,
-	} = useFieldArray({ control: form.control, name: 'technicalResources' })
-
 	const onSave = (values: z.infer<typeof formSchema>) => {
 		console.log('save', values)
 	}
@@ -87,38 +75,30 @@ export const Step2: FC = () => {
 	return (
 		<Form {...form}>
 			<form className='w-full space-y-5' onSubmit={form.handleSubmit(onSave)}>
-				<ContactsCard form={form} />
+				<ContactsCard />
 
 				<div className='grid md:grid-cols-2 gap-4'>
 					{/* internet  */}
 					<ResourceListCard
-						append={appendInternetResource}
 						buttonText='Добавить ресурс'
-						control={form.control}
 						description={
 							<>
 								Введите список ресурсов откуда был взят материал, <u>ресурс должен быть не старше 5 лет</u>
 							</>
 						}
-						fields={internetResourceFields}
 						label='Учебно-методический ресурсы'
 						name='internetResources'
 						placeholder='Откуда был взят материал для учебного плана'
-						remove={removeInternetResource}
 						title='Учебно-методическое оснащение, справочная литература/интернет-ресурсы'
 					/>
 
 					{/* technical */}
 					<ResourceListCard
-						append={appendTechnicalResource}
 						buttonText='Добавить материал'
-						control={form.control}
 						description='Введите список технических средств которые обязательны для учебного плана'
-						fields={technicalResourceFields}
 						label='Технические средства и материалы'
 						name='technicalResources'
 						placeholder='Что нужно при прохождении учебного плана'
-						remove={removeTechnicalResource}
 						title='Технические средства и материалы'
 					/>
 				</div>

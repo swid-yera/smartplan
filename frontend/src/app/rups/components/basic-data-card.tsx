@@ -23,6 +23,7 @@ import {
 	Input,
 	Popover,
 	PopoverContent,
+	// This component is not used in the file
 	PopoverTrigger,
 	Select,
 	SelectContent,
@@ -34,18 +35,25 @@ import {
 	TooltipTrigger,
 } from '@ui'
 import { Check, ChevronsUpDown, Info } from 'lucide-react'
-import type { UseFormReturn } from 'react-hook-form'
+import type { FieldValues, Path, PathValue } from 'react-hook-form'
+import { useFormContext } from 'react-hook-form'
 
 import { cn } from '@/lib'
 import { RupModuleTypeEnum, StudyFormEnum } from '@/shared/types'
 
-import type { FormData } from './step1'
-
-interface BasicDataCardProps {
-	form: UseFormReturn<FormData>
+// Define a base shape for the form data that this component needs.
+// Any form passed to this component must have at least these fields.
+type BasicDataValues = FieldValues & {
+	title: string
+	type: string
+	studyForm: string
+	prerequisites?: string
+	postrequisites?: string
 }
 
-export function BasicDataCard({ form }: BasicDataCardProps) {
+export function BasicDataCard<T extends BasicDataValues>() {
+	const form = useFormContext<T>()
+
 	return (
 		<Card>
 			<CardHeader>
@@ -56,7 +64,7 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 			<CardContent className='space-y-3 text-sm'>
 				<FormField
 					control={form.control}
-					name='title'
+					name={'title' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
 							<FormLabel>Наименование модуля</FormLabel>
@@ -71,7 +79,7 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 				<div className='grid grid-cols-2 gap-5'>
 					<FormField
 						control={form.control}
-						name='type'
+						name={'type' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>
@@ -101,13 +109,13 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 									</Tooltip>
 								</FormLabel>
 								<FormControl>
-									<Select onValueChange={field.onChange} {...field}>
+									<Select value={field.value ?? ''} onValueChange={field.onChange}>
 										<SelectTrigger className='w-full'>
 											<SelectValue placeholder='Теоретическая или практическая' />
 										</SelectTrigger>
 										<SelectContent position='popper'>
 											{Object.keys(RupModuleTypeEnum).map((rupType) => (
-												<SelectItem key={rupType} value={rupType}>
+												<SelectItem key={rupType} value={RupModuleTypeEnum[rupType]}>
 													{RupModuleTypeEnum[rupType]}
 												</SelectItem>
 											))}
@@ -121,12 +129,12 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 
 					<FormField
 						control={form.control}
-						name='studyForm'
+						name={'studyForm' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>Форма обучения</FormLabel>
 								<FormControl>
-									<Select onValueChange={field.onChange} {...field}>
+									<Select value={field.value ?? ''} onValueChange={field.onChange}>
 										<SelectTrigger className='w-full'>
 											<SelectValue placeholder='Очная или заочная' />
 										</SelectTrigger>
@@ -147,8 +155,8 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 
 				{/* requisites */}
 				<div className='grid grid-cols-2 gap-5'>
-					<RequisiteField form={form} label='Пререквизиты' type='prerequisites' />
-					<RequisiteField form={form} label='Постреквизиты' type='postrequisites' />
+					<RequisiteField label='Пререквизиты' type='prerequisites' />
+					<RequisiteField label='Постреквизиты' type='postrequisites' />
 				</div>
 			</CardContent>
 		</Card>
@@ -158,33 +166,32 @@ export function BasicDataCard({ form }: BasicDataCardProps) {
 // requisite field
 type RequisiteType = 'prerequisites' | 'postrequisites'
 
-interface RequisiteFieldProps {
-	form: UseFormReturn<FormData>
+interface RequisiteFieldProps<T extends BasicDataValues> {
 	type: RequisiteType
 	label: string
 }
 
 // mock data
 const modules = [
-	{ value: 'Основы программирования', label: 'Основы программирования' },
-	{ value: 'Базы данных', label: 'Базы данных' },
-	{ value: 'Веб-технологии', label: 'Веб-технологии' },
-	{ value: 'Алгоритмы и структуры данных', label: 'Алгоритмы и структуры данных' },
-	{ value: 'Компьютерные сети', label: 'Компьютерные сети' },
+	{ value: 'ПМ6 Основы программирования', label: 'Основы программирования' },
+	{ value: 'ПМ5 Базы данных', label: 'Базы данных' },
+	{ value: 'ПМ7 Веб-технологии', label: 'Веб-технологии' },
+	{ value: 'ОП5 Алгоритмы и структуры данных', label: 'Алгоритмы и структуры данных' },
+	{ value: 'ОП6 Компьютерные сети', label: 'Компьютерные сети' },
 ]
 
-function RequisiteField({ form, type, label }: RequisiteFieldProps) {
+function RequisiteField<T extends BasicDataValues>({ type, label }: RequisiteFieldProps<T>) {
+	const form = useFormContext<T>()
 	const [open, setOpen] = React.useState(false)
 
-	const otherType = type === 'prerequisites' ? 'postrequisites' : 'prerequisites'
-	const otherValue = form.watch(otherType)
+	const otherValue = form.watch(type as Path<T>)
 
 	const availableModules = modules.filter((module) => module.value !== otherValue)
 
 	return (
 		<FormField
 			control={form.control}
-			name={type}
+			name={type as Path<T>}
 			render={({ field }) => (
 				<FormItem className='flex flex-col'>
 					<FormLabel>{label}</FormLabel>
@@ -214,7 +221,7 @@ function RequisiteField({ form, type, label }: RequisiteFieldProps) {
 												key={module.value}
 												value={module.label}
 												onSelect={() => {
-													form.setValue(type, module.value)
+													form.setValue(type as Path<T>, module.value as PathValue<T, Path<T>>)
 													setOpen(false)
 												}}
 											>

@@ -13,15 +13,15 @@ import {
 	FormMessage,
 	Textarea,
 } from '@ui'
-import type { UseFormReturn } from 'react-hook-form'
+import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 
-import type { FormData } from './step1'
-
-interface ExplorationNoteCardProps {
-	form: UseFormReturn<FormData>
+type ExplorationNoteValues = FieldValues & {
+	explorationNote?: string
 }
 
-export function ExplorationNoteCard({ form }: ExplorationNoteCardProps) {
+export function ExplorationNoteCard<T extends ExplorationNoteValues>() {
+	const form = useFormContext<T>()
+
 	return (
 		<Card>
 			<CardHeader>
@@ -34,7 +34,7 @@ export function ExplorationNoteCard({ form }: ExplorationNoteCardProps) {
 			<CardContent className='space-y-2 text-sm'>
 				<FormField
 					control={form.control}
-					name='explorationNote'
+					name={'explorationNote' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
 							<div className='flex items-end justify-between'>
@@ -42,7 +42,7 @@ export function ExplorationNoteCard({ form }: ExplorationNoteCardProps) {
 
 								<AiGenerateButton
 									defaultType='annotation'
-									onGenerated={(t) => form.setValue('explorationNote', t)}
+									onGenerated={(t) => form.setValue('explorationNote' as Path<T>, t as PathValue<T, Path<T>>)}
 								/>
 							</div>
 							<FormControl>

@@ -20,7 +20,6 @@ import {
 	FormControl,
 	FormField,
 	FormItem,
-	FormMessage,
 	Input,
 	Table,
 	TableBody,
@@ -31,33 +30,49 @@ import {
 	TableRow,
 } from '@ui'
 import { Info, Trash } from 'lucide-react'
-import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
+import {
+	type ArrayPath,
+	type FieldValues,
+	type Path,
+	type PathValue,
+	useFieldArray,
+	useFormContext,
+	useWatch,
+} from 'react-hook-form'
 
 import { EditableHourCell } from '@/components/editable-hour-cell'
 import { formatHours } from '@/helpers'
+import { TopicTypeEnum } from '@/shared/types'
 
-import type { FormData } from './step3'
-
-interface IProps {
-	form: UseFormReturn<FormData>
+type Discipline = {
+	code: string
+	name: string
+	totalHours: number
+	semesters: { semester: number; hours: number }[]
 }
 
-export function DisciplineCard({ form }: IProps) {
+type DisciplineCardValues = FieldValues & {
+	disciplines: Discipline[]
+}
+
+export function DisciplineCard<T extends DisciplineCardValues>() {
+	const form = useFormContext<T>()
+
 	const {
 		fields: disciplineFields,
 		append,
 		remove,
 	} = useFieldArray({
 		control: form.control,
-		name: 'disciplines',
+		name: 'disciplines' as ArrayPath<T>,
 	})
 
 	const [disciplineToDelete, setDisciplineToDelete] = useState<number | null>(null)
 
 	const disciplines = useWatch({
 		control: form.control,
-		name: 'disciplines',
-	})
+		name: 'disciplines' as Path<T>,
+	}) as Discipline[]
 
 	const newDiscipline = {
 		code: '',
@@ -67,11 +82,23 @@ export function DisciplineCard({ form }: IProps) {
 			semester: i + 1,
 			hours: 0,
 		})),
+		topics: [
+			{
+				name: '',
+				type: TopicTypeEnum.Combined,
+				totalHours: 0,
+				theoryHours: 0,
+				practiceHours: 0,
+				individualHours: 0,
+			},
+		],
 	}
+
+	const totalModuleHours = disciplines?.map((d) => d.totalHours).reduce((a, b) => a + b, 0)
 
 	const semesterTotals = Array(8).fill(0)
 
-	disciplines.forEach((discipline) => {
+	disciplines?.forEach((discipline) => {
 		discipline.semesters.forEach((semester, i) => {
 			semesterTotals[i] += semester.hours || 0
 		})
@@ -130,7 +157,6 @@ export function DisciplineCard({ form }: IProps) {
 								<DisciplineRow
 									key={disciplineField.id}
 									disciplineIndex={disciplineIndex}
-									form={form}
 									setDisciplineToDelete={setDisciplineToDelete}
 								/>
 							))}
@@ -138,11 +164,7 @@ export function DisciplineCard({ form }: IProps) {
 						<TableFooter>
 							<TableRow>
 								<TableCell className='text-left font-bold'>Всего по модулю:</TableCell>
-								<TableCell className='text-right font-bold'>
-									{formatHours(
-										disciplines.map((discipline) => discipline.totalHours).reduce((a, b) => a + b, 0),
-									)}
-								</TableCell>
+								<TableCell className='text-right font-bold'>{formatHours(totalModuleHours)}</TableCell>
 								{semesterTotals.map((totalHours, i) => (
 									<TableCell key={i} className='text-center font-bold border-r last:border-r-0'>
 										<p>{totalHours}ч</p>
@@ -152,7 +174,12 @@ export function DisciplineCard({ form }: IProps) {
 						</TableFooter>
 					</Table>
 				</div>
-				<Button className='mt-4' type='button' variant='outline' onClick={() => append(newDiscipline)}>
+				<Button
+					className='mt-4'
+					type='button'
+					variant='outline'
+					onClick={() => append(newDiscipline as PathValue<T, ArrayPath<T>>)}
+				>
 					Добавить дисциплину
 				</Button>
 
@@ -166,7 +193,7 @@ export function DisciplineCard({ form }: IProps) {
 							<AlertDialogDescription>
 								Вы точно хотите удалить дисциплину{' '}
 								<span className='font-medium'>
-									{disciplineToDelete !== null && (disciplines[disciplineToDelete]?.code || '')}
+									{disciplineToDelete !== null && (disciplines?.[disciplineToDelete]?.code || '')}
 								</span>
 								?
 							</AlertDialogDescription>
@@ -184,26 +211,25 @@ export function DisciplineCard({ form }: IProps) {
 	)
 }
 
-function DisciplineRow({
-	form,
+function DisciplineRow<T extends DisciplineCardValues>({
 	disciplineIndex,
 	setDisciplineToDelete,
 }: {
-	form: UseFormReturn<FormData>
 	disciplineIndex: number
 	setDisciplineToDelete: (index: number | null) => void
 }) {
+	const form = useFormContext<T>()
 	const watchedSemesters = useWatch({
 		control: form.control,
-		name: `disciplines.${disciplineIndex}.semesters`,
-	})
+		name: `disciplines.${disciplineIndex}.semesters` as Path<T>,
+	}) as Discipline['semesters']
 
-	const totalHours = watchedSemesters.reduce((acc, sem) => acc + (sem.hours || 0), 0)
+	const totalHours = watchedSemesters?.reduce((acc, sem) => acc + (sem.hours || 0), 0) || 0
 
 	useEffect(() => {
 		// Update the form state silently so it's available on submission
-		if (form.getValues(`disciplines.${disciplineIndex}.totalHours`) !== totalHours) {
-			form.setValue(`disciplines.${disciplineIndex}.totalHours`, totalHours, {
+		if (form.getValues(`disciplines.${disciplineIndex}.totalHours` as Path<T>) !== totalHours) {
+			form.setValue(`disciplines.${disciplineIndex}.totalHours` as Path<T>, totalHours as PathValue<T, Path<T>>, {
 				shouldValidate: true,
 				shouldDirty: true,
 			})
@@ -218,13 +244,12 @@ function DisciplineRow({
 						<div className='grow'>
 							<FormField
 								control={form.control}
-								name={`disciplines.${disciplineIndex}.code`}
+								name={`disciplines.${disciplineIndex}.code` as Path<T>}
 								render={({ field }) => (
 									<FormItem>
 										<FormControl>
 											<Input placeholder='Код' {...field} />
 										</FormControl>
-										<FormMessage />
 									</FormItem>
 								)}
 							/>
@@ -240,26 +265,24 @@ function DisciplineRow({
 					</div>
 					<FormField
 						control={form.control}
-						name={`disciplines.${disciplineIndex}.name`}
+						name={`disciplines.${disciplineIndex}.name` as Path<T>}
 						render={({ field }) => (
 							<FormItem>
 								<FormControl>
 									<Input placeholder='Название дисциплины' {...field} />
 								</FormControl>
-								<FormMessage />
 							</FormItem>
 						)}
 					/>
 				</div>
 			</TableCell>
-			<TableCell className='align-middle text-center'>
-				{/* Displaying as text instead of an input */}
-				<p className='w-24 mx-auto font-medium'>{formatHours(totalHours)}</p>
+			<TableCell className='align-middle text-center w-24 font-medium'>
+				<p>{formatHours(totalHours)}</p>
 			</TableCell>
 			{Array.from({ length: 8 }).map((_, semesterIndex) => (
 				<EditableHourCell
 					key={semesterIndex}
-					fieldName={`disciplines.${disciplineIndex}.semesters.${semesterIndex}.hours`}
+					fieldName={`disciplines.${disciplineIndex}.semesters.${semesterIndex}.hours` as Path<T>}
 					form={form}
 				/>
 			))}

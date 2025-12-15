@@ -31,21 +31,23 @@ import {
 	SelectValue,
 } from '@ui'
 import { Check, ChevronsUpDown } from 'lucide-react'
-import type { UseFormReturn } from 'react-hook-form'
+import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 
 import { formatCourseFromYearAndGroupName } from '@/helpers'
 
-import { groupData } from '../mock.data'
-import type { FormData } from './step1'
+import { groupData } from '../create/mock.data'
 
-interface GroupCardProps {
-	form: UseFormReturn<FormData>
+type GroupValues = FieldValues & {
+	groupId: string
+	year: string
 }
 
-export function GroupCard({ form }: GroupCardProps) {
+export function GroupCard<T extends GroupValues>() {
+	const form = useFormContext<T>()
+
 	const [open, setOpen] = React.useState(false)
-	const watchedGroupId = form.watch('groupId')
-	const watchedYear = form.watch('year')
+	const watchedGroupId = form.watch('groupId' as Path<T>)
+	const watchedYear = form.watch('year' as Path<T>)
 
 	const selectedGroup = groupData.find((group) => group.id == watchedGroupId)
 	const specialty = selectedGroup?.specialty ?? 'Группа не выбрана'
@@ -73,7 +75,7 @@ export function GroupCard({ form }: GroupCardProps) {
 				<div className='grid grid-cols-2 gap-5'>
 					<FormField
 						control={form.control}
-						name='groupId'
+						name={'groupId' as Path<T>}
 						render={({ field }) => (
 							<FormItem className='flex flex-col'>
 								<FormLabel>Выберите группу</FormLabel>
@@ -103,8 +105,8 @@ export function GroupCard({ form }: GroupCardProps) {
 															key={group.id}
 															value={group.name}
 															onSelect={() => {
-																form.setValue('groupId', group.id)
-																form.setValue('year', '') // Reset year on group change
+																form.setValue('groupId' as Path<T>, group.id as PathValue<T, Path<T>>)
+																form.setValue('year' as Path<T>, '' as PathValue<T, Path<T>>) // Reset year on group change
 																setOpen(false)
 															}}
 														>
@@ -129,7 +131,7 @@ export function GroupCard({ form }: GroupCardProps) {
 
 					<FormField
 						control={form.control}
-						name='year'
+						name={'year' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>Год обучения</FormLabel>
