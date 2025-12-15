@@ -1,0 +1,384 @@
+{
+	"title": "asdfasdf",
+	"year": "2025-2026",
+	"type": "PRACTICE",
+	"course": "2",
+	"studyForm": "Correspondence",
+	"explorationNote": "Аннотация: Краткое описание дисциплины, её целей и задач, указывающее на значение предмета в подготовке специалиста. Дисциплина формирует базовые практические навыки и теоретические знания, необходимые для работы с информационными системами.",
+	"goals": "Цели и задачи: Формирование у студентов знаний о структуре информационных систем, навыков проектирования и администрирования; развитие умений анализа требований, разработки простых приложений и их тестирования.",
+	"prerequisites": "Основы программирования",
+	"postrequisites": "Базы данных",
+	"groupId": {
+		"keycloak_id": 2134,
+		"name": "WEB25",
+		"specialty": "06130100 \"Программное обеспечение\"",
+		"qualification": "3W06130102 \"Web-дизайнер\""
+	},
+
+	"contacts": [
+		{
+			"name": "Sain Baytasldfakhsd",
+			"phone": "+7 (702) 374-12-34",
+			"email": "sdfkgsfdb@gsad.com"
+		},
+		{
+			"name": "asdfarg asergae",
+			"phone": "+7 (727) 345-97-83",
+			"email": "wedsg@gasd.com"
+		}
+	],
+	"internetResources": [
+		{
+			"value": "asdf",
+			"link": ""
+		},
+		{
+			"value": "asdf",
+			"link": ""
+		},
+		{
+			"value": "asdf",
+			"link": ""
+		}
+	],
+	"technicalResources": [
+		{
+			"value": "dfgsdfg",
+			"link": ""
+		},
+		{
+			"value": "gfs",
+			"link": ""
+		},
+		{
+			"value": "ssdf",
+			"link": ""
+		}
+	],
+
+	"rupType": "Теоретическая",
+	"disciplines": [
+		{
+			"code": "РО5.6",
+			"name": "Тестировка Postgresql",
+			"totalCredits": 1,
+			"semesters": [
+				{
+					"semester": 1,
+					"credits": 0
+				},
+				{
+					"semester": 2,
+					"credits": 0
+				},
+				{
+					"semester": 3,
+					"credits": 6
+				},
+				{
+					"semester": 4,
+					"credits": 0
+				},
+				{
+					"semester": 5,
+					"credits": 0
+				},
+				{
+					"semester": 6,
+					"credits": 0
+				},
+				{
+					"semester": 7,
+					"credits": 0
+				},
+				{
+					"semester": 8,
+					"credits": 0
+				}
+			],
+			"topics": [
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				}
+			]
+		},
+		{
+			"code": "РО5.7",
+			"name": "Практика Postgresql",
+			"totalCredits": 1,
+			"semesters": [
+				{
+					"semester": 1,
+					"credits": 0
+				},
+				{
+					"semester": 2,
+					"credits": 0
+				},
+				{
+					"semester": 3,
+					"credits": 3
+				},
+				{
+					"semester": 4,
+					"credits": 3
+				},
+				{
+					"semester": 5,
+					"credits": 0
+				},
+				{
+					"semester": 6,
+					"credits": 0
+				},
+				{
+					"semester": 7,
+					"credits": 0
+				},
+				{
+					"semester": 8,
+					"credits": 0
+				}
+			],
+			"topics": [
+				{
+					"name": "asdf",
+					"type": "практическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "практическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdfasdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asdf",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asd",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asd",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asd",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				},
+				{
+					"name": "asd",
+					"type": "теоретическое",
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"SRSPHours": 0,
+					"SRSHours": 0
+				}
+			]
+		}
+	]
+}

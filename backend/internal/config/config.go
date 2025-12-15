@@ -1,28 +1,44 @@
 package config
 
-import "os"
+import (
+	"log"
+	"os"
+	"strconv"
+
+	"github.com/joho/godotenv"
+)
 
 type Config struct {
-	KeycloakRealmURL  string
-	KeycloakClientID  string
-	KeycloakAudience  string
-	Port              string
-	DBDSN             string
+	DBHost     string
+	DBPort     int
+	DBUser     string
+	DBPassword string
+	DBName     string
+	AppPort    int
 }
 
 func Load() *Config {
-	return &Config{
-		KeycloakRealmURL:  getEnv("KEYCLOAK_REALM_URL", "https://auth.college.kz/realms/college"),
-		KeycloakClientID:  getEnv("KEYCLOAK_CLIENT_ID", "rup-frontend"),
-		KeycloakAudience:  getEnv("KEYCLOAK_AUDIENCE", "rup-api"),
-		Port:              getEnv("PORT", "8080"),
-		DBDSN:             getEnv("DB_DSN", "host=localhost user=eduplan password=eduplan dbname=eduplan port=5433 sslmode=disable"),
-	}
-}
+	// Загружаем .env (если не найден — просто предупреждаем)
+	_ = godotenv.Load()
 
-func getEnv(key, defaultVal string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
+	dbPort, err := strconv.Atoi(os.Getenv("DB_PORT"))
+	if err != nil {
+		log.Fatal("Invalid DB_PORT")
 	}
-	return defaultVal
+
+	appPort, err := strconv.Atoi(os.Getenv("APP_PORT"))
+	if err != nil {
+		log.Fatal("Invalid APP_PORT")
+	}
+
+	cfg := &Config{
+		DBHost:     os.Getenv("DB_HOST"),
+		DBPort:     dbPort,
+		DBUser:     os.Getenv("DB_USER"),
+		DBPassword: os.Getenv("DB_PASSWORD"),
+		DBName:     os.Getenv("DB_NAME"),
+		AppPort:    appPort,
+	}
+
+	return cfg
 }

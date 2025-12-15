@@ -1,20 +1,32 @@
-version: '3.8'
+version: "3.9"
 
 services:
-   appdb:
-      image: postgres:15
-      environment:
-         POSTGRES_DB: eduplan
-         POSTGRES_USER: eduplan
-         POSTGRES_PASSWORD: eduplan
-      ports:
-         - '5433:5432'
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: rup_database
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
-   api:
-      build: .
-      ports:
-         - '3000:8080'
-      env_file:
-         - .env
-      depends_on:
-         - appdb
+  api:
+    build: .
+    restart: always
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: rup_database
+      APP_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
