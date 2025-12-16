@@ -12,6 +12,7 @@ type ObjectRepository interface {
 	Create(ctx context.Context, input models.InnerCreateObjectDTO) (*models.Object, error)
 	GetByID(ctx context.Context, id string) (*models.Object, error)
 	List(ctx context.Context) ([]*models.Object, error)
+	GetByStatus(ctx context.Context, status string) ([]*models.Object, error)
 	Update(ctx context.Context, input models.InnerUpdateObjectDTO) (*models.Object, error)
 	Delete(ctx context.Context, id string) error
 }
@@ -26,13 +27,14 @@ func NewObjectRepo(db *sql.DB) *ObjectRepo {
 
 func (r *ObjectRepo) Create(ctx context.Context, input models.InnerCreateObjectDTO) (*models.Object, error) {
 	query := `
-        INSERT INTO objects (title, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        RETURNING id, title, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
-    `
+	       INSERT INTO objects (title, status, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines)
+	       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+	       RETURNING id, title, status, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
+	   `
 
 	params := []interface{}{
 		rawToJSONParam(input.Title),
+		rawToJSONParam(input.Status),
 		rawToJSONParam(input.Year),
 		rawToJSONParam(input.Type),
 		rawToJSONParam(input.Course),
@@ -54,19 +56,19 @@ func (r *ObjectRepo) Create(ctx context.Context, input models.InnerCreateObjectD
 
 func (r *ObjectRepo) GetByID(ctx context.Context, id string) (*models.Object, error) {
 	query := `
-        SELECT id, title, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
-        FROM objects
-        WHERE id = $1
-    `
+	       SELECT id, title, status, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
+	       FROM objects
+	       WHERE id = $1
+	   `
 	return scanObject(r.db.QueryRowContext(ctx, query, id))
 }
 
 func (r *ObjectRepo) List(ctx context.Context) ([]*models.Object, error) {
 	query := `
-        SELECT id, title, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
-        FROM objects
-        ORDER BY created_at DESC
-    `
+	       SELECT id, title, status, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
+	       FROM objects
+	       ORDER BY created_at DESC
+	   `
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -87,13 +89,41 @@ func (r *ObjectRepo) List(ctx context.Context) ([]*models.Object, error) {
 	return list, rows.Err()
 }
 
+func (r *ObjectRepo) GetByStatus(ctx context.Context, status string) ([]*models.Object, error) {
+	query := `
+	       SELECT id, title, status, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
+	       FROM objects
+	       WHERE status = $1
+	       ORDER BY created_at DESC
+	   `
+
+	param := rawToJSONParam(json.RawMessage(`"` + status + `"`))
+	rows, err := r.db.QueryContext(ctx, query, param)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	list := []*models.Object{}
+	for rows.Next() {
+		obj, err := scanObject(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, obj)
+	}
+
+	return list, rows.Err()
+}
+
 func (r *ObjectRepo) Update(ctx context.Context, input models.InnerUpdateObjectDTO) (*models.Object, error) {
 	query := `
-        UPDATE objects
-        SET title = $1, year = $2, type = $3, course = $4, study_form = $5, exploration_note = $6, goals = $7, prerequisites = $8, postrequisites = $9, group_id = $10, contacts = $11, internet_resources = $12, technical_resources = $13, rup_type = $14, disciplines = $15, updated_at = NOW()
-        WHERE id = $16
-        RETURNING id, title, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
-    `
+	       UPDATE objects
+	       SET title = $1, status = $2, year = $3, type = $4, course = $5, study_form = $6, exploration_note = $7, goals = $8, prerequisites = $9, postrequisites = $10, group_id = $11, contacts = $12, internet_resources = $13, technical_resources = $14, rup_type = $15, disciplines = $16, updated_at = NOW()
+	       WHERE id = $17
+	       RETURNING id, title, status, year, type, course, study_form, exploration_note, goals, prerequisites, postrequisites, group_id, contacts, internet_resources, technical_resources, rup_type, disciplines, created_at, updated_at
+	   `
 
 	id, err := rawID(input.ID)
 	if err != nil {
@@ -102,6 +132,7 @@ func (r *ObjectRepo) Update(ctx context.Context, input models.InnerUpdateObjectD
 
 	params := []interface{}{
 		rawToJSONParam(input.Title),
+		rawToJSONParam(input.Status),
 		rawToJSONParam(input.Year),
 		rawToJSONParam(input.Type),
 		rawToJSONParam(input.Course),
@@ -154,13 +185,14 @@ func rawID(raw json.RawMessage) (string, error) {
 // scanObject reads DB jsonb fields as raw bytes, unmarshals them back into interfaces, and returns a ready Object.
 func scanObject(scanner rowScanner) (*models.Object, error) {
 	obj := &models.Object{}
-	var title, year, typ, course, studyForm, explorationNote, goals, prerequisites, postrequisites, groupID, contacts, internetResources, technicalResources, rupType, disciplines []byte
+	var title, status, year, typ, course, studyForm, explorationNote, goals, prerequisites, postrequisites, groupID, contacts, internetResources, technicalResources, rupType, disciplines []byte
 
-	if err := scanner.Scan(&obj.ID, &title, &year, &typ, &course, &studyForm, &explorationNote, &goals, &prerequisites, &postrequisites, &groupID, &contacts, &internetResources, &technicalResources, &rupType, &disciplines, &obj.CreatedAt, &obj.UpdatedAt); err != nil {
+	if err := scanner.Scan(&obj.ID, &title, &status, &year, &typ, &course, &studyForm, &explorationNote, &goals, &prerequisites, &postrequisites, &groupID, &contacts, &internetResources, &technicalResources, &rupType, &disciplines, &obj.CreatedAt, &obj.UpdatedAt); err != nil {
 		return nil, err
 	}
 
 	obj.Title = unmarshalJSONField(title)
+	obj.Status = unmarshalJSONField(status)
 	obj.Year = unmarshalJSONField(year)
 	obj.Type = unmarshalJSONField(typ)
 	obj.Course = unmarshalJSONField(course)

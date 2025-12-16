@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"rup_database/internal/models"
-	"rup_database/internal/repository"
+	"rup_database/internal/service"
 )
 
 type Handler struct {
-	repo *repository.ObjectRepo
+	service *service.ObjectService
 }
 
-func NewHandler(repo *repository.ObjectRepo) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(service *service.ObjectService) *Handler {
+	return &Handler{service: service}
 }
 
 // respondJSON is a helper to write JSON responses.
@@ -38,7 +38,7 @@ func (h *Handler) CreateObject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.repo.Create(r.Context(), inner)
+	obj, err := h.service.Create(r.Context(), inner)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -54,7 +54,7 @@ func (h *Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj, err := h.repo.GetByID(r.Context(), id)
+	obj, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
 		// You might want to check for a specific "not found" error from the repo
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -65,7 +65,7 @@ func (h *Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetAllObjects(w http.ResponseWriter, r *http.Request) {
-	objects, err := h.repo.List(r.Context())
+	objects, err := h.service.List(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -88,7 +88,7 @@ func (h *Handler) UpdateObject(w http.ResponseWriter, r *http.Request) {
 	}
 	inner.ID = wrapper.ID
 
-	obj, err := h.repo.Update(r.Context(), inner)
+	obj, err := h.service.Update(r.Context(), inner)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -104,11 +104,41 @@ func (h *Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.repo.Delete(r.Context(), id)
+	err := h.service.Delete(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) GetDraftedObjects(w http.ResponseWriter, r *http.Request) {
+	objects, err := h.service.GetByStatus(r.Context(), "DRAFT")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, objects)
+}
+
+func (h *Handler) GetInReviewObjects(w http.ResponseWriter, r *http.Request) {
+	objects, err := h.service.GetByStatus(r.Context(), "IN_REVIEW")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, objects)
+}
+
+func (h *Handler) GetApprovedObjects(w http.ResponseWriter, r *http.Request) {
+	objects, err := h.service.GetByStatus(r.Context(), "APPROVED")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, objects)
 }

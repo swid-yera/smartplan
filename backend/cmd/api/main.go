@@ -15,6 +15,7 @@ import (
 
 	httphandlers "rup_database/internal/http"
 	"rup_database/internal/repository"
+	"rup_database/internal/service"
 )
 
 func main() {
@@ -31,7 +32,8 @@ func main() {
 	defer db.Close()
 
 	repo := repository.NewObjectRepo(db)
-	h := httphandlers.NewHandler(repo)
+	service := service.NewObjectService(repo)
+	h := httphandlers.NewHandler(service)
 
 	// 1. Create the router
 	r := chi.NewRouter()

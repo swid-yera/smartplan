@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS objects;
 CREATE TABLE objects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title JSONB,
+    status JSONB,
     year JSONB,
     type JSONB,
     course JSONB,

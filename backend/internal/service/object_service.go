@@ -1,8 +1,7 @@
-package services
+package service
 
 import (
 	"context"
-	"encoding/json"
 	"rup_database/internal/models"
 	"rup_database/internal/repository"
 )
@@ -15,12 +14,8 @@ func NewObjectService(repo repository.ObjectRepository) *ObjectService {
 	return &ObjectService{repo: repo}
 }
 
-func (s *ObjectService) Create(ctx context.Context, input models.CreateObjectDTO) (*models.Object, error) {
-	var inner models.InnerCreateObjectDTO
-	if err := json.Unmarshal(input.Data, &inner); err != nil {
-		return nil, err
-	}
-	return s.repo.Create(ctx, inner)
+func (s *ObjectService) Create(ctx context.Context, input models.InnerCreateObjectDTO) (*models.Object, error) {
+	return s.repo.Create(ctx, input)
 }
 
 func (s *ObjectService) GetByID(ctx context.Context, id string) (*models.Object, error) {
@@ -31,13 +26,12 @@ func (s *ObjectService) List(ctx context.Context) ([]*models.Object, error) {
 	return s.repo.List(ctx)
 }
 
-func (s *ObjectService) Update(ctx context.Context, input models.UpdateObjectDTO) (*models.Object, error) {
-	var inner models.InnerUpdateObjectDTO
-	if err := json.Unmarshal(input.Data, &inner); err != nil {
-		return nil, err
-	}
-	inner.ID = input.ID
-	return s.repo.Update(ctx, inner)
+func (s *ObjectService) GetByStatus(ctx context.Context, status string) ([]*models.Object, error) {
+	return s.repo.GetByStatus(ctx, status)
+}
+
+func (s *ObjectService) Update(ctx context.Context, input models.InnerUpdateObjectDTO) (*models.Object, error) {
+	return s.repo.Update(ctx, input)
 }
 
 func (s *ObjectService) Delete(ctx context.Context, id string) error {

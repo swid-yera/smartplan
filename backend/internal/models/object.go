@@ -8,6 +8,7 @@ import (
 type Object struct {
 	ID                 string      `json:"id"`
 	Title              interface{} `json:"title,omitempty"`
+	Status             interface{} `json:"status,omitempty"`
 	Year               interface{} `json:"year,omitempty"`
 	Type               interface{} `json:"type,omitempty"`
 	Course             interface{} `json:"course,omitempty"`
@@ -32,6 +33,7 @@ type CreateObjectDTO struct {
 
 type InnerCreateObjectDTO struct {
 	Title              json.RawMessage `json:"title"`
+	Status             json.RawMessage `json:"status"`
 	Year               json.RawMessage `json:"year"`
 	Type               json.RawMessage `json:"type"`
 	Course             json.RawMessage `json:"course"`
@@ -56,6 +58,7 @@ type UpdateObjectDTO struct {
 type InnerUpdateObjectDTO struct {
 	ID                 json.RawMessage `json:"id"`
 	Title              json.RawMessage `json:"title"`
+	Status             json.RawMessage `json:"status"`
 	Year               json.RawMessage `json:"year"`
 	Type               json.RawMessage `json:"type"`
 	Course             json.RawMessage `json:"course"`
