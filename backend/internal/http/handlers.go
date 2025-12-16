@@ -15,90 +15,100 @@ func NewHandler(repo *repository.ObjectRepo) *Handler {
 	return &Handler{repo: repo}
 }
 
+// respondJSON is a helper to write JSON responses.
+func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		// If encoding fails, it's a server-side issue.
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+}
+
 func (h *Handler) CreateObject(w http.ResponseWriter, r *http.Request) {
 	var wrapper models.CreateObjectDTO
 	if err := json.NewDecoder(r.Body).Decode(&wrapper); err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var inner models.InnerCreateObjectDTO
 	if err := json.Unmarshal(wrapper.Data, &inner); err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	obj, err := h.repo.Create(r.Context(), inner)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(obj)
+	respondJSON(w, http.StatusCreated, obj)
 }
 
 func (h *Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		http.Error(w, "id required", 400)
+		http.Error(w, "id required", http.StatusBadRequest)
 		return
 	}
 
 	obj, err := h.repo.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		// You might want to check for a specific "not found" error from the repo
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	json.NewEncoder(w).Encode(obj)
+	respondJSON(w, http.StatusOK, obj)
 }
 
 func (h *Handler) GetAllObjects(w http.ResponseWriter, r *http.Request) {
 	objects, err := h.repo.List(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(objects)
+	respondJSON(w, http.StatusOK, objects)
 }
 
 func (h *Handler) UpdateObject(w http.ResponseWriter, r *http.Request) {
 	var wrapper models.UpdateObjectDTO
 	if err := json.NewDecoder(r.Body).Decode(&wrapper); err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var inner models.InnerUpdateObjectDTO
 	if err := json.Unmarshal(wrapper.Data, &inner); err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	inner.ID = wrapper.ID
 
 	obj, err := h.repo.Update(r.Context(), inner)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(obj)
+	respondJSON(w, http.StatusOK, obj)
 }
 
 func (h *Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		http.Error(w, "id required", 400)
+		http.Error(w, "id required", http.StatusBadRequest)
 		return
 	}
 
 	err := h.repo.Delete(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(204)
+	w.WriteHeader(http.StatusNoContent)
 }

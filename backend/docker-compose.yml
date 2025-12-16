@@ -1,32 +1,33 @@
-version: "3.9"
+version: '3.9'
 
 services:
-  postgres:
-    image: postgres:15
-    restart: always
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: rup_database
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+   postgres:
+      image: postgres:15
+      restart: always
+      environment:
+         POSTGRES_USER: admin
+         POSTGRES_PASSWORD: admin
+         POSTGRES_DB: rup_database
+      ports:
+         - '5432:5432'
+      volumes:
+         - pgdata:/var/lib/postgresql/data
 
-  api:
-    build: .
-    restart: always
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: admin
-      DB_PASSWORD: admin
-      DB_NAME: rup_database
-      APP_PORT: 8080
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
+   api:
+      build: .
+      restart: always
+      environment:
+         DB_HOST: postgres
+         DB_PORT: 5432
+         DB_USER: admin
+         DB_PASSWORD: admin
+         DB_NAME: rup_database
+         APP_PORT: 8080
+         DATABASE_URL: postgres://admin:admin@postgres:5432/rup_database?sslmode=disable
+      ports:
+         - '8080:8080'
+      depends_on:
+         - postgres
 
 volumes:
-  pgdata:
+   pgdata:

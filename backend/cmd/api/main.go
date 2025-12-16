@@ -1,40 +1,55 @@
 package main
 
 import (
-	"fmt"
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
-	"rup_database/internal/config"
-	db "rup_database/internal/db"
-	httpHandlers "rup_database/internal/http"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq" // The blank import for the postgres driver
+	"github.com/rs/cors"
+
+	httphandlers "rup_database/internal/http"
 	"rup_database/internal/repository"
 )
 
 func main() {
-	cfg := config.Load()
+	_ = godotenv.Load()
 
-	database, err := db.Connect(cfg)
-	if err != nil {
-		log.Fatal("failed to connect to database: ", err)
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL environment variable is not set")
 	}
-
-	// Run migrations
-	migrationSQL, err := os.ReadFile("internal/db/migrations/0001_init.sql")
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatal("failed to read migration file: ", err)
+		log.Fatalf("could not connect to database: %v", err)
 	}
-	_, err = database.Exec(string(migrationSQL))
-	if err != nil {
-		log.Fatal("failed to run migrations: ", err)
+	defer db.Close()
+
+	repo := repository.NewObjectRepo(db)
+	h := httphandlers.NewHandler(repo)
+
+	// 1. Create the router
+	r := chi.NewRouter()
+	// 2. Apply middleware
+	r.Use(cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+	}).Handler)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	// 3. Setup the routes
+	httphandlers.SetupRoutes(r, h)
+
+	log.Println("Server starting on :8080")
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		log.Fatalf("could not start server: %s\n", err)
 	}
-
-	repo := repository.NewObjectRepo(database)
-	handler := httpHandlers.NewHandler(repo)
-	router := httpHandlers.NewRouter(handler)
-
-	addr := fmt.Sprintf(":%d", cfg.AppPort)
-
-	log.Println("Server started on", addr)
-	http.ListenAndServe(addr, router)
 }
