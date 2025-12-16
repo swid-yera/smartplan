@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	_ = godotenv.Load("../../.env")
 
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
