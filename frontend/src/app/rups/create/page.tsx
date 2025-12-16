@@ -9,9 +9,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Badge, Button, Heading, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { cn } from '@/lib'
+import { createRupModule } from '@/services'
 
 import { type RUPFormData, formSchema } from './form-schema'
 import { disciplineData } from './mock.data'
@@ -72,6 +74,8 @@ const Page: NextPage = () => {
 	const searchParams = useSearchParams()
 	const [currentStep, setCurrentStep] = useState(searchParams.get('step') || '1')
 	const [highestStep, setHighestStep] = useState(Number(currentStep))
+	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [isSubmitted, setIsSubmitted] = useState(false)
 	const [isHydrating, setIsHydrating] = useState(true)
 
 	const methods = useForm<RUPFormData>({
@@ -123,8 +127,8 @@ const Page: NextPage = () => {
 
 	// This effect subscribes to form changes and saves them to localStorage.
 	useEffect(() => {
-		// Prevent saving default values to localStorage on initial load before hydration.
-		if (isHydrating) return
+		// Prevent saving to localStorage before hydration or after submission.
+		if (isHydrating || isSubmitted) return
 
 		const subscription = methods.watch((value) => {
 			try {
@@ -139,14 +143,14 @@ const Page: NextPage = () => {
 		})
 
 		return () => subscription.unsubscribe()
-	}, [methods, isHydrating]) // This effect runs only once on mount.
+	}, [methods, isHydrating, isSubmitted])
 
 	// This effect saves the highest step to localStorage.
 	useEffect(() => {
-		if (!isHydrating) {
+		if (!isHydrating && !isSubmitted) {
 			window.localStorage.setItem(HIGHEST_STEP_STORAGE_KEY, String(highestStep))
 		}
-	}, [highestStep, isHydrating])
+	}, [highestStep, isHydrating, isSubmitted])
 
 	const currentIndex = tabs.findIndex((t) => t.id === currentStep)
 
@@ -171,9 +175,25 @@ const Page: NextPage = () => {
 		if (currentIndex > 0) handleStepChange(tabs[currentIndex - 1].id)
 	}
 
-	const onSubmit = (data: RUPFormData) => {
-		console.log('FINAL DATA', data)
-		alert('Form submitted! Check the console for the data.')
+	const onSubmit = async (data: RUPFormData) => {
+		setIsSubmitting(true)
+
+		// @ts-ignore
+		const result = createRupModule(data)
+
+		toast.promise(result, {
+			loading: 'Сохранение данных...',
+			success: () => {
+				setIsSubmitted(true)
+				window.localStorage.removeItem(LOCAL_STORAGE_KEY)
+				window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
+				router.push('/rups')
+
+				return 'Данные успешно сохранены!'
+			},
+			error: (err) => err.message,
+			finally: () => setIsSubmitting(false),
+		})
 	}
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {
@@ -237,8 +257,9 @@ const Page: NextPage = () => {
 								</Button>
 
 								{currentIndex === tabs.length - 1 ? (
-									<Button size='lg' type='submit' variant='secondary'>
-										Завершить
+									<Button disabled={isSubmitting} size='lg' type='submit' variant='secondary'>
+										{isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+										{isSubmitting ? 'Сохранение...' : 'Завершить'}
 									</Button>
 								) : (
 									<Button size='lg' type='button' onClick={goNext}>

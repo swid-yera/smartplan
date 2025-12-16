@@ -1,9 +1,16 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
 import type { NextPage } from 'next'
 
 import { Heading } from '@ui'
 
-import { Filter } from './filter'
-import { Rups } from './rups'
+import type { IRupModule } from '@/shared/types'
+
+import { FilterCard } from './filter-card'
+import { NewCard } from './new-card'
+import { RupsCard } from './rups-card'
 
 interface IPageProps {
 	searchParams: {
@@ -15,9 +22,24 @@ interface IPageProps {
 }
 
 const Page: NextPage<IPageProps> = () => {
+	const [rupsData, setRupsData] = useState<IRupModule[]>([])
+
+	const fetchRups = async () => {
+		const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/get-all-objects`)
+		const json = await data.json()
+
+		console.log(json)
+
+		setRupsData(json)
+	}
+
+	useEffect(() => {
+		fetchRups()
+	}, [])
+
 	return (
 		<>
-			<section className='max-w-6xl mx-auto px-4 py-6 space-y-4'>
+			<section className='max-w-6xl w-full mx-auto px-4 py-6 space-y-4'>
 				{/* heading */}
 				<div>
 					<Heading align='left' size='h1'>
@@ -28,11 +50,14 @@ const Page: NextPage<IPageProps> = () => {
 					</p>
 				</div>
 
+				{/* create new */}
+				<NewCard />
+
 				{/* filters */}
-				<Filter items={[]} searchParams={{}} />
+				<FilterCard searchParams={{}} />
 
 				{/* rups */}
-				<Rups rups={[]} />
+				<RupsCard rups={[]} />
 			</section>
 		</>
 	)

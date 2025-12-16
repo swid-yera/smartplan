@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { ASidebar, Footer } from '@layout'
 import { ThemeProvider } from '@providers'
-import { SidebarInset, SidebarProvider } from '@ui'
+import { SidebarInset, SidebarProvider, Toaster } from '@ui'
 
 import './globals.css'
 
@@ -29,6 +29,7 @@ export default function RootLayout({
 						<SidebarInset className='flex flex-col justify-between'>
 							{children}
 
+							<Toaster position='top-right' />
 							<Footer />
 						</SidebarInset>
 					</SidebarProvider>

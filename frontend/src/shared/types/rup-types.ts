@@ -24,7 +24,7 @@ export enum RupModuleTypeEnum {
 }
 
 export interface IRupModule {
-	id: number
+	id: string
 	title: string
 	studyForm: StudyFormEnum
 	totalHours: number

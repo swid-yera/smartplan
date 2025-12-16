@@ -26,7 +26,7 @@ export const navMain = [
 	},
 	{
 		title: 'РУП',
-		url: '/rup/123',
+		url: '/rups',
 		icon: PenIcon,
 	},
 	{
