@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Badge, Button, Heading, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -215,21 +215,61 @@ const Page: NextPage = () => {
 
 			<form onKeyDown={handleKeyDown} onSubmit={methods.handleSubmit(onSubmit)}>
 				<Tabs className='w-full mx-auto px-4 py-6 space-y-4' value={currentStep} onValueChange={handleStepChange}>
-					<TabsList className='w-full bg-background justify-start rounded-none border-b p-0'>
-						{tabs.map((step, index) => (
-							<TabsTrigger
-								key={step.id}
-								disabled={index + 1 > highestStep}
-								type='button'
-								value={step.id}
-								onClick={(e) => {
-									e.preventDefault()
-									setCurrentStep(step.id)
-								}}
-							>
-								{step.title}
-							</TabsTrigger>
-						))}
+					<TabsList className='flex w-full justify-between bg-background border-0 p-0 rounded-none my-6'>
+						{tabs.map((step, index) => {
+							const isCompleted = currentStep > step.id
+							const isActive = currentStep === step.id
+							const isDisabled = index + 1 > highestStep
+
+							return (
+								<div key={step.id} className='relative flex flex-1 flex-col items-center'>
+									<TabsTrigger
+										className='group flex flex-col items-center gap-2 bg-transparent! border-0 p-0 shadow-none!'
+										disabled={isDisabled}
+										type='button'
+										value={step.id}
+										onClick={(e) => {
+											e.preventDefault()
+											setCurrentStep(step.id)
+										}}
+									>
+										{/* Circle */}
+										<div
+											className={cn(
+												'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors duration-300',
+												isCompleted
+													? 'bg-primary text-primary-foreground'
+													: isActive
+														? 'bg-primary text-primary-foreground'
+														: 'bg-accent text-accent-foreground',
+											)}
+										>
+											{isCompleted ? <Check className='h-5 w-5' /> : step.id}
+										</div>
+
+										{/* Title */}
+										<div
+											className={cn(
+												'text-center text-sm font-medium transition-colors',
+												isActive || isCompleted ? 'text-primary' : 'text-accent-foreground',
+											)}
+										>
+											{step.title}
+										</div>
+									</TabsTrigger>
+
+									{/* Connector line */}
+									{index < tabs.length - 1 && (
+										<div
+											className={cn(
+												'absolute top-5 left-[calc(50%+20px)] h-0.5 w-[calc(100%-40px)] -translate-y-1/2 bg-accent transition-colors duration-300',
+												isCompleted && 'bg-primary',
+											)}
+										/>
+									)}
+								</div>
+							)
+						})}
 					</TabsList>
 
 					{tabs.map((tab) => (
@@ -253,7 +293,7 @@ const Page: NextPage = () => {
 									variant='outline'
 									onClick={goBack}
 								>
-									<ArrowLeft /> Назад
+									<ChevronLeft /> Назад
 								</Button>
 
 								{currentIndex === tabs.length - 1 ? (
@@ -263,7 +303,7 @@ const Page: NextPage = () => {
 									</Button>
 								) : (
 									<Button size='lg' type='button' onClick={goNext}>
-										Далее <ArrowRight />
+										Далее <ChevronRight />
 									</Button>
 								)}
 							</div>

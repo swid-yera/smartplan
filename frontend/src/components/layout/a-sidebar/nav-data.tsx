@@ -1,14 +1,4 @@
-import {
-	BookOpen,
-	CircleQuestionMark,
-	ExpandIcon,
-	Headset,
-	Import,
-	LayoutDashboard,
-	PanelBottomOpenIcon,
-	PenIcon,
-	Table2Icon,
-} from 'lucide-react'
+import { BookOpen, CircleQuestionMark, Headset, LayoutDashboard, PenIcon, Table2Icon } from 'lucide-react'
 
 export const navUser = {
 	name: 'just-sain',
@@ -25,7 +15,7 @@ export const navMain = [
 		isActive: true,
 	},
 	{
-		title: 'РУП',
+		title: 'Модули РУП',
 		url: '/rups',
 		icon: PenIcon,
 	},
@@ -38,21 +28,6 @@ export const navMain = [
 		title: 'Расписание',
 		url: '/timetable/cs-2025-a',
 		icon: Table2Icon,
-	},
-	{
-		title: 'Импорт',
-		url: '/ai/import',
-		icon: Import,
-	},
-	{
-		title: 'Экспорт',
-		url: '/exports',
-		icon: ExpandIcon,
-	},
-	{
-		title: 'Панель администратора',
-		url: '/admin',
-		icon: PanelBottomOpenIcon,
 	},
 ]
 
