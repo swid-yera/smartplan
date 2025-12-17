@@ -1,3 +1,4 @@
+import { renameRupModuleGroupIdToGroup, renameRupModulesGroupIdToGroup } from '@/helpers'
 import type { IRupModule } from '@/shared/types'
 
 // get all rup modules
@@ -11,7 +12,9 @@ export const getAllRupModules = async (): Promise<IRupModule[] | false> => {
 		})
 		const json = await data.json()
 
-		if (data.status >= 200 && data.status < 300) return json
+		console.log(json)
+
+		if (data.status >= 200 && data.status < 300) return renameRupModulesGroupIdToGroup(json)
 
 		return false
 	} catch (error) {
@@ -22,17 +25,15 @@ export const getAllRupModules = async (): Promise<IRupModule[] | false> => {
 }
 
 // get rup module by id
-export const getRupModuleById = async (id: string): Promise<IRupModule[] | false> => {
+export const getRupModuleById = async (id: string): Promise<IRupModule | false> => {
 	try {
 		const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/get-object?id=${id}`, {
 			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-			},
 		})
+
 		const json = await data.json()
 
-		if (data.status >= 200 && data.status < 300) return json
+		if (data.status >= 200 && data.status < 300) return renameRupModuleGroupIdToGroup(json)
 
 		return false
 	} catch (error) {
@@ -44,12 +45,16 @@ export const getRupModuleById = async (id: string): Promise<IRupModule[] | false
 
 // create rup module
 interface ICreatingBodyRequest {
-	data: Omit<IRupModule, 'id'>
+	data: Omit<Omit<IRupModule, 'id'>, 'group'> & { groupId: Omit<IRupModule['group'], 'id'> & { keycloak_id: string } }
 }
 
-export const createRupModule = async (newRupModule: IRupModule): Promise<IRupModule | false> => {
+export const createRupModule = async (newRupModule: Omit<IRupModule, 'id'>): Promise<IRupModule | false> => {
 	try {
-		const configuredRupModule: ICreatingBodyRequest = { data: newRupModule }
+		const configuredRupModule: ICreatingBodyRequest = {
+			data: { ...newRupModule, groupId: { ...newRupModule.group, keycloak_id: newRupModule.group.id } },
+		}
+
+		console.log(configuredRupModule)
 
 		const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/create-object`, {
 			method: 'POST',
@@ -60,7 +65,7 @@ export const createRupModule = async (newRupModule: IRupModule): Promise<IRupMod
 		})
 		const json = await data.json()
 
-		if (data.status >= 200 && data.status < 300) return json
+		if (data.status >= 200 && data.status < 300) return renameRupModuleGroupIdToGroup(json)
 
 		return false
 	} catch (error) {
@@ -73,14 +78,17 @@ export const createRupModule = async (newRupModule: IRupModule): Promise<IRupMod
 // update rup module
 interface IUpdatingBodyRequest {
 	id: string
-	data: Omit<IRupModule, 'id'>
+	data: Omit<IRupModule, 'id'> & { groupId: Omit<IRupModule['group'], 'id'> & { keycloak_id: string } }
 }
 
 export const updateRupModule = async (newRupModule: IRupModule): Promise<IRupModule | false> => {
 	try {
-		const configuredRupModule: IUpdatingBodyRequest = { id: newRupModule.id, data: newRupModule }
+		const configuredRupModule: IUpdatingBodyRequest = {
+			id: newRupModule.id,
+			data: { ...newRupModule, groupId: { ...newRupModule.group, keycloak_id: newRupModule.group.id } },
+		}
 
-		const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/create-object`, {
+		const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/update-object`, {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -89,7 +97,7 @@ export const updateRupModule = async (newRupModule: IRupModule): Promise<IRupMod
 		})
 		const json = await data.json()
 
-		if (data.status >= 200 && data.status < 300) return json
+		if (data.status >= 200 && data.status < 300) return renameRupModuleGroupIdToGroup(json)
 
 		return false
 	} catch (error) {

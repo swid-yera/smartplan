@@ -1,9 +1,9 @@
 import type { IGroup, IUser } from './global-types'
 
 export enum RupModuleStatus {
-	DRAFT = 'Черновик',
-	IN_REVIEW = 'На согласовании',
-	APPROVED = 'утверждён',
+	DRAFT = 'DRAFT',
+	IN_REVIEW = 'IN_REVIEW',
+	APPROVED = 'APPROVED',
 }
 
 // rup
@@ -25,37 +25,26 @@ export enum RupModuleTypeEnum {
 
 export interface IRupModule {
 	id: string
+	status: RupModuleStatus
 	title: string
 	studyForm: StudyFormEnum
-	totalHours: number
-	hours: IHours
-	explorationNote: IRupModuleExplorationNote
-	developersName: string[]
-	years: string
+	explorationNote: string
+	goals: string
+	prerequisites: string
+	postrequisites: string
+	internetResources: IResources[]
+	technicalResources: IResources[]
+	contacts: IUser[]
+	year: string
 	type: RupModuleTypeEnum
 
 	disciplines: IDiscipline[]
 	group: IGroup
-	methodist: IUser
-	department: IUser
-	status: RupModuleStatus
 }
 
 // rup exploration note
 export interface IResources {
-	name: string
-	link: string
-}
-
-export interface IRupModuleExplorationNote {
-	according: string
-	goals: string
-	competencies: string
-	prerequisites: IRupModule
-	postrequisites: IRupModule
-	internetResources: IResources[]
-	technicalResources: IResources[]
-	contacts: IUser[]
+	value: string
 }
 
 // discipline

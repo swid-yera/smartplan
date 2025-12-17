@@ -72,7 +72,6 @@ export const formSchema = z
 			.array(
 				z.object({
 					value: z.string().min(1, 'Ресурс не может быть пустым'),
-					link: z.string().optional(),
 				}),
 			)
 			.optional(),

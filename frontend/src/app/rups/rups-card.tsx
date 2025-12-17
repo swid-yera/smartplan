@@ -18,6 +18,8 @@ import {
 	TableRow,
 } from '@ui'
 
+import { statusLabels, statusVariants } from '@/helpers'
+
 interface IRupsProps {
 	rups: IRupModule[]
 }
@@ -27,7 +29,7 @@ export const RupsCard: FC<IRupsProps> = ({ rups }) => {
 		<Card>
 			<CardHeader>
 				<CardTitle>
-					Список модулей РУП <span className='italic'>"Almaty Polytech College"</span>
+					Список модулей РУП <u>"Almaty Polytech College"</u>
 				</CardTitle>
 			</CardHeader>
 
@@ -55,7 +57,7 @@ export const RupsCard: FC<IRupsProps> = ({ rups }) => {
 										<TableCell>{item.title || 'Без названия'}</TableCell>
 										<TableCell>{specialty || '—'}</TableCell>
 										<TableCell>{item.group.qualification || '—'}</TableCell>
-										<TableCell>{item.years || '—'}</TableCell>
+										<TableCell>{item.year || '—'}</TableCell>
 										<TableCell>
 											<Badge variant={statusVariants[status] ?? 'default'}>
 												{statusLabels[status] ?? status}{' '}
@@ -83,16 +85,4 @@ export const RupsCard: FC<IRupsProps> = ({ rups }) => {
 			</CardContent>
 		</Card>
 	)
-}
-
-const statusLabels: Record<string, string> = {
-	DRAFT: 'Черновик',
-	IN_REVIEW: 'На согласовании',
-	APPROVED: 'Утверждён',
-}
-
-const statusVariants: Record<string, 'default' | 'destructive' | 'outline' | 'secondary'> = {
-	DRAFT: 'secondary',
-	IN_REVIEW: 'default',
-	APPROVED: 'default',
 }

@@ -21,7 +21,7 @@ export const navMain = [
 	},
 	{
 		title: 'Уроки',
-		url: '/subjects/123',
+		url: '/subjects',
 		icon: BookOpen,
 	},
 	{

@@ -6,6 +6,7 @@ import type { NextPage } from 'next'
 
 import { Heading } from '@ui'
 
+import { getAllRupModules } from '@/services'
 import type { IRupModule } from '@/shared/types'
 
 import { FilterCard } from './filter-card'
@@ -25,12 +26,11 @@ const Page: NextPage<IPageProps> = () => {
 	const [rupsData, setRupsData] = useState<IRupModule[]>([])
 
 	const fetchRups = async () => {
-		const data = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/get-all-objects`)
-		const json = await data.json()
+		const data = await getAllRupModules()
 
-		console.log(json)
+		if (!data) return
 
-		setRupsData(json)
+		setRupsData(data)
 	}
 
 	useEffect(() => {
@@ -57,7 +57,7 @@ const Page: NextPage<IPageProps> = () => {
 				<FilterCard searchParams={{}} />
 
 				{/* rups */}
-				<RupsCard rups={[]} />
+				<RupsCard rups={rupsData} />
 			</section>
 		</>
 	)

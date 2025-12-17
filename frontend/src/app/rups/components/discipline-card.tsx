@@ -125,11 +125,11 @@ export function DisciplineCard<T extends DisciplineCardValues>() {
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead className='align-bottom w-[30%] pb-2' rowSpan={3}>
-									Код и название дисциплины/модуля
+								<TableHead className='align-bottom w-[35%] pb-2' rowSpan={3}>
+									Код и название дисциплины
 								</TableHead>
 								<TableHead className='align-bottom text-center pb-2' rowSpan={3}>
-									Общее количество часов <br /> в модуле
+									Общее количество <br /> часов в модуле
 								</TableHead>
 								<TableHead className='text-center' colSpan={8}>
 									Из них по семестрам
@@ -144,7 +144,7 @@ export function DisciplineCard<T extends DisciplineCardValues>() {
 							</TableRow>
 							<TableRow>
 								{Array.from({ length: 8 }, (_, i) => (
-									<TableHead key={i} className='text-center border-r last:border-r-0 py-2'>
+									<TableHead key={i} className='text-xs text-center border-r last:border-r-0 py-2'>
 										{i + 1}
 										<br />
 										семестр

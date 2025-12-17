@@ -10,47 +10,20 @@ import { Badge, Button, Heading, Tabs, TabsContent, TabsList, TabsTrigger } from
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { z } from 'zod'
 
 import { cn } from '@/lib'
 import { createRupModule } from '@/services'
+import { RupModuleStatus, TopicTypeEnum } from '@/shared/types'
 
 import { type RUPFormData, formSchema } from './form-schema'
-import { disciplineData } from './mock.data'
+import { groupData } from './mock.data'
 import { Step1 } from './step1'
 import { Step2 } from './step2'
 import { Step3 } from './step3'
 import { Step4 } from './step4'
 
-// Corrected version of generateTemplateDisciplines
-const generateTemplateDisciplines = (
-	disciplineCount: number,
-	semesterCount: number,
-): z.infer<typeof formSchema>['disciplines'] => {
-	return Array.from({ length: disciplineCount }, (_, i) => ({
-		code: `DISC-${i + 1}`,
-		name: `Дисциплина ${i + 1}`,
-		totalHours: 0,
-		semesters: Array.from({ length: semesterCount }, (__, j) => ({
-			semester: j + 1,
-			hours: 0, // Added missing 'hours' property
-		})),
-		topics: [],
-	}))
-}
-
-const processMockData = (data: typeof disciplineData): RUPFormData['disciplines'] => {
-	return data.map((discipline) => ({
-		...discipline,
-		semesters: discipline.semesters.map((semester) => ({
-			...semester,
-			hours: 'hours' in semester ? (semester.hours as number) : 0,
-		})),
-	}))
-}
-
-const LOCAL_STORAGE_KEY = 'rup-form-data'
-const HIGHEST_STEP_STORAGE_KEY = 'rup-highest-step'
+const LOCAL_STORAGE_KEY = 'rup-create-form-data'
+const HIGHEST_STEP_STORAGE_KEY = 'rup-create-highest-step'
 
 const defaultValues: RUPFormData = {
 	title: '',
@@ -65,7 +38,29 @@ const defaultValues: RUPFormData = {
 	contacts: [{ email: '', name: '', phone: '' }],
 	internetResources: [{ value: '' }],
 	technicalResources: [{ value: '' }],
-	disciplines: disciplineData.length > 0 ? processMockData(disciplineData) : generateTemplateDisciplines(2, 8),
+	disciplines: [
+		{
+			code: '',
+			name: '',
+			totalHours: 0,
+			semesters: [1, 2, 3, 4, 5, 6, 7, 8].map((semester) => ({
+				semester,
+				hours: 0,
+			})),
+			topics: [
+				{
+					name: '',
+					type: TopicTypeEnum.Practical,
+					totalHours: 0,
+					individualHours: 0,
+					practiceHours: 0,
+					theoryHours: 0,
+					srsHours: 0,
+					srspHours: 0,
+				},
+			],
+		},
+	],
 }
 
 const Page: NextPage = () => {
@@ -178,8 +173,12 @@ const Page: NextPage = () => {
 	const onSubmit = async (data: RUPFormData) => {
 		setIsSubmitting(true)
 
-		// @ts-ignore
-		const result = createRupModule(data)
+		const newData = {
+			...data,
+			group: groupData.find((g) => g.id === data.groupId),
+			status: RupModuleStatus.DRAFT,
+		}
+		const result = createRupModule(newData)
 
 		toast.promise(result, {
 			loading: 'Сохранение данных...',
@@ -191,7 +190,7 @@ const Page: NextPage = () => {
 
 				return 'Данные успешно сохранены!'
 			},
-			error: (err) => err.message,
+			error: (err) => 'произошла ошибка при сохранении данных',
 			finally: () => setIsSubmitting(false),
 		})
 	}
