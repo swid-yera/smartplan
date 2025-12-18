@@ -4,7 +4,6 @@
 
 ```
 -  keycloak_id: uuid, not null, primary key
--  session_id: uuid, primary key
 
 -  email: text, not null
 -  username: text, not null
