@@ -1,0 +1,183 @@
+-- name: CreateUser :one
+INSERT INTO users (
+    keycloak_id,
+    email,
+    username,
+    first_name,
+    last_name,
+    roles
+) VALUES (
+    $1, $2, $3, $4, $5, $6
+)
+RETURNING *;
+
+-- name: GetUserByKeycloakID :one
+SELECT *
+FROM users
+WHERE keycloak_id = $1;
+
+
+-- name: UpdateUserProfile :exec
+UPDATE users
+SET
+    email = $2,
+    username = $3,
+    first_name = $4,
+    last_name = $5,
+    updated_at = NOW()
+WHERE keycloak_id = $1;
+
+
+-- name: UpdateUserRoles :exec
+UPDATE users
+SET
+    roles = $2,
+    updated_at = NOW()
+WHERE keycloak_id = $1;
+
+
+-- name: UpdateUserPasswordChangedAt :exec
+UPDATE users
+SET
+    password_changed_at = $2,
+    updated_at = NOW()
+WHERE keycloak_id = $1;
+
+
+-- name: UpdateUserLastSeenAt :exec
+UPDATE users
+SET
+    last_seen_at = $2,
+    updated_at = NOW()
+WHERE keycloak_id = $1;
+
+
+-- name: DeleteUser :exec
+DELETE FROM users
+WHERE keycloak_id = $1;
+
+
+-- name: GetAllUsers :many
+SELECT *
+FROM users
+ORDER BY created_at DESC;
+
+
+-- name: CreateRupResource :one
+INSERT INTO rup_resources (
+    name,
+    link
+) VALUES (
+    $1, $2
+)
+RETURNING *;
+
+
+-- name: GetRupResourceByID :one
+SELECT *
+FROM rup_resources
+WHERE id = $1;
+
+
+-- name: DeleteRupResource :exec
+DELETE FROM rup_resources
+WHERE id = $1;
+
+-- name: CreateRupExplorationNote :one
+INSERT INTO rup_exploration_notes (
+    basis,
+    goals,
+    summary,
+    competencies,
+    prerequisites,
+    postrequisites,
+    internet_resources_id,
+    technical_resources_id
+) VALUES (
+    $1,$2,$3,$4,$5,$6,$7,$8
+)
+RETURNING *;
+
+
+-- name: GetRupExplorationNoteByID :one
+SELECT *
+FROM rup_exploration_notes
+WHERE id = $1;
+
+-- name: CreateRups :one
+INSERT INTO rups (
+    name,
+    status,
+    course,
+    study_form,
+    study_year,
+    type,
+    methodist,
+    teacher
+) VALUES (
+    $1,$2,$3,$4,$5,$6,$7,$8
+)
+RETURNING *;
+
+
+-- name: GetRupsByID :one
+SELECT *
+FROM rups
+WHERE id = $1;
+
+
+-- name: UpdateRupsStatus :exec
+UPDATE rups
+SET
+    status = $2,
+    reason = $3,
+    updated_at = NOW()
+WHERE id = $1;
+
+
+-- name: GetRupsByMethodist :many
+SELECT *
+FROM rups
+WHERE methodist = $1
+ORDER BY created_at DESC;
+
+-- name: CreateAward :one
+INSERT INTO awards (
+    status,
+    methodist,
+    violation,
+    type,
+    text
+) VALUES (
+    $1,$2,$3,$4,$5
+)
+RETURNING *;
+
+
+-- name: GetAwardByID :one
+SELECT *
+FROM awards
+WHERE id = $1;
+
+
+-- name: UpdateAwardStatus :exec
+UPDATE awards
+SET
+    status = $2,
+    reason = $3,
+    updated_at = NOW()
+WHERE id = $1;
+
+-- name: CreateAwardType :one
+INSERT INTO award_types (
+    name,
+    variants
+) VALUES (
+    $1,$2
+)
+RETURNING *;
+
+
+-- name: GetAllAwardTypes :many
+SELECT *
+FROM award_types;
