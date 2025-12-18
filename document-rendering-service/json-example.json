@@ -1,0 +1,273 @@
+{
+	"id": "asd23f-fresdv-grv32c-carca",
+	"name": "ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet",
+	"status": "APPROVED",
+	"reason": "",
+	"studyForm": "FULL_TIME",
+	"studyYear": "2025-2026",
+	"type": "PRACTICE",
+	"totalHours": "288",
+	"contacts": [
+		{
+			"keycloak_id": "asd23f-fresdv-grv32c-carca",
+			"email": "contacts@asd.com",
+			"username": "contacts",
+			"first_name": "Динара ",
+			"last_name": "Кабдыгалиевна",
+			"phone": "+77427483423",
+			"roles": ["Teachers"]
+		}
+	],
+	"group": {
+		"id": "asd23f-fresdv-grv32c-carca",
+		"name": "Т22-4Б",
+		"specialty": "06120100 \"Вычислительная техника и информационные сети\" (по видам)",
+		"qualification": "4S06120102 \"Техник сетевого системного администрирования\""
+	},
+	"methodist": {
+		"keycloak_id": "asd23f-fresdv-grv32c-carca",
+		"email": "methodist@asdf.com",
+		"username": "methodist",
+		"first_name": "Галия",
+		"last_name": "Асхатовна",
+		"phone": "+77427483423",
+		"roles": ["Methodists"]
+	},
+	"teacher": {
+		"keycloak_id": "asd23f-fresdv-grv32c-carca",
+		"email": "teacher@asdf.com",
+		"username": "teacher",
+		"first_name": "Сауле",
+		"last_name": "Бактыбаевна",
+		"phone": "+77237434323",
+		"roles": ["Teachers"]
+	},
+	"exploration_note_id": {
+		"id": "asd23f-fresdv-grv32c-carca",
+		"basis": "Рабочая учебная программа по профессиональному модулю «ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet» разработана на основе Приказа Министра просвещения Республики Казахстан от 3 августа 2022 года № 348 учитывая внесенные изменения от 15.04.2025 года, профессиональных стандартов ««Сетевые, системные администраторы и администраторы серверов» (дополнение №5 к приказу заместителя председателя правления Национальной палаты предпринимателей Республики Казахстан «Атамекен» №222 от 05.12.2022), стандартов  WorldSkills Сетевое и системное администрирование для специальности «06120100 «Вычислительная техника и информационные сети» (по видам)» и квалификации 4S06120102 «Техник сетевого и системного администрирования».",
+		"goals": "Целью освоения профессионального модуля является обеспечение студентов навыками эффективного обслуживания, настройки и обеспечения информационной безопасности локальных вычислительных сетей и Internet. Данный модуль даёт студентам знания об архитектуре и компонентах локальных вычислительных сетей, мониторинге уязвимостей информации, принципах их работы и основных компонентах. Кроме того, студенты осваивают такие навыки, как настраивать и конфигурировать средства защиты ЛВС, анализировать угрозы и уязвимости, реализовать меры защиты информации, обновление, устранение неполадок, установка и администирование процесс управления безопасностью сетевых устройств и программного обеспечения.",
+		"summary": "",
+		"competencies": "Формируемые компетенции: Владеть методами и средствами обеспечения безопасности локальных сетей и подключенных к ним ресурсов с соблюдением требований охраны труда и техники безопасности; установка и управление ресурсами программного обеспечения и операционных систем.",
+
+		"prerequisites": "ПМ5 Администрирование процесса установки сетевых устройств инфокоммуникационных систем",
+		"postrequisites": "ПМ7 Управление системами и сетями организации.",
+
+		"internetResources": [
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Электронный учебно-методический комплекс «Введение в сетевые технологии» курса CCNA сетевой академии Cisco",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Б. В. Левин, А. В. Левина, А. А. Кириллов. «Информационная безопасность сети». Подробное объяснение принципов, технологий и методов защиты сетей.",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Электронный учебно-методический комплекс «Основы маршрутизации и коммутации» курса CCNA сетевой академии Cisco.",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Книга: Джон Э. Митник, Хорси Разен. «Искусство скрывать следы. Hacking Exposed: Network Security Secrets & Solutions». Практическое руководство по методам защиты и атакам на сети, обзор популярных уязвимостей, методы защиты",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Книга: А. Черных, Ю. Степанов, В. Звонков. «Безопасность локальных сетей», конкретные методы обеспечения безопасности ЛВС, типовые угрозы и меры противодействия.",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Учебное пособие: Под редакцией А. М. Павловского «Основы информационной безопасности», общие принципы ИБ, стандарты, правовые и организационные аспекты.",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Стандарты ISO/IEC 27001 и 27002 — международные стандарты по управлению информационной безопасностью",
+				"link": ""
+			}
+		],
+		"technicalResources": [
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Программное обеспечение:, Open Source инструменты: документация по использованию Snort, Wireshark для анализа сетевого трафика и обнаружения угроз.",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Операционные системы: Windows, Linux, macOS.",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Технические средства: компьютеры, мультимедийные проекторы, необходимые инструменты и аксессуары.",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Цифровые образовательные ресурсы.",
+				"link": ""
+			},
+			{
+				"id": "asd23f-fresdv-grv32c-carca",
+				"name": "Комплексы тестов.",
+				"link": ""
+			}
+		]
+	},
+
+	"disciplines": [
+		{
+			"id": "asd23f-fresdv-grv32c-carca",
+			"name": "Проводить мониторинг сетевой безопасности организации",
+			"code": "РО6.1",
+			"totalHours": 72,
+			"semesters": [
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 1,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 2,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 3,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 4,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 5,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 6,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 7,
+					"totalHours": 72
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 8,
+					"totalHours": 0
+				}
+			],
+			"topics": []
+		},
+		{
+			"id": "asd23f-fresdv-grv32c-carca",
+			"name": "Администрировать процесс управления безопасностью сетевых устройств и программного обеспечения",
+			"code": "РО6.2",
+			"totalHours": 96,
+			"semesters": [
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 1,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 2,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 3,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 4,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 5,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 6,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 7,
+					"totalHours": 96
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 8,
+					"totalHours": 0
+				}
+			],
+			"topics": []
+		},
+		{
+			"id": "asd23f-fresdv-grv32c-carca",
+			"name": "Обеспечивать сетевую безопасность организации",
+			"code": "РО6.3",
+			"totalHours": 120,
+			"semesters": [
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 1,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 2,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 3,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 4,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 5,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 6,
+					"totalHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 7,
+					"totalHours": 24
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"semester": 8,
+					"totalHours": 96
+				}
+			],
+			"topics": []
+		}
+	],
+
+	"created_at": "252982342",
+	"updated_at": "252982342"
+}
