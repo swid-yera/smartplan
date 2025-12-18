@@ -3,17 +3,18 @@
 	"name": "ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet",
 	"status": "APPROVED",
 	"reason": "",
+	"course": 4,
 	"studyForm": "FULL_TIME",
 	"studyYear": "2025-2026",
 	"type": "PRACTICE",
-	"totalHours": "288",
+	"totalHours": 288,
 	"contacts": [
 		{
 			"keycloak_id": "asd23f-fresdv-grv32c-carca",
 			"email": "contacts@asd.com",
 			"username": "contacts",
-			"first_name": "Динара ",
-			"last_name": "Кабдыгалиевна",
+			"firstName": "Динара ",
+			"lastName": "Кабдыгалиевна",
 			"phone": "+77427483423",
 			"roles": ["Teachers"]
 		}
@@ -28,8 +29,8 @@
 		"keycloak_id": "asd23f-fresdv-grv32c-carca",
 		"email": "methodist@asdf.com",
 		"username": "methodist",
-		"first_name": "Галия",
-		"last_name": "Асхатовна",
+		"firstName": "Галия",
+		"lastName": "Асхатовна",
 		"phone": "+77427483423",
 		"roles": ["Methodists"]
 	},
@@ -37,12 +38,12 @@
 		"keycloak_id": "asd23f-fresdv-grv32c-carca",
 		"email": "teacher@asdf.com",
 		"username": "teacher",
-		"first_name": "Сауле",
-		"last_name": "Бактыбаевна",
+		"firstName": "Сауле",
+		"lastName": "Бактыбаевна",
 		"phone": "+77237434323",
 		"roles": ["Teachers"]
 	},
-	"exploration_note_id": {
+	"explorationNote": {
 		"id": "asd23f-fresdv-grv32c-carca",
 		"basis": "Рабочая учебная программа по профессиональному модулю «ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet» разработана на основе Приказа Министра просвещения Республики Казахстан от 3 августа 2022 года № 348 учитывая внесенные изменения от 15.04.2025 года, профессиональных стандартов ««Сетевые, системные администраторы и администраторы серверов» (дополнение №5 к приказу заместителя председателя правления Национальной палаты предпринимателей Республики Казахстан «Атамекен» №222 от 05.12.2022), стандартов  WorldSkills Сетевое и системное администрирование для специальности «06120100 «Вычислительная техника и информационные сети» (по видам)» и квалификации 4S06120102 «Техник сетевого и системного администрирования».",
 		"goals": "Целью освоения профессионального модуля является обеспечение студентов навыками эффективного обслуживания, настройки и обеспечения информационной безопасности локальных вычислительных сетей и Internet. Данный модуль даёт студентам знания об архитектуре и компонентах локальных вычислительных сетей, мониторинге уязвимостей информации, принципах их работы и основных компонентах. Кроме того, студенты осваивают такие навыки, как настраивать и конфигурировать средства защиты ЛВС, анализировать угрозы и уязвимости, реализовать меры защиты информации, обновление, устранение неполадок, установка и администирование процесс управления безопасностью сетевых устройств и программного обеспечения.",
@@ -170,7 +171,112 @@
 				{
 					"id": "asd23f-fresdv-grv32c-carca",
 					"name": "Использует понятия и классификацию угроз ИБ. Распознает угрозы информационной безопасности 02,09",
-					"name": ""
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "Использует основные внешние и внутренние угрозы: примеры атак03,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "Понимает актуальные угрозы для сетевых устройств и ПО04,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "Разбирает современные кибератаки (фишинг, соц. инженерия, DDoS)05,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "№1 Анализирует реальные кейсы киберинцидентов08,09",
+					"type": "PRACTICE",
+
+					"totalHours": 2,
+					"theoryHours": 0,
+					"practiceHours": 2,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "№2Работает с примерами вредоносных программ08,09",
+					"type": "PRACTICE",
+
+					"totalHours": 2,
+					"theoryHours": 0,
+					"practiceHours": 2,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "№3.Использует инструменты: антивирусные сканеры, Nmap09,09",
+					"type": "PRACTICE",
+
+					"totalHours": 2,
+					"theoryHours": 0,
+					"practiceHours": 2,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "Понимает основные виды компьютерных преступлений. Работает с средствами и возможностями обеспечения ИБ.Вредоносное ПО 09,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "Понимает Законы Республики Казахстана «Уголовные правонарушения в сфере информатизации и связи»10,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
 				}
 			]
 		},
@@ -213,64 +319,64 @@
 				{
 					"id": "asd23f-fresdv-grv32c-carca",
 					"semester": 7,
-					"totalHours": 96
+					"totalHours": 72
 				},
 				{
 					"id": "asd23f-fresdv-grv32c-carca",
 					"semester": 8,
-					"totalHours": 0
-				}
-			],
-			"topics": []
-		},
-		{
-			"id": "asd23f-fresdv-grv32c-carca",
-			"name": "Обеспечивать сетевую безопасность организации",
-			"code": "РО6.3",
-			"totalHours": 120,
-			"semesters": [
-				{
-					"id": "asd23f-fresdv-grv32c-carca",
-					"semester": 1,
-					"totalHours": 0
-				},
-				{
-					"id": "asd23f-fresdv-grv32c-carca",
-					"semester": 2,
-					"totalHours": 0
-				},
-				{
-					"id": "asd23f-fresdv-grv32c-carca",
-					"semester": 3,
-					"totalHours": 0
-				},
-				{
-					"id": "asd23f-fresdv-grv32c-carca",
-					"semester": 4,
-					"totalHours": 0
-				},
-				{
-					"id": "asd23f-fresdv-grv32c-carca",
-					"semester": 5,
-					"totalHours": 0
-				},
-				{
-					"id": "asd23f-fresdv-grv32c-carca",
-					"semester": 6,
-					"totalHours": 0
-				},
-				{
-					"id": "asd23f-fresdv-grv32c-carca",
-					"semester": 7,
 					"totalHours": 24
+				}
+			],
+			"topics": [
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "Характеризует понятия управления безопасностью сетевых устройств и ПО02,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
 				},
 				{
 					"id": "asd23f-fresdv-grv32c-carca",
-					"semester": 8,
-					"totalHours": 96
+					"name": "Разбирается в понятиях и ролях управления безопасностью02,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "Понимает основные стандарты и нормативы (ISO/IEC 27001, NIST)03,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				{
+					"id": "asd23f-fresdv-grv32c-carca",
+					"name": "Работает с архитектурой системы управления безопасностью03,09",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
 				}
-			],
-			"topics": []
+			]
 		}
 	],
 
