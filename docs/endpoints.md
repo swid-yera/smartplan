@@ -1549,8 +1549,6 @@ delete resource
 { "error": "invalid data" }
 ```
 
----
-
 ### GET `/disciplines`
 
 **headers**
@@ -1578,8 +1576,6 @@ delete resource
 { "error": "invalid token" }
 ```
 
----
-
 ### GET `/disciplines/:id`
 
 **headers**
@@ -1604,8 +1600,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ### PUT `/disciplines/:id`
 
@@ -1642,8 +1636,6 @@ delete resource
 { "error": "invalid uuid" }
 ```
 
----
-
 ### DELETE `/disciplines/:id`
 
 **headers**
@@ -1663,8 +1655,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ## Discipline Semesters
 
@@ -1703,8 +1693,6 @@ delete resource
 { "error": "invalid data" }
 ```
 
----
-
 ### GET `/discipline-semesters/:id`
 
 **headers**
@@ -1729,8 +1717,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ### PUT `/discipline-semesters/:id`
 
@@ -1765,8 +1751,6 @@ delete resource
 { "error": "invalid uuid" }
 ```
 
----
-
 ### DELETE `/discipline-semesters/:id`
 
 **headers**
@@ -1786,8 +1770,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ## Discipline Topics
 
@@ -1833,8 +1815,6 @@ delete resource
 { "error": "invalid data" }
 ```
 
----
-
 ### PUT `/discipline-topics/:id`
 
 **headers**
@@ -1868,8 +1848,6 @@ delete resource
 { "error": "invalid uuid" }
 ```
 
----
-
 ### DELETE `/discipline-topics/:id`
 
 **headers**
@@ -1889,8 +1867,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ## Award Types
 
@@ -1927,8 +1903,6 @@ delete resource
 { "error": "invalid data" }
 ```
 
----
-
 ### GET `/award-types/:id`
 
 **headers**
@@ -1952,8 +1926,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ### PUT `/award-types/:id`
 
@@ -1986,8 +1958,6 @@ delete resource
 { "error": "invalid uuid" }
 ```
 
----
-
 ### DELETE `/award-types/:id`
 
 **headers**
@@ -2007,8 +1977,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ## Award Type Variants
 
@@ -2049,8 +2017,6 @@ delete resource
 { "error": "invalid data" }
 ```
 
----
-
 ### PUT `/award-type-variants/:id`
 
 **headers**
@@ -2082,8 +2048,6 @@ delete resource
 { "error": "invalid uuid" }
 ```
 
----
-
 ### DELETE `/award-type-variants/:id`
 
 **headers**
@@ -2103,8 +2067,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ## Award Type Criteria
 
@@ -2143,8 +2105,6 @@ delete resource
 { "error": "invalid data" }
 ```
 
----
-
 ### PUT `/award-type-criteria/:id`
 
 **headers**
@@ -2176,8 +2136,6 @@ delete resource
 { "error": "invalid uuid" }
 ```
 
----
-
 ### DELETE `/award-type-criteria/:id`
 
 **headers**
@@ -2197,8 +2155,6 @@ delete resource
 ```json
 { "error": "invalid uuid" }
 ```
-
----
 
 ## Awards
 
@@ -2239,8 +2195,6 @@ delete resource
 { "error": "invalid data" }
 ```
 
----
-
 ### GET `/awards/:id`
 
 **headers**
@@ -2267,8 +2221,6 @@ delete resource
 { "error": "invalid uuid" }
 ```
 
----
-
 ### DELETE `/awards/:id`
 
 **headers**
@@ -2281,6 +2233,491 @@ delete resource
 
 ```json
 { "result": "award deleted" }
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+## Award types criteria
+
+### POST `/award-types-criteria`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"points": 67,
+		"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+		"bonusName": "+ за каждый чих, от 1 до 100",
+		"bonusPoints": 52,
+		"bonusMethod": "MEASURING"
+	}
+}
+```
+
+**response 200**
+
+```json
+{
+	"data": {
+		"id": "892hfwbhw2-sdkjnksf4u",
+		"name": "name",
+		"points": 67,
+		"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+		"bonusName": "+ за каждый чих, от 1 до 100",
+		"bonusPoints": 52,
+		"bonusMethod": "MEASURING"
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid data" }
+```
+
+### GET `/award-types-criteria/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**response 200**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"points": 67,
+		"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+		"bonusName": "+ за каждый чих, от 1 до 100",
+		"bonusPoints": 52,
+		"bonusMethod": "MEASURING"
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+### PUT `/award-types-criteria/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"points": 67,
+		"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+		"bonusName": "+ за каждый чих, от 1 до 100",
+		"bonusPoints": 52,
+		"bonusMethod": "MEASURING"
+	}
+}
+```
+
+**response 200**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"points": 67,
+		"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+		"bonusName": "+ за каждый чих, от 1 до 100",
+		"bonusPoints": 52,
+		"bonusMethod": "MEASURING"
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+### DELETE `/award-types-criteria/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**response 200**
+
+```json
+{ "result": "award types criteria deleted succesfully" }
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+## Award type variants
+
+### POST `/award-types-variants`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"description": "описание ",
+		"criteria": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 200**
+
+```json
+{
+	"id": "45bhjf-f76dc-d6d7w8sd",
+	"data": {
+		"name": "name",
+		"description": "описание ",
+		"criteria": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid data" }
+```
+
+### GET `/award-types-criteria/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**response 200**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"description": "описание ",
+		"criteria": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+### PUT `/award-types-variants/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"description": "описание ",
+		"criteria": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 200**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"description": "описание ",
+		"criteria": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+### DELETE `/award-types-variants/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**response 200**
+
+```json
+{ "result": "award type variant deleted succesfully" }
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+## Award types
+
+### POST `/award-types`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"variants": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 200**
+
+```json
+{
+	"id": "45bhjf-f76dc-d6d7w8sd",
+	"data": {
+		"name": "name",
+		"variants": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid data" }
+```
+
+### GET `/award-types/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**response 200**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"variants": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+### PUT `/award-types/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"variants": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 200**
+
+```json
+{
+	"data": {
+		"name": "name",
+		"variants": [
+			{
+				"name": "name",
+				"points": 67,
+				"method": "NORMAL", // enum:[NORMAL, MEASURING, PENALTY]
+				"bonusName": "+ за каждый чих, от 1 до 100",
+				"bonusPoints": 52,
+				"bonusMethod": "MEASURING"
+			},
+			...
+		]
+	}
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid uuid" }
+```
+
+### DELETE `/award-types/:id`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**response 200**
+
+```json
+{ "result": "award type deleted succesfully" }
 ```
 
 **response 300**
