@@ -41,21 +41,21 @@ func (r *PostgresUserRepository) UpdateUserRoles(
 	return r.queries.UpdateUserRoles(
 		ctx,
 		storage.UpdateUserRolesParams{
-			SessionID: sessionID,
-			Roles:     roles,
+			KeycloakID: uuid.UUID{},
+			Roles:      roles,
 		},
 	)
 }
 
 func (r *PostgresUserRepository) UpdateUserPasswordChangedAt(
 	ctx context.Context,
-	sessionID uuid.UUID,
+	keycloak_id uuid.UUID,
 	changedAt time.Time,
 ) error {
 	return r.queries.UpdateUserPasswordChangedAt(
 		ctx,
 		storage.UpdateUserPasswordChangedAtParams{
-			SessionID: sessionID,
+			KeycloakID: uuid.UUID{},
 			PasswordChangedAt: pgtype.Timestamptz{
 				Time:  changedAt,
 				Valid: true,
