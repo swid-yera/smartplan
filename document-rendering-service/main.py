@@ -2,7 +2,12 @@ import json
 from docxtpl import DocxTemplate
 from datetime import datetime
 from helpers import zero_to_empty, decode_study_form
-from mappers import build_developers, build_disciplines_table, build_resources
+from mappers import (
+    build_content_table,
+    build_developers,
+    build_disciplines_table,
+    build_resources,
+)
 
 
 JSON_FILE = "json-example.json"
@@ -30,8 +35,10 @@ explorationNote = data.get("explorationNote")
 internet_resources = build_resources(explorationNote.get("internetResources"))
 technical_resources = build_resources(explorationNote.get("technicalResources"))
 
-
 disciplines, semesters_total = build_disciplines_table(data.get("disciplines", []))
+
+content_table = build_content_table(data)
+
 
 # word docx template
 print(f"importing {WORD_TEMPLATE}...")
@@ -74,6 +81,8 @@ context = {
     "sem6total": zero_to_empty(semesters_total[5]),
     "sem7total": zero_to_empty(semesters_total[6]),
     "sem8total": zero_to_empty(semesters_total[7]),
+    # topics
+    "content_table": content_table,
 }
 
 # rendering document to out folder

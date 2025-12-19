@@ -21,3 +21,16 @@ def short_name(first_name: str | None, last_name: str | None) -> str:
         return ""
 
     return f"{first_name[0].upper()}. {last_name}"
+
+
+# lesson type
+LESSON_TYPE_MAP = {
+    "COMBINED": "комбинированный",
+    "PRACTICE": "практический",
+    "SNZ": "СНЗ",
+}
+
+
+# decode lesson type from enum to text
+def decode_lesson_type(value: str) -> str:
+    return LESSON_TYPE_MAP.get(value, value)

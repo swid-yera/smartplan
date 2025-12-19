@@ -1,4 +1,4 @@
-from helpers import short_name, zero_to_empty
+from helpers import decode_lesson_type, short_name, zero_to_empty
 
 
 def build_disciplines_table(disciplines_data: dict) -> tuple[list, list]:
@@ -63,3 +63,69 @@ def build_resources(resources: dict) -> list:
         result.append(item.get("name"))
 
     return result
+
+
+# build content table
+def build_content_table(data: dict) -> list:
+    """
+    returns a flat list of rows for a table:
+    - topics lines
+    - total hours line after each discipline
+    """
+    rows = []
+    counter = 1
+
+    for discipline in data.get("disciplines", []):
+        discipline_total = {
+            "total": 0,
+            "theory": 0,
+            "practice": 0,
+            "individual": 0,
+            "srsp": 0,
+            "srs": 0,
+        }
+
+        for topic in discipline.get("topics", []):
+            discipline_total["total"] += topic.get("totalHours", 0)
+            discipline_total["theory"] += topic.get("theoryHours", 0)
+            discipline_total["practice"] += topic.get("practiceHours", 0)
+            discipline_total["individual"] += topic.get("individualHours", 0)
+            discipline_total["srsp"] += topic.get("srspHours", 0)
+            discipline_total["srs"] += topic.get("srsHours", 0)
+
+            rows.append(
+                {
+                    "num": counter,
+                    "discipline": f"{discipline['code']} {discipline['name']}",
+                    "topic": topic.get("name"),
+                    "total": zero_to_empty(topic.get("totalHours", 0)),
+                    "theory": zero_to_empty(topic.get("theoryHours", 0)),
+                    "practice": zero_to_empty(topic.get("practiceHours", 0)),
+                    "individual": zero_to_empty(topic.get("individualHours", 0)),
+                    "srsp": zero_to_empty(topic.get("srspHours", 0)),
+                    "srs": zero_to_empty(topic.get("srsHours", 0)),
+                    "type": decode_lesson_type(topic.get("type")),
+                    "is_total": False,
+                }
+            )
+
+            counter += 1
+
+        # line discipline total hours
+        rows.append(
+            {
+                "num": "",
+                "discipline": "Всего часов:",
+                "topic": "",
+                "total": zero_to_empty(discipline_total["total"]),
+                "theory": zero_to_empty(discipline_total["theory"]),
+                "practice": zero_to_empty(discipline_total["practice"]),
+                "individual": zero_to_empty(discipline_total["individual"]),
+                "srsp": zero_to_empty(discipline_total["srsp"]),
+                "srs": zero_to_empty(discipline_total["srs"]),
+                "type": "",
+                "is_total": True,
+            }
+        )
+
+    return rows
