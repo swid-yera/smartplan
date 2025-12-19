@@ -1,0 +1,745 @@
+openapi: 3.0.3
+info:
+   title: Educational Platform API
+   description: API для управления учебными планами (RUP), пользователями, группами и наградами.
+   version: 1.0.0
+
+servers:
+   - url: https://api.example.com/v1
+     description: Production server
+
+components:
+   securitySchemes:
+      BearerAuth:
+         type: http
+         scheme: bearer
+         bearerFormat: JWT
+
+   schemas:
+      # --- ENUMS ---
+      RoleEnum:
+         type: string
+         enum: [Teachers, Methodists, Admins]
+      StatusEnum:
+         type: string
+         enum: [DRAFT, IN_REVIEW, APPROVED, REJECTED]
+      StudyFormEnum:
+         type: string
+         enum: [CORRESPONDENCE, FULL_TIME]
+      RupTypeEnum:
+         type: string
+         enum: [PRACTICE, THEORY]
+      TopicTypeEnum:
+         type: string
+         enum: [SNZ, PRACTICAL, COMBINED]
+      ResourceTypeEnum:
+         type: string
+         enum: [INTERNET, TECHNICAL]
+      AwardViolationEnum:
+         type: string
+         enum: [NONE, REMARK, REBUKE, SEVERE_REPRIMAND]
+      AwardMethodEnum:
+         type: string
+         enum: [NORMAL, MEASURING, PENALTY]
+
+      # --- ENTITIES (Based on entities.md) ---
+
+      # User
+      User:
+         type: object
+         properties:
+            keycloak_id:
+               type: string
+               format: uuid
+            email:
+               type: string
+               format: email
+            username:
+               type: string
+            first_name:
+               type: string
+               nullable: true
+            last_name:
+               type: string
+               nullable: true
+            phone:
+               type: string
+               nullable: true
+            roles:
+               type: array
+               items:
+                  $ref: '#/components/schemas/RoleEnum'
+            total_points:
+               type: integer
+               default: 0
+            created_at:
+               type: string
+               format: date-time
+            updated_at:
+               type: string
+               format: date-time
+
+      # Group
+      Group:
+         type: object
+         properties:
+            keycloak_id:
+               type: string
+               format: uuid
+            name:
+               type: string
+            qualification:
+               type: string
+               nullable: true
+            specialty:
+               type: string
+               nullable: true
+
+      # Resource
+      Resource:
+         type: object
+         properties:
+            id:
+               type: string
+               format: uuid
+            name:
+               type: string
+            link:
+               type: string
+            type:
+               $ref: '#/components/schemas/ResourceTypeEnum'
+
+      # Exploration Note
+      ExplorationNote:
+         type: object
+         properties:
+            id:
+               type: string
+               format: uuid
+            basis:
+               type: string
+            goals:
+               type: string
+            summary:
+               type: string
+            competencies:
+               type: string
+            prerequisites:
+               type: string
+            postrequisites:
+               type: string
+            internetResources:
+               type: array
+               items:
+                  $ref: '#/components/schemas/Resource'
+            technicalResources:
+               type: array
+               items:
+                  $ref: '#/components/schemas/Resource'
+
+      # Discipline Topic
+      DisciplineTopic:
+         type: object
+         properties:
+            id:
+               type: string
+               format: uuid
+            name:
+               type: string
+            type:
+               $ref: '#/components/schemas/TopicTypeEnum'
+            totalHours:
+               type: integer
+            theoryHours:
+               type: integer
+            practiceHours:
+               type: integer
+            individualHours:
+               type: integer
+            srspHours:
+               type: integer
+            srsHours:
+               type: integer
+
+      # Discipline Semester
+      DisciplineSemester:
+         type: object
+         properties:
+            id:
+               type: string
+               format: uuid
+            semester:
+               type: integer
+               description: From 1 to 8
+            totalHours:
+               type: integer
+
+      # Discipline
+      Discipline:
+         type: object
+         properties:
+            id:
+               type: string
+               format: uuid
+            name:
+               type: string
+            code:
+               type: string
+               nullable: true
+            totalHours:
+               type: integer
+            semesters:
+               type: array
+               items:
+                  $ref: '#/components/schemas/DisciplineSemester'
+            topics:
+               type: array
+               items:
+                  $ref: '#/components/schemas/DisciplineTopic'
+            created_at:
+               type: string
+               format: date-time
+            updated_at:
+               type: string
+               format: date-time
+
+      # RUP (Full Object for Responses)
+      Rup:
+         type: object
+         properties:
+            id:
+               type: string
+               format: uuid
+            name:
+               type: string
+            code:
+               type: string
+            status:
+               $ref: '#/components/schemas/StatusEnum'
+            reason:
+               type: string
+               nullable: true
+            course:
+               type: integer
+               description: From 1 to 4
+            studyForm:
+               $ref: '#/components/schemas/StudyFormEnum'
+            studyYear:
+               type: string
+            type:
+               $ref: '#/components/schemas/RupTypeEnum'
+            totalHours:
+               type: integer
+            contacts:
+               type: array
+               items:
+                  $ref: '#/components/schemas/User'
+            groups:
+               type: array
+               items:
+                  $ref: '#/components/schemas/Group'
+            methodist:
+               $ref: '#/components/schemas/User'
+            teacher:
+               $ref: '#/components/schemas/User'
+            explorationNote:
+               $ref: '#/components/schemas/ExplorationNote'
+            disciplines:
+               type: array
+               items:
+                  $ref: '#/components/schemas/Discipline'
+            created_at:
+               type: string
+               format: date-time
+            updated_at:
+               type: string
+               format: date-time
+
+      # --- INPUT SCHEMAS (For POST/PUT bodies) ---
+
+      # RUP Create Input (Deeply nested as per example)
+      RupInput:
+         type: object
+         required: [name, code, type, studyYear, course, studyForm]
+         properties:
+            name:
+               type: string
+            code:
+               type: string
+            type:
+               $ref: '#/components/schemas/RupTypeEnum'
+            studyYear:
+               type: string
+            course:
+               type: integer
+            studyForm:
+               $ref: '#/components/schemas/StudyFormEnum'
+            contacts:
+               type: array
+               items:
+                  type: object
+                  properties:
+                     keycloak_id: { type: string, format: uuid }
+            groups:
+               type: array
+               items:
+                  type: object
+                  properties:
+                     keycloak_id: { type: string, format: uuid }
+            methodist:
+               type: object
+               properties:
+                  keycloak_id: { type: string, format: uuid }
+            teacher:
+               type: object
+               properties:
+                  keycloak_id: { type: string, format: uuid }
+            explorationNote:
+               type: object # Simplified inline definition for creation
+               properties:
+                  basis: { type: string }
+                  goals: { type: string }
+                  competencies: { type: string }
+                  prerequisites: { type: string }
+                  postrequisites: { type: string }
+                  internetResources:
+                     type: array
+                     items:
+                        type: object
+                        properties:
+                           value: { type: string }
+                           link: { type: string }
+                  technicalResources:
+                     type: array
+                     items:
+                        type: object
+                        properties:
+                           value: { type: string }
+                           link: { type: string }
+            disciplines:
+               type: array
+               items:
+                  type: object
+                  properties:
+                     name: { type: string }
+                     code: { type: string }
+                     semesters:
+                        type: array
+                        items:
+                           type: object
+                           properties:
+                              semester: { type: integer }
+                              totalHours: { type: integer }
+                     topics:
+                        type: array
+                        items:
+                           type: object
+                           properties:
+                              name: { type: string }
+                              type: { $ref: '#/components/schemas/TopicTypeEnum' }
+                              totalHours: { type: integer }
+                              theoryHours: { type: integer }
+                              practiceHours: { type: integer }
+
+      # Meta Pagination
+      PaginationMeta:
+         type: object
+         properties:
+            total: { type: integer }
+            page: { type: integer }
+            limit: { type: integer }
+            pages: { type: integer }
+
+      # Error
+      ErrorResponse:
+         type: object
+         properties:
+            error:
+               type: string
+
+   # --- PATHS ---
+paths:
+   # === AUTH ===
+   /login:
+      get:
+         tags: [Auth]
+         summary: Redirect to Keycloak
+         responses:
+            '302':
+               description: Redirect to Keycloak login
+
+   /callback:
+      get:
+         tags: [Auth]
+         summary: Keycloak callback
+         responses:
+            '302':
+               description: Redirect to frontend with SID
+
+   /logout:
+      get:
+         tags: [Auth]
+         summary: Logout
+         security:
+            - BearerAuth: []
+         responses:
+            '200':
+               description: Successfully logged out
+               content:
+                  application/json:
+                     example: { 'result': 'successfully logged out' }
+
+   # === USERS ===
+   /users/me:
+      get:
+         tags: [Users]
+         summary: Get current user
+         security:
+            - BearerAuth: []
+         responses:
+            '200':
+               description: User profile
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/User'
+            '401':
+               description: Invalid token
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+
+   /users:
+      get:
+         tags: [Users]
+         summary: Get all users
+         security:
+            - BearerAuth: []
+         parameters:
+            - name: page
+              in: query
+              schema: { type: integer, default: 1 }
+            - name: limit
+              in: query
+              schema: { type: integer, default: 10 }
+            - name: search
+              in: query
+              schema: { type: string }
+            - name: roles
+              in: query
+              schema:
+                 type: array
+                 items:
+                    $ref: '#/components/schemas/RoleEnum'
+         responses:
+            '200':
+               description: List of users
+               content:
+                  application/json:
+                     schema:
+                        type: object
+                        properties:
+                           data:
+                              type: array
+                              items:
+                                 $ref: '#/components/schemas/User'
+                           meta:
+                              $ref: '#/components/schemas/PaginationMeta'
+
+   /users/{id}:
+      get:
+         tags: [Users]
+         security:
+            - BearerAuth: []
+         parameters:
+            - name: id
+              in: path
+              required: true
+              schema: { type: string, format: uuid }
+         responses:
+            '200':
+               description: User details
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/User'
+      put:
+         tags: [Users]
+         security:
+            - BearerAuth: []
+         parameters:
+            - name: id
+              in: path
+              required: true
+              schema: { type: string, format: uuid }
+         requestBody:
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        email: { type: string }
+                        username: { type: string }
+                        firstName: { type: string }
+                        lastName: { type: string }
+                        phone: { type: string }
+                        roles:
+                           type: array
+                           items:
+                              $ref: '#/components/schemas/RoleEnum'
+         responses:
+            '200':
+               description: Updated user
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/User'
+
+   # === GROUPS ===
+   /groups:
+      get:
+         tags: [Groups]
+         security:
+            - BearerAuth: []
+         parameters:
+            - name: page
+              in: query
+              schema: { type: integer, default: 1 }
+            - name: limit
+              in: query
+              schema: { type: integer, default: 10 }
+            - name: search
+              in: query
+              schema: { type: string }
+            - name: specialty
+              in: query
+              schema: { type: string }
+         responses:
+            '200':
+               description: List of groups
+               content:
+                  application/json:
+                     schema:
+                        type: object
+                        properties:
+                           data:
+                              type: array
+                              items:
+                                 $ref: '#/components/schemas/Group'
+                           meta:
+                              $ref: '#/components/schemas/PaginationMeta'
+
+   /groups/{id}:
+      get:
+         tags: [Groups]
+         security:
+            - BearerAuth: []
+         parameters:
+            - name: id
+              in: path
+              required: true
+              schema: { type: string, format: uuid }
+         responses:
+            '200':
+               description: Group details
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/Group'
+      put:
+         tags: [Groups]
+         security:
+            - BearerAuth: []
+         parameters:
+            - name: id
+              in: path
+              required: true
+              schema: { type: string, format: uuid }
+         requestBody:
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        qualification: { type: string }
+                        specialty: { type: string }
+         responses:
+            '200':
+               description: Updated group
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/Group'
+
+   # === RUPs ===
+   /rups:
+      get:
+         tags: [RUPs]
+         summary: Get list of RUPs
+         security:
+            - BearerAuth: []
+         parameters:
+            - name: page
+              in: query
+              schema: { type: integer, default: 1 }
+            - name: limit
+              in: query
+              schema: { type: integer, default: 10 }
+            - name: dateFrom
+              in: query
+              schema: { type: string }
+            - name: search
+              in: query
+              schema: { type: string }
+            - name: status
+              in: query
+              explode: true
+              schema:
+                 type: array
+                 items:
+                    $ref: '#/components/schemas/StatusEnum'
+            - name: type
+              in: query
+              explode: true
+              schema:
+                 type: array
+                 items:
+                    $ref: '#/components/schemas/RupTypeEnum'
+            # Add other filters (studyForm, studyYear, etc.) here
+         responses:
+            '200':
+               description: Filtered RUPs
+               content:
+                  application/json:
+                     schema:
+                        type: object
+                        properties:
+                           data:
+                              type: array
+                              items:
+                                 $ref: '#/components/schemas/Rup'
+                           meta:
+                              $ref: '#/components/schemas/PaginationMeta'
+
+      post:
+         tags: [RUPs]
+         summary: Create RUP
+         security:
+            - BearerAuth: []
+         requestBody:
+            required: true
+            content:
+               application/json:
+                  schema:
+                     $ref: '#/components/schemas/RupInput'
+         responses:
+            '200':
+               description: Created RUP
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/Rup'
+            '400':
+               description: Invalid data
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/ErrorResponse'
+
+   /rups/{id}:
+      parameters:
+         - name: id
+           in: path
+           required: true
+           schema: { type: string, format: uuid }
+      get:
+         tags: [RUPs]
+         security:
+            - BearerAuth: []
+         responses:
+            '200':
+               description: RUP Detail
+               content:
+                  application/json:
+                     schema:
+                        $ref: '#/components/schemas/Rup'
+            '404':
+               description: Invalid UUID or not found
+      put:
+         tags: [RUPs]
+         summary: Update RUP (Admin/Teacher self)
+         security:
+            - BearerAuth: []
+         requestBody:
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        data:
+                           $ref: '#/components/schemas/RupInput'
+         responses:
+            '200':
+               description: Updated RUP
+               content:
+                  application/json:
+                     schema:
+                        type: object
+                        properties:
+                           data:
+                              $ref: '#/components/schemas/Rup'
+      delete:
+         tags: [RUPs]
+         security:
+            - BearerAuth: []
+         responses:
+            '200':
+               description: RUP deleted
+               content:
+                  application/json:
+                     example: { 'result': 'rup deleted successfully' }
+
+   /rups/{id}/update-status:
+      put:
+         tags: [RUPs]
+         security:
+            - BearerAuth: []
+         parameters:
+            - name: id
+              in: path
+              required: true
+              schema: { type: string, format: uuid }
+         requestBody:
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        status:
+                           $ref: '#/components/schemas/StatusEnum'
+         responses:
+            '200':
+               description: Status updated
+               content:
+                  application/json:
+                     example: { 'result': 'rup status updated successfully' }
+
+   # === Awards (Simplified structure example) ===
+   /awards:
+      post:
+         tags: [Awards]
+         security:
+            - BearerAuth: []
+         requestBody:
+            content:
+               application/json:
+                  schema:
+                     type: object
+                     properties:
+                        user_id: { type: string, format: uuid }
+                        discipline_id: { type: string, format: uuid }
+                        score: { type: integer }
+         responses:
+            '200':
+               description: Award created

@@ -1,5 +1,7 @@
 # entities
 
+entities
+
 ## table users
 
 ```
@@ -38,6 +40,7 @@
 ```
 -  id: uuid, not null, primary key
 -  name: text, not null
+-  code: text, not null
 -  status: text, enum:[DRAFT, IN_REVIEW, APPROVED, REJECTED]
 -  reason: text
 -  course: int, not null // from 1 to 4

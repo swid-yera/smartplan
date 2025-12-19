@@ -1,6 +1,6 @@
 # endpoint
 
-endpoint for backend
+endpoint
 
 ## auth
 
@@ -18,9 +18,35 @@ endpoint for keycloak to get tokens data from query parameters. then will set to
 
 delete the cookie, then send request to logout from keycloak to delete existing active tokens
 
-### GET `/me`
+**headers**
 
-get data about me
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**response status 200**
+
+```json
+{
+	"result": "successfully logged out"
+}
+```
+
+**response status 300**
+
+```json
+{
+	"error": "invalid token"
+}
+```
+
+## users
+
+get all, get by id, update endpoints
+
+### GET `users/me`
+
+return data about you, define user via sid token
 
 **headers**
 
@@ -35,8 +61,8 @@ get data about me
 	"keycloak_id": "ads3-23fd-aeff-123s",
 	"email": "example@example.com",
 	"username": "theUserName2",
-	"first_name": "Dimon",
-	"last_name": "Lupink",
+	"first_name": "Chelsea",
+	"last_name": "Nicolas",
 	"phone": "+77001234567", // string | null
 	// roles Teachers, Methodists, Admins
 	"roles": ["Teachers", "Methodists", "Admins"]
@@ -51,10 +77,6 @@ get data about me
 }
 ```
 
-## users
-
-get, update, delete endpoints
-
 ### GET `/users`
 
 get all users
@@ -67,37 +89,53 @@ get all users
 
 **query parameters**
 
-| key   | value | default value |
-| ----- | ----- | ------------- |
-| page  | int   | 1             |
-| limit | int   | 10            |
+| key    | value     | default value | description                                 |
+| ------ | --------- | ------------- | ------------------------------------------- |
+| page   | int       | 1             |                                             |
+| limit  | int       | 10            |                                             |
+| search | string    | ""            | firstName, lastName, email, username, phone |
+| roles  | rolesEnum | []            |                                             |
+
+**enums**
+
+| name      | values                         |
+| --------- | ------------------------------ |
+| rolesEnum | [Teachers, Methodists, Admins] |
 
 **response status 200**
 
 ```json
-[
-	{
-		"keycloak_id": "ads3-23fd-aeff-123s",
-		"email": "example@example.com",
-		"username": "theUserName2",
-		"first_name": "Kirill",
-		"last_name": "Lupink",
-		"phone": "+77001234567", // string | null
-		// roles Teachers, Methodists, Admins
-		"roles": ["Methodists"]
-	},
-	{
-		"keycloak_id": "ads3-23fd-aeff-123s",
-		"email": "example@example.com",
-		"username": "theUserName2",
-		"first_name": "Kirill",
-		"last_name": "Lupink",
-		"phone": "+77001234567", // string | null
-		// roles Teachers, Methodists, Admins
-		"roles": ["Teachers"]
-	},
-	...
-]
+{
+	"data": [
+		{
+			"keycloak_id": "ads3-23fd-aeff-123s",
+			"email": "example@example.com",
+			"username": "theUserName2",
+			"first_name": "Julien",
+			"last_name": "Johnston",
+			"phone": "+77001234567", // string | null
+			// roles Teachers, Methodists, Admins
+			"roles": ["Methodists"]
+		},
+		{
+			"keycloak_id": "ads3-23fd-aeff-123s",
+			"email": "example@example.com",
+			"username": "theUserName2",
+			"first_name": "Norris",
+			"last_name": "Green",
+			"phone": "+77001234567", // string | null
+			// roles Teachers, Methodists, Admins
+			"roles": ["Teachers"]
+		},
+		...
+	],
+	"meta": {
+		"total": 7,
+		"page": 1,
+		"limit": 10,
+		"pages": 1
+	}
+}
 ```
 
 **response status 300**
@@ -110,7 +148,7 @@ get all users
 
 ### GET `/users/:id`
 
-get user by id
+get user by id in url
 
 **headers**
 
@@ -125,8 +163,8 @@ get user by id
 	"keycloak_id": "ads3-23fd-aeff-123s",
 	"email": "example@example.com",
 	"username": "theUserName2",
-	"first_name": "Kirill",
-	"last_name": "Lupink",
+	"first_name": "Eva",
+	"last_name": "Crooks",
 	"phone": "+77001234567", // string | null
 	// roles Teachers, Methodists, Admins
 	"roles": ["Methodists"]
@@ -143,7 +181,17 @@ get user by id
 
 ### PUT `/users/:id`
 
-update user by id, only admin can update
+update user by id
+
+**permissions**
+
+| field     | TEACHER | METHODIST | ADMIN |
+| --------- | ------- | --------- | ----- |
+| email     | self    | self      | any   |
+| firstName | self    | self      | any   |
+| lastName  | self    | self      | any   |
+| phone     | self    | self      | any   |
+| roles     | no      | no        | any   |
 
 **headers**
 
@@ -157,11 +205,10 @@ update user by id, only admin can update
 {
 	"email": "example@example.com",
 	"username": "theUserName2",
-	"first_name": "bogdan", // change name to bogdan
-	"last_name": "lupink",
-	"phone": "+77001234567", // string | null
-	// roles Teachers, Methodists, Admins
-	"roles": ["Teachers", "Methodists", "Admins"]
+	"firstName": "Valerie",
+	"lastName": "Parisian",
+	"phone": "+77001234567",
+	"roles": ["Methodists", "Admins"]
 }
 ```
 
@@ -172,11 +219,10 @@ update user by id, only admin can update
 	"keycloak_id": "ads3-23fd-aeff-123s",
 	"email": "example@example.com",
 	"username": "theUserName2",
-	"first_name": "bogdan",
-	"last_name": "Lupink",
-	"phone": "+77001234567", // string | null
-	// roles Teachers, Methodists, Admins
-	"roles": ["Teachers", "Methodists", "Admins"]
+	"first_name": "Valerie",
+	"last_name": "Parisian",
+	"phone": "+77001234567",
+	"roles": ["Methodists", "Admins"]
 }
 ```
 
@@ -190,7 +236,8 @@ update user by id, only admin can update
 
 ## groups
 
-get endpoint
+get all, get by id and update group information
+without delete and create
 
 ### GET `/groups`
 
@@ -204,12 +251,37 @@ get all groups from keycloak
 
 **query parameters**
 
-| key   | value | default value |
-| ----- | ----- | ------------- |
-| page  | int   | 1             |
-| limit | int   | 10            |
+| key           | value  | default value |
+| ------------- | ------ | ------------- |
+| page          | int    | 1             |
+| limit         | int    | 10            |
+| search        | string | groupName     |
+| specialty     | string | ""            |
+| qualification | string | ""            |
+
+```json
+{
+	"data": [
+		{
+			"keycloak_id": "ads3-23fd-aeff-123s",
+			"name": "WEB25-1B",
+			"qualification": "4S06130105 \"Техник информационных систем\"",
+			"specialty": "06130100 \"Программное обеспечение\""
+		},
+		...
+	],
+	"meta": {
+		"total": 7,
+		"page": 1,
+		"limit": 10,
+		"pages": 1
+	}
+}
+```
 
 ### GET `/groups/:id`
+
+get group information by id in url
 
 **headers**
 
@@ -221,6 +293,7 @@ get all groups from keycloak
 
 ```json
 {
+	"keycloak_id": "ads3-23fd-aeff-123s",
 	"name": "WEB25-1B",
 	"qualification": "4S06130105 "Техник информационных систем"",
 	"specialty": "06130100 "Программное обеспечение""
@@ -239,6 +312,14 @@ get all groups from keycloak
 
 update group by id, only admin can update
 
+**permissions**
+
+| field         | TEACHER | METHODIST | ADMIN |
+| ------------- | ------- | --------- | ----- |
+| name          | no      | no        | no    |
+| qualification | no      | yes       | yes   |
+| specialty     | no      | yes       | yes   |
+
 **headers**
 
 | key           | value          |
@@ -249,7 +330,6 @@ update group by id, only admin can update
 
 ```json
 {
-	"name": "WEB25-1B",
 	"qualification": "4S06130105 "Техник информационных систем"",
 	"specialty": "06130100 "Программное обеспечение""
 }
@@ -259,9 +339,10 @@ update group by id, only admin can update
 
 ```json
 {
+	"keycloak_id": "ads3-23fd-aeff-123s",
 	"name": "WEB25-1B",
-	"qualification": "4S06130105 "Техник информационных систем"",
-	"specialty": "06130100 "Программное обеспечение""
+	"qualification": "4S06130105 \"Техник информационных систем\"",
+	"specialty": "06130100 \"Программное обеспечение\""
 }
 ```
 
@@ -275,237 +356,38 @@ update group by id, only admin can update
 
 ## RUPs
 
-post, get, update, delete endpoints
+get all, get by id, create, update and delete endpoints for rup
 
-### POST `/rups/create`
+### big data
 
-create rup
+here collected RUP big data, in endpoints will be anchor to here
 
-**headers**
+#### contacts
 
-| key           | value          |
-| ------------- | -------------- |
-| Authorization | Bearer <token> |
-
-**request body**
-
-````json
-
-**response status 200**
+contacts is massive of users
 
 ```json
-{
-	"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-	"name": "name",
-	"status": "DRAFT",
-	"type": "PRACTICE",
-	"study_year": "2025",
-	"studyForm": "CORRESPONDENCE",
-	"explorationNote": "Аннотация: Краткое описание дисциплины, её целей и задач, указывающее на значение предмета в подготовке специалиста. Дисциплина формирует базовые практические навыки и теоретические знания, необходимые для работы с информационными системами.",
-	"goals": "Цели и задачи: Формирование у студентов знаний о структуре информационных систем, навыков проектирования и администрирования; развитие умений анализа требований, разработки простых приложений и их тестирования.",
-	"prerequisites": "Основы программирования",
-	"postrequisites": "Базы данных",
-	"groupId": {
-		"keycloak_id": 2134,
-		"name": "WEB25",
-		"specialty": "06130100 \"Программное обеспечение\"",
-		"qualification": "3W06130102 \"Web-дизайнер\""
+[
+	{
+		"keycloak_id": "ads3a-23fda-aeffa-123sa",
+		"email": "money_optical@gmail.com",
+		"username": "money_optical",
+		"first_name": "Bonnie",
+		"last_name": "Price",
+		"phone": "+77001234567",
+		"roles": ["Teachers"]
 	},
-
-	"contacts": [
-		{
-			"name": "",
-			"phone": "+77023741234",
-			"email": "example@asdf.com"
-		}
-	],
-	"internetResources": [
-		{
-			"value": "Хабр статья",
-			"link": "https://habr.com/asdffd" // maybe without
-		}
-	],
-	"technicalResources": [
-		{
-			"value": "psql",
-			"link": ""
-		},
-		...
-	],
-
-	"rupType": "THEORY", // PRACTICE, THEORY
-	"disciplines": [
-		{
-			"code": "РО5.6",
-			"name": "обучение по Postgresql",
-			"totalCredits": 1,
-			"semesters": [
-				{
-					"semester": 1,
-					"credits": 0
-				},
-				...
-				{
-					"semester": 8,
-					"credits": 0
-				}
-			],
-			"topics": [
-				{
-					"name": "начало по работе sql",
-					"type": "COMBINED", // SNZ, PRACTICAL, COMBINED
-					"totalHours": 16,
-					"theoryHours": 8,
-					"practiceHours": 8,
-					"individualHours": 0,
-					"SRSPHours": 0,
-					"SRSHours": 0
-				},
-				...
-			]
-		},
-		{
-			"code": "РО5.7",
-			"name": "Практика Postgresql",
-			"totalCredits": 1,
-			"semesters": [
-				{
-					"semester": 1,
-					"credits": 0
-				},
-				...
-				{
-					"semester": 8,
-					"credits": 0
-				}
-			],
-			"topics": [
-				{
-					"name": "Что такое Left и Right join",
-					"type": "SNZ", // SNZ, PRACTICAL, COMBINED
-					"totalHours": 24,
-					"theoryHours": 12,
-					"practiceHours": 12,
-					"individualHours": 0,
-					"SRSPHours": 0,
-					"SRSHours": 0
-				},
-				...
-			]
-		}
-	]
-}
+	...
+],
 ```
 
-{
-"data": {
-"title": "name",
-"status": "APPROVED",
-"year": "2025-2026",
-"type": "PRACTICE",
-"course": "2",
-"studyForm": "Correspondence",
-"explorationNote": "Аннотация: Краткое описание дисциплины, её целей и задач, указывающее на значение предмета в подготовке специалиста. Дисциплина формирует базовые практические навыки и теоретические знания, необходимые для работы с информационными системами.",
-"goals": "Цели и задачи: Формирование у студентов знаний о структуре информационных систем, навыков проектирования и администрирования; развитие умений анализа требований, разработки простых приложений и их тестирования.",
-"prerequisites": "Основы программирования",
-"postrequisites": "Базы данных",
-"groupId": {
-"keycloak_id": 2134,
-"name": "WEB25",
-"specialty": "06130100 \"Программное обеспечение\"",
-"qualification": "3W06130102 \"Web-дизайнер\""
-},
+####
 
-    	"contacts": [
-    		{
-    			"name": "",
-    			"phone": "+77023741234",
-    			"email": "example@asdf.com"
-    		}
-    	],
-    	"internetResources": [
-    		{
-    			"value": "Хабр статья",
-    			"link": "https://habr.com/asdffd" // maybe without
-    		}
-    	],
-    	"technicalResources": [
-    		{
-    			"value": "psql",
-    			"link": ""
-    		},
-    		...
-    	],
-
-    	"rupType": "THEORY", // PRACTICE, THEORY
-    	"disciplines": [
-    		{
-    			"code": "РО5.6",
-    			"name": "обучение по Postgresql",
-    			"totalCredits": 1,
-    			"semesters": [
-    				{
-    					"semester": 1,
-    					"credits": 0
-    				},
-    				...
-    				{
-    					"semester": 8,
-    					"credits": 0
-    				}
-    			],
-    			"topics": [
-    				{
-    					"name": "начало по работе sql",
-    					"type": "COMBINED", // SNZ, PRACTICAL, COMBINED
-    					"totalHours": 16,
-    					"theoryHours": 8,
-    					"practiceHours": 8,
-    					"individualHours": 0,
-    					"SRSPHours": 0,
-    					"SRSHours": 0
-    				},
-    				...
-    			]
-    		},
-    		{
-    			"code": "РО5.7",
-    			"name": "Практика Postgresql",
-    			"totalCredits": 1,
-    			"semesters": [
-    				{
-    					"semester": 1,
-    					"credits": 0
-    				},
-    				...
-    				{
-    					"semester": 8,
-    					"credits": 0
-    				}
-    			],
-    			"topics": [
-    				{
-    					"name": "Что такое Left и Right join",
-    					"type": "SNZ", // SNZ, PRACTICAL, COMBINED
-    					"totalHours": 24,
-    					"theoryHours": 12,
-    					"practiceHours": 12,
-    					"individualHours": 0,
-    					"SRSPHours": 0,
-    					"SRSHours": 0
-    				},
-    				...
-    			]
-    		}
-    	]
-    }
-
-}
-````
+####
 
 ### GET `/rups`
 
-get rups
+get rups, filter feature in query parameters
 
 **headers**
 
@@ -515,61 +397,163 @@ get rups
 
 **query parameters**
 
-| key    | value                                  | default value                          |
-| ------ | -------------------------------------- | -------------------------------------- |
-| page   | int                                    | 1                                      |
-| limit  | int                                    | 10                                     |
-| status | [DRAFT, IN_REVIEW, APPROVED, REJECTED] | [DRAFT, IN_REVIEW, APPROVED, REJECTED] |
+| key           | value           | default value | description           |
+| ------------- | --------------- | ------------- | --------------------- |
+| page          | int             | 1             |                       |
+| limit         | int             | 10            |                       |
+| dateFrom      | string          | ""            |                       |
+| dateTo        | string          | ""            |                       |
+| search        | string          | ""            | code, name, groupName |
+| status        | statusEnum[]    | []            | enum                  |
+| type          | typeEnum[]      | []            | enum                  |
+| studyForm     | studyFormEnum[] | []            | enum                  |
+| studyYear     | string[]        | []            | example "2025-2026"   |
+| course        | int[]           | []            | from 1 to 4           |
+| specialty     | string[]        | []            | group specialty       |
+| qualification | string[]        | []            | group qualification   |
+| teacher       | string[]        | string[]      | teacher ids massive   |
+| methodist     | string[]        | string[]      | methodist ids massive |
 
-**//enum: [DRAFT, IN_REVIEW, APPROVED, REJECTED]**
+**enums**
+
+| name          | values                                 |
+| ------------- | -------------------------------------- |
+| statusEnum    | [DRAFT, IN_REVIEW, APPROVED, REJECTED] |
+| typeEnum      | [PRACTICE, THEORY]                     |
+| studyFormEnum | [CORRESPONDENCE, FULL_TIME]            |
 
 **response status 200**
 
 ```json
 {
-	"data": {
-		"name": "name",
-		"status": "APPROVED",
-		"reason": "тута записка от методиста, если статус REJECTED",
-		"type": "PRACTICE",
-		"course": "2",
-		"studyForm": "CORRESPONDENCE",
-		"studyYear": "2025-2026",
-		"totalHours": "1488",
+	"data": [
+		{
+			"id": "asd23f-fr5sdv-grv32c-c3rca",
+			"status": "DRAFT",
+			"reason": "",
+			"name": "Ознакомление с SQL",
+			"code": "ПМ6",
+			"type": "PRACTICE",
+			"studyYear": "2025",
+			"course": 2,
+			"studyForm": "CORRESPONDENCE",
+			"totalHours": 72,
 
-		"groups": [
-			{
-			"keycloak_id": 2134,
-			"name": "WEB25",
-			"specialty": "06130100 \"Программное обеспечение\"",
-			"qualification": "3W06130102 \"Web-дизайнер\""
+			"contacts": [
+				{
+					"keycloak_id": "ads3a-23fda-aeffa-123sa",
+					"email": "money_optical@gmail.com",
+					"username": "money_optical",
+					"first_name": "Bonnie",
+					"last_name": "Price",
+					"phone": "+77001234567",
+					"roles": ["Teachers"]
+				},
+				...
+			],
+			"groups": [
+				{
+					"keycloak_id": "da244-c0014-5f629-46f15",
+					"name": "WEB25",
+					"specialty": "06130100 \"Программное обеспечение\"",
+					"qualification": "3W06130102 \"Web-дизайнер\""
+				},
+				...
+			],
+			"methodist": {
+				"keycloak_id": "ads3a-23fda-aeffa-123sa",
+				"email": "Kaitlin.Weimann25@yahoo.com",
+				"username": "Hobart.Koch",
+				"first_name": "Laverne",
+				"last_name": "Hayes",
+				"phone": "+77001234567",
+				"roles": ["Methodists"]
 			},
-			...
-		],
-		"methodist":{
-			"email": "example@example.com",
-			"username": "theUserName2",
-			"first_name": "bogdan", // change name to bogdan
-			"last_name": "lupink",
-			"phone": "+77001234567", // string | null
-			// roles Teachers, Methodists, Admins
-			"roles": ["Teachers", "Methodists", "Admins"]
+			"teacher": {
+				"keycloak_id": "ads3a-23fda-aeffa-123sa",
+				"email": "Kaitlin.Weimann25@yahoo.com",
+				"username": "Hobart.Koch",
+				"first_name": "Laverne",
+				"last_name": "Hayes",
+				"phone": "+77001234567",
+				"roles": ["Teacher"]
+			},
+
+			"explorationNote": {
+				"id": "asd23f-fr5sdv-grv32c-c3rca",
+				"basis": "Краткое описание дисциплины,...",
+				"goals": "Формирование у студентов знаний о...",
+				"competencies": "Владеть методами и средствами...",
+
+				"prerequisites": "ПМ5 ...",
+				"postrequisites": "ПМ7 ...",
+
+				"internetResources": [
+					{
+						"id": "asd23f-fr5sdv-grv32c-c3rca",
+						"value": "Книга о SQL",
+						"link": "https://habr.com/asdffd"
+					}
+				],
+				"technicalResources": [
+					{
+						"id": "asd23f-fr5sdv-grv32c-c3rca",
+						"value": "Open Source инструменты",
+						"link": ""
+					},
+					...
+				],
+			},
+
+			"disciplines": [
+				{
+					"id": "asd23f-fr5sdv-grv32c-c3rca",
+					"name": "Проводить мониторинг сетевой...",
+					"code": "РО6.1",
+					"totalHours": 72,
+
+					"semesters": [
+						{
+							"id": "asd23f-fr5sdv-grv32c-c3rca",
+							"semester": 1,
+							"totalHours": 0
+						},
+						...
+						{
+							"id": "asd23f-fr5sdv-grv32c-c3rca",
+							"semester": 8,
+							"totalHours": 72,
+						}
+					],
+					"topics": [
+						{
+							"id": "asd23f-fr5sdv-grv32c-c3rca",
+							"name": "Использует понятия...",
+							"type": "COMBINED",
+
+							"totalHours": 2,
+							"theoryHours": 2,
+							"practiceHours": 0,
+							"individualHours": 0,
+							"srspHours": 0,
+							"srsHours": 0
+						},
+						...
+					]
+					...
+				},
+
+				"created_at": "1766097497072",
+				"updated_at": "1766097501201"
+			]
 		},
-
-		"teacher": {
-			"email": "example@example.com",
-			"username": "theUserName2",
-			"first_name": "bogdan", // change name to bogdan
-			"last_name": "lupink",
-			"phone": "+77001234567", // string | null
-			// roles Teachers, Methodists, Admins
-			"roles": ["Teachers", "Methodists", "Admins"]
-		},
-
-		
-
-		"createdAt": "20251212",
-		"updatedAt": "20251218"
+		...
+	],
+	"meta": {
+		"total": 7,
+		"page": 1,
+		"limit": 10,
+		"pages": 1
 	}
 }
 ```
@@ -588,148 +572,124 @@ get rup by id
 
 ```json
 {
-	"data": {
-		"title": "name",
-		"status": "APPROVED",
-		"reason": "тута записка от методиста, если статус REJECTED",
-		"type": "PRACTICE",
-		"course": "2",
-		"studyForm": "CORRESPONDENCE",
-		"studyYear": "2025-2026",
-		"totalHours": "1488",
+	"id": "asd23f-fr5sdv-grv32c-c3rca",
+	"status": "DRAFT",
+	"reason": "",
+	"name": "Ознакомление с SQL",
+	"code": "ПМ6",
+	"type": "PRACTICE",
+	"studyYear": "2025",
+	"course": 2,
+	"studyForm": "CORRESPONDENCE",
+	"totalHours": 72,
 
-		"contacts": [
-			{
-			"email": "example@example.com",
-			"username": "theUserName2",
-			"first_name": "bogdan", // change name to bogdan
-			"last_name": "lupink",
-			"phone": "+77001234567", // string | null
-			// roles Teachers, Methodists, Admins
-			"roles": ["Teachers", "Methodists", "Admins"]
-			},
-			...
-		],
-		"groups": [
-			{
-			"keycloak_id": 2134,
+	"contacts": [
+		{
+			"keycloak_id": "ads3a-23fda-aeffa-123sa",
+			"email": "money_optical@gmail.com",
+			"username": "money_optical",
+			"first_name": "Bonnie",
+			"last_name": "Price",
+			"phone": "+77001234567",
+			"roles": ["Teachers"]
+		},
+		...
+	],
+	"groups": [
+		{
+			"keycloak_id": "da244-c0014-5f629-46f15",
 			"name": "WEB25",
 			"specialty": "06130100 \"Программное обеспечение\"",
 			"qualification": "3W06130102 \"Web-дизайнер\""
+		},
+		...
+	],
+	"methodist": {
+		"keycloak_id": "ads3a-23fda-aeffa-123sa",
+		"email": "Kaitlin.Weimann25@yahoo.com",
+		"username": "Hobart.Koch",
+		"first_name": "Laverne",
+		"last_name": "Hayes",
+		"phone": "+77001234567",
+		"roles": ["Methodists"]
+	},
+	"teacher": {
+		"keycloak_id": "ads3a-23fda-aeffa-123sa",
+		"email": "Kaitlin.Weimann25@yahoo.com",
+		"username": "Hobart.Koch",
+		"first_name": "Laverne",
+		"last_name": "Hayes",
+		"phone": "+77001234567",
+		"roles": ["Teacher"]
+	},
+
+	"explorationNote": {
+		"id": "asd23f-fr5sdv-grv32c-c3rca",
+		"basis": "Краткое описание дисциплины,...",
+		"goals": "Формирование у студентов знаний о...",
+		"competencies": "Владеть методами и средствами...",
+
+		"prerequisites": "ПМ5 ...",
+		"postrequisites": "ПМ7 ...",
+
+		"internetResources": [
+			{
+				"id": "asd23f-fr5sdv-grv32c-c3rca",
+				"value": "Книга о SQL",
+				"link": "https://habr.com/asdffd"
+			}
+		],
+		"technicalResources": [
+			{
+				"id": "asd23f-fr5sdv-grv32c-c3rca",
+				"value": "Open Source инструменты",
+				"link": ""
 			},
 			...
 		],
-		"methodist":{
-			"email": "example@example.com",
-			"username": "theUserName2",
-			"first_name": "bogdan", // change name to bogdan
-			"last_name": "lupink",
-			"phone": "+77001234567", // string | null
-			// roles Teachers, Methodists, Admins
-			"roles": ["Teachers", "Methodists", "Admins"]
-		},
+	},
 
-		"teacher": {
-			"email": "example@example.com",
-			"username": "theUserName2",
-			"first_name": "bogdan", // change name to bogdan
-			"last_name": "lupink",
-			"phone": "+77001234567", // string | null
-			// roles Teachers, Methodists, Admins
-			"roles": ["Teachers", "Methodists", "Admins"]
-		},
+	"disciplines": [
+		{
+			"id": "asd23f-fr5sdv-grv32c-c3rca",
+			"name": "Проводить мониторинг сетевой...",
+			"code": "РО6.1",
+			"totalHours": 72,
 
-		"explorationNote": {
-			"id": "20251212",
-			"basis": "lorem",
-			"goals": "lorem",
-			"summary": "",
-			"competencies": "",
-			
-			"prerequisites": "",
-			"prerequisites": "",
-
-			"internetResources": [
-				{ 
-					"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-					"name": "kak svarit mef", 
-					"link": "loxotron.com"
+			"semesters": [
+				{
+					"id": "asd23f-fr5sdv-grv32c-c3rca",
+					"semester": 1,
+					"totalHours": 0
 				},
 				...
+				{
+					"id": "asd23f-fr5sdv-grv32c-c3rca",
+					"semester": 8,
+					"totalHours": 72,
+				}
 			],
-			"technicalResources": [
-				{ 
-					"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-					"name": "kak svarit mef", 
-					"link": "loxotron.com"
+			"topics": [
+				{
+					"id": "asd23f-fr5sdv-grv32c-c3rca",
+					"name": "Использует понятия...",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
 				},
 				...
-			],
+			]
+			...
 		},
-		"disciplines": [
-			{
-				"code": "РО5.6",
-				"name": "обучение по Postgresql",
-				"totalCredits": 1,
-				"semesters": [
-					{
-						"semester": 1,
-						"credits": 0
-					},
-					...
-					{
-						"semester": 8,
-						"credits": 0
-					}
-				],
-				"topics": [
-					{
-						"name": "начало по работе sql",
-						"type": "COMBINED", // SNZ, PRACTICAL, COMBINED
-						"totalHours": 16,
-						"theoryHours": 8,
-						"practiceHours": 8,
-						"individualHours": 0,
-						"SRSPHours": 0,
-						"SRSHours": 0
-					},
-					...
-				]
-			},
-			{
-				"code": "РО5.7",
-				"name": "Практика Postgresql",
-				"totalCredits": 1,
-				"semesters": [
-					{
-						"semester": 1,
-						"credits": 0
-					},
-					...
-					{
-						"semester": 8,
-						"credits": 0
-					}
-				],
-				"topics": [
-					{
-						"name": "Что такое Left и Right join",
-						"type": "SNZ", // SNZ, PRACTICAL, COMBINED
-						"totalHours": 24,
-						"theoryHours": 12,
-						"practiceHours": 12,
-						"individualHours": 0,
-						"SRSPHours": 0,
-						"SRSHours": 0
-					},
-					...
-				]
-			}
-		],
 
-		"createdAt": "20251212",
-		"updatedAt": "20251218"
-	}
+		"created_at": "1766097497072",
+		"updated_at": "1766097501201"
+	]
 }
 ```
 
@@ -741,17 +701,272 @@ get rup by id
 }
 ```
 
+### POST `/rups`
+
+create rup, for creation needed a lot of data
+
+**permissions**
+
+| field      | TEACHER | METHODIST | ADMIN |
+| ---------- | ------- | --------- | ----- |
+| permission | yes     | no        | yes   |
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"name": "Ознакомление с SQL",
+	"code": "ПМ6",
+	"type": "PRACTICE",
+	"studyYear": "2025",
+	"course": 2,
+	"studyForm": "CORRESPONDENCE",
+
+	"contacts": [
+		{
+			"keycloak_id": "ads3a-23fda-aeffa-123sa",
+		},
+		...
+	],
+	"groups": [
+		{
+			"keycloak_id": "da244-c0014-5f629-46f15",
+		},
+		...
+	],
+	"methodist": {
+		"keycloak_id": "ads3a-23fda-aeffa-123sa",
+	},
+	"teacher": {
+		"keycloak_id": "ads3a-23fda-aeffa-123sa",
+	},
+
+	"explorationNote": {
+		"basis": "Краткое описание дисциплины,...",
+		"goals": "Формирование у студентов знаний о...",
+		"competencies": "Владеть методами и средствами...",
+
+		"prerequisites": "ПМ5...",
+		"postrequisites": "ПМ7...",
+
+		"internetResources": [
+			{
+				"value": "Книга о SQL",
+				"link": "https://habr.com/asdffd"
+			}
+		],
+		"technicalResources": [
+			{
+				"value": "Open Source инструменты",
+				"link": ""
+			},
+			...
+		],
+	},
+
+	"disciplines": [
+		{
+			"name": "Проводить мониторинг сетевой...",
+			"code": "РО6.1",
+
+			"semesters": [
+				{
+					"semester": 1,
+					"totalHours": 0
+				},
+				...
+				{
+					"semester": 8,
+					"totalHours": 72
+				}
+			],
+			"topics": [
+				{
+					"name": "Использует понятия...",
+					"type": "COMBINED",
+
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				...
+			]
+		},
+		{
+			"name": "Администрировать процесс управления...",
+			"code": "РО6.2",
+			"totalCredits": 1,
+			"semesters": [
+				{
+					"semester": 1,
+					"totalHours": 0
+				},
+				...
+				{
+					"semester": 8,
+					"totalHours": 48
+				}
+			],
+			"topics": [
+				{
+					"name": "Использует понятия...",
+					"type": "COMBINED",
+
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				...
+			]
+		}
+	]
+}
+```
+
+**response status 200**
+
+```json
+{
+	"id": "asd23f-fr5sdv-grv32c-c3rca",
+	"status": "DRAFT",
+	"reason": "",
+	"name": "Ознакомление с SQL",
+	"code": "ПМ6",
+	"type": "PRACTICE",
+	"studyYear": "2025",
+	"course": 2,
+	"studyForm": "CORRESPONDENCE",
+	"totalHours": 72,
+
+	"contacts": [
+		{
+			"keycloak_id": "ads3a-23fda-aeffa-123sa",
+			"email": "money_optical@gmail.com",
+			"username": "money_optical",
+			"first_name": "Bonnie",
+			"last_name": "Price",
+			"phone": "+77001234567",
+			"roles": ["Teachers"]
+		},
+		...
+	],
+	"groups": [
+		{
+			"keycloak_id": "da244-c0014-5f629-46f15",
+			"name": "WEB25",
+			"specialty": "06130100 \"Программное обеспечение\"",
+			"qualification": "3W06130102 \"Web-дизайнер\""
+		},
+		...
+	],
+	"methodist": {
+		"keycloak_id": "ads3a-23fda-aeffa-123sa",
+		"email": "Kaitlin.Weimann25@yahoo.com",
+		"username": "Hobart.Koch",
+		"first_name": "Laverne",
+		"last_name": "Hayes",
+		"phone": "+77001234567",
+		"roles": ["Methodists"]
+	},
+	"teacher": {
+		"keycloak_id": "ads3a-23fda-aeffa-123sa",
+		"email": "Kaitlin.Weimann25@yahoo.com",
+		"username": "Hobart.Koch",
+		"first_name": "Laverne",
+		"last_name": "Hayes",
+		"phone": "+77001234567",
+		"roles": ["Teacher"]
+	},
+
+	"explorationNote": {
+		"id": "asd23f-fr5sdv-grv32c-c3rca",
+		"basis": "Краткое описание дисциплины,...",
+		"goals": "Формирование у студентов знаний о...",
+		"competencies": "Владеть методами и средствами...",
+
+		"prerequisites": "ПМ5 ...",
+		"postrequisites": "ПМ7 ...",
+
+		"internetResources": [
+			{
+				"id": "asd23f-fr5sdv-grv32c-c3rca",
+				"value": "Книга о SQL",
+				"link": "https://habr.com/asdffd"
+			}
+		],
+		"technicalResources": [
+			{
+				"id": "asd23f-fr5sdv-grv32c-c3rca",
+				"value": "Open Source инструменты",
+				"link": ""
+			},
+			...
+		],
+	},
+
+	"disciplines": [
+		{
+			"id": "asd23f-fr5sdv-grv32c-c3rca",
+			"name": "Проводить мониторинг сетевой...",
+			"code": "РО6.1",
+			"totalHours": 72,
+
+			"semesters": [
+				{
+					"id": "asd23f-fr5sdv-grv32c-c3rca",
+					"semester": 1,
+					"totalHours": 0
+				},
+				...
+				{
+					"id": "asd23f-fr5sdv-grv32c-c3rca",
+					"semester": 8,
+					"totalHours": 72,
+				}
+			],
+			"topics": [
+				{
+					"id": "asd23f-fr5sdv-grv32c-c3rca",
+					"name": "Использует понятия...",
+					"type": "COMBINED",
+
+					"totalHours": 2,
+					"theoryHours": 2,
+					"practiceHours": 0,
+					"individualHours": 0,
+					"srspHours": 0,
+					"srsHours": 0
+				},
+				...
+			]
+			...
+		},
+
+		"created_at": "1766097497072",
+		"updated_at": "1766097501201"
+	]
+}
+```
+
 ### PUT `/rups/:id`
 
 update rup by id, only admin can update
 
 **permissions**
 
-| role      | conditions                                    |
-| --------- | --------------------------------------------- |
-| TEACHER   | if his rup and status is equal REJECTED/DRAFT |
-| METHODIST | never                                         |
-| ADMIN     | always                                        |
+| field      | TEACHER                                      | METHODIST | ADMIN |
+| ---------- | -------------------------------------------- | --------- | ----- |
+| permission | only self and if status equal REJECTED/DRAFT | never     | any   |
 
 **headers**
 
@@ -820,22 +1035,22 @@ update rup by id, only admin can update
 			"goals": "lorem",
 			"summary": "",
 			"competencies": "",
-			
+
 			"prerequisites": "",
 			"prerequisites": "",
 
 			"internetResources": [
-				{ 
+				{
 					"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-					"name": "kak svarit mef", 
+					"name": "kak svarit mef",
 					"link": "loxotron.com"
 				},
 				...
 			],
 			"technicalResources": [
-				{ 
+				{
 					"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-					"name": "kak svarit mef", 
+					"name": "kak svarit mef",
 					"link": "loxotron.com"
 				},
 				...
@@ -969,22 +1184,22 @@ update rup by id, only admin can update
 			"goals": "lorem",
 			"summary": "",
 			"competencies": "",
-			
+
 			"prerequisites": "",
 			"prerequisites": "",
 
 			"internetResources": [
-				{ 
+				{
 					"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-					"name": "kak svarit mef", 
+					"name": "kak svarit mef",
 					"link": "loxotron.com"
 				},
 				...
 			],
 			"technicalResources": [
-				{ 
+				{
 					"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-					"name": "kak svarit mef", 
+					"name": "kak svarit mef",
 					"link": "loxotron.com"
 				},
 				...
@@ -1070,11 +1285,11 @@ update rup by id, only admin can update
 update rup status
 
 **permissions**
-| role      | conditions                        |
+| role | conditions |
 | --------- | --------------------------------- |
-| TEACHER   | from REJECTED, DRAFT to IN_REVIEW |
-| ADMIN     | always                            |
-| METHODIST | all except DRAFT                  |
+| TEACHER | from REJECTED, DRAFT to IN_REVIEW |
+| ADMIN | always |
+| METHODIST | all except DRAFT |
 
 **headers**
 
@@ -1083,6 +1298,7 @@ update rup status
 | Authorization | Bearer <token> |
 
 **request body**
+
 ```json
 {
 	"status": "APPROVED" // enum: [DRAFT, IN_REVIEW, APPROVED, REJECTED]
@@ -1090,6 +1306,7 @@ update rup status
 ```
 
 **response status 300**
+
 ```json
 {
 	"error": "invalid uuid"
@@ -1097,23 +1314,23 @@ update rup status
 ```
 
 **response status 200**
+
 ```json
 {
 	"error": "rup status updated succesfully"
 }
 ```
 
-
 ### DELETE `/rups/:id`
 
 delete rup by id
 
 **permissions**
-| role      | conditions                  |
+| role | conditions |
 | --------- | --------------------------- |
-| TEACHER   | if his rup and status draft |
-| ADMIN     | always                      |
-| METHODIST | never                       |
+| TEACHER | if his rup and status draft |
+| ADMIN | always |
+| METHODIST | never |
 
 **headers**
 
@@ -1130,6 +1347,7 @@ delete rup by id
 ```
 
 **response status 300**
+
 ```
 {
 	"error": "invalid uuid"
@@ -1164,14 +1382,14 @@ create rup exploration note
 		"postrequisites": "",
 
 		"internetResources": [
-			{ 
-				"name": "kak svarit mef", 
+			{
+				"name": "kak svarit mef",
 				"link": "loxotron.com"
 			},
 			...],
 		"technicalResources": [
-			{ 
-				"name": "kak svarit mef", 
+			{
+				"name": "kak svarit mef",
 				"link": "loxotron.com"
 			},
 			...
@@ -1182,7 +1400,7 @@ create rup exploration note
 
 **response status 200**
 
-```json
+````json
 {
 	"data": {
 		"basis": "lorem",
@@ -1194,9 +1412,9 @@ create rup exploration note
 		"postrequisites": "",
 
 		"internetResources": [
-			{ 
+			{
 				"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-				"name": "kak svarit mef", 
+				"name": "kak svarit mef",
 				"link": "loxotron.com"
 			},
 			...
@@ -1204,7 +1422,7 @@ create rup exploration note
 		"technicalResources": [
 			{
 				"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-				"name": "kak svarit mef", 
+				"name": "kak svarit mef",
 				"link": "loxotron.com"
 			},
 			...
@@ -1217,7 +1435,7 @@ create rup exploration note
 {
 	"error": "invalid data"
 }
-```
+````
 
 ### GET `/note/:id`
 
@@ -1230,6 +1448,7 @@ get rup exploration note
 | Authorization | Bearer <token> |
 
 **response status 200**
+
 ```json
 {
 	"basis": "lorem",
@@ -1241,9 +1460,9 @@ get rup exploration note
 	"postrequisites": "",
 
 	"internetResources": [
-		{ 
+		{
 			"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-			"name": "kak svarit mef", 
+			"name": "kak svarit mef",
 			"link": "loxotron.com"
 		},
 		...
@@ -1251,7 +1470,7 @@ get rup exploration note
 	"technicalResources": [
 		{
 			"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-			"name": "kak svarit mef", 
+			"name": "kak svarit mef",
 			"link": "loxotron.com"
 		},
 		...
@@ -1260,6 +1479,7 @@ get rup exploration note
 ```
 
 **response status 300**
+
 ```json
 {
 	"error": "invalid uuid"
@@ -1290,9 +1510,9 @@ update rup exploration note
 		"postrequisites": "",
 
 		"internetResources": [
-		{ 
+		{
 			"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-			"name": "kak svarit mef", 
+			"name": "kak svarit mef",
 			"link": "loxotron.com"
 		},
 		...
@@ -1300,7 +1520,7 @@ update rup exploration note
 	"technicalResources": [
 		{
 			"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-			"name": "kak svarit mef", 
+			"name": "kak svarit mef",
 			"link": "loxotron.com"
 		},
 		...
@@ -1310,6 +1530,7 @@ update rup exploration note
 ```
 
 **response status 200**
+
 ```json
 {
 	"basis": "lorem",
@@ -1321,9 +1542,9 @@ update rup exploration note
 	"postrequisites": "",
 
 	"internetResources": [
-		{ 
+		{
 			"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-			"name": "kak svarit mef", 
+			"name": "kak svarit mef",
 			"link": "loxotron.com"
 		},
 		...
@@ -1331,7 +1552,7 @@ update rup exploration note
 	"technicalResources": [
 		{
 			"id": "098c9b08-8bbb-404d-bbf0-4b8fc5d57801",
-			"name": "kak svarit mef", 
+			"name": "kak svarit mef",
 			"link": "loxotron.com"
 		},
 		...
@@ -1340,6 +1561,7 @@ update rup exploration note
 ```
 
 **response status 300**
+
 ```json
 {
 	"error": "invalid uuid"
@@ -1357,6 +1579,7 @@ delete rup exploration note
 | Authorization | Bearer <token> |
 
 **response status 200**
+
 ```json
 {
 	"error": "note deleted succesfully"
@@ -1364,6 +1587,7 @@ delete rup exploration note
 ```
 
 **response status 300**
+
 ```json
 {
 	"error": "invalid uuid"
@@ -1478,7 +1702,7 @@ update resource
 }
 ```
 
-**responce status 300**
+**response status 300**
 
 ```json
 {
@@ -1504,7 +1728,7 @@ delete resource
 }
 ```
 
-**responce status 300**
+**response status 300**
 
 ```json
 {
@@ -1526,9 +1750,9 @@ delete resource
 
 ```json
 {
-  "name": "PostgreSQL Basics",
-  "code": "DB-101",
-  "total_hours": 72
+	"name": "PostgreSQL Basics",
+	"code": "DB-101",
+	"total_hours": 72
 }
 ```
 
@@ -1536,10 +1760,10 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "name": "PostgreSQL Basics",
-  "code": "DB-101",
-  "total_hours": 72
+	"id": "uuid",
+	"name": "PostgreSQL Basics",
+	"code": "DB-101",
+	"total_hours": 72
 }
 ```
 
@@ -1561,12 +1785,12 @@ delete resource
 
 ```json
 [
-  {
-    "id": "uuid",
-    "name": "PostgreSQL Basics",
-    "code": "DB-101",
-    "total_hours": 72
-  }
+	{
+		"id": "uuid",
+		"name": "PostgreSQL Basics",
+		"code": "DB-101",
+		"total_hours": 72
+	}
 ]
 ```
 
@@ -1588,10 +1812,10 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "name": "PostgreSQL Basics",
-  "code": "DB-101",
-  "total_hours": 72
+	"id": "uuid",
+	"name": "PostgreSQL Basics",
+	"code": "DB-101",
+	"total_hours": 72
 }
 ```
 
@@ -1613,9 +1837,9 @@ delete resource
 
 ```json
 {
-  "name": "PostgreSQL Advanced",
-  "code": "DB-201",
-  "total_hours": 90
+	"name": "PostgreSQL Advanced",
+	"code": "DB-201",
+	"total_hours": 90
 }
 ```
 
@@ -1623,10 +1847,10 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "name": "PostgreSQL Advanced",
-  "code": "DB-201",
-  "total_hours": 90
+	"id": "uuid",
+	"name": "PostgreSQL Advanced",
+	"code": "DB-201",
+	"total_hours": 90
 }
 ```
 
@@ -1670,9 +1894,9 @@ delete resource
 
 ```json
 {
-  "discipline_id": "uuid",
-  "semester": 1,
-  "total_hours": 36
+	"discipline_id": "uuid",
+	"semester": 1,
+	"total_hours": 36
 }
 ```
 
@@ -1680,10 +1904,10 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "discipline_id": "uuid",
-  "semester": 1,
-  "total_hours": 36
+	"id": "uuid",
+	"discipline_id": "uuid",
+	"semester": 1,
+	"total_hours": 36
 }
 ```
 
@@ -1705,10 +1929,10 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "discipline_id": "uuid",
-  "semester": 1,
-  "total_hours": 36
+	"id": "uuid",
+	"discipline_id": "uuid",
+	"semester": 1,
+	"total_hours": 36
 }
 ```
 
@@ -1730,8 +1954,8 @@ delete resource
 
 ```json
 {
-  "semester": 2,
-  "total_hours": 40
+	"semester": 2,
+	"total_hours": 40
 }
 ```
 
@@ -1739,9 +1963,9 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "semester": 2,
-  "total_hours": 40
+	"id": "uuid",
+	"semester": 2,
+	"total_hours": 40
 }
 ```
 
@@ -1785,15 +2009,15 @@ delete resource
 
 ```json
 {
-  "semester_id": "uuid",
-  "name": "SQL joins",
-  "type": "combined",
-  "total_hours": 16,
-  "theory_hours": 8,
-  "practice_hours": 8,
-  "individual_hours": 0,
-  "srsp_hours": 0,
-  "srs_hours": 0
+	"semester_id": "uuid",
+	"name": "SQL joins",
+	"type": "combined",
+	"total_hours": 16,
+	"theory_hours": 8,
+	"practice_hours": 8,
+	"individual_hours": 0,
+	"srsp_hours": 0,
+	"srs_hours": 0
 }
 ```
 
@@ -1801,11 +2025,11 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "semester_id": "uuid",
-  "name": "SQL joins",
-  "type": "combined",
-  "total_hours": 16
+	"id": "uuid",
+	"semester_id": "uuid",
+	"name": "SQL joins",
+	"type": "combined",
+	"total_hours": 16
 }
 ```
 
@@ -1827,8 +2051,8 @@ delete resource
 
 ```json
 {
-  "name": "Advanced SQL joins",
-  "practice_hours": 10
+	"name": "Advanced SQL joins",
+	"practice_hours": 10
 }
 ```
 
@@ -1836,9 +2060,9 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "name": "Advanced SQL joins",
-  "practice_hours": 10
+	"id": "uuid",
+	"name": "Advanced SQL joins",
+	"practice_hours": 10
 }
 ```
 
@@ -1882,8 +2106,8 @@ delete resource
 
 ```json
 {
-  "name": "Exam",
-  "description": "Final exam award"
+	"name": "Exam",
+	"description": "Final exam award"
 }
 ```
 
@@ -1891,9 +2115,9 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "name": "Exam",
-  "description": "Final exam award"
+	"id": "uuid",
+	"name": "Exam",
+	"description": "Final exam award"
 }
 ```
 
@@ -1915,9 +2139,9 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "name": "Exam",
-  "description": "Final exam award"
+	"id": "uuid",
+	"name": "Exam",
+	"description": "Final exam award"
 }
 ```
 
@@ -1939,7 +2163,7 @@ delete resource
 
 ```json
 {
-  "name": "Final Exam"
+	"name": "Final Exam"
 }
 ```
 
@@ -1947,8 +2171,8 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "name": "Final Exam"
+	"id": "uuid",
+	"name": "Final Exam"
 }
 ```
 
@@ -1992,10 +2216,10 @@ delete resource
 
 ```json
 {
-  "award_type_id": "uuid",
-  "name": "Excellent",
-  "min_score": 90,
-  "max_score": 100
+	"award_type_id": "uuid",
+	"name": "Excellent",
+	"min_score": 90,
+	"max_score": 100
 }
 ```
 
@@ -2003,11 +2227,11 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "award_type_id": "uuid",
-  "name": "Excellent",
-  "min_score": 90,
-  "max_score": 100
+	"id": "uuid",
+	"award_type_id": "uuid",
+	"name": "Excellent",
+	"min_score": 90,
+	"max_score": 100
 }
 ```
 
@@ -2029,7 +2253,7 @@ delete resource
 
 ```json
 {
-  "min_score": 85
+	"min_score": 85
 }
 ```
 
@@ -2037,8 +2261,8 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "min_score": 85
+	"id": "uuid",
+	"min_score": 85
 }
 ```
 
@@ -2082,9 +2306,9 @@ delete resource
 
 ```json
 {
-  "variant_id": "uuid",
-  "name": "Attendance",
-  "weight": 0.3
+	"variant_id": "uuid",
+	"name": "Attendance",
+	"weight": 0.3
 }
 ```
 
@@ -2092,10 +2316,10 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "variant_id": "uuid",
-  "name": "Attendance",
-  "weight": 0.3
+	"id": "uuid",
+	"variant_id": "uuid",
+	"name": "Attendance",
+	"weight": 0.3
 }
 ```
 
@@ -2117,7 +2341,7 @@ delete resource
 
 ```json
 {
-  "weight": 0.4
+	"weight": 0.4
 }
 ```
 
@@ -2125,8 +2349,8 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "weight": 0.4
+	"id": "uuid",
+	"weight": 0.4
 }
 ```
 
@@ -2170,10 +2394,10 @@ delete resource
 
 ```json
 {
-  "user_id": "uuid",
-  "discipline_id": "uuid",
-  "award_type_variant_id": "uuid",
-  "score": 95
+	"user_id": "uuid",
+	"discipline_id": "uuid",
+	"award_type_variant_id": "uuid",
+	"score": 95
 }
 ```
 
@@ -2181,11 +2405,11 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "user_id": "uuid",
-  "discipline_id": "uuid",
-  "award_type_variant_id": "uuid",
-  "score": 95
+	"id": "uuid",
+	"user_id": "uuid",
+	"discipline_id": "uuid",
+	"award_type_variant_id": "uuid",
+	"score": 95
 }
 ```
 
@@ -2207,11 +2431,11 @@ delete resource
 
 ```json
 {
-  "id": "uuid",
-  "user_id": "uuid",
-  "discipline_id": "uuid",
-  "award_type_variant_id": "uuid",
-  "score": 95
+	"id": "uuid",
+	"user_id": "uuid",
+	"discipline_id": "uuid",
+	"award_type_variant_id": "uuid",
+	"score": 95
 }
 ```
 
@@ -2547,7 +2771,7 @@ delete resource
 **response 200**
 
 ```json
-{ "result": "award type variant deleted succesfully" }
+{ "result": "award type variant deleted successfully" }
 ```
 
 **response 300**
@@ -2591,7 +2815,7 @@ delete resource
 
 ```json
 {
-	"id": "45bhjf-f76dc-d6d7w8sd",
+	"id": "45b2jf-f76dc-d6d7w8sd",
 	"data": {
 		"name": "name",
 		"variants": [
@@ -2717,7 +2941,7 @@ delete resource
 **response 200**
 
 ```json
-{ "result": "award type deleted succesfully" }
+{ "result": "award type deleted successfully" }
 ```
 
 **response 300**
