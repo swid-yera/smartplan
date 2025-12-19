@@ -1,0 +1,3 @@
+apis:
+  docs/openapi.yaml:
+    alias: educational-platform-api

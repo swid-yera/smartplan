@@ -131,6 +131,7 @@ entities
 -  total_points: int, not null, default: 0
 -  violation: text, enum:[NONE, REMARK, REBUKE, SEVERE_REPRIMAND]
 -  type: text, // reference award_types table
+-  teacher: text, not null // reference users table
 
 -  text: text
 -  images: text[], //url image in minio bucket, default: []
