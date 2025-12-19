@@ -1,20 +1,16 @@
 package main
 
 import (
-	"context"
 	"log"
 	"strings"
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/handler"
-	"eduplan/backend/pkg/keycloak"
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/repository"
 	"eduplan/backend/pkg/service"
 	storage "eduplan/backend/pkg/sqlc/generated"
-	"eduplan/backend/pkg/worker"
 
-	"github.com/Nerzal/gocloak/v13"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 )
@@ -72,16 +68,11 @@ func main() {
 	// ---------- SERVICES ----------
 	userService := service.NewUserService(userRepo)
 	authService := service.NewAuthService(rdb)
-	webhooksService := service.NewWebhooksService(userRepo, userRepo)
-
-	// ---------- KEYCLOAK ----------
-	kc := keycloak.NewClient(
-		kcCfg.KeycloakURL,
-		kcCfg.KeycloakRealm,
-		kcCfg.KeycloakClientID,
-		kcCfg.KeycloakSecret,
+	webhooksService := service.NewWebhooksService(
+		userRepo,
+		userRepo,
+		authService,
 	)
-	gocloakClient := gocloak.NewClient(kcCfg.KeycloakURL)
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(
@@ -96,7 +87,7 @@ func main() {
 
 	// ---------- HANDLERS ----------
 	authHandler := handler.NewAuthHandler(
-		gocloakClient,
+		nil,
 		rdb,
 		kcCfg,
 		authService,
@@ -104,12 +95,6 @@ func main() {
 	)
 	userHandler := handler.NewUserHandler(userService)
 	webhooksHandler := handler.NewWebhooksHandler(webhooksService, nil)
-
-	// ---------- WORKER ----------
-	tokenRefresher := worker.NewTokenRefresher(kc, rdb)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go tokenRefresher.Start(ctx)
 
 	// ---------- ROUTER ----------
 	router := handler.NewRouter(authHandler, userHandler, webhooksHandler)
