@@ -7,7 +7,7 @@ from app.services.rup import generate_rup_docx
 app = FastAPI(title="Document Generator")
 
 
-@app.post("/generate", response_class=FileResponse)
+@app.post("/generate-rup", response_class=FileResponse)
 def generate_document(payload: dict = Body(...)):
     file_path = generate_rup_docx(payload)
 
