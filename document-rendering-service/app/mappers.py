@@ -1,5 +1,6 @@
 from docxtpl import RichText
-from helpers import decode_lesson_type, short_name, zero_to_empty
+
+from app.helpers.rup_helpers import decode_lesson_type, short_name, zero_to_empty
 
 
 def build_disciplines_table(disciplines_data: dict) -> tuple[list, list]:
