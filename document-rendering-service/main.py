@@ -4,10 +4,12 @@ from datetime import datetime
 from helpers import zero_to_empty, decode_study_form
 from mappers import (
     build_content_table,
+    build_contacts,
     build_developers,
     build_disciplines_table,
     build_resources,
 )
+from post_process import apply_vertical_merge
 
 
 JSON_FILE = "json-example.json"
@@ -29,6 +31,7 @@ totalCredits = int(int(data.get("totalHours")) / 24)
 
 group = data.get("group")
 
+contacts = build_contacts(data.get("contacts", []))
 developers = build_developers(data.get("contacts", []))
 
 explorationNote = data.get("explorationNote")
@@ -37,7 +40,7 @@ technical_resources = build_resources(explorationNote.get("technicalResources"))
 
 disciplines, semesters_total = build_disciplines_table(data.get("disciplines", []))
 
-content_table = build_content_table(data)
+content_table = build_content_table(data.get("disciplines", []))
 
 
 # word docx template
@@ -69,7 +72,7 @@ context = {
     "internet_resources": internet_resources,
     "technical_resources": technical_resources,
     # contacts
-    "contacts": data.get("contacts"),
+    "contacts": contacts,
     # distribution
     "disciplines": disciplines,
     # semesters total
@@ -87,11 +90,16 @@ context = {
 
 # rendering document to out folder
 print(f'rendering document to "{OUT_FOLDER}" folder...')
-
 doc.render(context)
+
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 document_name = f"output_{timestamp}.docx"
-doc.save(f"{OUT_FOLDER}/{document_name}")
+full_path = f"{OUT_FOLDER}/{document_name}"
 
-print(f"successfully saved {document_name} to {OUT_FOLDER}!")
-print(f"{OUT_FOLDER}/{document_name}")
+doc.save(full_path)
+
+# call post process
+print("applying vertical merge...")
+apply_vertical_merge(full_path)
+
+print(f"Successfully saved and merged {document_name}!")

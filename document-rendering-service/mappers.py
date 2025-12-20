@@ -1,3 +1,4 @@
+from docxtpl import RichText
 from helpers import decode_lesson_type, short_name, zero_to_empty
 
 
@@ -55,6 +56,29 @@ def build_developers(contacts: list, max_count: int = 3) -> list:
     return developers
 
 
+# build contacts
+def build_contacts(contacts: list) -> list:
+    result = []
+
+    for c in contacts:
+        full_name = short_name(
+            c.get("firstName"),
+            c.get("lastName"),
+        )
+
+        result.append(
+            {
+                "full_name": full_name,
+                "first_name": c.get("firstName"),
+                "last_name": c.get("lastName"),
+                "email": c.get("email"),
+                "phone": c.get("phone"),
+            }
+        )
+
+    return result
+
+
 # build resources list
 def build_resources(resources: dict) -> list:
     result = []
@@ -66,17 +90,28 @@ def build_resources(resources: dict) -> list:
 
 
 # build content table
-def build_content_table(data: dict) -> list:
+def build_content_table(disciplineData: dict) -> list:
     """
-    returns a flat list of rows for a table:
-    - topics lines
-    - total hours line after each discipline
+    Создает плоский список строк для таблицы.
+    Логика:
+    - Разворачиваем вложенность Дисциплина -> Темы в одну линию.
+    - Название дисциплины пишем только в первой строке темы.
+    - В конце каждой дисциплины добавляем строку с итогами.
     """
     rows = []
-    counter = 1
+    global_counter = 1
+    globalTotal = {
+        "total": 0,
+        "theory": 0,
+        "practice": 0,
+        "individual": 0,
+        "srsp": 0,
+        "srs": 0,
+    }
 
-    for discipline in data.get("disciplines", []):
-        discipline_total = {
+    for discipline in disciplineData:
+        # Инициализируем счетчики для итоговой строки раздела
+        d_stats = {
             "total": 0,
             "theory": 0,
             "practice": 0,
@@ -85,47 +120,89 @@ def build_content_table(data: dict) -> list:
             "srs": 0,
         }
 
-        for topic in discipline.get("topics", []):
-            discipline_total["total"] += topic.get("totalHours", 0)
-            discipline_total["theory"] += topic.get("theoryHours", 0)
-            discipline_total["practice"] += topic.get("practiceHours", 0)
-            discipline_total["individual"] += topic.get("individualHours", 0)
-            discipline_total["srsp"] += topic.get("srspHours", 0)
-            discipline_total["srs"] += topic.get("srsHours", 0)
+        topics = discipline.get("topics", [])
+
+        # Проходимся по всем темам дисциплины
+        for i, topic in enumerate(topics):
+            # Суммируем часы
+            t_total = topic.get("totalHours", 0)
+            t_theory = topic.get("theoryHours", 0)
+            t_practice = topic.get("practiceHours", 0)
+            t_ind = topic.get("individualHours", 0)
+            t_srsp = topic.get("srspHours", 0)
+            t_srs = topic.get("srsHours", 0)
+
+            d_stats["total"] += t_total
+            d_stats["theory"] += t_theory
+            d_stats["practice"] += t_practice
+            d_stats["individual"] += t_ind
+            d_stats["srsp"] += t_srsp
+            d_stats["srs"] += t_srs
+
+            # ЛОГИКА ОТОБРАЖЕНИЯ:
+            # Если это первая тема (i == 0), показываем код и название дисциплины.
+            # Иначе - пустая строка.
+            if i == 0:
+                disc_name = f"{discipline.get('code')} {discipline.get('name')}"
+            else:
+                disc_name = ""
 
             rows.append(
                 {
-                    "num": counter,
-                    "discipline": f"{discipline['code']} {discipline['name']}",
+                    "num": str(global_counter) + ".",
+                    "discipline": disc_name,  # Здесь либо название, либо пусто
                     "topic": topic.get("name"),
-                    "total": zero_to_empty(topic.get("totalHours", 0)),
-                    "theory": zero_to_empty(topic.get("theoryHours", 0)),
-                    "practice": zero_to_empty(topic.get("practiceHours", 0)),
-                    "individual": zero_to_empty(topic.get("individualHours", 0)),
-                    "srsp": zero_to_empty(topic.get("srspHours", 0)),
-                    "srs": zero_to_empty(topic.get("srsHours", 0)),
+                    "total": zero_to_empty(t_total),
+                    "theory": zero_to_empty(t_theory),
+                    "practice": zero_to_empty(t_practice),
+                    "individual": zero_to_empty(t_ind),
+                    "srsp": zero_to_empty(t_srsp),
+                    "srs": zero_to_empty(t_srs),
                     "type": decode_lesson_type(topic.get("type")),
-                    "is_total": False,
                 }
             )
 
-            counter += 1
+            global_counter += 1
 
-        # line discipline total hours
+        # Добавляем строку итогов по дисциплине
+        # Используем RichText, чтобы сделать текст жирным
         rows.append(
             {
                 "num": "",
-                "discipline": "Всего часов:",
+                "discipline": RichText("Всего часов:", bold=True),
                 "topic": "",
-                "total": zero_to_empty(discipline_total["total"]),
-                "theory": zero_to_empty(discipline_total["theory"]),
-                "practice": zero_to_empty(discipline_total["practice"]),
-                "individual": zero_to_empty(discipline_total["individual"]),
-                "srsp": zero_to_empty(discipline_total["srsp"]),
-                "srs": zero_to_empty(discipline_total["srs"]),
+                "total": RichText(str(zero_to_empty(d_stats["total"])), bold=True),
+                "theory": RichText(str(zero_to_empty(d_stats["theory"])), bold=True),
+                "practice": RichText(zero_to_empty(d_stats["practice"]), bold=True),
+                "individual": RichText(zero_to_empty(d_stats["individual"]), bold=True),
+                "srsp": RichText(zero_to_empty(d_stats["srsp"]), bold=True),
+                "srs": RichText(zero_to_empty(d_stats["srs"]), bold=True),
                 "type": "",
-                "is_total": True,
             }
         )
+
+        # global total hours
+        globalTotal["total"] += d_stats["total"]
+        globalTotal["theory"] += d_stats["theory"]
+        globalTotal["practice"] += d_stats["practice"]
+        globalTotal["individual"] += d_stats["individual"]
+        globalTotal["srsp"] += d_stats["srsp"]
+        globalTotal["srs"] += d_stats["srs"]
+
+    # Добавляем строку итогов по всем дисциплинам
+    rows.append(
+        {
+            "num": "",
+            "discipline": RichText("Итого часов:", bold=True),
+            "topic": "",
+            "total": RichText(str(zero_to_empty(globalTotal["total"])), bold=True),
+            "theory": RichText(str(zero_to_empty(globalTotal["theory"])), bold=True),
+            "practice": RichText(zero_to_empty(globalTotal["practice"]), bold=True),
+            "individual": RichText(zero_to_empty(globalTotal["individual"]), bold=True),
+            "srsp": RichText(zero_to_empty(globalTotal["srsp"]), bold=True),
+            "srs": RichText(zero_to_empty(globalTotal["srs"]), bold=True),
+            "type": "",
+        }
+    )
 
     return rows
