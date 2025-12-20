@@ -19,7 +19,7 @@ def build_disciplines_table(disciplines_data: dict) -> tuple[list, list]:
             "total": zero_to_empty(discipline.get("totalHours", 0)),
         }
 
-        # sem1 ... sem8 = ""
+        # sem1 ... sem8 zero to empty
         for sem in range(1, 9):
             row[f"sem{sem}"] = ""
 
@@ -33,7 +33,7 @@ def build_disciplines_table(disciplines_data: dict) -> tuple[list, list]:
 
         disciplines.append(row)
 
-    # 0 → ""
+    # zero to empty string
     semesters_total = [zero_to_empty(v) for v in semesters_total]
 
     return disciplines, semesters_total
@@ -110,7 +110,7 @@ def build_content_table(disciplineData: dict) -> list:
     }
 
     for discipline in disciplineData:
-        # Инициализируем счетчики для итоговой строки раздела
+        # initialized counters for the section summary line
         d_stats = {
             "total": 0,
             "theory": 0,
@@ -122,9 +122,8 @@ def build_content_table(disciplineData: dict) -> list:
 
         topics = discipline.get("topics", [])
 
-        # Проходимся по всем темам дисциплины
         for i, topic in enumerate(topics):
-            # Суммируем часы
+            # hours summary
             t_total = topic.get("totalHours", 0)
             t_theory = topic.get("theoryHours", 0)
             t_practice = topic.get("practiceHours", 0)
@@ -139,9 +138,9 @@ def build_content_table(disciplineData: dict) -> list:
             d_stats["srsp"] += t_srsp
             d_stats["srs"] += t_srs
 
-            # ЛОГИКА ОТОБРАЖЕНИЯ:
-            # Если это первая тема (i == 0), показываем код и название дисциплины.
-            # Иначе - пустая строка.
+            # display logic:
+            # if this is the first topic (i == 0), show the course code and name
+            # otherwise show an empty string
             if i == 0:
                 disc_name = f"{discipline.get('code')} {discipline.get('name')}"
             else:
@@ -150,7 +149,7 @@ def build_content_table(disciplineData: dict) -> list:
             rows.append(
                 {
                     "num": str(global_counter) + ".",
-                    "discipline": disc_name,  # Здесь либо название, либо пусто
+                    "discipline": disc_name,
                     "topic": topic.get("name"),
                     "total": zero_to_empty(t_total),
                     "theory": zero_to_empty(t_theory),
@@ -164,8 +163,7 @@ def build_content_table(disciplineData: dict) -> list:
 
             global_counter += 1
 
-        # Добавляем строку итогов по дисциплине
-        # Используем RichText, чтобы сделать текст жирным
+        # discipline hours summary
         rows.append(
             {
                 "num": "",
@@ -181,7 +179,7 @@ def build_content_table(disciplineData: dict) -> list:
             }
         )
 
-        # global total hours
+        # summary global total hours
         globalTotal["total"] += d_stats["total"]
         globalTotal["theory"] += d_stats["theory"]
         globalTotal["practice"] += d_stats["practice"]
@@ -189,7 +187,7 @@ def build_content_table(disciplineData: dict) -> list:
         globalTotal["srsp"] += d_stats["srsp"]
         globalTotal["srs"] += d_stats["srs"]
 
-    # Добавляем строку итогов по всем дисциплинам
+    # global hours result summary
     rows.append(
         {
             "num": "",

@@ -8,32 +8,31 @@ def apply_vertical_merge(file_path: str):
         return
 
     table = doc.tables[-1]
-    COL_INDEX = 1  # Столбец с РО (Разделами)
+    COL_INDEX = 1  # disciplines column
     primary_cell = None
 
     for row in table.rows:
         if len(row.cells) <= COL_INDEX:
             continue
 
-        # Индекс 0 — это колонка "№"
+        # index 0 it is num column
         row_number_text = row.cells[0].text.strip()
         current_cell = row.cells[COL_INDEX]
         current_text = current_cell.text.strip()
 
-        # ЛОГИКА:
-        # 1. Если в колонке № пусто — значит это строка "Всего часов"
+        # if text is empty it is disciplines summary hours line
         if not row_number_text:
-            # Пропускаем шапку (проверяем, не заголовок ли это)
+            # skipping if it's header
             if "№" not in row.cells[0].text:
-                primary_cell = None  # Сбрасываем мерж перед итоговой строкой
+                primary_cell = None  # reset merge
                 continue
 
-        # 2. Если есть текст в РО (например, "РО6.1...")
+        # if text exist it is discipline name
         if current_text:
             primary_cell = current_cell
             primary_cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
-        # 3. Если текста в РО нет, но это строка с темой (есть номер №)
+        # if text doesn't exist, but there is exists numeric cell value
         elif primary_cell is not None:
             primary_cell.merge(current_cell)
 
