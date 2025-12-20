@@ -2,6 +2,7 @@ from docxtpl import DocxTemplate
 from datetime import datetime
 from pathlib import Path
 
+from app.logger import logger
 from app.config import OUT_DIR, TEMPLATE_PATH
 
 from app.helpers.rup_helpers import decode_study_form, zero_to_empty
@@ -20,6 +21,8 @@ def generate_rup_docx(data: dict) -> Path:
     OUT_DIR.mkdir(exist_ok=True)
 
     # mapping data from json
+    logger.info("generating rup document, mapping data from json")
+
     rup_name = f"{data.get("code", "")} {data.get("name", "")}"
     totalHours = int(data.get("totalHours"))
     totalCredits = int(int(data.get("totalHours")) / 24)
@@ -78,11 +81,14 @@ def generate_rup_docx(data: dict) -> Path:
     }
 
     # render
+    logger.info("generating rup document, rendering document: %s", rup_name)
     doc = DocxTemplate(TEMPLATE_PATH)
     doc.render(context)
 
     # save
-    slug = slugify_ru(rup_name)
+    logger.info("generating rup document, saving document: %s", rup_name)
+
+    slug = slugify_ru(rup_name[:13])
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"{slug}_{timestamp}.docx"
     output_path = OUT_DIR / filename
@@ -90,6 +96,7 @@ def generate_rup_docx(data: dict) -> Path:
     doc.save(output_path)
 
     # merge columns
+    logger.info("generating rup document, applying vertical merge: %s", rup_name)
     apply_vertical_merge(output_path)
 
     return output_path

@@ -93,11 +93,11 @@ def build_resources(resources: dict) -> list:
 # build content table
 def build_content_table(disciplineData: dict) -> list:
     """
-    Создает плоский список строк для таблицы.
-    Логика:
-    - Разворачиваем вложенность Дисциплина -> Темы в одну линию.
-    - Название дисциплины пишем только в первой строке темы.
-    - В конце каждой дисциплины добавляем строку с итогами.
+    creates a flat list of rows for the table.
+    logic:
+    - expand the nesting structure discipline -> topics into a single line.
+    - write the discipline name only in the first line of the topic.
+    - add a row with the summary at the end of each discipline.
     """
     rows = []
     global_counter = 1
