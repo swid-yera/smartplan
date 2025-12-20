@@ -60,7 +60,9 @@ func main() {
 	defer db.Close()
 
 	queries := storage.New(db)
-	userRepo := repository.NewPostgresUserRepository(queries)
+	userRepo := repository.NewUsersPostgres(queries)
+	authRepo := repository.NewAuthPostgres(queries)
+	webhookRepo := repository.NewWebhookPostgres(queries)
 
 	// ---------- REDIS ----------
 	rdb := redis.NewClient(&redis.Options{
@@ -70,9 +72,9 @@ func main() {
 	})
 
 	// ---------- SERVICES ----------
-	userService := service.NewUserService(userRepo)
+	userService := service.NewUserService(authRepo)
 	authService := service.NewAuthService(rdb)
-	webhooksService := service.NewWebhooksService(userRepo, userRepo)
+	webhooksService := service.NewWebhooksService(*webhookRepo, userRepo)
 
 	// ---------- KEYCLOAK ----------
 	kc := keycloak.NewClient(

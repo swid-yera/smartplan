@@ -11,17 +11,15 @@ type UsersRepository interface {
 	CreateUser(ctx context.Context, params storage.CreateUserParams) (*storage.User, error)
 }
 
-type PostgresUserRepository struct {
-	*PostgresRepository
+type UsersServices struct {
+	queries *storage.Queries
 }
 
-func NewPostgresUserRepository(queries *storage.Queries) *PostgresUserRepository {
-	return &PostgresUserRepository{
-		PostgresRepository: NewPostgresRepository(queries),
-	}
+func NewUsersPostgres(queries *storage.Queries) *UsersServices {
+	return &UsersServices{queries: queries}
 }
 
-func (r *PostgresUserRepository) CreateUser(
+func (r *UsersServices) CreateUser(
 	ctx context.Context,
 	params storage.CreateUserParams,
 ) (*storage.User, error) {

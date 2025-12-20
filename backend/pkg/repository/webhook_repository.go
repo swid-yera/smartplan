@@ -10,14 +10,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type WebhookRepository interface {
-	UpdateUserLastSeenAt(ctx context.Context, sessionID uuid.UUID, lastSeenAt time.Time) error
-	UpdateUserRoles(ctx context.Context, sessionID uuid.UUID, roles []string) error
-	UpdateUserPasswordChangedAt(ctx context.Context, sessionID uuid.UUID, changedAt time.Time) error
-	DeleteUser(ctx context.Context, sessionID uuid.UUID) error
+type WebhookRepository struct {
+	queries *storage.Queries
 }
 
-func (r *PostgresUserRepository) UpdateUserLastSeenAt(
+func NewWebhookPostgres(queries *storage.Queries) *WebhookRepository {
+	return &WebhookRepository{queries: queries}
+}
+
+func (r *WebhookRepository) UpdateUserLastSeenAt(
 	ctx context.Context,
 	sessionID uuid.UUID,
 	lastSeenAt time.Time,
@@ -33,7 +34,7 @@ func (r *PostgresUserRepository) UpdateUserLastSeenAt(
 	)
 }
 
-func (r *PostgresUserRepository) UpdateUserRoles(
+func (r *WebhookRepository) UpdateUserRoles(
 	ctx context.Context,
 	sessionID uuid.UUID,
 	roles []string,
@@ -47,7 +48,7 @@ func (r *PostgresUserRepository) UpdateUserRoles(
 	)
 }
 
-func (r *PostgresUserRepository) UpdateUserPasswordChangedAt(
+func (r *WebhookRepository) UpdateUserPasswordChangedAt(
 	ctx context.Context,
 	keycloak_id uuid.UUID,
 	changedAt time.Time,
@@ -64,7 +65,7 @@ func (r *PostgresUserRepository) UpdateUserPasswordChangedAt(
 	)
 }
 
-func (r *PostgresUserRepository) DeleteUser(
+func (r *WebhookRepository) DeleteUser(
 	ctx context.Context,
 	sessionID uuid.UUID,
 ) error {

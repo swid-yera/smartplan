@@ -13,7 +13,15 @@ type AuthRepository interface {
 	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
 }
 
-func (r *PostgresUserRepository) GetUserBySessionID(
+type AuthServices struct {
+	queries *storage.Queries
+}
+
+func NewAuthPostgres(queries *storage.Queries) *AuthServices {
+	return &AuthServices{queries: queries}
+}
+
+func (r *AuthServices) GetUserBySessionID(
 	ctx context.Context,
 	sessionID uuid.UUID,
 ) (*storage.User, error) {
