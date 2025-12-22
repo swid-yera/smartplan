@@ -2,37 +2,33 @@ package repository
 
 import (
 	"context"
-	storage "eduplan/backend/pkg/sqlc/generated"
 	"time"
+
+	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
 )
 
-type Webhook interface {
-	UpdateUserLastSeenAt(ctx context.Context, sessionID uuid.UUID, lastSeenAt time.Time) error
-	UpdateUserRoles(ctx context.Context, sessionID uuid.UUID, roles []string) error
-	UpdateUserPasswordChangedAt(ctx context.Context, sessionID uuid.UUID, changedAt time.Time) error
-	DeleteUser(ctx context.Context, sessionID uuid.UUID) error
-}
-
 type Users interface {
 	CreateUser(ctx context.Context, params storage.CreateUserParams) (*storage.User, error)
+	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
+	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
+	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
+	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles []string) error
 }
 
 type Auth interface {
-	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
+	GetUserByKeycloakID(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
 }
 
 type Repository struct {
-	Webhook Webhook
-	Users   Users
-	Auth    Auth
+	Users Users
+	Auth  Auth
 }
 
 func NewRepository(queries *storage.Queries) *Repository {
 	return &Repository{
-		Webhook: NewWebhookPostgres(queries),
-		Users:   NewUsersPostgres(queries),
-		Auth:    NewAuthPostgres(queries),
+		Users: NewUsersPostgres(queries),
+		Auth:  NewAuthPostgres(queries),
 	}
 }

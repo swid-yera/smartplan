@@ -10,24 +10,24 @@ import (
 )
 
 type AuthRepository interface {
-	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
+	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
 }
 
-type AuthServices struct {
+type AuthPostgres struct {
 	queries *storage.Queries
 }
 
-func NewAuthPostgres(queries *storage.Queries) *AuthServices {
-	return &AuthServices{queries: queries}
+func NewAuthPostgres(queries *storage.Queries) *AuthPostgres {
+	return &AuthPostgres{queries: queries}
 }
 
-func (r *AuthServices) GetUserBySessionID(
+func (r *AuthPostgres) GetUserByKeycloakID(
 	ctx context.Context,
-	sessionID uuid.UUID,
+	keycloakID uuid.UUID,
 ) (*storage.User, error) {
-	user, err := r.queries.GetUserByKeycloakID(ctx, sessionID)
+	user, err := r.queries.GetUserByKeycloakID(ctx, keycloakID)
 	if err != nil {
-		return nil, fmt.Errorf("get user by session id: %w", err)
+		return nil, fmt.Errorf("get user by keycloak id: %w", err)
 	}
 	return &user, nil
 }

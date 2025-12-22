@@ -25,5 +25,5 @@ func (s *userService) GetUserBySessionID(
 	ctx context.Context,
 	sessionID uuid.UUID,
 ) (*storage.User, error) {
-	return s.repo.GetUserBySessionID(ctx, sessionID)
+	return s.repo.GetUserByKeycloakID(ctx, sessionID)
 }

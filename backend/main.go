@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"strings"
 
@@ -10,11 +9,8 @@ import (
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/repository"
 	"eduplan/backend/pkg/service"
-	"eduplan/backend/pkg/service/keycloak"
 	storage "eduplan/backend/pkg/sqlc/generated"
-	"eduplan/backend/pkg/worker"
 
-	"github.com/Nerzal/gocloak/v13"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 )
@@ -60,9 +56,7 @@ func main() {
 	defer db.Close()
 
 	queries := storage.New(db)
-	userRepo := repository.NewUsersPostgres(queries)
-	authRepo := repository.NewAuthPostgres(queries)
-	webhookRepo := repository.NewWebhookPostgres(queries)
+	NewRepository := repository.NewRepository(queries)
 
 	// ---------- REDIS ----------
 	rdb := redis.NewClient(&redis.Options{
@@ -72,18 +66,11 @@ func main() {
 	})
 
 	// ---------- SERVICES ----------
-	userService := service.NewUserService(authRepo)
+	userService := service.NewUserService(repository.NewAuthPostgres(queries))
 	authService := service.NewAuthService(rdb)
-	webhooksService := service.NewWebhooksService(*webhookRepo, userRepo)
-
-	// ---------- KEYCLOAK ----------
-	kc := keycloak.NewClient(
-		kcCfg.KeycloakURL,
-		kcCfg.KeycloakRealm,
-		kcCfg.KeycloakClientID,
-		kcCfg.KeycloakSecret,
+	webhooksService := service.NewWebhooksService(
+		NewRepository,
 	)
-	gocloakClient := gocloak.NewClient(kcCfg.KeycloakURL)
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(
@@ -98,7 +85,7 @@ func main() {
 
 	// ---------- HANDLERS ----------
 	authHandler := handler.NewAuthHandler(
-		gocloakClient,
+		nil,
 		rdb,
 		kcCfg,
 		authService,
@@ -106,12 +93,6 @@ func main() {
 	)
 	userHandler := handler.NewUserHandler(userService)
 	webhooksHandler := handler.NewWebhooksHandler(webhooksService, nil)
-
-	// ---------- WORKER ----------
-	tokenRefresher := worker.NewTokenRefresher(kc, rdb)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go tokenRefresher.Start(ctx)
 
 	// ---------- ROUTER ----------
 	router := handler.NewRouter(authHandler, userHandler, webhooksHandler)

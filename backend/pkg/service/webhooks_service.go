@@ -9,7 +9,6 @@ import (
 	"eduplan/backend/pkg/service/keycloak"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 )
 
 type WebhooksService interface {
@@ -17,17 +16,12 @@ type WebhooksService interface {
 }
 
 type webhooksService struct {
-	webhookRepo repository.WebhookRepository
-	usersRepo   repository.UsersRepository
+	users repository.UsersRepository
 }
 
-func NewWebhooksService(
-	webhookRepo repository.WebhookRepository,
-	usersRepo repository.UsersRepository,
-) WebhooksService {
+func NewWebhooksService(repo *repository.Repository) WebhooksService {
 	return &webhooksService{
-		webhookRepo: webhookRepo,
-		usersRepo:   usersRepo,
+		users: repo.Users,
 	}
 }
 
@@ -35,50 +29,29 @@ func (s *webhooksService) ProcessEvent(
 	ctx context.Context,
 	event *keycloak.KeycloakEvent,
 ) error {
-	if event.UserID == "" {
-		return fmt.Errorf("event.UserID is empty")
+	if event == nil {
+		return fmt.Errorf("event is nil")
 	}
 
 	keycloakID, err := uuid.Parse(event.UserID)
 	if err != nil {
-		return fmt.Errorf("invalid keycloak_id: %w", err)
+		return fmt.Errorf("invalid keycloak id: %w", err)
 	}
 
 	switch event.Type {
-	case keycloak.EventUserCreated:
-		return s.handleUserCreated(ctx, keycloakID, event)
-
-	case keycloak.EventUserUpdated:
-		return s.handleUserUpdated(ctx, keycloakID, event)
 
 	case keycloak.EventUserDeleted:
-		return s.webhookRepo.DeleteUser(ctx, keycloakID)
+		return s.users.DeleteByKeycloakID(ctx, keycloakID)
 
 	case keycloak.EventLogin:
-		return s.webhookRepo.UpdateUserLastSeenAt(ctx, keycloakID, time.Now())
+		return s.users.UpdateLastSeenAt(ctx, keycloakID, time.Now())
 
 	case keycloak.EventUpdatePassword:
-		return s.webhookRepo.UpdateUserPasswordChangedAt(ctx, keycloakID, time.Now())
+		return s.users.UpdatePasswordChangedAt(ctx, keycloakID, time.Now())
 
 	case keycloak.EventRoleUpdated:
-		roles := extractRoles(event)
-		return s.webhookRepo.UpdateUserRoles(ctx, keycloakID, roles)
-
-	default:
-		log.Warn().
-			Str("type", string(event.Type)).
-			Msg("Unhandled Keycloak webhook event")
-		return nil
+		return s.users.UpdateRoles(ctx, keycloakID, extractRoles(event))
 	}
-}
-
-// Заглушки оставил, чтобы проект собирался.
-// Потом заполни CreateUserParams из event.
-func (s *webhooksService) handleUserCreated(
-	ctx context.Context,
-	keycloakID uuid.UUID,
-	event *keycloak.KeycloakEvent,
-) error {
 	return nil
 }
 
