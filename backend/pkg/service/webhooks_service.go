@@ -9,7 +9,6 @@ import (
 	"eduplan/backend/pkg/repository"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 )
 
 type WebhooksService interface {
@@ -17,17 +16,23 @@ type WebhooksService interface {
 }
 
 type webhooksService struct {
-	webhookRepo repository.WebhookRepository
-	usersRepo   repository.UsersRepository
+<<<<<<< HEAD
+	users repository.UsersRepository
+}
+
+func NewWebhooksService(repo *repository.Repository) WebhooksService {
+	return &webhooksService{
+		users: repo.Users,
+=======
+	usersRepo repository.UsersRepository
 }
 
 func NewWebhooksService(
-	webhookRepo repository.WebhookRepository,
 	usersRepo repository.UsersRepository,
 ) WebhooksService {
 	return &webhooksService{
-		webhookRepo: webhookRepo,
-		usersRepo:   usersRepo,
+		usersRepo: usersRepo,
+>>>>>>> 953f052287c4302977d5710763577a23a3139cfa
 	}
 }
 
@@ -35,72 +40,89 @@ func (s *webhooksService) ProcessEvent(
 	ctx context.Context,
 	event *keycloak.KeycloakEvent,
 ) error {
+	if event == nil {
+		return fmt.Errorf("event is nil")
+<<<<<<< HEAD
+=======
+	}
+
 	if event.UserID == "" {
 		return fmt.Errorf("event.UserID is empty")
+>>>>>>> 953f052287c4302977d5710763577a23a3139cfa
 	}
 
 	keycloakID, err := uuid.Parse(event.UserID)
 	if err != nil {
-		return fmt.Errorf("invalid keycloak_id: %w", err)
+		return fmt.Errorf("invalid keycloak id: %w", err)
 	}
 
 	switch event.Type {
-	case keycloak.EventUserCreated:
-		return s.handleUserCreated(ctx, keycloakID, event)
+<<<<<<< HEAD
 
-	case keycloak.EventUserUpdated:
-		return s.handleUserUpdated(ctx, keycloakID, event)
+	case keycloak.EventUserCreated, keycloak.EventUserUpdated:
+		email, _ := event.Details["mail"].(string)
+		roles := extractRoles(event)
+		return s.users.UpsertFromKeycloak(ctx, keycloakID, email, roles)
 
 	case keycloak.EventUserDeleted:
-		return s.webhookRepo.DeleteUser(ctx, keycloakID)
+		return s.users.DeleteByKeycloakID(ctx, keycloakID)
 
 	case keycloak.EventLogin:
-		return s.webhookRepo.UpdateUserLastSeenAt(ctx, keycloakID, time.Now())
+		return s.users.UpdateLastSeenAt(ctx, keycloakID, time.Now())
 
 	case keycloak.EventUpdatePassword:
-		return s.webhookRepo.UpdateUserPasswordChangedAt(ctx, keycloakID, time.Now())
+		return s.users.UpdatePasswordChangedAt(ctx, keycloakID, time.Now())
+
+	case keycloak.EventRoleUpdated:
+		return s.users.UpdateRoles(ctx, keycloakID, extractRoles(event))
+=======
+
+	case keycloak.EventUserCreated:
+		return s.handleUserUpsert(ctx, keycloakID, event)
+
+	case keycloak.EventUserUpdated:
+		return s.handleUserUpsert(ctx, keycloakID, event)
+
+	case keycloak.EventUserDeleted:
+		return s.usersRepo.DeleteByKeycloakID(ctx, keycloakID)
+
+	case keycloak.EventLogin:
+		return s.usersRepo.UpdateLastSeenAt(ctx, keycloakID, time.Now())
+
+	case keycloak.EventUpdatePassword:
+		return s.usersRepo.UpdatePasswordChangedAt(ctx, keycloakID, time.Now())
 
 	case keycloak.EventRoleUpdated:
 		roles := extractRoles(event)
-		return s.webhookRepo.UpdateUserRoles(ctx, keycloakID, roles)
+		return s.usersRepo.UpdateRoles(ctx, keycloakID, roles)
 
 	default:
 		log.Warn().
 			Str("type", string(event.Type)).
 			Msg("Unhandled Keycloak webhook event")
 		return nil
+>>>>>>> 953f052287c4302977d5710763577a23a3139cfa
 	}
-}
 
-// Заглушки оставил, чтобы проект собирался.
-// Потом заполни CreateUserParams из event.
-func (s *webhooksService) handleUserCreated(
+<<<<<<< HEAD
+	return nil
+=======
+func (s *webhooksService) handleUserUpsert(
 	ctx context.Context,
 	keycloakID uuid.UUID,
 	event *keycloak.KeycloakEvent,
 ) error {
-	return nil
-}
-
-func (s *webhooksService) handleUserUpdated(
-	ctx context.Context,
-	keycloakID uuid.UUID,
-	event *keycloak.KeycloakEvent,
-) error {
-	return nil
-}
-
-func extractRoles(event *keycloak.KeycloakEvent) []string {
-	if realmAccess, ok := event.Details["realm_access"].(map[string]interface{}); ok {
-		if rolesRaw, ok := realmAccess["roles"].([]interface{}); ok {
-			roles := make([]string, 0, len(rolesRaw))
-			for _, r := range rolesRaw {
-				if s, ok := r.(string); ok {
-					roles = append(roles, s)
-				}
-			}
-			return roles
-		}
+	email, err := getString(event.Details, "mail")
+	if err != nil {
+		return err
 	}
-	return []string{}
+
+	user := repository.UserFromKeycloak{
+		KeycloakID: keycloakID,
+		Email:      email,
+		Roles:      extractRoles(event),
+	}
+
+	return s.usersRepo.UpsertFromKeycloak(ctx, user)
+>>>>>>> 953f052287c4302977d5710763577a23a3139cfa
 }

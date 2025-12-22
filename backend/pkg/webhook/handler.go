@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"eduplan/backend/pkg/keycloak"
 	"eduplan/backend/pkg/service"
+	"eduplan/backend/pkg/service/keycloak"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
