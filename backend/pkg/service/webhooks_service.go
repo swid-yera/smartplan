@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"eduplan/backend/pkg/keycloak"
 	"eduplan/backend/pkg/repository"
+	"eduplan/backend/pkg/service/keycloak"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -88,19 +88,4 @@ func (s *webhooksService) handleUserUpdated(
 	event *keycloak.KeycloakEvent,
 ) error {
 	return nil
-}
-
-func extractRoles(event *keycloak.KeycloakEvent) []string {
-	if realmAccess, ok := event.Details["realm_access"].(map[string]interface{}); ok {
-		if rolesRaw, ok := realmAccess["roles"].([]interface{}); ok {
-			roles := make([]string, 0, len(rolesRaw))
-			for _, r := range rolesRaw {
-				if s, ok := r.(string); ok {
-					roles = append(roles, s)
-				}
-			}
-			return roles
-		}
-	}
-	return []string{}
 }

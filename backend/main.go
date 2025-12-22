@@ -7,10 +7,10 @@ import (
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/handler"
-	"eduplan/backend/pkg/keycloak"
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/repository"
 	"eduplan/backend/pkg/service"
+	"eduplan/backend/pkg/service/keycloak"
 	storage "eduplan/backend/pkg/sqlc/generated"
 	"eduplan/backend/pkg/worker"
 

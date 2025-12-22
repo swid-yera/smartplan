@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"eduplan/backend/pkg/keycloak"
 	"eduplan/backend/pkg/service"
+	"eduplan/backend/pkg/service/keycloak"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
