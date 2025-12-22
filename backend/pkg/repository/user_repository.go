@@ -3,23 +3,32 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	storage "eduplan/backend/pkg/sqlc/generated"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type UsersRepository interface {
 	CreateUser(ctx context.Context, params storage.CreateUserParams) (*storage.User, error)
+
+	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
+	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
+	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
+	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles []string) error
 }
 
-type UsersServices struct {
+type UsersPostgres struct {
 	queries *storage.Queries
 }
 
-func NewUsersPostgres(queries *storage.Queries) *UsersServices {
-	return &UsersServices{queries: queries}
+func NewUsersPostgres(queries *storage.Queries) *UsersPostgres {
+	return &UsersPostgres{queries: queries}
 }
 
-func (r *UsersServices) CreateUser(
+func (r *UsersPostgres) CreateUser(
 	ctx context.Context,
 	params storage.CreateUserParams,
 ) (*storage.User, error) {
@@ -28,4 +37,59 @@ func (r *UsersServices) CreateUser(
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 	return &user, nil
+}
+
+func (r *UsersPostgres) DeleteByKeycloakID(
+	ctx context.Context,
+	keycloakID uuid.UUID,
+) error {
+	return r.queries.DeleteUser(ctx, keycloakID)
+}
+
+func (r *UsersPostgres) UpdateLastSeenAt(
+	ctx context.Context,
+	keycloakID uuid.UUID,
+	at time.Time,
+) error {
+	return r.queries.UpdateUserLastSeenAt(
+		ctx,
+		storage.UpdateUserLastSeenAtParams{
+			KeycloakID: keycloakID,
+			LastSeenAt: pgtype.Timestamptz{
+				Time:  at,
+				Valid: true,
+			},
+		},
+	)
+}
+
+func (r *UsersPostgres) UpdatePasswordChangedAt(
+	ctx context.Context,
+	keycloakID uuid.UUID,
+	at time.Time,
+) error {
+	return r.queries.UpdateUserPasswordChangedAt(
+		ctx,
+		storage.UpdateUserPasswordChangedAtParams{
+			KeycloakID: keycloakID,
+			PasswordChangedAt: pgtype.Timestamptz{
+				Time:  at,
+				Valid: true,
+			},
+		},
+	)
+}
+
+func (r *UsersPostgres) UpdateRoles(
+	ctx context.Context,
+	keycloakID uuid.UUID,
+	roles []string,
+) error {
+	return r.queries.UpdateUserRoles(
+		ctx,
+		storage.UpdateUserRolesParams{
+			KeycloakID: keycloakID,
+			Roles:      roles,
+		},
+	)
 }
