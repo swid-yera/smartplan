@@ -69,7 +69,13 @@ func main() {
 	userService := service.NewUserService(NewRepository)
 	authService := service.NewAuthService(rdb)
 	webhooksService := service.NewWebhooksService(
+<<<<<<< HEAD
 		NewRepository,
+=======
+		userRepo,
+		userRepo,
+		authService,
+>>>>>>> 953f052287c4302977d5710763577a23a3139cfa
 	)
 
 	// ---------- MIDDLEWARE ----------
