@@ -11,6 +11,7 @@ import (
 	"eduplan/backend/pkg/service"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
+	"github.com/Nerzal/gocloak/v13"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 )
@@ -65,8 +66,10 @@ func main() {
 		DB:       redisCfg.RedisDB,
 	})
 
+	kc := gocloak.NewClient(kcCfg.KeycloakURL)
+
 	// ---------- SERVICES ----------
-	userService := service.NewUserService(repository.NewAuthPostgres(queries))
+	userService := service.NewUserService(repository.NewAuthPostgres(queries), rdb)
 	authService := service.NewAuthService(rdb)
 	webhooksService := service.NewWebhooksService(
 		NewRepository,
@@ -85,7 +88,7 @@ func main() {
 
 	// ---------- HANDLERS ----------
 	authHandler := handler.NewAuthHandler(
-		nil,
+		kc,
 		rdb,
 		kcCfg,
 		authService,
