@@ -57,7 +57,10 @@ func main() {
 	defer db.Close()
 
 	queries := storage.New(db)
-	NewRepository := repository.NewRepository(queries)
+
+	// ---------- REPOSITORIES ----------
+	authRepo := repository.NewAuthPostgres(queries)
+	usersRepo := repository.NewUsersPostgres(queries)
 
 	// ---------- REDIS ----------
 	rdb := redis.NewClient(&redis.Options{
@@ -69,11 +72,9 @@ func main() {
 	kc := gocloak.NewClient(kcCfg.KeycloakURL)
 
 	// ---------- SERVICES ----------
-	userService := service.NewUserService(repository.NewAuthPostgres(queries), rdb)
-	authService := service.NewAuthService(rdb)
-	webhooksService := service.NewWebhooksService(
-		NewRepository,
-	)
+
+	authService := service.NewAuthService(rdb, authRepo) // работает только с AuthRepository
+	userService := service.NewUserService(usersRepo, rdb)
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(
@@ -95,10 +96,9 @@ func main() {
 		authMiddleware.GetKeyFunc(),
 	)
 	userHandler := handler.NewUserHandler(userService)
-	webhooksHandler := handler.NewWebhooksHandler(webhooksService, nil)
 
 	// ---------- ROUTER ----------
-	router := handler.NewRouter(authHandler, userHandler, webhooksHandler)
+	router := handler.NewRouter(authHandler, userHandler, nil)
 	engine := router.Init()
 
 	port := "8080"

@@ -15,6 +15,7 @@ type Users interface {
 	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles []string) error
+	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
 }
 
 type Auth interface {

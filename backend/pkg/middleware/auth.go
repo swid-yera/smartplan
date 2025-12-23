@@ -227,7 +227,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		fmt.Printf("Access token validated successfully for user: %s\n", sub)
 
 		// Set user context
-		c.Set("user_id", sub)
+		c.Set("keycloak_id", sub)
 		c.Set("claims", claims)
 		c.Next()
 	}

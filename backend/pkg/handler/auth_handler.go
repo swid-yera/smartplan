@@ -167,13 +167,13 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	keycloakUserID, err := uuid.Parse(subStr)
+	keycloakID, err := uuid.Parse(subStr)
 	if err != nil {
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=invalid_sub")
 		return
 	}
 
-	sessionID, err := h.auth.HandleCallback(ctx, keycloakUserID, token.AccessToken)
+	sessionID, err := h.auth.HandleCallback(ctx, keycloakID, token.AccessToken, claims)
 	if err != nil {
 		c.Error(err)
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=auth_failed")

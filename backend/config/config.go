@@ -83,7 +83,7 @@ func LoadDBConfig() *DBConfig {
 		Port:     getEnvAsInt("DB_PORT", 5432),
 		User:     getEnv("DB_USER", "postgres"),
 		Password: getEnv("DB_PASSWORD", "password"),
-		DBName:   getEnv("DB_DBNAME", "postgres"),
+		DBName:   getEnv("DB_NAME", "postgres"),
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
 }
