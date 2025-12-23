@@ -12,17 +12,20 @@ import (
 type Router struct {
 	auth     *AuthHandler
 	user     *UserHandler
+	rup      *RupHandler
 	webhooks *WebhooksHandler
 }
 
 func NewRouter(
 	auth *AuthHandler,
 	user *UserHandler,
+	rup *RupHandler,
 	webhooks *WebhooksHandler,
 ) *Router {
 	return &Router{
 		auth:     auth,
 		user:     user,
+		rup:      rup,
 		webhooks: webhooks,
 	}
 }
@@ -72,6 +75,14 @@ func (r *Router) Init() *gin.Engine {
 	api := engine.Group("/api")
 	{
 		api.GET("/me", r.user.GetMe)
+
+		// RUP routes
+		api.POST("/rups", r.rup.CreateRup)
+		api.GET("/rups", r.rup.GetAllRups)
+		api.GET("/rups/:id", r.rup.GetRupByID)
+		api.PUT("/rups/:id/status", r.rup.UpdateRupStatus)
+		api.DELETE("/rups/:id", r.rup.DeleteRup)
+		api.GET("/rups/methodist", r.rup.GetRupsByMethodist)
 	}
 
 	// --- WEBHOOKS ---

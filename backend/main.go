@@ -71,6 +71,7 @@ func main() {
 	webhooksService := service.NewWebhooksService(
 		NewRepository,
 	)
+	rupService := service.NewRupService(repository.NewRupPostgres(queries))
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(
@@ -92,10 +93,11 @@ func main() {
 		authMiddleware.GetKeyFunc(),
 	)
 	userHandler := handler.NewUserHandler(userService)
+	rupHandler := handler.NewRupHandler(rupService)
 	webhooksHandler := handler.NewWebhooksHandler(webhooksService, nil)
 
 	// ---------- ROUTER ----------
-	router := handler.NewRouter(authHandler, userHandler, webhooksHandler)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, webhooksHandler)
 	engine := router.Init()
 
 	port := "8080"
