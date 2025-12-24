@@ -72,6 +72,23 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// --- ВОТ ЭТО ДОБАВИТЬ (logout before login) ---
+	ctx := c.Request.Context()
+	if sid, err := c.Cookie(sessionCookieName); err == nil && sid != "" {
+		_ = h.auth.Logout(ctx, sid)
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     sessionCookieName,
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   h.isHTTPS(),
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   -1,
+		})
+	}
+	// --- конец добавленного блока ---
+
 	redirectURI := h.backendCallbackURL()
 	state := randomHex(16)
 
@@ -94,6 +111,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"&response_type=code" +
 		"&scope=openid" +
 		"&state=" + url.QueryEscape(state)
+
+	// 🔥 Опционально, но часто нужно, чтобы Keycloak не делал silent login тем же юзером
+	// loginURL += "&prompt=login"
 
 	c.Redirect(http.StatusFound, loginURL)
 }
@@ -167,13 +187,13 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	keycloakUserID, err := uuid.Parse(subStr)
+	keycloakID, err := uuid.Parse(subStr)
 	if err != nil {
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=invalid_sub")
 		return
 	}
 
-	sessionID, err := h.auth.HandleCallback(ctx, keycloakUserID, token.AccessToken)
+	sessionID, err := h.auth.HandleCallback(ctx, keycloakID, token.AccessToken, claims)
 	if err != nil {
 		c.Error(err)
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=auth_failed")
@@ -202,11 +222,14 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	sid, err := c.Cookie(sessionCookieName)
-	if err == nil && sid != "" {
-		_ = h.redis.Del(c.Request.Context(), "session:"+sid).Err()
+	ctx := c.Request.Context()
+
+	// 1) если есть sid — удаляем сессию через сервис (он чистит session:* и user_sessions:*)
+	if sid, err := c.Cookie(sessionCookieName); err == nil && sid != "" {
+		_ = h.auth.Logout(ctx, sid) // игнорируем ошибку, чтобы logout был идемпотентным
 	}
 
+	// 2) чистим cookie (важно оставить те же атрибуты: Path/SameSite/Secure)
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",

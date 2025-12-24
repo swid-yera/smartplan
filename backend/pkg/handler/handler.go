@@ -64,17 +64,12 @@ func (r *Router) Init() *gin.Engine {
 	engine.GET("/callback", middleware.ValidateQueryParams("code"), r.auth.Callback)
 	engine.GET("/logout", r.auth.Logout)
 
-	auth := engine.Group("/auth")
-	{
-		auth.GET("/login", r.auth.Login)
-		auth.GET("/callback", middleware.ValidateQueryParams("code"), r.auth.Callback)
-		auth.GET("/logout", r.auth.Logout)
-	}
-
 	// --- API ---
 	api := engine.Group("/api")
 	{
 		api.GET("/me", r.user.GetMe)
+    api.GET("/users", r.user.GetAllUsers)
+		api.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 
 		// RUP routes
 		api.POST("/rups", r.rup.CreateRup)

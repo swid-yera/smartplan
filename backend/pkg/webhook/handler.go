@@ -51,7 +51,7 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 	if err := h.webhooksService.ProcessEvent(c.Request.Context(), &event); err != nil {
 		log.Error().Err(err).
 			Str("eventType", string(event.Type)).
-			Str("userId", event.UserID).
+			Str("keycloakID", event.UserID).
 			Msg("Failed to process Keycloak event")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process event"})
 		return

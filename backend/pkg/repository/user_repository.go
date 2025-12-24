@@ -13,11 +13,12 @@ import (
 
 type UsersRepository interface {
 	CreateUser(ctx context.Context, params storage.CreateUserParams) (*storage.User, error)
-
 	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
 	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles []string) error
+	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
+	GetAllUsers(ctx context.Context) ([]storage.User, error)
 }
 
 type UsersPostgres struct {
@@ -35,6 +36,14 @@ func (r *UsersPostgres) CreateUser(
 	user, err := r.queries.CreateUser(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
+	}
+	return &user, nil
+}
+
+func (r *UsersPostgres) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error) {
+	user, err := r.queries.GetUserByKeycloakID(ctx, keycloakID)
+	if err != nil {
+		return nil, fmt.Errorf("get user by keycloak id: %w", err)
 	}
 	return &user, nil
 }
@@ -92,4 +101,8 @@ func (r *UsersPostgres) UpdateRoles(
 			Roles:      roles,
 		},
 	)
+}
+
+func (r *UsersPostgres) GetAllUsers(ctx context.Context) ([]storage.User, error) {
+	return r.queries.GetAllUsers(ctx)
 }

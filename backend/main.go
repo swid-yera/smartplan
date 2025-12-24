@@ -11,6 +11,7 @@ import (
 	"eduplan/backend/pkg/service"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
+	"github.com/Nerzal/gocloak/v13"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 )
@@ -56,7 +57,10 @@ func main() {
 	defer db.Close()
 
 	queries := storage.New(db)
-	NewRepository := repository.NewRepository(queries)
+
+	// ---------- REPOSITORIES ----------
+	authRepo := repository.NewAuthPostgres(queries)
+	usersRepo := repository.NewUsersPostgres(queries)
 
 	// ---------- REDIS ----------
 	rdb := redis.NewClient(&redis.Options{
@@ -65,12 +69,12 @@ func main() {
 		DB:       redisCfg.RedisDB,
 	})
 
+	kc := gocloak.NewClient(kcCfg.KeycloakURL)
+
 	// ---------- SERVICES ----------
-	userService := service.NewUserService(repository.NewAuthPostgres(queries))
-	authService := service.NewAuthService(rdb)
-	webhooksService := service.NewWebhooksService(
-		NewRepository,
-	)
+
+	authService := service.NewAuthService(rdb, authRepo) // работает только с AuthRepository
+	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(repository.NewRupPostgres(queries))
 
 	// ---------- MIDDLEWARE ----------
@@ -86,7 +90,7 @@ func main() {
 
 	// ---------- HANDLERS ----------
 	authHandler := handler.NewAuthHandler(
-		nil,
+		kc,
 		rdb,
 		kcCfg,
 		authService,
@@ -94,10 +98,9 @@ func main() {
 	)
 	userHandler := handler.NewUserHandler(userService)
 	rupHandler := handler.NewRupHandler(rupService)
-	webhooksHandler := handler.NewWebhooksHandler(webhooksService, nil)
 
 	// ---------- ROUTER ----------
-	router := handler.NewRouter(authHandler, userHandler, rupHandler, webhooksHandler)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, nil)
 	engine := router.Init()
 
 	port := "8080"

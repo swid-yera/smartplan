@@ -5,6 +5,8 @@ INSERT INTO users (
     username,
     first_name,
     last_name,
+    created_at,
+    updated_at,
     roles
 ) VALUES (
     $1, $2, $3, $4, $5, $6
