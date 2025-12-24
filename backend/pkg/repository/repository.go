@@ -16,6 +16,7 @@ type Users interface {
 	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles []string) error
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
+	GetAllUsers(ctx context.Context) ([]storage.User, error)
 }
 
 type Auth interface {
@@ -32,4 +33,8 @@ func NewRepository(queries *storage.Queries) *Repository {
 		Users: NewUsersPostgres(queries),
 		Auth:  NewAuthPostgres(queries),
 	}
+}
+
+func (r *AuthPostgres) GetAllUsers(ctx context.Context) ([]storage.User, error) {
+	return r.queries.GetAllUsers(ctx)
 }

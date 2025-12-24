@@ -51,6 +51,7 @@ func (s *webhooksService) ProcessEvent(
 
 	case keycloak.EventRoleUpdated:
 		return s.users.UpdateRoles(ctx, keycloakID, extractRoles(event))
+
 	}
 	return nil
 }

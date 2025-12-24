@@ -18,6 +18,7 @@ type UsersRepository interface {
 	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles []string) error
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
+	GetAllUsers(ctx context.Context) ([]storage.User, error)
 }
 
 type UsersPostgres struct {
@@ -100,4 +101,8 @@ func (r *UsersPostgres) UpdateRoles(
 			Roles:      roles,
 		},
 	)
+}
+
+func (r *UsersPostgres) GetAllUsers(ctx context.Context) ([]storage.User, error) {
+	return r.queries.GetAllUsers(ctx)
 }
