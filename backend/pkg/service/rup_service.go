@@ -49,7 +49,6 @@ type ExplorationNoteRequest struct {
 type ResourceRequest struct {
 	Name string `json:"name"`
 	Link string `json:"link"`
-	Type string `json:"type"`
 }
 
 type DisciplineRequest struct {
@@ -67,7 +66,6 @@ type SemesterRequest struct {
 type TopicRequest struct {
 	Name            string `json:"name"`
 	Type            string `json:"type"`
-	TotalHours      int32  `json:"totalHours"`
 	TheoryHours     int32  `json:"theoryHours"`
 	PracticeHours   int32  `json:"practiceHours"`
 	IndividualHours int32  `json:"individualHours"`
@@ -76,24 +74,24 @@ type TopicRequest struct {
 }
 
 type RupResponse struct {
-	ID              uuid.UUID                `json:"id"`
-	Name            string                   `json:"name"`
-	Code            string                   `json:"code"`
-	Status          string                   `json:"status"`
-	Reason          string                   `json:"reason"`
-	Course          int32                    `json:"course"`
-	StudyForm       string                   `json:"studyForm"`
-	StudyYear       string                   `json:"studyYear"`
-	Type            string                   `json:"type"`
-	TotalHours      int32                    `json:"totalHours"`
-	Contacts        []*UserResponse          `json:"contacts"`
-	Groups          []*GroupResponse         `json:"groups"`
-	Methodist       *UserResponse            `json:"methodist"`
-	Teacher         *UserResponse            `json:"teacher"`
-	ExplorationNote *ExplorationNoteResponse `json:"explorationNote"`
-	Disciplines     []*DisciplineResponse    `json:"disciplines"`
-	CreatedAt       time.Time                `json:"createdAt"`
-	UpdatedAt       time.Time                `json:"updatedAt"`
+	ID              uuid.UUID               `json:"id"`
+	Name            string                  `json:"name"`
+	Code            string                  `json:"code"`
+	Status          string                  `json:"status"`
+	Reason          string                  `json:"reason"`
+	Course          int32                   `json:"course"`
+	StudyForm       string                  `json:"studyForm"`
+	StudyYear       string                  `json:"studyYear"`
+	Type            string                  `json:"type"`
+	TotalHours      int32                   `json:"totalHours"`
+	Contacts        []*UserResponse         `json:"contacts"`
+	Groups          []*GroupResponse        `json:"groups"`
+	Methodist       *UserResponse           `json:"methodist"`
+	Teacher         *UserResponse           `json:"teacher"`
+	ExplorationNote ExplorationNoteResponse `json:"explorationNote"`
+	Disciplines     []*DisciplineResponse   `json:"disciplines"`
+	CreatedAt       time.Time               `json:"createdAt"`
+	UpdatedAt       time.Time               `json:"updatedAt"`
 }
 
 type UserResponse struct {
@@ -296,6 +294,11 @@ func (s *rupService) validateCreateRupRequest(req CreateRupRequest) error {
 	if req.StudyForm != "CORRESPONDENCE" && req.StudyForm != "FULL_TIME" {
 		return fmt.Errorf("studyForm must be CORRESPONDENCE or FULL_TIME")
 	}
+	for _, disc := range req.Disciplines {
+		if len(disc.Semesters) != 8 {
+			return fmt.Errorf("discipline must have exactly 8 semesters, got %d", len(disc.Semesters))
+		}
+	}
 	return nil
 }
 
@@ -366,34 +369,42 @@ func (s *rupService) createExplorationNote(ctx context.Context, note *Exploratio
 	}
 
 	// Create internet resources
-	var internetResourceID *uuid.UUID
-	if len(note.InternetResources) > 0 {
-		id, err := s.createResources(ctx, note.InternetResources)
+	var internetResourceIDs []uuid.UUID
+	for _, res := range note.InternetResources {
+		params := storage.CreateRupResourceParams{
+			Name: res.Name,
+			Link: pgtype.Text{String: res.Link, Valid: res.Link != ""},
+		}
+		resource, err := s.repo.CreateResource(ctx, params)
 		if err != nil {
 			return nil, err
 		}
-		internetResourceID = id
+		internetResourceIDs = append(internetResourceIDs, resource.ID)
 	}
 
 	// Create technical resources
-	var technicalResourceID *uuid.UUID
-	if len(note.TechnicalResources) > 0 {
-		id, err := s.createResources(ctx, note.TechnicalResources)
+	var technicalResourceIDs []uuid.UUID
+	for _, res := range note.TechnicalResources {
+		params := storage.CreateRupResourceParams{
+			Name: res.Name,
+			Link: pgtype.Text{String: res.Link, Valid: res.Link != ""},
+		}
+		resource, err := s.repo.CreateResource(ctx, params)
 		if err != nil {
 			return nil, err
 		}
-		technicalResourceID = id
+		technicalResourceIDs = append(technicalResourceIDs, resource.ID)
 	}
 
 	params := storage.CreateRupExplorationNoteParams{
-		Basis:                pgtype.Text{String: note.Basis, Valid: note.Basis != ""},
-		Goals:                pgtype.Text{String: note.Goals, Valid: note.Goals != ""},
-		Summary:              pgtype.Text{String: "", Valid: false}, // Not in request
-		Competencies:         pgtype.Text{String: note.Competencies, Valid: note.Competencies != ""},
-		Prerequisites:        pgtype.Text{String: note.Prerequisites, Valid: note.Prerequisites != ""},
-		Postrequisites:       pgtype.Text{String: note.Postrequisites, Valid: note.Postrequisites != ""},
-		InternetResourcesID:  s.toPgUUID(internetResourceID),
-		TechnicalResourcesID: s.toPgUUID(technicalResourceID),
+		Basis:              pgtype.Text{String: note.Basis, Valid: note.Basis != ""},
+		Goals:              pgtype.Text{String: note.Goals, Valid: note.Goals != ""},
+		Summary:            pgtype.Text{String: "", Valid: false}, // Not in request
+		Competencies:       pgtype.Text{String: note.Competencies, Valid: note.Competencies != ""},
+		Prerequisites:      pgtype.Text{String: note.Prerequisites, Valid: note.Prerequisites != ""},
+		Postrequisites:     pgtype.Text{String: note.Postrequisites, Valid: note.Postrequisites != ""},
+		InternetResources:  internetResourceIDs,
+		TechnicalResources: technicalResourceIDs,
 	}
 
 	explorationNote, err := s.repo.CreateExplorationNote(ctx, params)
@@ -402,26 +413,6 @@ func (s *rupService) createExplorationNote(ctx context.Context, note *Exploratio
 	}
 
 	return &explorationNote.ID, nil
-}
-
-func (s *rupService) createResources(ctx context.Context, resources []*ResourceRequest) (*uuid.UUID, error) {
-	if len(resources) == 0 {
-		return nil, nil
-	}
-
-	// For simplicity, create the first resource
-	resource := resources[0]
-	params := storage.CreateRupResourceParams{
-		Name: resource.Name,
-		Link: pgtype.Text{String: resource.Link, Valid: resource.Link != ""},
-	}
-
-	res, err := s.repo.CreateResource(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return &res.ID, nil
 }
 
 func (s *rupService) createDisciplines(ctx context.Context, disciplines []*DisciplineRequest) ([]uuid.UUID, error) {
@@ -493,10 +484,12 @@ func (s *rupService) createTopics(ctx context.Context, topics []*TopicRequest) (
 			topicType = storage.DisciplineTopicTypeCOMBINED
 		}
 
+		TotalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours + topic.SrspHours + topic.SrsHours
+
 		params := storage.CreateDisciplineTopicParams{
 			Name:            topic.Name,
 			Type:            topicType,
-			TotalHours:      topic.TotalHours,
+			TotalHours:      TotalHours,
 			TheoryHours:     topic.TheoryHours,
 			PracticeHours:   topic.PracticeHours,
 			IndividualHours: topic.IndividualHours,
@@ -566,7 +559,17 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	}
 
 	// Get exploration note
-	var explorationNote *ExplorationNoteResponse
+	explorationNote := ExplorationNoteResponse{
+		ID:                 uuid.Nil,
+		Basis:              "",
+		Goals:              "",
+		Summary:            "",
+		Competencies:       "",
+		Prerequisites:      "",
+		Postrequisites:     "",
+		InternetResources:  []*ResourceResponse{},
+		TechnicalResources: []*ResourceResponse{},
+	}
 	if rup.ExplorationNoteID.Valid {
 		note, err := s.repo.GetExplorationNoteByID(ctx, rup.ExplorationNoteID.Bytes)
 		if err == nil {
@@ -634,34 +637,36 @@ func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse 
 	}
 }
 
-func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note storage.RupExplorationNote) *ExplorationNoteResponse {
+func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note storage.RupExplorationNote) ExplorationNoteResponse {
 	internetResources := []*ResourceResponse{}
-	if note.InternetResourcesID.Valid {
-		res, err := s.repo.GetResourceByID(ctx, note.InternetResourcesID.Bytes)
-		if err == nil {
-			internetResources = append(internetResources, &ResourceResponse{
-				ID:   res.ID,
-				Name: res.Name,
-				Link: res.Link.String,
-				Type: "INTERNET",
-			})
+	for _, resID := range note.InternetResources {
+		res, err := s.repo.GetResourceByID(ctx, resID)
+		if err != nil {
+			continue
 		}
+		internetResources = append(internetResources, &ResourceResponse{
+			ID:   res.ID,
+			Name: res.Name,
+			Link: res.Link.String,
+			Type: "INTERNET",
+		})
 	}
 
 	technicalResources := []*ResourceResponse{}
-	if note.TechnicalResourcesID.Valid {
-		res, err := s.repo.GetResourceByID(ctx, note.TechnicalResourcesID.Bytes)
-		if err == nil {
-			technicalResources = append(technicalResources, &ResourceResponse{
-				ID:   res.ID,
-				Name: res.Name,
-				Link: res.Link.String,
-				Type: "TECHNICAL",
-			})
+	for _, resID := range note.TechnicalResources {
+		res, err := s.repo.GetResourceByID(ctx, resID)
+		if err != nil {
+			continue
 		}
+		technicalResources = append(technicalResources, &ResourceResponse{
+			ID:   res.ID,
+			Name: res.Name,
+			Link: res.Link.String,
+			Type: "TECHNICAL",
+		})
 	}
 
-	return &ExplorationNoteResponse{
+	return ExplorationNoteResponse{
 		ID:                 note.ID,
 		Basis:              note.Basis.String,
 		Goals:              note.Goals.String,

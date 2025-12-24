@@ -101,15 +101,15 @@ INSERT INTO rup_exploration_notes (
     competencies,
     prerequisites,
     postrequisites,
-    internet_resources_id,
-    technical_resources_id
+    internet_resources,
+    technical_resources
 ) VALUES (
     $1,$2,$3,$4,$5,$6,$7,$8
 )
 RETURNING *;
 
 -- name: GetRupExplorationNoteByID :one
-SELECT *
+SELECT id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources
 FROM rup_exploration_notes
 WHERE id = $1;
 

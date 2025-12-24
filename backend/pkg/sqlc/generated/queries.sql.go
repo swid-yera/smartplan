@@ -206,23 +206,23 @@ INSERT INTO rup_exploration_notes (
     competencies,
     prerequisites,
     postrequisites,
-    internet_resources_id,
-    technical_resources_id
+    internet_resources,
+    technical_resources
 ) VALUES (
     $1,$2,$3,$4,$5,$6,$7,$8
 )
-RETURNING id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources_id, technical_resources_id
+RETURNING id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources
 `
 
 type CreateRupExplorationNoteParams struct {
-	Basis                pgtype.Text `json:"basis"`
-	Goals                pgtype.Text `json:"goals"`
-	Summary              pgtype.Text `json:"summary"`
-	Competencies         pgtype.Text `json:"competencies"`
-	Prerequisites        pgtype.Text `json:"prerequisites"`
-	Postrequisites       pgtype.Text `json:"postrequisites"`
-	InternetResourcesID  pgtype.UUID `json:"internet_resources_id"`
-	TechnicalResourcesID pgtype.UUID `json:"technical_resources_id"`
+	Basis              pgtype.Text `json:"basis"`
+	Goals              pgtype.Text `json:"goals"`
+	Summary            pgtype.Text `json:"summary"`
+	Competencies       pgtype.Text `json:"competencies"`
+	Prerequisites      pgtype.Text `json:"prerequisites"`
+	Postrequisites     pgtype.Text `json:"postrequisites"`
+	InternetResources  []uuid.UUID `json:"internet_resources"`
+	TechnicalResources []uuid.UUID `json:"technical_resources"`
 }
 
 func (q *Queries) CreateRupExplorationNote(ctx context.Context, arg CreateRupExplorationNoteParams) (RupExplorationNote, error) {
@@ -233,8 +233,8 @@ func (q *Queries) CreateRupExplorationNote(ctx context.Context, arg CreateRupExp
 		arg.Competencies,
 		arg.Prerequisites,
 		arg.Postrequisites,
-		arg.InternetResourcesID,
-		arg.TechnicalResourcesID,
+		arg.InternetResources,
+		arg.TechnicalResources,
 	)
 	var i RupExplorationNote
 	err := row.Scan(
@@ -245,8 +245,8 @@ func (q *Queries) CreateRupExplorationNote(ctx context.Context, arg CreateRupExp
 		&i.Competencies,
 		&i.Prerequisites,
 		&i.Postrequisites,
-		&i.InternetResourcesID,
-		&i.TechnicalResourcesID,
+		&i.InternetResources,
+		&i.TechnicalResources,
 	)
 	return i, err
 }
@@ -737,7 +737,7 @@ func (q *Queries) GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDi
 }
 
 const getRupExplorationNoteByID = `-- name: GetRupExplorationNoteByID :one
-SELECT id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources_id, technical_resources_id
+SELECT id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources
 FROM rup_exploration_notes
 WHERE id = $1
 `
@@ -753,8 +753,8 @@ func (q *Queries) GetRupExplorationNoteByID(ctx context.Context, id uuid.UUID) (
 		&i.Competencies,
 		&i.Prerequisites,
 		&i.Postrequisites,
-		&i.InternetResourcesID,
-		&i.TechnicalResourcesID,
+		&i.InternetResources,
+		&i.TechnicalResources,
 	)
 	return i, err
 }
