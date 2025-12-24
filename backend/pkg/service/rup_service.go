@@ -524,7 +524,7 @@ func (s *rupService) toPgUUID(id *uuid.UUID) pgtype.UUID {
 
 func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*RupResponse, error) {
 	// Get contacts
-	var contacts []*UserResponse
+	contacts := []*UserResponse{}
 	for _, contactID := range rup.Contacts {
 		user, err := s.repo.GetUserByID(ctx, contactID)
 		if err != nil {
@@ -533,13 +533,18 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 		contacts = append(contacts, s.convertToUserResponse(*user))
 	}
 
-	// Get groups - assuming groups are stored as strings, need to fetch from somewhere
-	var groups []*GroupResponse
-	// For now, create dummy groups based on GroupIds
-	for _, groupName := range rup.GroupIds {
-		groups = append(groups, &GroupResponse{
-			Name: groupName,
-		})
+	// Get groups
+	groups := []*GroupResponse{}
+	for _, groupIDStr := range rup.GroupIds {
+		groupID, err := uuid.Parse(groupIDStr)
+		if err != nil {
+			continue // Skip invalid UUIDs
+		}
+		group, err := s.repo.GetGroupByKeycloakID(ctx, groupID)
+		if err != nil {
+			continue // Skip if not found
+		}
+		groups = append(groups, s.convertToGroupResponse(*group))
 	}
 
 	// Get methodist
@@ -570,7 +575,7 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	}
 
 	// Get disciplines
-	var disciplines []*DisciplineResponse
+	disciplines := []*DisciplineResponse{}
 	for _, discID := range rup.Disciplines {
 		disc, err := s.repo.GetDisciplineByID(ctx, discID)
 		if err != nil {
@@ -620,8 +625,17 @@ func (s *rupService) convertToUserResponse(user storage.User) *UserResponse {
 	}
 }
 
+func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse {
+	return &GroupResponse{
+		KeycloakID:    group.KeycloakID,
+		Name:          group.Name,
+		Qualification: group.Qualification.String,
+		Specialty:     group.Specialty.String,
+	}
+}
+
 func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note storage.RupExplorationNote) *ExplorationNoteResponse {
-	var internetResources []*ResourceResponse
+	internetResources := []*ResourceResponse{}
 	if note.InternetResourcesID.Valid {
 		res, err := s.repo.GetResourceByID(ctx, note.InternetResourcesID.Bytes)
 		if err == nil {
@@ -634,7 +648,7 @@ func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note 
 		}
 	}
 
-	var technicalResources []*ResourceResponse
+	technicalResources := []*ResourceResponse{}
 	if note.TechnicalResourcesID.Valid {
 		res, err := s.repo.GetResourceByID(ctx, note.TechnicalResourcesID.Bytes)
 		if err == nil {
@@ -661,7 +675,7 @@ func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note 
 }
 
 func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc storage.RupDiscipline) (*DisciplineResponse, error) {
-	var semesters []*SemesterResponse
+	semesters := []*SemesterResponse{}
 	for _, semID := range disc.Semesters {
 		sem, err := s.repo.GetSemesterByID(ctx, semID)
 		if err != nil {
@@ -674,7 +688,7 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 		})
 	}
 
-	var topics []*TopicResponse
+	topics := []*TopicResponse{}
 	for _, topicID := range disc.Topics {
 		topic, err := s.repo.GetTopicByID(ctx, topicID)
 		if err != nil {

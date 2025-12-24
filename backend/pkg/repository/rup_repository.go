@@ -25,6 +25,7 @@ type RupRepository interface {
 	CreateTopic(ctx context.Context, params storage.CreateDisciplineTopicParams) (*storage.DisciplineTopic, error)
 
 	GetUserByID(ctx context.Context, id uuid.UUID) (*storage.User, error)
+	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.Group, error)
 	GetExplorationNoteByID(ctx context.Context, id uuid.UUID) (*storage.RupExplorationNote, error)
 	GetDisciplineByID(ctx context.Context, id uuid.UUID) (*storage.RupDiscipline, error)
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*storage.RupResource, error)
@@ -122,6 +123,14 @@ func (r *RupPostgres) GetUserByID(ctx context.Context, id uuid.UUID) (*storage.U
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *RupPostgres) GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.Group, error) {
+	group, err := r.queries.GetGroupByKeycloakID(ctx, keycloakID)
+	if err != nil {
+		return nil, err
+	}
+	return &group, nil
 }
 
 func (r *RupPostgres) GetExplorationNoteByID(ctx context.Context, id uuid.UUID) (*storage.RupExplorationNote, error) {

@@ -698,6 +698,24 @@ func (q *Queries) GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (Dis
 	return i, err
 }
 
+const getGroupByKeycloakID = `-- name: GetGroupByKeycloakID :one
+SELECT keycloak_id, name, qualification, specialty
+FROM groups
+WHERE keycloak_id = $1
+`
+
+func (q *Queries) GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error) {
+	row := q.db.QueryRow(ctx, getGroupByKeycloakID, keycloakID)
+	var i Group
+	err := row.Scan(
+		&i.KeycloakID,
+		&i.Name,
+		&i.Qualification,
+		&i.Specialty,
+	)
+	return i, err
+}
+
 const getRupDisciplineByID = `-- name: GetRupDisciplineByID :one
 SELECT id, name, code, total_hours, semesters, topics
 FROM rup_disciplines

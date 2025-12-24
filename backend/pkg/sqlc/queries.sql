@@ -260,6 +260,11 @@ RETURNING *;
 SELECT *
 FROM award_types;
 
+-- name: GetGroupByKeycloakID :one
+SELECT keycloak_id, name, qualification, specialty
+FROM groups
+WHERE keycloak_id = $1;
+
 -- name: DeleteRup :exec
 DELETE FROM rups
 WHERE id = $1;

@@ -33,6 +33,7 @@ type Querier interface {
 	GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
 	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
+	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error)
 	GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDiscipline, error)
 	GetRupExplorationNoteByID(ctx context.Context, id uuid.UUID) (RupExplorationNote, error)
 	GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupResource, error)
