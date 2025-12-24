@@ -64,8 +64,11 @@ func (r *Router) Init() *gin.Engine {
 	engine.GET("/callback", middleware.ValidateQueryParams("code"), r.auth.Callback)
 	engine.GET("/logout", r.auth.Logout)
 
+	auth := middleware.SessionAuth(r.user.userService)
+
 	// --- API ---
 	api := engine.Group("/api")
+	api.Use(auth)
 	{
 		api.GET("/me", r.user.GetMe)
 		api.GET("/users", r.user.GetAllUsers)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"eduplan/backend/config"
+	"eduplan/backend/pkg/service"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -98,6 +100,8 @@ func NewAuthMiddleware(keycloakURL, realm string, redisClient *redis.Client, con
 func (a *AuthMiddleware) GetKeyFunc() jwt.Keyfunc {
 	return a.keyFunc
 }
+
+const ContextUserKey = "user"
 
 func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -259,4 +263,39 @@ func (a *AuthMiddleware) logout(c *gin.Context, sid string) {
 	})
 
 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
+}
+
+func SessionAuth(userService service.UserService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		sid, err := c.Cookie("sid")
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "no session",
+			})
+			return
+		}
+
+		sessionID, err := uuid.Parse(sid)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"error": "invalid session",
+			})
+			return
+		}
+
+		user, err := userService.GetUserBySessionID(
+			c.Request.Context(),
+			sessionID,
+		)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "session expired or invalid",
+			})
+			return
+		}
+
+		// кладём пользователя в context
+		c.Set(ContextUserKey, user)
+		c.Next()
+	}
 }
