@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"eduplan/backend/pkg/service"
@@ -114,7 +115,8 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 
 // GetRupsByMethodist получает RUP по методисту
 func (h *RupHandler) GetRupsByMethodist(c *gin.Context) {
-	methodistIDStr := c.Query("methodist_id")
+	methodistIDStr := c.Query("id")
+	log.Println(methodistIDStr)
 	if methodistIDStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "methodist_id query parameter is required"})
 		return

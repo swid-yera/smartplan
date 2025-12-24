@@ -68,7 +68,7 @@ func (r *Router) Init() *gin.Engine {
 	api := engine.Group("/api")
 	{
 		api.GET("/me", r.user.GetMe)
-    api.GET("/users", r.user.GetAllUsers)
+		api.GET("/users", r.user.GetAllUsers)
 		api.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 
 		// RUP routes
@@ -77,7 +77,7 @@ func (r *Router) Init() *gin.Engine {
 		api.GET("/rups/:id", r.rup.GetRupByID)
 		api.PUT("/rups/:id/status", r.rup.UpdateRupStatus)
 		api.DELETE("/rups/:id", r.rup.DeleteRup)
-		api.GET("/rups/methodist", r.rup.GetRupsByMethodist)
+		api.GET("/rups/methodist/:id", r.rup.GetRupsByMethodist)
 	}
 
 	// --- WEBHOOKS ---
