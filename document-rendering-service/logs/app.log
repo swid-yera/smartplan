@@ -1,0 +1,11 @@
+2025-12-20 19:31:18,518 | INFO | document_service | deleted success: 0, with error 0
+2025-12-20 19:31:29,602 | INFO | document_service | deleted success: 0, with error 0
+2025-12-20 19:31:34,206 | INFO | document_service | deleted success: 0, with error 0
+2025-12-20 19:32:36,451 | INFO | document_service | deleted file: I:\www\eduplan\document-rendering-service\out\pm6-obespechen_2025-12-20_19-31-18.docx
+2025-12-20 19:32:36,451 | INFO | document_service | deleted success: 1, with error 0
+2025-12-20 19:32:58,004 | INFO | document_service | deleted file: I:\www\eduplan\document-rendering-service\out\pm6-obespechen_2025-12-20_19-32-50.docx
+2025-12-20 19:32:58,005 | INFO | document_service | deleted success: 1, with error 0
+2025-12-20 19:33:17,277 | INFO | document_service | deleted file: I:\www\eduplan\document-rendering-service\out\pm6-obespechen_2025-12-20_19-32-51.docx
+2025-12-20 19:33:17,279 | INFO | document_service | deleted file: I:\www\eduplan\document-rendering-service\out\pm6-obespechen_2025-12-20_19-32-52.docx
+2025-12-20 19:33:17,280 | INFO | document_service | deleted file: I:\www\eduplan\document-rendering-service\out\pm6-obespechen_2025-12-20_19-32-58.docx
+2025-12-20 19:33:17,280 | INFO | document_service | deleted success: 3, with error 0
