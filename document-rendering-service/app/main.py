@@ -1,19 +1,20 @@
-from fastapi import FastAPI, Body
+from fastapi import Depends, FastAPI, Body
 from fastapi.responses import FileResponse
 
 from app.logger import logger
 from app.config import OUT_DIR
 from app.helpers.cleanup import cleanup_by_count, clear_out_folder
 from app.services.rup import generate_rup_docx
+from app.helpers.security import verify_api_key
 
 
 app = FastAPI(title="Document Generator")
 
 
 @app.post("/generate-rup", response_class=FileResponse)
-def generate_document(payload: dict = Body(...)):
-    """"""
-
+def generate_document(
+    payload: dict = Body(...), api_key: str = Depends(verify_api_key)
+):
     try:
         logger.info(
             "/generate-rup, request to generate document: %s", payload.get("name")
@@ -43,7 +44,7 @@ def generate_document(payload: dict = Body(...)):
 
 
 @app.delete("/cleanup")
-async def delete_out_files():
+async def delete_out_files(api_key: str = Depends(verify_api_key)):
     """
     delete all files in /out folder
     """
