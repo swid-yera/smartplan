@@ -115,6 +115,7 @@ CREATE TABLE rup_disciplines (
 CREATE TABLE rups (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    code TEXT,
     status rups_status NOT NULL,
     reason TEXT,
     course INT NOT NULL CHECK (course BETWEEN 1 AND 4),

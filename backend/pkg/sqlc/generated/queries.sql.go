@@ -276,45 +276,61 @@ func (q *Queries) CreateRupResource(ctx context.Context, arg CreateRupResourcePa
 const createRups = `-- name: CreateRups :one
 INSERT INTO rups (
     name,
+    code,
     status,
     course,
     study_form,
     study_year,
     type,
+    contacts,
+    group_ids,
     methodist,
-    teacher
+    teacher,
+    exploration_note_id,
+    disciplines
 ) VALUES (
-    $1,$2,$3,$4,$5,$6,$7,$8
+    $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
 )
-RETURNING id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+RETURNING id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 `
 
 type CreateRupsParams struct {
-	Name      string        `json:"name"`
-	Status    RupsStatus    `json:"status"`
-	Course    int32         `json:"course"`
-	StudyForm StudyFormEnum `json:"study_form"`
-	StudyYear string        `json:"study_year"`
-	Type      RupsTypeEnum  `json:"type"`
-	Methodist pgtype.UUID   `json:"methodist"`
-	Teacher   pgtype.UUID   `json:"teacher"`
+	Name              string        `json:"name"`
+	Code              pgtype.Text   `json:"code"`
+	Status            RupsStatus    `json:"status"`
+	Course            int32         `json:"course"`
+	StudyForm         StudyFormEnum `json:"study_form"`
+	StudyYear         string        `json:"study_year"`
+	Type              RupsTypeEnum  `json:"type"`
+	Contacts          []uuid.UUID   `json:"contacts"`
+	GroupIds          []string      `json:"group_ids"`
+	Methodist         pgtype.UUID   `json:"methodist"`
+	Teacher           pgtype.UUID   `json:"teacher"`
+	ExplorationNoteID pgtype.UUID   `json:"exploration_note_id"`
+	Disciplines       []uuid.UUID   `json:"disciplines"`
 }
 
 func (q *Queries) CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error) {
 	row := q.db.QueryRow(ctx, createRups,
 		arg.Name,
+		arg.Code,
 		arg.Status,
 		arg.Course,
 		arg.StudyForm,
 		arg.StudyYear,
 		arg.Type,
+		arg.Contacts,
+		arg.GroupIds,
 		arg.Methodist,
 		arg.Teacher,
+		arg.ExplorationNoteID,
+		arg.Disciplines,
 	)
 	var i Rup
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.Code,
 		&i.Status,
 		&i.Reason,
 		&i.Course,
@@ -534,7 +550,7 @@ func (q *Queries) GetAllRupResources(ctx context.Context) ([]RupResource, error)
 }
 
 const getAllRups = `-- name: GetAllRups :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 FROM rups
 ORDER BY created_at DESC
 `
@@ -551,6 +567,7 @@ func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
+			&i.Code,
 			&i.Status,
 			&i.Reason,
 			&i.Course,
@@ -738,7 +755,7 @@ func (q *Queries) GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupReso
 }
 
 const getRupsByID = `-- name: GetRupsByID :one
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 FROM rups
 WHERE id = $1
 `
@@ -749,6 +766,7 @@ func (q *Queries) GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.Code,
 		&i.Status,
 		&i.Reason,
 		&i.Course,
@@ -769,7 +787,7 @@ func (q *Queries) GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error) {
 }
 
 const getRupsByMethodist = `-- name: GetRupsByMethodist :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 FROM rups
 WHERE methodist = $1
 ORDER BY created_at DESC
@@ -787,6 +805,7 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
+			&i.Code,
 			&i.Status,
 			&i.Reason,
 			&i.Course,

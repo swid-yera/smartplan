@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
@@ -12,23 +13,155 @@ import (
 )
 
 type RupService interface {
-	CreateRup(ctx context.Context, req CreateRupRequest) (*storage.Rup, error)
-	GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Rup, error)
-	GetAllRups(ctx context.Context) ([]storage.Rup, error)
+	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
+	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
+	GetAllRups(ctx context.Context) ([]*RupResponse, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string) error
-	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]storage.Rup, error)
+	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 }
 
 type CreateRupRequest struct {
-	Name      string `json:"name"`
-	Code      string `json:"code"`
-	Type      string `json:"type"`
-	StudyYear string `json:"studyYear"`
-	Course    int32  `json:"course"`
-	StudyForm string `json:"studyForm"`
-	Methodist string `json:"methodist"`
-	Teacher   string `json:"teacher"`
+	Name            string                  `json:"name"`
+	Code            string                  `json:"code"`
+	Type            string                  `json:"type"`
+	StudyYear       string                  `json:"studyYear"`
+	Course          int32                   `json:"course"`
+	StudyForm       string                  `json:"studyForm"`
+	Contacts        []string                `json:"contacts"`
+	Groups          []string                `json:"groups"`
+	Methodist       string                  `json:"methodist"`
+	Teacher         string                  `json:"teacher"`
+	ExplorationNote *ExplorationNoteRequest `json:"explorationNote"`
+	Disciplines     []*DisciplineRequest    `json:"disciplines"`
+}
+
+type ExplorationNoteRequest struct {
+	Basis              string             `json:"basis"`
+	Goals              string             `json:"goals"`
+	Competencies       string             `json:"competencies"`
+	Prerequisites      string             `json:"prerequisites"`
+	Postrequisites     string             `json:"postrequisites"`
+	InternetResources  []*ResourceRequest `json:"internetResources"`
+	TechnicalResources []*ResourceRequest `json:"technicalResources"`
+}
+
+type ResourceRequest struct {
+	Name string `json:"name"`
+	Link string `json:"link"`
+	Type string `json:"type"`
+}
+
+type DisciplineRequest struct {
+	Name      string             `json:"name"`
+	Code      string             `json:"code"`
+	Semesters []*SemesterRequest `json:"semesters"`
+	Topics    []*TopicRequest    `json:"topics"`
+}
+
+type SemesterRequest struct {
+	Semester   int32 `json:"semester"`
+	TotalHours int32 `json:"totalHours"`
+}
+
+type TopicRequest struct {
+	Name            string `json:"name"`
+	Type            string `json:"type"`
+	TotalHours      int32  `json:"totalHours"`
+	TheoryHours     int32  `json:"theoryHours"`
+	PracticeHours   int32  `json:"practiceHours"`
+	IndividualHours int32  `json:"individualHours"`
+	SrspHours       int32  `json:"srspHours"`
+	SrsHours        int32  `json:"srsHours"`
+}
+
+type RupResponse struct {
+	ID              uuid.UUID                `json:"id"`
+	Name            string                   `json:"name"`
+	Code            string                   `json:"code"`
+	Status          string                   `json:"status"`
+	Reason          string                   `json:"reason"`
+	Course          int32                    `json:"course"`
+	StudyForm       string                   `json:"studyForm"`
+	StudyYear       string                   `json:"studyYear"`
+	Type            string                   `json:"type"`
+	TotalHours      int32                    `json:"totalHours"`
+	Contacts        []*UserResponse          `json:"contacts"`
+	Groups          []*GroupResponse         `json:"groups"`
+	Methodist       *UserResponse            `json:"methodist"`
+	Teacher         *UserResponse            `json:"teacher"`
+	ExplorationNote *ExplorationNoteResponse `json:"explorationNote"`
+	Disciplines     []*DisciplineResponse    `json:"disciplines"`
+	CreatedAt       time.Time                `json:"createdAt"`
+	UpdatedAt       time.Time                `json:"updatedAt"`
+}
+
+type UserResponse struct {
+	KeycloakID  uuid.UUID `json:"keycloak_id"`
+	Email       string    `json:"email"`
+	Username    string    `json:"username"`
+	FirstName   string    `json:"firstName"`
+	LastName    string    `json:"lastName"`
+	Phone       string    `json:"phone"`
+	Roles       []string  `json:"roles"`
+	TotalPoints int32     `json:"totalPoints"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type GroupResponse struct {
+	KeycloakID    uuid.UUID `json:"keycloak_id"`
+	Name          string    `json:"name"`
+	Qualification string    `json:"qualification"`
+	Specialty     string    `json:"specialty"`
+}
+
+type ExplorationNoteResponse struct {
+	ID                 uuid.UUID           `json:"id"`
+	Basis              string              `json:"basis"`
+	Goals              string              `json:"goals"`
+	Summary            string              `json:"summary"`
+	Competencies       string              `json:"competencies"`
+	Prerequisites      string              `json:"prerequisites"`
+	Postrequisites     string              `json:"postrequisites"`
+	InternetResources  []*ResourceResponse `json:"internetResources"`
+	TechnicalResources []*ResourceResponse `json:"technicalResources"`
+}
+
+type ResourceResponse struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Link string    `json:"link"`
+	Type string    `json:"type"`
+}
+
+type DisciplineResponse struct {
+	ID         uuid.UUID           `json:"id"`
+	Name       string              `json:"name"`
+	Code       string              `json:"code"`
+	TotalHours int32               `json:"totalHours"`
+	Semesters  []*SemesterResponse `json:"semesters"`
+	Topics     []*TopicResponse    `json:"topics"`
+	CreatedAt  time.Time           `json:"createdAt"`
+	UpdatedAt  time.Time           `json:"updatedAt"`
+}
+
+type SemesterResponse struct {
+	ID         uuid.UUID `json:"id"`
+	Semester   int32     `json:"semester"`
+	TotalHours int32     `json:"totalHours"`
+}
+
+type TopicResponse struct {
+	ID              uuid.UUID `json:"id"`
+	Name            string    `json:"name"`
+	Type            string    `json:"type"`
+	TotalHours      int32     `json:"totalHours"`
+	TheoryHours     int32     `json:"theoryHours"`
+	PracticeHours   int32     `json:"practiceHours"`
+	IndividualHours int32     `json:"individualHours"`
+	SrspHours       int32     `json:"srspHours"`
+	SrsHours        int32     `json:"srsHours"`
 }
 
 type rupService struct {
@@ -39,14 +172,25 @@ func NewRupService(repo repository.RupRepository) RupService {
 	return &rupService{repo: repo}
 }
 
-func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*storage.Rup, error) {
+func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error) {
 	// Валидация
 	if err := s.validateCreateRupRequest(req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
+	// Создание связанных сущностей
+	explorationNoteID, err := s.createExplorationNote(ctx, req.ExplorationNote)
+	if err != nil {
+		return nil, fmt.Errorf("create exploration note failed: %w", err)
+	}
+
+	disciplineIDs, err := s.createDisciplines(ctx, req.Disciplines)
+	if err != nil {
+		return nil, fmt.Errorf("create disciplines failed: %w", err)
+	}
+
 	// Преобразование в параметры для repository
-	params := s.convertToCreateParams(req)
+	params := s.convertToCreateParams(req, explorationNoteID, disciplineIDs)
 
 	// Создание RUP
 	rup, err := s.repo.CreateRup(ctx, params)
@@ -54,15 +198,40 @@ func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*stor
 		return nil, fmt.Errorf("create rup failed: %w", err)
 	}
 
-	return rup, nil
+	// Сборка полного ответа
+	response, err := s.buildRupResponse(ctx, *rup)
+	if err != nil {
+		return nil, fmt.Errorf("build response failed: %w", err)
+	}
+
+	return response, nil
 }
 
-func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Rup, error) {
-	return s.repo.GetRupByID(ctx, id)
+func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error) {
+	rup, err := s.repo.GetRupByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildRupResponse(ctx, *rup)
 }
 
-func (s *rupService) GetAllRups(ctx context.Context) ([]storage.Rup, error) {
-	return s.repo.GetAllRups(ctx)
+func (s *rupService) GetAllRups(ctx context.Context) ([]*RupResponse, error) {
+	rups, err := s.repo.GetAllRups(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []*RupResponse
+	for _, rup := range rups {
+		response, err := s.buildRupResponse(ctx, rup)
+		if err != nil {
+			continue // Skip failed conversions
+		}
+		responses = append(responses, response)
+	}
+
+	return responses, nil
 }
 
 func (s *rupService) UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string) error {
@@ -88,9 +257,23 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, id uuid.UUID, status s
 	return s.repo.UpdateRupStatus(ctx, id, rupStatus, reasonText)
 }
 
-func (s *rupService) GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]storage.Rup, error) {
+func (s *rupService) GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error) {
 	methodistUUID := pgtype.UUID{Bytes: methodistID, Valid: true}
-	return s.repo.GetRupsByMethodist(ctx, methodistUUID)
+	rups, err := s.repo.GetRupsByMethodist(ctx, methodistUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []*RupResponse
+	for _, rup := range rups {
+		response, err := s.buildRupResponse(ctx, rup)
+		if err != nil {
+			continue // Skip failed conversions
+		}
+		responses = append(responses, response)
+	}
+
+	return responses, nil
 }
 
 func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {
@@ -116,9 +299,10 @@ func (s *rupService) validateCreateRupRequest(req CreateRupRequest) error {
 	return nil
 }
 
-func (s *rupService) convertToCreateParams(req CreateRupRequest) storage.CreateRupsParams {
+func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID) storage.CreateRupsParams {
 	var methodistUUID pgtype.UUID
 	var teacherUUID pgtype.UUID
+	var explorationNoteUUID pgtype.UUID
 
 	if req.Methodist != "" {
 		if id, err := uuid.Parse(req.Methodist); err == nil {
@@ -129,6 +313,17 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest) storage.CreateR
 	if req.Teacher != "" {
 		if id, err := uuid.Parse(req.Teacher); err == nil {
 			teacherUUID = pgtype.UUID{Bytes: id, Valid: true}
+		}
+	}
+
+	if explorationNoteID != nil {
+		explorationNoteUUID = pgtype.UUID{Bytes: *explorationNoteID, Valid: true}
+	}
+
+	var contacts []uuid.UUID
+	for _, contactStr := range req.Contacts {
+		if id, err := uuid.Parse(contactStr); err == nil {
+			contacts = append(contacts, id)
 		}
 	}
 
@@ -149,13 +344,363 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest) storage.CreateR
 	}
 
 	return storage.CreateRupsParams{
-		Name:      req.Name,
-		Status:    storage.RupsStatusDRAFT,
-		Course:    req.Course,
-		StudyForm: studyForm,
-		StudyYear: req.StudyYear,
-		Type:      rupType,
-		Methodist: methodistUUID,
-		Teacher:   teacherUUID,
+		Name:              req.Name,
+		Code:              pgtype.Text{String: req.Code, Valid: req.Code != ""},
+		Status:            storage.RupsStatusDRAFT,
+		Course:            req.Course,
+		StudyForm:         studyForm,
+		StudyYear:         req.StudyYear,
+		Type:              rupType,
+		Contacts:          contacts,
+		GroupIds:          req.Groups,
+		Methodist:         methodistUUID,
+		Teacher:           teacherUUID,
+		ExplorationNoteID: explorationNoteUUID,
+		Disciplines:       disciplineIDs,
 	}
+}
+
+func (s *rupService) createExplorationNote(ctx context.Context, note *ExplorationNoteRequest) (*uuid.UUID, error) {
+	if note == nil {
+		return nil, nil
+	}
+
+	// Create internet resources
+	var internetResourceID *uuid.UUID
+	if len(note.InternetResources) > 0 {
+		id, err := s.createResources(ctx, note.InternetResources)
+		if err != nil {
+			return nil, err
+		}
+		internetResourceID = id
+	}
+
+	// Create technical resources
+	var technicalResourceID *uuid.UUID
+	if len(note.TechnicalResources) > 0 {
+		id, err := s.createResources(ctx, note.TechnicalResources)
+		if err != nil {
+			return nil, err
+		}
+		technicalResourceID = id
+	}
+
+	params := storage.CreateRupExplorationNoteParams{
+		Basis:                pgtype.Text{String: note.Basis, Valid: note.Basis != ""},
+		Goals:                pgtype.Text{String: note.Goals, Valid: note.Goals != ""},
+		Summary:              pgtype.Text{String: "", Valid: false}, // Not in request
+		Competencies:         pgtype.Text{String: note.Competencies, Valid: note.Competencies != ""},
+		Prerequisites:        pgtype.Text{String: note.Prerequisites, Valid: note.Prerequisites != ""},
+		Postrequisites:       pgtype.Text{String: note.Postrequisites, Valid: note.Postrequisites != ""},
+		InternetResourcesID:  s.toPgUUID(internetResourceID),
+		TechnicalResourcesID: s.toPgUUID(technicalResourceID),
+	}
+
+	explorationNote, err := s.repo.CreateExplorationNote(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &explorationNote.ID, nil
+}
+
+func (s *rupService) createResources(ctx context.Context, resources []*ResourceRequest) (*uuid.UUID, error) {
+	if len(resources) == 0 {
+		return nil, nil
+	}
+
+	// For simplicity, create the first resource
+	resource := resources[0]
+	params := storage.CreateRupResourceParams{
+		Name: resource.Name,
+		Link: pgtype.Text{String: resource.Link, Valid: resource.Link != ""},
+	}
+
+	res, err := s.repo.CreateResource(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &res.ID, nil
+}
+
+func (s *rupService) createDisciplines(ctx context.Context, disciplines []*DisciplineRequest) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+
+	for _, disc := range disciplines {
+		// Create semesters
+		semesterIDs, err := s.createSemesters(ctx, disc.Semesters)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create topics
+		topicIDs, err := s.createTopics(ctx, disc.Topics)
+		if err != nil {
+			return nil, err
+		}
+
+		params := storage.CreateRupDisciplineParams{
+			Name:       disc.Name,
+			Code:       pgtype.Text{String: disc.Code, Valid: disc.Code != ""},
+			TotalHours: 0, // Calculate later
+			Semesters:  semesterIDs,
+			Topics:     topicIDs,
+		}
+
+		discipline, err := s.repo.CreateDiscipline(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, discipline.ID)
+	}
+
+	return ids, nil
+}
+
+func (s *rupService) createSemesters(ctx context.Context, semesters []*SemesterRequest) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+
+	for _, sem := range semesters {
+		params := storage.CreateDisciplineSemesterParams{
+			Semester:   sem.Semester,
+			TotalHours: sem.TotalHours,
+		}
+
+		semester, err := s.repo.CreateSemester(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, semester.ID)
+	}
+
+	return ids, nil
+}
+
+func (s *rupService) createTopics(ctx context.Context, topics []*TopicRequest) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+
+	for _, topic := range topics {
+		var topicType storage.DisciplineTopicType
+		switch topic.Type {
+		case "SNZ":
+			topicType = storage.DisciplineTopicTypeSNZ
+		case "PRACTICAL":
+			topicType = storage.DisciplineTopicTypePRACTICAL
+		case "COMBINED":
+			topicType = storage.DisciplineTopicTypeCOMBINED
+		}
+
+		params := storage.CreateDisciplineTopicParams{
+			Name:            topic.Name,
+			Type:            topicType,
+			TotalHours:      topic.TotalHours,
+			TheoryHours:     topic.TheoryHours,
+			PracticeHours:   topic.PracticeHours,
+			IndividualHours: topic.IndividualHours,
+			SrspHours:       topic.SrspHours,
+			SrsHours:        topic.SrsHours,
+		}
+
+		topicEntity, err := s.repo.CreateTopic(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, topicEntity.ID)
+	}
+
+	return ids, nil
+}
+
+func (s *rupService) toPgUUID(id *uuid.UUID) pgtype.UUID {
+	if id == nil {
+		return pgtype.UUID{Valid: false}
+	}
+	return pgtype.UUID{Bytes: *id, Valid: true}
+}
+
+func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*RupResponse, error) {
+	// Get contacts
+	var contacts []*UserResponse
+	for _, contactID := range rup.Contacts {
+		user, err := s.repo.GetUserByID(ctx, contactID)
+		if err != nil {
+			continue // Skip if not found
+		}
+		contacts = append(contacts, s.convertToUserResponse(*user))
+	}
+
+	// Get groups - assuming groups are stored as strings, need to fetch from somewhere
+	var groups []*GroupResponse
+	// For now, create dummy groups based on GroupIds
+	for _, groupName := range rup.GroupIds {
+		groups = append(groups, &GroupResponse{
+			Name: groupName,
+		})
+	}
+
+	// Get methodist
+	var methodist *UserResponse
+	if rup.Methodist.Valid {
+		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
+		if err == nil {
+			methodist = s.convertToUserResponse(*user)
+		}
+	}
+
+	// Get teacher
+	var teacher *UserResponse
+	if rup.Teacher.Valid {
+		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
+		if err == nil {
+			teacher = s.convertToUserResponse(*user)
+		}
+	}
+
+	// Get exploration note
+	var explorationNote *ExplorationNoteResponse
+	if rup.ExplorationNoteID.Valid {
+		note, err := s.repo.GetExplorationNoteByID(ctx, rup.ExplorationNoteID.Bytes)
+		if err == nil {
+			explorationNote = s.convertToExplorationNoteResponse(ctx, *note)
+		}
+	}
+
+	// Get disciplines
+	var disciplines []*DisciplineResponse
+	for _, discID := range rup.Disciplines {
+		disc, err := s.repo.GetDisciplineByID(ctx, discID)
+		if err != nil {
+			continue
+		}
+		disciplineResp, err := s.convertToDisciplineResponse(ctx, *disc)
+		if err != nil {
+			continue
+		}
+		disciplines = append(disciplines, disciplineResp)
+	}
+
+	return &RupResponse{
+		ID:              rup.ID,
+		Name:            rup.Name,
+		Code:            rup.Code.String,
+		Status:          string(rup.Status),
+		Reason:          rup.Reason.String,
+		Course:          rup.Course,
+		StudyForm:       string(rup.StudyForm),
+		StudyYear:       rup.StudyYear,
+		Type:            string(rup.Type),
+		TotalHours:      rup.TotalHours,
+		Contacts:        contacts,
+		Groups:          groups,
+		Methodist:       methodist,
+		Teacher:         teacher,
+		ExplorationNote: explorationNote,
+		Disciplines:     disciplines,
+		CreatedAt:       rup.CreatedAt.Time,
+		UpdatedAt:       rup.UpdatedAt.Time,
+	}, nil
+}
+
+func (s *rupService) convertToUserResponse(user storage.User) *UserResponse {
+	return &UserResponse{
+		KeycloakID:  user.KeycloakID,
+		Email:       user.Email,
+		Username:    user.Username,
+		FirstName:   user.FirstName.String,
+		LastName:    user.LastName.String,
+		Phone:       user.Phone.String,
+		Roles:       user.Roles,
+		TotalPoints: user.TotalPoints,
+		CreatedAt:   user.CreatedAt.Time,
+		UpdatedAt:   user.UpdatedAt.Time,
+	}
+}
+
+func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note storage.RupExplorationNote) *ExplorationNoteResponse {
+	var internetResources []*ResourceResponse
+	if note.InternetResourcesID.Valid {
+		res, err := s.repo.GetResourceByID(ctx, note.InternetResourcesID.Bytes)
+		if err == nil {
+			internetResources = append(internetResources, &ResourceResponse{
+				ID:   res.ID,
+				Name: res.Name,
+				Link: res.Link.String,
+				Type: "INTERNET",
+			})
+		}
+	}
+
+	var technicalResources []*ResourceResponse
+	if note.TechnicalResourcesID.Valid {
+		res, err := s.repo.GetResourceByID(ctx, note.TechnicalResourcesID.Bytes)
+		if err == nil {
+			technicalResources = append(technicalResources, &ResourceResponse{
+				ID:   res.ID,
+				Name: res.Name,
+				Link: res.Link.String,
+				Type: "TECHNICAL",
+			})
+		}
+	}
+
+	return &ExplorationNoteResponse{
+		ID:                 note.ID,
+		Basis:              note.Basis.String,
+		Goals:              note.Goals.String,
+		Summary:            note.Summary.String,
+		Competencies:       note.Competencies.String,
+		Prerequisites:      note.Prerequisites.String,
+		Postrequisites:     note.Postrequisites.String,
+		InternetResources:  internetResources,
+		TechnicalResources: technicalResources,
+	}
+}
+
+func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc storage.RupDiscipline) (*DisciplineResponse, error) {
+	var semesters []*SemesterResponse
+	for _, semID := range disc.Semesters {
+		sem, err := s.repo.GetSemesterByID(ctx, semID)
+		if err != nil {
+			continue
+		}
+		semesters = append(semesters, &SemesterResponse{
+			ID:         sem.ID,
+			Semester:   sem.Semester,
+			TotalHours: sem.TotalHours,
+		})
+	}
+
+	var topics []*TopicResponse
+	for _, topicID := range disc.Topics {
+		topic, err := s.repo.GetTopicByID(ctx, topicID)
+		if err != nil {
+			continue
+		}
+		topics = append(topics, &TopicResponse{
+			ID:              topic.ID,
+			Name:            topic.Name,
+			Type:            string(topic.Type),
+			TotalHours:      topic.TotalHours,
+			TheoryHours:     topic.TheoryHours,
+			PracticeHours:   topic.PracticeHours,
+			IndividualHours: topic.IndividualHours,
+			SrspHours:       topic.SrspHours,
+			SrsHours:        topic.SrsHours,
+		})
+	}
+
+	return &DisciplineResponse{
+		ID:         disc.ID,
+		Name:       disc.Name,
+		Code:       disc.Code.String,
+		TotalHours: disc.TotalHours,
+		Semesters:  semesters,
+		Topics:     topics,
+		CreatedAt:  time.Now(), // Placeholder
+		UpdatedAt:  time.Now(), // Placeholder
+	}, nil
 }

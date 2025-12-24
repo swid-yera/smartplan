@@ -5,8 +5,6 @@ INSERT INTO users (
     username,
     first_name,
     last_name,
-    created_at,
-    updated_at,
     roles
 ) VALUES (
     $1, $2, $3, $4, $5, $6
@@ -177,15 +175,20 @@ FROM rup_disciplines;
 -- name: CreateRups :one
 INSERT INTO rups (
     name,
+    code,
     status,
     course,
     study_form,
     study_year,
     type,
+    contacts,
+    group_ids,
     methodist,
-    teacher
+    teacher,
+    exploration_note_id,
+    disciplines
 ) VALUES (
-    $1,$2,$3,$4,$5,$6,$7,$8
+    $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
 )
 RETURNING *;
 
