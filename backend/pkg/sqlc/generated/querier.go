@@ -14,21 +14,33 @@ import (
 type Querier interface {
 	CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error)
 	CreateAwardType(ctx context.Context, arg CreateAwardTypeParams) (AwardType, error)
+	CreateDisciplineSemester(ctx context.Context, arg CreateDisciplineSemesterParams) (DisciplineSemester, error)
+	CreateDisciplineTopic(ctx context.Context, arg CreateDisciplineTopicParams) (DisciplineTopic, error)
+	CreateRupDiscipline(ctx context.Context, arg CreateRupDisciplineParams) (RupDiscipline, error)
 	CreateRupExplorationNote(ctx context.Context, arg CreateRupExplorationNoteParams) (RupExplorationNote, error)
 	CreateRupResource(ctx context.Context, arg CreateRupResourceParams) (RupResource, error)
 	CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
 	GetAllAwardTypes(ctx context.Context) ([]AwardType, error)
+	GetAllDisciplineTopics(ctx context.Context) ([]DisciplineTopic, error)
+	GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, error)
+	GetAllRupResources(ctx context.Context) ([]RupResource, error)
+	GetAllRups(ctx context.Context) ([]Rup, error)
 	GetAllUsers(ctx context.Context) ([]User, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
+	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
+	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
+	GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDiscipline, error)
 	GetRupExplorationNoteByID(ctx context.Context, id uuid.UUID) (RupExplorationNote, error)
 	GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupResource, error)
 	GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
+	UpdateRupResource(ctx context.Context, arg UpdateRupResourceParams) error
 	UpdateRupsStatus(ctx context.Context, arg UpdateRupsStatusParams) error
 	UpdateUserLastSeenAt(ctx context.Context, arg UpdateUserLastSeenAtParams) error
 	UpdateUserPasswordChangedAt(ctx context.Context, arg UpdateUserPasswordChangedAtParams) error

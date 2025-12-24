@@ -74,12 +74,22 @@ INSERT INTO rup_resources (
 )
 RETURNING *;
 
+-- name: GetAllRupResources :many
+SELECT *
+FROM rup_resources;
 
 -- name: GetRupResourceByID :one
 SELECT *
 FROM rup_resources
 WHERE id = $1;
 
+-- name: UpdateRupResource :exec
+UPDATE rup_resources
+SET
+    name = $2,
+    link = $3,
+    updated_at = NOW()
+WHERE id = $1;
 
 -- name: DeleteRupResource :exec
 DELETE FROM rup_resources
@@ -100,11 +110,69 @@ INSERT INTO rup_exploration_notes (
 )
 RETURNING *;
 
-
 -- name: GetRupExplorationNoteByID :one
 SELECT *
 FROM rup_exploration_notes
 WHERE id = $1;
+
+-- name: CreateDisciplineSemester :one
+INSERT INTO discipline_semesters (
+    semester,
+    total_hours
+) VALUES (
+    $1, $2
+)
+RETURNING *;
+
+-- name: GetDisciplineSemesterByID :one
+SELECT *
+FROM discipline_semesters
+WHERE id = $1;
+
+-- name: CreateDisciplineTopic :one
+INSERT INTO discipline_topics (
+    name,
+    type,
+    total_hours,
+    theory_hours,
+    practice_hours,
+    individual_hours,
+    srsp_hours,
+    srs_hours
+) VALUES (
+    $1,$2,$3,$4,$5,$6,$7,$8
+)
+RETURNING *;
+
+-- name: GetDisciplineTopicByID :one
+SELECT *
+FROM discipline_topics
+WHERE id = $1;
+
+-- name: GetAllDisciplineTopics :many
+SELECT *
+FROM discipline_topics;
+
+-- name: CreateRupDiscipline :one
+INSERT INTO rup_disciplines (
+    name,
+    code,
+    total_hours,
+    semesters,
+    topics
+) VALUES (
+    $1,$2,$3,$4,$5
+)
+RETURNING *;
+
+-- name: GetRupDisciplineByID :one
+SELECT *
+FROM rup_disciplines
+WHERE id = $1;
+
+-- name: GetAllRupDisciplines :many
+SELECT *
+FROM rup_disciplines;
 
 -- name: CreateRups :one
 INSERT INTO rups (
@@ -120,6 +188,11 @@ INSERT INTO rups (
     $1,$2,$3,$4,$5,$6,$7,$8
 )
 RETURNING *;
+
+-- name: GetAllRups :many
+SELECT *
+FROM rups
+ORDER BY created_at DESC;
 
 
 -- name: GetRupsByID :one
@@ -183,3 +256,7 @@ RETURNING *;
 -- name: GetAllAwardTypes :many
 SELECT *
 FROM award_types;
+
+-- name: DeleteRup :exec
+DELETE FROM rups
+WHERE id = $1;

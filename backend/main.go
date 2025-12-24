@@ -75,6 +75,7 @@ func main() {
 
 	authService := service.NewAuthService(rdb, authRepo) // работает только с AuthRepository
 	userService := service.NewUserService(usersRepo, rdb)
+	rupService := service.NewRupService(repository.NewRupPostgres(queries))
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(
@@ -96,9 +97,10 @@ func main() {
 		authMiddleware.GetKeyFunc(),
 	)
 	userHandler := handler.NewUserHandler(userService)
+	rupHandler := handler.NewRupHandler(rupService)
 
 	// ---------- ROUTER ----------
-	router := handler.NewRouter(authHandler, userHandler, nil)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, nil)
 	engine := router.Init()
 
 	port := "8080"
