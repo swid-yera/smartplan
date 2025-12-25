@@ -1,0 +1,13 @@
+type: folder
+model: folder
+id: fl_WCNj7nAhDn
+createdAt: 2025-11-26T11:56:13.616172600
+updatedAt: 2025-12-24T13:17:28.895357200
+workspaceId: wk_yScn9PeBcZ
+folderId: null
+authentication: {}
+authenticationType: null
+description: ''
+headers: []
+name: keycloak
+sortPriority: -1764158173614.0

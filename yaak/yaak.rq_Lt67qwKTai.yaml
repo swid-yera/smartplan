@@ -1,0 +1,44 @@
+type: http_request
+model: http_request
+id: rq_Lt67qwKTai
+createdAt: 2025-11-26T12:01:09.074135900
+updatedAt: 2025-12-12T10:39:45.734555100
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_WCNj7nAhDn
+authentication: {}
+authenticationType: null
+body:
+  form:
+  - enabled: true
+    name: client_id
+    value: ${[ client_id ]}
+  - enabled: true
+    name: client_secret
+    value: ${[ client_secret ]}
+  - enabled: true
+    name: grant_type
+    value: password
+  - enabled: true
+    name: username
+    value: just-sain
+  - enabled: true
+    name: password
+    value: 20302030#S@ain$just.sain29@gmail.com
+  - enabled: true
+    name: scope
+    value: openid
+  - enabled: true
+    name: ''
+    value: ''
+bodyType: application/x-www-form-urlencoded
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/x-www-form-urlencoded
+  id: r2w0vNsbG7
+method: POST
+name: access token
+sortPriority: 0.0
+url: https://auth.aspc.kz/realms/test/protocol/openid-connect/token
+urlParameters: []

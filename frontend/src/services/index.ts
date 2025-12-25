@@ -1,7 +1,7 @@
-import { AuthService } from './auth-service'
-import { UserService } from './user-service'
+import { AuthService } from './auth.service'
+import { UserService } from './user.service'
 
-export * from './rups-service'
+export * from './rups.service'
 
 // exporting services
 export const services = {

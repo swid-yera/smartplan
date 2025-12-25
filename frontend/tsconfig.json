@@ -27,7 +27,7 @@
 			"@components": ["./src/components/index.ts"],
 			"@layout": ["./src/components/layout/index.ts"],
 			"@hoc": ["./src/hoc/index.ts"],
-			"@contexts": ["./src/contexts/index.ts"],
+			"@store": ["./src/store/index.ts"],
 			"@types": ["./src/shared/types/index.ts"],
 			"@services": ["./src/services/index.ts"],
 			"@lib": ["./src/lib/index.ts"],
@@ -42,6 +42,14 @@
 			}
 		]
 	},
-	"include": ["svgr.d.ts", "next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+	"include": [
+		"svgr.d.ts", // svgr
+		"next-env.d.ts", // next env
+		"src/shared/declarations.d.ts", // for css, scss, sass
+		"**/*.ts",
+		"**/*.tsx",
+		".next/types/**/*.ts",
+		".next/dev/types/**/*.ts"
+	],
 	"exclude": ["node_modules"]
 }

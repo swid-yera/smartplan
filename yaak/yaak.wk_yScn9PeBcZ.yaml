@@ -1,0 +1,14 @@
+type: workspace
+model: workspace
+id: wk_yScn9PeBcZ
+createdAt: 2025-11-20T11:32:24.656414200
+updatedAt: 2025-12-25T14:24:26.304651500
+authentication: {}
+authenticationType: null
+description: ''
+headers: []
+name: eduplan
+encryptionKeyChallenge: null
+settingValidateCertificates: true
+settingFollowRedirects: true
+settingRequestTimeout: 0
