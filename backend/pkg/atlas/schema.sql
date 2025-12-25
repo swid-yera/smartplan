@@ -7,7 +7,7 @@ CREATE TYPE rups_type_enum AS ENUM ('PRACTICE', 'THEORY');
 CREATE TYPE discipline_topic_type AS ENUM ('SNZ', 'PRACTICAL', 'COMBINED');
 CREATE TYPE awards_status AS ENUM ('DRAFT', 'IN_REVIEW', 'APPROVED', 'REJECTED');
 CREATE TYPE violation_enum AS ENUM ('NONE', 'REMARK', 'REBUKE', 'SEVERE_REPRIMAND');
-CREATE TYPE criteria_method_enum AS ENUM ('NORMAL', 'MEASURING', 'PENALTY');
+CREATE TYPE enum_criteria_method AS ENUM ('NORMAL', 'MEASURING');
 
 -- =====================
 -- USERS
@@ -25,6 +25,7 @@ CREATE TABLE users (
     rups TEXT[],
     total_points INT NOT NULL DEFAULT 0,
     awards TEXT[],
+    violation violation_enum NOT NULL,
 
     password_changed_at TIMESTAMPTZ,
     last_seen_at TIMESTAMPTZ,
@@ -145,11 +146,8 @@ CREATE TABLE rups (
 CREATE TABLE award_type_criteria (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    points INT,
-    method criteria_method_enum,
-    bonus_name TEXT,
-    bonus_points INT,
-    bonus_method criteria_method_enum
+    points INT[],
+    method enum_criteria_method DEFAULT 'NORMAL' 
 );
 
 -- =====================
@@ -159,7 +157,8 @@ CREATE TABLE award_type_variants (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     description TEXT,
-    criteria UUID[]
+    criteria UUID[],
+    bonusCriteria UUID[]
 );
 
 -- =====================
@@ -179,9 +178,12 @@ CREATE TABLE awards (
     status awards_status NOT NULL,
     reason TEXT,
     methodist UUID,
+    teacher UUID NOT NULL REFERENCES users(keycloak_id),
+   
     total_points INT NOT NULL DEFAULT 0,
-    violation violation_enum NOT NULL,
-    type UUID,
+    type UUID REFERENCES award_types(id),
+    variant UUID REFERENCES award_type_variants(id),
+    criteria UUID REFERENCES award_type_criteria(id),
 
     text TEXT,
     images TEXT[] DEFAULT '{}',

@@ -18,6 +18,7 @@ entities
 -  rups: []text //rups ids, references: rups table
 -  total_points: int, not null, default:0
 -  awards: []text //awards ids, references: awards table
+-  violation: text, enum:[NONE, REMARK, REBUKE, SEVERE_REPRIMAND]
 
 -  password_changed_at: timestamptz
 -  last_seen_at: timestampz
@@ -128,10 +129,12 @@ entities
 -  status: text, enum:[DRAFT, IN_REVIEW, APPROVED, REJECTED]
 -  reason: text // if status = "REJECTED"
 -  methodist: text //user id, references: users table
--  total_points: int, not null, default: 0
--  violation: text, enum:[NONE, REMARK, REBUKE, SEVERE_REPRIMAND]
--  type: text, // reference award_types table
 -  teacher: text, not null // reference users table
+
+-  total_points: int, not null, default: 0
+-  type: text, // reference award_types table
+-  variant: text, // reference award_types_variants table
+-  criteria: text, // reference award_types_criteria table
 
 -  text: text
 -  images: text[], //url image in minio bucket, default: []
@@ -157,6 +160,7 @@ entities
 -  name: text, not null
 -  description: text
 -  criteria: text[], references: award_type_criteria table
+-  bonusCriteria: text[]
 ```
 
 ### table award_type_criteria
@@ -164,9 +168,6 @@ entities
 ```
 -  id: uuid, not null, primary
 -  name: text, not null
--  points: int
--  method: text, enum:[NORMAL, MEASURING, PENALTY]
--  bonus_name: text
--  bonus_points: int
--  bonus_method: text, enum:[NORMAL, MEASURING, PENALTY]
+-  points: int[]
+-  method: text, enum:[NORMAL, MEASURING]
 ```
