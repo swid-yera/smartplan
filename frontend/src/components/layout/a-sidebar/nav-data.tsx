@@ -1,11 +1,13 @@
-import { BookOpen, CircleQuestionMark, Headset, LayoutDashboard, PenIcon, Table2Icon } from 'lucide-react'
-
-export const navUser = {
-	name: 'just-sain',
-	role: 'Администратор',
-	email: 'just-sain@apc.loc',
-	avatar: 'https://avatars.githubusercontent.com/u/1486366',
-}
+import {
+	Award,
+	BookOpen,
+	CircleQuestionMark,
+	Headset,
+	LayoutDashboard,
+	PenIcon,
+	Table2Icon,
+	University,
+} from 'lucide-react'
 
 export const navMain = [
 	{
@@ -25,9 +27,19 @@ export const navMain = [
 		icon: BookOpen,
 	},
 	{
+		title: 'Награды',
+		url: '/awards',
+		icon: Award,
+	},
+	{
 		title: 'Расписание',
-		url: '/timetable/cs-2025-a',
+		url: '/timetable',
 		icon: Table2Icon,
+	},
+	{
+		title: 'Преподаватели',
+		url: '/teachers',
+		icon: University,
 	},
 ]
 
