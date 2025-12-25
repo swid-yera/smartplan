@@ -219,6 +219,10 @@ FROM rups
 WHERE methodist = $1
 ORDER BY created_at DESC;
 
+-- name: DeleteRup :exec
+DELETE FROM rups
+WHERE id = $1;
+
 -- name: CreateAward :one
 INSERT INTO awards (
     status,
@@ -264,7 +268,3 @@ FROM award_types;
 SELECT keycloak_id, name, qualification, specialty
 FROM groups
 WHERE keycloak_id = $1;
-
--- name: DeleteRup :exec
-DELETE FROM rups
-WHERE id = $1;

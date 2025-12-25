@@ -31,7 +31,7 @@ type CreateRupRequest struct {
 	Contacts        []string                `json:"contacts"`
 	Groups          []string                `json:"groups"`
 	Methodist       string                  `json:"methodist"`
-	Teacher         string                  `json:"teacher"`
+	Teacher         string                  `json:"-"` // Set from session, not from JSON
 	ExplorationNote *ExplorationNoteRequest `json:"explorationNote"`
 	Disciplines     []*DisciplineRequest    `json:"disciplines"`
 }
@@ -171,10 +171,13 @@ func NewRupService(repo repository.RupRepository) RupService {
 }
 
 func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error) {
+	fmt.Printf("CreateRup called with contacts: %v\n", req.Contacts)
 	// Валидация
-	if err := s.validateCreateRupRequest(req); err != nil {
+	if err := s.validateCreateRupRequest(ctx, req); err != nil {
+		fmt.Printf("Validation failed: %v\n", err)
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
+	fmt.Printf("Validation passed\n")
 
 	// Создание связанных сущностей
 	explorationNoteID, err := s.createExplorationNote(ctx, req.ExplorationNote)
@@ -278,7 +281,8 @@ func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {
 	return s.repo.DeleteRup(ctx, id)
 }
 
-func (s *rupService) validateCreateRupRequest(req CreateRupRequest) error {
+func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRupRequest) error {
+	fmt.Printf("Validating request: contacts=%v, groups=%v\n", req.Contacts, req.Groups)
 	if req.Name == "" {
 		return fmt.Errorf("name is required")
 	}
@@ -294,11 +298,61 @@ func (s *rupService) validateCreateRupRequest(req CreateRupRequest) error {
 	if req.StudyForm != "CORRESPONDENCE" && req.StudyForm != "FULL_TIME" {
 		return fmt.Errorf("studyForm must be CORRESPONDENCE or FULL_TIME")
 	}
+	// Validate contacts exist
+	for _, contactIDStr := range req.Contacts {
+		fmt.Printf("Validating contact: %s\n", contactIDStr)
+		contactID, err := uuid.Parse(contactIDStr)
+		if err != nil {
+			fmt.Printf("Invalid UUID format: %s\n", contactIDStr)
+			return fmt.Errorf("invalid contact ID format: %s", contactIDStr)
+		}
+		_, err = s.repo.GetUserByID(ctx, contactID)
+		if err != nil {
+			fmt.Printf("Contact not found: %s, error: %v\n", contactIDStr, err)
+			return fmt.Errorf("contact with ID %s does not exist", contactIDStr)
+		}
+		fmt.Printf("Contact validated: %s\n", contactIDStr)
+	}
+
+	// Validate groups exist
+	for _, groupIDStr := range req.Groups {
+		groupID, err := uuid.Parse(groupIDStr)
+		if err != nil {
+			return fmt.Errorf("invalid group ID format: %s", groupIDStr)
+		}
+		_, err = s.repo.GetGroupByKeycloakID(ctx, groupID)
+		if err != nil {
+			return fmt.Errorf("group with ID %s does not exist", groupIDStr)
+		}
+	}
+
+	// Validate methodist exists
+	if req.Methodist != "" {
+		methodistID, err := uuid.Parse(req.Methodist)
+		if err != nil {
+			return fmt.Errorf("invalid methodist ID format: %s", req.Methodist)
+		}
+		_, err = s.repo.GetUserByID(ctx, methodistID)
+		if err != nil {
+			return fmt.Errorf("methodist with ID %s does not exist", req.Methodist)
+		}
+	}
+
+	// Teacher is always set from session, no need to validate from request
+
+	// Validate disciplines have exactly 8 semesters
 	for _, disc := range req.Disciplines {
 		if len(disc.Semesters) != 8 {
 			return fmt.Errorf("discipline must have exactly 8 semesters, got %d", len(disc.Semesters))
 		}
+		// Check semester numbers are sequential 1-8
+		for i, sem := range disc.Semesters {
+			if sem.Semester != int32(i+1) {
+				return fmt.Errorf("semester number must be %d, got %d", i+1, sem.Semester)
+			}
+		}
 	}
+
 	return nil
 }
 

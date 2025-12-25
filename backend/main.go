@@ -100,7 +100,8 @@ func main() {
 	rupHandler := handler.NewRupHandler(rupService)
 
 	// ---------- ROUTER ----------
-	router := handler.NewRouter(authHandler, userHandler, rupHandler, nil)
+	sessionAuthMiddleware := middleware.SessionAuth(userService)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, nil, sessionAuthMiddleware)
 	engine := router.Init()
 
 	port := "8080"

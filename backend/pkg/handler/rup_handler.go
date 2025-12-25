@@ -4,7 +4,9 @@ import (
 	"log"
 	"net/http"
 
+	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
+	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -32,6 +34,23 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 		})
 		return
 	}
+
+	// Получить пользователя из контекста (должен быть установлен middleware)
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Преобразовать в storage.User
+	currentUser, ok := userInterface.(*storage.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	// Установить teacher из текущего пользователя
+	req.Teacher = currentUser.KeycloakID.String()
 
 	// Вызываем service для создания RUP
 	rup, err := h.rupService.CreateRup(c.Request.Context(), req)

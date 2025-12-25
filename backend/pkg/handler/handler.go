@@ -10,10 +10,11 @@ import (
 )
 
 type Router struct {
-	auth     *AuthHandler
-	user     *UserHandler
-	rup      *RupHandler
-	webhooks *WebhooksHandler
+	auth                  *AuthHandler
+	user                  *UserHandler
+	rup                   *RupHandler
+	webhooks              *WebhooksHandler
+	sessionAuthMiddleware gin.HandlerFunc
 }
 
 func NewRouter(
@@ -21,12 +22,14 @@ func NewRouter(
 	user *UserHandler,
 	rup *RupHandler,
 	webhooks *WebhooksHandler,
+	sessionAuthMiddleware gin.HandlerFunc,
 ) *Router {
 	return &Router{
-		auth:     auth,
-		user:     user,
-		rup:      rup,
-		webhooks: webhooks,
+		auth:                  auth,
+		user:                  user,
+		rup:                   rup,
+		webhooks:              webhooks,
+		sessionAuthMiddleware: sessionAuthMiddleware,
 	}
 }
 
@@ -72,7 +75,7 @@ func (r *Router) Init() *gin.Engine {
 		api.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 
 		// RUP routes
-		api.POST("/rups", r.rup.CreateRup)
+		api.POST("/rups", r.sessionAuthMiddleware, r.rup.CreateRup)
 		api.GET("/rups", r.rup.GetAllRups)
 		api.GET("/rups/:id", r.rup.GetRupByID)
 		api.PUT("/rups/:id/status", r.rup.UpdateRupStatus)

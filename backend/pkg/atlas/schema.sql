@@ -185,7 +185,7 @@ CREATE TABLE awards (
 
     text TEXT,
     images TEXT[] DEFAULT '{}',
-    documents TEXT[] DEFAULT '{}',
+    document TEXT DEFAULT '{}',
     links TEXT[] DEFAULT '{}',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
