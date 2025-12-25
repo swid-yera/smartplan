@@ -101,15 +101,15 @@ INSERT INTO rup_exploration_notes (
     competencies,
     prerequisites,
     postrequisites,
-    internet_resources_id,
-    technical_resources_id
+    internet_resources,
+    technical_resources
 ) VALUES (
     $1,$2,$3,$4,$5,$6,$7,$8
 )
 RETURNING *;
 
 -- name: GetRupExplorationNoteByID :one
-SELECT *
+SELECT id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources
 FROM rup_exploration_notes
 WHERE id = $1;
 
@@ -219,6 +219,10 @@ FROM rups
 WHERE methodist = $1
 ORDER BY created_at DESC;
 
+-- name: DeleteRup :exec
+DELETE FROM rups
+WHERE id = $1;
+
 -- name: CreateAward :one
 INSERT INTO awards (
     status,
@@ -264,7 +268,3 @@ FROM award_types;
 SELECT keycloak_id, name, qualification, specialty
 FROM groups
 WHERE keycloak_id = $1;
-
--- name: DeleteRup :exec
-DELETE FROM rups
-WHERE id = $1;

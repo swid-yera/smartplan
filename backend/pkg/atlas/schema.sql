@@ -66,8 +66,8 @@ CREATE TABLE rup_exploration_notes (
     prerequisites TEXT,
     postrequisites TEXT,
 
-    internet_resources_id UUID REFERENCES rup_resources(id),
-    technical_resources_id UUID REFERENCES rup_resources(id)
+    internet_resources UUID[],
+    technical_resources UUID[]
 );
 
 -- =====================
@@ -185,7 +185,7 @@ CREATE TABLE awards (
 
     text TEXT,
     images TEXT[] DEFAULT '{}',
-    documents TEXT[] DEFAULT '{}',
+    document TEXT DEFAULT '{}',
     links TEXT[] DEFAULT '{}',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

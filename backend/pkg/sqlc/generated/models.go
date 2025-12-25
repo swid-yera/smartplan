@@ -409,15 +409,15 @@ type RupDiscipline struct {
 }
 
 type RupExplorationNote struct {
-	ID                   uuid.UUID   `json:"id"`
-	Basis                pgtype.Text `json:"basis"`
-	Goals                pgtype.Text `json:"goals"`
-	Summary              pgtype.Text `json:"summary"`
-	Competencies         pgtype.Text `json:"competencies"`
-	Prerequisites        pgtype.Text `json:"prerequisites"`
-	Postrequisites       pgtype.Text `json:"postrequisites"`
-	InternetResourcesID  pgtype.UUID `json:"internet_resources_id"`
-	TechnicalResourcesID pgtype.UUID `json:"technical_resources_id"`
+	ID                 uuid.UUID   `json:"id"`
+	Basis              pgtype.Text `json:"basis"`
+	Goals              pgtype.Text `json:"goals"`
+	Summary            pgtype.Text `json:"summary"`
+	Competencies       pgtype.Text `json:"competencies"`
+	Prerequisites      pgtype.Text `json:"prerequisites"`
+	Postrequisites     pgtype.Text `json:"postrequisites"`
+	InternetResources  []uuid.UUID `json:"internet_resources"`
+	TechnicalResources []uuid.UUID `json:"technical_resources"`
 }
 
 type RupResource struct {
