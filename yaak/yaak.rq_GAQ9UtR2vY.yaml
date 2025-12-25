@@ -1,0 +1,35 @@
+type: http_request
+model: http_request
+id: rq_GAQ9UtR2vY
+createdAt: 2025-11-26T11:57:03.745284200
+updatedAt: 2025-11-26T12:35:03.788067600
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_WCNj7nAhDn
+authentication: {}
+authenticationType: null
+body:
+  form:
+  - enabled: true
+    name: client_id
+    value: ${[ client_id ]}
+  - enabled: true
+    name: client_secret
+    value: ${[ client_secret ]}
+  - enabled: true
+    name: refresh_token
+    value: eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmOWZhYTA3Ni1mZTJhLTQ5MDMtODM2Mi00MTMwMTE1YmY1YTQifQ.eyJleHAiOjE3NjQxNjIxNDYsImlhdCI6MTc2NDE2MDM0NiwianRpIjoiMDQwOTNlYmEtYTEwMy04M2E4LWIyZTEtNmZiOGQzODNiYTVmIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmFzcGMua3ovcmVhbG1zL3Rlc3QiLCJhdWQiOiJodHRwczovL2F1dGguYXNwYy5rei9yZWFsbXMvdGVzdCIsInN1YiI6IjJmY2U5YzA2LWE3ZjctNDk4Zi1hMDdmLTQwMDZjNDViY2U3OCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJjb3Vyc2VzLW9pZGMtdGVzdGluZyIsInNpZCI6IjFjYjJjN2Y5LTVlN2EtM2FkYS03NjcyLTNkZGEyMzk4OTQxMCIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIGVtYWlsIHJvbGVzIHdlYi1vcmlnaW5zIn0.GqKIv73yCI9vGFrG2z1NvGbHBbIoeq8jnnuCBy2Fw0YT_SFnwsFvnX7dSkrq9y6QH6GfecVpFzq-flNDWSQQfw
+  - enabled: true
+    name: ''
+    value: ''
+bodyType: application/x-www-form-urlencoded
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/x-www-form-urlencoded
+  id: HZcP6VzU9z
+method: POST
+name: logout
+sortPriority: 4000.0
+url: https://auth.aspc.kz/realms/test/protocol/openid-connect/logout
+urlParameters: []

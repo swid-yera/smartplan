@@ -4,6 +4,8 @@ import { ASidebar, Footer } from '@layout'
 import { QueryProvider, ThemeProvider } from '@providers'
 import { SidebarInset, SidebarProvider, Toaster } from '@ui'
 
+import { AuthInitializer } from '@/store'
+
 import './globals.css'
 
 // metadata
@@ -26,6 +28,7 @@ export default function RootLayout({
 				<ThemeProvider>
 					<QueryProvider>
 						<SidebarProvider defaultOpen suppressHydrationWarning>
+							<AuthInitializer />
 							<ASidebar />
 							<SidebarInset className='flex flex-col justify-between'>
 								{children}

@@ -15,7 +15,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ui'
-import { AlertTriangle, Bell, CheckCircle2, Clock, FileText } from 'lucide-react'
+import { AlertTriangle, Bell } from 'lucide-react'
 
 // --- Mock Data ---
 // В реальном приложении эти данные будут приходить с бэкенда
@@ -49,12 +49,6 @@ const statusLabels: Record<string, string> = {
 	completed: 'Завершено',
 	in_progress: 'В процессе',
 	not_started: 'Не начато',
-}
-
-const statusIcons: Record<string, React.ReactNode> = {
-	completed: <CheckCircle2 className='h-5 w-5 text-green-500' />,
-	in_progress: <Clock className='h-5 w-5 text-blue-500' />,
-	not_started: <FileText className='h-5 w-5 text-slate-500' />,
 }
 
 const urgencyLabels: Record<string, string> = {
@@ -110,7 +104,7 @@ const TeacherDashboardPage: NextPage = () => {
 						<div className='space-y-4'>
 							{notifications.map((notification) => (
 								<div key={notification.id} className='flex items-start gap-3'>
-									<div className='flex-shrink-0'>{notificationIcons[notification.type]}</div>
+									<div className='shrink-0'>{notificationIcons[notification.type]}</div>
 									<p className='text-sm text-muted-foreground'>{notification.message}</p>
 								</div>
 							))}
@@ -140,8 +134,8 @@ const TeacherDashboardPage: NextPage = () => {
 										<TableCell>{new Date(deadline.dueDate).toLocaleDateString('ru-RU')}</TableCell>
 										<TableCell className='text-right'>
 											<Badge
-												variant={deadline.urgency === 'high' ? 'destructive' : 'secondary'}
 												className='capitalize'
+												variant={deadline.urgency === 'high' ? 'destructive' : 'secondary'}
 											>
 												{urgencyLabels[deadline.urgency]}
 											</Badge>

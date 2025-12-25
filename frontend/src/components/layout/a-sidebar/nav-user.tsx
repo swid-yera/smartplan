@@ -20,13 +20,10 @@ import {
 } from '@ui'
 import { Bell, ChevronsUpDown, CreditCard, LogOut, User } from 'lucide-react'
 
+import type { IUser } from '@/shared/types'
+
 interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElement>, HTMLUListElement> {
-	user: {
-		name: string
-		role: string
-		email: string
-		avatar: string
-	}
+	user: IUser
 }
 
 export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
@@ -42,12 +39,17 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 							size='lg'
 						>
 							<Avatar className='h-8 w-8 rounded-lg'>
-								<AvatarImage alt={user.name} src={user.avatar} />
-								<AvatarFallback className='rounded-lg'>{user.name}</AvatarFallback>
+								<AvatarImage alt={user.username} src='https://avatars.githubusercontent.com/u/1486366' />
+								<AvatarFallback className='rounded-lg'>{user.username}</AvatarFallback>
 							</Avatar>
 							<div className='grid flex-1 text-left text-sm leading-tight'>
-								<span className='truncate font-medium'>{user.name}</span>
-								<span className='truncate text-xs text-muted-foreground'>{user.role}</span>
+								<span className='truncate font-medium'>{user.username}</span>
+								<span className='truncate text-xs text-muted-foreground'>
+									{user.roles
+										.map((role) => role)
+										.join(', ')
+										.trim()}
+								</span>
 							</div>
 							<ChevronsUpDown className='ml-auto size-4' />
 						</SidebarMenuButton>
@@ -61,11 +63,11 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 						<DropdownMenuLabel className='p-0 font-normal'>
 							<div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
 								<Avatar className='h-8 w-8 rounded-lg'>
-									<AvatarImage alt={user.name} src={user.avatar} />
-									<AvatarFallback className='rounded-lg'>CN</AvatarFallback>
+									<AvatarImage alt={user.username} src='https://avatars.githubusercontent.com/u/1486366' />
+									<AvatarFallback className='rounded-lg'>{user.username}</AvatarFallback>
 								</Avatar>
 								<div className='grid flex-1 text-left text-sm leading-tight'>
-									<span className='truncate font-medium'>{user.name}</span>
+									<span className='truncate font-medium'>{user.username}</span>
 									<span className='truncate text-xs'>{user.email}</span>
 								</div>
 							</div>
