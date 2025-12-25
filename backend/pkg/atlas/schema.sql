@@ -21,7 +21,7 @@ CREATE TABLE users (
     last_name TEXT,
     phone TEXT,
 
-    roles TEXT[] NOT NULL DEFAULT '{}',
+    roles TEXT[] NOT NULL,
     rups TEXT[],
     total_points INT NOT NULL DEFAULT 0,
     awards TEXT[],

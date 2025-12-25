@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"eduplan/backend/pkg/repository"
@@ -44,8 +45,28 @@ func (s *authService) HandleCallback(
 	firstName, _ := claims["given_name"].(string)
 	lastName, _ := claims["family_name"].(string)
 
+	// new
+	realmAccess, ok := claims["realm_access"].(map[string]interface{})
+	if !ok {
+		return uuid.Nil, errors.New("realm_access missing")
+	}
+
+	rolesRaw, ok := realmAccess["roles"].([]interface{})
+	if !ok {
+		return uuid.Nil, errors.New("roles missing")
+	}
+
+	roles := make([]string, 0, len(rolesRaw))
+	for _, r := range rolesRaw {
+		if role, ok := r.(string); ok {
+			roles = append(roles, role)
+		}
+	}
+
+	fmt.Println("roles:", roles)
+
 	// 1. Попытка создать пользователя через репозиторий
-	user, err := s.users.CreateUser(ctx, keycloakID, email, username, firstName, lastName)
+	user, err := s.users.CreateUser(ctx, keycloakID, roles, email, username, firstName, lastName)
 	if err != nil {
 		// Игнорируем уникальное ограничение (пользователь уже есть)
 		if !isUniqueViolation(err) {

@@ -12,7 +12,6 @@ import (
 )
 
 type UsersRepository interface {
-	CreateUser(ctx context.Context, params storage.CreateUserParams) (*storage.User, error)
 	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
 	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
@@ -27,17 +26,6 @@ type UsersPostgres struct {
 
 func NewUsersPostgres(queries *storage.Queries) *UsersPostgres {
 	return &UsersPostgres{queries: queries}
-}
-
-func (r *UsersPostgres) CreateUser(
-	ctx context.Context,
-	params storage.CreateUserParams,
-) (*storage.User, error) {
-	user, err := r.queries.CreateUser(ctx, params)
-	if err != nil {
-		return nil, fmt.Errorf("create user: %w", err)
-	}
-	return &user, nil
 }
 
 func (r *UsersPostgres) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error) {
