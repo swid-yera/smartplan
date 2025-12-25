@@ -25,4 +25,13 @@ export class UserService {
 			return data
 		},
 	})
+
+	getAllUsersOptions = queryOptions<IUser[]>({
+		queryKey: ['users'],
+		queryFn: async () => {
+			const { data } = await api.get<IUser[]>('/api/users')
+
+			return data
+		},
+	})
 }
