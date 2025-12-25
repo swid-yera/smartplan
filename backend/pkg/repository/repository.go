@@ -11,7 +11,6 @@ import (
 )
 
 type Users interface {
-	CreateUser(ctx context.Context, params storage.CreateUserParams) (*storage.User, error)
 	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
 	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error

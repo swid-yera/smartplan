@@ -12,7 +12,7 @@ import (
 
 type AuthRepository interface {
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
-	CreateUser(ctx context.Context, keycloakID uuid.UUID, email, username, firstName, lastName string) (*storage.User, error)
+	CreateUser(ctx context.Context, keycloakID uuid.UUID, roles []string, email, username, firstName, lastName string) (*storage.User, error)
 }
 
 type AuthPostgres struct {
@@ -37,10 +37,11 @@ func (r *AuthPostgres) GetUserByKeycloakID(
 func (r *AuthPostgres) CreateUser(
 	ctx context.Context,
 	keycloakID uuid.UUID,
+	roles []string,
 	email, username, firstName, lastName string,
 ) (*storage.User, error) {
-	fmt.Printf("HandleCallback: keycloakID=%s email=%s username=%s firstName=%s lastName=%s\n",
-		keycloakID, email, username, firstName, lastName)
+	fmt.Printf("HandleCallback: keycloakID=%s roles=%s email=%s username=%s firstName=%s lastName=%s\n",
+		keycloakID, roles, email, username, firstName, lastName)
 
 	user, err := r.queries.CreateUser(ctx, storage.CreateUserParams{
 		KeycloakID: keycloakID,
@@ -48,7 +49,7 @@ func (r *AuthPostgres) CreateUser(
 		Username:   username,
 		FirstName:  pgtype.Text{String: firstName, Valid: true},
 		LastName:   pgtype.Text{String: lastName, Valid: true},
-		Roles:      []string{},
+		Roles:      roles,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
