@@ -6,6 +6,7 @@ import (
 	storage "eduplan/backend/pkg/sqlc/generated"
 	"io"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -32,4 +33,23 @@ func (s *AwardService) CreateAwardWithFile(ctx context.Context, params *storage.
 
 	// 3. Save to Database
 	return s.repo.CreateAward(ctx, params)
+}
+
+func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (storage.Award, error) {
+	return s.repo.GetAwardByID(ctx, id)
+}
+
+func (s *AwardService) GetAllAwards(ctx context.Context) ([]storage.Award, error) {
+	return s.repo.GetAllAwards(ctx)
+}
+func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (storage.Award, error) {
+	return s.repo.UpdateAwardStatus(ctx, params)
+}
+
+func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
+	return s.repo.DeleteAward(ctx, id)
+}
+
+func (s *AwardService) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Award, error) {
+	return s.repo.GetAwardsByMethodist(ctx, methodist)
 }

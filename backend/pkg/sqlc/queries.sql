@@ -227,14 +227,16 @@ WHERE id = $1;
 INSERT INTO awards (
     status,
     methodist,
-    violation,
     type,
     text
 ) VALUES (
-    $1,$2,$3,$4,$5
+    $1,$2,$3,$4
 )
 RETURNING *;
 
+-- name: GetAllAwards :many
+SELECT *
+FROM awards;
 
 -- name: GetAwardByID :one
 SELECT *
@@ -249,6 +251,15 @@ SET
     reason = $3,
     updated_at = NOW()
 WHERE id = $1;
+
+-- name: DeleteAward :exec
+DELETE FROM awards
+WHERE id = $1;
+
+-- name: GetAwardsByMethodist :many
+SELECT *
+FROM awards
+WHERE methodist = $1;
 
 -- name: CreateAwardType :one
 INSERT INTO award_types (
