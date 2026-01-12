@@ -3,11 +3,11 @@ package keycloak
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
-	"github.com/Nerzal/gocloak/v13"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -22,130 +22,66 @@ func NewGroupsSyncService(kc *Client, repo repository.GroupsRepository) *GroupsS
 }
 
 // SyncGroups:
-// 1) получает service account token (client_credentials)
-// 2) тянет все группы из Admin API (с attributes)
-// 3) расплющивает дерево subGroups
-// 4) сохраняет в БД через upsert в транзакции
+// 1) service account token (client_credentials)
+// 2) raw admin rest -> groups tree
+// 3) берём ТОЛЬКО /students и все подгруппы
+// 4) upsert в БД
 func (s *GroupsSyncService) SyncGroups(ctx context.Context) error {
-	fmt.Printf("[groups-sync] starting...\n")
-
 	jwt, err := s.kc.LoginServiceAccount(ctx)
 	if err != nil {
 		return fmt.Errorf("keycloak login service account: %w", err)
 	}
-	// Не печатаем сам токен целиком (секрет), только первые символы
-	at := jwt.AccessToken
-	if len(at) > 16 {
-		at = at[:16] + "..."
-	}
-	fmt.Printf("[groups-sync] service account token ok, access_token=%s\n", at)
 
-	groups, err := s.kc.GetGroups(ctx, jwt.AccessToken)
+	raw, err := s.kc.GetGroupsRawHTTP(ctx, jwt.AccessToken, 0, 5000)
 	if err != nil {
-		return fmt.Errorf("keycloak get groups: %w", err)
+		return fmt.Errorf("keycloak get groups raw http: %w", err)
 	}
-	fmt.Printf("[groups-sync] keycloak groups top-level: %d\n", len(groups))
 
-	flat := flattenGocloakGroups(groups)
-	fmt.Printf("[groups-sync] keycloak groups flattened: %d\n", len(flat))
-
-	// Покажем первые 5 групп “как есть”
-	for i, g := range flat {
-		if i >= 5 {
-			break
-		}
-		var id, name any
-		if g != nil {
-			id = g.ID
-			name = g.Name
-		}
-		fmt.Printf("[groups-sync] sample[%d] id=%v name=%v hasAttrs=%v hasSubGroups=%v\n",
-			i,
-			id,
-			name,
-			g != nil && g.Attributes != nil,
-			g != nil && g.SubGroups != nil,
-		)
-		if g != nil && g.Attributes != nil {
-			qual := firstAttr(g.Attributes, "qualification")
-			spec := firstAttr(g.Attributes, "specialty")
-			fmt.Printf("[groups-sync] sample[%d] qualification=%v specialty=%v\n", i, qual, spec)
-		}
+	// Ищем именно /students (надежнее, чем по имени)
+	root := findGroupTree(raw, "/Students", "Students")
+	if root == nil {
+		return fmt.Errorf("students group not found in keycloak")
 	}
+
+	flat := flattenRawGroups([]GroupRepresentation{*root})
 
 	params := make([]storage.UpsertGroupParams, 0, len(flat))
-	skippedNil := 0
-	skippedNoID := 0
-	skippedNoName := 0
-	skippedBadUUID := 0
-
 	for _, g := range flat {
-		if g == nil {
-			skippedNil++
-			continue
-		}
-		if g.ID == nil {
-			skippedNoID++
-			continue
-		}
-		if g.Name == nil {
-			skippedNoName++
+		if strings.TrimSpace(g.ID) == "" || strings.TrimSpace(g.Name) == "" {
 			continue
 		}
 
-		id, err := uuid.Parse(*g.ID)
+		id, err := uuid.Parse(g.ID)
 		if err != nil {
-			skippedBadUUID++
-			fmt.Printf("[groups-sync] WARN: bad group uuid %q: %v\n", *g.ID, err)
-			continue
+			return fmt.Errorf("parse keycloak group id %q: %w", g.ID, err)
 		}
 
-		qual := firstAttr(g.Attributes, "qualification")
-		spec := firstAttr(g.Attributes, "specialty")
+		qual := firstAttrRaw(g.Attributes, "qualification")
+		spec := firstAttrRaw(g.Attributes, "specialty")
 
 		params = append(params, storage.UpsertGroupParams{
 			KeycloakID:    id,
-			Name:          *g.Name,
+			Name:          g.Name,
 			Qualification: toPgText(qual),
 			Specialty:     toPgText(spec),
 		})
-		cnt, err := s.kc.client.GetGroupsCount(ctx, jwt.AccessToken, s.kc.cfg.Realm, gocloak.GetGroupsParams{})
-		fmt.Printf("[groups-sync] groups count from KC: %v err=%v\n", cnt, err)
-
-	}
-
-	fmt.Printf("[groups-sync] mapped for db: %d (skipped: nil=%d noID=%d noName=%d badUUID=%d)\n",
-		len(params), skippedNil, skippedNoID, skippedNoName, skippedBadUUID)
-
-	if len(params) == 0 {
-		fmt.Printf("[groups-sync] WARN: nothing to save to db (params is empty)\n")
-		// Это НЕ ошибка, но полезно знать
 	}
 
 	if err := s.repo.CreateGroups(ctx, params); err != nil {
 		return fmt.Errorf("save groups to db: %w", err)
 	}
 
-	fmt.Printf("[groups-sync] done: saved %d groups\n", len(params))
 	return nil
 }
 
-// flattenGocloakGroups расплющивает дерево групп (subGroups) в плоский список.
-func flattenGocloakGroups(groups []*gocloak.Group) []*gocloak.Group {
-	out := make([]*gocloak.Group, 0, len(groups))
+func flattenRawGroups(groups []GroupRepresentation) []GroupRepresentation {
+	out := make([]GroupRepresentation, 0, len(groups))
 
-	var walk func(g *gocloak.Group)
-	walk = func(g *gocloak.Group) {
-		if g == nil {
-			return
-		}
+	var walk func(g GroupRepresentation)
+	walk = func(g GroupRepresentation) {
 		out = append(out, g)
-
-		if g.SubGroups != nil {
-			for i := range *g.SubGroups {
-				sg := &(*g.SubGroups)[i]
-				walk(sg)
-			}
+		for _, sg := range g.SubGroups {
+			walk(sg)
 		}
 	}
 
@@ -155,12 +91,47 @@ func flattenGocloakGroups(groups []*gocloak.Group) []*gocloak.Group {
 	return out
 }
 
-// firstAttr берёт первый элемент attributes[key], если он есть.
-func firstAttr(attrs *map[string][]string, key string) *string {
-	if attrs == nil {
-		return nil
+// findGroupTree ищет группу сначала по path, потом по name (в глубину)
+func findGroupTree(groups []GroupRepresentation, wantPath string, wantName string) *GroupRepresentation {
+	if wantPath != "" {
+		if g := findByPath(groups, wantPath); g != nil {
+			return g
+		}
 	}
-	v, ok := (*attrs)[key]
+	if wantName != "" {
+		if g := findByNameDeep(groups, wantName); g != nil {
+			return g
+		}
+	}
+	return nil
+}
+
+func findByPath(groups []GroupRepresentation, want string) *GroupRepresentation {
+	for i := range groups {
+		if groups[i].Path == want {
+			return &groups[i]
+		}
+		if g := findByPath(groups[i].SubGroups, want); g != nil {
+			return g
+		}
+	}
+	return nil
+}
+
+func findByNameDeep(groups []GroupRepresentation, wantName string) *GroupRepresentation {
+	for i := range groups {
+		if strings.EqualFold(groups[i].Name, wantName) {
+			return &groups[i]
+		}
+		if g := findByNameDeep(groups[i].SubGroups, wantName); g != nil {
+			return g
+		}
+	}
+	return nil
+}
+
+func firstAttrRaw(attrs map[string][]string, key string) *string {
+	v, ok := attrs[key]
 	if !ok || len(v) == 0 {
 		return nil
 	}
@@ -168,10 +139,47 @@ func firstAttr(attrs *map[string][]string, key string) *string {
 	return &s
 }
 
-// toPgText конвертит *string в pgtype.Text (nullable)
 func toPgText(p *string) pgtype.Text {
 	if p == nil {
 		return pgtype.Text{Valid: false}
 	}
 	return pgtype.Text{String: *p, Valid: true}
+}
+
+func (s *GroupsSyncService) DebugFetchStudentsTree(ctx context.Context) (*GroupRepresentation, error) {
+	jwt, err := s.kc.LoginServiceAccount(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("keycloak login service account: %w", err)
+	}
+
+	// 1) найдём Students в топ-левеле (там есть id)
+	top, err := s.kc.GetGroupsRawHTTP(ctx, jwt.AccessToken, 0, 5000)
+	if err != nil {
+		return nil, fmt.Errorf("keycloak get groups: %w", err)
+	}
+
+	root := findByNameDeep(top, "Students")
+	if root == nil {
+		root = findByNameDeep(top, "students")
+	}
+	if root == nil || strings.TrimSpace(root.ID) == "" {
+		return nil, fmt.Errorf("Students group not found in keycloak")
+	}
+
+	// 2) берём полную группу по id (там должны быть subGroups)
+	full, err := s.kc.GetGroupByIDRawHTTP(ctx, jwt.AccessToken, root.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3) если subGroups всё равно пусто — fallback: получаем детей отдельным endpoint и приклеиваем
+	if len(full.SubGroups) == 0 {
+		children, err := s.kc.GetGroupChildrenRawHTTP(ctx, jwt.AccessToken, root.ID, 0, 5000)
+		if err != nil {
+			return nil, err
+		}
+		full.SubGroups = children
+	}
+
+	return full, nil
 }

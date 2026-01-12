@@ -304,23 +304,12 @@ func SessionAuth(userService service.UserService) gin.HandlerFunc {
 
 func AuthRequired(kc *keycloak.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		h := strings.TrimSpace(c.GetHeader("Authorization"))
-		if h == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing authorization header"})
+		h := c.GetHeader("Authorization")
+		if h == "" || !strings.HasPrefix(strings.ToLower(h), "bearer ") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
 			return
 		}
-
-		parts := strings.SplitN(h, " ", 2)
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header"})
-			return
-		}
-
-		token := strings.TrimSpace(parts[1])
-		if token == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "empty bearer token"})
-			return
-		}
+		token := strings.TrimSpace(h[len("Bearer "):])
 
 		res, err := kc.IntrospectToken(c.Request.Context(), token)
 		if err != nil {
@@ -332,9 +321,7 @@ func AuthRequired(kc *keycloak.Client) gin.HandlerFunc {
 			return
 		}
 
-		// (опционально) можно положить результат introspect в контекст
-		// c.Set("introspect", res)
-
+		// при желании можно прокинуть user info в контекст
 		c.Next()
 	}
 }

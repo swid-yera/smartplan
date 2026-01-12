@@ -101,6 +101,7 @@ func (r *Router) Init() *gin.Engine {
 		{
 			// POST /api/groups/sync
 			groups.POST("/sync", r.groups.SyncGroups)
+			groups.GET("/debug/students", r.groups.DebugStudents)
 
 			// (опционально) GET /api/groups
 			// groups.GET("/", r.groups.GetAllGroups)

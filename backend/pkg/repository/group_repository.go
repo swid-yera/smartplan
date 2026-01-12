@@ -29,10 +29,7 @@ func NewGroupsPostgres(pool *pgxpool.Pool) *GroupsPostgres {
 }
 
 func (r *GroupsPostgres) CreateGroups(ctx context.Context, groups []storage.UpsertGroupParams) error {
-	fmt.Printf("[groups-repo] CreateGroups called: %d items\n", len(groups))
-
 	if len(groups) == 0 {
-		fmt.Printf("[groups-repo] nothing to save, returning\n")
 		return nil
 	}
 
@@ -44,29 +41,16 @@ func (r *GroupsPostgres) CreateGroups(ctx context.Context, groups []storage.Upse
 
 	qtx := r.queries.WithTx(tx)
 
-	okCount := 0
-	for i, g := range groups {
-		// покажем первые 3 записи, чтобы убедиться что параметры норм
-		if i < 3 {
-			fmt.Printf("[groups-repo] upsert sample[%d]: keycloak_id=%s name=%q qual.valid=%v spec.valid=%v\n",
-				i, g.KeycloakID, g.Name, g.Qualification.Valid, g.Specialty.Valid)
-		}
-
-		res, err := qtx.UpsertGroup(ctx, g)
+	for _, g := range groups {
+		_, err := qtx.UpsertGroup(ctx, g)
 		if err != nil {
 			return fmt.Errorf("upsert group %s (%s): %w", g.Name, g.KeycloakID, err)
 		}
-		okCount++
-
-		// Если UpsertGroup возвращает строку/ID — покажем (если тип не поддерживается, просто убери res)
-		_ = res
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
 	}
-
-	fmt.Printf("[groups-repo] saved/updated: %d groups, committed\n", okCount)
 	return nil
 }
 
