@@ -1,0 +1,22 @@
+type: http_request
+model: http_request
+id: rq_pPtUUpVBD9
+createdAt: 2025-12-29T13:48:27.340170400
+updatedAt: 2025-12-29T13:49:26.786205800
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_fh7jNUikxF
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: POST
+name: ''
+sortPriority: -0.0001
+url: http://localhost:8080/api/awards/
+urlParameters:
+- enabled: true
+  name: ''
+  value: ''
+  id: DRdSvgzZTv

@@ -30,6 +30,15 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if valueStr := getEnv(key, ""); valueStr != "" {
+		if value, err := strconv.ParseBool(valueStr); err == nil {
+			return value
+		}
+	}
+	return defaultValue
+}
+
 type KeycloakConfig struct {
 	KeycloakURL      string
 	KeycloakRealm    string
@@ -53,6 +62,25 @@ type RedisConfig struct {
 	RedisAddr     string
 	RedisPassword string
 	RedisDB       int
+}
+
+type MinioConfig struct {
+	Port              string
+	MinioEndpoint     string
+	BucketName        string
+	MinioRootUser     string
+	MinioRootPassword string
+	MinioUseSSL       bool
+}
+
+func LoadMinioConfig() *MinioConfig {
+	return &MinioConfig{
+		MinioEndpoint:     getEnv("MINIO_ENDPOINT", "localhost:9000"),
+		BucketName:        getEnv("MINIO_BUCKET_NAME", "awards"),
+		MinioRootUser:     getEnv("MINIO_ROOT_USER", "minioadmin"),
+		MinioRootPassword: getEnv("MINIO_ROOT_PASSWORD", "minioadmin"),
+		MinioUseSSL:       getEnvAsBool("MINIO_USE_SSL", false),
+	}
 }
 
 func LoadKeycloakConfig() *KeycloakConfig {

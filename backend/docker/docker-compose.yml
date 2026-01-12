@@ -40,5 +40,7 @@ networks:
     driver: bridge
 
 volumes:
+  minio_data:
+  minio_config:
   postgres_eduplan_data:
   redis_eduplan_data:
