@@ -49,7 +49,6 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	params := storage.CreateAwardParams{
 		Status:    storage.AwardsStatus(c.PostForm("status")),
 		Methodist: parseUUID(c.PostForm("methodist")),
-		Violation: storage.ViolationEnum(c.PostForm("violation")),
 		Type:      parseUUID(c.PostForm("type")),
 	}
 
@@ -62,4 +61,88 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, award)
+}
+
+func (h *AwardHandler) GetAllAwards(c *gin.Context) {
+	awards, err := h.service.GetAllAwards(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, awards)
+}
+
+func (h *AwardHandler) GetAwardByID(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
+		return
+	}
+
+	award, err := h.service.GetAwardByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, award)
+}
+
+func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
+		return
+	}
+
+	var req struct {
+		Status storage.AwardsStatus `json:"status"`
+		Reason pgtype.Text          `json:"reason"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	params := storage.UpdateAwardStatusParams{
+		ID:     id,
+		Status: req.Status,
+		Reason: req.Reason,
+	}
+
+	award, err := h.service.UpdateAwardStatus(c.Request.Context(), params)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, award)
+}
+
+func (h *AwardHandler) DeleteAward(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
+		return
+	}
+
+	err = h.service.DeleteAward(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *AwardHandler) GetAwardsByMethodist(c *gin.Context) {
+	idParam := c.Param("id")
+	methodistUUID := parseUUID(idParam)
+	awards, err := h.service.GetAwardsByMethodist(c.Request.Context(), methodistUUID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, awards)
 }

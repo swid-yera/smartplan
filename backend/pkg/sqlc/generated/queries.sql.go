@@ -16,28 +16,25 @@ const createAward = `-- name: CreateAward :one
 INSERT INTO awards (
     status,
     methodist,
-    violation,
     type,
     text
 ) VALUES (
-    $1,$2,$3,$4,$5
+    $1,$2,$3,$4
 )
-RETURNING id, status, reason, methodist, total_points, violation, type, text, images, documents, links, created_at, updated_at
+RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
 `
 
 type CreateAwardParams struct {
-	Status    AwardsStatus  `json:"status"`
-	Methodist pgtype.UUID   `json:"methodist"`
-	Violation ViolationEnum `json:"violation"`
-	Type      pgtype.UUID   `json:"type"`
-	Text      pgtype.Text   `json:"text"`
+	Status    AwardsStatus `json:"status"`
+	Methodist pgtype.UUID  `json:"methodist"`
+	Type      pgtype.UUID  `json:"type"`
+	Text      pgtype.Text  `json:"text"`
 }
 
 func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error) {
 	row := q.db.QueryRow(ctx, createAward,
 		arg.Status,
 		arg.Methodist,
-		arg.Violation,
 		arg.Type,
 		arg.Text,
 	)
@@ -47,12 +44,14 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		&i.Status,
 		&i.Reason,
 		&i.Methodist,
+		&i.Teacher,
 		&i.TotalPoints,
-		&i.Violation,
 		&i.Type,
+		&i.Variant,
+		&i.Criteria,
 		&i.Text,
 		&i.Images,
-		&i.Documents,
+		&i.Document,
 		&i.Links,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -361,7 +360,7 @@ INSERT INTO users (
 ) VALUES (
     $1, $2, $3, $4, $5, $6
 )
-RETURNING keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, password_changed_at, last_seen_at, created_at, updated_at
+RETURNING keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -394,12 +393,23 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Rups,
 		&i.TotalPoints,
 		&i.Awards,
+		&i.Violation,
 		&i.PasswordChangedAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteAward = `-- name: DeleteAward :exec
+DELETE FROM awards
+WHERE id = $1
+`
+
+func (q *Queries) DeleteAward(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAward, id)
+	return err
 }
 
 const deleteRup = `-- name: DeleteRup :exec
@@ -447,6 +457,47 @@ func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
 	for rows.Next() {
 		var i AwardType
 		if err := rows.Scan(&i.ID, &i.Name, &i.Variants); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllAwards = `-- name: GetAllAwards :many
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
+FROM awards
+`
+
+func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
+	rows, err := q.db.Query(ctx, getAllAwards)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Award
+	for rows.Next() {
+		var i Award
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.Reason,
+			&i.Methodist,
+			&i.Teacher,
+			&i.TotalPoints,
+			&i.Type,
+			&i.Variant,
+			&i.Criteria,
+			&i.Text,
+			&i.Images,
+			&i.Document,
+			&i.Links,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -595,7 +646,7 @@ func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 ORDER BY created_at DESC
 `
@@ -620,6 +671,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 			&i.Rups,
 			&i.TotalPoints,
 			&i.Awards,
+			&i.Violation,
 			&i.PasswordChangedAt,
 			&i.LastSeenAt,
 			&i.CreatedAt,
@@ -636,7 +688,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getAwardByID = `-- name: GetAwardByID :one
-SELECT id, status, reason, methodist, total_points, violation, type, text, images, documents, links, created_at, updated_at
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
 FROM awards
 WHERE id = $1
 `
@@ -649,17 +701,61 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 		&i.Status,
 		&i.Reason,
 		&i.Methodist,
+		&i.Teacher,
 		&i.TotalPoints,
-		&i.Violation,
 		&i.Type,
+		&i.Variant,
+		&i.Criteria,
 		&i.Text,
 		&i.Images,
-		&i.Documents,
+		&i.Document,
 		&i.Links,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getAwardsByMethodist = `-- name: GetAwardsByMethodist :many
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
+FROM awards
+WHERE methodist = $1
+`
+
+func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error) {
+	rows, err := q.db.Query(ctx, getAwardsByMethodist, methodist)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Award
+	for rows.Next() {
+		var i Award
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.Reason,
+			&i.Methodist,
+			&i.Teacher,
+			&i.TotalPoints,
+			&i.Type,
+			&i.Variant,
+			&i.Criteria,
+			&i.Text,
+			&i.Images,
+			&i.Document,
+			&i.Links,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getDisciplineSemesterByID = `-- name: GetDisciplineSemesterByID :one
@@ -851,7 +947,7 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 }
 
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
-SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 WHERE keycloak_id = $1
 `
@@ -870,6 +966,7 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 		&i.Rups,
 		&i.TotalPoints,
 		&i.Awards,
+		&i.Violation,
 		&i.PasswordChangedAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,

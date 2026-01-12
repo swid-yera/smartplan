@@ -21,16 +21,19 @@ type Querier interface {
 	CreateRupResource(ctx context.Context, arg CreateRupResourceParams) (RupResource, error)
 	CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteAward(ctx context.Context, id uuid.UUID) error
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
 	GetAllAwardTypes(ctx context.Context) ([]AwardType, error)
+	GetAllAwards(ctx context.Context) ([]Award, error)
 	GetAllDisciplineTopics(ctx context.Context) ([]DisciplineTopic, error)
 	GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, error)
 	GetAllRupResources(ctx context.Context) ([]RupResource, error)
 	GetAllRups(ctx context.Context) ([]Rup, error)
 	GetAllUsers(ctx context.Context) ([]User, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
+	GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error)
 	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
 	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error)

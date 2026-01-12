@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -30,4 +31,28 @@ func (r *AwardRepository) UploadToMinIO(ctx context.Context, fileName string, re
 
 func (r *AwardRepository) CreateAward(ctx context.Context, params *storage.CreateAwardParams) (storage.Award, error) {
 	return r.queries.CreateAward(ctx, *params)
+}
+
+func (r *AwardRepository) GetAwardByID(ctx context.Context, id uuid.UUID) (storage.Award, error) {
+	return r.queries.GetAwardByID(ctx, id)
+}
+
+func (r *AwardRepository) GetAllAwards(ctx context.Context) ([]storage.Award, error) {
+	return r.queries.GetAllAwards(ctx)
+}
+
+func (r *AwardRepository) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (storage.Award, error) {
+	err := r.queries.UpdateAwardStatus(ctx, params)
+	if err != nil {
+		return storage.Award{}, err
+	}
+	return storage.Award{}, nil
+}
+
+func (r *AwardRepository) DeleteAward(ctx context.Context, id uuid.UUID) error {
+	return r.queries.DeleteAward(ctx, id)
+}
+
+func (r *AwardRepository) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Award, error) {
+	return r.queries.GetAwardsByMethodist(ctx, methodist)
 }

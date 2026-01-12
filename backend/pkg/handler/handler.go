@@ -72,18 +72,26 @@ func (r *Router) Init() *gin.Engine {
 		api.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 
 		// RUP routes
-		api.POST("/rups", r.rup.CreateRup)
-		api.GET("/rups", r.rup.GetAllRups)
-		api.GET("/rups/:id", r.rup.GetRupByID)
-		api.PUT("/rups/:id/status", r.rup.UpdateRupStatus)
-		api.DELETE("/rups/:id", r.rup.DeleteRup)
-		api.GET("/rups/methodist/:id", r.rup.GetRupsByMethodist)
+		rups := api.Group("/rups")
+		{
+			rups.POST("/", r.rup.CreateRup)
+			rups.GET("/", r.rup.GetAllRups)
+			rups.GET("/:id", r.rup.GetRupByID)
+			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
+			rups.DELETE("/:id", r.rup.DeleteRup)
+			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
+		}
 
 		// --- AWARD ROUTES ---
 		awards := api.Group("/awards")
 		{
 			// POST /api/awards/
 			awards.POST("/", r.award.CreateAward)
+			awards.GET("/", r.award.GetAllAwards)
+			awards.GET("/:id", r.award.GetAwardByID)
+			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
+			awards.DELETE("/:id", r.award.DeleteAward)
+			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
 		}
 	}
 
