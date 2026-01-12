@@ -4,12 +4,14 @@ import (
 	"log"
 	"os" // Added for getEnv
 	"strings"
+	"time"
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/handler"
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/repository"
 	"eduplan/backend/pkg/service"
+	kcservice "eduplan/backend/pkg/service/keycloak"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/Nerzal/gocloak/v13"
@@ -55,6 +57,8 @@ func main() {
 
 	queries := storage.New(db)
 
+	groupsRepo := repository.NewGroupsPostgres(db)
+
 	// ---------- MINIO ----------
 	minioRepo, err := repository.NewMinioRepository(
 		minioCfg.MinioEndpoint,
@@ -80,11 +84,20 @@ func main() {
 	// Passing our wrapped minioRepo to the AwardRepository
 	awardRepo := repository.NewAwardRepository(queries, minioRepo)
 
+	kcSyncClient := kcservice.NewClient(
+		kcCfg.KeycloakURL,
+		kcCfg.KeycloakRealm,
+		kcCfg.KeycloakClientID,
+		kcCfg.KeycloakSecret,
+	)
+
 	// ---------- SERVICES ----------
 	authService := service.NewAuthService(rdb, authRepo)
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(repository.NewRupPostgres(queries))
 	awardService := service.NewAwardService(awardRepo)
+	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
+	syncGuard := service.NewSyncGuard(1 * time.Minute)
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(
@@ -104,12 +117,13 @@ func main() {
 	userHandler := handler.NewUserHandler(userService)
 	rupHandler := handler.NewRupHandler(rupService)
 	awardHandler := handler.NewAwardHandler(awardService)
+	groupsHandler := handler.NewGroupsHandler(groupsSyncService, syncGuard)
 
 	// ---------- ROUTER ----------
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
 
 	// Ensure your NewRouter signature matches: (auth, user, rup, award, middleware)
-	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, nil, sessionAuthMiddleware)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, nil, groupsHandler, sessionAuthMiddleware)
 	engine := router.Init()
 
 	port := getEnv("PORT", "8080")

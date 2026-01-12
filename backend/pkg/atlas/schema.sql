@@ -25,7 +25,7 @@ CREATE TABLE users (
     rups TEXT[],
     total_points INT NOT NULL DEFAULT 0,
     awards TEXT[],
-    violation violation_enum NOT NULL,
+    violation violation_enum NOT NULL DEFAULT 'NONE',
 
     password_changed_at TIMESTAMPTZ,
     last_seen_at TIMESTAMPTZ,
@@ -38,11 +38,10 @@ CREATE TABLE users (
 -- GROUPS
 -- =====================
 CREATE TABLE groups (
-    keycloak_id UUID NOT NULL,
+    keycloak_id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     qualification TEXT,
-    specialty TEXT,
-    PRIMARY KEY (keycloak_id, name)
+    specialty TEXT
 );
 
 -- =====================
