@@ -2,6 +2,7 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
+import { statusLabels, statusVariants } from '@helpers'
 import type { IRupModule } from '@types'
 import {
 	Badge,
@@ -17,8 +18,6 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ui'
-
-import { statusLabels, statusVariants } from '@/helpers'
 
 interface IRupsProps {
 	rups: IRupModule[]

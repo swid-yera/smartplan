@@ -74,6 +74,7 @@ import {
 	TooltipTrigger,
 } from '@ui'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 const formSchema = z.object({
@@ -349,7 +350,7 @@ function Home() {
 			{/* Sonner - Toast */}
 			<section className='space-y-4'>
 				<Heading size='h2'>Sonner (Toast)</Heading>
-				<Button onClick={() => {}}>Show Toast</Button>
+				<Button onClick={() => toast.success('This is a success toast')}>Show Toast</Button>
 				{/* Note: Sonner needs toast function, but for demo */}
 			</section>
 		</div>

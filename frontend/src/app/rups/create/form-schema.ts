@@ -1,6 +1,5 @@
+import { formatCourseFromYearAndGroupName } from '@helpers'
 import { z } from 'zod'
-
-import { formatCourseFromYearAndGroupName } from '@/helpers'
 
 import { groupData } from './mock.data'
 

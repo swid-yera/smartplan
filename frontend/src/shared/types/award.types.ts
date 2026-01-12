@@ -23,6 +23,7 @@ export enum IAwardTypeCriteriaMethodEnum {
 export interface IAward {
 	id: string
 
+	title: string
 	status: AwardStatusEnum
 	teacher: IUser
 
@@ -39,22 +40,22 @@ export interface IAward {
 	document?: string
 	links?: string[]
 
-	createAt: string
+	createdAt: string
 	updatedAt: string
 }
 
 export interface IAwardType {
 	id: string
 	name: string
-	variants: IAwardTypeVariant[]
+	variants?: IAwardTypeVariant[]
 }
 
 export interface IAwardTypeVariant {
 	id: string
 	name: string
 	description: string
-	criteria: IAwardTypeCriteria[]
-	bonusCriteria: IAwardTypeCriteria[]
+	criteria?: IAwardTypeCriteria[]
+	bonusCriteria?: IAwardTypeCriteria[]
 }
 
 export interface IAwardTypeCriteria {

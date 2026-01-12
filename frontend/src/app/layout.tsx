@@ -2,9 +2,8 @@ import type { Metadata } from 'next'
 
 import { ASidebar, Footer } from '@layout'
 import { QueryProvider, ThemeProvider } from '@providers'
+import { AuthInitializer } from '@store'
 import { SidebarInset, SidebarProvider, Toaster } from '@ui'
-
-import { AuthInitializer } from '@/store'
 
 import './globals.css'
 

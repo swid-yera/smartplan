@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+import { EditableHourCell } from '@components'
 import {
 	DndContext,
 	type DragEndEvent,
@@ -15,6 +16,7 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { formatHours } from '@helpers'
 import { cn } from '@lib'
 import { RupModuleTypeEnum, TopicTypeEnum } from '@types'
 import {
@@ -63,9 +65,6 @@ import {
 	useFormContext,
 	useWatch,
 } from 'react-hook-form'
-
-import { EditableHourCell } from '@/components/editable-hour-cell'
-import { formatHours } from '@/helpers'
 
 type Topic = {
 	name: string

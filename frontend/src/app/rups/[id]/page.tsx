@@ -5,7 +5,10 @@ import { type FC, type KeyboardEvent, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
+import { statusLabels, statusVariants } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { deleteRupModuleById, getRupModuleById, updateRupModule } from '@services'
+import { type IRupModule, RupModuleStatus } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -24,10 +27,6 @@ import {
 import { ArrowLeft } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-
-import { statusLabels, statusVariants } from '@/helpers'
-import { deleteRupModuleById, getRupModuleById, updateRupModule } from '@/services'
-import { type IRupModule, RupModuleStatus } from '@/shared/types'
 
 import {
 	BasicDataCard,

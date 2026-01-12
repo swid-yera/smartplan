@@ -2,6 +2,7 @@
 
 import type { DetailedHTMLProps, FC, HTMLAttributes } from 'react'
 
+import type { IUser } from '@types'
 import {
 	Avatar,
 	AvatarFallback,
@@ -19,8 +20,6 @@ import {
 	useSidebar,
 } from '@ui'
 import { Bell, ChevronsUpDown, CreditCard, LogOut, User } from 'lucide-react'
-
-import type { IUser } from '@/shared/types'
 
 interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElement>, HTMLUListElement> {
 	user: IUser

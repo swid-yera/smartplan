@@ -1,4 +1,4 @@
-import type { RupModuleStatus } from '@/shared/types'
+import type { RupModuleStatus } from '@types'
 
 export const statusLabels: Record<RupModuleStatus, string> = {
 	DRAFT: 'Черновик',

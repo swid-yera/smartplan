@@ -27,8 +27,8 @@ export const navMain = [
 		icon: BookOpen,
 	},
 	{
-		title: 'Награды',
-		url: '/awards',
+		title: 'KPI',
+		url: '/kpi',
 		icon: Award,
 	},
 	{

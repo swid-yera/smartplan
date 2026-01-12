@@ -1,6 +1,5 @@
+import type { IUser } from '@types'
 import { create } from 'zustand'
-
-import type { IUser } from '@/shared/types'
 
 interface AuthState {
 	user: IUser | null

@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react'
 
 import type { NextPage } from 'next'
 
+import { getAllRupModules } from '@services'
+import type { IRupModule } from '@types'
 import { Heading } from '@ui'
-
-import { getAllRupModules } from '@/services'
-import type { IRupModule } from '@/shared/types'
 
 import { FilterCard } from './filter-card'
 import { NewCard } from './new-card'

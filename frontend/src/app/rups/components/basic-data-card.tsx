@@ -2,6 +2,8 @@
 
 import React from 'react'
 
+import { cn } from '@lib'
+import { RupModuleTypeEnum, StudyFormEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -37,9 +39,6 @@ import {
 import { Check, ChevronsUpDown, Info } from 'lucide-react'
 import type { FieldValues, Path, PathValue } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'
-
-import { cn } from '@/lib'
-import { RupModuleTypeEnum, StudyFormEnum } from '@/shared/types'
 
 // Define a base shape for the form data that this component needs.
 // Any form passed to this component must have at least these fields.

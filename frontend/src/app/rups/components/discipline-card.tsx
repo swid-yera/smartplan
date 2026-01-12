@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react'
 
+import { EditableHourCell } from '@components'
+import { formatHours } from '@helpers'
+import { TopicTypeEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -39,10 +42,6 @@ import {
 	useFormContext,
 	useWatch,
 } from 'react-hook-form'
-
-import { EditableHourCell } from '@/components/editable-hour-cell'
-import { formatHours } from '@/helpers'
-import { TopicTypeEnum } from '@/shared/types'
 
 type Discipline = {
 	code: string
