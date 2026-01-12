@@ -15,6 +15,7 @@ type Router struct {
 	rup                   *RupHandler
 	award                 *AwardHandler // Added
 	webhooks              *WebhooksHandler
+	groups                *GroupsHandler
 	sessionAuthMiddleware gin.HandlerFunc
 }
 
@@ -24,6 +25,7 @@ func NewRouter(
 	rup *RupHandler,
 	award *AwardHandler, // Added
 	webhooks *WebhooksHandler,
+	groups *GroupsHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
 ) *Router {
 	return &Router{
@@ -32,6 +34,7 @@ func NewRouter(
 		rup:                   rup,
 		award:                 award, // Added
 		webhooks:              webhooks,
+		groups:                groups,
 		sessionAuthMiddleware: sessionAuthMiddleware,
 	}
 }
@@ -92,6 +95,15 @@ func (r *Router) Init() *gin.Engine {
 			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
 			awards.DELETE("/:id", r.award.DeleteAward)
 			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
+		}
+
+		groups := api.Group("/groups")
+		{
+			// POST /api/groups/sync
+			groups.POST("/sync", r.groups.SyncGroups)
+
+			// (опционально) GET /api/groups
+			// groups.GET("/", r.groups.GetAllGroups)
 		}
 	}
 

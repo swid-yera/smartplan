@@ -279,3 +279,27 @@ FROM award_types;
 SELECT keycloak_id, name, qualification, specialty
 FROM groups
 WHERE keycloak_id = $1;
+
+-- name: CreateGroup :one
+INSERT INTO groups (
+    keycloak_id,
+    name,
+    qualification,
+    specialty
+) VALUES (
+    $1, $2, $3, $4
+)
+RETURNING keycloak_id, name, qualification, specialty;
+
+-- name: GetAllGroups :many
+SELECT * FROM groups
+ORDER BY name;
+
+-- name: UpsertGroup :one
+INSERT INTO groups (keycloak_id, name, qualification, specialty)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (keycloak_id) DO UPDATE SET
+    name = EXCLUDED.name,
+    qualification = EXCLUDED.qualification,
+    specialty = EXCLUDED.specialty
+RETURNING keycloak_id;
