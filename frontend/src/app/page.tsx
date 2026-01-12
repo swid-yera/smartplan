@@ -1,360 +1,144 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
 
-import { zodResolver } from '@hookform/resolvers/zod'
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-	Alert,
-	AlertDescription,
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	Avatar,
-	AvatarFallback,
-	AvatarImage,
-	Badge,
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbLink,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-	Button,
-	ButtonGroup,
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-	Form,
-	FormControl,
-	FormDescription,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-	Heading,
-	Input,
-	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-	Separator,
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-	Skeleton,
-	Spinner,
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from '@ui'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import { z } from 'zod'
+import { Button, Card, CardDescription, CardHeader, CardTitle, Heading } from '@ui'
+import { BarChart3, FileText, GraduationCap, Loader2, ShieldCheck } from 'lucide-react'
 
-const formSchema = z.object({
-	email: z.string().email('Invalid email address'),
-})
+const features = [
+	{
+		icon: <FileText className='h-16 w-16 text-primary' />,
+		title: 'Автоматизация создания РУП',
+		description:
+			'EduPlan использует искусственный интеллект для автоматического создания рабочих учебных планов, значительно сокращая время и усилия, необходимые для их разработки.',
+		preview: '/videos/example.mp4',
+	},
+	{
+		icon: <ShieldCheck className='h-16 w-16 text-primary' />,
+		title: 'Валидация и проверка',
+		description:
+			'Встроенные инструменты валидации обеспечивают соответствие РУП стандартам и требованиям, а также упрощают процесс проверки и утверждения планов методистами.',
+		preview: '/videos/example.mp4',
+	},
+	{
+		icon: <BarChart3 className='h-16 w-16 text-primary' />,
+		title: 'Система KPI и рейтинг',
+		description:
+			'Платформа включает систему KPI для объективной оценки эффективности преподавателей, формируя прозрачный рейтинг на основе их достижений и вклада в учебный процесс.',
+		preview: '/videos/example.mp4',
+	},
+	{
+		icon: <GraduationCap className='h-16 w-16 text-primary' />,
+		title: 'Повышение качества образования',
+		description:
+			'Благодаря автоматизации и объективной оценке, EduPlan способствует повышению общего качества образования, позволяя преподавателям сосредоточиться на обучении.',
+		preview: '/videos/example.mp4',
+	},
+]
 
-function Home() {
-	const [alertDialogOpen, setAlertDialogOpen] = useState(false)
-	const [sheetOpen, setSheetOpen] = useState(false)
-	const [collapsibleOpen, setCollapsibleOpen] = useState(false)
-	const [successMessage, setSuccessMessage] = useState('')
-	const form = useForm({
-		resolver: zodResolver(formSchema),
-		defaultValues: {
-			email: '',
-		},
-	})
+const Page = () => {
+	const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+		const cardWrapper = e.currentTarget
+		const videoPreview = cardWrapper.querySelector<HTMLDivElement>('.video-preview')
+		const video = cardWrapper.querySelector('video')
+		const loader = cardWrapper.querySelector<HTMLDivElement>('.video-loader')
+
+		if (!videoPreview || !video) return
+
+		const cardRect = cardWrapper.getBoundingClientRect()
+		// Приблизительная высота всплывающего окна с видео
+		const videoHeight = 320
+
+		if (cardRect.top < videoHeight) {
+			// Недостаточно места сверху, показать снизу
+			videoPreview.classList.remove('bottom-full', 'mb-4')
+			videoPreview.classList.add('top-full', 'mt-4')
+		} else {
+			// Достаточно места сверху, показать сверху (по умолчанию)
+			videoPreview.classList.remove('top-full', 'mt-4')
+			videoPreview.classList.add('bottom-full', 'mb-4')
+		}
+
+		if (loader) loader.classList.remove('opacity-0')
+		video.currentTime = 0
+		video.play().catch(console.error)
+	}
+
+	const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+		const video = e.currentTarget.querySelector('video')
+
+		if (video) {
+			video.pause()
+		}
+	}
 
 	return (
-		<div className='max-w-7xl px-4 mx-auto p-4 space-y-8'>
-			<Heading size='h1'>UI Components Test Page</Heading>
-
-			{/* Buttons */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Buttons</Heading>
-				<div className='flex flex-wrap gap-2'>
-					<Button>Default Button</Button>
-					<Button variant='secondary'>Secondary</Button>
-					<Button variant='outline'>Outline</Button>
-					<Button variant='ghost'>Ghost</Button>
-					<Button variant='destructive'>Destructive</Button>
+		<section className='w-full py-12 md:py-24 lg:py-32'>
+			<div className='container px-4 md:px-6'>
+				<div className='flex flex-col items-center space-y-4 text-center'>
+					<div className='space-y-2'>
+						<Heading align='center' size='h1'>
+							Добро пожаловать в EduPlan
+						</Heading>
+						<p className='mx-auto max-w-[700px] text-muted-foreground md:text-xl'>
+							Система автоматизации создания и управления рабочими учебными планами с использованием ИИ, а также
+							оценки преподавателей по KPI.
+						</p>
+					</div>
 				</div>
-				<ButtonGroup>
-					<Button>Group 1</Button>
-					<Button>Group 2</Button>
-				</ButtonGroup>
-			</section>
+				<div className='mx-auto mt-12 grid grid-cols-1 items-start gap-8 sm:max-w-4xl sm:grid-cols-2 md:gap-12 lg:max-w-5xl'>
+					{features.map((feature) => (
+						<div
+							key={feature.title}
+							className='group relative h-full'
+							onMouseEnter={handleMouseEnter}
+							onMouseLeave={handleMouseLeave}
+						>
+							<div className='video-preview absolute bottom-full left-1/2 z-10 mb-4 invisible w-[500px] -translate-x-1/2 translate-y-2 rounded-lg border bg-background/80 backdrop-blur-md p-1 shadow-xl opacity-0 transition-all duration-300 group-hover:delay-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100'>
+								<div className='video-loader absolute inset-1 z-10 flex items-center justify-center rounded bg-background/50 backdrop-blur-sm transition-opacity duration-300'>
+									<Loader2 className='h-8 w-8 animate-spin text-primary' />
+								</div>
+								<video
+									loop
+									muted
+									playsInline
+									className='aspect-video w-full rounded bg-muted object-cover'
+									src={feature.preview}
+									onPlaying={(e) => {
+										const loader = e.currentTarget.parentElement?.querySelector('.video-loader')
 
-			{/* Alerts */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Alerts</Heading>
-				<Alert>
-					<AlertDescription>This is a default alert.</AlertDescription>
-				</Alert>
-				<Alert variant='destructive'>
-					<AlertDescription>This is a destructive alert.</AlertDescription>
-				</Alert>
-				<Button onClick={() => setAlertDialogOpen(true)}>Open Alert Dialog</Button>
-				<AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Are you sure?</AlertDialogTitle>
-							<AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
-							<AlertDialogAction>Continue</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-			</section>
+										if (loader) loader.classList.add('opacity-0')
+									}}
+									onWaiting={(e) => {
+										const loader = e.currentTarget.parentElement?.querySelector('.video-loader')
 
-			{/* Cards and Badges */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Cards and Badges</Heading>
-				<Card>
-					<CardHeader>
-						<CardTitle>Card Title</CardTitle>
-						<CardDescription>Card description</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<p>Card content</p>
-						<Badge>Badge</Badge>
-						<Badge variant='secondary'>Secondary Badge</Badge>
-					</CardContent>
-					<CardFooter>
-						<Button>Action</Button>
-					</CardFooter>
-				</Card>
-			</section>
-
-			{/* Avatars */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Avatars</Heading>
-				<div className='flex items-center gap-4'>
-					<Avatar>
-						<AvatarImage src='https://github.com/shadcn.png' />
-						<AvatarFallback>CN</AvatarFallback>
-					</Avatar>
-					<Avatar className='size-10'>
-						<AvatarImage src='https://github.com/shadcn.png' />
-						<AvatarFallback>CN</AvatarFallback>
-					</Avatar>
-					<Avatar className='size-12'>
-						<AvatarImage src='https://github.com/shadcn.png' />
-						<AvatarFallback>CN</AvatarFallback>
-					</Avatar>
-					<Avatar>
-						<AvatarFallback>JD</AvatarFallback>
-					</Avatar>
-					<Avatar className='size-10'>
-						<AvatarFallback>AB</AvatarFallback>
-					</Avatar>
+										if (loader) loader.classList.remove('opacity-0')
+									}}
+								/>
+							</div>
+							<Card className='h-full transition-all group-hover:-translate-y-1 group-hover:shadow-lg'>
+								<CardHeader className='flex flex-row items-start gap-4'>
+									{feature.icon}
+									<div className='grid gap-1'>
+										<CardTitle>{feature.title}</CardTitle>
+										<CardDescription>{feature.description}</CardDescription>
+									</div>
+								</CardHeader>
+							</Card>
+						</div>
+					))}
 				</div>
-			</section>
-
-			{/* Breadcrumbs */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Breadcrumbs</Heading>
-				<Breadcrumb>
-					<BreadcrumbList>
-						<BreadcrumbItem>
-							<BreadcrumbLink href='/'>Home</BreadcrumbLink>
-						</BreadcrumbItem>
-						<BreadcrumbSeparator />
-						<BreadcrumbItem>
-							<BreadcrumbLink href='/components'>Components</BreadcrumbLink>
-						</BreadcrumbItem>
-						<BreadcrumbSeparator />
-						<BreadcrumbPage>Test</BreadcrumbPage>
-					</BreadcrumbList>
-				</Breadcrumb>
-			</section>
-
-			{/* Form */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Form</Heading>
-				<Form {...form}>
-					<form
-						className='space-y-4'
-						onSubmit={form.handleSubmit((data) => {
-							console.log(data)
-							setSuccessMessage('Email submitted successfully!')
-						})}
-					>
-						<FormField
-							name='email'
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Email</FormLabel>
-									<FormControl>
-										<Input autoComplete='email' id='email' placeholder='Enter email' {...field} />
-									</FormControl>
-									<FormDescription>We'll never share your email.</FormDescription>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<Button type='submit'>Submit</Button>
-					</form>
-					{successMessage && (
-						<Alert>
-							<AlertDescription>{successMessage}</AlertDescription>
-						</Alert>
-					)}
-				</Form>
-			</section>
-
-			{/* Inputs and Selects */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Inputs and Selects</Heading>
-				<div className='space-y-2'>
-					<Label htmlFor='input'>Input</Label>
-					<Input id='input' placeholder='Type here' />
+				<div className='mt-12 flex flex-col justify-center gap-2 min-[400px]:flex-row'>
+					<Button asChild>
+						<Link href='/rups'>Перейти к РУП</Link>
+					</Button>
+					<Button asChild variant='outline'>
+						<Link href='/kpi'>Перейти к KPI</Link>
+					</Button>
 				</div>
-				<div className='space-y-2'>
-					<Label htmlFor='select'>Select</Label>
-					<Select>
-						<SelectTrigger id='select'>
-							<SelectValue placeholder='Select an option' />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='option1'>Option 1</SelectItem>
-							<SelectItem value='option2'>Option 2</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
-			</section>
-
-			{/* Dropdown Menu */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Dropdown Menu</Heading>
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button>Open Menu</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent>
-						<DropdownMenuLabel>My Account</DropdownMenuLabel>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem>Profile</DropdownMenuItem>
-						<DropdownMenuItem>Billing</DropdownMenuItem>
-						<DropdownMenuItem>Team</DropdownMenuItem>
-						<DropdownMenuItem>Subscription</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			</section>
-
-			{/* Sheet */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Sheet</Heading>
-				<Button onClick={() => setSheetOpen(true)}>Open Sheet</Button>
-				<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-					<SheetContent>
-						<SheetHeader>
-							<SheetTitle>Sheet Title</SheetTitle>
-							<SheetDescription>Sheet description</SheetDescription>
-						</SheetHeader>
-						<p>Sheet content</p>
-					</SheetContent>
-				</Sheet>
-			</section>
-
-			{/* Accordion */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Accordion</Heading>
-				<Accordion collapsible type='single'>
-					<AccordionItem value='item-1'>
-						<AccordionTrigger>Item 1</AccordionTrigger>
-						<AccordionContent>Content for item 1</AccordionContent>
-					</AccordionItem>
-					<AccordionItem value='item-2'>
-						<AccordionTrigger>Item 2</AccordionTrigger>
-						<AccordionContent>Content for item 2</AccordionContent>
-					</AccordionItem>
-				</Accordion>
-			</section>
-
-			{/* Collapsible */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Collapsible</Heading>
-				<Collapsible open={collapsibleOpen} onOpenChange={setCollapsibleOpen}>
-					<CollapsibleTrigger asChild>
-						<Button>Toggle Collapsible</Button>
-					</CollapsibleTrigger>
-					<CollapsibleContent>Collapsible content</CollapsibleContent>
-				</Collapsible>
-			</section>
-
-			{/* Skeleton */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Skeleton</Heading>
-				<Skeleton className='h-4 w-[250px]' />
-				<Skeleton className='h-4 w-[200px]' />
-			</section>
-
-			{/* Spinner */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Spinner</Heading>
-				<Spinner />
-			</section>
-
-			{/* Tooltip */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Tooltip</Heading>
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button>Hover me</Button>
-						</TooltipTrigger>
-						<TooltipContent>
-							<p>Tooltip content</p>
-						</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
-			</section>
-
-			{/* Separator */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Separator</Heading>
-				<Separator />
-			</section>
-
-			{/* Sonner - Toast */}
-			<section className='space-y-4'>
-				<Heading size='h2'>Sonner (Toast)</Heading>
-				<Button onClick={() => toast.success('This is a success toast')}>Show Toast</Button>
-				{/* Note: Sonner needs toast function, but for demo */}
-			</section>
-		</div>
+			</div>
+		</section>
 	)
 }
 
-export default Home
+export default Page

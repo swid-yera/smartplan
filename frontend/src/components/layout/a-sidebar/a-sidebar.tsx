@@ -25,7 +25,7 @@ export function ASidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { user, isAuthenticated, isLoading } = useAuthStore()
 
 	return (
-		<Sidebar className='border-r-0' collapsible='offcanvas' variant='inset' {...props}>
+		<Sidebar className='border-r-0' collapsible='icon' variant='inset' {...props}>
 			<SidebarHeader>
 				{isLoading ? (
 					<SidebarMenu>

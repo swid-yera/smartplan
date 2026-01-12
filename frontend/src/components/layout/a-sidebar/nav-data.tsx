@@ -1,13 +1,4 @@
-import {
-	Award,
-	BookOpen,
-	CircleQuestionMark,
-	Headset,
-	LayoutDashboard,
-	PenIcon,
-	Table2Icon,
-	University,
-} from 'lucide-react'
+import { Award, BookOpen, Headset, LayoutDashboard, PenIcon, Table2Icon, University } from 'lucide-react'
 
 export const navMain = [
 	{
@@ -45,12 +36,7 @@ export const navMain = [
 
 export const navFooter = [
 	{
-		title: 'FAQ',
-		url: '/faq',
-		icon: CircleQuestionMark,
-	},
-	{
-		title: 'связь с поддержкой',
+		title: 'Поддержка',
 		url: '/support',
 		icon: Headset,
 	},

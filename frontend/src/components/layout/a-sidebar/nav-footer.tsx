@@ -24,7 +24,7 @@ export function NavFooter({
 					{items.map((item) => (
 						<SidebarMenuItem key={item.title}>
 							<SidebarMenuButton asChild size='sm'>
-								<a href={item.url}>
+								<a className='text-muted-foreground' href={item.url}>
 									<item.icon />
 									<span>{item.title}</span>
 								</a>
