@@ -2,15 +2,128 @@ type: http_request
 model: http_request
 id: rq_pPtUUpVBD9
 createdAt: 2025-12-29T13:48:27.340170400
-updatedAt: 2025-12-29T13:49:26.786205800
+updatedAt: 2026-01-13T05:35:37.486547200
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_fh7jNUikxF
-authentication: {}
-authenticationType: null
-body: {}
-bodyType: null
+authentication:
+  prefix: 'Bearer '
+  token: ''
+authenticationType: bearer
+body:
+  text: |-
+    {
+      "teacher_id": "c5ff2dba-8301-40f6-9056-9419ea61928c",
+      "status": "DRAFT",
+      "reason": "",
+      "methodist_id": "c5ff2dba-8301-40f6-9056-9419ea61928c",
+      "totalPoints": 95,
+      "violation": "",
+      "text": "Отличная работа по проекту",
+      "images": [],
+      "documents": [],
+      "links": [
+        "https://example.com/link1"
+      ],
+      "type": {
+        "name": "Экзамен",
+        "variants": [
+          {
+            "name": "Отлично",
+            "description": "Высокий балл",
+            "criteria": [
+              {
+                "name": "Посещаемость",
+                "points": 20,
+                "method": "NORMAL",
+                "bonusName": "Дополнительные баллы",
+                "bonusPoints": [
+                  2,
+                  5
+                ],
+                "bonusMethod": "MEASURING"
+              },
+              {
+                "name": "Качество работы",
+                "points": 80,
+                "method": "NORMAL"
+              }
+            ],
+            "bonusCriteria": [
+              {
+                "name": "Бонус за активность",
+                "points": 10,
+                "method": "MEASURING"
+              }
+            ]
+          },
+          {
+            "name": "Хорошо",
+            "description": "Средний балл",
+            "criteria": [
+              {
+                "name": "Посещаемость",
+                "points": 30,
+                "method": "NORMAL"
+              },
+              {
+                "name": "Качество работы",
+                "points": 70,
+                "method": "NORMAL"
+              }
+            ]
+          }
+        ]
+      },
+      "variant": {
+        "name": "Отлично",
+        "description": "Высокий балл",
+        "criteria": [
+          {
+            "name": "Посещаемость",
+            "points": 20,
+            "method": "NORMAL",
+            "bonusName": "Дополнительные баллы",
+            "bonusPoints": 5,
+            "bonusMethod": "MEASURING"
+          },
+          {
+            "name": "Качество работы",
+            "points": 80,
+            "method": "NORMAL"
+          }
+        ],
+        "bonusCriteria": [
+          {
+            "name": "Бонус за активность",
+            "points": 10,
+            "method": "MEASURING"
+          }
+        ]
+      },
+      "criteria": {
+        "name": "Посещаемость",
+        "points": 20,
+        "method": "NORMAL",
+        "bonusName": "Дополнительные баллы",
+        "bonusPoints": 5,
+        "bonusMethod": "MEASURING"
+      }
+    }
+bodyType: application/json
 description: ''
-headers: []
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: 9xpIH8kFUN
+- enabled: true
+  name: Cookie
+  value: sid=c5ff2dba-8301-40f6-9056-9419ea61928c
+  id: IbqKxWm6Xg
+- enabled: true
+  name: ''
+  value: ''
+  id: q6gmdpHuPk
 method: POST
 name: ''
 sortPriority: -0.0001

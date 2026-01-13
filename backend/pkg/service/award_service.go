@@ -10,6 +10,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// CreateAwardWithTypesParams представляет параметры для создания award с типами, вариантами и критериями
+type CreateAwardWithTypesParams struct {
+	Status    storage.AwardsStatus `json:"status"`
+	Methodist pgtype.UUID          `json:"methodist"`
+	Teacher   uuid.UUID            `json:"teacher"`
+	Text      pgtype.Text          `json:"text"`
+	Document  pgtype.Text          `json:"document"`
+	AwardType struct {
+		Name     string             `json:"name"`
+		Variants []AwardTypeVariant `json:"variants"`
+	} `json:"award_type"`
+}
+
+// AwardTypeVariant представляет вариант типа награды
+type AwardTypeVariant struct {
+	Name          string              `json:"name"`
+	Description   pgtype.Text         `json:"description"`
+	Criteria      []AwardTypeCriteria `json:"criteria"`
+	BonusCriteria []AwardTypeCriteria `json:"bonus_criteria"`
+}
+
+// AwardTypeCriteria представляет критерий типа награды
+type AwardTypeCriteria struct {
+	Name   string                         `json:"name"`
+	Points []int32                        `json:"points"`
+	Method storage.NullEnumCriteriaMethod `json:"method"`
+}
+
 type AwardService struct {
 	repo *repository.AwardRepository
 }
@@ -52,4 +80,16 @@ func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
 
 func (s *AwardService) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Award, error) {
 	return s.repo.GetAwardsByMethodist(ctx, methodist)
+}
+
+func (s *AwardService) createAwardType(ctx context.Context, params *storage.CreateAwardTypeParams) (storage.AwardType, error) {
+	return s.repo.CreateAwardType(ctx, params)
+}
+
+func (s *AwardService) CreateAwardTypesVariant(ctx context.Context, params *storage.CreateAwardTypesVariantParams) (storage.AwardTypeVariant, error) {
+	return s.repo.CreateAwardTypeVariant(ctx, params)
+}
+
+func (s *AwardService) CreateAwardTypeCriteria(ctx context.Context, params *storage.CreateAwardTypeCriteriaParams) (storage.AwardTypeCriterium, error) {
+	return s.repo.CreateAwardTypeCriteria(ctx, params)
 }

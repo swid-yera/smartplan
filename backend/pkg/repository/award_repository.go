@@ -56,3 +56,15 @@ func (r *AwardRepository) DeleteAward(ctx context.Context, id uuid.UUID) error {
 func (r *AwardRepository) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Award, error) {
 	return r.queries.GetAwardsByMethodist(ctx, methodist)
 }
+
+func (r *AwardRepository) CreateAwardType(ctx context.Context, params *storage.CreateAwardTypeParams) (storage.AwardType, error) {
+	return r.queries.CreateAwardType(ctx, *params)
+}
+
+func (r *AwardRepository) CreateAwardTypeVariant(ctx context.Context, params *storage.CreateAwardTypesVariantParams) (storage.AwardTypeVariant, error) {
+	return r.queries.CreateAwardTypesVariant(ctx, *params)
+}
+
+func (r *AwardRepository) CreateAwardTypeCriteria(ctx context.Context, params *storage.CreateAwardTypeCriteriaParams) (storage.AwardTypeCriterium, error) {
+	return r.queries.CreateAwardTypeCriteria(ctx, *params)
+}

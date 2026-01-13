@@ -228,9 +228,11 @@ INSERT INTO awards (
     status,
     methodist,
     type,
-    text
+    text,
+    document,
+    variants
 ) VALUES (
-    $1,$2,$3,$4
+    $1,$2,$3,$4,$5,$6
 )
 RETURNING *;
 
@@ -270,10 +272,59 @@ INSERT INTO award_types (
 )
 RETURNING *;
 
+-- name: GetAwardTypeByID :one
+SELECT *
+FROM award_types
+WHERE id = $1;
 
 -- name: GetAllAwardTypes :many
 SELECT *
 FROM award_types;
+
+-- name: CreateAwardTypesVariant :one
+INSERT INTO award_type_variants (
+    name,
+    description,
+    criteria,
+    bonusCriteria
+) VALUES (
+    $1,$2,$3,$4
+)
+RETURNING *;
+
+-- name: GetAwardTypeVariantByID :one
+SELECT *
+FROM award_type_variants
+WHERE id = $1;
+ 
+-- name: GetAllAwardTypeVariants :many
+SELECT *
+FROM award_type_variants;
+
+-- name: CreateAwardTypeCriteria :one
+INSERT INTO award_type_criteria (
+    name,
+    points,
+    method
+) VALUES (
+    $1,$2,$3
+)
+RETURNING *;
+
+-- name: GetAwardTypeCriteriaByID :one
+SELECT *
+FROM award_type_criteria
+WHERE id = $1;
+
+-- name: GetAllAwardTypeCriteria :many
+SELECT *
+FROM award_type_criteria;
+
+-- name: UpdateAwardTypeVariants :one
+UPDATE award_types
+SET variants = $2
+WHERE id = $1
+RETURNING *;
 
 -- name: GetGroupByKeycloakID :one
 SELECT keycloak_id, name, qualification, specialty

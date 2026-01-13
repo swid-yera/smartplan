@@ -17,11 +17,13 @@ INSERT INTO awards (
     status,
     methodist,
     type,
-    text
+    text,
+    document,
+    variants
 ) VALUES (
-    $1,$2,$3,$4
+    $1,$2,$3,$4,$5,$6
 )
-RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
+RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
 `
 
 type CreateAwardParams struct {
@@ -29,6 +31,8 @@ type CreateAwardParams struct {
 	Methodist pgtype.UUID  `json:"methodist"`
 	Type      pgtype.UUID  `json:"type"`
 	Text      pgtype.Text  `json:"text"`
+	Document  pgtype.Text  `json:"document"`
+	Variants  []uuid.UUID  `json:"variants"`
 }
 
 func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error) {
@@ -37,6 +41,8 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		arg.Methodist,
 		arg.Type,
 		arg.Text,
+		arg.Document,
+		arg.Variants,
 	)
 	var i Award
 	err := row.Scan(
@@ -49,6 +55,7 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		&i.Type,
 		&i.Variant,
 		&i.Criteria,
+		&i.Variants,
 		&i.Text,
 		&i.Images,
 		&i.Document,
@@ -78,6 +85,72 @@ func (q *Queries) CreateAwardType(ctx context.Context, arg CreateAwardTypeParams
 	row := q.db.QueryRow(ctx, createAwardType, arg.Name, arg.Variants)
 	var i AwardType
 	err := row.Scan(&i.ID, &i.Name, &i.Variants)
+	return i, err
+}
+
+const createAwardTypeCriteria = `-- name: CreateAwardTypeCriteria :one
+INSERT INTO award_type_criteria (
+    name,
+    points,
+    method
+) VALUES (
+    $1,$2,$3
+)
+RETURNING id, name, points, method
+`
+
+type CreateAwardTypeCriteriaParams struct {
+	Name   string                 `json:"name"`
+	Points []int32                `json:"points"`
+	Method NullEnumCriteriaMethod `json:"method"`
+}
+
+func (q *Queries) CreateAwardTypeCriteria(ctx context.Context, arg CreateAwardTypeCriteriaParams) (AwardTypeCriterium, error) {
+	row := q.db.QueryRow(ctx, createAwardTypeCriteria, arg.Name, arg.Points, arg.Method)
+	var i AwardTypeCriterium
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Points,
+		&i.Method,
+	)
+	return i, err
+}
+
+const createAwardTypesVariant = `-- name: CreateAwardTypesVariant :one
+INSERT INTO award_type_variants (
+    name,
+    description,
+    criteria,
+    bonusCriteria
+) VALUES (
+    $1,$2,$3,$4
+)
+RETURNING id, name, description, criteria, bonuscriteria
+`
+
+type CreateAwardTypesVariantParams struct {
+	Name          string      `json:"name"`
+	Description   pgtype.Text `json:"description"`
+	Criteria      []uuid.UUID `json:"criteria"`
+	Bonuscriteria []uuid.UUID `json:"bonuscriteria"`
+}
+
+func (q *Queries) CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTypesVariantParams) (AwardTypeVariant, error) {
+	row := q.db.QueryRow(ctx, createAwardTypesVariant,
+		arg.Name,
+		arg.Description,
+		arg.Criteria,
+		arg.Bonuscriteria,
+	)
+	var i AwardTypeVariant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Criteria,
+		&i.Bonuscriteria,
+	)
 	return i, err
 }
 
@@ -442,6 +515,67 @@ func (q *Queries) DeleteUser(ctx context.Context, keycloakID uuid.UUID) error {
 	return err
 }
 
+const getAllAwardTypeCriteria = `-- name: GetAllAwardTypeCriteria :many
+SELECT id, name, points, method
+FROM award_type_criteria
+`
+
+func (q *Queries) GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCriterium, error) {
+	rows, err := q.db.Query(ctx, getAllAwardTypeCriteria)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AwardTypeCriterium
+	for rows.Next() {
+		var i AwardTypeCriterium
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Points,
+			&i.Method,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllAwardTypeVariants = `-- name: GetAllAwardTypeVariants :many
+SELECT id, name, description, criteria, bonuscriteria
+FROM award_type_variants
+`
+
+func (q *Queries) GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error) {
+	rows, err := q.db.Query(ctx, getAllAwardTypeVariants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AwardTypeVariant
+	for rows.Next() {
+		var i AwardTypeVariant
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Criteria,
+			&i.Bonuscriteria,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllAwardTypes = `-- name: GetAllAwardTypes :many
 SELECT id, name, variants
 FROM award_types
@@ -468,7 +602,7 @@ func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
 }
 
 const getAllAwards = `-- name: GetAllAwards :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
 FROM awards
 `
 
@@ -491,6 +625,7 @@ func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
 			&i.Type,
 			&i.Variant,
 			&i.Criteria,
+			&i.Variants,
 			&i.Text,
 			&i.Images,
 			&i.Document,
@@ -688,7 +823,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getAwardByID = `-- name: GetAwardByID :one
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
 FROM awards
 WHERE id = $1
 `
@@ -706,6 +841,7 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 		&i.Type,
 		&i.Variant,
 		&i.Criteria,
+		&i.Variants,
 		&i.Text,
 		&i.Images,
 		&i.Document,
@@ -716,8 +852,58 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 	return i, err
 }
 
+const getAwardTypeByID = `-- name: GetAwardTypeByID :one
+SELECT id, name, variants
+FROM award_types
+WHERE id = $1
+`
+
+func (q *Queries) GetAwardTypeByID(ctx context.Context, id uuid.UUID) (AwardType, error) {
+	row := q.db.QueryRow(ctx, getAwardTypeByID, id)
+	var i AwardType
+	err := row.Scan(&i.ID, &i.Name, &i.Variants)
+	return i, err
+}
+
+const getAwardTypeCriteriaByID = `-- name: GetAwardTypeCriteriaByID :one
+SELECT id, name, points, method
+FROM award_type_criteria
+WHERE id = $1
+`
+
+func (q *Queries) GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (AwardTypeCriterium, error) {
+	row := q.db.QueryRow(ctx, getAwardTypeCriteriaByID, id)
+	var i AwardTypeCriterium
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Points,
+		&i.Method,
+	)
+	return i, err
+}
+
+const getAwardTypeVariantByID = `-- name: GetAwardTypeVariantByID :one
+SELECT id, name, description, criteria, bonuscriteria
+FROM award_type_variants
+WHERE id = $1
+`
+
+func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error) {
+	row := q.db.QueryRow(ctx, getAwardTypeVariantByID, id)
+	var i AwardTypeVariant
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Criteria,
+		&i.Bonuscriteria,
+	)
+	return i, err
+}
+
 const getAwardsByMethodist = `-- name: GetAwardsByMethodist :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
 FROM awards
 WHERE methodist = $1
 `
@@ -741,6 +927,7 @@ func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUI
 			&i.Type,
 			&i.Variant,
 			&i.Criteria,
+			&i.Variants,
 			&i.Text,
 			&i.Images,
 			&i.Document,
@@ -993,6 +1180,25 @@ type UpdateAwardStatusParams struct {
 func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error {
 	_, err := q.db.Exec(ctx, updateAwardStatus, arg.ID, arg.Status, arg.Reason)
 	return err
+}
+
+const updateAwardTypeVariants = `-- name: UpdateAwardTypeVariants :one
+UPDATE award_types
+SET variants = $2
+WHERE id = $1
+RETURNING id, name, variants
+`
+
+type UpdateAwardTypeVariantsParams struct {
+	ID       uuid.UUID   `json:"id"`
+	Variants []uuid.UUID `json:"variants"`
+}
+
+func (q *Queries) UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTypeVariantsParams) (AwardType, error) {
+	row := q.db.QueryRow(ctx, updateAwardTypeVariants, arg.ID, arg.Variants)
+	var i AwardType
+	err := row.Scan(&i.ID, &i.Name, &i.Variants)
+	return i, err
 }
 
 const updateRupResource = `-- name: UpdateRupResource :exec

@@ -323,6 +323,7 @@ type Award struct {
 	Type        pgtype.UUID        `json:"type"`
 	Variant     pgtype.UUID        `json:"variant"`
 	Criteria    pgtype.UUID        `json:"criteria"`
+	Variants    []uuid.UUID        `json:"variants"`
 	Text        pgtype.Text        `json:"text"`
 	Images      []string           `json:"images"`
 	Document    pgtype.Text        `json:"document"`

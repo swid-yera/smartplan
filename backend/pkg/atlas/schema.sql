@@ -25,7 +25,7 @@ CREATE TABLE users (
     rups TEXT[],
     total_points INT NOT NULL DEFAULT 0,
     awards TEXT[],
-    violation violation_enum NOT NULL,
+    violation violation_enum NOT NULL DEFAULT 'NONE',
 
     password_changed_at TIMESTAMPTZ,
     last_seen_at TIMESTAMPTZ,
@@ -179,21 +179,22 @@ CREATE TABLE awards (
     reason TEXT,
     methodist UUID,
     teacher UUID NOT NULL REFERENCES users(keycloak_id),
-
-   
+    
+    
     total_points INT NOT NULL DEFAULT 0,
     type UUID REFERENCES award_types(id),
     variant UUID REFERENCES award_type_variants(id),
     criteria UUID REFERENCES award_type_criteria(id),
-
+    variants UUID[],
+    
     text TEXT,
     images TEXT[] DEFAULT '{}',
     document TEXT DEFAULT '{}',
     links TEXT[] DEFAULT '{}',
-
+    
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
+    
     CONSTRAINT fk_award_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id),
     CONSTRAINT fk_award_type FOREIGN KEY (type) REFERENCES award_types(id)
 );
