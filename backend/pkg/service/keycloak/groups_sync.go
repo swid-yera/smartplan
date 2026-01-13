@@ -46,6 +46,8 @@ func (s *GroupsSyncService) SyncGroups(ctx context.Context) error {
 	flat := flattenRawGroups([]GroupRepresentation{*root})
 
 	params := make([]storage.UpsertGroupParams, 0, len(flat))
+	actualIDs := make([]uuid.UUID, 0, len(flat))
+
 	for _, g := range flat {
 		if strings.TrimSpace(g.ID) == "" || strings.TrimSpace(g.Name) == "" {
 			continue
@@ -65,10 +67,16 @@ func (s *GroupsSyncService) SyncGroups(ctx context.Context) error {
 			Qualification: toPgText(qual),
 			Specialty:     toPgText(spec),
 		})
+
+		actualIDs = append(actualIDs, id)
 	}
 
 	if err := s.repo.CreateGroups(ctx, params); err != nil {
 		return fmt.Errorf("save groups to db: %w", err)
+	}
+
+	if err := s.repo.DeleteGroupsNotInKeycloak(ctx, actualIDs); err != nil {
+		return fmt.Errorf("delete removed groups: %w", err)
 	}
 
 	return nil

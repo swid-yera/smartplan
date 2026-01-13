@@ -12,6 +12,7 @@ import (
 
 type GroupsRepository interface {
 	CreateGroups(ctx context.Context, groups []storage.UpsertGroupParams) error
+	DeleteGroupsNotInKeycloak(ctx context.Context, keycloakID []uuid.UUID) error
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (storage.Group, error)
 	GetAllGroups(ctx context.Context) ([]storage.Group, error)
 }
@@ -60,4 +61,13 @@ func (r *GroupsPostgres) GetGroupByKeycloakID(ctx context.Context, keycloakID uu
 
 func (r *GroupsPostgres) GetAllGroups(ctx context.Context) ([]storage.Group, error) {
 	return r.queries.GetAllGroups(ctx)
+}
+
+func (r *GroupsPostgres) DeleteGroupsNotInKeycloak(ctx context.Context, keycloakID []uuid.UUID) error {
+
+	if len(keycloakID) == 0 {
+		return fmt.Errorf("refusing to delete all groups: empty keycloak ids")
+	}
+
+	return r.queries.DeleteGroupsNotInKeycloak(ctx, keycloakID)
 }
