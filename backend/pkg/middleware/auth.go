@@ -5,11 +5,13 @@ import (
 	"crypto/rsa"
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/service"
+	"eduplan/backend/pkg/service/keycloak"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"math/big"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Nerzal/gocloak/v13"
@@ -296,6 +298,30 @@ func SessionAuth(userService service.UserService) gin.HandlerFunc {
 
 		// кладём пользователя в context
 		c.Set(ContextUserKey, user)
+		c.Next()
+	}
+}
+
+func AuthRequired(kc *keycloak.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h := c.GetHeader("Authorization")
+		if h == "" || !strings.HasPrefix(strings.ToLower(h), "bearer ") {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
+			return
+		}
+		token := strings.TrimSpace(h[len("Bearer "):])
+
+		res, err := kc.IntrospectToken(c.Request.Context(), token)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token introspect failed"})
+			return
+		}
+		if res == nil || res.Active == nil || !*res.Active {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token inactive"})
+			return
+		}
+
+		// при желании можно прокинуть user info в контекст
 		c.Next()
 	}
 }

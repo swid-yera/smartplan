@@ -38,11 +38,10 @@ CREATE TABLE users (
 -- GROUPS
 -- =====================
 CREATE TABLE groups (
-    keycloak_id UUID NOT NULL,
+    keycloak_id UUID PRIMARY KEY,
     name TEXT NOT NULL,
     qualification TEXT,
-    specialty TEXT,
-    PRIMARY KEY (keycloak_id, name)
+    specialty TEXT
 );
 
 -- =====================

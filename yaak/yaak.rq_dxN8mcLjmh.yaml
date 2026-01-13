@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_dxN8mcLjmh
+createdAt: 2026-01-13T03:19:28.262373
+updatedAt: 2026-01-13T03:20:37.509723800
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_WCNj7nAhDn
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: Cookie
+  value: sid=2aa46abf-2aae-4779-8d6a-125aa0362bca
+  id: FMB9u85CUF
+- enabled: true
+  name: ''
+  value: ''
+  id: 027QCfFKH9
+method: POST
+name: ''
+sortPriority: -0.0002
+url: http://localhost:8080/api/groups/sync
+urlParameters: []

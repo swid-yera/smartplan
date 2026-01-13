@@ -67,13 +67,9 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 }
 
 const createAwardType = `-- name: CreateAwardType :one
-INSERT INTO award_types (
-    name,
-    variants
-) VALUES (
-    $1,$2
-)
-RETURNING id, name, variants
+INSERT INTO
+    award_types (name, variants)
+VALUES ($1, $2) RETURNING id, name, variants
 `
 
 type CreateAwardTypeParams struct {
@@ -155,13 +151,9 @@ func (q *Queries) CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTy
 }
 
 const createDisciplineSemester = `-- name: CreateDisciplineSemester :one
-INSERT INTO discipline_semesters (
-    semester,
-    total_hours
-) VALUES (
-    $1, $2
-)
-RETURNING id, semester, total_hours
+INSERT INTO
+    discipline_semesters (semester, total_hours)
+VALUES ($1, $2) RETURNING id, semester, total_hours
 `
 
 type CreateDisciplineSemesterParams struct {
@@ -177,19 +169,27 @@ func (q *Queries) CreateDisciplineSemester(ctx context.Context, arg CreateDiscip
 }
 
 const createDisciplineTopic = `-- name: CreateDisciplineTopic :one
-INSERT INTO discipline_topics (
-    name,
-    type,
-    total_hours,
-    theory_hours,
-    practice_hours,
-    individual_hours,
-    srsp_hours,
-    srs_hours
-) VALUES (
-    $1,$2,$3,$4,$5,$6,$7,$8
-)
-RETURNING id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours
+INSERT INTO
+    discipline_topics (
+        name,
+        type,
+        total_hours,
+        theory_hours,
+        practice_hours,
+        individual_hours,
+        srsp_hours,
+        srs_hours
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+    ) RETURNING id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours
 `
 
 type CreateDisciplineTopicParams struct {
@@ -229,17 +229,54 @@ func (q *Queries) CreateDisciplineTopic(ctx context.Context, arg CreateDisciplin
 	return i, err
 }
 
-const createRupDiscipline = `-- name: CreateRupDiscipline :one
-INSERT INTO rup_disciplines (
+const createGroup = `-- name: CreateGroup :one
+INSERT INTO
+    groups (
+        keycloak_id,
+        name,
+        qualification,
+        specialty
+    )
+VALUES ($1, $2, $3, $4) RETURNING keycloak_id,
     name,
-    code,
-    total_hours,
-    semesters,
-    topics
-) VALUES (
-    $1,$2,$3,$4,$5
-)
-RETURNING id, name, code, total_hours, semesters, topics
+    qualification,
+    specialty
+`
+
+type CreateGroupParams struct {
+	KeycloakID    uuid.UUID   `json:"keycloak_id"`
+	Name          string      `json:"name"`
+	Qualification pgtype.Text `json:"qualification"`
+	Specialty     pgtype.Text `json:"specialty"`
+}
+
+func (q *Queries) CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error) {
+	row := q.db.QueryRow(ctx, createGroup,
+		arg.KeycloakID,
+		arg.Name,
+		arg.Qualification,
+		arg.Specialty,
+	)
+	var i Group
+	err := row.Scan(
+		&i.KeycloakID,
+		&i.Name,
+		&i.Qualification,
+		&i.Specialty,
+	)
+	return i, err
+}
+
+const createRupDiscipline = `-- name: CreateRupDiscipline :one
+INSERT INTO
+    rup_disciplines (
+        name,
+        code,
+        total_hours,
+        semesters,
+        topics
+    )
+VALUES ($1, $2, $3, $4, $5) RETURNING id, name, code, total_hours, semesters, topics
 `
 
 type CreateRupDisciplineParams struct {
@@ -271,19 +308,27 @@ func (q *Queries) CreateRupDiscipline(ctx context.Context, arg CreateRupDiscipli
 }
 
 const createRupExplorationNote = `-- name: CreateRupExplorationNote :one
-INSERT INTO rup_exploration_notes (
-    basis,
-    goals,
-    summary,
-    competencies,
-    prerequisites,
-    postrequisites,
-    internet_resources,
-    technical_resources
-) VALUES (
-    $1,$2,$3,$4,$5,$6,$7,$8
-)
-RETURNING id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources
+INSERT INTO
+    rup_exploration_notes (
+        basis,
+        goals,
+        summary,
+        competencies,
+        prerequisites,
+        postrequisites,
+        internet_resources,
+        technical_resources
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+    ) RETURNING id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources
 `
 
 type CreateRupExplorationNoteParams struct {
@@ -324,13 +369,9 @@ func (q *Queries) CreateRupExplorationNote(ctx context.Context, arg CreateRupExp
 }
 
 const createRupResource = `-- name: CreateRupResource :one
-INSERT INTO rup_resources (
-    name,
-    link
-) VALUES (
-    $1, $2
-)
-RETURNING id, name, link
+INSERT INTO
+    rup_resources (name, link)
+VALUES ($1, $2) RETURNING id, name, link
 `
 
 type CreateRupResourceParams struct {
@@ -346,24 +387,37 @@ func (q *Queries) CreateRupResource(ctx context.Context, arg CreateRupResourcePa
 }
 
 const createRups = `-- name: CreateRups :one
-INSERT INTO rups (
-    name,
-    code,
-    status,
-    course,
-    study_form,
-    study_year,
-    type,
-    contacts,
-    group_ids,
-    methodist,
-    teacher,
-    exploration_note_id,
-    disciplines
-) VALUES (
-    $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
-)
-RETURNING id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+INSERT INTO
+    rups (
+        name,
+        code,
+        status,
+        course,
+        study_form,
+        study_year,
+        type,
+        contacts,
+        group_ids,
+        methodist,
+        teacher,
+        exploration_note_id,
+        disciplines
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10,
+        $11,
+        $12,
+        $13
+    ) RETURNING id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 `
 
 type CreateRupsParams struct {
@@ -423,17 +477,16 @@ func (q *Queries) CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, er
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (
-    keycloak_id,
-    email,
-    username,
-    first_name,
-    last_name,
-    roles
-) VALUES (
-    $1, $2, $3, $4, $5, $6
-)
-RETURNING keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+INSERT INTO
+    users (
+        keycloak_id,
+        email,
+        username,
+        first_name,
+        last_name,
+        roles
+    )
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -476,8 +529,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const deleteAward = `-- name: DeleteAward :exec
-DELETE FROM awards
-WHERE id = $1
+DELETE FROM awards WHERE id = $1
 `
 
 func (q *Queries) DeleteAward(ctx context.Context, id uuid.UUID) error {
@@ -485,9 +537,20 @@ func (q *Queries) DeleteAward(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteGroupsNotInKeycloak = `-- name: DeleteGroupsNotInKeycloak :exec
+DELETE FROM groups
+WHERE keycloak_id NOT IN (
+    SELECT unnest($1::uuid[])
+)
+`
+
+func (q *Queries) DeleteGroupsNotInKeycloak(ctx context.Context, dollar_1 []uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteGroupsNotInKeycloak, dollar_1)
+	return err
+}
+
 const deleteRup = `-- name: DeleteRup :exec
-DELETE FROM rups
-WHERE id = $1
+DELETE FROM rups WHERE id = $1
 `
 
 func (q *Queries) DeleteRup(ctx context.Context, id uuid.UUID) error {
@@ -496,8 +559,7 @@ func (q *Queries) DeleteRup(ctx context.Context, id uuid.UUID) error {
 }
 
 const deleteRupResource = `-- name: DeleteRupResource :exec
-DELETE FROM rup_resources
-WHERE id = $1
+DELETE FROM rup_resources WHERE id = $1
 `
 
 func (q *Queries) DeleteRupResource(ctx context.Context, id uuid.UUID) error {
@@ -506,8 +568,7 @@ func (q *Queries) DeleteRupResource(ctx context.Context, id uuid.UUID) error {
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users
-WHERE keycloak_id = $1
+DELETE FROM users WHERE keycloak_id = $1
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, keycloakID uuid.UUID) error {
@@ -577,8 +638,7 @@ func (q *Queries) GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVaria
 }
 
 const getAllAwardTypes = `-- name: GetAllAwardTypes :many
-SELECT id, name, variants
-FROM award_types
+SELECT id, name, variants FROM award_types
 `
 
 func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
@@ -602,7 +662,7 @@ func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
 }
 
 const getAllAwards = `-- name: GetAllAwards :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
 FROM awards
 `
 
@@ -644,8 +704,7 @@ func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
 }
 
 const getAllDisciplineTopics = `-- name: GetAllDisciplineTopics :many
-SELECT id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours
-FROM discipline_topics
+SELECT id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours FROM discipline_topics
 `
 
 func (q *Queries) GetAllDisciplineTopics(ctx context.Context) ([]DisciplineTopic, error) {
@@ -678,9 +737,37 @@ func (q *Queries) GetAllDisciplineTopics(ctx context.Context) ([]DisciplineTopic
 	return items, nil
 }
 
+const getAllGroups = `-- name: GetAllGroups :many
+SELECT keycloak_id, name, qualification, specialty FROM groups ORDER BY name
+`
+
+func (q *Queries) GetAllGroups(ctx context.Context) ([]Group, error) {
+	rows, err := q.db.Query(ctx, getAllGroups)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Group
+	for rows.Next() {
+		var i Group
+		if err := rows.Scan(
+			&i.KeycloakID,
+			&i.Name,
+			&i.Qualification,
+			&i.Specialty,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAllRupDisciplines = `-- name: GetAllRupDisciplines :many
-SELECT id, name, code, total_hours, semesters, topics
-FROM rup_disciplines
+SELECT id, name, code, total_hours, semesters, topics FROM rup_disciplines
 `
 
 func (q *Queries) GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, error) {
@@ -711,8 +798,7 @@ func (q *Queries) GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, er
 }
 
 const getAllRupResources = `-- name: GetAllRupResources :many
-SELECT id, name, link
-FROM rup_resources
+SELECT id, name, link FROM rup_resources
 `
 
 func (q *Queries) GetAllRupResources(ctx context.Context) ([]RupResource, error) {
@@ -736,9 +822,7 @@ func (q *Queries) GetAllRupResources(ctx context.Context) ([]RupResource, error)
 }
 
 const getAllRups = `-- name: GetAllRups :many
-SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
-FROM rups
-ORDER BY created_at DESC
+SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups ORDER BY created_at DESC
 `
 
 func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
@@ -781,9 +865,7 @@ func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
-FROM users
-ORDER BY created_at DESC
+SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -823,7 +905,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getAwardByID = `-- name: GetAwardByID :one
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
 FROM awards
 WHERE id = $1
 `
@@ -903,7 +985,7 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 }
 
 const getAwardsByMethodist = `-- name: GetAwardsByMethodist :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
 FROM awards
 WHERE methodist = $1
 `
@@ -946,9 +1028,7 @@ func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUI
 }
 
 const getDisciplineSemesterByID = `-- name: GetDisciplineSemesterByID :one
-SELECT id, semester, total_hours
-FROM discipline_semesters
-WHERE id = $1
+SELECT id, semester, total_hours FROM discipline_semesters WHERE id = $1
 `
 
 func (q *Queries) GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error) {
@@ -959,9 +1039,7 @@ func (q *Queries) GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (
 }
 
 const getDisciplineTopicByID = `-- name: GetDisciplineTopicByID :one
-SELECT id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours
-FROM discipline_topics
-WHERE id = $1
+SELECT id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours FROM discipline_topics WHERE id = $1
 `
 
 func (q *Queries) GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error) {
@@ -982,9 +1060,14 @@ func (q *Queries) GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (Dis
 }
 
 const getGroupByKeycloakID = `-- name: GetGroupByKeycloakID :one
-SELECT keycloak_id, name, qualification, specialty
+SELECT
+    keycloak_id,
+    name,
+    qualification,
+    specialty
 FROM groups
-WHERE keycloak_id = $1
+WHERE
+    keycloak_id = $1
 `
 
 func (q *Queries) GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error) {
@@ -1000,9 +1083,7 @@ func (q *Queries) GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID
 }
 
 const getRupDisciplineByID = `-- name: GetRupDisciplineByID :one
-SELECT id, name, code, total_hours, semesters, topics
-FROM rup_disciplines
-WHERE id = $1
+SELECT id, name, code, total_hours, semesters, topics FROM rup_disciplines WHERE id = $1
 `
 
 func (q *Queries) GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDiscipline, error) {
@@ -1020,9 +1101,19 @@ func (q *Queries) GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDi
 }
 
 const getRupExplorationNoteByID = `-- name: GetRupExplorationNoteByID :one
-SELECT id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources
+SELECT
+    id,
+    basis,
+    goals,
+    summary,
+    competencies,
+    prerequisites,
+    postrequisites,
+    internet_resources,
+    technical_resources
 FROM rup_exploration_notes
-WHERE id = $1
+WHERE
+    id = $1
 `
 
 func (q *Queries) GetRupExplorationNoteByID(ctx context.Context, id uuid.UUID) (RupExplorationNote, error) {
@@ -1043,9 +1134,7 @@ func (q *Queries) GetRupExplorationNoteByID(ctx context.Context, id uuid.UUID) (
 }
 
 const getRupResourceByID = `-- name: GetRupResourceByID :one
-SELECT id, name, link
-FROM rup_resources
-WHERE id = $1
+SELECT id, name, link FROM rup_resources WHERE id = $1
 `
 
 func (q *Queries) GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupResource, error) {
@@ -1056,9 +1145,7 @@ func (q *Queries) GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupReso
 }
 
 const getRupsByID = `-- name: GetRupsByID :one
-SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
-FROM rups
-WHERE id = $1
+SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE id = $1
 `
 
 func (q *Queries) GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error) {
@@ -1088,10 +1175,7 @@ func (q *Queries) GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error) {
 }
 
 const getRupsByMethodist = `-- name: GetRupsByMethodist :many
-SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
-FROM rups
-WHERE methodist = $1
-ORDER BY created_at DESC
+SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE methodist = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error) {
@@ -1134,9 +1218,7 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 }
 
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
-SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
-FROM users
-WHERE keycloak_id = $1
+SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
 `
 
 func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error) {
@@ -1168,7 +1250,8 @@ SET
     status = $2,
     reason = $3,
     updated_at = NOW()
-WHERE id = $1
+WHERE
+    id = $1
 `
 
 type UpdateAwardStatusParams struct {
@@ -1207,7 +1290,8 @@ SET
     name = $2,
     link = $3,
     updated_at = NOW()
-WHERE id = $1
+WHERE
+    id = $1
 `
 
 type UpdateRupResourceParams struct {
@@ -1227,7 +1311,8 @@ SET
     status = $2,
     reason = $3,
     updated_at = NOW()
-WHERE id = $1
+WHERE
+    id = $1
 `
 
 type UpdateRupsStatusParams struct {
@@ -1246,7 +1331,8 @@ UPDATE users
 SET
     last_seen_at = $2,
     updated_at = NOW()
-WHERE keycloak_id = $1
+WHERE
+    keycloak_id = $1
 `
 
 type UpdateUserLastSeenAtParams struct {
@@ -1264,7 +1350,8 @@ UPDATE users
 SET
     password_changed_at = $2,
     updated_at = NOW()
-WHERE keycloak_id = $1
+WHERE
+    keycloak_id = $1
 `
 
 type UpdateUserPasswordChangedAtParams struct {
@@ -1285,7 +1372,8 @@ SET
     first_name = $4,
     last_name = $5,
     updated_at = NOW()
-WHERE keycloak_id = $1
+WHERE
+    keycloak_id = $1
 `
 
 type UpdateUserProfileParams struct {
@@ -1312,7 +1400,8 @@ UPDATE users
 SET
     roles = $2,
     updated_at = NOW()
-WHERE keycloak_id = $1
+WHERE
+    keycloak_id = $1
 `
 
 type UpdateUserRolesParams struct {
@@ -1323,4 +1412,39 @@ type UpdateUserRolesParams struct {
 func (q *Queries) UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) error {
 	_, err := q.db.Exec(ctx, updateUserRoles, arg.KeycloakID, arg.Roles)
 	return err
+}
+
+const upsertGroup = `-- name: UpsertGroup :one
+INSERT INTO
+    groups (
+        keycloak_id,
+        name,
+        qualification,
+        specialty
+    )
+VALUES ($1, $2, $3, $4) ON CONFLICT (keycloak_id) DO
+UPDATE
+SET
+    name = EXCLUDED.name,
+    qualification = EXCLUDED.qualification,
+    specialty = EXCLUDED.specialty RETURNING keycloak_id
+`
+
+type UpsertGroupParams struct {
+	KeycloakID    uuid.UUID   `json:"keycloak_id"`
+	Name          string      `json:"name"`
+	Qualification pgtype.Text `json:"qualification"`
+	Specialty     pgtype.Text `json:"specialty"`
+}
+
+func (q *Queries) UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, upsertGroup,
+		arg.KeycloakID,
+		arg.Name,
+		arg.Qualification,
+		arg.Specialty,
+	)
+	var keycloak_id uuid.UUID
+	err := row.Scan(&keycloak_id)
+	return keycloak_id, err
 }

@@ -18,12 +18,14 @@ type Querier interface {
 	CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTypesVariantParams) (AwardTypeVariant, error)
 	CreateDisciplineSemester(ctx context.Context, arg CreateDisciplineSemesterParams) (DisciplineSemester, error)
 	CreateDisciplineTopic(ctx context.Context, arg CreateDisciplineTopicParams) (DisciplineTopic, error)
+	CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error)
 	CreateRupDiscipline(ctx context.Context, arg CreateRupDisciplineParams) (RupDiscipline, error)
 	CreateRupExplorationNote(ctx context.Context, arg CreateRupExplorationNoteParams) (RupExplorationNote, error)
 	CreateRupResource(ctx context.Context, arg CreateRupResourceParams) (RupResource, error)
 	CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
+	DeleteGroupsNotInKeycloak(ctx context.Context, dollar_1 []uuid.UUID) error
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
@@ -32,6 +34,7 @@ type Querier interface {
 	GetAllAwardTypes(ctx context.Context) ([]AwardType, error)
 	GetAllAwards(ctx context.Context) ([]Award, error)
 	GetAllDisciplineTopics(ctx context.Context) ([]DisciplineTopic, error)
+	GetAllGroups(ctx context.Context) ([]Group, error)
 	GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, error)
 	GetAllRupResources(ctx context.Context) ([]RupResource, error)
 	GetAllRups(ctx context.Context) ([]Rup, error)
@@ -58,6 +61,7 @@ type Querier interface {
 	UpdateUserPasswordChangedAt(ctx context.Context, arg UpdateUserPasswordChangedAtParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error
 	UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) error
+	UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error)
 }
 
 var _ Querier = (*Queries)(nil)
