@@ -3,12 +3,13 @@ import type { FC } from 'react'
 import Link from 'next/link'
 
 import { statusLabels, statusVariants } from '@helpers'
-import type { IRupModule } from '@types'
+import { type IRupModule } from '@types'
 import {
 	Badge,
 	Button,
 	Card,
 	CardContent,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 	Table,
@@ -18,12 +19,20 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ui'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+import { mockRupModules } from './mock.data'
 
 interface IRupsProps {
 	rups: IRupModule[]
+	currentPage: number
+	totalPages: number
+	onPageChange: (page: number) => void
 }
 
-export const RupsCard: FC<IRupsProps> = ({ rups }) => {
+export const RupsCard: FC<IRupsProps> = ({ rups, currentPage, totalPages, onPageChange }) => {
+	const data = rups.length > 0 ? rups : mockRupModules
+
 	return (
 		<Card>
 			<CardHeader>
@@ -47,7 +56,7 @@ export const RupsCard: FC<IRupsProps> = ({ rups }) => {
 						</TableHeader>
 
 						<TableBody>
-							{rups.map((item) => {
+							{data.map((item) => {
 								const status = item.status ?? 'DRAFT'
 								const specialty = item.group.specialty ?? item.group.specialty
 
@@ -71,7 +80,7 @@ export const RupsCard: FC<IRupsProps> = ({ rups }) => {
 								)
 							})}
 
-							{rups.length === 0 && (
+							{data.length === 0 && (
 								<TableRow>
 									<TableCell className='text-center' colSpan={6}>
 										Пока нет ни одного модуля. Создайте первый.
@@ -82,6 +91,31 @@ export const RupsCard: FC<IRupsProps> = ({ rups }) => {
 					</Table>
 				</div>
 			</CardContent>
+			{totalPages > 1 && (
+				<CardFooter className='flex items-center justify-end space-x-2'>
+					<Button
+						disabled={currentPage <= 1}
+						size='sm'
+						variant='outline'
+						onClick={() => onPageChange(currentPage - 1)}
+					>
+						<ChevronLeft className='h-4 w-4 mr-2' />
+						Назад
+					</Button>
+					<div className='text-sm font-medium'>
+						Страница {currentPage} из {totalPages}
+					</div>
+					<Button
+						disabled={currentPage >= totalPages}
+						size='sm'
+						variant='outline'
+						onClick={() => onPageChange(currentPage + 1)}
+					>
+						Вперед
+						<ChevronRight className='h-4 w-4 ml-2' />
+					</Button>
+				</CardFooter>
+			)}
 		</Card>
 	)
 }

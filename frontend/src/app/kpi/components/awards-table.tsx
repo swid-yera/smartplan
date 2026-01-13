@@ -23,9 +23,10 @@ import { AwardDetailsSheet } from './award-details-sheet'
 interface IProps {
 	className?: string
 	awards: IAward[]
+	isMethodist?: boolean
 }
 
-export const AwardsTable: FC<IProps> = ({ className, awards: data }) => {
+export const AwardsTable: FC<IProps> = ({ className, awards: data, isMethodist }) => {
 	const [selectedAward, setSelectedAward] = useState<IAward | null>(null)
 
 	return (
@@ -75,7 +76,7 @@ export const AwardsTable: FC<IProps> = ({ className, awards: data }) => {
 				</CardContent>
 			</Card>
 
-			<AwardDetailsSheet award={selectedAward} onClose={() => setSelectedAward(null)} />
+			<AwardDetailsSheet award={selectedAward} isMethodist={isMethodist} onClose={() => setSelectedAward(null)} />
 		</>
 	)
 }

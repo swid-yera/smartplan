@@ -1,6 +1,6 @@
 'use client'
 
-import { type FC, type KeyboardEvent, useEffect, useState } from 'react'
+import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
@@ -40,6 +40,8 @@ import {
 } from '../components'
 import { type RUPFormData, formSchema } from '../create/form-schema'
 import { groupData } from '../create/mock.data'
+import { mockRupModules } from '../mock.data'
+import RupView from './rup-view'
 
 const defaultValues: RUPFormData = {
 	title: '',
@@ -60,8 +62,8 @@ const defaultValues: RUPFormData = {
 const Page: FC = () => {
 	const params = useParams<{ id: string }>()
 	const router = useRouter()
-	const [rupData, setRupData] = useState<IRupModule | null>(null)
-	const [loading, setLoading] = useState(true)
+	const [rupData, setRupData] = useState<IRupModule | null>(mockRupModules[0])
+	const [loading, setLoading] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
 	const methods = useForm<RUPFormData>({
@@ -73,7 +75,7 @@ const Page: FC = () => {
 
 	// fetch rup
 	useEffect(() => {
-		fetchRup()
+		// fetchRup()
 	}, [params.id])
 
 	const fetchRup = async () => {
@@ -145,6 +147,15 @@ const Page: FC = () => {
 
 	if (!rupData) {
 		notFound()
+	}
+
+	const isReadOnly = useMemo(
+		() => rupData.status === RupModuleStatus.APPROVED || rupData.status === RupModuleStatus.IN_REVIEW,
+		[rupData.status],
+	)
+
+	if (isReadOnly) {
+		return <RupView data={rupData} />
 	}
 
 	return (

@@ -2,14 +2,15 @@ import type { FC } from 'react'
 
 import { AwardStatusBadge } from '@components'
 import type { IAward } from '@types'
-import { Separator, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@ui'
+import { Button, Separator, Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@ui'
 
 interface IProps {
 	award: IAward | null
 	onClose: () => void
+	isMethodist?: boolean
 }
 
-export const AwardDetailsSheet: FC<IProps> = ({ award, onClose }) => {
+export const AwardDetailsSheet: FC<IProps> = ({ award, onClose, isMethodist }) => {
 	return (
 		<Sheet open={!!award} onOpenChange={onClose}>
 			<SheetContent className='w-full sm:max-w-lg'>
@@ -51,6 +52,17 @@ export const AwardDetailsSheet: FC<IProps> = ({ award, onClose }) => {
 								</ul>
 							</div>
 						</div>
+
+						{isMethodist && award.status === 'IN_REVIEW' && (
+							<SheetFooter className='mt-6 gap-2 sm:justify-start'>
+								<Button className='w-full sm:w-auto' variant='default'>
+									Подтвердить
+								</Button>
+								<Button className='w-full sm:w-auto' variant='destructive'>
+									Отклонить
+								</Button>
+							</SheetFooter>
+						)}
 					</>
 				)}
 			</SheetContent>

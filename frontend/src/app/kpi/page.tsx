@@ -1,24 +1,24 @@
-import { Heading } from '@ui'
+'use client'
 
-import { AwardsTable, CreateCard, HeroCard } from './components'
-import { mockAwards } from './mock.data'
+import { useState } from 'react'
+
+import { Button } from '@ui'
+
+import { MethodistView } from './components/methodist-view'
+import { TeacherView } from './components/teacher-view'
 
 const Page = () => {
+	const [role, setRole] = useState<'teacher' | 'methodist'>('methodist')
+
 	return (
-		<section className='p-4 w-full'>
-			<Heading align='left' size='h2'>
-				Награды
-			</Heading>
-
-			{/* top block */}
-			<div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)] mt-4'>
-				<HeroCard />
-				<CreateCard />
+		<div className='space-y-4'>
+			<div className='flex justify-end px-4 pt-4'>
+				<Button variant='outline' onClick={() => setRole((r) => (r === 'teacher' ? 'methodist' : 'teacher'))}>
+					Переключить на {role === 'teacher' ? 'Методиста' : 'Преподавателя'}
+				</Button>
 			</div>
-
-			{/* table */}
-			<AwardsTable awards={mockAwards} className='mt-4' />
-		</section>
+			{role === 'methodist' ? <MethodistView /> : <TeacherView />}
+		</div>
 	)
 }
 

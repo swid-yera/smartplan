@@ -5,7 +5,6 @@ export const navMain = [
 		title: 'Панель управления',
 		url: '/dashboard',
 		icon: LayoutDashboard,
-		isActive: true,
 	},
 	{
 		title: 'Модули РУП',

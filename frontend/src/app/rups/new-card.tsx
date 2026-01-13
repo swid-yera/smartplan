@@ -1,10 +1,12 @@
+import type { ComponentProps, FC } from 'react'
+
 import Link from 'next/link'
 
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
 
-export const NewCard = () => {
+export const NewCard: FC<ComponentProps<'div'>> = ({ ...props }) => {
 	return (
-		<Card>
+		<Card {...props}>
 			<CardHeader>
 				<CardTitle>Создать новый модуль РУП</CardTitle>
 				<CardDescription>
