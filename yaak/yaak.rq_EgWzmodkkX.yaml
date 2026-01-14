@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_EgWzmodkkX
 createdAt: 2025-11-26T11:56:54.133819500
-updatedAt: 2025-12-12T12:22:24.814680400
+updatedAt: 2026-01-14T09:04:10.849746800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_WCNj7nAhDn
 authentication: {}
@@ -20,12 +20,12 @@ description: ''
 headers:
 - enabled: true
   name: Authorization
-  value: Bearer eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmOWZhYTA3Ni1mZTJhLTQ5MDMtODM2Mi00MTMwMTE1YmY1YTQifQ.eyJleHAiOjE3NjQxNjIxNDYsImlhdCI6MTc2NDE2MDM0NiwianRpIjoiMDQwOTNlYmEtYTEwMy04M2E4LWIyZTEtNmZiOGQzODNiYTVmIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmFzcGMua3ovcmVhbG1zL3Rlc3QiLCJhdWQiOiJodHRwczovL2F1dGguYXNwYy5rei9yZWFsbXMvdGVzdCIsInN1YiI6IjJmY2U5YzA2LWE3ZjctNDk4Zi1hMDdmLTQwMDZjNDViY2U3OCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJjb3Vyc2VzLW9pZGMtdGVzdGluZyIsInNpZCI6IjFjYjJjN2Y5LTVlN2EtM2FkYS03NjcyLTNkZGEyMzk4OTQxMCIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIGVtYWlsIHJvbGVzIHdlYi1vcmlnaW5zIn0.GqKIv73yCI9vGFrG2z1NvGbHBbIoeq8jnnuCBy2Fw0YT_SFnwsFvnX7dSkrq9y6QH6GfecVpFzq-flNDWSQQfw
+  value: Bearer 8c9018ea-39d8-483e-8eb7-ef35e9f605ef
   id: uJXcGjs2Sg
 - enabled: true
   name: ''
   value: ''
-  id: YiYI8PTR8y
+  id: AASkkK9Bn7
 method: GET
 name: userinfo
 sortPriority: 296.2962962962963

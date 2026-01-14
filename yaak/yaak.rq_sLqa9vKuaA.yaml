@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_sLqa9vKuaA
 createdAt: 2026-01-13T03:16:53.778892300
-updatedAt: 2026-01-13T03:39:12.958939200
+updatedAt: 2026-01-14T12:16:20.457230200
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_fh7jNUikxF
 authentication: {}
@@ -13,14 +13,14 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=c5ff2dba-8301-40f6-9056-9419ea61928c
+  value: sid=c6bdb396-924c-4cf9-ae22-34bc2de930c0
   id: XSFi44FdUC
 - enabled: true
   name: ''
   value: ''
-  id: qFc3c5y7NT
+  id: kbM98fFRwH
 method: DELETE
-name: ''
-sortPriority: -0.0001
-url: http://localhost:8080/api/awards/:id
+name: Delete award
+sortPriority: 3000.0
+url: http://localhost:8080/api/awards/615e75e2-105a-4b1d-858c-8cb8316d46b9
 urlParameters: []

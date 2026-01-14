@@ -1,0 +1,43 @@
+type: http_request
+model: http_request
+id: rq_AbitNRK4ou
+createdAt: 2026-01-14T13:12:25.530645600
+updatedAt: 2026-01-14T13:51:27.182165300
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_fh7jNUikxF
+authentication: {}
+authenticationType: null
+body:
+  form:
+  - enabled: true
+    file: C:\Users\KIRKANATOR\Desktop\job\templator\output\generated-rup-20251213_100249.docx
+    id: SPmpITGJ5m
+    name: file
+  - enabled: true
+    id: IccwJXVNCp
+    name: data
+    value: '"{  "status": "DRAFT",  "methodist": {    "UUID": "550e8400-e29b-41d4-a716-446655440000",    "Valid": true  },  "total_points": 80,  "type": {    "name": "Участие в конференции",    "variants": [      {        "name": "Докладчик",        "description": "Участие в качестве докладчика на конференции",        "criteria": [          {            "name": "Международный уровень",            "points": [50],            "method": "NORMAL"          },          {            "name": "Республиканский уровень",            "points": [30, 40],            "method": "MEASURING"          }        ],        "bonus_criteria": []      }    ]  },  "text": "",  "links": []}"'
+  - enabled: true
+    id: 0SUzpri09u
+    name: ''
+    value: ''
+bodyType: multipart/form-data
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: multipart/form-data
+  id: qPMXznREPf
+- enabled: true
+  name: Cookie
+  value: sid=680b66d3-e630-4aa2-8a7e-0a1004c708df
+  id: PbxcytQwjH
+- enabled: true
+  name: ''
+  value: ''
+  id: 2q57gaz7Gi
+method: POST
+name: ''
+sortPriority: 0.0
+url: http://localhost:8080/api/awards
+urlParameters: []

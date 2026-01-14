@@ -46,7 +46,7 @@ func (r *AwardRepository) UpdateAwardStatus(ctx context.Context, params storage.
 	if err != nil {
 		return storage.Award{}, err
 	}
-	return storage.Award{}, nil
+	return r.queries.GetAwardByID(ctx, params.ID)
 }
 
 func (r *AwardRepository) DeleteAward(ctx context.Context, id uuid.UUID) error {
@@ -67,4 +67,8 @@ func (r *AwardRepository) CreateAwardTypeVariant(ctx context.Context, params *st
 
 func (r *AwardRepository) CreateAwardTypeCriteria(ctx context.Context, params *storage.CreateAwardTypeCriteriaParams) (storage.AwardTypeCriterium, error) {
 	return r.queries.CreateAwardTypeCriteria(ctx, *params)
+}
+
+func (r *AwardRepository) GetUserByID(ctx context.Context, id uuid.UUID) (storage.User, error) {
+	return r.queries.GetUserByKeycloakID(ctx, id)
 }

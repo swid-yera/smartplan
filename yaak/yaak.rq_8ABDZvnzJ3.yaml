@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_8ABDZvnzJ3
 createdAt: 2026-01-13T03:20:49.883142700
-updatedAt: 2026-01-13T03:21:12.016706500
+updatedAt: 2026-01-14T10:11:17.073970800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_WCNj7nAhDn
 authentication: {}
@@ -13,12 +13,12 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=2aa46abf-2aae-4779-8d6a-125aa0362bca
+  value: sid=ead19399-435c-4c1f-93be-8d8f97989c7c
   id: FMB9u85CUF
 - enabled: true
   name: ''
   value: ''
-  id: 027QCfFKH9
+  id: 0JfaC4DQFU
 method: GET
 name: localhost:8080/api/groups/sync Copy
 sortPriority: 0.0008

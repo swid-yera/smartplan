@@ -89,8 +89,10 @@ func (r *Router) Init() *gin.Engine {
 		awards := api.Group("/awards")
 		{
 			// POST /api/awards/
-			awards.POST("/", r.award.CreateAward)
-			awards.GET("/", r.award.GetAllAwards)
+			awards.POST("", r.award.CreateAwardWithFileAndData)
+			awards.POST("/upload", r.award.UploadAwardFile)
+			awards.POST("/with-types", r.award.CreateAwardWithTypes)
+			awards.GET("", r.award.GetAllAwards)
 			awards.GET("/:id", r.award.GetAwardByID)
 			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
 			awards.DELETE("/:id", r.award.DeleteAward)

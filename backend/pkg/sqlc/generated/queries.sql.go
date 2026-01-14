@@ -16,12 +16,13 @@ const createAward = `-- name: CreateAward :one
 INSERT INTO awards (
     status,
     methodist,
+    teacher,
     type,
     text,
     document,
     variants
 ) VALUES (
-    $1,$2,$3,$4,$5,$6
+    $1,$2,$3,$4,$5,$6,$7
 )
 RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
 `
@@ -29,6 +30,7 @@ RETURNING id, status, reason, methodist, teacher, total_points, type, variant, c
 type CreateAwardParams struct {
 	Status    AwardsStatus `json:"status"`
 	Methodist pgtype.UUID  `json:"methodist"`
+	Teacher   uuid.UUID    `json:"teacher"`
 	Type      pgtype.UUID  `json:"type"`
 	Text      pgtype.Text  `json:"text"`
 	Document  pgtype.Text  `json:"document"`
@@ -39,6 +41,7 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 	row := q.db.QueryRow(ctx, createAward,
 		arg.Status,
 		arg.Methodist,
+		arg.Teacher,
 		arg.Type,
 		arg.Text,
 		arg.Document,
@@ -67,9 +70,13 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 }
 
 const createAwardType = `-- name: CreateAwardType :one
-INSERT INTO
-    award_types (name, variants)
-VALUES ($1, $2) RETURNING id, name, variants
+INSERT INTO award_types (
+    name,
+    variants
+) VALUES (
+    $1,$2
+)
+RETURNING id, name, variants
 `
 
 type CreateAwardTypeParams struct {
@@ -662,8 +669,7 @@ func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
 }
 
 const getAllAwards = `-- name: GetAllAwards :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
-FROM awards
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at FROM awards
 `
 
 func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
@@ -905,9 +911,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getAwardByID = `-- name: GetAwardByID :one
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
-FROM awards
-WHERE id = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at FROM awards WHERE id = $1
 `
 
 func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error) {
@@ -985,9 +989,7 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 }
 
 const getAwardsByMethodist = `-- name: GetAwardsByMethodist :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, text, images, document, links, created_at, updated_at
-FROM awards
-WHERE methodist = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at FROM awards WHERE methodist = $1
 `
 
 func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error) {

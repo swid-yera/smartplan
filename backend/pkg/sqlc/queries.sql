@@ -227,12 +227,13 @@ DELETE FROM rups WHERE id = $1;
 INSERT INTO awards (
     status,
     methodist,
+    teacher,
     type,
     text,
     document,
     variants
 ) VALUES (
-    $1,$2,$3,$4,$5,$6
+    $1,$2,$3,$4,$5,$6,$7
 )
 RETURNING *;
 

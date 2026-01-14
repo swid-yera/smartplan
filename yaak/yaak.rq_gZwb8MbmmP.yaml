@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_gZwb8MbmmP
 createdAt: 2026-01-13T03:16:50.993879100
-updatedAt: 2026-01-13T03:38:57.770446700
+updatedAt: 2026-01-14T08:47:13.936080900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_fh7jNUikxF
 authentication: {}
@@ -13,14 +13,14 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=c5ff2dba-8301-40f6-9056-9419ea61928c
+  value: sid=53a6f809-8686-44ef-8035-af1c0d288b56
   id: EbzSEb6Ekx
 - enabled: true
   name: ''
   value: ''
-  id: gZ64JQYHzd
+  id: rmDN2FBRYf
 method: GET
-name: ''
-sortPriority: -0.0001
+name: Get award by methodist
+sortPriority: 4000.0
 url: http://localhost:8080/api/awards/methodist/:id
 urlParameters: []
