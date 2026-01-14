@@ -73,6 +73,18 @@ type MinioConfig struct {
 	MinioUseSSL       bool
 }
 
+type DocumentRenderConfig struct {
+	Url    string
+	ApiKey string
+}
+
+func LoadDocumentRenderConfig() *DocumentRenderConfig {
+	return &DocumentRenderConfig{
+		Url:    getEnv("DOCUMENT_RENDER_URL", "http://localhost:8000"),
+		ApiKey: getEnv("DOCUMENT_RENDER_API_KEY", ""),
+	}
+}
+
 func LoadMinioConfig() *MinioConfig {
 	return &MinioConfig{
 		MinioEndpoint:     getEnv("MINIO_ENDPOINT", "localhost:9000"),
