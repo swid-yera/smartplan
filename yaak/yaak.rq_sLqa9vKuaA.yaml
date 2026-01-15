@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_sLqa9vKuaA
 createdAt: 2026-01-13T03:16:53.778892300
-updatedAt: 2026-01-15T10:12:15.618074500
+updatedAt: 2026-01-15T14:39:40.454898
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_fh7jNUikxF
 authentication: {}
@@ -13,14 +13,14 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=
+  value: ${[ sid ]}
   id: XSFi44FdUC
 - enabled: true
   name: ''
   value: ''
-  id: X6CGYgdSIW
+  id: YTWSgxEX0r
 method: DELETE
-name: Delete award
-sortPriority: 7000.0
+name: delete award
+sortPriority: 6000.0
 url: http://localhost:8080/api/awards/615e75e2-105a-4b1d-858c-8cb8316d46b9
 urlParameters: []

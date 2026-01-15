@@ -2,7 +2,11 @@ type: http_request
 model: http_request
 id: rq_rTHv64pmT9
 createdAt: 2026-01-14T14:34:26.714382500
+<<<<<<< HEAD
 updatedAt: 2026-01-15T14:31:26.106060100
+=======
+updatedAt: 2026-01-15T14:38:16.231962500
+>>>>>>> 17485e41227308c81f9e3fd1b35db146af2a8560
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -18,7 +22,11 @@ headers:
 - enabled: true
   name: ''
   value: ''
+<<<<<<< HEAD
   id: BhCguWURUt
+=======
+  id: RwgVzqeIVb
+>>>>>>> 17485e41227308c81f9e3fd1b35db146af2a8560
 method: GET
 name: me
 sortPriority: 0.001

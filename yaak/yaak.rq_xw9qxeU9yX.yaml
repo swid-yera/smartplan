@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_xw9qxeU9yX
 createdAt: 2026-01-13T08:08:03.936537100
-updatedAt: 2026-01-15T10:03:04.039748100
+updatedAt: 2026-01-15T14:38:33.830836300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_zvfDpAtxLh
 authentication: {}
@@ -22,7 +22,7 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=b3fd6868-b698-4575-91e6-8229c038bf92
+  value: ${[ sid ]}
   id: ParhRHb0zu
 - enabled: true
   name: Content-Type
@@ -31,9 +31,9 @@ headers:
 - enabled: true
   name: ''
   value: ''
-  id: TqcUrWd2ef
+  id: IeHWPaxhhy
 method: POST
-name: Upload file
+name: upload file
 sortPriority: 1000.0
 url: http://localhost:8080/api/awards/upload
 urlParameters: []
