@@ -10,8 +10,26 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type User struct {
+	KeycloakID uuid.UUID
+	Email      string
+	Username   string
+	FirstName  *string
+	LastName   *string
+	Role       string
+}
+
+type MeResponse struct {
+	KeycloakID uuid.UUID `json:"keycloakId"`
+	Email      string    `json:"email"`
+	Username   string    `json:"username"`
+	FirstName  string    `json:"firstName,omitempty"`
+	LastName   string    `json:"lastName,omitempty"`
+	Role       string    `json:"role"`
+}
+
 type UserService interface {
-	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
+	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error)
 	GetAllUsers(ctx context.Context) ([]storage.User, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
 }
@@ -21,11 +39,22 @@ type userService struct {
 	redis *redis.Client
 }
 
+func ToMeResponse(user *storage.User) *MeResponse {
+	return &MeResponse{
+		KeycloakID: user.KeycloakID,
+		Email:      user.Email,
+		Username:   user.Username,
+		FirstName:  user.FirstName.String,
+		LastName:   user.LastName.String,
+		Role:       string(user.Role),
+	}
+}
+
 func NewUserService(repo repository.UsersRepository, redisClient *redis.Client) UserService {
 	return &userService{repo: repo, redis: redisClient}
 }
 
-func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*storage.User, error) {
+func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error) {
 
 	sessionKey := "session:" + sessionID.String()
 
@@ -39,7 +68,32 @@ func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUI
 		return nil, err
 	}
 
-	return s.repo.GetUserByKeycloakID(ctx, keycloakID)
+	dbUser, err := s.repo.GetUserByKeycloakID(ctx, keycloakID)
+	if err != nil {
+		return nil, err
+	}
+
+	return toServiceUser(dbUser), nil
+}
+
+func toServiceUser(u *storage.User) *User {
+	var firstName, lastName *string
+
+	if u.FirstName.Valid {
+		firstName = &u.FirstName.String
+	}
+	if u.LastName.Valid {
+		lastName = &u.LastName.String
+	}
+
+	return &User{
+		KeycloakID: u.KeycloakID,
+		Email:      u.Email,
+		Username:   u.Username,
+		FirstName:  firstName,
+		LastName:   lastName,
+		Role:       string(u.Role),
+	}
 }
 
 func (s *userService) GetAllUsers(ctx context.Context) ([]storage.User, error) {

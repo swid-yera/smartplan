@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"eduplan/backend/config"
+	"eduplan/backend/pkg/helpers"
 	"eduplan/backend/pkg/repository"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -23,12 +25,14 @@ type AuthService interface {
 type authService struct {
 	redis *redis.Client
 	users repository.AuthRepository
+	cfg   *config.KeycloakConfig
 }
 
-func NewAuthService(redis *redis.Client, users repository.AuthRepository) AuthService {
+func NewAuthService(redis *redis.Client, users repository.AuthRepository, cfg *config.KeycloakConfig) AuthService {
 	return &authService{
 		redis: redis,
 		users: users,
+		cfg:   cfg,
 	}
 }
 
@@ -56,17 +60,22 @@ func (s *authService) HandleCallback(
 		return uuid.Nil, errors.New("roles missing")
 	}
 
-	roles := make([]string, 0, len(rolesRaw))
+	kcRoles := make([]string, 0, len(rolesRaw))
 	for _, r := range rolesRaw {
 		if role, ok := r.(string); ok {
-			roles = append(roles, role)
+			kcRoles = append(kcRoles, role)
 		}
 	}
 
-	fmt.Println("roles:", roles)
+	role, ok := helpers.ResolveHighestRole(kcRoles, *s.cfg)
+	if !ok {
+		return uuid.Nil, errors.New("user has no allowed roles")
+	}
+
+	fmt.Println("roles:", role)
 
 	// 1. Попытка создать пользователя через репозиторий
-	user, err := s.users.CreateUser(ctx, keycloakID, roles, email, username, firstName, lastName)
+	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName)
 	if err != nil {
 		// Игнорируем уникальное ограничение (пользователь уже есть)
 		if !isUniqueViolation(err) {
