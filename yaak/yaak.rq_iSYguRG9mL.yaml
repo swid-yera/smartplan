@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_iSYguRG9mL
+createdAt: 2026-01-15T14:30:12.726977300
+updatedAt: 2026-01-15T14:30:31.736630500
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_3iv2xvWuAp
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: Cookie
+  value: ${[ sid ]}
+  id: T3rH6MvqVj
+- enabled: true
+  name: ''
+  value: ''
+  id: BhCguWURUt
+method: GET
+name: users
+sortPriority: 0.002
+url: http://localhost:8080/api/users
+urlParameters: []

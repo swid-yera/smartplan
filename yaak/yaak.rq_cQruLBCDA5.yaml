@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_cQruLBCDA5
+createdAt: 2026-01-15T14:31:01.786455
+updatedAt: 2026-01-15T14:31:21.541170600
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_3iv2xvWuAp
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: Cookie
+  value: ${[ sid ]}
+  id: T3rH6MvqVj
+- enabled: true
+  name: ''
+  value: ''
+  id: BhCguWURUt
+method: GET
+name: user by id
+sortPriority: 0.003
+url: http://localhost:8080/api/users/720447e1-3bab-4aa1-9704-f3366fd50cdd
+urlParameters: []

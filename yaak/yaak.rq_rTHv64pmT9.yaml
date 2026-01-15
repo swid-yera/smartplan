@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_rTHv64pmT9
 createdAt: 2026-01-14T14:34:26.714382500
-updatedAt: 2026-01-14T14:34:58.656388500
+updatedAt: 2026-01-15T14:31:26.106060100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -13,14 +13,14 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=e4725275-6f4d-46a8-aa4e-a600ee97a51e
+  value: ${[ sid ]}
   id: T3rH6MvqVj
 - enabled: true
   name: ''
   value: ''
-  id: cJCMMg4nj3
+  id: BhCguWURUt
 method: GET
-name: ''
+name: me
 sortPriority: 0.001
 url: http://localhost:8080/api/me
 urlParameters: []
