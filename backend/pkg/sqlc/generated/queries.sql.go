@@ -13,18 +13,17 @@ import (
 )
 
 const createAward = `-- name: CreateAward :one
-INSERT INTO awards (
-    status,
-    methodist,
-    teacher,
-    type,
-    text,
-    document,
-    variants
-) VALUES (
-    $1,$2,$3,$4,$5,$6,$7
-)
-RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
+INSERT INTO
+    awards (
+        status,
+        methodist,
+        teacher,
+        type,
+        text,
+        document,
+        variants
+    )
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
 `
 
 type CreateAwardParams struct {
@@ -70,13 +69,9 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 }
 
 const createAwardType = `-- name: CreateAwardType :one
-INSERT INTO award_types (
-    name,
-    variants
-) VALUES (
-    $1,$2
-)
-RETURNING id, name, variants
+INSERT INTO
+    award_types (name, variants)
+VALUES ($1, $2) RETURNING id, name, variants
 `
 
 type CreateAwardTypeParams struct {
@@ -92,14 +87,9 @@ func (q *Queries) CreateAwardType(ctx context.Context, arg CreateAwardTypeParams
 }
 
 const createAwardTypeCriteria = `-- name: CreateAwardTypeCriteria :one
-INSERT INTO award_type_criteria (
-    name,
-    points,
-    method
-) VALUES (
-    $1,$2,$3
-)
-RETURNING id, name, points, method
+INSERT INTO
+    award_type_criteria (name, points, method)
+VALUES ($1, $2, $3) RETURNING id, name, points, method
 `
 
 type CreateAwardTypeCriteriaParams struct {
@@ -121,15 +111,14 @@ func (q *Queries) CreateAwardTypeCriteria(ctx context.Context, arg CreateAwardTy
 }
 
 const createAwardTypesVariant = `-- name: CreateAwardTypesVariant :one
-INSERT INTO award_type_variants (
-    name,
-    description,
-    criteria,
-    bonusCriteria
-) VALUES (
-    $1,$2,$3,$4
-)
-RETURNING id, name, description, criteria, bonuscriteria
+INSERT INTO
+    award_type_variants (
+        name,
+        description,
+        criteria,
+        bonusCriteria
+    )
+VALUES ($1, $2, $3, $4) RETURNING id, name, description, criteria, bonuscriteria
 `
 
 type CreateAwardTypesVariantParams struct {
@@ -491,9 +480,9 @@ INSERT INTO
         username,
         first_name,
         last_name,
-        roles
+        role
     )
-VALUES ($1, $2, $3, $4, $5, $6) RETURNING keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -502,7 +491,7 @@ type CreateUserParams struct {
 	Username   string      `json:"username"`
 	FirstName  pgtype.Text `json:"first_name"`
 	LastName   pgtype.Text `json:"last_name"`
-	Roles      []string    `json:"roles"`
+	Role       UserRole    `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -512,7 +501,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Username,
 		arg.FirstName,
 		arg.LastName,
-		arg.Roles,
+		arg.Role,
 	)
 	var i User
 	err := row.Scan(
@@ -522,7 +511,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
-		&i.Roles,
+		&i.Role,
 		&i.Rups,
 		&i.TotalPoints,
 		&i.Awards,
@@ -584,8 +573,7 @@ func (q *Queries) DeleteUser(ctx context.Context, keycloakID uuid.UUID) error {
 }
 
 const getAllAwardTypeCriteria = `-- name: GetAllAwardTypeCriteria :many
-SELECT id, name, points, method
-FROM award_type_criteria
+SELECT id, name, points, method FROM award_type_criteria
 `
 
 func (q *Queries) GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCriterium, error) {
@@ -614,8 +602,7 @@ func (q *Queries) GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCrite
 }
 
 const getAllAwardTypeVariants = `-- name: GetAllAwardTypeVariants :many
-SELECT id, name, description, criteria, bonuscriteria
-FROM award_type_variants
+SELECT id, name, description, criteria, bonuscriteria FROM award_type_variants
 `
 
 func (q *Queries) GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error) {
@@ -871,7 +858,7 @@ func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC
 `
 
 func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
@@ -890,7 +877,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 			&i.FirstName,
 			&i.LastName,
 			&i.Phone,
-			&i.Roles,
+			&i.Role,
 			&i.Rups,
 			&i.TotalPoints,
 			&i.Awards,
@@ -939,9 +926,7 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 }
 
 const getAwardTypeByID = `-- name: GetAwardTypeByID :one
-SELECT id, name, variants
-FROM award_types
-WHERE id = $1
+SELECT id, name, variants FROM award_types WHERE id = $1
 `
 
 func (q *Queries) GetAwardTypeByID(ctx context.Context, id uuid.UUID) (AwardType, error) {
@@ -952,9 +937,7 @@ func (q *Queries) GetAwardTypeByID(ctx context.Context, id uuid.UUID) (AwardType
 }
 
 const getAwardTypeCriteriaByID = `-- name: GetAwardTypeCriteriaByID :one
-SELECT id, name, points, method
-FROM award_type_criteria
-WHERE id = $1
+SELECT id, name, points, method FROM award_type_criteria WHERE id = $1
 `
 
 func (q *Queries) GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (AwardTypeCriterium, error) {
@@ -970,9 +953,7 @@ func (q *Queries) GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (A
 }
 
 const getAwardTypeVariantByID = `-- name: GetAwardTypeVariantByID :one
-SELECT id, name, description, criteria, bonuscriteria
-FROM award_type_variants
-WHERE id = $1
+SELECT id, name, description, criteria, bonuscriteria FROM award_type_variants WHERE id = $1
 `
 
 func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error) {
@@ -1220,7 +1201,7 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 }
 
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
-SELECT keycloak_id, email, username, first_name, last_name, phone, roles, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
 `
 
 func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error) {
@@ -1233,7 +1214,7 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
-		&i.Roles,
+		&i.Role,
 		&i.Rups,
 		&i.TotalPoints,
 		&i.Awards,
@@ -1268,10 +1249,7 @@ func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusPa
 }
 
 const updateAwardTypeVariants = `-- name: UpdateAwardTypeVariants :one
-UPDATE award_types
-SET variants = $2
-WHERE id = $1
-RETURNING id, name, variants
+UPDATE award_types SET variants = $2 WHERE id = $1 RETURNING id, name, variants
 `
 
 type UpdateAwardTypeVariantsParams struct {
@@ -1397,22 +1375,21 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 	return err
 }
 
-const updateUserRoles = `-- name: UpdateUserRoles :exec
+const updateUserRole = `-- name: UpdateUserRole :exec
 UPDATE users
-SET
-    roles = $2,
-    updated_at = NOW()
+SET role = $2,
+updated_at = NOW()
 WHERE
     keycloak_id = $1
 `
 
-type UpdateUserRolesParams struct {
+type UpdateUserRoleParams struct {
 	KeycloakID uuid.UUID `json:"keycloak_id"`
-	Roles      []string  `json:"roles"`
+	Role       UserRole  `json:"role"`
 }
 
-func (q *Queries) UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) error {
-	_, err := q.db.Exec(ctx, updateUserRoles, arg.KeycloakID, arg.Roles)
+func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {
+	_, err := q.db.Exec(ctx, updateUserRole, arg.KeycloakID, arg.Role)
 	return err
 }
 

@@ -60,7 +60,7 @@ type Querier interface {
 	UpdateUserLastSeenAt(ctx context.Context, arg UpdateUserLastSeenAtParams) error
 	UpdateUserPasswordChangedAt(ctx context.Context, arg UpdateUserPasswordChangedAtParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error
-	UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) error
+	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
 	UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error)
 }
 

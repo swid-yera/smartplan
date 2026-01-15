@@ -107,7 +107,7 @@ type UserResponse struct {
 	FirstName   string    `json:"firstName"`
 	LastName    string    `json:"lastName"`
 	Phone       string    `json:"phone"`
-	Roles       []string  `json:"roles"`
+	Roles       string    `json:"roles"`
 	TotalPoints int32     `json:"totalPoints"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
@@ -893,7 +893,7 @@ func (s *rupService) convertToUserResponse(user storage.User) *UserResponse {
 		FirstName:   user.FirstName.String,
 		LastName:    user.LastName.String,
 		Phone:       user.Phone.String,
-		Roles:       user.Roles,
+		Roles:       string(user.Role),
 		TotalPoints: user.TotalPoints,
 		CreatedAt:   user.CreatedAt.Time,
 		UpdatedAt:   user.UpdatedAt.Time,

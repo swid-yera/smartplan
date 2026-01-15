@@ -96,7 +96,7 @@ func main() {
 	)
 
 	// ---------- SERVICES ----------
-	authService := service.NewAuthService(rdb, authRepo)
+	authService := service.NewAuthService(rdb, authRepo, kcCfg)
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
 	awardService := service.NewAwardService(awardRepo)

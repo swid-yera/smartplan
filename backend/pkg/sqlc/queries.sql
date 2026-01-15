@@ -6,7 +6,7 @@ INSERT INTO
         username,
         first_name,
         last_name,
-        roles
+        role
     )
 VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
 
@@ -24,11 +24,10 @@ SET
 WHERE
     keycloak_id = $1;
 
--- name: UpdateUserRoles :exec
+-- name: UpdateUserRole :exec
 UPDATE users
-SET
-    roles = $2,
-    updated_at = NOW()
+SET role = $2,
+updated_at = NOW()
 WHERE
     keycloak_id = $1;
 
@@ -224,18 +223,17 @@ SELECT * FROM rups WHERE methodist = $1 ORDER BY created_at DESC;
 DELETE FROM rups WHERE id = $1;
 
 -- name: CreateAward :one
-INSERT INTO awards (
-    status,
-    methodist,
-    teacher,
-    type,
-    text,
-    document,
-    variants
-) VALUES (
-    $1,$2,$3,$4,$5,$6,$7
-)
-RETURNING *;
+INSERT INTO
+    awards (
+        status,
+        methodist,
+        teacher,
+        type,
+        text,
+        document,
+        variants
+    )
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 -- name: GetAllAwards :many
 SELECT * FROM awards;
@@ -259,66 +257,45 @@ DELETE FROM awards WHERE id = $1;
 SELECT * FROM awards WHERE methodist = $1;
 
 -- name: CreateAwardType :one
-INSERT INTO award_types (
-    name,
-    variants
-) VALUES (
-    $1,$2
-)
-RETURNING *;
+INSERT INTO
+    award_types (name, variants)
+VALUES ($1, $2) RETURNING *;
 
 -- name: GetAwardTypeByID :one
-SELECT *
-FROM award_types
-WHERE id = $1;
+SELECT * FROM award_types WHERE id = $1;
 
 -- name: GetAllAwardTypes :many
 SELECT * FROM award_types;
 
 -- name: CreateAwardTypesVariant :one
-INSERT INTO award_type_variants (
-    name,
-    description,
-    criteria,
-    bonusCriteria
-) VALUES (
-    $1,$2,$3,$4
-)
-RETURNING *;
+INSERT INTO
+    award_type_variants (
+        name,
+        description,
+        criteria,
+        bonusCriteria
+    )
+VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: GetAwardTypeVariantByID :one
-SELECT *
-FROM award_type_variants
-WHERE id = $1;
- 
+SELECT * FROM award_type_variants WHERE id = $1;
+
 -- name: GetAllAwardTypeVariants :many
-SELECT *
-FROM award_type_variants;
+SELECT * FROM award_type_variants;
 
 -- name: CreateAwardTypeCriteria :one
-INSERT INTO award_type_criteria (
-    name,
-    points,
-    method
-) VALUES (
-    $1,$2,$3
-)
-RETURNING *;
+INSERT INTO
+    award_type_criteria (name, points, method)
+VALUES ($1, $2, $3) RETURNING *;
 
 -- name: GetAwardTypeCriteriaByID :one
-SELECT *
-FROM award_type_criteria
-WHERE id = $1;
+SELECT * FROM award_type_criteria WHERE id = $1;
 
 -- name: GetAllAwardTypeCriteria :many
-SELECT *
-FROM award_type_criteria;
+SELECT * FROM award_type_criteria;
 
 -- name: UpdateAwardTypeVariants :one
-UPDATE award_types
-SET variants = $2
-WHERE id = $1
-RETURNING *;
+UPDATE award_types SET variants = $2 WHERE id = $1 RETURNING *;
 
 -- name: GetGroupByKeycloakID :one
 SELECT
