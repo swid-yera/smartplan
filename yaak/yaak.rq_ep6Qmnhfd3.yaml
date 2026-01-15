@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ep6Qmnhfd3
 createdAt: 2025-12-20T13:06:37.558153800
-updatedAt: 2025-12-20T13:22:26.478808500
+updatedAt: 2026-01-14T11:06:27.428097900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_cC5D8rXnWh
 authentication: {}
@@ -16,8 +16,16 @@ headers:
   name: Content-Type
   value: application/json
   id: hapc05uK5j
+- enabled: true
+  name: x-api-key
+  value: ZI32IzUIRFLh1EgCd6sAL6uzp3yIZtK
+  id: BYepR3duZB
+- enabled: true
+  name: ''
+  value: ''
+  id: fdkzI7xHQ4
 method: POST
 name: generate-rup
 sortPriority: -1763638414427.0
-url: http://localhost:8000/generate
+url: http://192.168.49.16:8000/generate-rup
 urlParameters: []

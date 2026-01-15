@@ -1,0 +1,34 @@
+type: http_request
+model: http_request
+id: rq_aP2DVPQfMr
+createdAt: 2026-01-14T14:38:21.382290500
+updatedAt: 2026-01-15T07:48:46.887021800
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_YjpbbUVpPX
+authentication: {}
+authenticationType: null
+body:
+  text: |
+    {
+      "status": "APPROVED"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Cookie
+  value: ${[ sid ]}
+  id: PdYB9EAGtq
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: Fi05S3wP97
+- enabled: true
+  name: ''
+  value: ''
+  id: jdAyWwcV8T
+method: PUT
+name: status
+sortPriority: 0.003
+url: http://localhost:8080/api/rups/9053e8a6-f364-45b2-a7b6-7f66fcb21cda/status
+urlParameters: []

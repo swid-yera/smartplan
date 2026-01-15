@@ -285,10 +285,7 @@ func SessionAuth(userService service.UserService) gin.HandlerFunc {
 			return
 		}
 
-		user, err := userService.GetUserBySessionID(
-			c.Request.Context(),
-			sessionID,
-		)
+		user, err := userService.GetUserBySessionID(c.Request.Context(), sessionID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "session expired or invalid",

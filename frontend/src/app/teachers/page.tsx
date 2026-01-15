@@ -2,17 +2,12 @@
 
 import { useMemo, useState } from 'react'
 
+import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
-
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { UserService } from '@/services/user.service'
-
-const userService = new UserService()
+import { Button, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ui'
 
 export default function TeachersPage() {
-	const { data: users = [], isLoading } = useQuery(userService.getAllUsersOptions)
+	const { data: users = [], isLoading } = useQuery(services.user.getAllUsersOptions)
 
 	const [search, setSearch] = useState('')
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')

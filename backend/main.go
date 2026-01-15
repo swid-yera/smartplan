@@ -1,13 +1,14 @@
 package main
 
 import (
-	"log"
+	"net/http"
 	"os" // Added for getEnv
 	"strings"
 	"time"
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/handler"
+	"eduplan/backend/pkg/helpers"
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/repository"
 	"eduplan/backend/pkg/service"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog"
 )
 
 // Helper function to get environment variables with a default value
@@ -39,19 +39,21 @@ func normalizeRedisAddr(addr string) string {
 }
 
 func main() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	// ---------- LOGGER ----------
+	log := helpers.NewLogger()
 
 	// ---------- CONFIG ----------
 	kcCfg := config.LoadKeycloakConfig()
 	dbCfg := config.LoadDBConfig()
 	redisCfg := config.LoadRedisConfig()
 	minioCfg := config.LoadMinioConfig()
+	docCfg := config.LoadDocumentRenderConfig()
 
 	// ---------- DB ----------
 	// Note: Ensure repository.NewPostgresDB exists and accepts *config.DBConfig
 	db, err := repository.NewPostgresDB(dbCfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize DB: %s", err)
+		log.Fatalf("Failed to initialize DB: %v", err)
 	}
 	defer db.Close()
 
@@ -71,6 +73,10 @@ func main() {
 		log.Fatalf("Failed to connect to MinIO: %v", err)
 	}
 
+	httpClient := &http.Client{
+		Timeout: 60 * time.Second,
+	}
+
 	// ---------- REDIS ----------
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     normalizeRedisAddr(redisCfg.RedisAddr),
@@ -83,18 +89,16 @@ func main() {
 	usersRepo := repository.NewUsersPostgres(queries)
 	// Passing our wrapped minioRepo to the AwardRepository
 	awardRepo := repository.NewAwardRepository(queries, minioRepo)
+	rupRepo := repository.NewRupPostgres(queries)
 
 	kcSyncClient := kcservice.NewClient(
-		kcCfg.KeycloakURL,
-		kcCfg.KeycloakRealm,
-		kcCfg.KeycloakClientID,
-		kcCfg.KeycloakSecret,
+		kcCfg,
 	)
 
 	// ---------- SERVICES ----------
-	authService := service.NewAuthService(rdb, authRepo)
+	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
-	rupService := service.NewRupService(repository.NewRupPostgres(queries))
+	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
 	awardService := service.NewAwardService(awardRepo)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	syncGuard := service.NewSyncGuard(1 * time.Minute)
@@ -113,7 +117,7 @@ func main() {
 	// ---------- HANDLERS ----------
 	kc := gocloak.NewClient(kcCfg.KeycloakURL)
 
-	authHandler := handler.NewAuthHandler(kc, rdb, kcCfg, authService, authMiddleware.GetKeyFunc())
+	authHandler := handler.NewAuthHandler(kc, rdb, kcCfg, authService, authMiddleware.GetKeyFunc(), log)
 	userHandler := handler.NewUserHandler(userService)
 	rupHandler := handler.NewRupHandler(rupService)
 	awardHandler := handler.NewAwardHandler(awardService)
@@ -123,11 +127,11 @@ func main() {
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
 
 	// Ensure your NewRouter signature matches: (auth, user, rup, award, middleware)
-	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, nil, groupsHandler, sessionAuthMiddleware)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, groupsHandler, nil, sessionAuthMiddleware)
 	engine := router.Init()
 
 	port := getEnv("PORT", "8080")
-	log.Printf("Server starting on port %s", port)
+	log.Infof("Server starting on port %s", port)
 	if err := engine.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

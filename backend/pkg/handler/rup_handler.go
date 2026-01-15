@@ -161,6 +161,29 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 	c.JSON(http.StatusOK, rup)
 }
 
+func (h *RupHandler) DownloadRup(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid rup id"})
+		return
+	}
+
+	url, err := h.rupService.GetRupDownloadURL(
+		c.Request.Context(),
+		id,
+	)
+	if err != nil {
+		c.JSON(404, gin.H{"error": "file not found"})
+		return
+	}
+
+	// вариант А — вернуть ссылку
+	c.JSON(200, gin.H{"url": url})
+
+	// вариант Б — редирект (лучше UX)
+	// c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
 // GetRupsByMethodist получает RUP по методисту
 func (h *RupHandler) GetRupsByMethodist(c *gin.Context) {
 	methodistIDStr := c.Query("id")

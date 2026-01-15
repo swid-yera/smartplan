@@ -1,5 +1,5 @@
-import { renameRupModuleGroupIdToGroup, renameRupModulesGroupIdToGroup } from '@/helpers'
-import type { IRupModule } from '@/shared/types'
+import { renameRupModuleGroupIdToGroup, renameRupModulesGroupIdToGroup } from '@helpers'
+import type { IRupModule } from '@types'
 
 // get all rup modules
 export const getAllRupModules = async (): Promise<IRupModule[] | false> => {

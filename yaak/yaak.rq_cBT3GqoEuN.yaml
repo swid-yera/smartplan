@@ -2,37 +2,37 @@ type: http_request
 model: http_request
 id: rq_cBT3GqoEuN
 createdAt: 2025-11-26T12:24:50.682397700
-updatedAt: 2026-01-15T13:19:40.934412500
+updatedAt: 2026-01-14T14:49:08.069324300
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_WCNj7nAhDn
+folderId: fl_wRXcNsMiL3
 authentication: {}
 authenticationType: null
 body:
   form:
-  - enabled: true
-    name: client_id
-    value: ${[ client_id ]}
-  - enabled: true
-    name: client_secret
-    value: ${[ client_secret ]}
-  - enabled: true
-    name: grant_type
-    value: refresh_token
-  - enabled: true
-    name: refresh_token
-    value: eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmOWZhYTA3Ni1mZTJhLTQ5MDMtODM2Mi00MTMwMTE1YmY1YTQifQ.eyJleHAiOjE3Njg0ODQ4NzgsImlhdCI6MTc2ODQ4MzA3OCwianRpIjoiYjUxMmMxNzEtMTdiMi0xOGY2LTVhZWItMmI4ZmI2MmY3MjA1IiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmFzcGMua3ovcmVhbG1zL3Rlc3QiLCJhdWQiOiJodHRwczovL2F1dGguYXNwYy5rei9yZWFsbXMvdGVzdCIsInN1YiI6ImI4Mzg4MmJkLTc3NjEtNDZiZC1iNjU3LWNiMTU2OTUwMzA5ZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJjb3Vyc2VzLW9pZGMtdGVzdGluZyIsInNpZCI6ImYwM2ExOTRlLTQwZWUtNzAzMS02NmZhLTE3ZDViNjcxNTViMiIsInNjb3BlIjoib3BlbmlkIG1pY3JvcHJvZmlsZS1qd3Qgc2VydmljZV9hY2NvdW50In0.kaJVrIll9rMG9wpVXB3TJmMAzWgiGhnL8MH_5JVXA31ZHQPrFlDjNW7XB1_-p5Dsb-e62UNPYN_RVh2UBYMQbQ
-  - enabled: true
-    name: ''
-    value: ''
+    - enabled: true
+      name: client_id
+      value: ${[ client_id ]}
+    - enabled: true
+      name: client_secret
+      value: ${[ client_secret ]}
+    - enabled: true
+      name: grant_type
+      value: refresh_token
+    - enabled: true
+      name: refresh_token
+      value: eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmOWZhYTA3Ni1mZTJhLTQ5MDMtODM2Mi00MTMwMTE1YmY1YTQifQ.eyJleHAiOjE3Njg0ODQ4NzgsImlhdCI6MTc2ODQ4MzA3OCwianRpIjoiYjUxMmMxNzEtMTdiMi0xOGY2LTVhZWItMmI4ZmI2MmY3MjA1IiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmFzcGMua3ovcmVhbG1zL3Rlc3QiLCJhdWQiOiJodHRwczovL2F1dGguYXNwYy5rei9yZWFsbXMvdGVzdCIsInN1YiI6ImI4Mzg4MmJkLTc3NjEtNDZiZC1iNjU3LWNiMTU2OTUwMzA5ZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJjb3Vyc2VzLW9pZGMtdGVzdGluZyIsInNpZCI6ImYwM2ExOTRlLTQwZWUtNzAzMS02NmZhLTE3ZDViNjcxNTViMiIsInNjb3BlIjoib3BlbmlkIG1pY3JvcHJvZmlsZS1qd3Qgc2VydmljZV9hY2NvdW50In0.kaJVrIll9rMG9wpVXB3TJmMAzWgiGhnL8MH_5JVXA31ZHQPrFlDjNW7XB1_-p5Dsb-e62UNPYN_RVh2UBYMQbQ
+    - enabled: true
+      name: ""
+      value: ""
 bodyType: application/x-www-form-urlencoded
-description: ''
+description: ""
 headers:
-- enabled: true
-  name: Content-Type
-  value: application/x-www-form-urlencoded
-  id: r2w0vNsbG7
+  - enabled: true
+    name: Content-Type
+    value: application/x-www-form-urlencoded
+    id: r2w0vNsbG7
 method: POST
 name: refresh token
-sortPriority: 888.8888888888889
+sortPriority: 1000.0
 url: https://auth.aspc.kz/realms/test/protocol/openid-connect/token
 urlParameters: []

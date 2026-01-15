@@ -14,7 +14,7 @@ type Users interface {
 	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
 	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
-	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles []string) error
+	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles storage.UserRole) error
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
 	GetAllUsers(ctx context.Context) ([]storage.User, error)
 }

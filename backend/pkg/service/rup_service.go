@@ -1,10 +1,15 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
 
+	"eduplan/backend/config"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -20,6 +25,7 @@ type RupService interface {
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
+	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
 }
 
 type CreateRupRequest struct {
@@ -102,7 +108,7 @@ type UserResponse struct {
 	FirstName   string    `json:"firstName"`
 	LastName    string    `json:"lastName"`
 	Phone       string    `json:"phone"`
-	Roles       []string  `json:"roles"`
+	Roles       string    `json:"roles"`
 	TotalPoints int32     `json:"totalPoints"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
@@ -164,11 +170,32 @@ type TopicResponse struct {
 }
 
 type rupService struct {
-	repo repository.RupRepository
+	repo        repository.RupRepository
+	cfg         *config.DocumentRenderConfig
+	httpClient  *http.Client
+	fileStorage FileStorage
 }
 
-func NewRupService(repo repository.RupRepository) RupService {
-	return &rupService{repo: repo}
+type RupDocumentPayload struct {
+	RupID       string              `json:"rup_id"`
+	Code        string              `json:"code"`
+	Name        string              `json:"name"`
+	TotalHours  int32               `json:"totalHours"`
+	StudyForm   string              `json:"studyForm"`
+	Course      int32               `json:"course"`
+	Group       map[string]any      `json:"group"`
+	Contacts    []map[string]string `json:"contacts"`
+	Disciplines []map[string]any    `json:"disciplines"`
+	Exploration map[string]any      `json:"explorationNote"`
+}
+
+func NewRupService(repo repository.RupRepository, cfg *config.DocumentRenderConfig, httpClient *http.Client, fileStorage FileStorage) RupService {
+	return &rupService{
+		repo:        repo,
+		cfg:         cfg,
+		httpClient:  httpClient,
+		fileStorage: fileStorage,
+	}
 }
 
 func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error) {
@@ -236,7 +263,13 @@ func (s *rupService) GetAllRups(ctx context.Context) ([]*RupResponse, error) {
 	return responses, nil
 }
 
-func (s *rupService) UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string) error {
+func (s *rupService) UpdateRupStatus(
+	ctx context.Context,
+	id uuid.UUID,
+	status string,
+	reason string,
+) error {
+
 	var rupStatus storage.RupsStatus
 	switch status {
 	case "DRAFT":
@@ -251,11 +284,35 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, id uuid.UUID, status s
 		return fmt.Errorf("invalid status: %s", status)
 	}
 
+	// 1. если APPROVED — генерируем документ
+	if rupStatus == storage.RupsStatusAPPROVED {
+		fileBytes, err := s.generateViaPython(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		reader := bytes.NewReader(fileBytes)
+
+		objectName := fmt.Sprintf("rups/%s/document.docx", id.String())
+
+		// 2. сохраняем в MinIO
+		if err := s.fileStorage.UploadFile(
+			ctx,
+			objectName,
+			reader,
+			int64(len(fileBytes)),
+		); err != nil {
+			return err
+		}
+	}
+
+	// 3. reason
 	var reasonText pgtype.Text
 	if reason != "" {
 		reasonText = pgtype.Text{String: reason, Valid: true}
 	}
 
+	// 4. обновляем статус в БД
 	return s.repo.UpdateRupStatus(ctx, id, rupStatus, reasonText)
 }
 
@@ -294,6 +351,167 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 	}
 
 	return s.buildRupResponse(ctx, *updatedRup)
+}
+
+func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byte, error) {
+
+	// 1. забираем ВСЮ модель из БД
+	rup, err := s.GetRupByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. строим payload
+	payload := buildPayload(rup)
+
+	// 3. JSON
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. HTTP → Python
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		s.cfg.Url+"/generate-rup",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Request-ID", uuid.NewString())
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("python error: %s", string(errBody))
+	}
+
+	// 5. читаем файл
+	fileBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return fileBytes, nil
+}
+
+func buildPayload(rup *RupResponse) RupDocumentPayload {
+
+	// ---------- GROUP (один!) ----------
+	group := map[string]any{}
+	if len(rup.Groups) > 0 {
+		group = map[string]any{
+			"name":          rup.Groups[0].Name,
+			"specialty":     rup.Groups[0].Specialty,
+			"qualification": rup.Groups[0].Qualification,
+		}
+	}
+
+	// ---------- CONTACTS ----------
+	contacts := make([]map[string]string, 0, len(rup.Contacts))
+	for _, c := range rup.Contacts {
+		contacts = append(contacts, map[string]string{
+			"firstName": c.FirstName,
+			"lastName":  c.LastName,
+			"email":     c.Email,
+		})
+	}
+
+	// ---------- DISCIPLINES ----------
+	disciplines := make([]map[string]any, 0, len(rup.Disciplines))
+	for _, d := range rup.Disciplines {
+
+		semesters := []map[string]int32{}
+		for _, s := range d.Semesters {
+			semesters = append(semesters, map[string]int32{
+				"semester":   s.Semester,
+				"totalHours": s.TotalHours,
+			})
+		}
+
+		topics := []map[string]int32{}
+		for _, t := range d.Topics {
+			topics = append(topics, map[string]int32{
+				"theoryHours":     t.TheoryHours,
+				"practiceHours":   t.PracticeHours,
+				"individualHours": t.IndividualHours,
+				"srspHours":       t.SrspHours,
+				"srsHours":        t.SrsHours,
+			})
+		}
+
+		disciplines = append(disciplines, map[string]any{
+			"name":      d.Name,
+			"code":      d.Code,
+			"semesters": semesters,
+			"topics":    topics,
+		})
+	}
+
+	// ---------- EXPLORATION NOTE ----------
+	exploration := map[string]any{}
+	en := rup.ExplorationNote
+
+	exploration["basis"] = en.Basis
+	exploration["goals"] = en.Goals
+	exploration["competencies"] = en.Competencies
+	exploration["prerequisites"] = en.Prerequisites
+	exploration["postrequisites"] = en.Postrequisites
+
+	internet := []map[string]string{}
+	for _, r := range en.InternetResources {
+		internet = append(internet, map[string]string{
+			"name": r.Name,
+			"link": r.Link,
+		})
+	}
+
+	technical := []map[string]string{}
+	for _, r := range en.TechnicalResources {
+		technical = append(technical, map[string]string{
+			"name": r.Name,
+			"link": r.Link,
+		})
+	}
+
+	exploration["internetResources"] = internet
+	exploration["technicalResources"] = technical
+
+	return RupDocumentPayload{
+		RupID:       rup.ID.String(),
+		Code:        rup.Code,
+		Name:        rup.Name,
+		TotalHours:  rup.TotalHours,
+		StudyForm:   rup.StudyForm,
+		Course:      rup.Course,
+		Group:       group,
+		Contacts:    contacts,
+		Disciplines: disciplines,
+		Exploration: exploration,
+	}
+}
+
+func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error) {
+
+	objectName := fmt.Sprintf(
+		"rups/%s/document.docx",
+		id.String(),
+	)
+
+	return s.fileStorage.GetDownloadFileURL(
+		ctx,
+		objectName,
+		10*time.Minute,
+	)
 }
 
 func (s *rupService) GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error) {
@@ -775,7 +993,7 @@ func (s *rupService) convertToUserResponse(user storage.User) *UserResponse {
 		FirstName:   user.FirstName.String,
 		LastName:    user.LastName.String,
 		Phone:       user.Phone.String,
-		Roles:       user.Roles,
+		Roles:       string(user.Role),
 		TotalPoints: user.TotalPoints,
 		CreatedAt:   user.CreatedAt.Time,
 		UpdatedAt:   user.UpdatedAt.Time,
