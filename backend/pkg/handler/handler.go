@@ -13,7 +13,7 @@ type Router struct {
 	auth                  *AuthHandler
 	user                  *UserHandler
 	rup                   *RupHandler
-	award                 *AwardHandler // Added
+	award                 *AwardHandler
 	groups                *GroupsHandler
 	webhooks              *WebhooksHandler
 	sessionAuthMiddleware gin.HandlerFunc
@@ -23,7 +23,7 @@ func NewRouter(
 	auth *AuthHandler,
 	user *UserHandler,
 	rup *RupHandler,
-	award *AwardHandler, // Added
+	award *AwardHandler,
 	groups *GroupsHandler,
 	webhooks *WebhooksHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
@@ -32,9 +32,9 @@ func NewRouter(
 		auth:                  auth,
 		user:                  user,
 		rup:                   rup,
-		award:                 award, // Added
-		groups:                groups,
+		award:                 award,
 		webhooks:              webhooks,
+		groups:                groups,
 		sessionAuthMiddleware: sessionAuthMiddleware,
 	}
 }
@@ -81,6 +81,7 @@ func (r *Router) Init() *gin.Engine {
 			rups.GET("/", r.rup.GetAllRups)
 			rups.GET("/:id", r.rup.GetRupByID)
 			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
+			rups.PUT("/:id", r.rup.UpdateRup)
 			rups.DELETE("/:id", r.rup.DeleteRup)
 			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
 			rups.GET("/:id/download", r.rup.DownloadRup)
@@ -90,12 +91,21 @@ func (r *Router) Init() *gin.Engine {
 		awards := api.Group("/awards")
 		{
 			// POST /api/awards/
-			awards.POST("/", r.award.CreateAward)
-			awards.GET("/", r.award.GetAllAwards)
+			// awards.POST("", r.award.CreateAwardWithFileAndData)
+			awards.POST("/upload", r.award.UploadAwardFile)
+			awards.POST("/upload-data", r.award.CreateAwardWithTypes)
+			awards.GET("", r.award.GetAllAwards)
 			awards.GET("/:id", r.award.GetAwardByID)
 			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
+			awards.PUT("/:id", r.award.UpdateAward)
 			awards.DELETE("/:id", r.award.DeleteAward)
 			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
+
+			awardTypes := awards.Group("/types")
+			{
+				awardTypes.POST("", r.award.CreateAwardType)
+				awardTypes.GET("", r.award.GetAllAwardTypes)
+			}
 		}
 
 		groups := api.Group("/groups")

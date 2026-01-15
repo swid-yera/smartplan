@@ -13,14 +13,13 @@ import (
 
 // CreateAwardWithTypesParams представляет параметры для создания award с типами, вариантами и критериями
 type CreateAwardWithTypesParams struct {
-	Status    storage.AwardsStatus `json:"status"`
-	Methodist pgtype.UUID          `json:"methodist"`
-	Text      pgtype.Text          `json:"text"`
-	Document  pgtype.Text          `json:"document"`
-	AwardType struct {
-		Name     string             `json:"name"`
-		Variants []AwardTypeVariant `json:"variants"`
-	} `json:"type"`
+	Status      storage.AwardsStatus `json:"status"`
+	AwardType   uuid.UUID            `json:"type"`
+	TotalPoints int32                `json:"total_points"`
+	Text        pgtype.Text          `json:"text"`
+	Images      []string             `json:"images"`
+	Document    pgtype.Text          `json:"document"`
+	Links       []string             `json:"links"`
 }
 
 // AwardTypeVariant представляет вариант типа награды
@@ -33,9 +32,25 @@ type AwardTypeVariant struct {
 
 // AwardTypeCriteria представляет критерий типа награды
 type AwardTypeCriteria struct {
-	Name   string                         `json:"name"`
-	Points []int32                        `json:"points"`
-	Method storage.NullEnumCriteriaMethod `json:"method"`
+	Name   string                     `json:"name"`
+	Points []int32                    `json:"points"`
+	Method storage.EnumCriteriaMethod `json:"method"`
+}
+
+// CreateFullAwardTypeParams represents the parameters for creating a full award type structure.
+type CreateFullAwardTypeParams struct {
+	Name     string             `json:"name"`
+	Variants []AwardTypeVariant `json:"variants"`
+}
+
+type UpdateAwardRequest struct {
+	Status      storage.AwardsStatus `json:"status"`
+	AwardType   uuid.UUID            `json:"type"`
+	TotalPoints int32                `json:"total_points"`
+	Text        pgtype.Text          `json:"text"`
+	Images      []string             `json:"images"`
+	Document    pgtype.Text          `json:"document"`
+	Links       []string             `json:"links"`
 }
 
 type AwardService struct {
@@ -67,9 +82,14 @@ func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (storage.
 	return s.repo.GetAwardByID(ctx, id)
 }
 
+func (s *AwardService) GetAllAwardTypes(ctx context.Context) ([]storage.AwardType, error) {
+	return s.repo.GetAllAwardTypes(ctx)
+}
+
 func (s *AwardService) GetAllAwards(ctx context.Context) ([]storage.Award, error) {
 	return s.repo.GetAllAwards(ctx)
 }
+
 func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (storage.Award, error) {
 	return s.repo.UpdateAwardStatus(ctx, params)
 }
@@ -94,6 +114,31 @@ func (s *AwardService) CreateAwardTypeCriteria(ctx context.Context, params *stor
 	return s.repo.CreateAwardTypeCriteria(ctx, params)
 }
 
+func (s *AwardService) CreateFullAwardType(ctx context.Context, params *CreateFullAwardTypeParams) (storage.AwardType, error) {
+	// Validation
+	if err := s.validateCreateFullAwardTypeParams(ctx, params); err != nil {
+		return storage.AwardType{}, fmt.Errorf("validation failed: %w", err)
+	}
+
+	// Create variants with their criteria
+	variantIDs, err := s.createAwardTypeVariantsWithCriteria(ctx, params.Variants)
+	if err != nil {
+		return storage.AwardType{}, fmt.Errorf("create variants failed: %w", err)
+	}
+
+	// Create type
+	typeParams := storage.CreateAwardTypeParams{
+		Name:     params.Name,
+		Variants: variantIDs,
+	}
+	awardType, err := s.createAwardType(ctx, &typeParams)
+	if err != nil {
+		return storage.AwardType{}, fmt.Errorf("create type failed: %w", err)
+	}
+
+	return awardType, nil
+}
+
 func (s *AwardService) CreateAwardWithTypes(ctx context.Context, teacherID uuid.UUID, params *CreateAwardWithTypesParams) (storage.Award, error) {
 	// Validation
 	if err := s.validateCreateAwardWithTypesParams(ctx, params); err != nil {
@@ -105,74 +150,63 @@ func (s *AwardService) CreateAwardWithTypes(ctx context.Context, teacherID uuid.
 		return storage.Award{}, fmt.Errorf("teacher with ID %s does not exist: %w", teacherID, err)
 	}
 
-	// Create variants with their criteria
-	variantIDs, err := s.createAwardTypeVariantsWithCriteria(ctx, params.AwardType.Variants)
-	if err != nil {
-		return storage.Award{}, fmt.Errorf("create variants failed: %w", err)
-	}
-
-	// Create type
-	typeParams := storage.CreateAwardTypeParams{
-		Name:     params.AwardType.Name,
-		Variants: variantIDs,
-	}
-	awardType, err := s.createAwardType(ctx, &typeParams)
-	if err != nil {
-		return storage.Award{}, fmt.Errorf("create type failed: %w", err)
-	}
-
 	// Create award
 	awardParams := storage.CreateAwardParams{
-		Status:    params.Status,
-		Methodist: params.Methodist,
-		Teacher:   teacherID,
-		Type:      pgtype.UUID{Bytes: awardType.ID, Valid: true},
-		Text:      params.Text,
-		Document:  params.Document,
-		Variants:  variantIDs,
+		Status:      params.Status,
+		Teacher:     teacherID,
+		Type:        pgtype.UUID{Bytes: params.AwardType, Valid: true},
+		Text:        params.Text,
+		Document:    params.Document,
+		Images:      params.Images,
+		Links:       params.Links,
+		TotalPoints: params.TotalPoints,
 	}
 
 	return s.repo.CreateAward(ctx, &awardParams)
 }
 
-func (s *AwardService) validateCreateAwardWithTypesParams(ctx context.Context, params *CreateAwardWithTypesParams) error {
-	if params.AwardType.Name == "" {
+func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (storage.Award, error) {
+	// 1. Проверка существования
+	_, err := s.repo.GetAwardByID(ctx, id)
+	if err != nil {
+		return storage.Award{}, fmt.Errorf("award not found: %w", err)
+	}
+
+	// 2. Обновление основных полей Award
+	params := storage.UpdateAwardParams{
+		ID:          id,
+		Status:      req.Status,
+		Type:        pgtype.UUID{Bytes: req.AwardType, Valid: req.AwardType != uuid.Nil},
+		TotalPoints: req.TotalPoints,
+		Text:        req.Text,
+		Images:      req.Images,
+		Document:    req.Document,
+		Links:       req.Links,
+	}
+
+	updatedAward, err := s.repo.UpdateAward(ctx, params)
+	if err != nil {
+		return storage.Award{}, fmt.Errorf("update award failed: %w", err)
+	}
+	return *updatedAward, nil
+}
+
+func (s *AwardService) validateCreateFullAwardTypeParams(ctx context.Context, params *CreateFullAwardTypeParams) error {
+	if params.Name == "" {
 		return fmt.Errorf("award type name is required")
 	}
-	if len(params.AwardType.Variants) == 0 {
+	if len(params.Variants) == 0 {
 		return fmt.Errorf("at least one variant is required")
 	}
-	for _, variant := range params.AwardType.Variants {
-		if variant.Name == "" {
-			return fmt.Errorf("variant name is required")
-		}
-		if len(variant.Criteria) == 0 {
-			return fmt.Errorf("at least one criteria is required for variant")
-		}
-		for _, crit := range variant.Criteria {
-			if crit.Name == "" {
-				return fmt.Errorf("criteria name is required")
-			}
-			if len(crit.Points) == 0 {
-				return fmt.Errorf("criteria points are required")
-			}
-		}
-		for _, crit := range variant.BonusCriteria {
-			if crit.Name == "" {
-				return fmt.Errorf("bonus criteria name is required")
-			}
-			if len(crit.Points) == 0 {
-				return fmt.Errorf("bonus criteria points are required")
-			}
-		}
+
+	return nil
+}
+
+func (s *AwardService) validateCreateAwardWithTypesParams(ctx context.Context, params *CreateAwardWithTypesParams) error {
+	if params.AwardType == uuid.Nil {
+		return fmt.Errorf("award type ID is required")
 	}
-	// Methodist validation if present
-	if params.Methodist.Valid {
-		_, err := s.repo.GetUserByID(ctx, params.Methodist.Bytes)
-		if err != nil {
-			return fmt.Errorf("methodist with ID %s does not exist", params.Methodist.Bytes)
-		}
-	}
+
 	return nil
 }
 

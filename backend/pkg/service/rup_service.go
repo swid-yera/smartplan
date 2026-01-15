@@ -22,6 +22,7 @@ type RupService interface {
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
 	GetAllRups(ctx context.Context) ([]*RupResponse, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string) error
+	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
@@ -37,7 +38,7 @@ type CreateRupRequest struct {
 	Contacts        []string                `json:"contacts"`
 	Groups          []string                `json:"groups"`
 	Methodist       string                  `json:"methodist"`
-	Teacher         string                  `json:"-"` // Set from session, not from JSON
+	Teacher         string                  `json:"teacher"`
 	ExplorationNote *ExplorationNoteRequest `json:"explorationNote"`
 	Disciplines     []*DisciplineRequest    `json:"disciplines"`
 }
@@ -313,6 +314,43 @@ func (s *rupService) UpdateRupStatus(
 
 	// 4. обновляем статус в БД
 	return s.repo.UpdateRupStatus(ctx, id, rupStatus, reasonText)
+}
+
+func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error) {
+	// 1. Check if RUP exists and get current status
+	existingRup, err := s.repo.GetRupByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("rup not found: %w", err)
+	}
+
+	// 2. Validate request
+	if err := s.validateCreateRupRequest(ctx, req); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	// 3. Create new related entities (ExplorationNote, Disciplines)
+	// We create new ones to replace the old ones.
+	explorationNoteID, err := s.createExplorationNote(ctx, req.ExplorationNote)
+	if err != nil {
+		return nil, fmt.Errorf("create exploration note failed: %w", err)
+	}
+
+	disciplineIDs, err := s.createDisciplines(ctx, req.Disciplines)
+	if err != nil {
+		return nil, fmt.Errorf("create disciplines failed: %w", err)
+	}
+
+	// 4. Prepare update params
+	// We preserve the existing status
+	params := s.convertToUpdateParams(id, req, existingRup.Status, explorationNoteID, disciplineIDs)
+
+	// 5. Update RUP
+	updatedRup, err := s.repo.UpdateRup(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("update rup failed: %w", err)
+	}
+
+	return s.buildRupResponse(ctx, *updatedRup)
 }
 
 func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byte, error) {
@@ -622,6 +660,68 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 		Name:              req.Name,
 		Code:              pgtype.Text{String: req.Code, Valid: req.Code != ""},
 		Status:            storage.RupsStatusDRAFT,
+		Course:            req.Course,
+		StudyForm:         studyForm,
+		StudyYear:         req.StudyYear,
+		Type:              rupType,
+		Contacts:          contacts,
+		GroupIds:          req.Groups,
+		Methodist:         methodistUUID,
+		Teacher:           teacherUUID,
+		ExplorationNoteID: explorationNoteUUID,
+		Disciplines:       disciplineIDs,
+	}
+
+}
+
+func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, status storage.RupsStatus, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID) storage.UpdateRupParams {
+	var methodistUUID pgtype.UUID
+	var teacherUUID pgtype.UUID
+	var explorationNoteUUID pgtype.UUID
+
+	if req.Methodist != "" {
+		if uid, err := uuid.Parse(req.Methodist); err == nil {
+			methodistUUID = pgtype.UUID{Bytes: uid, Valid: true}
+		}
+	}
+
+	if req.Teacher != "" {
+		if uid, err := uuid.Parse(req.Teacher); err == nil {
+			teacherUUID = pgtype.UUID{Bytes: uid, Valid: true}
+		}
+	}
+
+	if explorationNoteID != nil {
+		explorationNoteUUID = pgtype.UUID{Bytes: *explorationNoteID, Valid: true}
+	}
+
+	var contacts []uuid.UUID
+	for _, contactStr := range req.Contacts {
+		if uid, err := uuid.Parse(contactStr); err == nil {
+			contacts = append(contacts, uid)
+		}
+	}
+
+	var rupType storage.RupsTypeEnum
+	switch req.Type {
+	case "PRACTICE":
+		rupType = storage.RupsTypeEnumPRACTICE
+	case "THEORY":
+		rupType = storage.RupsTypeEnumTHEORY
+	}
+
+	var studyForm storage.StudyFormEnum
+	switch req.StudyForm {
+	case "CORRESPONDENCE":
+		studyForm = storage.StudyFormEnumCORRESPONDENCE
+	case "FULL_TIME":
+		studyForm = storage.StudyFormEnumFULLTIME
+	}
+
+	return storage.UpdateRupParams{
+		ID:                id,
+		Name:              req.Name,
+		Code:              pgtype.Text{String: req.Code, Valid: req.Code != ""},
 		Course:            req.Course,
 		StudyForm:         studyForm,
 		StudyYear:         req.StudyYear,

@@ -2,25 +2,30 @@ type: http_request
 model: http_request
 id: rq_doZXMJESQg
 createdAt: 2026-01-13T03:16:48.377937500
-updatedAt: 2026-01-14T08:46:50.209621300
+updatedAt: 2026-01-15T10:16:16.007789100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_fh7jNUikxF
 authentication: {}
 authenticationType: null
-body: {}
-bodyType: null
+body:
+  text: "{\n  \"status\": \"REJECTED\",\n  \"reason\": \"а потому что некуй\"\n  \n}"
+bodyType: application/json
 description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=53a6f809-8686-44ef-8035-af1c0d288b56
+  value: sid=b3fd6868-b698-4575-91e6-8229c038bf92
   id: ng2CVkwENY
 - enabled: true
   name: ''
   value: ''
-  id: EnBbQUaM6a
+  id: a3katn09Zd
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: G7Bv0HQNNt
 method: PUT
 name: Update award status
-sortPriority: 2000.0
-url: http://localhost:8080/api/awards/:id/status
+sortPriority: 6000.0
+url: http://localhost:8080/api/awards/c5319420-ba7e-4821-9d8f-9dd761f01eb5/status
 urlParameters: []

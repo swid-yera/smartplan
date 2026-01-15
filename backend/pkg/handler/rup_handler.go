@@ -132,6 +132,35 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "RUP status updated successfully"})
 }
 
+// UpdateRup обновляет данные RUP
+func (h *RupHandler) UpdateRup(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		return
+	}
+
+	var req service.CreateRupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid JSON format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	rup, err := h.rupService.UpdateRup(c.Request.Context(), id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to update RUP",
+			"details": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, rup)
+}
+
 func (h *RupHandler) DownloadRup(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

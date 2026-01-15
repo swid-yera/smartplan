@@ -41,12 +41,24 @@ func (r *AwardRepository) GetAllAwards(ctx context.Context) ([]storage.Award, er
 	return r.queries.GetAllAwards(ctx)
 }
 
+func (r *AwardRepository) GetAllAwardTypes(ctx context.Context) ([]storage.AwardType, error) {
+	return r.queries.GetAllAwardTypes(ctx)
+}
+
 func (r *AwardRepository) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (storage.Award, error) {
 	err := r.queries.UpdateAwardStatus(ctx, params)
 	if err != nil {
 		return storage.Award{}, err
 	}
 	return r.queries.GetAwardByID(ctx, params.ID)
+}
+
+func (r *AwardRepository) UpdateAward(ctx context.Context, params storage.UpdateAwardParams) (*storage.Award, error) {
+	award, err := r.queries.UpdateAward(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	return &award, nil
 }
 
 func (r *AwardRepository) DeleteAward(ctx context.Context, id uuid.UUID) error {
