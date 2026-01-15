@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 )
 
 type AuthService interface {
@@ -26,13 +27,15 @@ type authService struct {
 	redis *redis.Client
 	users repository.AuthRepository
 	cfg   *config.KeycloakConfig
+	log   *logrus.Entry
 }
 
-func NewAuthService(redis *redis.Client, users repository.AuthRepository, cfg *config.KeycloakConfig) AuthService {
+func NewAuthService(redis *redis.Client, users repository.AuthRepository, cfg *config.KeycloakConfig, log *logrus.Logger) AuthService {
 	return &authService{
 		redis: redis,
 		users: users,
 		cfg:   cfg,
+		log:   log.WithField("service", "AuthService"),
 	}
 }
 
@@ -52,12 +55,12 @@ func (s *authService) HandleCallback(
 	// new
 	realmAccess, ok := claims["realm_access"].(map[string]interface{})
 	if !ok {
-		return uuid.Nil, errors.New("realm_access missing")
+		return uuid.Nil, fmt.Errorf("realm_access missing in token claims")
 	}
 
 	rolesRaw, ok := realmAccess["roles"].([]interface{})
 	if !ok {
-		return uuid.Nil, errors.New("roles missing")
+		return uuid.Nil, fmt.Errorf("roles missing in token claims")
 	}
 
 	kcRoles := make([]string, 0, len(rolesRaw))
@@ -69,21 +72,26 @@ func (s *authService) HandleCallback(
 
 	role, ok := helpers.ResolveHighestRole(kcRoles, *s.cfg)
 	if !ok {
-		return uuid.Nil, errors.New("user has no allowed roles")
+		return uuid.Nil, fmt.Errorf("user has no allowed roles from list: %v", kcRoles)
 	}
 
-	fmt.Println("roles:", role)
+	s.log.WithFields(logrus.Fields{
+		"keycloak_id": keycloakID,
+		"role":        role,
+	}).Info("Resolved user role")
 
 	// 1. Попытка создать пользователя через репозиторий
 	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName)
 	if err != nil {
 		// Игнорируем уникальное ограничение (пользователь уже есть)
 		if !isUniqueViolation(err) {
+			s.log.WithError(err).Error("Failed to create user")
 			return uuid.Nil, err
 		}
 		// Получаем существующего пользователя
 		user, err = s.users.GetUserByKeycloakID(ctx, keycloakID)
 		if err != nil {
+			s.log.WithError(err).Error("Failed to get existing user by keycloak ID")
 			return uuid.Nil, err
 		}
 	}
@@ -106,6 +114,7 @@ func (s *authService) HandleCallback(
 	pipe.Expire(ctx, userSessionsKey, 24*time.Hour)
 
 	if _, err := pipe.Exec(ctx); err != nil {
+		s.log.WithError(err).Error("Redis transaction failed during session creation")
 		return uuid.Nil, err
 	}
 
@@ -118,6 +127,10 @@ func (s *authService) Logout(ctx context.Context, sessionID string) error {
 
 	keycloakID, err := s.redis.HGet(ctx, sessionKey, "keycloak_id").Result()
 	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			s.log.WithError(err).WithField("session_id", sessionID).Error("Failed to get keycloak_id from session in Redis")
+		}
+		// if redis.Nil, session is already gone, which is fine for logout.
 		return err
 	}
 
@@ -126,7 +139,10 @@ func (s *authService) Logout(ctx context.Context, sessionID string) error {
 	pipe.SRem(ctx, "user_sessions:"+keycloakID, sessionID)
 
 	_, err = pipe.Exec(ctx)
-	return err
+	if err != nil {
+		s.log.WithError(err).WithField("session_id", sessionID).Error("Redis transaction failed during logout")
+	}
+	return err // return original error if any
 }
 
 // InvalidateAllSessions удаляет все сессии пользователя
@@ -135,6 +151,7 @@ func (s *authService) InvalidateAllSessions(ctx context.Context, keycloakID uuid
 
 	sessionIDs, err := s.redis.SMembers(ctx, userSessionsKey).Result()
 	if err != nil {
+		s.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Failed to get session IDs for user from Redis")
 		return err
 	}
 
@@ -149,7 +166,10 @@ func (s *authService) InvalidateAllSessions(ctx context.Context, keycloakID uuid
 	pipe.Del(ctx, userSessionsKey)
 
 	_, err = pipe.Exec(ctx)
-	return err
+	if err != nil {
+		s.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Redis transaction failed during InvalidateAllSessions")
+	}
+	return err // return original error if any
 }
 
 // isUniqueViolation проверяет ошибку Postgres на уникальное ограничение

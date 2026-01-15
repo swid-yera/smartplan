@@ -2,7 +2,7 @@ package handler
 
 import (
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/base64"
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,6 +16,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -29,6 +30,7 @@ type AuthHandler struct {
 	cfg     *config.KeycloakConfig
 	auth    service.AuthService
 	keyFunc jwt.Keyfunc
+	log     *logrus.Logger
 }
 
 func NewAuthHandler(
@@ -37,6 +39,7 @@ func NewAuthHandler(
 	cfg *config.KeycloakConfig,
 	auth service.AuthService,
 	keyFunc jwt.Keyfunc,
+	log *logrus.Logger,
 ) *AuthHandler {
 	return &AuthHandler{
 		gocloak: gocloak,
@@ -44,13 +47,8 @@ func NewAuthHandler(
 		cfg:     cfg,
 		auth:    auth,
 		keyFunc: keyFunc,
+		log:     log,
 	}
-}
-
-func randomHex(n int) string {
-	b := make([]byte, n)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
 }
 
 func (h *AuthHandler) isHTTPS() bool {
@@ -68,6 +66,7 @@ func (h *AuthHandler) backendCallbackURL() string {
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	if h == nil || h.cfg == nil {
+		h.log.Error("Auth handler not configured during login attempt")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "auth handler not configured"})
 		return
 	}
@@ -75,6 +74,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// --- ВОТ ЭТО ДОБАВИТЬ (logout before login) ---
 	ctx := c.Request.Context()
 	if sid, err := c.Cookie(sessionCookieName); err == nil && sid != "" {
+		h.log.WithField("sid", sid).Info("Existing session found during login. Logging out first.")
 		_ = h.auth.Logout(ctx, sid)
 
 		http.SetCookie(c.Writer, &http.Cookie{
@@ -90,11 +90,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// --- конец добавленного блока ---
 
 	redirectURI := h.backendCallbackURL()
-	state := randomHex(16)
+	stateBytes := make([]byte, 16)
+	if _, err := rand.Read(stateBytes); err != nil {
+		h.log.WithError(err).Error("Failed to generate random state for login")
+		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=server_error")
+		return
+	}
+	state := base64.RawURLEncoding.EncodeToString(stateBytes)
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     stateCookieName,
-		Value:    state,
+		Value:    state, // Используем сгенерированный state
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   h.isHTTPS(),
@@ -122,6 +128,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 func (h *AuthHandler) Callback(c *gin.Context) {
 	if h == nil || h.cfg == nil {
+		h.log.Error("Auth handler not configured during callback")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=server_not_configured")
 		return
 	}
@@ -130,12 +137,14 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	state := c.Query("state")
 
 	if code == "" {
+		h.log.Warn("Callback request is missing 'code' query parameter")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=missing_code")
 		return
 	}
 
 	cookieState, err := c.Cookie(stateCookieName)
 	if err != nil || cookieState != state {
+		h.log.WithError(err).Warn("Callback state mismatch or cookie error")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=invalid_state")
 		return
 	}
@@ -163,39 +172,48 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	})
 	if err != nil {
 		// важно: не оставляем пользователя на /callback
-		// и логируем причину в консоль
-		c.Error(err)
+		// и логируем причину
+		h.log.WithError(err).Error("Failed to exchange authorization code for token")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=token_exchange_failed")
 		return
 	}
 
 	parsed, err := jwt.Parse(token.AccessToken, h.keyFunc)
 	if err != nil || !parsed.Valid {
+		h.log.WithFields(logrus.Fields{
+			"error":       err,
+			"token_valid": parsed != nil && parsed.Valid,
+		}).Error("Callback token validation failed")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=invalid_token")
 		return
 	}
 
 	claims, ok := parsed.Claims.(jwt.MapClaims)
 	if !ok {
+		h.log.WithField("claims_type", claims).Error("Invalid claims type in JWT")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=invalid_claims")
 		return
 	}
 
 	subStr, ok := claims["sub"].(string)
 	if !ok {
+		h.log.WithFields(logrus.Fields{
+			"claims": claims,
+		}).Error("'sub' claim not found or not a string in JWT")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=sub_not_found")
 		return
 	}
 
 	keycloakID, err := uuid.Parse(subStr)
 	if err != nil {
+		h.log.WithError(err).WithField("sub", subStr).Error("Failed to parse 'sub' claim as UUID")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=invalid_sub")
 		return
 	}
 
 	sessionID, err := h.auth.HandleCallback(ctx, keycloakID, token.AccessToken, claims)
 	if err != nil {
-		c.Error(err)
+		h.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Auth service HandleCallback failed")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=auth_failed")
 		return
 	}
@@ -211,6 +229,10 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 
+	h.log.WithFields(logrus.Fields{
+		"keycloak_id": keycloakID,
+		"session_id":  sessionID,
+	}).Info("User successfully authenticated and session created")
 	c.Redirect(http.StatusFound, h.cfg.FrontendURL)
 }
 
@@ -218,6 +240,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 
 func (h *AuthHandler) Logout(c *gin.Context) {
 	if h == nil || h.cfg == nil {
+		h.log.Error("Auth handler not configured during logout attempt")
 		c.Redirect(http.StatusFound, "/")
 		return
 	}
@@ -226,6 +249,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 
 	// 1) если есть sid — удаляем сессию через сервис (он чистит session:* и user_sessions:*)
 	if sid, err := c.Cookie(sessionCookieName); err == nil && sid != "" {
+		h.log.WithField("sid", sid).Info("User logging out")
 		_ = h.auth.Logout(ctx, sid) // игнорируем ошибку, чтобы logout был идемпотентным
 	}
 

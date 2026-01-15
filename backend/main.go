@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os" // Added for getEnv
 	"strings"
@@ -9,6 +8,7 @@ import (
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/handler"
+	"eduplan/backend/pkg/helpers"
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/repository"
 	"eduplan/backend/pkg/service"
@@ -17,7 +17,6 @@ import (
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog"
 )
 
 // Helper function to get environment variables with a default value
@@ -40,7 +39,8 @@ func normalizeRedisAddr(addr string) string {
 }
 
 func main() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	// ---------- LOGGER ----------
+	log := helpers.NewLogger()
 
 	// ---------- CONFIG ----------
 	kcCfg := config.LoadKeycloakConfig()
@@ -53,7 +53,7 @@ func main() {
 	// Note: Ensure repository.NewPostgresDB exists and accepts *config.DBConfig
 	db, err := repository.NewPostgresDB(dbCfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize DB: %s", err)
+		log.Fatalf("Failed to initialize DB: %v", err)
 	}
 	defer db.Close()
 
@@ -96,7 +96,7 @@ func main() {
 	)
 
 	// ---------- SERVICES ----------
-	authService := service.NewAuthService(rdb, authRepo, kcCfg)
+	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
 	awardService := service.NewAwardService(awardRepo)
@@ -117,7 +117,7 @@ func main() {
 	// ---------- HANDLERS ----------
 	kc := gocloak.NewClient(kcCfg.KeycloakURL)
 
-	authHandler := handler.NewAuthHandler(kc, rdb, kcCfg, authService, authMiddleware.GetKeyFunc())
+	authHandler := handler.NewAuthHandler(kc, rdb, kcCfg, authService, authMiddleware.GetKeyFunc(), log)
 	userHandler := handler.NewUserHandler(userService)
 	rupHandler := handler.NewRupHandler(rupService)
 	awardHandler := handler.NewAwardHandler(awardService)
@@ -131,7 +131,7 @@ func main() {
 	engine := router.Init()
 
 	port := getEnv("PORT", "8080")
-	log.Printf("Server starting on port %s", port)
+	log.Infof("Server starting on port %s", port)
 	if err := engine.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
