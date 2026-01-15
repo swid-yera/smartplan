@@ -24,6 +24,7 @@ type RupService interface {
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string) error
 	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
+	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
 }
 
 type CreateRupRequest struct {
@@ -284,17 +285,19 @@ func (s *rupService) UpdateRupStatus(
 
 	// 1. если APPROVED — генерируем документ
 	if rupStatus == storage.RupsStatusAPPROVED {
-		fileBytes, filename, err := s.generateViaPython(ctx, id)
+		fileBytes, err := s.generateViaPython(ctx, id)
 		if err != nil {
 			return err
 		}
 
 		reader := bytes.NewReader(fileBytes)
 
+		objectName := fmt.Sprintf("rups/%s/document.docx", id.String())
+
 		// 2. сохраняем в MinIO
 		if err := s.fileStorage.UploadFile(
 			ctx,
-			filename,
+			objectName,
 			reader,
 			int64(len(fileBytes)),
 		); err != nil {
@@ -312,15 +315,12 @@ func (s *rupService) UpdateRupStatus(
 	return s.repo.UpdateRupStatus(ctx, id, rupStatus, reasonText)
 }
 
-func (s *rupService) generateViaPython(
-	ctx context.Context,
-	id uuid.UUID,
-) ([]byte, string, error) {
+func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byte, error) {
 
 	// 1. забираем ВСЮ модель из БД
 	rup, err := s.GetRupByID(ctx, id)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	// 2. строим payload
@@ -329,7 +329,7 @@ func (s *rupService) generateViaPython(
 	// 3. JSON
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	// 4. HTTP → Python
@@ -340,7 +340,7 @@ func (s *rupService) generateViaPython(
 		bytes.NewReader(body),
 	)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -348,24 +348,22 @@ func (s *rupService) generateViaPython(
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		errBody, _ := io.ReadAll(resp.Body)
-		return nil, "", fmt.Errorf("python error: %s", string(errBody))
+		return nil, fmt.Errorf("python error: %s", string(errBody))
 	}
 
 	// 5. читаем файл
 	fileBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	filename := resp.Header.Get("Content-Disposition")
-
-	return fileBytes, filename, nil
+	return fileBytes, nil
 }
 
 func buildPayload(rup *RupResponse) RupDocumentPayload {
@@ -462,6 +460,20 @@ func buildPayload(rup *RupResponse) RupDocumentPayload {
 		Disciplines: disciplines,
 		Exploration: exploration,
 	}
+}
+
+func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error) {
+
+	objectName := fmt.Sprintf(
+		"rups/%s/document.docx",
+		id.String(),
+	)
+
+	return s.fileStorage.GetDownloadFileURL(
+		ctx,
+		objectName,
+		10*time.Minute,
+	)
 }
 
 func (s *rupService) GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error) {

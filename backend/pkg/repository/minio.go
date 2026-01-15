@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -31,4 +32,20 @@ func NewMinioRepository(endpoint, accessKey, secretKey, bucket string, useSSL bo
 func (r *MinioRepository) UploadFile(ctx context.Context, fileName string, reader io.Reader, size int64) error {
 	_, err := r.Client.PutObject(ctx, r.Bucket, fileName, reader, size, minio.PutObjectOptions{})
 	return err
+}
+
+func (r *MinioRepository) DownloadFile(ctx context.Context, fileName string) (io.ReadCloser, error) {
+	object, err := r.Client.GetObject(ctx, r.Bucket, fileName, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return object, nil
+}
+
+func (r *MinioRepository) GetDownloadFileURL(ctx context.Context, fileName string, expiry time.Duration) (string, error) {
+	presignedURL, err := r.Client.PresignedGetObject(ctx, r.Bucket, fileName, expiry, nil)
+	if err != nil {
+		return "", err
+	}
+	return presignedURL.String(), nil
 }

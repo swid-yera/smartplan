@@ -3,10 +3,13 @@ package service
 import (
 	"context"
 	"io"
+	"time"
 )
 
 type FileStorage interface {
 	UploadFile(ctx context.Context, fileName string, reader io.Reader, size int64) error
+	DownloadFile(ctx context.Context, fileName string) (io.ReadCloser, error)
+	GetDownloadFileURL(ctx context.Context, fileName string, expiry time.Duration) (string, error)
 }
 
 type StorageService struct {

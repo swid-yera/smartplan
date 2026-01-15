@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_aaLtU37DXo
 createdAt: 2026-01-14T14:24:53.158508400
-updatedAt: 2026-01-14T15:53:25.849706800
+updatedAt: 2026-01-15T07:41:53.327359
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -14,16 +14,16 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=e4725275-6f4d-46a8-aa4e-a600ee97a51e
+  value: ${[ sid ]}
   id: PdYB9EAGtq
-- enabled: true
-  name: ''
-  value: ''
-  id: hPTDuqUdkI
 - enabled: true
   name: Content-Type
   value: application/json
   id: F9XqVtz5af
+- enabled: true
+  name: ''
+  value: ''
+  id: ew43DKdqdg
 method: POST
 name: create
 sortPriority: 0.001

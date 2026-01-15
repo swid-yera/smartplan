@@ -2,13 +2,13 @@ type: http_request
 model: http_request
 id: rq_aP2DVPQfMr
 createdAt: 2026-01-14T14:38:21.382290500
-updatedAt: 2026-01-14T14:41:10.017375100
+updatedAt: 2026-01-15T07:48:46.887021800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
 authenticationType: null
 body:
-  text: |-
+  text: |
     {
       "status": "APPROVED"
     }
@@ -17,7 +17,7 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=36eeb79c-a4b7-4bc6-bea0-e85857618ce9
+  value: ${[ sid ]}
   id: PdYB9EAGtq
 - enabled: true
   name: Content-Type
@@ -26,9 +26,9 @@ headers:
 - enabled: true
   name: ''
   value: ''
-  id: SwcYuQrNNI
+  id: jdAyWwcV8T
 method: PUT
 name: status
 sortPriority: 0.003
-url: http://localhost:8080/api/rups/2825edef-c185-4d57-b9c8-ee9bbf2b525e/status
+url: http://localhost:8080/api/rups/9053e8a6-f364-45b2-a7b6-7f66fcb21cda/status
 urlParameters: []
