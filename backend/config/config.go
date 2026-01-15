@@ -47,6 +47,7 @@ type KeycloakConfig struct {
 	FrontendURL      string
 	CookieDomain     string
 	BaseURL          string
+	GroupID          string
 }
 
 type DBConfig struct {
@@ -109,6 +110,7 @@ func LoadKeycloakConfig() *KeycloakConfig {
 		FrontendURL:      getEnv("FRONTEND_URL", "http://example:3000"),
 		CookieDomain:     getEnv("COOKIE_DOMAIN", "localhost"),
 		BaseURL:          getEnv("BASE_URL", "http://exaple:8080"),
+		GroupID:          getEnv("GROUP_ID", ""),
 	}
 }
 

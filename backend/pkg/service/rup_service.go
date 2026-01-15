@@ -336,7 +336,7 @@ func (s *rupService) generateViaPython(
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		"http://127.0.0.1:8000/generate-rup",
+		s.cfg.Url+"/generate-rup",
 		bytes.NewReader(body),
 	)
 	if err != nil {

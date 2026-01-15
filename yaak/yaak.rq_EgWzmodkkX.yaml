@@ -2,9 +2,9 @@ type: http_request
 model: http_request
 id: rq_EgWzmodkkX
 createdAt: 2025-11-26T11:56:54.133819500
-updatedAt: 2025-12-12T12:22:24.814680400
+updatedAt: 2026-01-14T14:49:08.012407500
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_WCNj7nAhDn
+folderId: fl_wRXcNsMiL3
 authentication: {}
 authenticationType: null
 body:
@@ -28,6 +28,6 @@ headers:
   id: YiYI8PTR8y
 method: GET
 name: userinfo
-sortPriority: 296.2962962962963
+sortPriority: 0.0
 url: https://auth.aspc.kz/realms/test/protocol/openid-connect/userinfo
 urlParameters: []
