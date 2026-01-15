@@ -9,16 +9,16 @@ authentication: {}
 authenticationType: null
 body: {}
 bodyType: null
-description: ''
+description: ""
 headers:
-- enabled: true
-  name: Cookie
-  value: ${[ sid ]}
-  id: FMB9u85CUF
-- enabled: true
-  name: ''
-  value: ''
-  id: VvjPZh54iH
+  - enabled: true
+    name: Cookie
+    value: ${[ sid ]}
+    id: FMB9u85CUF
+  - enabled: true
+    name: ""
+    value: ""
+    id: VvjPZh54iH
 method: POST
 name: sync
 sortPriority: 1000.0

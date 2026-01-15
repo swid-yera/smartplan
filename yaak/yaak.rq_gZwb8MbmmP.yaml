@@ -9,16 +9,16 @@ authentication: {}
 authenticationType: null
 body: {}
 bodyType: null
-description: ''
+description: ""
 headers:
-- enabled: true
-  name: Cookie
-  value: sid=c5ff2dba-8301-40f6-9056-9419ea61928c
-  id: EbzSEb6Ekx
-- enabled: true
-  name: ''
-  value: ''
-  id: gZ64JQYHzd
+  - enabled: true
+    name: Cookie
+    value: sid=53a6f809-8686-44ef-8035-af1c0d288b56
+    id: EbzSEb6Ekx
+  - enabled: true
+    name: ""
+    value: ""
+    id: rmDN2FBRYf
 method: GET
 name: localhost:8080/api/awards/methodist/:id
 sortPriority: -0.0001

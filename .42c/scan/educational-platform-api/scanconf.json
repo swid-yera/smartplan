@@ -98,9 +98,24 @@
                         "requestBody": {
                             "mode": "json",
                             "json": {
-                                "discipline_id": "qeylhhsisufpoyresbjwdimurmzzibaq",
-                                "score": 5907252934919787544,
-                                "user_id": "xudslgsrmzopyfouxsbcqyujfkldjzhe"
+                                "name": "string",
+                                "code": "string",
+                                "award_types": [
+                                    {
+                                        "name": "string",
+                                        "award_type_variants": [
+                                            {
+                                                "name": "string",
+                                                "award_type_criteria": [
+                                                    {
+                                                        "name": "string",
+                                                        "score": 0
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
                             }
                         }
                     }

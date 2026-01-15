@@ -17,9 +17,10 @@ func ValidateRequestHeaders() gin.HandlerFunc {
 				contentType = "application/json" // default
 			}
 			if !strings.Contains(contentType, "application/json") &&
-				!strings.Contains(contentType, "application/x-www-form-urlencoded") {
+				!strings.Contains(contentType, "application/x-www-form-urlencoded") &&
+				!strings.Contains(contentType, "multipart/form-data") {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-					"error": "Invalid Content-Type. Expected application/json or application/x-www-form-urlencoded",
+					"error": "Invalid Content-Type. Expected application/json, application/x-www-form-urlencoded, or multipart/form-data",
 				})
 				return
 			}
