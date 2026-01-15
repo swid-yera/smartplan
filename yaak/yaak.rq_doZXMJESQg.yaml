@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_doZXMJESQg
 createdAt: 2026-01-13T03:16:48.377937500
-updatedAt: 2026-01-15T10:16:16.007789100
+updatedAt: 2026-01-15T14:39:34.799526500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_fh7jNUikxF
 authentication: {}
@@ -14,18 +14,18 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=b3fd6868-b698-4575-91e6-8229c038bf92
+  value: ${[ sid ]}
   id: ng2CVkwENY
-- enabled: true
-  name: ''
-  value: ''
-  id: a3katn09Zd
 - enabled: true
   name: Content-Type
   value: application/json
   id: G7Bv0HQNNt
+- enabled: true
+  name: ''
+  value: ''
+  id: 2WivGgKPtB
 method: PUT
-name: Update award status
-sortPriority: 6000.0
+name: update award status
+sortPriority: 5000.0
 url: http://localhost:8080/api/awards/c5319420-ba7e-4821-9d8f-9dd761f01eb5/status
 urlParameters: []

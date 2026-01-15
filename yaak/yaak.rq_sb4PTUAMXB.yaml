@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_sb4PTUAMXB
 createdAt: 2026-01-14T14:37:15.839580800
-updatedAt: 2026-01-15T07:42:29.669170900
+updatedAt: 2026-01-15T14:36:53.907775700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -22,6 +22,6 @@ headers:
   id: CFtRdvGKtw
 method: GET
 name: by id
-sortPriority: 0.002
+sortPriority: 1000.0
 url: http://localhost:8080/api/rups/2825edef-c185-4d57-b9c8-ee9bbf2b525e
 urlParameters: []

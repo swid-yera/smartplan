@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_aP2DVPQfMr
 createdAt: 2026-01-14T14:38:21.382290500
-updatedAt: 2026-01-15T07:48:46.887021800
+updatedAt: 2026-01-15T14:36:54.021572300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -29,6 +29,6 @@ headers:
   id: jdAyWwcV8T
 method: PUT
 name: status
-sortPriority: 0.003
+sortPriority: 3000.0
 url: http://localhost:8080/api/rups/9053e8a6-f364-45b2-a7b6-7f66fcb21cda/status
 urlParameters: []
