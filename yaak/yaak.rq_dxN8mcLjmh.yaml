@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_dxN8mcLjmh
+createdAt: 2026-01-13T03:19:28.262373
+updatedAt: 2026-01-14T15:17:15.152070500
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_KEgdPSdZmC
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ""
+headers:
+  - enabled: true
+    name: Cookie
+    value: ${[ sid ]}
+    id: FMB9u85CUF
+  - enabled: true
+    name: ""
+    value: ""
+    id: VvjPZh54iH
+method: POST
+name: sync
+sortPriority: 1000.0
+url: http://localhost:8080/api/groups/sync
+urlParameters: []

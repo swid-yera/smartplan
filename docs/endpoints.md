@@ -2382,7 +2382,221 @@ delete resource
 
 ## Awards
 
+### POST `/awards/upload`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"file": "file"
+}
+```
+
+**response 200**
+
+```json
+{
+	"fileKey": "path/to/file/in/minio"
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid data" }
+```
+
+### POST `/awards/with-types`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"status": "DRAFT",
+	"methodist": {
+		"UUID": "550e8400-e29b-41d4-a716-446655440000",
+		"Valid": true
+	},
+	"total_points": 80,
+	"type": {
+		"name": "Участие в конференции",
+		"variants": [
+			{
+				"name": "Докладчик",
+				"description": "Участие в качестве докладчика на конференции",
+				"criteria": [
+					{
+						"name": "Международный уровень",
+						"points": [50],
+						"method": "NORMAL"
+					},
+					{
+						"name": "Республиканский уровень",
+						"points": [30,40],
+						"method": "MEASURING"
+					}
+				],
+				"bonus_criteria": []
+			}
+		]
+	},
+	"text": "",
+	"links": [],
+	"document": "path/to/file/in/minio"
+}
+```
+
+**response 200**
+
+```json
+{
+	"id": "uuid",
+	"status": "DRAFT",
+	"methodist": {
+		"UUID": "550e8400-e29b-41d4-a716-446655440000",
+		"Valid": true
+	},
+	"total_points": 80,
+	"type": {
+		"name": "Участие в конференции",
+		"variants": [
+			{
+				"name": "Докладчик",
+				"description": "Участие в качестве докладчика на конференции",
+				"criteria": [
+					{
+						"name": "Международный уровень",
+						"points": [50],
+						"method": "NORMAL"
+					},
+					{
+						"name": "Республиканский уровень",
+						"points": [30,40],
+						"method": "MEASURING"
+					}
+				],
+				"bonus_criteria": []
+			}
+		]
+	},
+	"text": "",
+	"links": [],
+	"document": "path/to/file/in/minio"
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid data" }
+```
+
 ### POST `/awards`
+
+**headers**
+
+| key           | value          |
+| ------------- | -------------- |
+| Authorization | Bearer <token> |
+
+**request body**
+
+```json
+{
+	"file": "file",
+	"data": {
+		"status": "DRAFT",
+		"methodist": {
+			"UUID": "550e8400-e29b-41d4-a716-446655440000",
+			"Valid": true
+		},
+		"total_points": 80,
+		"type": {
+			"name": "Участие в конференции",
+			"variants": [
+				{
+					"name": "Докладчик",
+					"description": "Участие в качестве докладчика на конференции",
+					"criteria": [
+						{
+							"name": "Международный уровень",
+							"points": [50],
+							"method": "NORMAL"
+						},
+						{
+							"name": "Республиканский уровень",
+							"points": [30,40],
+							"method": "MEASURING"
+						}
+					],
+					"bonus_criteria": []
+				}
+			]
+		},
+		"text": "",
+		"links": []
+	}
+}
+```
+
+**response 200**
+
+```json
+{
+	"id": "uuid",
+	"status": "DRAFT",
+	"methodist": {
+		"UUID": "550e8400-e29b-41d4-a716-446655440000",
+		"Valid": true
+	},
+	"total_points": 80,
+	"type": {
+		"name": "Участие в конференции",
+		"variants": [
+			{
+				"name": "Докладчик",
+				"description": "Участие в качестве докладчика на конференции",
+				"criteria": [
+					{
+						"name": "Международный уровень",
+						"points": [50],
+						"method": "NORMAL"
+					},
+					{
+						"name": "Республиканский уровень",
+						"points": [30,40],
+						"method": "MEASURING"
+					}
+				],
+				"bonus_criteria": []
+			}
+		]
+	},
+	"text": "",
+	"links": [],
+	"document": "path/to/file/in/minio"
+}
+```
+
+**response 300**
+
+```json
+{ "error": "invalid data" }
+```
+
+### POST `/awards/old`
 
 **headers**
 

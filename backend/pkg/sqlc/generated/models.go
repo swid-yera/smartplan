@@ -56,49 +56,6 @@ func (ns NullAwardsStatus) Value() (driver.Value, error) {
 	return string(ns.AwardsStatus), nil
 }
 
-type CriteriaMethodEnum string
-
-const (
-	CriteriaMethodEnumNORMAL    CriteriaMethodEnum = "NORMAL"
-	CriteriaMethodEnumMEASURING CriteriaMethodEnum = "MEASURING"
-	CriteriaMethodEnumPENALTY   CriteriaMethodEnum = "PENALTY"
-)
-
-func (e *CriteriaMethodEnum) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = CriteriaMethodEnum(s)
-	case string:
-		*e = CriteriaMethodEnum(s)
-	default:
-		return fmt.Errorf("unsupported scan type for CriteriaMethodEnum: %T", src)
-	}
-	return nil
-}
-
-type NullCriteriaMethodEnum struct {
-	CriteriaMethodEnum CriteriaMethodEnum `json:"criteria_method_enum"`
-	Valid              bool               `json:"valid"` // Valid is true if CriteriaMethodEnum is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullCriteriaMethodEnum) Scan(value interface{}) error {
-	if value == nil {
-		ns.CriteriaMethodEnum, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.CriteriaMethodEnum.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullCriteriaMethodEnum) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.CriteriaMethodEnum), nil
-}
-
 type DisciplineTopicType string
 
 const (
@@ -140,6 +97,48 @@ func (ns NullDisciplineTopicType) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.DisciplineTopicType), nil
+}
+
+type EnumCriteriaMethod string
+
+const (
+	EnumCriteriaMethodNORMAL    EnumCriteriaMethod = "NORMAL"
+	EnumCriteriaMethodMEASURING EnumCriteriaMethod = "MEASURING"
+)
+
+func (e *EnumCriteriaMethod) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = EnumCriteriaMethod(s)
+	case string:
+		*e = EnumCriteriaMethod(s)
+	default:
+		return fmt.Errorf("unsupported scan type for EnumCriteriaMethod: %T", src)
+	}
+	return nil
+}
+
+type NullEnumCriteriaMethod struct {
+	EnumCriteriaMethod EnumCriteriaMethod `json:"enum_criteria_method"`
+	Valid              bool               `json:"valid"` // Valid is true if EnumCriteriaMethod is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullEnumCriteriaMethod) Scan(value interface{}) error {
+	if value == nil {
+		ns.EnumCriteriaMethod, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.EnumCriteriaMethod.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullEnumCriteriaMethod) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.EnumCriteriaMethod), nil
 }
 
 type RupsStatus string
@@ -319,12 +318,15 @@ type Award struct {
 	Status      AwardsStatus       `json:"status"`
 	Reason      pgtype.Text        `json:"reason"`
 	Methodist   pgtype.UUID        `json:"methodist"`
+	Teacher     uuid.UUID          `json:"teacher"`
 	TotalPoints int32              `json:"total_points"`
-	Violation   ViolationEnum      `json:"violation"`
 	Type        pgtype.UUID        `json:"type"`
+	Variant     pgtype.UUID        `json:"variant"`
+	Criteria    pgtype.UUID        `json:"criteria"`
+	Variants    []uuid.UUID        `json:"variants"`
 	Text        pgtype.Text        `json:"text"`
 	Images      []string           `json:"images"`
-	Documents   []string           `json:"documents"`
+	Document    pgtype.Text        `json:"document"`
 	Links       []string           `json:"links"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
@@ -337,20 +339,18 @@ type AwardType struct {
 }
 
 type AwardTypeCriterium struct {
-	ID          uuid.UUID              `json:"id"`
-	Name        string                 `json:"name"`
-	Points      pgtype.Int4            `json:"points"`
-	Method      NullCriteriaMethodEnum `json:"method"`
-	BonusName   pgtype.Text            `json:"bonus_name"`
-	BonusPoints pgtype.Int4            `json:"bonus_points"`
-	BonusMethod NullCriteriaMethodEnum `json:"bonus_method"`
+	ID     uuid.UUID              `json:"id"`
+	Name   string                 `json:"name"`
+	Points []int32                `json:"points"`
+	Method NullEnumCriteriaMethod `json:"method"`
 }
 
 type AwardTypeVariant struct {
-	ID          uuid.UUID   `json:"id"`
-	Name        string      `json:"name"`
-	Description pgtype.Text `json:"description"`
-	Criteria    []uuid.UUID `json:"criteria"`
+	ID            uuid.UUID   `json:"id"`
+	Name          string      `json:"name"`
+	Description   pgtype.Text `json:"description"`
+	Criteria      []uuid.UUID `json:"criteria"`
+	Bonuscriteria []uuid.UUID `json:"bonuscriteria"`
 }
 
 type DisciplineSemester struct {
@@ -437,6 +437,7 @@ type User struct {
 	Rups              []string           `json:"rups"`
 	TotalPoints       int32              `json:"total_points"`
 	Awards            []string           `json:"awards"`
+	Violation         ViolationEnum      `json:"violation"`
 	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
 	LastSeenAt        pgtype.Timestamptz `json:"last_seen_at"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`

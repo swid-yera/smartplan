@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_rVept5gfSn
 createdAt: 2025-12-20T14:23:14.553165400
-updatedAt: 2025-12-20T14:23:30.024336200
+updatedAt: 2026-01-14T11:05:42.060574300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_cC5D8rXnWh
 authentication: {}
@@ -16,8 +16,16 @@ headers:
   name: Content-Type
   value: application/json
   id: hapc05uK5j
+- enabled: false
+  name: X-API-KEY
+  value: ZI32IzUIRFLh1EgCd6sAML6uzp3yIZtK
+  id: 77TpTUmdaY
+- enabled: true
+  name: ''
+  value: ''
+  id: XKM3YaR5k3
 method: DELETE
 name: cleanup
 sortPriority: -1763638414426.999
-url: http://localhost:8000/cleanup
+url: http://192.168.49.16:8000/cleanup
 urlParameters: []

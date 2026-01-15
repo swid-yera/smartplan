@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_UGzRzai8Bc
+createdAt: 2026-01-13T03:16:46.890644700
+updatedAt: 2026-01-14T14:32:59.177585400
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_fh7jNUikxF
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ""
+headers:
+  - enabled: true
+    name: Cookie
+    value: sid=53a6f809-8686-44ef-8035-af1c0d288b56
+    id: f0amvc7qTR
+  - enabled: true
+    name: ""
+    value: ""
+    id: yPKQ25EuMA
+method: GET
+name: localhost:8080/api/awards/
+sortPriority: -0.0001
+url: http://localhost:8080/api/awards/
+urlParameters: []

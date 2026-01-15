@@ -13,6 +13,8 @@ type Router struct {
 	auth                  *AuthHandler
 	user                  *UserHandler
 	rup                   *RupHandler
+	award                 *AwardHandler // Added
+	groups                *GroupsHandler
 	webhooks              *WebhooksHandler
 	sessionAuthMiddleware gin.HandlerFunc
 }
@@ -21,6 +23,8 @@ func NewRouter(
 	auth *AuthHandler,
 	user *UserHandler,
 	rup *RupHandler,
+	award *AwardHandler, // Added
+	groups *GroupsHandler,
 	webhooks *WebhooksHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
 ) *Router {
@@ -28,6 +32,8 @@ func NewRouter(
 		auth:                  auth,
 		user:                  user,
 		rup:                   rup,
+		award:                 award, // Added
+		groups:                groups,
 		webhooks:              webhooks,
 		sessionAuthMiddleware: sessionAuthMiddleware,
 	}
@@ -36,19 +42,15 @@ func NewRouter(
 func (r *Router) Init() *gin.Engine {
 	engine := gin.New()
 
-	// стандартные middleware (без gin.Default(), чтобы не было дублей)
 	engine.Use(gin.Logger())
 	engine.Use(gin.Recovery())
 
-	// чтобы убрать warning "trusted all proxies"
 	_ = engine.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 
-	// healthcheck (удобно)
 	engine.GET("/healthz", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
 
-	// CORS (обычно нужен только фронт)
 	engine.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -57,39 +59,56 @@ func (r *Router) Init() *gin.Engine {
 		MaxAge:           12 * 3600,
 	}))
 
-	// ваш middleware
 	engine.Use(middleware.ValidateRequestHeaders())
 
 	// --- AUTH ---
-	// Оставляем и /login (чтобы как сейчас в браузере не было 404),
-	// и /auth/login (более “чистый” вариант)
 	engine.GET("/login", r.auth.Login)
 	engine.GET("/callback", middleware.ValidateQueryParams("code"), r.auth.Callback)
 	engine.GET("/logout", r.auth.Logout)
 
-	auth := middleware.SessionAuth(r.user.userService)
-
 	// --- API ---
 	api := engine.Group("/api")
-	api.Use(auth)
+	api.Use(r.sessionAuthMiddleware) // Use the field from struct
 	{
 		api.GET("/me", r.user.GetMe)
 		api.GET("/users", r.user.GetAllUsers)
 		api.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 
 		// RUP routes
-		api.POST("/rups", r.sessionAuthMiddleware, r.rup.CreateRup)
-		api.GET("/rups", r.rup.GetAllRups)
-		api.GET("/rups/:id", r.rup.GetRupByID)
-		api.PUT("/rups/:id/status", r.rup.UpdateRupStatus)
-		api.DELETE("/rups/:id", r.rup.DeleteRup)
-		api.GET("/rups/methodist/:id", r.rup.GetRupsByMethodist)
+		rups := api.Group("/rups")
+		{
+			rups.POST("/", r.rup.CreateRup)
+			rups.GET("/", r.rup.GetAllRups)
+			rups.GET("/:id", r.rup.GetRupByID)
+			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
+			rups.DELETE("/:id", r.rup.DeleteRup)
+			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
+			rups.GET("/:id/download", r.rup.DownloadRup)
+		}
+
+		// --- AWARD ROUTES ---
+		awards := api.Group("/awards")
+		{
+			// POST /api/awards/
+			awards.POST("/", r.award.CreateAward)
+			awards.GET("/", r.award.GetAllAwards)
+			awards.GET("/:id", r.award.GetAwardByID)
+			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
+			awards.DELETE("/:id", r.award.DeleteAward)
+			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
+		}
+
+		groups := api.Group("/groups")
+		{
+			groups.GET("", r.groups.GetAllGroups)
+			groups.POST("/sync", r.groups.SyncGroups) // ⚠ protected
+		}
 	}
 
 	// --- WEBHOOKS ---
-	webhooks := engine.Group("/webhooks")
+	webhooksGroup := engine.Group("/webhooks")
 	{
-		webhooks.POST("/keycloak", r.webhooks.KeycloakWebhook)
+		webhooksGroup.POST("/keycloak", r.webhooks.KeycloakWebhook)
 	}
 
 	return engine

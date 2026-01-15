@@ -14,23 +14,36 @@ import (
 type Querier interface {
 	CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error)
 	CreateAwardType(ctx context.Context, arg CreateAwardTypeParams) (AwardType, error)
+	CreateAwardTypeCriteria(ctx context.Context, arg CreateAwardTypeCriteriaParams) (AwardTypeCriterium, error)
+	CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTypesVariantParams) (AwardTypeVariant, error)
 	CreateDisciplineSemester(ctx context.Context, arg CreateDisciplineSemesterParams) (DisciplineSemester, error)
 	CreateDisciplineTopic(ctx context.Context, arg CreateDisciplineTopicParams) (DisciplineTopic, error)
+	CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error)
 	CreateRupDiscipline(ctx context.Context, arg CreateRupDisciplineParams) (RupDiscipline, error)
 	CreateRupExplorationNote(ctx context.Context, arg CreateRupExplorationNoteParams) (RupExplorationNote, error)
 	CreateRupResource(ctx context.Context, arg CreateRupResourceParams) (RupResource, error)
 	CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteAward(ctx context.Context, id uuid.UUID) error
+	DeleteGroupsNotInKeycloak(ctx context.Context, dollar_1 []uuid.UUID) error
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
+	GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCriterium, error)
+	GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error)
 	GetAllAwardTypes(ctx context.Context) ([]AwardType, error)
+	GetAllAwards(ctx context.Context) ([]Award, error)
 	GetAllDisciplineTopics(ctx context.Context) ([]DisciplineTopic, error)
+	GetAllGroups(ctx context.Context) ([]Group, error)
 	GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, error)
 	GetAllRupResources(ctx context.Context) ([]RupResource, error)
 	GetAllRups(ctx context.Context) ([]Rup, error)
 	GetAllUsers(ctx context.Context) ([]User, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
+	GetAwardTypeByID(ctx context.Context, id uuid.UUID) (AwardType, error)
+	GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (AwardTypeCriterium, error)
+	GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error)
+	GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error)
 	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
 	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error)
@@ -41,12 +54,14 @@ type Querier interface {
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
+	UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTypeVariantsParams) (AwardType, error)
 	UpdateRupResource(ctx context.Context, arg UpdateRupResourceParams) error
 	UpdateRupsStatus(ctx context.Context, arg UpdateRupsStatusParams) error
 	UpdateUserLastSeenAt(ctx context.Context, arg UpdateUserLastSeenAtParams) error
 	UpdateUserPasswordChangedAt(ctx context.Context, arg UpdateUserPasswordChangedAtParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error
 	UpdateUserRoles(ctx context.Context, arg UpdateUserRolesParams) error
+	UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error)
 }
 
 var _ Querier = (*Queries)(nil)
