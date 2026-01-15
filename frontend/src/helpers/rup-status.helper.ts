@@ -1,17 +1,19 @@
 import type { RupModuleStatus } from '@types'
 
-export const statusLabels: Record<RupModuleStatus, string> = {
+export const rupStatusLabels: Record<RupModuleStatus, string> = {
 	DRAFT: 'Черновик',
 	IN_REVIEW: 'На согласовании',
 	APPROVED: 'Утверждён',
+	REJECTED: 'Отклонен',
 }
 
-export const statusVariants: Record<string, 'default' | 'destructive' | 'outline' | 'secondary'> = {
-	DRAFT: 'secondary',
-	IN_REVIEW: 'default',
+export const rupStatusVariants: Record<RupModuleStatus, 'default' | 'destructive' | 'outline' | 'secondary'> = {
+	DRAFT: 'outline',
+	IN_REVIEW: 'secondary',
 	APPROVED: 'default',
+	REJECTED: 'destructive',
 }
 
-export const statusEnumToString = (status: RupModuleStatus): string => {
-	return statusLabels[status]
+export const normalizeRupStatusEnum = (status: RupModuleStatus): string => {
+	return rupStatusLabels[status]
 }

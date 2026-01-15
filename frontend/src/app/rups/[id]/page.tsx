@@ -1,77 +1,26 @@
 'use client'
 
-import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { type FC, useEffect, useState } from 'react'
 
 import Link from 'next/link'
-import { notFound, useParams, useRouter } from 'next/navigation'
+import { notFound, useParams } from 'next/navigation'
 
-import { statusLabels, statusVariants } from '@helpers'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { deleteRupModuleById, getRupModuleById, updateRupModule } from '@services'
+import { getRupModuleById, updateRupModule } from '@services'
+import { RoleSwitcher } from '@store'
 import { type IRupModule, RupModuleStatus } from '@types'
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	Badge,
-	Button,
-	Heading,
-	Spinner,
-	buttonVariants,
-} from '@ui'
-import { ArrowLeft } from 'lucide-react'
-import { FormProvider, useForm } from 'react-hook-form'
+import { Button, Spinner } from '@ui'
+import { FileDown } from 'lucide-react'
 import { toast } from 'sonner'
 
-import {
-	BasicDataCard,
-	ContactsCard,
-	DisciplineCard,
-	ExplorationNoteCard,
-	GoalsCard,
-	GroupCard,
-	ResourceListCard,
-	TopicsCard,
-} from '../components'
-import { type RUPFormData, formSchema } from '../create/form-schema'
-import { groupData } from '../create/mock.data'
+import useUserRoleStore from '../../../store/user-role.store'
 import { mockRupModules } from '../mock.data'
-import RupView from './rup-view'
-
-const defaultValues: RUPFormData = {
-	title: '',
-	type: '',
-	studyForm: '',
-	explorationNote: '',
-	goals: '',
-	prerequisites: '',
-	postrequisites: '',
-	year: '',
-	groupId: '',
-	contacts: [],
-	internetResources: [],
-	technicalResources: [],
-	disciplines: [],
-}
+import { RupView } from './rup-view'
 
 const Page: FC = () => {
 	const params = useParams<{ id: string }>()
-	const router = useRouter()
-	const [rupData, setRupData] = useState<IRupModule | null>(mockRupModules[0])
+	const [rupData, setRupData] = useState<IRupModule | null>(mockRupModules[2])
 	const [loading, setLoading] = useState(false)
-	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-
-	const methods = useForm<RUPFormData>({
-		resolver: zodResolver(formSchema),
-		mode: 'onChange',
-		shouldUnregister: false,
-		defaultValues,
-	})
+	const { role } = useUserRoleStore()
 
 	// fetch rup
 	useEffect(() => {
@@ -87,57 +36,36 @@ const Page: FC = () => {
 		} else {
 			console.log(data)
 			setRupData(data)
-			methods.reset({ ...data, groupId: data.group?.id })
 		}
 		setLoading(false)
 	}
 
-	const onSubmit = (data: RUPFormData) => {
-		const newData = {
-			...data,
-			id: params.id,
-			status: rupData?.status ?? RupModuleStatus.DRAFT,
-			group: groupData.find((g) => g.id === data.groupId),
-		}
-
-		toast.loading('Сохранение данных...', { id: 'rup-update' })
-
-		const result = updateRupModule(newData)
-
-		result.then((res) => {
-			if (!res) {
-				toast.error('Произошла ошибка при сохранении данных', { id: 'rup-update' })
-
-				return
-			}
-
-			toast.success('Данные успешно сохранены!', { id: 'rup-update' })
-			methods.reset({ ...res, groupId: res.group?.id })
-		})
-	}
-
-	const handleDelete = async () => {
+	const handleStatusChange = async (newStatus: RupModuleStatus) => {
 		if (!rupData) return
 
-		toast.loading('Удаление РУП...', { id: 'rup-delete' })
+		const toastId = `rup-status-update-${newStatus}`
 
-		const result = await deleteRupModuleById(rupData.id)
+		toast.loading('Изменение статуса...', { id: toastId })
+
+		// In a real app, this might be a dedicated endpoint like `updateRupStatus(id, newStatus)`
+		const updatedRup = { ...rupData, status: newStatus }
+		const result = await updateRupModule(updatedRup)
 
 		if (result) {
-			toast.success('РУП успешно удален!', { id: 'rup-delete' })
-			router.push('/rups')
+			toast.success('Статус успешно изменен!', { id: toastId })
+			// Refetch or update state to reflect the change
+			setRupData(result)
 		} else {
-			toast.error('Произошла ошибка при удалении', { id: 'rup-delete' })
+			toast.error('Произошла ошибка при изменении статуса', { id: toastId })
 		}
-
-		// Close the dialog regardless of the outcome
-		setIsDeleteDialogOpen(false)
 	}
 
-	const handleKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {
-		if (e.key === 'Enter' && (e.target as HTMLElement).tagName.toLowerCase() === 'input') {
-			e.preventDefault()
-		}
+	const onDownload = () => {
+		toast.promise(() => new Promise((resolve) => setTimeout(() => resolve({ name: 'Event' }), 2000)), {
+			loading: 'Загрузка...',
+			success: (data) => `${data} has been created`,
+			error: 'Error',
+		})
 	}
 
 	// render
@@ -149,129 +77,34 @@ const Page: FC = () => {
 		notFound()
 	}
 
-	const isReadOnly = useMemo(
-		() => rupData.status === RupModuleStatus.APPROVED || rupData.status === RupModuleStatus.IN_REVIEW,
-		[rupData.status],
-	)
-
-	if (isReadOnly) {
-		return <RupView data={rupData} />
-	}
+	const canEdit = role === 'TEACHER' && rupData.status === RupModuleStatus.DRAFT
+	const canDownload = rupData.status === RupModuleStatus.APPROVED
 
 	return (
-		<FormProvider {...methods}>
-			<form
-				className='w-full mx-auto px-4 py-6 space-y-4'
-				onKeyDown={handleKeyDown}
-				onSubmit={methods.handleSubmit(onSubmit)}
-			>
-				{/* Back button and heading */}
-				<div className='flex items-center gap-4'>
-					<Button asChild size='icon' type='button' variant='outline'>
-						<Link href='/rups'>
-							<ArrowLeft />
-						</Link>
-					</Button>
+		<>
+			<RoleSwitcher />
 
-					<div className='w-full'>
-						<Heading align='left' size='h1'>
-							{rupData.title || 'Рабочий учебный план'}{' '}
-							<Badge variant={statusVariants[rupData.status] ?? 'outline'}>
-								{!rupData.status ? statusLabels[RupModuleStatus.DRAFT] : statusLabels[rupData.status]}
-							</Badge>
-						</Heading>
-						<p className='text-muted-foreground'>Просмотр и редактирование рабочего учебного плана.</p>
-					</div>
-
-					<div className='flex gap-4 justify-end'>
-						<Button size='lg' type='button' variant='outline' onClick={() => setIsDeleteDialogOpen(true)}>
-							Удалить
-						</Button>
-
-						<Button size='lg' type='submit' variant='default'>
-							Сохранить
-						</Button>
-					</div>
-				</div>
-
-				{/* content */}
-				<div className='w-full space-y-5'>
-					{/* basic data and exploration note cards */}
-					<div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)]'>
-						<BasicDataCard />
-
-						<GroupCard />
-					</div>
-
-					{/* goals and group cards */}
-					<div className='grid gap-4 md:grid-cols-2'>
-						<GoalsCard />
-
-						<ExplorationNoteCard />
-					</div>
-
-					<ContactsCard />
-
-					{/* resource card */}
-					<div className='grid md:grid-cols-2 gap-4'>
-						{/* internet  */}
-						<ResourceListCard
-							buttonText='Добавить ресурс'
-							description={
-								<>
-									Введите список ресурсов откуда был взят материал, <u>ресурс должен быть не старше 5 лет</u>
-								</>
-							}
-							label='Учебно-методический ресурсы'
-							name='internetResources'
-							placeholder='Откуда был взят материал для учебного плана'
-							title='Учебно-методическое оснащение, справочная литература/интернет-ресурсы'
-						/>
-
-						{/* technical */}
-						<ResourceListCard
-							buttonText='Добавить материал'
-							description='Введите список технических средств которые обязательны для учебного плана'
-							label='Технические средства и материалы'
-							name='technicalResources'
-							placeholder='Что нужно при прохождении учебного плана'
-							title='Технические средства и материалы'
-						/>
-					</div>
-
-					<DisciplineCard />
-
-					<TopicsCard />
-				</div>
-
-				{/* submit */}
-				<div className='flex justify-end gap-4 '>
-					<Button size='lg' type='button' variant='outline' onClick={() => setIsDeleteDialogOpen(true)}>
-						Удалить
-					</Button>
-
-					<Button size='lg' type='submit' variant='default'>
-						Сохранить изменения
-					</Button>
-				</div>
-			</form>
-			<AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-						<AlertDialogDescription>
-							Это действие невозможно отменить. Это приведет к необратимому удалению рабочего учебного плана.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Отмена</AlertDialogCancel>
-						<AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={handleDelete}>
-							Удалить
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
-		</FormProvider>
+			<RupView
+				actions={
+					<>
+						{canEdit && (
+							<Button asChild size='lg'>
+								<Link href={`/rups/${params.id}/edit`}>Редактировать</Link>
+							</Button>
+						)}
+						{canDownload && (
+							<Button size='lg' variant='outline' onClick={onDownload}>
+								<FileDown className='mr-2 h-4 w-4' />
+								Скачать файл
+							</Button>
+						)}
+					</>
+				}
+				data={rupData}
+				role={role}
+				onStatusChange={handleStatusChange}
+			/>
+		</>
 	)
 }
 

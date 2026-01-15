@@ -23,9 +23,10 @@ import { Filter } from 'lucide-react'
 
 interface IProps {
 	className?: string
+	role: string
 }
 
-export const FilterCard: FC<IProps> = ({ className }) => {
+export const FilterCard: FC<IProps> = ({ className, role }) => {
 	const searchParams = useSearchParams()
 	const q = (searchParams.get('q') ?? '').toLowerCase().trim()
 	const statusFilter = searchParams.get('status') ?? 'ALL'
@@ -46,7 +47,13 @@ export const FilterCard: FC<IProps> = ({ className }) => {
 					<div className='grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_repeat(3,minmax(0,1fr))_auto]'>
 						<div className='space-y-1'>
 							<Label>Поиск</Label>
-							<Input defaultValue={q} name='q' placeholder='Наименование, специальность...' />
+							<Input
+								defaultValue={q}
+								name='q'
+								placeholder={
+									role == 'TEACHER' ? 'Наименование, специальность...' : 'Наименование, специальность, имя...'
+								}
+							/>
 						</div>
 
 						<div className='space-y-1'>

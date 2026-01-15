@@ -1,4 +1,4 @@
-import { Award, BookOpen, Headset, LayoutDashboard, PenIcon, Table2Icon, University } from 'lucide-react'
+import { Award, BookOpen, Headset, LayoutDashboard, PenIcon, University } from 'lucide-react'
 
 export const navMain = [
 	{
@@ -12,7 +12,7 @@ export const navMain = [
 		icon: PenIcon,
 	},
 	{
-		title: 'Уроки',
+		title: 'Поурочный план',
 		url: '/subjects',
 		icon: BookOpen,
 	},
@@ -20,11 +20,6 @@ export const navMain = [
 		title: 'KPI',
 		url: '/kpi',
 		icon: Award,
-	},
-	{
-		title: 'Расписание',
-		url: '/timetable',
-		icon: Table2Icon,
 	},
 	{
 		title: 'Преподаватели',
