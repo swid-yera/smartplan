@@ -127,7 +127,7 @@ func main() {
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
 
 	// Ensure your NewRouter signature matches: (auth, user, rup, award, middleware)
-	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, nil, groupsHandler, sessionAuthMiddleware)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, groupsHandler, nil, sessionAuthMiddleware)
 	engine := router.Init()
 
 	port := getEnv("PORT", "8080")

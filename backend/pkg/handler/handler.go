@@ -83,6 +83,7 @@ func (r *Router) Init() *gin.Engine {
 			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
 			rups.DELETE("/:id", r.rup.DeleteRup)
 			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
+			rups.GET("/:id/download", r.rup.DownloadRup)
 		}
 
 		// --- AWARD ROUTES ---
@@ -99,8 +100,8 @@ func (r *Router) Init() *gin.Engine {
 
 		groups := api.Group("/groups")
 		{
-			groups.GET("", r.groups.GetAll)
-			groups.POST("/sync", r.groups.Sync) // ⚠ protected
+			groups.GET("", r.groups.GetAllGroups)
+			groups.POST("/sync", r.groups.SyncGroups) // ⚠ protected
 		}
 	}
 
