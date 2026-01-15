@@ -2,6 +2,8 @@
 
 import React from 'react'
 
+import { cn } from '@lib'
+import { RupModuleTypeEnum, StudyFormEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -23,7 +25,6 @@ import {
 	Input,
 	Popover,
 	PopoverContent,
-	// This component is not used in the file
 	PopoverTrigger,
 	Select,
 	SelectContent,
@@ -34,12 +35,9 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@ui'
-import { Check, ChevronsUpDown, Info } from 'lucide-react'
+import { Check, ChevronsUpDown, Info, RotateCcw } from 'lucide-react'
 import type { FieldValues, Path, PathValue } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'
-
-import { cn } from '@/lib'
-import { RupModuleTypeEnum, StudyFormEnum } from '@/shared/types'
 
 // Define a base shape for the form data that this component needs.
 // Any form passed to this component must have at least these fields.
@@ -51,8 +49,19 @@ type BasicDataValues = FieldValues & {
 	postrequisites?: string
 }
 
+const ChangeIndicator = ({ onReset }: { onReset: () => void }) => (
+	<button
+		className='ml-2 p-0.5 rounded-full text-sky-500 hover:bg-sky-100'
+		title='Сбросить изменение'
+		type='button'
+		onClick={onReset}
+	>
+		<RotateCcw className='h-3 w-3' />
+	</button>
+)
+
 export function BasicDataCard<T extends BasicDataValues>() {
-	const form = useFormContext<T>()
+	const { control, formState, resetField } = useFormContext<T>()
 
 	return (
 		<Card>
@@ -63,11 +72,16 @@ export function BasicDataCard<T extends BasicDataValues>() {
 
 			<CardContent className='space-y-3 text-sm'>
 				<FormField
-					control={form.control}
+					control={control}
 					name={'title' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Наименование модуля</FormLabel>
+							<FormLabel className='flex items-center'>
+								Наименование модуля
+								{formState.dirtyFields.title && (
+									<ChangeIndicator onReset={() => resetField('title' as Path<T>)} />
+								)}
+							</FormLabel>
 							<FormControl>
 								<Input placeholder='Введите называние модуля' {...field} />
 							</FormControl>
@@ -78,14 +92,17 @@ export function BasicDataCard<T extends BasicDataValues>() {
 
 				<div className='grid grid-cols-2 gap-5'>
 					<FormField
-						control={form.control}
+						control={control}
 						name={'type' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>
+								<FormLabel className='flex items-center'>
 									Тип модуля
+									{formState.dirtyFields.type && (
+										<ChangeIndicator onReset={() => resetField('type' as Path<T>)} />
+									)}
 									<Tooltip>
-										<TooltipTrigger type='button'>
+										<TooltipTrigger className='ml-1' type='button'>
 											<Info size='14' />
 										</TooltipTrigger>
 										<TooltipContent side='top'>
@@ -128,11 +145,16 @@ export function BasicDataCard<T extends BasicDataValues>() {
 					/>
 
 					<FormField
-						control={form.control}
+						control={control}
 						name={'studyForm' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Форма обучения</FormLabel>
+								<FormLabel className='flex items-center'>
+									Форма обучения
+									{formState.dirtyFields.studyForm && (
+										<ChangeIndicator onReset={() => resetField('studyForm' as Path<T>)} />
+									)}
+								</FormLabel>
 								<FormControl>
 									<Select value={field.value ?? ''} onValueChange={field.onChange}>
 										<SelectTrigger className='w-full'>
@@ -181,20 +203,23 @@ const modules = [
 ]
 
 function RequisiteField<T extends BasicDataValues>({ type, label }: RequisiteFieldProps<T>) {
-	const form = useFormContext<T>()
+	const { control, watch, setValue, formState, resetField } = useFormContext<T>()
 	const [open, setOpen] = React.useState(false)
 
-	const otherValue = form.watch(type as Path<T>)
+	const otherValue = watch(type as Path<T>)
 
 	const availableModules = modules.filter((module) => module.value !== otherValue)
 
 	return (
 		<FormField
-			control={form.control}
+			control={control}
 			name={type as Path<T>}
 			render={({ field }) => (
 				<FormItem className='flex flex-col'>
-					<FormLabel>{label}</FormLabel>
+					<FormLabel className='flex items-center'>
+						{label}
+						{formState.dirtyFields[type] && <ChangeIndicator onReset={() => resetField(type as Path<T>)} />}
+					</FormLabel>
 					<Popover open={open} onOpenChange={setOpen}>
 						<PopoverTrigger asChild>
 							<FormControl>
@@ -221,7 +246,7 @@ function RequisiteField<T extends BasicDataValues>({ type, label }: RequisiteFie
 												key={module.value}
 												value={module.label}
 												onSelect={() => {
-													form.setValue(type as Path<T>, module.value as PathValue<T, Path<T>>)
+													setValue(type as Path<T>, module.value as PathValue<T, Path<T>>)
 													setOpen(false)
 												}}
 											>

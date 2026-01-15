@@ -26,6 +26,7 @@ export function NavMain({
 		url: string
 		icon: LucideIcon
 		isActive?: boolean
+		disabled?: boolean
 		items?: {
 			title: string
 			url: string

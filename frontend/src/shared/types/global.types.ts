@@ -1,4 +1,4 @@
-import type { AwardViolationEnum, IAward } from './awards.types'
+import type { AwardViolationEnum, IAward } from './award.types'
 import type { IRupModule } from './rup.types'
 
 export interface IGroup {

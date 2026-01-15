@@ -2,6 +2,7 @@
 
 import React from 'react'
 
+import { formatCourseFromYearAndGroupName } from '@helpers'
 import { cn } from '@lib'
 import {
 	Button,
@@ -32,8 +33,6 @@ import {
 } from '@ui'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
-
-import { formatCourseFromYearAndGroupName } from '@/helpers'
 
 import { groupData } from '../create/mock.data'
 

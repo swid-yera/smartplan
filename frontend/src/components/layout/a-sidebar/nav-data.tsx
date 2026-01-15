@@ -1,20 +1,10 @@
-import {
-	Award,
-	BookOpen,
-	CircleQuestionMark,
-	Headset,
-	LayoutDashboard,
-	PenIcon,
-	Table2Icon,
-	University,
-} from 'lucide-react'
+import { Award, BookOpen, Headset, LayoutDashboard, PenIcon, University } from 'lucide-react'
 
 export const navMain = [
 	{
 		title: 'Панель управления',
 		url: '/dashboard',
 		icon: LayoutDashboard,
-		isActive: true,
 	},
 	{
 		title: 'Модули РУП',
@@ -22,19 +12,14 @@ export const navMain = [
 		icon: PenIcon,
 	},
 	{
-		title: 'Уроки',
+		title: 'Поурочный план',
 		url: '/subjects',
 		icon: BookOpen,
 	},
 	{
-		title: 'Награды',
-		url: '/awards',
+		title: 'KPI',
+		url: '/kpi',
 		icon: Award,
-	},
-	{
-		title: 'Расписание',
-		url: '/timetable',
-		icon: Table2Icon,
 	},
 	{
 		title: 'Преподаватели',
@@ -45,12 +30,7 @@ export const navMain = [
 
 export const navFooter = [
 	{
-		title: 'FAQ',
-		url: '/faq',
-		icon: CircleQuestionMark,
-	},
-	{
-		title: 'связь с поддержкой',
+		title: 'Поддержка',
 		url: '/support',
 		icon: Headset,
 	},
