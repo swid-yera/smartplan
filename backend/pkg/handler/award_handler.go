@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
 
 	"eduplan/backend/pkg/middleware"
@@ -48,47 +46,47 @@ func parseUUID(s string) uuid.UUID {
 	return parsed
 }
 
-func (h *AwardHandler) CreateAward(c *gin.Context) {
-	// Получаем пользователя из контекста, установленного middleware
-	userInterface, exists := c.Get(middleware.ContextUserKey)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-		return
-	}
+// // --- awards
+// func (h *AwardHandler) CreateAward(c *gin.Context) {
+// 	// Получаем пользователя из контекста, установленного middleware
+// 	userInterface, exists := c.Get(middleware.ContextUserKey)
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+// 		return
+// 	}
 
-	// Преобразуем в *storage.User
-	currentUser, ok := userInterface.(*storage.User)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
-		return
-	}
+// 	// Преобразуем в *storage.User
+// 	currentUser, ok := userInterface.(*storage.User)
+// 	if !ok {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+// 		return
+// 	}
 
-	// 1. Parse File from multipart form
-	file, header, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
-		return
-	}
-	defer file.Close()
+// 	// 1. Parse File from multipart form
+// 	file, header, err := c.Request.FormFile("file")
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+// 		return
+// 	}
+// 	defer file.Close()
 
-	// 2. Parse Other Fields and map to SQLC params
-	params := storage.CreateAwardParams{
-		Status:    storage.AwardsStatus(c.PostForm("status")),
-		Methodist: parseUUIDPgtype(c.PostForm("methodist")),
-		Teacher:   currentUser.KeycloakID, // Используем ID текущего пользователя (преподавателя)
-		Type:      parseUUIDPgtype(c.PostForm("type")),
-	}
+// 	// 2. Parse Other Fields and map to SQLC params
+// 	params := storage.CreateAwardParams{
+// 		Status:  storage.AwardsStatus(c.PostForm("status")),
+// 		Teacher: currentUser.KeycloakID, // Используем ID текущего пользователя (преподавателя)
+// 		Type:    parseUUIDPgtype(c.PostForm("type")),
+// 	}
 
-	// 3. Call Service layer
-	// It handles MinIO upload + DB record creation
-	award, err := h.service.CreateAwardWithFile(c.Request.Context(), &params, file, header.Size, header.Filename)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+// 	// 3. Call Service layer
+// 	// It handles MinIO upload + DB record creation
+// 	award, err := h.service.CreateAwardWithFile(c.Request.Context(), &params, file, header.Size, header.Filename)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
 
-	c.JSON(http.StatusCreated, award)
-}
+// 	c.JSON(http.StatusCreated, award)
+// }
 
 func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 	awards, err := h.service.GetAllAwards(c.Request.Context())
@@ -124,8 +122,9 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status storage.AwardsStatus `json:"status"`
-		Reason pgtype.Text          `json:"reason"`
+		Status    storage.AwardsStatus `json:"status"`
+		Reason    pgtype.Text          `json:"reason"`
+		Methodist pgtype.UUID          `json:"methodist"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -134,9 +133,10 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	}
 
 	params := storage.UpdateAwardStatusParams{
-		ID:     id,
-		Status: req.Status,
-		Reason: req.Reason,
+		ID:        id,
+		Status:    req.Status,
+		Reason:    req.Reason,
+		Methodist: req.Methodist,
 	}
 
 	award, err := h.service.UpdateAwardStatus(c.Request.Context(), params)
@@ -207,30 +207,11 @@ func (h *AwardHandler) CreateAwardWithTypes(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
 		return
 	}
-	// Parse JSON data from form field
-	dataStr := c.PostForm("data")
-	if dataStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
-		return
-	}
 
 	var params service.CreateAwardWithTypesParams
-	if err := json.Unmarshal([]byte(dataStr), &params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON in data field"})
+	if err := c.ShouldBindJSON(&params); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
 		return
-	}
-
-	// Parse optional file
-	file, header, err := c.Request.FormFile("file")
-	if err == nil {
-		defer file.Close()
-		// Upload file and set document
-		objectKey, uploadErr := h.service.UploadFile(c.Request.Context(), header.Filename, file, header.Size)
-		if uploadErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": uploadErr.Error()})
-			return
-		}
-		params.Document = pgtype.Text{String: objectKey, Valid: true}
 	}
 
 	award, err := h.service.CreateAwardWithTypes(c.Request.Context(), currentUser.KeycloakID, &params)
@@ -242,60 +223,115 @@ func (h *AwardHandler) CreateAwardWithTypes(c *gin.Context) {
 	c.JSON(http.StatusCreated, award)
 }
 
-func (h *AwardHandler) CreateAwardWithFileAndData(c *gin.Context) {
-	// Получаем пользователя из контекста, установленного middleware
-	userInterface, exists := c.Get(middleware.ContextUserKey)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-		return
-	}
-
-	// Преобразуем в *storage.User
-	currentUser, ok := userInterface.(*storage.User)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
-		return
-	}
-
-	// Получаем файл из multipart-запроса
-	file, header, err := c.Request.FormFile("file")
+// UpdateAward обновляет данные Award
+func (h *AwardHandler) UpdateAward(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
 		return
 	}
-	defer file.Close()
 
-	// Загружаем файл в MinIO
-	objectKey, err := h.service.UploadFile(c.Request.Context(), header.Filename, file, header.Size)
+	var req service.UpdateAwardRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid JSON format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	award, err := h.service.UpdateAward(c.Request.Context(), id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to update award",
+			"details": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, award)
+}
+
+// func (h *AwardHandler) CreateAwardWithFileAndData(c *gin.Context) {
+// 	// Получаем пользователя из контекста, установленного middleware
+// 	userInterface, exists := c.Get(middleware.ContextUserKey)
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+// 		return
+// 	}
+
+// 	// Преобразуем в *storage.User
+// 	currentUser, ok := userInterface.(*storage.User)
+// 	if !ok {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+// 		return
+// 	}
+
+// 	// Получаем файл из multipart-запроса
+// 	file, header, err := c.Request.FormFile("file")
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+// 		return
+// 	}
+// 	defer file.Close()
+
+// 	// Загружаем файл в MinIO
+// 	objectKey, err := h.service.UploadFile(c.Request.Context(), header.Filename, file, header.Size)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	// Получаем JSON-данные из multipart-запроса
+// 	dataStr := c.PostForm("data")
+// 	if dataStr == "" {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
+// 		return
+// 	}
+
+// 	var params service.CreateAwardWithTypesParams
+// 	if err := json.Unmarshal([]byte(dataStr), &params); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON in data field"})
+// 		return
+// 	}
+
+// 	// Устанавливаем ссылку на файл в JSON-данные
+// 	params.Document = pgtype.Text{String: objectKey, Valid: true}
+
+// 	// Создаем награду с типами
+// 	award, err := h.service.CreateAwardWithTypes(c.Request.Context(), currentUser.KeycloakID, &params)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	log.Printf("Received data: %s", dataStr)
+
+// 	c.JSON(http.StatusCreated, award)
+// }
+
+// --- award type
+func (h *AwardHandler) CreateAwardType(c *gin.Context) {
+	var req service.CreateFullAwardTypeParams
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	awardType, err := h.service.CreateFullAwardType(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Получаем JSON-данные из multipart-запроса
-	dataStr := c.PostForm("data")
-	if dataStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
-		return
-	}
+	c.JSON(http.StatusCreated, awardType)
+}
 
-	var params service.CreateAwardWithTypesParams
-	if err := json.Unmarshal([]byte(dataStr), &params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON in data field"})
-		return
-	}
-
-	// Устанавливаем ссылку на файл в JSON-данные
-	params.Document = pgtype.Text{String: objectKey, Valid: true}
-
-	// Создаем награду с типами
-	award, err := h.service.CreateAwardWithTypes(c.Request.Context(), currentUser.KeycloakID, &params)
+func (h *AwardHandler) GetAllAwardTypes(c *gin.Context) {
+	awardTypes, err := h.service.GetAllAwardTypes(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	log.Printf("Received data: %s", dataStr)
-
-	c.JSON(http.StatusCreated, award)
+	c.JSON(http.StatusOK, awardTypes)
 }

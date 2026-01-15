@@ -208,6 +208,25 @@ SELECT * FROM rups ORDER BY created_at DESC;
 -- name: GetRupsByID :one
 SELECT * FROM rups WHERE id = $1;
 
+-- name: UpdateRup :exec
+UPDATE rups
+SET
+    name = $2,
+    code = $3,
+    course = $4,
+    study_form = $5,
+    study_year = $6,
+    type = $7,
+    contacts = $8,
+    group_ids = $9,
+    methodist = $10,
+    teacher = $11,
+    exploration_note_id = $12,
+    disciplines = $13,
+    updated_at = NOW()
+WHERE
+    id = $1;
+
 -- name: UpdateRupsStatus :exec
 UPDATE rups
 SET
@@ -226,14 +245,15 @@ DELETE FROM rups WHERE id = $1;
 -- name: CreateAward :one
 INSERT INTO awards (
     status,
-    methodist,
     teacher,
     type,
+    total_points,
     text,
+    images,
     document,
-    variants
+    links
 ) VALUES (
-    $1,$2,$3,$4,$5,$6,$7
+    $1,$2,$3,$4,$5,$6,$7,$8
 )
 RETURNING *;
 
@@ -248,9 +268,27 @@ UPDATE awards
 SET
     status = $2,
     reason = $3,
+    methodist = $4,
     updated_at = NOW()
 WHERE
     id = $1;
+
+-- name: UpdateAward :one
+UPDATE awards
+SET
+    status = $2,
+    reason = $3,
+    teacher = $4,
+    type = $5,
+    total_points = $6,
+    text = $7,
+    images = $8,
+    document = $9,
+    links = $10,
+    updated_at = NOW()
+WHERE
+    id = $1
+RETURNING *;
 
 -- name: DeleteAward :exec
 DELETE FROM awards WHERE id = $1;

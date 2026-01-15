@@ -1,10 +1,10 @@
 type: http_request
 model: http_request
-id: rq_pPtUUpVBD9
-createdAt: 2025-12-29T13:48:27.340170400
-updatedAt: 2026-01-14T13:03:13.904974300
+id: rq_o727bXe2RL
+createdAt: 2026-01-15T07:34:44.889749
+updatedAt: 2026-01-15T08:43:12.636382800
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_fh7jNUikxF
+folderId: fl_RSWsGmeehe
 authentication:
   prefix: 'Bearer '
   token: ''
@@ -31,25 +31,21 @@ body:
     id: z3VxFSyVa7
     name: ''
     value: ''
-bodyType: multipart/form-data
+bodyType: null
 description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=d6f14ffc-d4cd-4e89-b22c-b97855085437
+  value: sid=0d80cec9-42cf-48c6-a076-d45f7de1abe7
   id: IbqKxWm6Xg
-- enabled: true
-  name: Content-Type
-  value: multipart/form-data
-  id: BxBnK8iXI7
 - enabled: true
   name: ''
   value: ''
-  id: 8UzrTzajGQ
-method: POST
-name: Create award
+  id: rTjIBwRSKg
+method: GET
+name: all
 sortPriority: 0.0
-url: http://localhost:8080/api/awards
+url: http://localhost:8080/api/awards/types
 urlParameters:
 - enabled: true
   name: ''

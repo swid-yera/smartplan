@@ -15,37 +15,40 @@ import (
 const createAward = `-- name: CreateAward :one
 INSERT INTO awards (
     status,
-    methodist,
     teacher,
     type,
+    total_points,
     text,
+    images,
     document,
-    variants
+    links
 ) VALUES (
-    $1,$2,$3,$4,$5,$6,$7
+    $1,$2,$3,$4,$5,$6,$7,$8
 )
-RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at
+RETURNING id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at
 `
 
 type CreateAwardParams struct {
-	Status    AwardsStatus `json:"status"`
-	Methodist pgtype.UUID  `json:"methodist"`
-	Teacher   uuid.UUID    `json:"teacher"`
-	Type      pgtype.UUID  `json:"type"`
-	Text      pgtype.Text  `json:"text"`
-	Document  pgtype.Text  `json:"document"`
-	Variants  []uuid.UUID  `json:"variants"`
+	Status      AwardsStatus `json:"status"`
+	Teacher     uuid.UUID    `json:"teacher"`
+	Type        pgtype.UUID  `json:"type"`
+	TotalPoints int32        `json:"total_points"`
+	Text        pgtype.Text  `json:"text"`
+	Images      []string     `json:"images"`
+	Document    pgtype.Text  `json:"document"`
+	Links       []string     `json:"links"`
 }
 
 func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error) {
 	row := q.db.QueryRow(ctx, createAward,
 		arg.Status,
-		arg.Methodist,
 		arg.Teacher,
 		arg.Type,
+		arg.TotalPoints,
 		arg.Text,
+		arg.Images,
 		arg.Document,
-		arg.Variants,
+		arg.Links,
 	)
 	var i Award
 	err := row.Scan(
@@ -56,9 +59,6 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		&i.Teacher,
 		&i.TotalPoints,
 		&i.Type,
-		&i.Variant,
-		&i.Criteria,
-		&i.Variants,
 		&i.Text,
 		&i.Images,
 		&i.Document,
@@ -103,9 +103,9 @@ RETURNING id, name, points, method
 `
 
 type CreateAwardTypeCriteriaParams struct {
-	Name   string                 `json:"name"`
-	Points []int32                `json:"points"`
-	Method NullEnumCriteriaMethod `json:"method"`
+	Name   string             `json:"name"`
+	Points []int32            `json:"points"`
+	Method EnumCriteriaMethod `json:"method"`
 }
 
 func (q *Queries) CreateAwardTypeCriteria(ctx context.Context, arg CreateAwardTypeCriteriaParams) (AwardTypeCriterium, error) {
@@ -669,7 +669,7 @@ func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
 }
 
 const getAllAwards = `-- name: GetAllAwards :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at FROM awards
+SELECT id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at FROM awards
 `
 
 func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
@@ -689,9 +689,6 @@ func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
 			&i.Teacher,
 			&i.TotalPoints,
 			&i.Type,
-			&i.Variant,
-			&i.Criteria,
-			&i.Variants,
 			&i.Text,
 			&i.Images,
 			&i.Document,
@@ -911,7 +908,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getAwardByID = `-- name: GetAwardByID :one
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at FROM awards WHERE id = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at FROM awards WHERE id = $1
 `
 
 func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error) {
@@ -925,9 +922,6 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 		&i.Teacher,
 		&i.TotalPoints,
 		&i.Type,
-		&i.Variant,
-		&i.Criteria,
-		&i.Variants,
 		&i.Text,
 		&i.Images,
 		&i.Document,
@@ -989,7 +983,7 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 }
 
 const getAwardsByMethodist = `-- name: GetAwardsByMethodist :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, variants, text, images, document, links, created_at, updated_at FROM awards WHERE methodist = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at FROM awards WHERE methodist = $1
 `
 
 func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error) {
@@ -1009,9 +1003,6 @@ func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUI
 			&i.Teacher,
 			&i.TotalPoints,
 			&i.Type,
-			&i.Variant,
-			&i.Criteria,
-			&i.Variants,
 			&i.Text,
 			&i.Images,
 			&i.Document,
@@ -1246,24 +1237,94 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 	return i, err
 }
 
+const updateAward = `-- name: UpdateAward :one
+UPDATE awards
+SET
+    status = $2,
+    reason = $3,
+    teacher = $4,
+    type = $5,
+    total_points = $6,
+    text = $7,
+    images = $8,
+    document = $9,
+    links = $10,
+    updated_at = NOW()
+WHERE
+    id = $1
+RETURNING id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at
+`
+
+type UpdateAwardParams struct {
+	ID          uuid.UUID    `json:"id"`
+	Status      AwardsStatus `json:"status"`
+	Reason      pgtype.Text  `json:"reason"`
+	Teacher     uuid.UUID    `json:"teacher"`
+	Type        pgtype.UUID  `json:"type"`
+	TotalPoints int32        `json:"total_points"`
+	Text        pgtype.Text  `json:"text"`
+	Images      []string     `json:"images"`
+	Document    pgtype.Text  `json:"document"`
+	Links       []string     `json:"links"`
+}
+
+func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error) {
+	row := q.db.QueryRow(ctx, updateAward,
+		arg.ID,
+		arg.Status,
+		arg.Reason,
+		arg.Teacher,
+		arg.Type,
+		arg.TotalPoints,
+		arg.Text,
+		arg.Images,
+		arg.Document,
+		arg.Links,
+	)
+	var i Award
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.Reason,
+		&i.Methodist,
+		&i.Teacher,
+		&i.TotalPoints,
+		&i.Type,
+		&i.Text,
+		&i.Images,
+		&i.Document,
+		&i.Links,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateAwardStatus = `-- name: UpdateAwardStatus :exec
 UPDATE awards
 SET
     status = $2,
     reason = $3,
+    methodist = $4,
     updated_at = NOW()
 WHERE
     id = $1
 `
 
 type UpdateAwardStatusParams struct {
-	ID     uuid.UUID    `json:"id"`
-	Status AwardsStatus `json:"status"`
-	Reason pgtype.Text  `json:"reason"`
+	ID        uuid.UUID    `json:"id"`
+	Status    AwardsStatus `json:"status"`
+	Reason    pgtype.Text  `json:"reason"`
+	Methodist pgtype.UUID  `json:"methodist"`
 }
 
 func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error {
-	_, err := q.db.Exec(ctx, updateAwardStatus, arg.ID, arg.Status, arg.Reason)
+	_, err := q.db.Exec(ctx, updateAwardStatus,
+		arg.ID,
+		arg.Status,
+		arg.Reason,
+		arg.Methodist,
+	)
 	return err
 }
 
@@ -1284,6 +1345,61 @@ func (q *Queries) UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTy
 	var i AwardType
 	err := row.Scan(&i.ID, &i.Name, &i.Variants)
 	return i, err
+}
+
+const updateRup = `-- name: UpdateRup :exec
+UPDATE rups
+SET
+    name = $2,
+    code = $3,
+    course = $4,
+    study_form = $5,
+    study_year = $6,
+    type = $7,
+    contacts = $8,
+    group_ids = $9,
+    methodist = $10,
+    teacher = $11,
+    exploration_note_id = $12,
+    disciplines = $13,
+    updated_at = NOW()
+WHERE
+    id = $1
+`
+
+type UpdateRupParams struct {
+	ID                uuid.UUID     `json:"id"`
+	Name              string        `json:"name"`
+	Code              pgtype.Text   `json:"code"`
+	Course            int32         `json:"course"`
+	StudyForm         StudyFormEnum `json:"study_form"`
+	StudyYear         string        `json:"study_year"`
+	Type              RupsTypeEnum  `json:"type"`
+	Contacts          []uuid.UUID   `json:"contacts"`
+	GroupIds          []string      `json:"group_ids"`
+	Methodist         pgtype.UUID   `json:"methodist"`
+	Teacher           pgtype.UUID   `json:"teacher"`
+	ExplorationNoteID pgtype.UUID   `json:"exploration_note_id"`
+	Disciplines       []uuid.UUID   `json:"disciplines"`
+}
+
+func (q *Queries) UpdateRup(ctx context.Context, arg UpdateRupParams) error {
+	_, err := q.db.Exec(ctx, updateRup,
+		arg.ID,
+		arg.Name,
+		arg.Code,
+		arg.Course,
+		arg.StudyForm,
+		arg.StudyYear,
+		arg.Type,
+		arg.Contacts,
+		arg.GroupIds,
+		arg.Methodist,
+		arg.Teacher,
+		arg.ExplorationNoteID,
+		arg.Disciplines,
+	)
+	return err
 }
 
 const updateRupResource = `-- name: UpdateRupResource :exec

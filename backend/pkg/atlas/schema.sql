@@ -146,7 +146,7 @@ CREATE TABLE award_type_criteria (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     points INT[],
-    method enum_criteria_method DEFAULT 'NORMAL' 
+    method enum_criteria_method NOT NULL
 );
 
 -- =====================
@@ -182,9 +182,6 @@ CREATE TABLE awards (
     
     total_points INT NOT NULL DEFAULT 0,
     type UUID REFERENCES award_types(id),
-    variant UUID REFERENCES award_type_variants(id),
-    criteria UUID REFERENCES award_type_criteria(id),
-    variants UUID[],
     
     text TEXT,
     images TEXT[] DEFAULT '{}',
@@ -194,6 +191,5 @@ CREATE TABLE awards (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     
-    CONSTRAINT fk_award_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id),
-    CONSTRAINT fk_award_type FOREIGN KEY (type) REFERENCES award_types(id)
+    CONSTRAINT fk_award_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id)
 );
