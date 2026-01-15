@@ -8,7 +8,6 @@ import (
 	"eduplan/backend/pkg/service/keycloak"
 	"encoding/base64"
 	"encoding/binary"
-	"fmt"
 	"math/big"
 	"net/http"
 	"strings"
@@ -19,6 +18,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 )
 
 type AuthMiddleware struct {
@@ -28,9 +28,10 @@ type AuthMiddleware struct {
 	issuer  string
 	redis   *redis.Client
 	config  *config.KeycloakConfig
+	log     *logrus.Logger
 }
 
-func NewAuthMiddleware(keycloakURL, realm string, redisClient *redis.Client, config *config.KeycloakConfig) (*AuthMiddleware, error) {
+func NewAuthMiddleware(keycloakURL, realm string, redisClient *redis.Client, config *config.KeycloakConfig, log *logrus.Logger) (*AuthMiddleware, error) {
 	client := gocloak.NewClient(keycloakURL)
 	ctx := context.Background()
 
@@ -39,11 +40,13 @@ func NewAuthMiddleware(keycloakURL, realm string, redisClient *redis.Client, con
 	// Get certificates for JWT validation
 	certs, err := client.GetCerts(ctx, realm)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get certs: %w", err)
+		log.Error("failed to get certs: %w", err)
+		return nil, err
 	}
 
 	if certs == nil || len(*certs.Keys) == 0 {
-		return nil, fmt.Errorf("no certs found")
+		log.Error("no certs found")
+		return nil, err
 	}
 
 	// Create a map of kid to public key
@@ -55,11 +58,13 @@ func NewAuthMiddleware(keycloakURL, realm string, redisClient *redis.Client, con
 
 		nBytes, err := base64.RawURLEncoding.DecodeString(*key.N)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decode modulus for kid %s: %w", *key.Kid, err)
+			log.Error("failed to decode modulus for kid", *key.Kid, err)
+			return nil, err
 		}
 		eBytes, err := base64.RawURLEncoding.DecodeString(*key.E)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decode exponent for kid %s: %w", *key.Kid, err)
+			log.Error("failed to decode exponent for kid", *key.Kid, err)
+			return nil, err
 		}
 		e := int(binary.BigEndian.Uint32(append(make([]byte, 4-len(eBytes)), eBytes...)))
 
@@ -71,20 +76,24 @@ func NewAuthMiddleware(keycloakURL, realm string, redisClient *redis.Client, con
 	}
 
 	if len(keyMap) == 0 {
-		return nil, fmt.Errorf("no valid keys found")
+		log.Error("no valid keys found")
+		return nil, err
 	}
 
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		kid, ok := token.Header["kid"].(string)
 		if !ok {
-			return nil, fmt.Errorf("kid header missing in token")
+			log.Error("kid header missing in token")
+			return nil, err
 		}
 		key, exists := keyMap[kid]
 		if !exists {
-			return nil, fmt.Errorf("unknown kid: %s", kid)
+			log.Error("unknown kid", kid)
+			return nil, err
 		}
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			log.Error("unexpected signing method", token.Header["alg"])
+			return nil, err
 		}
 		return key, nil
 	}
@@ -96,6 +105,7 @@ func NewAuthMiddleware(keycloakURL, realm string, redisClient *redis.Client, con
 		issuer:  issuer,
 		redis:   redisClient,
 		config:  config,
+		log:     log,
 	}, nil
 }
 
@@ -110,7 +120,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		// Get session ID from cookie
 		sid, err := c.Cookie("sid")
 		if err != nil {
-			fmt.Printf("Cookie read error: %v\n", err)
+			a.log.WithField("Cookie read error:", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "Not authenticated",
 				"details": "Cookie read error",
@@ -125,7 +135,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 			return
 		}
 
-		fmt.Printf("Validating session for SID: %s\n", sid)
+		a.log.WithField("Validating session for SID:", sid)
 
 		ctx := context.Background()
 		sessionKey := "session:" + sid
@@ -133,7 +143,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		// Get session data from Redis
 		sessionData, err := a.redis.HGetAll(ctx, sessionKey).Result()
 		if err != nil {
-			fmt.Printf("Redis error for session %s: %v\n", sessionKey, err)
+			a.log.WithError(err).WithField("Redis error for session", sessionKey)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "Session not found",
 				"details": "Redis error",
@@ -141,7 +151,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 			return
 		}
 		if len(sessionData) == 0 {
-			fmt.Printf("No session data found for key: %s\n", sessionKey)
+			a.log.WithField("No session data found for key:", sessionKey)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "Session not found",
 				"details": "Empty session data",
@@ -149,12 +159,12 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 			return
 		}
 
-		fmt.Printf("Session data keys: %v\n", getKeys(sessionData))
+		a.log.WithField("Session data keys:", getKeys(sessionData))
 
 		// Check if access token exists
 		accessToken, ok := sessionData["access_token"]
 		if !ok || accessToken == "" {
-			fmt.Printf("No access token in session for key: %s\n", sessionKey)
+			a.log.WithField("No access token in session for key:", sessionKey)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "Invalid session",
 				"details": "No access token",
@@ -166,7 +176,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		token, err := jwt.Parse(accessToken, a.keyFunc)
 
 		if err != nil {
-			fmt.Printf("Access token parsing error: %v\n", err)
+			a.log.WithField("Access token parsing error:", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "Invalid access token",
 				"details": err.Error(),
@@ -175,7 +185,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		}
 
 		if !token.Valid {
-			fmt.Printf("Access token validation failed\n")
+			a.log.Error("Access token validation failed")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "Access token validation failed",
 			})
@@ -193,7 +203,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 
 		// Validate issuer
 		if iss, ok := claims["iss"].(string); !ok || iss != a.issuer {
-			fmt.Printf("Invalid issuer: expected %s, got %v\n", a.issuer, claims["iss"])
+			a.log.WithField("Invalid issuer: expected", a.issuer).WithField(", got", claims["iss"])
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid token issuer",
 			})
@@ -203,7 +213,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		// Validate authorized party (azp)
 		azp, ok := claims["azp"].(string)
 		if !ok || azp != a.config.KeycloakClientID {
-			fmt.Printf("Invalid azp: expected %s, got %v\n", a.config.KeycloakClientID, claims["azp"])
+			a.log.WithField("Invalid azp: expected", a.config.KeycloakClientID).WithField(", got", claims["azp"])
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid authorized party (azp)",
 			})
@@ -213,7 +223,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		// Check expiration
 		if exp, ok := claims["exp"].(float64); ok {
 			if time.Now().Unix() > int64(exp) {
-				fmt.Printf("Access token expired\n")
+				a.log.Error("Access token expired")
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"error": "Access token expired",
 				})
@@ -230,7 +240,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 			return
 		}
 
-		fmt.Printf("Access token validated successfully for user: %s\n", sub)
+		a.log.WithField("Access token validated successfully for user:", sub)
 
 		// Set user context
 		c.Set("keycloak_id", sub)

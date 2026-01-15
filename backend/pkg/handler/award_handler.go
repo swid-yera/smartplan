@@ -202,7 +202,7 @@ func (h *AwardHandler) CreateAwardWithTypes(c *gin.Context) {
 	}
 
 	// Преобразуем в *storage.User
-	currentUser, ok := userInterface.(*storage.User)
+	currentUser, ok := userInterface.(*service.User)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
 		return

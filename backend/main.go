@@ -109,6 +109,7 @@ func main() {
 		kcCfg.KeycloakRealm,
 		rdb,
 		kcCfg,
+		log,
 	)
 	if err != nil {
 		log.Fatalf("Failed to init auth middleware: %v", err)
@@ -119,7 +120,7 @@ func main() {
 
 	authHandler := handler.NewAuthHandler(kc, rdb, kcCfg, authService, authMiddleware.GetKeyFunc(), log)
 	userHandler := handler.NewUserHandler(userService)
-	rupHandler := handler.NewRupHandler(rupService)
+	rupHandler := handler.NewRupHandler(rupService, log)
 	awardHandler := handler.NewAwardHandler(awardService)
 	groupsHandler := handler.NewGroupsHandler(groupsSyncService, syncGuard)
 

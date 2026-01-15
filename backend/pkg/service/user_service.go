@@ -32,6 +32,7 @@ type UserService interface {
 	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error)
 	GetAllUsers(ctx context.Context) ([]storage.User, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
+	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
 }
 
 type userService struct {
@@ -74,6 +75,22 @@ func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUI
 	}
 
 	return toServiceUser(dbUser), nil
+}
+
+func (s *userService) GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error) {
+
+	sessionKey := "session:" + sessionID.String()
+
+	keycloakIDStr, err := s.redis.HGet(ctx, sessionKey, "keycloak_id").Result()
+	if err != nil {
+		return nil, err
+	}
+
+	keycloakID, err := uuid.Parse(keycloakIDStr)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.GetUserByKeycloakID(ctx, keycloakID)
 }
 
 func toServiceUser(u *storage.User) *User {

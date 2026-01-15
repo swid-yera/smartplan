@@ -6,19 +6,21 @@ import (
 
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
-	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type RupHandler struct {
 	rupService service.RupService
+	log        *logrus.Logger
 }
 
-func NewRupHandler(rupService service.RupService) *RupHandler {
+func NewRupHandler(rupService service.RupService, log *logrus.Logger) *RupHandler {
 	return &RupHandler{
 		rupService: rupService,
+		log:        log,
 	}
 }
 
@@ -28,6 +30,7 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 
 	// Парсим JSON из запроса
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid JSON format",
 			"details": err.Error(),
@@ -38,13 +41,15 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	// Получить пользователя из контекста (должен быть установлен middleware)
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
+		h.log.Error("User not authenticated")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
-	// Преобразовать в storage.User
-	currentUser, ok := userInterface.(*storage.User)
+	// Преобразовать в *service.User
+	currentUser, ok := userInterface.(*service.User)
 	if !ok {
+		h.log.Error("Invalid user context", currentUser)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
 		return
 	}
@@ -55,6 +60,7 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	// Вызываем service для создания RUP
 	rup, err := h.rupService.CreateRup(c.Request.Context(), req)
 	if err != nil {
+		h.log.WithError(err).Error("failed to create RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to create RUP",
 			"details": err.Error(),
@@ -71,12 +77,14 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		h.log.WithError(err).Error("invalid RUP ID")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
 		return
 	}
 
 	rup, err := h.rupService.GetRupByID(c.Request.Context(), id)
 	if err != nil {
+		h.log.WithError(err).Error("RUP not found")
 		c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
 		return
 	}
@@ -88,6 +96,7 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 func (h *RupHandler) GetAllRups(c *gin.Context) {
 	rups, err := h.rupService.GetAllRups(c.Request.Context())
 	if err != nil {
+		h.log.WithError(err).Error("failed to get RUPs")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to get RUPs",
 			"details": err.Error(),
@@ -103,6 +112,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		h.log.WithError(err).Error("invalid RUP ID")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
 		return
 	}
@@ -113,6 +123,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid JSON format",
 			"details": err.Error(),
@@ -122,6 +133,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 
 	err = h.rupService.UpdateRupStatus(c.Request.Context(), id, req.Status, req.Reason)
 	if err != nil {
+		h.log.WithError(err).Error("failed to update RUP status")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to update RUP status",
 			"details": err.Error(),
@@ -137,12 +149,14 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		h.log.WithError(err).Error("invalid RUP ID")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
 		return
 	}
 
 	var req service.CreateRupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid JSON format",
 			"details": err.Error(),
@@ -152,6 +166,7 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 
 	rup, err := h.rupService.UpdateRup(c.Request.Context(), id, req)
 	if err != nil {
+		h.log.WithError(err).Error("failed to update RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to update RUP",
 			"details": err.Error(),
@@ -164,6 +179,7 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 func (h *RupHandler) DownloadRup(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
+		h.log.WithError(err).Error("invalid rup id")
 		c.JSON(400, gin.H{"error": "invalid rup id"})
 		return
 	}
@@ -189,18 +205,21 @@ func (h *RupHandler) GetRupsByMethodist(c *gin.Context) {
 	methodistIDStr := c.Query("id")
 	log.Println(methodistIDStr)
 	if methodistIDStr == "" {
+		h.log.Error("methodist_id query parameter is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "methodist_id query parameter is required"})
 		return
 	}
 
 	methodistID, err := uuid.Parse(methodistIDStr)
 	if err != nil {
+		h.log.WithError(err).Error("invalid methodist ID")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid methodist ID"})
 		return
 	}
 
 	rups, err := h.rupService.GetRupsByMethodist(c.Request.Context(), methodistID)
 	if err != nil {
+		h.log.WithError(err).Error("failed to get RUPs by methodist")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to get RUPs by methodist",
 			"details": err.Error(),
@@ -216,12 +235,14 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		h.log.WithError(err).Error("invalid RUP ID")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
 		return
 	}
 
 	err = h.rupService.DeleteRup(c.Request.Context(), id)
 	if err != nil {
+		h.log.WithError(err).Error("failed to delete RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to delete RUP",
 			"details": err.Error(),
