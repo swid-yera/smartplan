@@ -6,14 +6,13 @@ import type { NextPage } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { cn } from '@lib'
+import { createRupModule } from '@services'
+import { RupModuleStatus, TopicTypeEnum } from '@types'
 import { Badge, Button, Heading, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-
-import { cn } from '@/lib'
-import { createRupModule } from '@/services'
-import { RupModuleStatus, TopicTypeEnum } from '@/shared/types'
 
 import { type RUPFormData, formSchema } from './form-schema'
 import { groupData } from './mock.data'

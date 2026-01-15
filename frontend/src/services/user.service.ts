@@ -1,7 +1,6 @@
+import { api } from '@lib'
 import { queryOptions } from '@tanstack/react-query'
-
-import { api } from '@/lib'
-import { type IUser } from '@/shared/types'
+import { type IUser } from '@types'
 
 export class UserService {
 	// type guard

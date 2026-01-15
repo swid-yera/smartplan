@@ -21,10 +21,10 @@
 		"jsxImportSource": "react",
 		"incremental": true,
 		"paths": {
-			"@/*": ["./src/*"],
+			// "@/*": ["./src/*"],
 			// export * from file
-			"@ui": ["./src/components/ui/index.ts"],
 			"@components": ["./src/components/index.ts"],
+			"@ui": ["./src/components/ui/index.ts"],
 			"@layout": ["./src/components/layout/index.ts"],
 			"@hoc": ["./src/hoc/index.ts"],
 			"@store": ["./src/store/index.ts"],

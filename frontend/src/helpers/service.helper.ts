@@ -1,4 +1,4 @@
-import type { IRupModule } from '@/shared/types'
+import type { IRupModule } from '@types'
 
 export const renameRupModuleGroupIdToGroup = (rupModule): IRupModule => {
 	const renamedRupModule = { ...rupModule, group: { ...rupModule.groupId, id: rupModule.groupId['keycloak_id'] } }
