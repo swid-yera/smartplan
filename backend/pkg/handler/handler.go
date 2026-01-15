@@ -14,8 +14,8 @@ type Router struct {
 	user                  *UserHandler
 	rup                   *RupHandler
 	award                 *AwardHandler // Added
-	webhooks              *WebhooksHandler
 	groups                *GroupsHandler
+	webhooks              *WebhooksHandler
 	sessionAuthMiddleware gin.HandlerFunc
 }
 
@@ -24,8 +24,8 @@ func NewRouter(
 	user *UserHandler,
 	rup *RupHandler,
 	award *AwardHandler, // Added
-	webhooks *WebhooksHandler,
 	groups *GroupsHandler,
+	webhooks *WebhooksHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
 ) *Router {
 	return &Router{
@@ -33,8 +33,8 @@ func NewRouter(
 		user:                  user,
 		rup:                   rup,
 		award:                 award, // Added
-		webhooks:              webhooks,
 		groups:                groups,
+		webhooks:              webhooks,
 		sessionAuthMiddleware: sessionAuthMiddleware,
 	}
 }
@@ -83,16 +83,15 @@ func (r *Router) Init() *gin.Engine {
 			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
 			rups.DELETE("/:id", r.rup.DeleteRup)
 			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
+			rups.GET("/:id/download", r.rup.DownloadRup)
 		}
 
 		// --- AWARD ROUTES ---
 		awards := api.Group("/awards")
 		{
 			// POST /api/awards/
-			awards.POST("", r.award.CreateAwardWithFileAndData)
-			awards.POST("/upload", r.award.UploadAwardFile)
-			awards.POST("/with-types", r.award.CreateAwardWithTypes)
-			awards.GET("", r.award.GetAllAwards)
+			awards.POST("/", r.award.CreateAward)
+			awards.GET("/", r.award.GetAllAwards)
 			awards.GET("/:id", r.award.GetAwardByID)
 			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
 			awards.DELETE("/:id", r.award.DeleteAward)
@@ -101,12 +100,8 @@ func (r *Router) Init() *gin.Engine {
 
 		groups := api.Group("/groups")
 		{
-			// POST /api/groups/sync
-			groups.POST("/sync", r.groups.SyncGroups)
-			groups.GET("/debug/students", r.groups.DebugStudents)
-
-			// (опционально) GET /api/groups
-			// groups.GET("/", r.groups.GetAllGroups)
+			groups.GET("", r.groups.GetAllGroups)
+			groups.POST("/sync", r.groups.SyncGroups) // ⚠ protected
 		}
 	}
 

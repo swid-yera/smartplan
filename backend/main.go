@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os" // Added for getEnv
 	"strings"
 	"time"
@@ -46,6 +47,7 @@ func main() {
 	dbCfg := config.LoadDBConfig()
 	redisCfg := config.LoadRedisConfig()
 	minioCfg := config.LoadMinioConfig()
+	docCfg := config.LoadDocumentRenderConfig()
 
 	// ---------- DB ----------
 	// Note: Ensure repository.NewPostgresDB exists and accepts *config.DBConfig
@@ -71,6 +73,10 @@ func main() {
 		log.Fatalf("Failed to connect to MinIO: %v", err)
 	}
 
+	httpClient := &http.Client{
+		Timeout: 60 * time.Second,
+	}
+
 	// ---------- REDIS ----------
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     normalizeRedisAddr(redisCfg.RedisAddr),
@@ -83,18 +89,16 @@ func main() {
 	usersRepo := repository.NewUsersPostgres(queries)
 	// Passing our wrapped minioRepo to the AwardRepository
 	awardRepo := repository.NewAwardRepository(queries, minioRepo)
+	rupRepo := repository.NewRupPostgres(queries)
 
 	kcSyncClient := kcservice.NewClient(
-		kcCfg.KeycloakURL,
-		kcCfg.KeycloakRealm,
-		kcCfg.KeycloakClientID,
-		kcCfg.KeycloakSecret,
+		kcCfg,
 	)
 
 	// ---------- SERVICES ----------
 	authService := service.NewAuthService(rdb, authRepo)
 	userService := service.NewUserService(usersRepo, rdb)
-	rupService := service.NewRupService(repository.NewRupPostgres(queries))
+	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
 	awardService := service.NewAwardService(awardRepo)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	syncGuard := service.NewSyncGuard(1 * time.Minute)
@@ -123,7 +127,7 @@ func main() {
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
 
 	// Ensure your NewRouter signature matches: (auth, user, rup, award, middleware)
-	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, nil, groupsHandler, sessionAuthMiddleware)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, groupsHandler, nil, sessionAuthMiddleware)
 	engine := router.Init()
 
 	port := getEnv("PORT", "8080")

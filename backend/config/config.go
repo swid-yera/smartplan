@@ -47,6 +47,7 @@ type KeycloakConfig struct {
 	FrontendURL      string
 	CookieDomain     string
 	BaseURL          string
+	GroupID          string
 }
 
 type DBConfig struct {
@@ -73,6 +74,18 @@ type MinioConfig struct {
 	MinioUseSSL       bool
 }
 
+type DocumentRenderConfig struct {
+	Url    string
+	ApiKey string
+}
+
+func LoadDocumentRenderConfig() *DocumentRenderConfig {
+	return &DocumentRenderConfig{
+		Url:    getEnv("DOCUMENT_RENDER_URL", "http://localhost:8000"),
+		ApiKey: getEnv("DOCUMENT_RENDER_API_KEY", ""),
+	}
+}
+
 func LoadMinioConfig() *MinioConfig {
 	return &MinioConfig{
 		MinioEndpoint:     getEnv("MINIO_ENDPOINT", "localhost:9000"),
@@ -97,6 +110,7 @@ func LoadKeycloakConfig() *KeycloakConfig {
 		FrontendURL:      getEnv("FRONTEND_URL", "http://example:3000"),
 		CookieDomain:     getEnv("COOKIE_DOMAIN", "localhost"),
 		BaseURL:          getEnv("BASE_URL", "http://exaple:8080"),
+		GroupID:          getEnv("GROUP_ID", ""),
 	}
 }
 

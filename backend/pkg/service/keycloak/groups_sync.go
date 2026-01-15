@@ -12,6 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type SyncResult struct {
+	Added   int `json:"added"`
+	Updated int `json:"updated"`
+	Deleted int `json:"deleted"`
+}
+
 type GroupsSyncService struct {
 	kc   *Client
 	repo repository.GroupsRepository
@@ -21,45 +27,58 @@ func NewGroupsSyncService(kc *Client, repo repository.GroupsRepository) *GroupsS
 	return &GroupsSyncService{kc: kc, repo: repo}
 }
 
+func (s *GroupsSyncService) GetAllGroups(ctx context.Context) ([]storage.Group, error) {
+	return s.repo.GetAllGroups(ctx)
+}
+
 // SyncGroups:
 // 1) service account token (client_credentials)
 // 2) raw admin rest -> groups tree
 // 3) берём ТОЛЬКО /students и все подгруппы
 // 4) upsert в БД
-func (s *GroupsSyncService) SyncGroups(ctx context.Context) error {
+func (s *GroupsSyncService) SyncGroups(ctx context.Context) (*SyncResult, error) {
 	jwt, err := s.kc.LoginServiceAccount(ctx)
 	if err != nil {
-		return fmt.Errorf("keycloak login service account: %w", err)
+		return nil, fmt.Errorf("keycloak login service account: %w", err)
 	}
 
 	raw, err := s.kc.GetGroupsRawHTTP(ctx, jwt.AccessToken, 0, 5000)
 	if err != nil {
-		return fmt.Errorf("keycloak get groups raw http: %w", err)
+		return nil, fmt.Errorf("keycloak get groups raw http: %w", err)
 	}
 
-	// Ищем именно /students (надежнее, чем по имени)
-	root := findGroupTree(raw, "/Students", "Students")
-	if root == nil {
-		return fmt.Errorf("students group not found in keycloak")
+	existingGroups, err := s.repo.GetAllGroups(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get existing groups: %w", err)
+	}
+	existingIDs := make(map[uuid.UUID]struct{}, len(existingGroups))
+	for _, g := range existingGroups {
+		existingIDs[g.KeycloakID] = struct{}{}
 	}
 
-	flat := flattenRawGroups([]GroupRepresentation{*root})
+	params := make([]storage.UpsertGroupParams, 0, len(raw))
+	actualIDs := make([]uuid.UUID, 0, len(raw))
+	addedCount := 0
+	updatedCount := 0
 
-	params := make([]storage.UpsertGroupParams, 0, len(flat))
-	actualIDs := make([]uuid.UUID, 0, len(flat))
-
-	for _, g := range flat {
+	for _, g := range raw {
 		if strings.TrimSpace(g.ID) == "" || strings.TrimSpace(g.Name) == "" {
 			continue
 		}
 
 		id, err := uuid.Parse(g.ID)
 		if err != nil {
-			return fmt.Errorf("parse keycloak group id %q: %w", g.ID, err)
+			return nil, fmt.Errorf("parse keycloak group id %q: %w", g.ID, err)
 		}
 
-		qual := firstAttrRaw(g.Attributes, "qualification")
-		spec := firstAttrRaw(g.Attributes, "specialty")
+		if _, exists := existingIDs[id]; exists {
+			updatedCount++
+		} else {
+			addedCount++
+		}
+
+		qual := firstAttrRaw(g.Attributes, "mail")
+		spec := firstAttrRaw(g.Attributes, "description")
 
 		params = append(params, storage.UpsertGroupParams{
 			KeycloakID:    id,
@@ -72,14 +91,20 @@ func (s *GroupsSyncService) SyncGroups(ctx context.Context) error {
 	}
 
 	if err := s.repo.CreateGroups(ctx, params); err != nil {
-		return fmt.Errorf("save groups to db: %w", err)
+		return nil, fmt.Errorf("save groups to db: %w", err)
 	}
 
-	if err := s.repo.DeleteGroupsNotInKeycloak(ctx, actualIDs); err != nil {
-		return fmt.Errorf("delete removed groups: %w", err)
+	// NOTE: This assumes `DeleteGroupsNotInKeycloak` is changed to return (int64, error)
+	err = s.repo.DeleteGroupsNotInKeycloak(ctx, actualIDs)
+	if err != nil {
+		return nil, fmt.Errorf("delete removed groups: %w", err)
 	}
 
-	return nil
+	return &SyncResult{
+		Added:   addedCount,
+		Updated: updatedCount,
+		Deleted: 0, // TODO: realize it
+	}, nil
 }
 
 func flattenRawGroups(groups []GroupRepresentation) []GroupRepresentation {

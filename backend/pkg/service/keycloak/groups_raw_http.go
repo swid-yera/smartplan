@@ -13,7 +13,7 @@ import (
 )
 
 func (c *Client) adminURL(path string) (string, error) {
-	u, err := url.Parse(c.baseURL)
+	u, err := url.Parse(c.cfg.KeycloakURL)
 	if err != nil {
 		return "", fmt.Errorf("parse base url: %w", err)
 	}
@@ -42,7 +42,7 @@ func (c *Client) doAdminGET(ctx context.Context, accessToken string, fullURL str
 
 // 1) Топ-левел группы (может НЕ содержать subGroups)
 func (c *Client) GetGroupsRawHTTP(ctx context.Context, accessToken string, first, max int) ([]GroupRepresentation, error) {
-	base, err := c.adminURL("/admin/realms/" + c.cfg.Realm + "/groups")
+	base, err := c.adminURL("/admin/realms/" + c.cfg.KeycloakRealm + "/groups/" + c.cfg.GroupID + "/children")
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (c *Client) GetGroupsRawHTTP(ctx context.Context, accessToken string, first
 
 // 2) Получить группу по ID (вот тут обычно subGroups уже есть)
 func (c *Client) GetGroupByIDRawHTTP(ctx context.Context, accessToken, groupID string) (*GroupRepresentation, error) {
-	base, err := c.adminURL("/admin/realms/" + c.cfg.Realm + "/groups/" + groupID)
+	base, err := c.adminURL("/admin/realms/" + c.cfg.KeycloakRealm + "/groups/" + groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (c *Client) GetGroupByIDRawHTTP(ctx context.Context, accessToken, groupID s
 
 // 3) Получить детей группы (если вдруг subGroups не заполняется в GetGroupByID)
 func (c *Client) GetGroupChildrenRawHTTP(ctx context.Context, accessToken, groupID string, first, max int) ([]GroupRepresentation, error) {
-	base, err := c.adminURL("/admin/realms/" + c.cfg.Realm + "/groups/" + groupID + "/children")
+	base, err := c.adminURL("/admin/realms/" + c.cfg.KeycloakRealm + "/groups/" + groupID + "/children")
 	if err != nil {
 		return nil, err
 	}
