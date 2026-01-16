@@ -16,6 +16,7 @@ type RupRepository interface {
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error
 	UpdateRup(ctx context.Context, params storage.UpdateRupParams) (*storage.Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Rup, error)
+	GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]storage.Rup, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 
 	// Additional methods for related entities
@@ -82,6 +83,10 @@ func (r *RupPostgres) UpdateRup(ctx context.Context, params storage.UpdateRupPar
 
 func (r *RupPostgres) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Rup, error) {
 	return r.queries.GetRupsByMethodist(ctx, methodist)
+}
+
+func (r *RupPostgres) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]storage.Rup, error) {
+	return r.queries.GetRupsByTeacher(ctx, teacher)
 }
 
 func (r *RupPostgres) DeleteRup(ctx context.Context, id uuid.UUID) error {

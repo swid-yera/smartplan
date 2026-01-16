@@ -24,6 +24,7 @@ type RupService interface {
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string, methodistID uuid.UUID) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
+	GetRupsByTeacher(ctx context.Context, teacherID uuid.UUID) ([]*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
 }
@@ -523,6 +524,25 @@ func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID) (strin
 func (s *rupService) GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error) {
 	methodistUUID := pgtype.UUID{Bytes: methodistID, Valid: true}
 	rups, err := s.repo.GetRupsByMethodist(ctx, methodistUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []*RupResponse
+	for _, rup := range rups {
+		response, err := s.buildRupResponse(ctx, rup)
+		if err != nil {
+			continue // Skip failed conversions
+		}
+		responses = append(responses, response)
+	}
+
+	return responses, nil
+}
+
+func (s *rupService) GetRupsByTeacher(ctx context.Context, teacherID uuid.UUID) ([]*RupResponse, error) {
+	teacherUUID := pgtype.UUID{Bytes: teacherID, Valid: true}
+	rups, err := s.repo.GetRupsByTeacher(ctx, teacherUUID)
 	if err != nil {
 		return nil, err
 	}

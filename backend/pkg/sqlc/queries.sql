@@ -239,6 +239,9 @@ WHERE
 -- name: GetRupsByMethodist :many
 SELECT * FROM rups WHERE methodist = $1 ORDER BY created_at DESC;
 
+-- name: GetRupsByTeacher :many
+SELECT * FROM rups WHERE teacher = $1 ORDER BY created_at DESC;
+
 -- name: DeleteRup :exec
 DELETE FROM rups WHERE id = $1;
 

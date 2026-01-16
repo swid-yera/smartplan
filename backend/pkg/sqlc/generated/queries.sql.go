@@ -1200,6 +1200,49 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 	return items, nil
 }
 
+const getRupsByTeacher = `-- name: GetRupsByTeacher :many
+SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE teacher = $1 ORDER BY created_at DESC
+`
+
+func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error) {
+	rows, err := q.db.Query(ctx, getRupsByTeacher, teacher)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Rup
+	for rows.Next() {
+		var i Rup
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Code,
+			&i.Status,
+			&i.Reason,
+			&i.Course,
+			&i.StudyForm,
+			&i.StudyYear,
+			&i.Type,
+			&i.TotalHours,
+			&i.Contacts,
+			&i.GroupIds,
+			&i.Methodist,
+			&i.Teacher,
+			&i.ExplorationNoteID,
+			&i.Disciplines,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
 SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
 `

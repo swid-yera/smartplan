@@ -84,6 +84,7 @@ func (r *Router) Init() *gin.Engine {
 			rups.PUT("/:id", r.rup.UpdateRup)
 			rups.DELETE("/:id", r.rup.DeleteRup)
 			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
+			rups.GET("/teacher/:id", r.rup.GetRupsByTeacher)
 			rups.GET("/:id/download", r.rup.DownloadRup)
 		}
 

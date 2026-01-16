@@ -246,6 +246,35 @@ func (h *RupHandler) GetRupsByMethodist(c *gin.Context) {
 	c.JSON(http.StatusOK, rups)
 }
 
+// GetRupsByTeacher получает RUP по преподавателю
+func (h *RupHandler) GetRupsByTeacher(c *gin.Context) {
+	teacherIDStr := c.Param("id")
+	if teacherIDStr == "" {
+		h.log.Error("teacher ID is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "teacher ID is required"})
+		return
+	}
+
+	teacherID, err := uuid.Parse(teacherIDStr)
+	if err != nil {
+		h.log.WithError(err).Error("invalid teacher ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher ID"})
+		return
+	}
+
+	rups, err := h.rupService.GetRupsByTeacher(c.Request.Context(), teacherID)
+	if err != nil {
+		h.log.WithError(err).Error("failed to get RUPs by teacher")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to get RUPs by teacher",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, rups)
+}
+
 // DeleteRup удаляет RUP по ID
 func (h *RupHandler) DeleteRup(c *gin.Context) {
 	idStr := c.Param("id")

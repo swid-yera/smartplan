@@ -52,6 +52,7 @@ type Querier interface {
 	GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupResource, error)
 	GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error)
+	GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error)
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
