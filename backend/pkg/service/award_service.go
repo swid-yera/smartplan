@@ -15,7 +15,7 @@ import (
 type CreateAwardWithTypesParams struct {
 	Status      storage.AwardsStatus `json:"status"`
 	AwardType   uuid.UUID            `json:"type"`
-	TotalPoints int32                `json:"total_points"`
+	TotalPoints int32                `json:"totalPoints"`
 	Text        pgtype.Text          `json:"text"`
 	Images      []string             `json:"images"`
 	Document    pgtype.Text          `json:"document"`
@@ -27,7 +27,7 @@ type AwardTypeVariant struct {
 	Name          string              `json:"name"`
 	Description   pgtype.Text         `json:"description"`
 	Criteria      []AwardTypeCriteria `json:"criteria"`
-	BonusCriteria []AwardTypeCriteria `json:"bonus_criteria"`
+	BonusCriteria []AwardTypeCriteria `json:"bonusCriteria"`
 }
 
 // AwardTypeCriteria представляет критерий типа награды
@@ -46,7 +46,7 @@ type CreateFullAwardTypeParams struct {
 type UpdateAwardRequest struct {
 	Status      storage.AwardsStatus `json:"status"`
 	AwardType   uuid.UUID            `json:"type"`
-	TotalPoints int32                `json:"total_points"`
+	TotalPoints int32                `json:"totalPoints"`
 	Text        pgtype.Text          `json:"text"`
 	Images      []string             `json:"images"`
 	Document    pgtype.Text          `json:"document"`

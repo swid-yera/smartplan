@@ -20,7 +20,7 @@ import (
 type RupService interface {
 	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
-	GetAllRups(ctx context.Context) ([]*RupResponse, error)
+	GetAllRups(ctx context.Context) ([]*ListAllRupsResponse, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string, methodistID uuid.UUID) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
@@ -102,8 +102,26 @@ type RupResponse struct {
 	UpdatedAt       time.Time               `json:"updatedAt"`
 }
 
+type ListAllRupsResponse struct {
+	ID         uuid.UUID        `json:"id"`
+	Name       string           `json:"name"`
+	Code       string           `json:"code"`
+	Status     string           `json:"status"`
+	Reason     string           `json:"reason"`
+	Course     int32            `json:"course"`
+	StudyForm  string           `json:"studyForm"`
+	StudyYear  string           `json:"studyYear"`
+	Type       string           `json:"type"`
+	TotalHours int32            `json:"totalHours"`
+	Groups     []*GroupResponse `json:"groups"`
+	Methodist  *UserResponse    `json:"methodist"`
+	Teacher    *UserResponse    `json:"teacher"`
+	CreatedAt  time.Time        `json:"createdAt"`
+	UpdatedAt  time.Time        `json:"updatedAt"`
+}
+
 type UserResponse struct {
-	KeycloakID  uuid.UUID `json:"keycloak_id"`
+	KeycloakID  uuid.UUID `json:"keycloakId"`
 	Email       string    `json:"email"`
 	Username    string    `json:"username"`
 	FirstName   string    `json:"firstName"`
@@ -116,7 +134,7 @@ type UserResponse struct {
 }
 
 type GroupResponse struct {
-	KeycloakID    uuid.UUID `json:"keycloak_id"`
+	KeycloakID    uuid.UUID `json:"keycloakId"`
 	Name          string    `json:"name"`
 	Qualification string    `json:"qualification"`
 	Specialty     string    `json:"specialty"`
@@ -178,7 +196,7 @@ type rupService struct {
 }
 
 type RupDocumentPayload struct {
-	RupID       string              `json:"rup_id"`
+	RupID       string              `json:"rupId"`
 	Code        string              `json:"code"`
 	Name        string              `json:"name"`
 	TotalHours  int32               `json:"totalHours"`
@@ -246,19 +264,37 @@ func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse
 	return s.buildRupResponse(ctx, *rup)
 }
 
-func (s *rupService) GetAllRups(ctx context.Context) ([]*RupResponse, error) {
+func (s *rupService) GetAllRups(ctx context.Context) ([]*ListAllRupsResponse, error) {
 	rups, err := s.repo.GetAllRups(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var responses []*RupResponse
+	var responses []*ListAllRupsResponse
 	for _, rup := range rups {
-		response, err := s.buildRupResponse(ctx, rup)
+		response, err := s.buildListAllRupsResponse(ctx, rup)
 		if err != nil {
 			continue // Skip failed conversions
 		}
-		responses = append(responses, response)
+		// Create a simplified response without unnecessary fields
+		simplifiedResponse := &ListAllRupsResponse{
+			ID:         response.ID,
+			Name:       response.Name,
+			Code:       response.Code,
+			Status:     response.Status,
+			Reason:     response.Reason,
+			Course:     response.Course,
+			StudyForm:  response.StudyForm,
+			StudyYear:  response.StudyYear,
+			Type:       response.Type,
+			TotalHours: response.TotalHours,
+			Groups:     response.Groups,
+			Methodist:  response.Methodist,
+			Teacher:    response.Teacher,
+			CreatedAt:  response.CreatedAt,
+			UpdatedAt:  response.UpdatedAt,
+		}
+		responses = append(responses, simplifiedResponse)
 	}
 
 	return responses, nil
@@ -911,6 +947,59 @@ func (s *rupService) toPgUUID(id *uuid.UUID) pgtype.UUID {
 		return pgtype.UUID{Valid: false}
 	}
 	return pgtype.UUID{Bytes: *id, Valid: true}
+}
+
+func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.Rup) (*RupResponse, error) {
+
+	// Get groups
+	groups := []*GroupResponse{}
+	for _, groupIDStr := range rup.GroupIds {
+		groupID, err := uuid.Parse(groupIDStr)
+		if err != nil {
+			continue // Skip invalid UUIDs
+		}
+		group, err := s.repo.GetGroupByKeycloakID(ctx, groupID)
+		if err != nil {
+			continue // Skip if not found
+		}
+		groups = append(groups, s.convertToGroupResponse(*group))
+	}
+
+	// Get methodist
+	var methodist *UserResponse
+	if rup.Methodist.Valid {
+		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
+		if err == nil {
+			methodist = s.convertToUserResponse(*user)
+		}
+	}
+
+	// Get teacher
+	var teacher *UserResponse
+	if rup.Teacher.Valid {
+		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
+		if err == nil {
+			teacher = s.convertToUserResponse(*user)
+		}
+	}
+
+	return &RupResponse{
+		ID:         rup.ID,
+		Name:       rup.Name,
+		Code:       rup.Code.String,
+		Status:     string(rup.Status),
+		Reason:     rup.Reason.String,
+		Course:     rup.Course,
+		StudyForm:  string(rup.StudyForm),
+		StudyYear:  rup.StudyYear,
+		Type:       string(rup.Type),
+		TotalHours: rup.TotalHours,
+		Groups:     groups,
+		Methodist:  methodist,
+		Teacher:    teacher,
+		CreatedAt:  rup.CreatedAt.Time,
+		UpdatedAt:  rup.UpdatedAt.Time,
+	}, nil
 }
 
 func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*RupResponse, error) {

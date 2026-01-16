@@ -11,18 +11,18 @@ import (
 )
 
 type User struct {
-	KeycloakID uuid.UUID
-	Email      string
-	Username   string
-	FirstName  *string
-	LastName   *string
-	Role       string
+	KeycloakID uuid.UUID `json:"keycloakId"`
+	Email      string    `json:"email"`
+	Username   string    `json:"userName"`
+	FirstName  *string   `json:"firstName"`
+	LastName   *string   `json:"lastName"`
+	Role       string    `json:"role"`
 }
 
 type MeResponse struct {
 	KeycloakID uuid.UUID `json:"keycloakId"`
 	Email      string    `json:"email"`
-	Username   string    `json:"username"`
+	Username   string    `json:"userName"`
 	FirstName  string    `json:"firstName,omitempty"`
 	LastName   string    `json:"lastName,omitempty"`
 	Role       string    `json:"role"`
