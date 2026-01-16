@@ -4,7 +4,7 @@ import { create } from 'zustand'
 interface AuthState {
 	user: IUser | null
 	isAuthenticated: boolean
-	isLoading: boolean
+	authLoading: boolean
 	setUser: (user: IUser | null) => void
 	logout: () => void
 }
@@ -12,7 +12,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
 	user: null,
 	isAuthenticated: false,
-	isLoading: true,
+	authLoading: true,
 
 	setUser: (user) => {
 		let isAuthenticated = true
@@ -24,7 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 		set({
 			user,
 			isAuthenticated,
-			isLoading: false,
+			authLoading: false,
 		})
 	},
 

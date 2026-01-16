@@ -4,11 +4,12 @@ import { type FC, type ReactNode, useState } from 'react'
 
 import Link from 'next/link'
 
-import { rupStatusLabels, rupStatusVariants } from '@helpers'
-import { type IRupModule, RupModuleStatus } from '@types'
+import { hasRole, normalizeRupStatus, rupStatusVariants } from '@helpers'
+import { type IRup, RupStatusEnum, UserRoleEnum } from '@types'
 import {
 	Badge,
 	Button,
+	ButtonGroup,
 	Card,
 	CardAction,
 	CardContent,
@@ -32,17 +33,15 @@ import { ArrowLeft, CheckCircle, MessageSquarePlus, MessageSquareText, SendToBac
 import { DisciplineCardView } from '../components/discipline-card-view'
 import { TopicsCardView } from '../components/topics-view'
 
-type UserRole = 'TEACHER' | 'METHODIST'
-
 interface IRupViewProps {
-	data: IRupModule
-	role: UserRole
-	onStatusChange?: (newStatus: RupModuleStatus) => void
+	data: IRup
+	role: UserRoleEnum
+	onStatusChange?: (newStatus: RupStatusEnum) => void
 	actions?: ReactNode
 }
 
 export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions }) => {
-	const isMethodistReview = role === 'METHODIST' && data.status === RupModuleStatus.IN_REVIEW
+	const isMethodistReview = hasRole(role, UserRoleEnum.METHODIST) && data.status === RupStatusEnum.IN_REVIEW
 	const [comments, setComments] = useState<Record<string, string>>({})
 	const [generalComment, setGeneralComment] = useState('')
 
@@ -62,33 +61,41 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 
 				<div className='w-full'>
 					<Heading align='left' size='h1'>
-						{data.title || 'Рабочий учебный план'}{' '}
-						<Badge variant={rupStatusVariants[data.status] ?? 'outline'}>
-							{rupStatusLabels[data.status] ?? data.status}
-						</Badge>
+						{data.name || 'Рабочий учебный план'}{' '}
+						<Badge variant={rupStatusVariants[data.status] ?? 'outline'}>{normalizeRupStatus(data.status)}</Badge>
 					</Heading>
+
 					<p className='text-muted-foreground'>
-						{role === 'METHODIST'
+						{hasRole(role, UserRoleEnum.METHODIST)
 							? 'Проверка рабочего учебного плана.'
 							: 'Просмотр рабочего учебного плана. Редактирование запрещено.'}
 					</p>
 				</div>
 
-				{actions && <div className='flex gap-4 justify-end'>{actions}</div>}
-
-				{isMethodistReview && (
-					<div className='flex gap-4 justify-end'>
-						<Button size='lg' variant='outline' onClick={() => onStatusChange?.(RupModuleStatus.DRAFT)}>
+				<ButtonGroup>
+					{actions}
+					<ButtonGroup>
+						<Button
+							className='hover:text-destructive'
+							size='sm'
+							variant='outline'
+							onClick={() => onStatusChange?.(RupStatusEnum.REJECTED)}
+						>
 							<SendToBack className='mr-2 h-4 w-4' />
-							Отправить на доработку
+							Отклонить
 						</Button>
 
-						<Button size='lg' variant='default' onClick={() => onStatusChange?.(RupModuleStatus.APPROVED)}>
+						<Button
+							className='hover:text-primary'
+							size='sm'
+							variant='outline'
+							onClick={() => onStatusChange?.(RupStatusEnum.APPROVED)}
+						>
 							<CheckCircle className='mr-2 h-4 w-4' />
 							Утвердить
 						</Button>
-					</div>
-				)}
+					</ButtonGroup>
+				</ButtonGroup>
 			</div>
 
 			<div className='space-y-6'>
@@ -112,7 +119,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								}
 								label='Наименование модуля'
 							>
-								{data.title}
+								{data?.code} {data?.name}
 							</InfoItem>
 							<InfoItem
 								commentSlot={
@@ -126,7 +133,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								}
 								label='Тип модуля'
 							>
-								{data.type}
+								{data?.type}
 							</InfoItem>
 							<InfoItem
 								commentSlot={
@@ -140,7 +147,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								}
 								label='Форма обучения'
 							>
-								{data.studyForm}
+								{data?.studyForm}
 							</InfoItem>
 							<InfoItem
 								commentSlot={
@@ -154,7 +161,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								}
 								label='Год'
 							>
-								{data.year}
+								{data?.studyYear}
 							</InfoItem>
 						</CardContent>
 					</Card>
@@ -177,7 +184,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								}
 								label='Группа'
 							>
-								{data.group?.name}
+								{data.groups[0]?.name}
 							</InfoItem>
 							<InfoItem
 								commentSlot={
@@ -191,7 +198,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								}
 								label='Специальность'
 							>
-								{data.group?.specialty}
+								{data.groups[0]?.specialty}
 							</InfoItem>
 							<InfoItem
 								commentSlot={
@@ -205,7 +212,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								}
 								label='Квалификация'
 							>
-								{data.group?.qualification}
+								{data.groups[0]?.qualification}
 							</InfoItem>
 						</CardContent>
 					</Card>
@@ -223,7 +230,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 						)}
 					</CardHeader>
 					<CardContent>
-						<p className='text-sm leading-relaxed'>{data.goals || '—'}</p>
+						<p className='text-sm leading-relaxed'>{data.explorationNote.goals || '—'}</p>
 					</CardContent>
 
 					<Separator />
@@ -242,7 +249,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 						)}
 					</CardHeader>
 					<CardContent>
-						<p className='text-sm leading-relaxed'>{data.explorationNote || '—'}</p>
+						<p className='text-sm leading-relaxed'>{data.explorationNote.basis || '—'}</p>
 					</CardContent>
 				</Card>
 
@@ -263,10 +270,10 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 							)}
 						</CardHeader>
 						<CardContent>
-							{data.internetResources?.length > 0 ? (
+							{data.explorationNote.internetResources?.length > 0 ? (
 								<ul className='list-disc space-y-2 pl-5 text-sm'>
-									{data.internetResources.map((res, i) => (
-										<li key={i}>{res.value}</li>
+									{data.explorationNote.internetResources.map((res, i) => (
+										<li key={i}>{res.name}</li>
 									))}
 								</ul>
 							) : (
@@ -296,10 +303,10 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 							)}
 						</CardHeader>
 						<CardContent>
-							{data.technicalResources?.length > 0 ? (
+							{data.explorationNote.technicalResources?.length > 0 ? (
 								<ul className='list-disc space-y-2 pl-5 text-sm'>
-									{data.technicalResources.map((res, i) => (
-										<li key={i}>{res.value}</li>
+									{data.explorationNote.technicalResources.map((res, i) => (
+										<li key={i}>{res.name}</li>
 									))}
 								</ul>
 							) : (

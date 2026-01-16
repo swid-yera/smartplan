@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_cQruLBCDA5
 createdAt: 2026-01-15T14:31:01.786455
-updatedAt: 2026-01-15T14:31:21.541170600
+updatedAt: 2026-01-15T20:19:57.809064300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -11,16 +11,16 @@ body: {}
 bodyType: null
 description: ''
 headers:
-- enabled: true
+- enabled: false
   name: Cookie
   value: ${[ sid ]}
   id: T3rH6MvqVj
 - enabled: true
   name: ''
   value: ''
-  id: BhCguWURUt
+  id: 6AxPx6s3eI
 method: GET
 name: user by id
-sortPriority: 0.003
-url: http://localhost:8080/api/users/720447e1-3bab-4aa1-9704-f3366fd50cdd
+sortPriority: 2000.0
+url: ${[ url ]}/api/users/b83882bd-7761-46bd-b657-cb156950309d
 urlParameters: []

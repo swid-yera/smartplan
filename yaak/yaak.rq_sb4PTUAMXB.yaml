@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_sb4PTUAMXB
 createdAt: 2026-01-14T14:37:15.839580800
-updatedAt: 2026-01-15T14:36:53.907775700
+updatedAt: 2026-01-16T02:55:25.836138900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -12,16 +12,16 @@ body:
 bodyType: null
 description: ''
 headers:
-- enabled: true
+- enabled: false
   name: Cookie
   value: ${[ sid ]}
   id: PdYB9EAGtq
 - enabled: true
   name: ''
   value: ''
-  id: CFtRdvGKtw
+  id: JR23fAaJHp
 method: GET
 name: by id
 sortPriority: 1000.0
-url: http://localhost:8080/api/rups/2825edef-c185-4d57-b9c8-ee9bbf2b525e
+url: ${[ url ]}/api/rups/2a2dc5b5-286f-4747-a58d-b76af5ee77f4
 urlParameters: []

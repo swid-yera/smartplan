@@ -3,7 +3,7 @@ import type { FC } from 'react'
 import Link from 'next/link'
 
 import { rupStatusLabels, rupStatusVariants } from '@helpers'
-import { type IRupModule } from '@types'
+import { type IRup } from '@types'
 import {
 	Badge,
 	Button,
@@ -21,18 +21,14 @@ import {
 } from '@ui'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { mockRupModules } from '../mock.data'
-
 interface IRupsProps {
-	rups: IRupModule[]
+	rups: IRup[]
 	currentPage: number
 	totalPages: number
 	onPageChange: (page: number) => void
 }
 
 export const RupsCard: FC<IRupsProps> = ({ rups, currentPage, totalPages, onPageChange }) => {
-	const data = rups.length > 0 ? rups : mockRupModules
-
 	return (
 		<Card>
 			<CardHeader>
@@ -57,20 +53,20 @@ export const RupsCard: FC<IRupsProps> = ({ rups, currentPage, totalPages, onPage
 						</TableHeader>
 
 						<TableBody>
-							{data.map((item) => {
+							{rups.map((item) => {
 								const status = item.status ?? 'DRAFT'
-								const specialty = item.group.specialty
+								const specialty = item.groups[0].specialty
 
 								return (
 									<TableRow key={item.id}>
-										<TableCell>{item.title || 'Без названия'}</TableCell>
-										<TableCell>{item.contacts[0].name || 'Неизвестно'}</TableCell>
+										<TableCell>{item?.code || 'Без названия'}</TableCell>
+										<TableCell>{item?.teacher?.firstName || 'Неизвестно'}</TableCell>
 										<TableCell>{specialty || '—'}</TableCell>
-										<TableCell>{item.group.qualification || '—'}</TableCell>
-										<TableCell>{item.year || '—'}</TableCell>
+										<TableCell>{item?.groups[0]?.qualification || '—'}</TableCell>
+										<TableCell>{item?.studyYear || '—'}</TableCell>
 										<TableCell className='text-right'>
 											<Badge variant={rupStatusVariants[status] ?? 'default'}>
-												{rupStatusLabels[status] ?? status}{' '}
+												{rupStatusLabels[status] ?? status}
 											</Badge>
 										</TableCell>
 										<TableCell className='text-right'>
@@ -82,7 +78,7 @@ export const RupsCard: FC<IRupsProps> = ({ rups, currentPage, totalPages, onPage
 								)
 							})}
 
-							{data.length === 0 && (
+							{rups.length === 0 && (
 								<TableRow>
 									<TableCell className='text-center' colSpan={6}>
 										Пока нет ни одного модуля. Создайте первый.

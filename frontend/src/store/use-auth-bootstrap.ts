@@ -12,7 +12,7 @@ export const useAuthBootstrap = () => {
 	const setUser = useAuthStore((s) => s.setUser)
 
 	const { data, isError } = useQuery({
-		...services.auth.getMeOptions,
+		...services.auth.getMeOptions(),
 		enabled: true,
 	})
 

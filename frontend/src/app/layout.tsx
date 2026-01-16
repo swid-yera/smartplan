@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 
 import { ASidebar, Footer } from '@layout'
-import { QueryProvider, ThemeProvider } from '@providers'
+import { ASidebarProvider, QueryProvider, ThemeProvider } from '@providers'
 import { AuthInitializer } from '@store'
-import { SidebarInset, SidebarProvider, Toaster } from '@ui'
+import { SidebarInset, Toaster } from '@ui'
 
 import './globals.css'
 
@@ -26,7 +26,7 @@ export default function RootLayout({
 			<body className='min-h-screen antialiased flex flex-col'>
 				<ThemeProvider>
 					<QueryProvider>
-						<SidebarProvider defaultOpen suppressHydrationWarning>
+						<ASidebarProvider>
 							<AuthInitializer />
 							<ASidebar />
 							<SidebarInset className='flex flex-col justify-between'>
@@ -35,7 +35,7 @@ export default function RootLayout({
 								<Toaster position='top-right' />
 								<Footer />
 							</SidebarInset>
-						</SidebarProvider>
+						</ASidebarProvider>
 					</QueryProvider>
 				</ThemeProvider>
 			</body>

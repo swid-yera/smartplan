@@ -14,7 +14,7 @@ import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { type RUPFormData, formSchema } from './form-schema'
+import { type RUPFormData, formSchema } from '../form-schema'
 import { groupData } from './mock.data'
 import { Step1 } from './step1'
 import { Step2 } from './step2'

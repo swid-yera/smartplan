@@ -18,7 +18,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { formatHours } from '@helpers'
 import { cn } from '@lib'
-import { RupModuleTypeEnum, TopicTypeEnum } from '@types'
+import { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -101,8 +101,8 @@ type TopicsCardValues = FieldValues & {
 }
 
 const RUP_TYPE_HOURS_CONFIG = {
-	[RupModuleTypeEnum.THEORY]: { totalHours: 2, theoryHours: 2, practiceHours: 0, individualHours: 0 },
-	[RupModuleTypeEnum.PRACTICE]: { totalHours: 6, theoryHours: 0, practiceHours: 6, individualHours: 0 },
+	[RupTypeEnum.THEORY]: { totalHours: 2, theoryHours: 2, practiceHours: 0, individualHours: 0 },
+	[RupTypeEnum.PRACTICE]: { totalHours: 6, theoryHours: 0, practiceHours: 6, individualHours: 0 },
 }
 
 export function TopicsCard<T extends TopicsCardValues>() {
@@ -435,9 +435,9 @@ const TopicRow = <T extends TopicsCardValues>({
 		// determine counting hours 2 or 6, depends at rup module type
 		let countingHours: 2 | 6 = 2
 
-		if (rupModuleType == RupModuleTypeEnum.THEORY) {
+		if (rupModuleType == RupTypeEnum.THEORY) {
 			countingHours = 2
-		} else if (rupModuleType == RupModuleTypeEnum.PRACTICE) {
+		} else if (rupModuleType == RupTypeEnum.PRACTICE) {
 			countingHours = 6
 		}
 
@@ -454,13 +454,13 @@ const TopicRow = <T extends TopicsCardValues>({
 				newPracticeHours = 0
 				newIndividualHours = countingHours
 				break
-			case TopicTypeEnum.Combined:
+			case TopicTypeEnum.COMBINED:
 				newTotalHours = countingHours
 				newTheoryHours = countingHours
 				newPracticeHours = 0
 				newIndividualHours = 0
 				break
-			case TopicTypeEnum.Practical:
+			case TopicTypeEnum.PRACTICAL:
 				newTotalHours = countingHours
 				newTheoryHours = 0
 				newPracticeHours = countingHours
@@ -545,12 +545,12 @@ const TopicRow = <T extends TopicsCardValues>({
 										<SelectValue placeholder='Тип занятия' />
 									</SelectTrigger>
 									<SelectContent>
-										{rupModuleType === RupModuleTypeEnum.THEORY && (
+										{rupModuleType === RupTypeEnum.THEORY && (
 											<SelectItem value={TopicTypeEnum.SNZ}>СНЗ</SelectItem>
 										)}
-										<SelectItem value={TopicTypeEnum.Practical}>Практическая</SelectItem>
-										{rupModuleType === RupModuleTypeEnum.THEORY && (
-											<SelectItem value={TopicTypeEnum.Combined}>Комбинированная</SelectItem>
+										<SelectItem value={TopicTypeEnum.PRACTICAL}>Практическая</SelectItem>
+										{rupModuleType === RupTypeEnum.THEORY && (
+											<SelectItem value={TopicTypeEnum.COMBINED}>Комбинированная</SelectItem>
 										)}
 									</SelectContent>
 								</Select>

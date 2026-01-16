@@ -2,12 +2,15 @@ import { api } from '@lib'
 import { queryOptions } from '@tanstack/react-query'
 import type { IUser } from '@types'
 
+const loginUrl = `${process.env.NEXT_PUBLIC_API_URL}/login`
+const logoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/logout`
+
 export class AuthService {
 	// redirect to login
 	redirectToLogin() {
 		if (typeof window !== 'undefined') {
 			// redirecting to backend
-			window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/login`
+			window.location.href = loginUrl
 		}
 	}
 
@@ -15,7 +18,7 @@ export class AuthService {
 	redirectToLogout() {
 		if (typeof window !== 'undefined') {
 			// redirecting to backend
-			window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/logout`
+			window.location.href = logoutUrl
 		}
 	}
 
@@ -25,21 +28,32 @@ export class AuthService {
 			throw new Error('data is not exist')
 		}
 
-		if (!data?.keycloak_id || !data.username || !data.email) {
+		if (!user?.keycloakID || !user?.username) {
 			throw new Error('invalid user data')
 		}
 	}
 
 	// get me
-	getMeOptions = queryOptions({
-		queryKey: ['me'],
-		queryFn: async () => {
-			const { data } = await api.get<IUser | null>('/api/me')
+	getMeOptions = () => {
+		return queryOptions({
+			queryKey: ['me'],
+			queryFn: async () => {
+				const { data } = await api.get<IUser | null>('/api/me')
 
-			this.assertUser(data)
+				const user = lowercaseFirstLetter(data)
 
-			return data
-		},
-		retry: false,
-	})
+				// this.assertUser(user)
+
+				return user
+			},
+			retry: false,
+		})
+	}
+}
+
+// TODO: delete me when it's over
+const lowercaseFirstLetter = (obj: Record<string, string>) => {
+	return Object.fromEntries(
+		Object.entries(obj).map(([key, value]) => [key.charAt(0).toLowerCase() + key.slice(1), value]),
+	)
 }

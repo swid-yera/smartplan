@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ui'
 
 export default function TeachersPage() {
-	const { data: users = [], isLoading } = useQuery(services.user.getAllUsersOptions)
+	const { data: users = [], isLoading } = useQuery(services.user.getAllOptions())
 
 	const [search, setSearch] = useState('')
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')

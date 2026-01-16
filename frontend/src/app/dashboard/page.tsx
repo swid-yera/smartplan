@@ -1,32 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { notFound } from 'next/navigation'
 
+import { Loader } from '@components'
+import { hasRole } from '@helpers'
 import { useAuthStore } from '@store'
-import { Button } from '@ui'
+import { UserRoleEnum } from '@types'
 
 import { MethodistDashboard } from './methodist-dashboard'
 import { TeacherDashboard } from './teacher-dashboard'
 
 export default function DashboardPage() {
-	const { user, isLoading } = useAuthStore()
-	const [isMethodistOverride, setIsMethodistOverride] = useState<boolean | null>(null)
+	const { user, authLoading } = useAuthStore()
 
-	if (isLoading) {
-		return null
-	}
+	if (authLoading) return <Loader />
+	if (!user) return notFound()
 
-	// В реальном приложении роль должна приходить с бэкенда в объекте user
-	const isMethodist = isMethodistOverride ?? user?.roles?.includes('methodist')
+	const isMethodist = hasRole(user.role, UserRoleEnum.METHODIST)
 
 	return (
-		<div className='p-4 sm:p-6 lg:p-8 relative'>
-			<div className='absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8'>
-				<Button variant='outline' onClick={() => setIsMethodistOverride(!isMethodist)}>
-					{isMethodist ? 'Teacher View' : 'Methodist View'}
-				</Button>
-			</div>
-			{isMethodist ? <MethodistDashboard /> : <TeacherDashboard />}
-		</div>
+		<div className='p-4 sm:p-6 lg:p-8 relative'>{isMethodist ? <MethodistDashboard /> : <TeacherDashboard />}</div>
 	)
 }

@@ -2,8 +2,9 @@
 
 import React from 'react'
 
+import { normalizeRupType, normalizeStudyForm } from '@helpers'
 import { cn } from '@lib'
-import { RupModuleTypeEnum, StudyFormEnum } from '@types'
+import { RupTypeEnum, StudyFormEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -35,33 +36,25 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@ui'
-import { Check, ChevronsUpDown, Info, RotateCcw } from 'lucide-react'
+import { Check, ChevronsUpDown, Info } from 'lucide-react'
 import type { FieldValues, Path, PathValue } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'
 
 // Define a base shape for the form data that this component needs.
 // Any form passed to this component must have at least these fields.
 type BasicDataValues = FieldValues & {
-	title: string
-	type: string
-	studyForm: string
+	name: string
+	code: string
+	type: RupTypeEnum
+	studyForm: StudyFormEnum
 	prerequisites?: string
 	postrequisites?: string
 }
 
-const ChangeIndicator = ({ onReset }: { onReset: () => void }) => (
-	<button
-		className='ml-2 p-0.5 rounded-full text-sky-500 hover:bg-sky-100'
-		title='Сбросить изменение'
-		type='button'
-		onClick={onReset}
-	>
-		<RotateCcw className='h-3 w-3' />
-	</button>
-)
-
 export function BasicDataCard<T extends BasicDataValues>() {
-	const { control, formState, resetField } = useFormContext<T>()
+	const { control, getValues } = useFormContext<T>()
+
+	console.log(getValues())
 
 	return (
 		<Card>
@@ -73,15 +66,10 @@ export function BasicDataCard<T extends BasicDataValues>() {
 			<CardContent className='space-y-3 text-sm'>
 				<FormField
 					control={control}
-					name={'title' as Path<T>}
+					name={'name' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel className='flex items-center'>
-								Наименование модуля
-								{formState.dirtyFields.title && (
-									<ChangeIndicator onReset={() => resetField('title' as Path<T>)} />
-								)}
-							</FormLabel>
+							<FormLabel className='flex items-center'>Наименование модуля</FormLabel>
 							<FormControl>
 								<Input placeholder='Введите называние модуля' {...field} />
 							</FormControl>
@@ -98,28 +86,16 @@ export function BasicDataCard<T extends BasicDataValues>() {
 							<FormItem>
 								<FormLabel className='flex items-center'>
 									Тип модуля
-									{formState.dirtyFields.type && (
-										<ChangeIndicator onReset={() => resetField('type' as Path<T>)} />
-									)}
 									<Tooltip>
 										<TooltipTrigger className='ml-1' type='button'>
 											<Info size='14' />
 										</TooltipTrigger>
 										<TooltipContent side='top'>
-											{[
-												{
-													type: RupModuleTypeEnum.PRACTICE,
-													desc: 'Для каждой темы будет считаться по 6 часа',
-												},
-												{
-													type: RupModuleTypeEnum.THEORY,
-													desc: 'Для каждой темы будет считаться по 2 часа',
-												},
-											].map((item) => (
-												<p key={item.type}>
-													<span className='font-bold'>{item.type}:</span>
+											{Object.entries(rupTypeTips).map((obj) => (
+												<p key={obj[0]}>
+													<span className='font-bold'>{normalizeRupType(obj[0] as RupTypeEnum)}:</span>
 													<br />
-													{item.desc}
+													{obj[1]}
 												</p>
 											))}
 										</TooltipContent>
@@ -131,9 +107,9 @@ export function BasicDataCard<T extends BasicDataValues>() {
 											<SelectValue placeholder='Теоретическая или практическая' />
 										</SelectTrigger>
 										<SelectContent position='popper'>
-											{Object.keys(RupModuleTypeEnum).map((rupType) => (
-												<SelectItem key={rupType} value={RupModuleTypeEnum[rupType]}>
-													{RupModuleTypeEnum[rupType]}
+											{Object.keys(RupTypeEnum).map((rupType) => (
+												<SelectItem key={rupType} value={RupTypeEnum[rupType]}>
+													{normalizeRupType(rupType as RupTypeEnum)}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -149,12 +125,7 @@ export function BasicDataCard<T extends BasicDataValues>() {
 						name={'studyForm' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className='flex items-center'>
-									Форма обучения
-									{formState.dirtyFields.studyForm && (
-										<ChangeIndicator onReset={() => resetField('studyForm' as Path<T>)} />
-									)}
-								</FormLabel>
+								<FormLabel className='flex items-center'>Форма обучения</FormLabel>
 								<FormControl>
 									<Select value={field.value ?? ''} onValueChange={field.onChange}>
 										<SelectTrigger className='w-full'>
@@ -163,7 +134,7 @@ export function BasicDataCard<T extends BasicDataValues>() {
 										<SelectContent position='popper'>
 											{Object.keys(StudyFormEnum).map((studyForm) => (
 												<SelectItem key={studyForm} value={studyForm}>
-													{StudyFormEnum[studyForm]}
+													{normalizeStudyForm(studyForm as StudyFormEnum)}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -183,6 +154,11 @@ export function BasicDataCard<T extends BasicDataValues>() {
 			</CardContent>
 		</Card>
 	)
+}
+
+const rupTypeTips: Record<RupTypeEnum, string> = {
+	PRACTICE: 'Для каждой темы будет считаться по 6 часа',
+	THEORY: 'Для каждой темы будет считаться по 2 часа',
 }
 
 // requisite field
@@ -216,10 +192,7 @@ function RequisiteField<T extends BasicDataValues>({ type, label }: RequisiteFie
 			name={type as Path<T>}
 			render={({ field }) => (
 				<FormItem className='flex flex-col'>
-					<FormLabel className='flex items-center'>
-						{label}
-						{formState.dirtyFields[type] && <ChangeIndicator onReset={() => resetField(type as Path<T>)} />}
-					</FormLabel>
+					<FormLabel className='flex items-center'>{label}</FormLabel>
 					<Popover open={open} onOpenChange={setOpen}>
 						<PopoverTrigger asChild>
 							<FormControl>

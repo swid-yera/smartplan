@@ -2,25 +2,25 @@ type: http_request
 model: http_request
 id: rq_8ABDZvnzJ3
 createdAt: 2026-01-13T03:20:49.883142700
-updatedAt: 2026-01-14T15:35:41.482688300
+updatedAt: 2026-01-15T17:42:50.134764
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_KEgdPSdZmC
 authentication: {}
 authenticationType: null
 body: {}
 bodyType: null
-description: ""
+description: ''
 headers:
-  - enabled: true
-    name: Cookie
-    value: ${[ sid ]}
-    id: FMB9u85CUF
-  - enabled: true
-    name: ""
-    value: ""
-    id: DP3XxA7raU
+- enabled: false
+  name: Cookie
+  value: ${[ sid ]}
+  id: FMB9u85CUF
+- enabled: true
+  name: ''
+  value: ''
+  id: BMm8gdbIma
 method: GET
 name: students
 sortPriority: 0.0
-url: http://localhost:8080/api/groups/
+url: ${[ url ]}/api/groups/
 urlParameters: []

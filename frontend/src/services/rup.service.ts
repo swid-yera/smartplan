@@ -1,0 +1,99 @@
+import { api } from '@lib'
+import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
+import type { IMessageResponse, IRup, IUpdateRequest, IUpdateStatusRequest } from '@types'
+
+export class RupService {
+	// get all
+	getAllOptions = () => {
+		return queryOptions<IRup[]>({
+			queryKey: ['rups'],
+			queryFn: async () => {
+				const { data } = await api.get<IRup[]>('/api/rups/')
+
+				return data
+			},
+		})
+	}
+
+	// get by id
+	getByIdOptions = (id: string) => {
+		return queryOptions<IRup>({
+			queryKey: ['rup', id],
+			queryFn: async () => {
+				const { data } = await api.get<IRup>(`/api/rups/${id}`)
+
+				return data
+			},
+		})
+	}
+
+	// create
+	createOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: ({ newRup }: { newRup: IUpdateRequest }) =>
+				api.post<IRup>('/api/rups', newRup).then((r) => r.data),
+
+			onSuccess: (createdRup) => {
+				queryClient.setQueryData(['rup', createdRup.id], createdRup)
+			},
+		})
+	}
+
+	// update rup by id
+	updateOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: ({ id, changedRup }: { id: string; changedRup: IUpdateRequest }) =>
+				api.put<IRup>(`/api/rups/${id}`, changedRup).then((r) => r.data),
+
+			onSuccess: (updatedRup, { id }) => {
+				queryClient.setQueryData(['rup', id], updatedRup)
+			},
+		})
+	}
+
+	// update rup status by id
+	updateStatusOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: ({ id, ...payload }: IUpdateStatusRequest) =>
+				api.put<IMessageResponse>(`/api/rups/${id}/status`, payload).then((r) => r.data),
+
+			onSuccess: (messageResponse, { id }) => {
+				queryClient.invalidateQueries({ queryKey: ['rup', id] })
+				queryClient.invalidateQueries({ queryKey: ['rups'] })
+			},
+		})
+	}
+
+	// delete by id
+	deleteMutationOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: async (id: string) => {
+				const { data, statusText } = await api.delete<IMessageResponse>(`/api/rups/${id}`)
+
+				if (statusText !== 'OK') throw new Error(data.message)
+
+				return id
+			},
+
+			onSuccess: (deletedId: string) => {
+				// delete from cache getAllRups if exists
+				queryClient.setQueryData<IRup[] | null>(['rups'], (old) =>
+					old ? old.filter((rup) => rup.id !== deletedId) : null,
+				)
+
+				// delete from getRupById cache if exists
+				queryClient.removeQueries({
+					queryKey: ['rup', deletedId],
+				})
+			},
+		})
+	}
+}

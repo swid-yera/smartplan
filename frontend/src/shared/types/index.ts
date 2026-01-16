@@ -1,3 +1,8 @@
 export * from './award.types'
 export * from './global.types'
 export * from './rup.types'
+
+// service
+export * from './service/global.service.types'
+export * from './service/group.service.types'
+export * from './service/rup.service.types'

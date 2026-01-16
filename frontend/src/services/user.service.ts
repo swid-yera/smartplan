@@ -1,36 +1,29 @@
 import { api } from '@lib'
 import { queryOptions } from '@tanstack/react-query'
-import { type IUser } from '@types'
+import type { IUser } from '@types'
 
 export class UserService {
-	// type guard
-	private assertUser(data: IUser | null): asserts data is IUser {
-		if (!data) {
-			throw new Error('data is not exist')
-		}
+	// get all
+	getAllOptions = () => {
+		return queryOptions<IUser[]>({
+			queryKey: ['users'],
+			queryFn: async () => {
+				const { data } = await api.get<IUser[]>('/api/users')
 
-		if (!data?.keycloak_id || !data.name || !data.email) {
-			throw new Error('invalid user data')
-		}
+				return data
+			},
+		})
 	}
 
-	getMeOptions = queryOptions({
-		queryKey: ['me'],
-		queryFn: async () => {
-			const { data } = await api.get<IUser | null>('/api/me')
+	// get by id
+	getByIdOptions = (id: string) => {
+		return queryOptions<IUser>({
+			queryKey: ['user', id],
+			queryFn: async () => {
+				const { data } = await api.get<IUser>(`/api/users/${id}`)
 
-			this.assertUser(data)
-
-			return data
-		},
-	})
-
-	getAllUsersOptions = queryOptions<IUser[]>({
-		queryKey: ['users'],
-		queryFn: async () => {
-			const { data } = await api.get<IUser[]>('/api/users')
-
-			return data
-		},
-	})
+				return data
+			},
+		})
+	}
 }

@@ -2,6 +2,8 @@
 
 import type { DetailedHTMLProps, FC, HTMLAttributes } from 'react'
 
+import { normalizeUserRole } from '@helpers'
+import { services } from '@services'
 import type { IUser } from '@types'
 import {
 	Avatar,
@@ -19,7 +21,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from '@ui'
-import { Bell, ChevronsUpDown, CreditCard, LogOut, User } from 'lucide-react'
+import { ChevronsUpDown, LogOut, Mail, Phone, ShieldUser, User } from 'lucide-react'
 
 interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElement>, HTMLUListElement> {
 	user: IUser
@@ -41,14 +43,12 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 								<AvatarImage alt={user.username} src='https://avatars.githubusercontent.com/u/1486366' />
 								<AvatarFallback className='rounded-lg'>{user.username}</AvatarFallback>
 							</Avatar>
+
 							<div className='grid flex-1 text-left text-sm leading-tight'>
-								<span className='truncate font-medium'>{user.username}</span>
-								<span className='truncate text-xs text-muted-foreground'>
-									{user.roles
-										.map((role) => role)
-										.join(', ')
-										.trim()}
+								<span className='truncate font-medium'>
+									{user.firstName} {user.lastName}
 								</span>
+								<span className='truncate text-xs text-muted-foreground'>{normalizeUserRole(user.role)}</span>
 							</div>
 							<ChevronsUpDown className='ml-auto size-4' />
 						</SidebarMenuButton>
@@ -66,8 +66,8 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 									<AvatarFallback className='rounded-lg'>{user.username}</AvatarFallback>
 								</Avatar>
 								<div className='grid flex-1 text-left text-sm leading-tight'>
-									<span className='truncate font-medium'>{user.username}</span>
-									<span className='truncate text-xs'>{user.email}</span>
+									<span className='truncate font-medium'>{user.firstName}</span>
+									<span className='truncate text-xs'>{user.lastName}</span>
 								</div>
 							</div>
 						</DropdownMenuLabel>
@@ -75,22 +75,27 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 						<DropdownMenuGroup>
 							<DropdownMenuItem>
 								<User />
-								Профиль
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<CreditCard />
-								Карта оплаты
+								{user.username}
 							</DropdownMenuItem>
 							<DropdownMenuItem>
-								<Bell />
-								Уведомления
+								<ShieldUser />
+								{normalizeUserRole(user.role)}
 							</DropdownMenuItem>
+							{user.email && (
+								<DropdownMenuItem>
+									<Mail />
+									{user.email}
+								</DropdownMenuItem>
+							)}
+							{user.phone && (
+								<DropdownMenuItem>
+									<Phone />
+									{user.phone}
+								</DropdownMenuItem>
+							)}
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem>
+						<DropdownMenuItem className='cursor-pointer' onClick={() => services.auth.redirectToLogout()}>
 							<LogOut />
 							Выйти
 						</DropdownMenuItem>

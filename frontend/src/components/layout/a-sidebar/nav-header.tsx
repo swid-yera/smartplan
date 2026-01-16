@@ -20,7 +20,7 @@ import { LogInIcon } from 'lucide-react'
 import { NavUser } from './nav-user'
 
 export function AppSidebarHeader() {
-	const { user, isAuthenticated, isLoading } = useAuthStore()
+	const { user, isAuthenticated, authLoading } = useAuthStore()
 	const { state, isMobile } = useSidebar()
 
 	return (
@@ -32,7 +32,7 @@ export function AppSidebarHeader() {
 				<SidebarTrigger />
 			</div>
 
-			{isLoading ? (
+			{authLoading ? (
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton className='flex items-center gap-2 p-2' size='lg'>
@@ -54,7 +54,7 @@ export function AppSidebarHeader() {
 							className='w-full rounded-full transition-all duration-200 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:gap-0'
 							type='button'
 							variant='default'
-							onClick={services.auth.redirectToLogin}
+							onClick={() => services.auth.redirectToLogin()}
 						>
 							<LogInIcon />
 							<span className='whitespace-nowrap overflow-hidden transition-all duration-200 max-w-24 opacity-100 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0'>
