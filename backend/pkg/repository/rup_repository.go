@@ -13,7 +13,7 @@ type RupRepository interface {
 	CreateRup(ctx context.Context, params storage.CreateRupsParams) (*storage.Rup, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Rup, error)
 	GetAllRups(ctx context.Context) ([]storage.Rup, error)
-	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text) error
+	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error
 	UpdateRup(ctx context.Context, params storage.UpdateRupParams) (*storage.Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Rup, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
@@ -62,11 +62,12 @@ func (r *RupPostgres) GetAllRups(ctx context.Context) ([]storage.Rup, error) {
 	return r.queries.GetAllRups(ctx)
 }
 
-func (r *RupPostgres) UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text) error {
+func (r *RupPostgres) UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error {
 	return r.queries.UpdateRupsStatus(ctx, storage.UpdateRupsStatusParams{
-		ID:     id,
-		Status: status,
-		Reason: reason,
+		ID:        id,
+		Status:    status,
+		Reason:    reason,
+		Methodist: methodistID,
 	})
 }
 

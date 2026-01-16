@@ -21,7 +21,7 @@ type RupService interface {
 	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
 	GetAllRups(ctx context.Context) ([]*RupResponse, error)
-	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string) error
+	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string, methodistID uuid.UUID) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
@@ -268,6 +268,7 @@ func (s *rupService) UpdateRupStatus(
 	id uuid.UUID,
 	status string,
 	reason string,
+	methodistID uuid.UUID,
 ) error {
 
 	var rupStatus storage.RupsStatus
@@ -312,8 +313,13 @@ func (s *rupService) UpdateRupStatus(
 		reasonText = pgtype.Text{String: reason, Valid: true}
 	}
 
+	methodistUUID := pgtype.UUID{
+		Bytes: methodistID,
+		Valid: methodistID != uuid.Nil,
+	}
+
 	// 4. обновляем статус в БД
-	return s.repo.UpdateRupStatus(ctx, id, rupStatus, reasonText)
+	return s.repo.UpdateRupStatus(ctx, id, rupStatus, reasonText, methodistUUID)
 }
 
 func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error) {

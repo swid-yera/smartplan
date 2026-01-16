@@ -13,19 +13,27 @@ import (
 )
 
 const createAward = `-- name: CreateAward :one
-INSERT INTO awards (
-    status,
-    teacher,
-    type,
-    total_points,
-    text,
-    images,
-    document,
-    links
-) VALUES (
-    $1,$2,$3,$4,$5,$6,$7,$8
-)
-RETURNING id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at
+INSERT INTO
+    awards (
+        status,
+        teacher,
+        type,
+        total_points,
+        text,
+        images,
+        document,
+        links
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+    ) RETURNING id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at
 `
 
 type CreateAwardParams struct {
@@ -1233,8 +1241,7 @@ SET
     links = $10,
     updated_at = NOW()
 WHERE
-    id = $1
-RETURNING id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at
+    id = $1 RETURNING id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at
 `
 
 type UpdateAwardParams struct {
@@ -1407,19 +1414,26 @@ UPDATE rups
 SET
     status = $2,
     reason = $3,
+    methodist = $4,
     updated_at = NOW()
 WHERE
     id = $1
 `
 
 type UpdateRupsStatusParams struct {
-	ID     uuid.UUID   `json:"id"`
-	Status RupsStatus  `json:"status"`
-	Reason pgtype.Text `json:"reason"`
+	ID        uuid.UUID   `json:"id"`
+	Status    RupsStatus  `json:"status"`
+	Reason    pgtype.Text `json:"reason"`
+	Methodist pgtype.UUID `json:"methodist"`
 }
 
 func (q *Queries) UpdateRupsStatus(ctx context.Context, arg UpdateRupsStatusParams) error {
-	_, err := q.db.Exec(ctx, updateRupsStatus, arg.ID, arg.Status, arg.Reason)
+	_, err := q.db.Exec(ctx, updateRupsStatus,
+		arg.ID,
+		arg.Status,
+		arg.Reason,
+		arg.Methodist,
+	)
 	return err
 }
 

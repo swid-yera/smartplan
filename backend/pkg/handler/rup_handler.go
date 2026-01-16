@@ -131,7 +131,23 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		return
 	}
 
-	err = h.rupService.UpdateRupStatus(c.Request.Context(), id, req.Status, req.Reason)
+	// Получить пользователя из контекста (должен быть установлен middleware)
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		h.log.Error("User not authenticated")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Преобразовать в *service.User
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		h.log.Error("Invalid user context", currentUser)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	err = h.rupService.UpdateRupStatus(c.Request.Context(), id, req.Status, req.Reason, currentUser.KeycloakID)
 	if err != nil {
 		h.log.WithError(err).Error("failed to update RUP status")
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -202,11 +218,11 @@ func (h *RupHandler) DownloadRup(c *gin.Context) {
 
 // GetRupsByMethodist получает RUP по методисту
 func (h *RupHandler) GetRupsByMethodist(c *gin.Context) {
-	methodistIDStr := c.Query("id")
+	methodistIDStr := c.Param("id")
 	log.Println(methodistIDStr)
 	if methodistIDStr == "" {
-		h.log.Error("methodist_id query parameter is required")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "methodist_id query parameter is required"})
+		h.log.Error("methodist ID is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "methodist ID is required"})
 		return
 	}
 
