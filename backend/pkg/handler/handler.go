@@ -77,8 +77,8 @@ func (r *Router) Init() *gin.Engine {
 		// RUP routes
 		rups := api.Group("/rups")
 		{
-			rups.POST("/", r.rup.CreateRup)
-			rups.GET("/", r.rup.GetAllRups)
+			rups.POST("", r.rup.CreateRup)
+			rups.GET("", r.rup.GetAllRups)
 			rups.GET("/:id", r.rup.GetRupByID)
 			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
 			rups.PUT("/:id", r.rup.UpdateRup)
