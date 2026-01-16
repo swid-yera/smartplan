@@ -28,7 +28,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@ui'
-import { ArrowLeft, CheckCircle, MessageSquarePlus, MessageSquareText, SendToBack } from 'lucide-react'
+import { ArrowLeft, CheckCircle, ExternalLink, MessageSquarePlus, MessageSquareText, SendToBack } from 'lucide-react'
 
 import { DisciplineCardView } from '../components/discipline-card-view'
 import { TopicsCardView } from '../components/topics-view'
@@ -36,7 +36,7 @@ import { TopicsCardView } from '../components/topics-view'
 interface IRupViewProps {
 	data: IRup
 	role: UserRoleEnum
-	onStatusChange?: (newStatus: RupStatusEnum) => void
+	onStatusChange: (newStatus: RupStatusEnum, reason?: string) => void
 	actions?: ReactNode
 }
 
@@ -74,27 +74,29 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 
 				<ButtonGroup>
 					{actions}
-					<ButtonGroup>
-						<Button
-							className='hover:text-destructive'
-							size='sm'
-							variant='outline'
-							onClick={() => onStatusChange?.(RupStatusEnum.REJECTED)}
-						>
-							<SendToBack className='mr-2 h-4 w-4' />
-							Отклонить
-						</Button>
+					{isMethodistReview && (
+						<ButtonGroup>
+							<Button
+								className='hover:text-destructive'
+								size='sm'
+								variant='outline'
+								onClick={() => onStatusChange(RupStatusEnum.REJECTED, generalComment)}
+							>
+								<SendToBack className='mr-2 h-4 w-4' />
+								Отклонить
+							</Button>
 
-						<Button
-							className='hover:text-primary'
-							size='sm'
-							variant='outline'
-							onClick={() => onStatusChange?.(RupStatusEnum.APPROVED)}
-						>
-							<CheckCircle className='mr-2 h-4 w-4' />
-							Утвердить
-						</Button>
-					</ButtonGroup>
+							<Button
+								className='hover:text-primary'
+								size='sm'
+								variant='outline'
+								onClick={() => onStatusChange(RupStatusEnum.APPROVED)}
+							>
+								<CheckCircle className='mr-2 h-4 w-4' />
+								Утвердить
+							</Button>
+						</ButtonGroup>
+					)}
 				</ButtonGroup>
 			</div>
 
@@ -273,7 +275,22 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 							{data.explorationNote.internetResources?.length > 0 ? (
 								<ul className='list-disc space-y-2 pl-5 text-sm'>
 									{data.explorationNote.internetResources.map((res, i) => (
-										<li key={i}>{res.name}</li>
+										<li key={i} className='group'>
+											<div className='flex items-center gap-2'>
+												<span>{res.name}</span>
+
+												{res.link && (
+													<Link
+														className='inline-flex items-center text-primary hover:underline underline-offset-4'
+														href={res.link}
+														rel='noopener noreferrer'
+														target='_blank'
+													>
+														<ExternalLink className='h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity' />
+													</Link>
+												)}
+											</div>
+										</li>
 									))}
 								</ul>
 							) : (
@@ -306,7 +323,22 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 							{data.explorationNote.technicalResources?.length > 0 ? (
 								<ul className='list-disc space-y-2 pl-5 text-sm'>
 									{data.explorationNote.technicalResources.map((res, i) => (
-										<li key={i}>{res.name}</li>
+										<li key={i} className='group'>
+											<div className='flex items-center gap-2'>
+												<span>{res.name}</span>
+
+												{res.link && (
+													<Link
+														className='inline-flex items-center text-primary hover:underline underline-offset-4'
+														href={res.link}
+														rel='noopener noreferrer'
+														target='_blank'
+													>
+														<ExternalLink className='h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity' />
+													</Link>
+												)}
+											</div>
+										</li>
 									))}
 								</ul>
 							) : (

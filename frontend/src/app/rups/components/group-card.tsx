@@ -1,9 +1,12 @@
 'use client'
 
-import React from 'react'
+import { useEffect, useState } from 'react'
 
-import { formatCourseFromYearAndGroupName } from '@helpers'
+import { formatCourseFromYearAndGroupName, generateStudyYears } from '@helpers'
 import { cn } from '@lib'
+import { services } from '@services'
+import { useQuery } from '@tanstack/react-query'
+import type { IGroup } from '@types'
 import {
 	Button,
 	Card,
@@ -34,29 +37,46 @@ import {
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 
-import { groupData } from '../create/mock.data'
-
 type GroupValues = FieldValues & {
 	groupId: string
-	year: string
+	studyYear: string
+	course: number
 }
 
 export function GroupCard<T extends GroupValues>() {
 	const form = useFormContext<T>()
 
-	const [open, setOpen] = React.useState(false)
+	const [selectedGroup, setSelectedGroup] = useState<IGroup | undefined>(undefined)
+	const [formattedCourse, setFormattedCourse] = useState<number | string | undefined>('')
+	const [open, setOpen] = useState(false)
 	const watchedGroupId = form.watch('groupId' as Path<T>)
-	const watchedYear = form.watch('year' as Path<T>)
+	const watchedYear = form.watch('studyYear' as Path<T>)
 
-	const selectedGroup = groupData.find((group) => group.id == watchedGroupId)
-	const specialty = selectedGroup?.specialty ?? 'Группа не выбрана'
-	const qualification = selectedGroup?.qualification ?? 'Группа не выбрана'
-	const course =
-		selectedGroup?.name && watchedYear
-			? formatCourseFromYearAndGroupName(selectedGroup.name, watchedYear)
-			: 'Группа или год обучения не выбраны'
+	const generatedStudyYears = generateStudyYears(6)
 
-	const isCourseError = typeof course === 'string'
+	const {
+		data: groupsData = [],
+		isLoading,
+		isSuccess,
+	} = useQuery({ ...services.group.getAllOptions(), enabled: true })
+
+	// set selected group
+	useEffect(() => {
+		if (isLoading || !isSuccess || !watchedGroupId) return
+
+		const foundGroup = groupsData.find((g) => g.keycloak_id == watchedGroupId)
+
+		if (!foundGroup) return
+		setSelectedGroup(foundGroup)
+
+		if (!watchedYear) return
+		const foundCourse = formatCourseFromYearAndGroupName(foundGroup.name, watchedYear)
+
+		setFormattedCourse(foundCourse)
+
+		if (typeof foundCourse != 'number') form.setValue('course' as Path<T>, 0 as PathValue<T, Path<T>>)
+		form.setValue('course' as Path<T>, foundCourse as PathValue<T, Path<T>>)
+	}, [isSuccess, isLoading, groupsData, watchedGroupId, watchedYear])
 
 	return (
 		<Card>
@@ -87,7 +107,7 @@ export function GroupCard<T extends GroupValues>() {
 												variant='outline'
 											>
 												{field.value
-													? groupData.find((group) => group.id === field.value)?.name
+													? groupsData.find((group) => group.keycloak_id === field.value)?.name
 													: 'Выбрать группу...'}
 												<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
 											</Button>
@@ -99,20 +119,22 @@ export function GroupCard<T extends GroupValues>() {
 											<CommandList>
 												<CommandEmpty>Группа не найдена.</CommandEmpty>
 												<CommandGroup>
-													{groupData.map((group) => (
+													{groupsData.map((group) => (
 														<CommandItem
-															key={group.id}
+															key={group.keycloak_id}
 															value={group.name}
 															onSelect={() => {
-																form.setValue('groupId' as Path<T>, group.id as PathValue<T, Path<T>>)
-																form.setValue('year' as Path<T>, '' as PathValue<T, Path<T>>) // Reset year on group change
+																form.setValue(
+																	'groupId' as Path<T>,
+																	group.keycloak_id as PathValue<T, Path<T>>,
+																)
 																setOpen(false)
 															}}
 														>
 															<Check
 																className={cn(
 																	'mr-2 h-4 w-4',
-																	group.id === field.value ? 'opacity-100' : 'opacity-0',
+																	group.keycloak_id === field.value ? 'opacity-100' : 'opacity-0',
 																)}
 															/>
 															{group.name}
@@ -130,7 +152,7 @@ export function GroupCard<T extends GroupValues>() {
 
 					<FormField
 						control={form.control}
-						name={'year' as Path<T>}
+						name={'studyYear' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>Год обучения</FormLabel>
@@ -139,7 +161,7 @@ export function GroupCard<T extends GroupValues>() {
 										<SelectValue placeholder='Выберите год' />
 									</SelectTrigger>
 									<SelectContent>
-										{['2026-2027', '2025-2026', '2024-2025', '2023-2024', '2022-2023'].map((studyYears) => (
+										{generatedStudyYears.map((studyYears) => (
 											<SelectItem key={studyYears} value={studyYears}>
 												{studyYears}
 											</SelectItem>
@@ -154,15 +176,15 @@ export function GroupCard<T extends GroupValues>() {
 
 				<div>
 					<p>Специальность</p>
-					<p>{specialty}</p>
+					<p>{selectedGroup?.specialty}</p>
 				</div>
 				<div>
 					<p>Квалификация</p>
-					<p>{qualification}</p>
+					<p>{selectedGroup?.qualification}</p>
 				</div>
 				<div>
 					<p>Курс</p>
-					<p className={cn({ 'text-destructive': isCourseError })}>{course}</p>
+					<p className={cn({ 'text-destructive': typeof formattedCourse != 'number' })}>{formattedCourse}</p>
 				</div>
 			</CardContent>
 		</Card>

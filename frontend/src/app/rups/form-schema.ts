@@ -45,6 +45,7 @@ export const formSchema = z.object({
 		error: () => ({ message: 'Выберите корректный тип формы обучения' }),
 	}),
 	studyYear: z.string().min(9, 'Учебный год обязателен').max(9, 'Учебный год обязателен'),
+	course: z.number().min(1, 'yes').max(4, 'yes'),
 	groupId: z.string().min(1, 'Группа обязательна'),
 
 	// exploration note
@@ -59,13 +60,13 @@ export const formSchema = z.object({
 	internetResources: z.array(
 		z.object({
 			name: z.string().min(1, 'Ресурс не может быть пустым'),
-			link: z.string().optional(),
+			link: z.string(),
 		}),
 	),
 	technicalResources: z.array(
 		z.object({
 			name: z.string().min(1, 'Материал не может быть пустым'),
-			link: z.string().optional(),
+			link: z.string(),
 		}),
 	),
 

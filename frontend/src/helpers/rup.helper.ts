@@ -1,4 +1,4 @@
-import type { ICreateDiscipline, IDiscipline, RupStatusEnum, RupTypeEnum, StudyFormEnum } from '@types'
+import type { ICreateDiscipline, IDiscipline, RupStatusEnum, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
 
 // status
 export const rupStatusLabels: Record<RupStatusEnum, string> = {
@@ -37,6 +37,32 @@ export const studyFormLabels: Record<StudyFormEnum, string> = {
 
 export const normalizeStudyForm = (studyForm: StudyFormEnum): string => {
 	return studyFormLabels[studyForm] ?? ''
+}
+
+// topic type
+export const topicTypeLabels: Record<TopicTypeEnum, string> = {
+	COMBINED: 'Комбинированный',
+	PRACTICAL: 'Практический',
+	SNZ: 'СНЗ',
+}
+
+export const normalizeTopicType = (studyForm: TopicTypeEnum): string => {
+	return topicTypeLabels[studyForm] ?? ''
+}
+
+// generate study years
+export const generateStudyYears = (diapason: number = 6): string[] => {
+	const currentYear = new Date().getFullYear()
+	const years: string[] = []
+
+	for (let i = diapason; i >= -diapason; i--) {
+		const startYear = currentYear + i
+		const endYear = startYear + 1
+
+		years.push(`${startYear}-${endYear}`)
+	}
+
+	return years
 }
 
 // generate template

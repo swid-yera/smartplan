@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { EditableHourCell } from '@components'
 import {
 	DndContext,
-	type DragEndEvent,
 	KeyboardSensor,
 	MouseSensor,
 	TouchSensor,
@@ -16,7 +15,7 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { formatHours } from '@helpers'
+import { normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
@@ -24,7 +23,6 @@ import {
 	AlertDialogAction,
 	AlertDialogCancel,
 	AlertDialogContent,
-	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
@@ -34,9 +32,7 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
-	FormControl,
 	FormField,
-	FormItem,
 	Input,
 	Select,
 	SelectContent,
@@ -50,26 +46,14 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
 } from '@ui'
-import { ChevronDown, GripVertical, Info, Plus, Trash } from 'lucide-react'
-import {
-	type ArrayPath,
-	type FieldValues,
-	type Path,
-	type PathValue,
-	useFieldArray,
-	useFormContext,
-	useWatch,
-} from 'react-hook-form'
+import { ChevronDown, GripVertical, Plus, Trash } from 'lucide-react'
+import { type ArrayPath, type FieldValues, type Path, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 
+// --- Types ---
 type Topic = {
 	name: string
-	type: string
-	totalHours: number
+	type: TopicTypeEnum
 	theoryHours: number
 	practiceHours: number
 	individualHours: number
@@ -77,22 +61,13 @@ type Topic = {
 	srsHours?: number
 }
 
+type Semester = { semester: number; totalHours: number }
+
 type Discipline = {
 	code: string
 	name: string
-	totalHours: number
+	semesters: Semester[]
 	topics: Topic[]
-}
-
-const newTopic = {
-	name: '',
-	type: TopicTypeEnum.SNZ,
-	totalHours: 0,
-	theoryHours: 0,
-	practiceHours: 0,
-	individualHours: 0,
-	srspHours: 0,
-	srsHours: 0,
 }
 
 type TopicsCardValues = FieldValues & {
@@ -100,70 +75,45 @@ type TopicsCardValues = FieldValues & {
 	disciplines: Discipline[]
 }
 
-const RUP_TYPE_HOURS_CONFIG = {
-	[RupTypeEnum.THEORY]: { totalHours: 2, theoryHours: 2, practiceHours: 0, individualHours: 0 },
-	[RupTypeEnum.PRACTICE]: { totalHours: 6, theoryHours: 0, practiceHours: 6, individualHours: 0 },
+const newTopic: Topic = {
+	name: '',
+	type: TopicTypeEnum.SNZ,
+	theoryHours: 0,
+	practiceHours: 0,
+	individualHours: 0,
+	srspHours: 0,
+	srsHours: 0,
 }
 
 export function TopicsCard<T extends TopicsCardValues>() {
 	const form = useFormContext<T>()
-
 	const rupModuleType = useWatch({ control: form.control, name: 'type' as Path<T> }) ?? ''
 	const disciplines = (useWatch({ control: form.control, name: 'disciplines' as Path<T> }) ?? []) as Discipline[]
 
-	// This effect updates the hours for all topics when the global RUP type changes.
-	// It does not run on every change to `disciplines` to avoid performance issues and infinite loops.
-	useEffect(() => {
-		if (!rupModuleType) return
-
-		const newHours = RUP_TYPE_HOURS_CONFIG[rupModuleType as keyof typeof RUP_TYPE_HOURS_CONFIG]
-		// Add a guard to ensure newHours is defined before proceeding.
-
-		if (!newHours) return
-
-		const currentDisciplines = form.getValues('disciplines' as Path<T>) as Discipline[]
-
-		currentDisciplines.forEach((discipline, disciplineIndex) => {
-			discipline.topics.forEach((topic, topicIndex) => {
-				form.setValue(
-					`disciplines.${disciplineIndex}.topics.${topicIndex}.totalHours` as Path<T>,
-					newHours.totalHours as PathValue<T, Path<T>>,
-				)
-				form.setValue(
-					`disciplines.${disciplineIndex}.topics.${topicIndex}.theoryHours` as Path<T>,
-					newHours.theoryHours as PathValue<T, Path<T>>,
-				)
-				form.setValue(
-					`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours` as Path<T>,
-					newHours.practiceHours as PathValue<T, Path<T>>,
-				)
-				form.setValue(
-					`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours` as Path<T>,
-					newHours.individualHours as PathValue<T, Path<T>>,
-				)
+	// Расчет итогов по всей карточке (модулю)
+	const total = disciplines.reduce(
+		(acc, disc) => {
+			disc.topics?.forEach((t) => {
+				acc.theoryHours += Number(t.theoryHours) || 0
+				acc.practiceHours += Number(t.practiceHours) || 0
+				acc.individualHours += Number(t.individualHours) || 0
+				acc.srspHours += Number(t.srspHours) || 0
+				acc.srsHours += Number(t.srsHours) || 0
+				// totalHours вычисляем как сумму составляющих
+				acc.totalHours +=
+					(Number(t.theoryHours) || 0) + (Number(t.practiceHours) || 0) + (Number(t.individualHours) || 0)
 			})
-		})
-	}, [rupModuleType, form])
 
-	const total = {
-		totalHours: 0,
-		theoryHours: 0,
-		practiceHours: 0,
-		individualHours: 0,
-		srspHours: 0,
-		srsHours: 0,
-	}
+			return acc
+		},
+		{ totalHours: 0, theoryHours: 0, practiceHours: 0, individualHours: 0, srspHours: 0, srsHours: 0 },
+	)
 
-	disciplines.forEach((discipline) => {
-		discipline.topics.forEach((topic) => {
-			total.totalHours += topic.totalHours || 0
-			total.theoryHours += topic.theoryHours || 0
-			total.practiceHours += topic.practiceHours || 0
-			total.individualHours += topic.individualHours || 0
-			total.srspHours += topic.srspHours || 0
-			total.srsHours += topic.srsHours || 0
-		})
-	})
+	// Общее количество "Заявленных" часов (сумма по всем семестрам всех дисциплин)
+	const totalDeclaredHours = disciplines.reduce(
+		(sum, d) => sum + (d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0),
+		0,
+	)
 
 	return (
 		<Card>
@@ -172,26 +122,35 @@ export function TopicsCard<T extends TopicsCardValues>() {
 				<CardDescription>Добавьте темы занятий для каждой дисциплины.</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>
-				{disciplines.map((discipline, disciplineIndex) => (
-					<DisciplineBlock key={discipline.code} disciplineIndex={disciplineIndex} rupModuleType={rupModuleType} />
-				))}
-				<div className='flex justify-end items-center pt-4 pr-6 space-x-4'>
-					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
-						<p className='font-medium'>Заявлено часов:</p>
-						<p className='font-bold text-2xl'>{disciplines.reduce((sum, d) => sum + d.totalHours, 0)}</p>
+				{disciplines.map((_, index) => {
+					// Если вы используете useFieldArray для дисциплин здесь:
+					const fieldId = _[index]?.id
 
-						<p className='font-medium'>Текущие общие часы:</p>
+					return (
+						<DisciplineBlock
+							key={fieldId || index} // Используйте стабильный ID
+							disciplineIndex={index}
+							rupModuleType={rupModuleType}
+						/>
+					)
+				})}
+
+				<div className='flex justify-end items-center pt-4 pr-6 space-x-4 border-t'>
+					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
+						<p className='font-medium'>Заявлено часов в плане:</p>
+						<p className='font-bold text-2xl'>{totalDeclaredHours}</p>
+
+						<p className='font-medium'>Распределено тем (часов):</p>
 						<div
 							className={cn(
 								'font-bold text-right text-2xl',
-								total.totalHours !== disciplines.reduce((sum, d) => sum + d.totalHours, 0) &&
-									'text-destructive',
+								total.totalHours !== totalDeclaredHours && 'text-destructive',
 							)}
 						>
 							<p>{total.totalHours}</p>
 							<p className='text-xs font-normal text-muted-foreground'>
-								(Теория: {total.theoryHours} / Практика: {total.practiceHours} / Индивид:{' '}
-								{total.individualHours} / СРСП: {total.srspHours} / СРС: {total.srsHours})
+								(Т: {total.theoryHours} / П: {total.practiceHours} / И: {total.individualHours} / СРСП:{' '}
+								{total.srspHours} / СРС: {total.srsHours})
 							</p>
 						</div>
 					</div>
@@ -210,7 +169,6 @@ function DisciplineBlock<T extends TopicsCardValues>({
 }) {
 	const form = useFormContext<T>()
 	const [isCollapsed, setIsCollapsed] = useState(false)
-	const tableFooterRef = useRef<HTMLTableSectionElement>(null)
 	const {
 		fields: topicFields,
 		append,
@@ -219,173 +177,133 @@ function DisciplineBlock<T extends TopicsCardValues>({
 	} = useFieldArray({
 		control: form.control,
 		name: `disciplines.${disciplineIndex}.topics` as ArrayPath<T>,
-		keyName: 'key', // Use 'key' instead of 'id' to avoid conflicts with dnd-kit
+		keyName: 'key',
 	})
 	const [topicToDelete, setTopicToDelete] = useState<number | null>(null)
 
-	const discipline = useWatch({ control: form.control, name: `disciplines.${disciplineIndex}` as Path<T> })
+	const discipline = useWatch({
+		control: form.control,
+		name: `disciplines.${disciplineIndex}` as Path<T>,
+	}) as Discipline
 
-	const sectionTotal = {
-		totalHours: 0,
-		theoryHours: 0,
-		practiceHours: 0,
-		individualHours: 0,
-		srspHours: 0,
-		srsHours: 0,
-	}
+	if (!discipline) return null
 
-	discipline.topics.forEach((topic) => {
-		sectionTotal.totalHours += topic.totalHours || 0
-		sectionTotal.theoryHours += topic.theoryHours || 0
-		sectionTotal.practiceHours += topic.practiceHours || 0
-		sectionTotal.individualHours += topic.individualHours || 0
-		sectionTotal.srspHours += topic.srspHours || 0
-		sectionTotal.srsHours += topic.srsHours || 0
-	})
+	// Расчет итогов внутри одной дисциплины
+	const sectionTotal = (discipline.topics || []).reduce(
+		(acc, t) => {
+			const tHours = (Number(t.theoryHours) || 0) + (Number(t.practiceHours) || 0) + (Number(t.individualHours) || 0)
 
-	const hasError = sectionTotal.totalHours !== discipline.totalHours
+			acc.totalHours += tHours
+			acc.theoryHours += Number(t.theoryHours) || 0
+			acc.practiceHours += Number(t.practiceHours) || 0
+			acc.individualHours += Number(t.individualHours) || 0
+			acc.srspHours += Number(t.srspHours) || 0
+			acc.srsHours += Number(t.srsHours) || 0
+			return acc
+		},
+		{ totalHours: 0, theoryHours: 0, practiceHours: 0, individualHours: 0, srspHours: 0, srsHours: 0 },
+	)
 
-	const onAddNewTopic = () => {
-		append(newTopic as PathValue<T, ArrayPath<T>>, { shouldFocus: true })
-		setIsCollapsed(false)
-	}
+	const declaredForThisDiscipline = discipline.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0
+	const hasError = sectionTotal.totalHours !== declaredForThisDiscipline
 
-	const sensors = useSensors(useSensor(MouseSensor, {}), useSensor(TouchSensor, {}), useSensor(KeyboardSensor))
-
-	const handleDragEnd = (event: DragEndEvent) => {
-		const { active, over } = event
-
-		if (active && over && active.id !== over.id) {
-			const oldIndex = topicFields.findIndex((topic) => topic.key === active.id)
-			const newIndex = topicFields.findIndex((topic) => topic.key === over.id)
-
-			move(oldIndex, newIndex)
-		}
-	}
+	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(KeyboardSensor))
 
 	return (
-		<div className='border rounded-lg rounded-t-none'>
-			{/* Discipline Header */}
-			<div className='flex items-center p-4 bg-accent z-10 sticky top-0'>
-				<div className='font-semibold pr-4'>{discipline.code}</div>
-				<div className='flex-1 font-medium text-left'>{discipline.name}</div>
-				<div className='flex items-center space-x-2'>
-					<Button size='sm' type='button' variant='ghost' onClick={() => onAddNewTopic()}>
-						<Plus className='h-4 w-4 mr-2' />
-						Добавить тему
+		<div className='border rounded-lg overflow-hidden mb-6'>
+			<div className='flex items-center p-3 bg-muted/50'>
+				<div className='font-bold w-16'>{discipline.code}</div>
+				<div className='flex-1 font-medium'>{discipline.name}</div>
+				<div className='flex gap-2'>
+					<Button
+						size='sm'
+						variant='outline'
+						onClick={() => {
+							append(newTopic as any)
+							setIsCollapsed(false)
+						}}
+					>
+						<Plus className='h-4 w-4 mr-1' /> Тема
 					</Button>
 					<Button size='sm' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
-						<ChevronDown />
-						{isCollapsed ? 'Показать' : 'Скрыть'}
+						<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />
 					</Button>
 				</div>
 			</div>
 
-			{/* Topics Table */}
 			{!isCollapsed && (
 				<DndContext
 					collisionDetection={closestCenter}
 					modifiers={[restrictToVerticalAxis]}
 					sensors={sensors}
-					onDragEnd={handleDragEnd}
+					onDragEnd={(e) => {
+						const { active, over } = e
+
+						if (active && over && active.id !== over.id) {
+							move(
+								topicFields.findIndex((f) => f.key === active.id),
+								topicFields.findIndex((f) => f.key === over.id),
+							)
+						}
+					}}
 				>
-					<div className='p-4'>
-						<Table>
-							<TableHeader>
-								<TableRow className='*:p-2'>
-									<TableHead className='w-12 text-center'>№</TableHead>
-									<TableHead>Темы занятий</TableHead>
-									<TableHead className='w-20 text-center'>Всего</TableHead>
-									<TableHead className='w-20 text-center'>Теория</TableHead>
-									<TableHead className='w-20 text-center'>Практика</TableHead>
-									<TableHead className='w-20 text-center'>Индивидуальная</TableHead>
-									<TableHead className='w-20 text-center'>
-										<TooltipProvider>
-											<Tooltip>
-												<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
-													СРСП <Info className='w-3 h-3' />
-												</TooltipTrigger>
-												<TooltipContent>
-													<p>Самостоятельная работа студента с преподавателем</p>
-												</TooltipContent>
-											</Tooltip>
-										</TooltipProvider>
-									</TableHead>
-									<TableHead className='w-20 text-center'>
-										<TooltipProvider>
-											<Tooltip>
-												<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
-													СРС <Info className='w-3 h-3' />
-												</TooltipTrigger>
-												<TooltipContent>
-													<p>Самостоятельная работа студента</p>
-												</TooltipContent>
-											</Tooltip>
-										</TooltipProvider>
-									</TableHead>
-									<TableHead className='w-48 text-end'>Тип занятия</TableHead>
-									<TableHead className='w-12' />
-								</TableRow>
-							</TableHeader>
-
-							<SortableContext
-								items={topicFields.map((field) => field.key)}
-								strategy={verticalListSortingStrategy}
-							>
-								<TableBody>
-									{topicFields.map((topicField, topicIndex) => (
-										<TopicRow
-											key={topicField.key}
-											disciplineIndex={disciplineIndex}
-											id={topicField.key}
-											rupModuleType={rupModuleType}
-											setTopicToDelete={setTopicToDelete}
-											topicIndex={topicIndex}
-										/>
-									))}
-								</TableBody>
-							</SortableContext>
-
-							<TableFooter ref={tableFooterRef}>
-								<TableRow>
-									<TableCell
-										className={cn('text-right font-bold', hasError && 'text-destructive')}
-										colSpan={2}
-									>
-										Итого по разделу:
-									</TableCell>
-									<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
-										{formatHours(sectionTotal.totalHours)}
-									</TableCell>
-									<TableCell className='font-bold text-center'>{sectionTotal.theoryHours}ч</TableCell>
-									<TableCell className='font-bold text-center'>{sectionTotal.practiceHours}ч</TableCell>
-									<TableCell className='font-bold text-center'>{sectionTotal.individualHours}ч</TableCell>
-									<TableCell className='font-bold text-center'>{sectionTotal.srspHours}ч</TableCell>
-									<TableCell className='font-bold text-center'>{sectionTotal.srsHours}ч</TableCell>
-									<TableCell
-										className={cn('text-right font-bold', hasError && 'text-destructive')}
-										colSpan={2}
-									>
-										Заявлено: {formatHours(discipline.totalHours)}
-									</TableCell>
-								</TableRow>
-							</TableFooter>
-						</Table>
-					</div>
+					<Table>
+						<TableHeader>
+							<TableRow className='bg-muted/20'>
+								<TableHead className='w-12 text-center'>№</TableHead>
+								<TableHead>Темы занятий</TableHead>
+								<TableHead className='w-20 text-center'>Всего</TableHead>
+								<TableHead className='w-20 text-center'>Теор</TableHead>
+								<TableHead className='w-20 text-center'>Прак</TableHead>
+								<TableHead className='w-20 text-center'>Инд</TableHead>
+								<TableHead className='w-20 text-center text-xs'>СРСП</TableHead>
+								<TableHead className='w-20 text-center text-xs'>СРС</TableHead>
+								<TableHead className='w-40'>Тип</TableHead>
+								<TableHead className='w-10' />
+							</TableRow>
+						</TableHeader>
+						<SortableContext items={topicFields.map((f) => f.key)} strategy={verticalListSortingStrategy}>
+							<TableBody>
+								{topicFields.map((field, index) => (
+									<TopicRow
+										key={field.key}
+										id={field.key}
+										disciplineIndex={disciplineIndex}
+										topicIndex={index}
+										rupModuleType={rupModuleType}
+										setTopicToDelete={setTopicToDelete}
+									/>
+								))}
+							</TableBody>
+						</SortableContext>
+						<TableFooter>
+							<TableRow className='bg-muted/5'>
+								<TableCell colSpan={2} className={cn('text-right font-bold', hasError && 'text-destructive')}>
+									Итого по разделу:
+								</TableCell>
+								<TableCell className='text-center font-bold'>{sectionTotal.totalHours}ч</TableCell>
+								<TableCell className='text-center text-muted-foreground'>{sectionTotal.theoryHours}</TableCell>
+								<TableCell className='text-center text-muted-foreground'>
+									{sectionTotal.practiceHours}
+								</TableCell>
+								<TableCell className='text-center text-muted-foreground'>
+									{sectionTotal.individualHours}
+								</TableCell>
+								<TableCell className='text-center text-muted-foreground'>{sectionTotal.srspHours}</TableCell>
+								<TableCell className='text-center text-muted-foreground'>{sectionTotal.srsHours}</TableCell>
+								<TableCell colSpan={2} className={cn('text-right font-medium', hasError && 'text-destructive')}>
+									Заявлено: {declaredForThisDiscipline}ч
+								</TableCell>
+							</TableRow>
+						</TableFooter>
+					</Table>
 				</DndContext>
 			)}
 
-			<AlertDialog open={topicToDelete !== null} onOpenChange={(isOpen) => !isOpen && setTopicToDelete(null)}>
+			<AlertDialog open={topicToDelete !== null} onOpenChange={() => setTopicToDelete(null)}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
-						<AlertDialogDescription>
-							Вы точно хотите удалить тему{' '}
-							<span className='font-medium'>
-								{topicToDelete !== null && discipline.topics[topicToDelete]?.name}
-							</span>
-							?
-						</AlertDialogDescription>
+						<AlertDialogTitle>Удалить тему?</AlertDialogTitle>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel>Отмена</AlertDialogCancel>
@@ -399,173 +317,94 @@ function DisciplineBlock<T extends TopicsCardValues>({
 	)
 }
 
-const TopicRow = <T extends TopicsCardValues>({
-	id,
-	disciplineIndex,
-	topicIndex,
-	rupModuleType,
-	setTopicToDelete,
-}: {
-	id: string
-	disciplineIndex: number
-	topicIndex: number
-	rupModuleType: string
-	setTopicToDelete: (index: number | null) => void
-}) => {
-	const form = useFormContext<T>()
-	const topic = useWatch({
-		control: form.control, // useWatch gets control from context, but being explicit is fine
-		name: `disciplines.${disciplineIndex}.topics.${topicIndex}` as Path<T>,
-	}) as Topic
-
+const TopicRow = ({ id, disciplineIndex, topicIndex, rupModuleType, setTopicToDelete }: any) => {
+	const form = useFormContext()
+	const topic = useWatch({ name: `disciplines.${disciplineIndex}.topics.${topicIndex}` }) as Topic
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 
-	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-		opacity: isDragging ? 0.8 : 1,
-		zIndex: isDragging ? 1 : 0,
-		position: 'relative' as const,
-	}
-
-	// This effect updates the hours for a single topic when its type changes.
+	// Логика автоматического распределения часов при смене ТИПА темы
 	useEffect(() => {
-		if (!topic) return
+		if (!topic?.type || !rupModuleType) return
+		const h = rupModuleType === RupTypeEnum.PRACTICE ? 6 : 2
 
-		// determine counting hours 2 or 6, depends at rup module type
-		let countingHours: 2 | 6 = 2
-
-		if (rupModuleType == RupTypeEnum.THEORY) {
-			countingHours = 2
-		} else if (rupModuleType == RupTypeEnum.PRACTICE) {
-			countingHours = 6
+		const map: Record<string, Partial<Topic>> = {
+			[TopicTypeEnum.SNZ]: { theoryHours: 0, practiceHours: 0, individualHours: h },
+			[TopicTypeEnum.COMBINED]: { theoryHours: h, practiceHours: 0, individualHours: 0 },
+			[TopicTypeEnum.PRACTICAL]: { theoryHours: 0, practiceHours: h, individualHours: 0 },
 		}
 
-		let newTotalHours = 0,
-			newTheoryHours = 0,
-			newPracticeHours = 0,
-			newIndividualHours = 0
+		const updates = map[topic.type]
 
-		// Determine hours based on the topic's specific type
-		switch (topic.type) {
-			case TopicTypeEnum.SNZ:
-				newTotalHours = countingHours
-				newTheoryHours = 0
-				newPracticeHours = 0
-				newIndividualHours = countingHours
-				break
-			case TopicTypeEnum.COMBINED:
-				newTotalHours = countingHours
-				newTheoryHours = countingHours
-				newPracticeHours = 0
-				newIndividualHours = 0
-				break
-			case TopicTypeEnum.PRACTICAL:
-				newTotalHours = countingHours
-				newTheoryHours = 0
-				newPracticeHours = countingHours
-				newIndividualHours = 0
-				break
-		}
+		if (updates) {
+			Object.entries(updates).forEach(([key, val]) => {
+				const path = `disciplines.${disciplineIndex}.topics.${topicIndex}.${key}`
 
-		// Only update form values if they have actually changed to prevent an infinite loop
-		if (
-			topic.totalHours !== newTotalHours ||
-			topic.theoryHours !== newTheoryHours ||
-			topic.practiceHours !== newPracticeHours ||
-			topic.individualHours !== newIndividualHours
-		) {
-			form.setValue(
-				`disciplines.${disciplineIndex}.topics.${topicIndex}.totalHours` as Path<T>,
-				newTotalHours as PathValue<T, Path<T>>,
-			)
-			form.setValue(
-				`disciplines.${disciplineIndex}.topics.${topicIndex}.theoryHours` as Path<T>,
-				newTheoryHours as PathValue<T, Path<T>>,
-			)
-			form.setValue(
-				`disciplines.${disciplineIndex}.topics.${topicIndex}.practiceHours` as Path<T>,
-				newPracticeHours as PathValue<T, Path<T>>,
-			)
-			form.setValue(
-				`disciplines.${disciplineIndex}.topics.${topicIndex}.individualHours` as Path<T>,
-				newIndividualHours as PathValue<T, Path<T>>,
-			)
+				if (form.getValues(path as any) !== val) {
+					form.setValue(path as any, val)
+				}
+			})
 		}
-	}, [topic?.type])
+	}, [topic?.type, rupModuleType])
+
+	const currentTotal =
+		(Number(topic?.theoryHours) || 0) + (Number(topic?.practiceHours) || 0) + (Number(topic?.individualHours) || 0)
 
 	return (
-		<TableRow ref={setNodeRef} style={style} {...attributes}>
-			<TableCell className='align-middle font-medium text-center w-24'>
-				<div className='flex items-center justify-center gap-2'>
-					<button className='cursor-grab' type='button' {...listeners}>
+		<TableRow
+			ref={setNodeRef}
+			style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+		>
+			<TableCell className='text-center'>
+				<div className='flex items-center gap-2'>
+					<button {...listeners} {...attributes} type='button'>
 						<GripVertical className='h-4 w-4 text-muted-foreground' />
 					</button>
-					<span>{topicIndex + 1}</span>
+					{topicIndex + 1}
 				</div>
 			</TableCell>
-			<TableCell className='align-middle'>
+			<TableCell>
 				<FormField
 					control={form.control}
-					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name` as Path<T>}
+					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name`}
+					render={({ field }) => <Input {...field} placeholder='Тема...' className='h-8' />}
+				/>
+			</TableCell>
+			<TableCell className='text-center font-bold'>{currentTotal}ч</TableCell>
+			<TableCell className='text-center'>{topic?.theoryHours}</TableCell>
+			<TableCell className='text-center'>{topic?.practiceHours}</TableCell>
+			<TableCell className='text-center'>{topic?.individualHours}</TableCell>
+			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours`} form={form} />
+			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours`} form={form} />
+			<TableCell>
+				<FormField
+					control={form.control}
+					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.type`}
 					render={({ field }) => (
-						<FormItem>
-							<FormControl className='min-w-[200px]'>
-								<Input placeholder='Название темы' {...field} />
-							</FormControl>
-						</FormItem>
+						<Select value={field.value} onValueChange={field.onChange}>
+							<SelectTrigger className='h-8 w-full'>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{Object.values(TopicTypeEnum).map((type) => (
+									<SelectItem key={type} value={type}>
+										{normalizeTopicType(type)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					)}
 				/>
 			</TableCell>
-			<TableCell className='align-middle text-center font-bold'>
-				<p>{topic.totalHours}ч</p>
-			</TableCell>
-			<TableCell className='align-middle text-center font-medium'>{topic.theoryHours}ч</TableCell>
-			<TableCell className='align-middle text-center font-medium'>{topic.practiceHours}ч</TableCell>
-			<TableCell className='align-middle text-center font-medium'>
-				<p>{topic.individualHours}ч</p>
-			</TableCell>
-			<EditableHourCell
-				fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours` as Path<T>}
-				form={form}
-			/>
-			<EditableHourCell
-				fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours` as Path<T>}
-				form={form}
-			/>
-			<TableCell className='align-middle'>
-				<FormField
-					control={form.control}
-					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.type` as Path<T>}
-					render={({ field }) => (
-						<FormItem>
-							<FormControl>
-								<Select defaultValue={field.value} onValueChange={field.onChange}>
-									<SelectTrigger className='w-full'>
-										<SelectValue placeholder='Тип занятия' />
-									</SelectTrigger>
-									<SelectContent>
-										{rupModuleType === RupTypeEnum.THEORY && (
-											<SelectItem value={TopicTypeEnum.SNZ}>СНЗ</SelectItem>
-										)}
-										<SelectItem value={TopicTypeEnum.PRACTICAL}>Практическая</SelectItem>
-										{rupModuleType === RupTypeEnum.THEORY && (
-											<SelectItem value={TopicTypeEnum.COMBINED}>Комбинированная</SelectItem>
-										)}
-									</SelectContent>
-								</Select>
-							</FormControl>
-						</FormItem>
-					)}
-				/>
-			</TableCell>
-			<TableCell className='align-middle'>
-				<Button size='icon' type='button' variant='ghost' onClick={() => setTopicToDelete(topicIndex)}>
+			<TableCell>
+				<Button
+					className='h-8 w-8 text-destructive'
+					size='icon'
+					variant='ghost'
+					onClick={() => setTopicToDelete(topicIndex)}
+				>
 					<Trash className='h-4 w-4' />
 				</Button>
 			</TableCell>
 		</TableRow>
 	)
 }
-
-TopicRow.displayName = 'TopicRow'

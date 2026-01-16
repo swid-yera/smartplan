@@ -1,6 +1,6 @@
-import { formatHours } from '@helpers'
+import { formatHours, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
-import { TopicTypeEnum } from '@types'
+import type { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
 	Card,
 	CardContent,
@@ -23,7 +23,7 @@ import { Info } from 'lucide-react'
 
 type Topic = {
 	name: string
-	type: string
+	type: TopicTypeEnum
 	totalHours: number
 	theoryHours: number
 	practiceHours: number
@@ -40,7 +40,7 @@ type Discipline = {
 }
 
 interface TopicsCardViewProps {
-	type: string
+	type: RupTypeEnum
 	disciplines: Discipline[]
 }
 
@@ -205,19 +205,6 @@ function DisciplineBlockView({ discipline, rupModuleType }: { discipline: Discip
 }
 
 const TopicRowView = ({ topic, topicIndex }: { topic: Topic; topicIndex: number; rupModuleType: string }) => {
-	const getTopicTypeName = (type: string) => {
-		switch (type) {
-			case TopicTypeEnum.SNZ:
-				return 'СНЗ'
-			case TopicTypeEnum.Practical:
-				return 'Практическая'
-			case TopicTypeEnum.Combined:
-				return 'Комбинированная'
-			default:
-				return type
-		}
-	}
-
 	return (
 		<TableRow>
 			<TableCell className='align-middle font-medium text-center w-24'>
@@ -236,7 +223,7 @@ const TopicRowView = ({ topic, topicIndex }: { topic: Topic; topicIndex: number;
 			</TableCell>
 			<TableCell className='align-middle text-center font-medium'>{topic.srspHours || 0}ч</TableCell>
 			<TableCell className='align-middle text-center font-medium'>{topic.srsHours || 0}ч</TableCell>
-			<TableCell className='align-middle text-end'>{getTopicTypeName(topic.type)}</TableCell>
+			<TableCell className='align-middle text-end'>{normalizeTopicType(topic.type)}</TableCell>
 		</TableRow>
 	)
 }

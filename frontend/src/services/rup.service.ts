@@ -1,6 +1,6 @@
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
-import type { IMessageResponse, IRup, IUpdateRequest, IUpdateStatusRequest } from '@types'
+import type { IMessageResponse, IRup, IUpdateRupRequest, IUpdateRupStatusRequest } from '@types'
 
 export class RupService {
 	// get all
@@ -9,6 +9,8 @@ export class RupService {
 			queryKey: ['rups'],
 			queryFn: async () => {
 				const { data } = await api.get<IRup[]>('/api/rups/')
+
+				if (!data) return []
 
 				return data
 			},
@@ -32,8 +34,8 @@ export class RupService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ newRup }: { newRup: IUpdateRequest }) =>
-				api.post<IRup>('/api/rups', newRup).then((r) => r.data),
+			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) =>
+				api.post<IRup>('/api/rups/', newRup).then((r) => r.data),
 
 			onSuccess: (createdRup) => {
 				queryClient.setQueryData(['rup', createdRup.id], createdRup)
@@ -46,7 +48,7 @@ export class RupService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ id, changedRup }: { id: string; changedRup: IUpdateRequest }) =>
+			mutationFn: ({ id, changedRup }: { id: string; changedRup: IUpdateRupRequest }) =>
 				api.put<IRup>(`/api/rups/${id}`, changedRup).then((r) => r.data),
 
 			onSuccess: (updatedRup, { id }) => {
@@ -60,7 +62,7 @@ export class RupService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ id, ...payload }: IUpdateStatusRequest) =>
+			mutationFn: ({ id, ...payload }: IUpdateRupStatusRequest) =>
 				api.put<IMessageResponse>(`/api/rups/${id}/status`, payload).then((r) => r.data),
 
 			onSuccess: (messageResponse, { id }) => {

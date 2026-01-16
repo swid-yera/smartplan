@@ -34,7 +34,7 @@ export function ExplorationNoteCard<T extends ExplorationNoteValues>() {
 			<CardContent className='space-y-2 text-sm'>
 				<FormField
 					control={form.control}
-					name={'explorationNote' as Path<T>}
+					name={'basis' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
 							<div className='flex items-end justify-between'>
@@ -42,7 +42,7 @@ export function ExplorationNoteCard<T extends ExplorationNoteValues>() {
 
 								<AiGenerateButton
 									defaultType='annotation'
-									onGenerated={(t) => form.setValue('explorationNote' as Path<T>, t as PathValue<T, Path<T>>)}
+									onGenerated={(t) => form.setValue('basis' as Path<T>, t as PathValue<T, Path<T>>)}
 								/>
 							</div>
 							<FormControl>

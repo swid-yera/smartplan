@@ -26,12 +26,12 @@ export type ICreateDiscipline = Omit<IDiscipline, 'totalHours' | 'semesters' | '
 	topics: ICreateTopic[]
 }
 
-export interface ICreateRequest {
+export interface ICreateRupRequest {
 	name: string
 	code: string
 
 	type: RupTypeEnum
-	course: 1 | 2 | 3 | 4
+	course: number
 	studyForm: StudyFormEnum
 	studyYear: string
 
@@ -43,12 +43,12 @@ export interface ICreateRequest {
 }
 
 // update
-export interface IUpdateRequest extends ICreateRequest {
+export interface IUpdateRupRequest extends ICreateRupRequest {
 	methodist?: string // IUser.keycloak_id
 }
 
 // update status
-export interface IUpdateStatusRequest {
+export interface IUpdateRupStatusRequest {
 	id: IRup['id'] // IUser.keycloak_id
 	status: IRup['status'] // IUser.keycloak_id
 	reason?: IRup['reason']

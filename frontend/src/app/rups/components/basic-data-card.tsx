@@ -1,32 +1,19 @@
 'use client'
 
-import React from 'react'
-
 import { normalizeRupType, normalizeStudyForm } from '@helpers'
-import { cn } from '@lib'
 import { RupTypeEnum, StudyFormEnum } from '@types'
 import {
-	Button,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 	Input,
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -36,8 +23,8 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@ui'
-import { Check, ChevronsUpDown, Info } from 'lucide-react'
-import type { FieldValues, Path, PathValue } from 'react-hook-form'
+import { Info } from 'lucide-react'
+import type { FieldValues, Path } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'
 
 // Define a base shape for the form data that this component needs.
@@ -52,9 +39,7 @@ type BasicDataValues = FieldValues & {
 }
 
 export function BasicDataCard<T extends BasicDataValues>() {
-	const { control, getValues } = useFormContext<T>()
-
-	console.log(getValues())
+	const { control } = useFormContext<T>()
 
 	return (
 		<Card>
@@ -64,21 +49,37 @@ export function BasicDataCard<T extends BasicDataValues>() {
 			</CardHeader>
 
 			<CardContent className='space-y-3 text-sm'>
-				<FormField
-					control={control}
-					name={'name' as Path<T>}
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel className='flex items-center'>Наименование модуля</FormLabel>
-							<FormControl>
-								<Input placeholder='Введите называние модуля' {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
+				<div className='grid gap-5 sm:grid-cols-[minmax(0.3,0.5fr)_minmax(1,2fr)]'>
+					<FormField
+						control={control}
+						name={'code' as Path<T>}
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel className='flex items-center'>Код</FormLabel>
+								<FormControl>
+									<Input placeholder='Код' {...field} />
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
 
-				<div className='grid grid-cols-2 gap-5'>
+					<FormField
+						control={control}
+						name={'name' as Path<T>}
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel className='flex items-center'>Наименование модуля</FormLabel>
+								<FormControl>
+									<Input placeholder='Введите называние модуля' {...field} />
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+				</div>
+
+				<div className='grid lg:grid-cols-[minmax(1,2fr)_minmax(0.6,0.8fr)] gap-5'>
 					<FormField
 						control={control}
 						name={'type' as Path<T>}
@@ -147,10 +148,33 @@ export function BasicDataCard<T extends BasicDataValues>() {
 				</div>
 
 				{/* requisites */}
-				<div className='grid grid-cols-2 gap-5'>
-					<RequisiteField label='Пререквизиты' type='prerequisites' />
-					<RequisiteField label='Постреквизиты' type='postrequisites' />
-				</div>
+				<FormField
+					control={control}
+					name={'prerequisites' as Path<T>}
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel className='flex items-center'>Пререквизиты</FormLabel>
+							<FormControl>
+								<Input placeholder='Пререквизиты' {...field} />
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={control}
+					name={'postrequisites' as Path<T>}
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel className='flex items-center'>Постреквизиты</FormLabel>
+							<FormControl>
+								<Input placeholder='Постреквизиты' {...field} />
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
 			</CardContent>
 		</Card>
 	)
@@ -159,87 +183,4 @@ export function BasicDataCard<T extends BasicDataValues>() {
 const rupTypeTips: Record<RupTypeEnum, string> = {
 	PRACTICE: 'Для каждой темы будет считаться по 6 часа',
 	THEORY: 'Для каждой темы будет считаться по 2 часа',
-}
-
-// requisite field
-type RequisiteType = 'prerequisites' | 'postrequisites'
-
-interface RequisiteFieldProps<T extends BasicDataValues> {
-	type: RequisiteType
-	label: string
-}
-
-// mock data
-const modules = [
-	{ value: 'ПМ6 Основы программирования', label: 'Основы программирования' },
-	{ value: 'ПМ5 Базы данных', label: 'Базы данных' },
-	{ value: 'ПМ7 Веб-технологии', label: 'Веб-технологии' },
-	{ value: 'ОП5 Алгоритмы и структуры данных', label: 'Алгоритмы и структуры данных' },
-	{ value: 'ОП6 Компьютерные сети', label: 'Компьютерные сети' },
-]
-
-function RequisiteField<T extends BasicDataValues>({ type, label }: RequisiteFieldProps<T>) {
-	const { control, watch, setValue, formState, resetField } = useFormContext<T>()
-	const [open, setOpen] = React.useState(false)
-
-	const otherValue = watch(type as Path<T>)
-
-	const availableModules = modules.filter((module) => module.value !== otherValue)
-
-	return (
-		<FormField
-			control={control}
-			name={type as Path<T>}
-			render={({ field }) => (
-				<FormItem className='flex flex-col'>
-					<FormLabel className='flex items-center'>{label}</FormLabel>
-					<Popover open={open} onOpenChange={setOpen}>
-						<PopoverTrigger asChild>
-							<FormControl>
-								<Button
-									className={cn('w-full justify-between', !field.value && 'text-muted-foreground')}
-									role='combobox'
-									variant='outline'
-								>
-									{field.value
-										? modules.find((module) => module.value === field.value)?.label
-										: 'Выбрать модуль...'}
-									<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-								</Button>
-							</FormControl>
-						</PopoverTrigger>
-						<PopoverContent align='center' className='w-[--radix-popover-trigger-width] p-0'>
-							<Command>
-								<CommandInput placeholder='Поиск модуля...' />
-								<CommandList>
-									<CommandEmpty>Модуль не найден.</CommandEmpty>
-									<CommandGroup>
-										{availableModules.map((module) => (
-											<CommandItem
-												key={module.value}
-												value={module.label}
-												onSelect={() => {
-													setValue(type as Path<T>, module.value as PathValue<T, Path<T>>)
-													setOpen(false)
-												}}
-											>
-												<Check
-													className={cn(
-														'mr-2 h-4 w-4',
-														module.value === field.value ? 'opacity-100' : 'opacity-0',
-													)}
-												/>
-												{module.label}
-											</CommandItem>
-										))}
-									</CommandGroup>
-								</CommandList>
-							</Command>
-						</PopoverContent>
-					</Popover>
-					<FormMessage />
-				</FormItem>
-			)}
-		/>
-	)
 }

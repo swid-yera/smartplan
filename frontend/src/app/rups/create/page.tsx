@@ -7,15 +7,15 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
-import { createRupModule } from '@services'
-import { RupModuleStatus, TopicTypeEnum } from '@types'
+import { services } from '@services'
+import { useMutation } from '@tanstack/react-query'
+import { type ICreateRupRequest, RupTypeEnum, StudyFormEnum } from '@types'
 import { Badge, Button, Heading, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { type RUPFormData, formSchema } from '../form-schema'
-import { groupData } from './mock.data'
 import { Step1 } from './step1'
 import { Step2 } from './step2'
 import { Step3 } from './step3'
@@ -25,41 +25,23 @@ const LOCAL_STORAGE_KEY = 'rup-create-form-data'
 const HIGHEST_STEP_STORAGE_KEY = 'rup-create-highest-step'
 
 const defaultValues: RUPFormData = {
-	title: '',
-	type: '',
-	studyForm: '',
-	explorationNote: '',
+	name: '',
+	code: '',
+	type: RupTypeEnum.THEORY,
+	studyForm: StudyFormEnum.FULL_TIME,
+	basis: '',
+	competencies: '',
+	summary: '',
+	course: 0,
 	goals: '',
 	prerequisites: '',
 	postrequisites: '',
-	year: '',
+	studyYear: '',
 	groupId: '',
-	contacts: [{ email: '', name: '', phone: '' }],
-	internetResources: [{ value: '' }],
-	technicalResources: [{ value: '' }],
-	disciplines: [
-		{
-			code: '',
-			name: '',
-			totalHours: 0,
-			semesters: [1, 2, 3, 4, 5, 6, 7, 8].map((semester) => ({
-				semester,
-				hours: 0,
-			})),
-			topics: [
-				{
-					name: '',
-					type: TopicTypeEnum.Practical,
-					totalHours: 0,
-					individualHours: 0,
-					practiceHours: 0,
-					theoryHours: 0,
-					srsHours: 0,
-					srspHours: 0,
-				},
-			],
-		},
-	],
+	contacts: [],
+	internetResources: [],
+	technicalResources: [],
+	disciplines: [],
 }
 
 const Page: NextPage = () => {
@@ -69,8 +51,10 @@ const Page: NextPage = () => {
 	const [currentStep, setCurrentStep] = useState(searchParams.get('step') || '1')
 	const [highestStep, setHighestStep] = useState(Number(currentStep))
 	const [isSubmitting, setIsSubmitting] = useState(false)
-	const [isSubmitted, setIsSubmitted] = useState(false)
 	const [isHydrating, setIsHydrating] = useState(true)
+
+	// queries
+	const createMutation = useMutation(services.rup.createOptions())
 
 	const methods = useForm<RUPFormData>({
 		resolver: zodResolver(formSchema),
@@ -122,13 +106,13 @@ const Page: NextPage = () => {
 	// This effect subscribes to form changes and saves them to localStorage.
 	useEffect(() => {
 		// Prevent saving to localStorage before hydration or after submission.
-		if (isHydrating || isSubmitted) return
+		if (isHydrating) return
 
 		const subscription = methods.watch((value) => {
 			try {
 				// To avoid saving incomplete default data on first load, we can check for a title.
 				// This is a simple way to ensure the user has interacted with the form.
-				if (value.title) {
+				if (value.name) {
 					window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(value))
 				}
 			} catch (e) {
@@ -137,14 +121,14 @@ const Page: NextPage = () => {
 		})
 
 		return () => subscription.unsubscribe()
-	}, [methods, isHydrating, isSubmitted])
+	}, [methods, isHydrating])
 
 	// This effect saves the highest step to localStorage.
 	useEffect(() => {
-		if (!isHydrating && !isSubmitted) {
+		if (!isHydrating) {
 			window.localStorage.setItem(HIGHEST_STEP_STORAGE_KEY, String(highestStep))
 		}
-	}, [highestStep, isHydrating, isSubmitted])
+	}, [highestStep, isHydrating])
 
 	const currentIndex = tabs.findIndex((t) => t.id === currentStep)
 
@@ -169,29 +153,67 @@ const Page: NextPage = () => {
 		if (currentIndex > 0) handleStepChange(tabs[currentIndex - 1].id)
 	}
 
-	const onSubmit = async (data: RUPFormData) => {
+	const onSubmit = async (newData: RUPFormData) => {
 		setIsSubmitting(true)
 
-		const newData = {
-			...data,
-			group: groupData.find((g) => g.id === data.groupId),
-			status: RupModuleStatus.DRAFT,
-		}
-		const result = createRupModule(newData)
+		// mapped disciplines
+		const mappedDisciplines = newData.disciplines.map((discipline) => ({
+			...discipline,
+			topics: discipline.topics.map((topic) => ({
+				...topic,
+				// Заменяем undefined на 0 для всех числовых полей
+				individualHours: topic.individualHours ?? 0,
+				srspHours: topic.srspHours ?? 0,
+				srsHours: topic.srsHours ?? 0,
+			})),
+		}))
 
-		toast.promise(result, {
-			loading: 'Сохранение данных...',
-			success: () => {
-				setIsSubmitted(true)
-				window.localStorage.removeItem(LOCAL_STORAGE_KEY)
-				window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
-				router.push('/rups')
+		// mapped data
+		const mappedData: ICreateRupRequest = {
+			...newData,
+			groups: [newData.groupId],
+			explorationNote: {
+				basis: newData.basis ?? '',
+				goals: newData.goals ?? '',
+				competencies: newData.competencies ?? '',
+				summary: '',
 
-				return 'Данные успешно сохранены!'
+				prerequisites: newData.prerequisites ?? '',
+				postrequisites: newData.postrequisites ?? '',
+
+				internetResources: newData.internetResources,
+				technicalResources: newData.technicalResources,
 			},
-			error: (err) => 'произошла ошибка при сохранении данных',
-			finally: () => setIsSubmitting(false),
-		})
+			disciplines: mappedDisciplines,
+		}
+
+		const toastId = `rup-create`
+
+		toast.loading(`Создание ${mappedData.code}...`, { id: toastId })
+
+		setIsSubmitting(true)
+		createMutation.mutate(
+			{ newRup: mappedData },
+			{
+				onSuccess: (createdRup) => {
+					setIsSubmitting(false)
+					window.localStorage.removeItem(LOCAL_STORAGE_KEY)
+					window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
+
+					toast.success(`${createdRup.code} успешно создан`, { id: toastId })
+
+					router.push(`/rups/${createdRup.id}`)
+				},
+				onError: (err) => {
+					setIsSubmitting(false)
+
+					toast.error(`Произошла ошибка при обновлений ${mappedData.code}`, {
+						id: toastId,
+						description: err.message,
+					})
+				},
+			},
+		)
 	}
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {

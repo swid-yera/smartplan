@@ -10,10 +10,10 @@ import { hasRole } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { services } from '@services'
 import { useAuthStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
-import { RupTypeEnum, StudyFormEnum, UserRoleEnum } from '@types'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { type IUpdateRupRequest, RupTypeEnum, StudyFormEnum, UserRoleEnum } from '@types'
 import { Button, ButtonGroup, Heading } from '@ui'
-import { ArrowLeft, RotateCcw, SaveIcon } from 'lucide-react'
+import { ArrowLeft, EyeIcon, RotateCcw, SaveIcon } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -37,6 +37,7 @@ const defaultValues: RUPFormData = {
 	studyForm: StudyFormEnum.FULL_TIME,
 	studyYear: '2025-2026',
 	groupId: '', // groupId
+	course: 1,
 
 	basis: '',
 	goals: '',
@@ -60,6 +61,7 @@ const EditPage: FC = () => {
 	// queries
 	const { data: rupData, isLoading } = useQuery({ ...services.rup.getByIdOptions(id), enabled: !!id })
 	// mutations
+	const updateMutation = useMutation(services.rup.updateOptions())
 
 	// form
 	const methods = useForm<RUPFormData>({
@@ -68,6 +70,20 @@ const EditPage: FC = () => {
 		shouldUnregister: false,
 		defaultValues,
 	})
+
+	// form update default values
+	useEffect(() => {
+		if (!rupData) return
+
+		methods.reset({
+			...rupData,
+			...rupData.explorationNote,
+			disciplines: rupData?.disciplines ?? [],
+			groupId: rupData.groups[0]?.keycloak_id,
+			// @ts-ignore
+			contacts: rupData.contacts.map((c) => c?.keycloak_id),
+		})
+	}, [rupData, methods.reset])
 
 	// Warn user about unsaved changes before leaving the page.
 	// NOTE: This works for page reloads, closing the tab, or navigating away.
@@ -85,28 +101,62 @@ const EditPage: FC = () => {
 		return () => window.removeEventListener('beforeunload', handleBeforeUnload)
 	}, [methods.formState.isDirty])
 
-	const onSubmit = (data: RUPFormData) => {
-		// const newData = {
-		// 	...data,
-		// 	id: params.id,
-		// 	status: rupData?.status ?? RupStatusEnum.DRAFT,
-		// 	// group: groupData.find((g) => g.id === data.groupId),
-		// }
+	const onSubmit = (newData: RUPFormData) => {
+		if (!rupData) return
+		console.log(newData)
 
-		toast.loading('Сохранение данных...', { id: 'rup-update' })
+		// mapped disciplines
+		const mappedDisciplines = newData.disciplines.map((discipline) => ({
+			...discipline,
+			topics: discipline.topics.map((topic) => ({
+				...topic,
+				// Заменяем undefined на 0 для всех числовых полей
+				individualHours: topic.individualHours ?? 0,
+				srspHours: topic.srspHours ?? 0,
+				srsHours: topic.srsHours ?? 0,
+			})),
+		}))
 
-		// const result = updateRupModule(newData)
+		// mapped data
+		const mappedData: IUpdateRupRequest = {
+			...newData,
+			groups: [newData.groupId],
+			// @ts-ignore
+			teacher: rupData?.teacher.id ?? user?.keycloakID,
+			explorationNote: {
+				basis: newData.basis ?? '',
+				goals: newData.goals ?? '',
+				competencies: newData.competencies ?? '',
+				summary: rupData?.explorationNote.summary ?? '',
 
-		// result.then((res) => {
-		// 	if (!res) {
-		// 		toast.error('Произошла ошибка при сохранении данных', { id: 'rup-update' })
+				prerequisites: newData.prerequisites ?? '',
+				postrequisites: newData.postrequisites ?? '',
 
-		// 		return
-		// 	}
+				internetResources: newData.internetResources,
+				technicalResources: newData.technicalResources,
+			},
+			disciplines: mappedDisciplines,
+		}
 
-		// 	toast.success('Данные успешно сохранены!', { id: 'rup-update' })
-		// 	methods.reset({ ...res, groupId: res.group?.id })
-		// })
+		const toastId = `rup-${rupData.id}-update`
+
+		toast.loading('Сохранение данных...', { id: toastId })
+
+		updateMutation.mutate(
+			{ id: rupData.id, changedRup: mappedData },
+			{
+				onSuccess: (updatedRup) => {
+					toast.success(`${updatedRup.code} успешно обновлен`, { id: toastId })
+					replace(`/rups/${updatedRup.id}`)
+				},
+				onError: (err) => {
+					toast.error(`Произошла ошибка при обновлений ${mappedData.code}`, {
+						id: toastId,
+						description: err.message,
+					})
+				},
+			},
+		)
 	}
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {
@@ -142,6 +192,12 @@ const EditPage: FC = () => {
 					</div>
 
 					<ButtonGroup>
+						<Button asChild size='sm' type='button' variant='outline'>
+							<Link href={`/rups/${rupData.id}`}>
+								<EyeIcon />
+								Просмотр
+							</Link>
+						</Button>
 						<Button
 							className='hover:text-destructive'
 							disabled={!methods.formState.isDirty}

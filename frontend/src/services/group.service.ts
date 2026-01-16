@@ -19,9 +19,11 @@ export class GroupService {
 	// get all groups
 	getAllOptions = () => {
 		return queryOptions({
-			queryKey: [],
+			queryKey: ['groups'],
 			queryFn: async () => {
-				const { data } = await api.get<IGroup[] | null>('/api/groups/')
+				const { data } = await api.get<IGroup[] | null>('/api/groups')
+
+				if (!data) return []
 
 				return data
 			},

@@ -10,7 +10,7 @@ import { hasRole, normalizeRupStatus } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateStatusRequest, RupStatusEnum, UserRoleEnum } from '@types'
+import { type IUpdateRupStatusRequest, RupStatusEnum, UserRoleEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -36,7 +36,7 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@ui'
-import { Edit, FileDown, ShieldAlert, Trash } from 'lucide-react'
+import { Edit, FileDown, SendIcon, ShieldAlert, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { RupView } from './rup-view'
@@ -64,7 +64,7 @@ const Page: FC = () => {
 		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
 
 		toast.loading('Изменение статуса...', { id: toastId })
-		const updateStatusPayload: IUpdateStatusRequest = { id: rupData.id, status: newStatus, reason }
+		const updateStatusPayload: IUpdateRupStatusRequest = { id: rupData.id, status: newStatus, reason }
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
@@ -114,7 +114,8 @@ const Page: FC = () => {
 	const isAdmin = hasRole(user.role, UserRoleEnum.ADMIN)
 	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER)
 	const isStatusForEdit = rupData.status === RupStatusEnum.DRAFT || rupData.status === RupStatusEnum.REJECTED
-	const isUserCreator = hasRole(user.role, UserRoleEnum.TEACHER) && rupData?.teacher?.keycloakID == user.keycloakID
+	// @ts-ignore
+	const isUserCreator = hasRole(user.role, UserRoleEnum.TEACHER) && rupData?.teacher?.keycloak_id == user.keycloakID
 	// conditions
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
 	const canDownload = rupData.status === RupStatusEnum.APPROVED
@@ -168,6 +169,7 @@ const Page: FC = () => {
 								variant='outline'
 								onClick={() => handleStatusChange(RupStatusEnum.IN_REVIEW)}
 							>
+								<SendIcon />
 								Отправить на согласование
 							</Button>
 						)}

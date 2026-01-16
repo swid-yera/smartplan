@@ -10,6 +10,8 @@ export class UserService {
 			queryFn: async () => {
 				const { data } = await api.get<IUser[]>('/api/users')
 
+				if (!data) return []
+
 				return data
 			},
 		})
