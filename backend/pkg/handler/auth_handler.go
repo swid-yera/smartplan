@@ -211,7 +211,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	sessionID, err := h.auth.HandleCallback(ctx, keycloakID, token.AccessToken, claims)
+	sessionID, err := h.auth.HandleCallback(ctx, keycloakID, token.AccessToken, token.IDToken, claims)
 	if err != nil {
 		h.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Auth service HandleCallback failed")
 		c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login?error=auth_failed")
@@ -247,13 +247,23 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	// 1) если есть sid — удаляем сессию через сервис (он чистит session:* и user_sessions:*)
+	var idToken string
+
+	// 1) если есть sid — читаем session
 	if sid, err := c.Cookie(sessionCookieName); err == nil && sid != "" {
-		h.log.WithField("sid", sid).Info("User logging out")
-		_ = h.auth.Logout(ctx, sid) // игнорируем ошибку, чтобы logout был идемпотентным
+		sessionKey := "session:" + sid
+
+		sessionData, err := h.redis.HGetAll(ctx, sessionKey).Result()
+		if err != nil {
+			h.log.WithError(err).Warn("Failed to load session for logout")
+		} else {
+			idToken = sessionData["id_token"]
+		}
+
+		_ = h.auth.Logout(ctx, sid) // удаляем локальную сессию
 	}
 
-	// 2) чистим cookie (важно оставить те же атрибуты: Path/SameSite/Secure)
+	// 2) чистим cookie
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",
@@ -264,5 +274,22 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		MaxAge:   -1,
 	})
 
+	// 3) если есть id_token — logout через Keycloak
+	if idToken != "" {
+		postLogoutRedirect := strings.TrimRight(h.cfg.FrontendURL, "")
+
+		kcLogoutURL := h.cfg.KeycloakURL +
+			"/realms/" + h.cfg.KeycloakRealm +
+			"/protocol/openid-connect/logout" +
+			"?id_token_hint=" + url.QueryEscape(idToken) +
+			"&post_logout_redirect_uri=" + url.QueryEscape(postLogoutRedirect)
+
+		h.log.Info("Redirecting user to Keycloak logout")
+		c.Redirect(http.StatusFound, kcLogoutURL)
+		return
+	}
+
+	// 4) fallback — если id_token нет
+	h.log.Warn("id_token not found in session, redirecting to frontend login")
 	c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login")
 }

@@ -18,7 +18,7 @@ import (
 )
 
 type AuthService interface {
-	HandleCallback(ctx context.Context, keycloakID uuid.UUID, accessToken string, claims jwt.MapClaims) (uuid.UUID, error)
+	HandleCallback(ctx context.Context, keycloakID uuid.UUID, accessToken string, idToken string, claims jwt.MapClaims) (uuid.UUID, error)
 	Logout(ctx context.Context, sessionID string) error
 	InvalidateAllSessions(ctx context.Context, keycloakID uuid.UUID) error
 }
@@ -40,12 +40,7 @@ func NewAuthService(redis *redis.Client, users repository.AuthRepository, cfg *c
 }
 
 // HandleCallback создаёт пользователя (если нужно) и сессию в Redis
-func (s *authService) HandleCallback(
-	ctx context.Context,
-	keycloakID uuid.UUID,
-	accessToken string,
-	claims jwt.MapClaims,
-) (uuid.UUID, error) {
+func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, accessToken string, idToken string, claims jwt.MapClaims) (uuid.UUID, error) {
 
 	email, _ := claims["email"].(string)
 	username, _ := claims["preferred_username"].(string)
@@ -108,6 +103,7 @@ func (s *authService) HandleCallback(
 	pipe.HSet(ctx, sessionKey,
 		"keycloak_id", keycloakID.String(),
 		"access_token", accessToken,
+		"id_token", idToken,
 	)
 	pipe.Expire(ctx, sessionKey, 24*time.Hour)
 	pipe.SAdd(ctx, userSessionsKey, sessionID.String())
