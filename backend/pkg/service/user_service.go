@@ -17,6 +17,7 @@ type User struct {
 	FirstName  *string   `json:"firstName"`
 	LastName   *string   `json:"lastName"`
 	Role       string    `json:"role"`
+	Phone      *string   `json:"phone"`
 }
 
 type MeResponse struct {
@@ -26,6 +27,7 @@ type MeResponse struct {
 	FirstName  string    `json:"firstName,omitempty"`
 	LastName   string    `json:"lastName,omitempty"`
 	Role       string    `json:"role"`
+	Phone      string    `json:"phone,omitempty"`
 }
 
 type UserService interface {
@@ -48,6 +50,7 @@ func ToMeResponse(user *storage.User) *MeResponse {
 		FirstName:  user.FirstName.String,
 		LastName:   user.LastName.String,
 		Role:       string(user.Role),
+		Phone:      user.Phone.String,
 	}
 }
 
@@ -94,13 +97,16 @@ func (s *userService) GetUserBySessionIDFromStorageUser(ctx context.Context, ses
 }
 
 func toServiceUser(u *storage.User) *User {
-	var firstName, lastName *string
+	var firstName, lastName, phone *string
 
 	if u.FirstName.Valid {
 		firstName = &u.FirstName.String
 	}
 	if u.LastName.Valid {
 		lastName = &u.LastName.String
+	}
+	if u.Phone.Valid {
+		phone = &u.Phone.String
 	}
 
 	return &User{
@@ -110,6 +116,7 @@ func toServiceUser(u *storage.User) *User {
 		FirstName:  firstName,
 		LastName:   lastName,
 		Role:       string(u.Role),
+		Phone:      phone,
 	}
 }
 

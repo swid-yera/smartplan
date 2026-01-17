@@ -46,6 +46,7 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	username, _ := claims["preferred_username"].(string)
 	firstName, _ := claims["given_name"].(string)
 	lastName, _ := claims["family_name"].(string)
+	phone, _ := claims["phone"].(string)
 
 	// new
 	realmAccess, ok := claims["realm_access"].(map[string]interface{})
@@ -76,7 +77,7 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	}).Info("Resolved user role")
 
 	// 1. Попытка создать пользователя через репозиторий
-	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName)
+	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
 	if err != nil {
 		// Игнорируем уникальное ограничение (пользователь уже есть)
 		if !isUniqueViolation(err) {
