@@ -403,7 +403,6 @@ INSERT INTO
         type,
         contacts,
         group_ids,
-        methodist,
         teacher,
         exploration_note_id,
         disciplines
@@ -420,8 +419,7 @@ VALUES (
         $9,
         $10,
         $11,
-        $12,
-        $13
+        $12
     ) RETURNING id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 `
 
@@ -435,7 +433,6 @@ type CreateRupsParams struct {
 	Type              RupsTypeEnum  `json:"type"`
 	Contacts          []uuid.UUID   `json:"contacts"`
 	GroupIds          []string      `json:"group_ids"`
-	Methodist         pgtype.UUID   `json:"methodist"`
 	Teacher           pgtype.UUID   `json:"teacher"`
 	ExplorationNoteID pgtype.UUID   `json:"exploration_note_id"`
 	Disciplines       []uuid.UUID   `json:"disciplines"`
@@ -452,7 +449,6 @@ func (q *Queries) CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, er
 		arg.Type,
 		arg.Contacts,
 		arg.GroupIds,
-		arg.Methodist,
 		arg.Teacher,
 		arg.ExplorationNoteID,
 		arg.Disciplines,
@@ -1390,10 +1386,8 @@ SET
     type = $7,
     contacts = $8,
     group_ids = $9,
-    methodist = $10,
-    teacher = $11,
-    exploration_note_id = $12,
-    disciplines = $13,
+    exploration_note_id = $10,
+    disciplines = $11,
     updated_at = NOW()
 WHERE
     id = $1
@@ -1409,8 +1403,6 @@ type UpdateRupParams struct {
 	Type              RupsTypeEnum  `json:"type"`
 	Contacts          []uuid.UUID   `json:"contacts"`
 	GroupIds          []string      `json:"group_ids"`
-	Methodist         pgtype.UUID   `json:"methodist"`
-	Teacher           pgtype.UUID   `json:"teacher"`
 	ExplorationNoteID pgtype.UUID   `json:"exploration_note_id"`
 	Disciplines       []uuid.UUID   `json:"disciplines"`
 }
@@ -1426,8 +1418,6 @@ func (q *Queries) UpdateRup(ctx context.Context, arg UpdateRupParams) error {
 		arg.Type,
 		arg.Contacts,
 		arg.GroupIds,
-		arg.Methodist,
-		arg.Teacher,
 		arg.ExplorationNoteID,
 		arg.Disciplines,
 	)
