@@ -18,7 +18,7 @@ import (
 )
 
 type AuthService interface {
-	HandleCallback(ctx context.Context, keycloakID uuid.UUID, accessToken string, claims jwt.MapClaims) (uuid.UUID, error)
+	HandleCallback(ctx context.Context, keycloakID uuid.UUID, accessToken string, idToken string, claims jwt.MapClaims) (uuid.UUID, error)
 	Logout(ctx context.Context, sessionID string) error
 	InvalidateAllSessions(ctx context.Context, keycloakID uuid.UUID) error
 }
@@ -40,17 +40,13 @@ func NewAuthService(redis *redis.Client, users repository.AuthRepository, cfg *c
 }
 
 // HandleCallback создаёт пользователя (если нужно) и сессию в Redis
-func (s *authService) HandleCallback(
-	ctx context.Context,
-	keycloakID uuid.UUID,
-	accessToken string,
-	claims jwt.MapClaims,
-) (uuid.UUID, error) {
+func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, accessToken string, idToken string, claims jwt.MapClaims) (uuid.UUID, error) {
 
 	email, _ := claims["email"].(string)
 	username, _ := claims["preferred_username"].(string)
 	firstName, _ := claims["given_name"].(string)
 	lastName, _ := claims["family_name"].(string)
+	phone, _ := claims["phone"].(string)
 
 	// new
 	realmAccess, ok := claims["realm_access"].(map[string]interface{})
@@ -80,18 +76,29 @@ func (s *authService) HandleCallback(
 		"role":        role,
 	}).Info("Resolved user role")
 
-	// 1. Попытка создать пользователя через репозиторий
-	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName)
+	// 1. Попытка создать пользователя
+	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
+
 	if err != nil {
-		// Игнорируем уникальное ограничение (пользователь уже есть)
-		if !isUniqueViolation(err) {
+		// Если пользователь уже существует (Unique Violation)
+		if isUniqueViolation(err) {
+			// 2. Обновляем профиль существующего пользователя
+			err = s.users.UpdateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
+
+			if err != nil {
+				s.log.WithError(err).Error("Failed to update existing user profile")
+				return uuid.Nil, err
+			}
+
+			// 3. Получаем актуальные данные пользователя после обновления
+			user, err = s.users.GetUserByKeycloakID(ctx, keycloakID)
+			if err != nil {
+				s.log.WithError(err).Error("Failed to get existing user after update")
+				return uuid.Nil, err
+			}
+		} else {
+			// Если ошибка не связана с уникальностью, прерываем выполнение
 			s.log.WithError(err).Error("Failed to create user")
-			return uuid.Nil, err
-		}
-		// Получаем существующего пользователя
-		user, err = s.users.GetUserByKeycloakID(ctx, keycloakID)
-		if err != nil {
-			s.log.WithError(err).Error("Failed to get existing user by keycloak ID")
 			return uuid.Nil, err
 		}
 	}
@@ -108,6 +115,7 @@ func (s *authService) HandleCallback(
 	pipe.HSet(ctx, sessionKey,
 		"keycloak_id", keycloakID.String(),
 		"access_token", accessToken,
+		"id_token", idToken,
 	)
 	pipe.Expire(ctx, sessionKey, 24*time.Hour)
 	pipe.SAdd(ctx, userSessionsKey, sessionID.String())

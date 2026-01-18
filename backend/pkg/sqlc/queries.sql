@@ -6,9 +6,10 @@ INSERT INTO
         username,
         first_name,
         last_name,
-        role
+        role,
+        phone
     )
-VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 -- name: GetUserByKeycloakID :one
 SELECT * FROM users WHERE keycloak_id = $1;
@@ -20,6 +21,8 @@ SET
     username = $3,
     first_name = $4,
     last_name = $5,
+    phone = $6,
+    role = $7,
     updated_at = NOW()
 WHERE
     keycloak_id = $1;

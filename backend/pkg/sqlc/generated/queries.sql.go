@@ -489,9 +489,10 @@ INSERT INTO
         username,
         first_name,
         last_name,
-        role
+        role,
+        phone
     )
-VALUES ($1, $2, $3, $4, $5, $6) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -501,6 +502,7 @@ type CreateUserParams struct {
 	FirstName  pgtype.Text `json:"first_name"`
 	LastName   pgtype.Text `json:"last_name"`
 	Role       UserRole    `json:"role"`
+	Phone      pgtype.Text `json:"phone"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -511,6 +513,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.FirstName,
 		arg.LastName,
 		arg.Role,
+		arg.Phone,
 	)
 	var i User
 	err := row.Scan(
@@ -1525,6 +1528,8 @@ SET
     username = $3,
     first_name = $4,
     last_name = $5,
+    phone = $6,
+    role = $7,
     updated_at = NOW()
 WHERE
     keycloak_id = $1
@@ -1536,6 +1541,8 @@ type UpdateUserProfileParams struct {
 	Username   string      `json:"username"`
 	FirstName  pgtype.Text `json:"first_name"`
 	LastName   pgtype.Text `json:"last_name"`
+	Phone      pgtype.Text `json:"phone"`
+	Role       UserRole    `json:"role"`
 }
 
 func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error {
@@ -1545,6 +1552,8 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		arg.Username,
 		arg.FirstName,
 		arg.LastName,
+		arg.Phone,
+		arg.Role,
 	)
 	return err
 }
