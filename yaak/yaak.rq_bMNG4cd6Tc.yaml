@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_bMNG4cd6Tc
 createdAt: 2026-01-15T08:26:15.143395800
-updatedAt: 2026-01-15T18:14:33.781781200
+updatedAt: 2026-01-18T13:59:44.463261100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -12,15 +12,11 @@ bodyType: null
 description: ''
 headers:
 - enabled: true
-  name: Cookie
-  value: ${[ sid ]}
-  id: VvTkcT32Da
-- enabled: true
   name: ''
   value: ''
-  id: i6rE9EVd57
+  id: 9p60YuAUg3
 method: GET
 name: download rup
 sortPriority: 5000.0
-url: http://localhost:8080/api/rups/9053e8a6-f364-45b2-a7b6-7f66fcb21cda/download
+url: ${[ url ]}/api/rups/e4c65e2f-0966-43dc-9315-7e6e6db9ede3/download
 urlParameters: []

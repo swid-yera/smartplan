@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_GAQ9UtR2vY
 createdAt: 2025-11-26T11:57:03.745284200
-updatedAt: 2026-01-14T14:49:08.125770100
+updatedAt: 2026-01-18T11:39:53.845625700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_wRXcNsMiL3
 authentication: {}
@@ -30,6 +30,6 @@ headers:
   id: HZcP6VzU9z
 method: POST
 name: logout
-sortPriority: 2000.0
+sortPriority: 3000.0
 url: https://auth.aspc.kz/realms/test/protocol/openid-connect/logout
 urlParameters: []

@@ -2,12 +2,12 @@ type: folder
 model: folder
 id: fl_zvfDpAtxLh
 createdAt: 2026-01-15T08:43:25.346794300
-updatedAt: 2026-01-15T14:34:04.663750100
+updatedAt: 2026-01-18T12:18:09.023619900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_fh7jNUikxF
 authentication: {}
 authenticationType: null
 description: ''
 headers: []
-name: Award
+name: award
 sortPriority: 0.0

@@ -131,7 +131,7 @@ func main() {
 	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, groupsHandler, nil, sessionAuthMiddleware)
 	engine := router.Init()
 
-	port := getEnv("PORT", "8080")
+	port := getEnv("SERVER_PORT", "8080")
 	log.Infof("Server starting on port %s", port)
 	if err := engine.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
