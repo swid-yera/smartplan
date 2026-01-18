@@ -53,3 +53,8 @@ export interface IUpdateRupStatusRequest {
 	status: IRup['status'] // IUser.keycloak_id
 	reason?: IRup['reason']
 }
+
+// download response
+export interface IDownloadResponse {
+	url: string
+}

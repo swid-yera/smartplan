@@ -50,8 +50,12 @@ const Page: FC = () => {
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-	// get data on initial
+	// queries
 	const { data: rupData, isLoading } = useQuery({ ...services.rup.getByIdOptions(params.id), enabled: !!params.id })
+	const { refetch: getDownloadUrl } = useQuery({
+		...services.rup.getDownloadUrlOptions(params.id),
+		enabled: false,
+	})
 	// mutations
 	const updateStatusMutation = useMutation(services.rup.updateStatusOptions())
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
@@ -97,13 +101,27 @@ const Page: FC = () => {
 		})
 	}
 
-	// TODO: realize it
 	const onDownload = () => {
-		toast.promise(() => new Promise((resolve) => setTimeout(() => resolve({ name: 'Event' }), 2000)), {
-			loading: 'Загрузка...',
-			success: (data) => `${data} has been created`,
-			error: 'Error',
-		})
+		toast.promise(
+			async () => {
+				const { data } = await getDownloadUrl()
+
+				if (!data) throw new Error('Не удалось получить ссылку на файл')
+
+				const link = document.createElement('a')
+
+				link.href = data.url
+				link.setAttribute('download', `RUP_${rupData?.code || 'file'}.docx`)
+				document.body.appendChild(link)
+				link.click()
+				link.remove()
+			},
+			{
+				loading: 'Подготовка файла...',
+				success: 'Файл скачивается',
+				error: 'Ошибка при скачивании',
+			},
+		)
 	}
 
 	// loading
