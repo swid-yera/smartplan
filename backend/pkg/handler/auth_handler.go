@@ -125,7 +125,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 /* ---------- CALLBACK ---------- */
-
 func (h *AuthHandler) Callback(c *gin.Context) {
 	if h == nil || h.cfg == nil {
 		h.log.Error("Auth handler not configured during callback")

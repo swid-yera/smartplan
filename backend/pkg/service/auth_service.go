@@ -76,18 +76,29 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 		"role":        role,
 	}).Info("Resolved user role")
 
-	// 1. Попытка создать пользователя через репозиторий
+	// 1. Попытка создать пользователя
 	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
+
 	if err != nil {
-		// Игнорируем уникальное ограничение (пользователь уже есть)
-		if !isUniqueViolation(err) {
+		// Если пользователь уже существует (Unique Violation)
+		if isUniqueViolation(err) {
+			// 2. Обновляем профиль существующего пользователя
+			err = s.users.UpdateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
+
+			if err != nil {
+				s.log.WithError(err).Error("Failed to update existing user profile")
+				return uuid.Nil, err
+			}
+
+			// 3. Получаем актуальные данные пользователя после обновления
+			user, err = s.users.GetUserByKeycloakID(ctx, keycloakID)
+			if err != nil {
+				s.log.WithError(err).Error("Failed to get existing user after update")
+				return uuid.Nil, err
+			}
+		} else {
+			// Если ошибка не связана с уникальностью, прерываем выполнение
 			s.log.WithError(err).Error("Failed to create user")
-			return uuid.Nil, err
-		}
-		// Получаем существующего пользователя
-		user, err = s.users.GetUserByKeycloakID(ctx, keycloakID)
-		if err != nil {
-			s.log.WithError(err).Error("Failed to get existing user by keycloak ID")
 			return uuid.Nil, err
 		}
 	}

@@ -1528,6 +1528,8 @@ SET
     username = $3,
     first_name = $4,
     last_name = $5,
+    phone = $6,
+    role = $7,
     updated_at = NOW()
 WHERE
     keycloak_id = $1
@@ -1539,6 +1541,8 @@ type UpdateUserProfileParams struct {
 	Username   string      `json:"username"`
 	FirstName  pgtype.Text `json:"first_name"`
 	LastName   pgtype.Text `json:"last_name"`
+	Phone      pgtype.Text `json:"phone"`
+	Role       UserRole    `json:"role"`
 }
 
 func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error {
@@ -1548,6 +1552,8 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		arg.Username,
 		arg.FirstName,
 		arg.LastName,
+		arg.Phone,
+		arg.Role,
 	)
 	return err
 }

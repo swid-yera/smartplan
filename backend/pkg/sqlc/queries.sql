@@ -21,6 +21,8 @@ SET
     username = $3,
     first_name = $4,
     last_name = $5,
+    phone = $6,
+    role = $7,
     updated_at = NOW()
 WHERE
     keycloak_id = $1;
