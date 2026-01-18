@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
@@ -11,32 +11,6 @@ export default function TeachersPage() {
 
 	const [search, setSearch] = useState('')
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-
-	const filteredAndSortedTeachers = useMemo(() => {
-		let teachers = users.filter((user) => user.roles.includes('teacher'))
-
-		if (search) {
-			teachers = teachers.filter(
-				(user) =>
-					user.name.toLowerCase().includes(search.toLowerCase()) ||
-					user.secondName.toLowerCase().includes(search.toLowerCase()) ||
-					user.email.toLowerCase().includes(search.toLowerCase()),
-			)
-		}
-
-		teachers.sort((a, b) => {
-			const nameA = `${a.name} ${a.secondName}`.toLowerCase()
-			const nameB = `${b.name} ${b.secondName}`.toLowerCase()
-
-			if (sortOrder === 'asc') {
-				return nameA.localeCompare(nameB)
-			} else {
-				return nameB.localeCompare(nameA)
-			}
-		})
-
-		return teachers
-	}, [users, search, sortOrder])
 
 	const toggleSort = () => {
 		setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
@@ -71,11 +45,11 @@ export default function TeachersPage() {
 				</TableHeader>
 				<TableBody>
 					{users.map((teacher) => (
-						<TableRow key={teacher.keycloak_id}>
-							<TableCell>{`${teacher.name} ${teacher.secondName}`}</TableCell>
+						<TableRow key={teacher.keycloakId}>
+							<TableCell>{`${teacher.firstName} ${teacher.lastName}`}</TableCell>
 							<TableCell>{teacher.email}</TableCell>
 							<TableCell>{teacher.phone}</TableCell>
-							<TableCell>{teacher.roles.join(', ')}</TableCell>
+							<TableCell>{teacher.role}</TableCell>
 						</TableRow>
 					))}
 				</TableBody>

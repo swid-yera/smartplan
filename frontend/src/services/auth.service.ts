@@ -28,7 +28,7 @@ export class AuthService {
 			throw new Error('data is not exist')
 		}
 
-		if (!user?.keycloakID || !user?.username) {
+		if (!data?.keycloakId || !data?.userName) {
 			throw new Error('invalid user data')
 		}
 	}
@@ -40,20 +40,11 @@ export class AuthService {
 			queryFn: async () => {
 				const { data } = await api.get<IUser | null>('/api/me')
 
-				const user = lowercaseFirstLetter(data)
+				this.assertUser(data)
 
-				// this.assertUser(user)
-
-				return user
+				return data
 			},
 			retry: false,
 		})
 	}
-}
-
-// TODO: delete me when it's over
-const lowercaseFirstLetter = (obj: Record<string, string>) => {
-	return Object.fromEntries(
-		Object.entries(obj).map(([key, value]) => [key.charAt(0).toLowerCase() + key.slice(1), value]),
-	)
 }

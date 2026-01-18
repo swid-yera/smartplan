@@ -15,9 +15,9 @@ export interface IGroup {
 }
 
 export interface IUser {
-	keycloakID: string
+	keycloakId: string
 
-	username: string
+	userName: string
 	email?: string
 	role: UserRoleEnum
 
@@ -30,6 +30,6 @@ export interface IUser {
 	awards?: IAward[]
 	violation?: AwardViolationEnum
 
-	created_at: string
-	updated_at: string
+	createdAt: string
+	updatedAt: string
 }

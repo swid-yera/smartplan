@@ -8,7 +8,7 @@ export class RupService {
 		return queryOptions<IRup[]>({
 			queryKey: ['rups'],
 			queryFn: async () => {
-				const { data } = await api.get<IRup[]>('/api/rups/')
+				const { data } = await api.get<IRup[]>('/api/rups')
 
 				if (!data) return []
 
@@ -35,7 +35,7 @@ export class RupService {
 
 		return mutationOptions({
 			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) =>
-				api.post<IRup>('/api/rups/', newRup).then((r) => r.data),
+				api.post<IRup>('/api/rups', newRup).then((r) => r.data),
 
 			onSuccess: (createdRup) => {
 				queryClient.setQueryData(['rup', createdRup.id], createdRup)
