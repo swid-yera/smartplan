@@ -2,9 +2,9 @@ type: http_request
 model: http_request
 id: rq_sLqa9vKuaA
 createdAt: 2026-01-13T03:16:53.778892300
-updatedAt: 2026-01-15T14:39:40.454898
+updatedAt: 2026-01-18T18:51:41.698426400
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_fh7jNUikxF
+folderId: fl_oAFVcfRqht
 authentication: {}
 authenticationType: null
 body: {}
@@ -12,15 +12,11 @@ bodyType: null
 description: ''
 headers:
 - enabled: true
-  name: Cookie
-  value: ${[ sid ]}
-  id: XSFi44FdUC
-- enabled: true
   name: ''
   value: ''
-  id: YTWSgxEX0r
+  id: ZjV7VHkree
 method: DELETE
 name: delete award
-sortPriority: 6000.0
-url: http://localhost:8080/api/awards/615e75e2-105a-4b1d-858c-8cb8316d46b9
+sortPriority: 2000.0
+url: ${[ url ]}/api/awards/cb6d1471-cf3b-4b59-b7fa-e2a81b7193eq
 urlParameters: []

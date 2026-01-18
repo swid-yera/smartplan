@@ -1,0 +1,13 @@
+type: folder
+model: folder
+id: fl_K53iQSXBTw
+createdAt: 2026-01-18T17:34:51.233023
+updatedAt: 2026-01-18T18:10:21.375815100
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_YjpbbUVpPX
+authentication: {}
+authenticationType: null
+description: ''
+headers: []
+name: manage
+sortPriority: 1000.0

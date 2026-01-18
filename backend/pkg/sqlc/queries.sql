@@ -183,7 +183,6 @@ INSERT INTO
         type,
         contacts,
         group_ids,
-        methodist,
         teacher,
         exploration_note_id,
         disciplines
@@ -200,8 +199,7 @@ VALUES (
         $9,
         $10,
         $11,
-        $12,
-        $13
+        $12
     ) RETURNING *;
 
 -- name: GetAllRups :many
@@ -221,10 +219,8 @@ SET
     type = $7,
     contacts = $8,
     group_ids = $9,
-    methodist = $10,
-    teacher = $11,
-    exploration_note_id = $12,
-    disciplines = $13,
+    exploration_note_id = $10,
+    disciplines = $11,
     updated_at = NOW()
 WHERE
     id = $1;

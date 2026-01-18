@@ -2,9 +2,9 @@ type: http_request
 model: http_request
 id: rq_TsReh98dPb
 createdAt: 2026-01-13T03:16:39.883243600
-updatedAt: 2026-01-15T14:39:26.239407
+updatedAt: 2026-01-18T18:16:09.520648700
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_fh7jNUikxF
+folderId: fl_ammwUQh5ZG
 authentication: {}
 authenticationType: null
 body: {}
@@ -12,15 +12,11 @@ bodyType: null
 description: ''
 headers:
 - enabled: true
-  name: Cookie
-  value: ${[ sid ]}
-  id: jeJXXsSpKs
-- enabled: true
   name: ''
   value: ''
-  id: D0NfDasSRH
+  id: s2E0IkM8rn
 method: GET
-name: get award by id
-sortPriority: 4000.0
-url: http://localhost:8080/api/awards/c5319420-ba7e-4821-9d8f-9dd761f01eb5
+name: by id
+sortPriority: 333.3333333333333
+url: ${[ url ]}/api/awards/c5319420-ba7e-4821-9d8f-9dd761f01eb5
 urlParameters: []

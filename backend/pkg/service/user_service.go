@@ -20,38 +20,16 @@ type User struct {
 	Phone      *string   `json:"phone"`
 }
 
-type MeResponse struct {
-	KeycloakID uuid.UUID `json:"keycloakId"`
-	Email      string    `json:"email"`
-	Username   string    `json:"userName"`
-	FirstName  string    `json:"firstName,omitempty"`
-	LastName   string    `json:"lastName,omitempty"`
-	Role       string    `json:"role"`
-	Phone      string    `json:"phone,omitempty"`
-}
-
 type UserService interface {
 	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error)
-	GetAllUsers(ctx context.Context) ([]storage.User, error)
-	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
+	GetAllUsers(ctx context.Context) ([]*User, error)
+	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error)
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
 }
 
 type userService struct {
 	repo  repository.UsersRepository
 	redis *redis.Client
-}
-
-func ToMeResponse(user *storage.User) *MeResponse {
-	return &MeResponse{
-		KeycloakID: user.KeycloakID,
-		Email:      user.Email,
-		Username:   user.Username,
-		FirstName:  user.FirstName.String,
-		LastName:   user.LastName.String,
-		Role:       string(user.Role),
-		Phone:      user.Phone.String,
-	}
 }
 
 func NewUserService(repo repository.UsersRepository, redisClient *redis.Client) UserService {
@@ -120,10 +98,31 @@ func toServiceUser(u *storage.User) *User {
 	}
 }
 
-func (s *userService) GetAllUsers(ctx context.Context) ([]storage.User, error) {
-	return s.repo.GetAllUsers(ctx)
+func (s *userService) GetAllUsers(ctx context.Context) ([]*User, error) {
+	dbUsers, err := s.repo.GetAllUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(dbUsers) == 0 {
+		return []*User{}, nil
+	}
+
+	serviceUsers := make([]*User, 0, len(dbUsers))
+
+	for i := range dbUsers {
+		u := toServiceUser(&dbUsers[i])
+		serviceUsers = append(serviceUsers, u)
+	}
+
+	return serviceUsers, nil
 }
 
-func (s *userService) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error) {
-	return s.repo.GetUserByKeycloakID(ctx, keycloakID)
+func (s *userService) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error) {
+	dbUser, err := s.repo.GetUserByKeycloakID(ctx, keycloakID)
+	if err != nil {
+		return nil, err
+	}
+
+	return toServiceUser(dbUser), nil
 }

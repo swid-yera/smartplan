@@ -77,35 +77,33 @@ func (r *Router) Init() *gin.Engine {
 		// RUP routes
 		rups := api.Group("/rups")
 		{
-			rups.POST("", r.rup.CreateRup)
 			rups.GET("", r.rup.GetAllRups)
 			rups.GET("/:id", r.rup.GetRupByID)
+			rups.GET("/teacher/:id", r.rup.GetRupsByTeacher)
+			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
+			rups.POST("", r.rup.CreateRup)
 			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
 			rups.PUT("/:id", r.rup.UpdateRup)
 			rups.DELETE("/:id", r.rup.DeleteRup)
-			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
-			rups.GET("/teacher/:id", r.rup.GetRupsByTeacher)
 			rups.GET("/:id/download", r.rup.DownloadRup)
 		}
 
 		// --- AWARD ROUTES ---
 		awards := api.Group("/awards")
 		{
-			// POST /api/awards/
-			// awards.POST("", r.award.CreateAwardWithFileAndData)
-			awards.POST("/upload", r.award.UploadAwardFile)
-			awards.POST("/upload-data", r.award.CreateAwardWithTypes)
 			awards.GET("", r.award.GetAllAwards)
 			awards.GET("/:id", r.award.GetAwardByID)
+			awards.POST("/upload", r.award.UploadAwardFile)
+			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
+			awards.POST("/upload-data", r.award.CreateAwardWithTypes)
 			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
 			awards.PUT("/:id", r.award.UpdateAward)
 			awards.DELETE("/:id", r.award.DeleteAward)
-			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
 
 			awardTypes := awards.Group("/types")
 			{
-				awardTypes.POST("", r.award.CreateAwardType)
 				awardTypes.GET("", r.award.GetAllAwardTypes)
+				awardTypes.POST("", r.award.CreateAwardType)
 			}
 		}
 

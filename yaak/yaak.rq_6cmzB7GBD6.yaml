@@ -2,9 +2,9 @@ type: http_request
 model: http_request
 id: rq_6cmzB7GBD6
 createdAt: 2026-01-15T18:12:50.578097400
-updatedAt: 2026-01-15T18:16:27.174788900
+updatedAt: 2026-01-18T18:11:29.279935200
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_YjpbbUVpPX
+folderId: fl_XZaE2gEbts
 authentication: {}
 authenticationType: null
 body:
@@ -12,14 +12,10 @@ body:
 bodyType: null
 description: ''
 headers:
-- enabled: false
-  name: Cookie
-  value: ${[ sid ]}
-  id: PdYB9EAGtq
 - enabled: true
   name: ''
   value: ''
-  id: JR23fAaJHp
+  id: AaYnqA76Qn
 method: GET
 name: all
 sortPriority: 0.0
