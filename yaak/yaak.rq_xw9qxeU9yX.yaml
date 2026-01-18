@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_xw9qxeU9yX
 createdAt: 2026-01-13T08:08:03.936537100
-updatedAt: 2026-01-15T14:38:33.830836300
+updatedAt: 2026-01-18T16:58:32.430656500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_zvfDpAtxLh
 authentication: {}
@@ -10,11 +10,11 @@ authenticationType: null
 body:
   form:
   - enabled: true
-    file: C:\Users\KIRKANATOR\Desktop\job\templator\output\generated-rup-20251213_131837.docx
+    file: C:\Users\justs\OneDrive\Pictures\IMG_5284.JPG
     id: ZI3btwrTwn
     name: file
   - enabled: true
-    id: 7nGdPVZ9Vg
+    id: ZNnnp6n0Sg
     name: ''
     value: ''
 bodyType: multipart/form-data

@@ -1,0 +1,73 @@
+type: http_request
+model: http_request
+id: rq_xJL88qMBCW
+createdAt: 2026-01-18T20:28:34.668241600
+updatedAt: 2026-01-18T20:31:25.940620600
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_zvfDpAtxLh
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "status": "DRAFT",
+      "methodist": "550e8400-e29b-41d4-a716-446655440000",
+      "teacher": "550e8400-e29b-41d4-a716-446655440001",
+      "text": "Описание награды",
+      "document": "",
+      "award_type": {
+        "name": "Лучший студент",
+        "variants": [
+          {
+            "name": "Вариант 1",
+            "description": "Описание варианта 1",
+            "criteria": [
+              {
+                "name": "Критерий 1",
+                "points": 20,
+                "method": "NORMAL"
+              },
+              {
+                "name": "Критерий 2",
+                "points": [
+                  5,
+                  15
+                ],
+                "method": "MEASURING"
+              }
+            ],
+            "bonus_criteria": [
+              {
+                "name": "Бонусный критерий 1",
+                "points": 2,
+                "method": "NORMAL"
+              }
+            ]
+          },
+          {
+            "name": "Вариант 2",
+            "description": "Описание варианта 2",
+            "criteria": [
+              {
+                "name": "Критерий 3",
+                "points": 8,
+                "method": "NORMAL"
+              }
+            ],
+            "bonus_criteria": []
+          }
+        ]
+      }
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: AwCwzEcrHG
+method: POST
+name: ''
+sortPriority: 1000.0
+url: http://localhost:8080/api/awards/upload-data
+urlParameters: []

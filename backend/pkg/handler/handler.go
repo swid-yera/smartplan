@@ -106,6 +106,9 @@ func (r *Router) Init() *gin.Engine {
 			{
 				awardTypes.POST("", r.award.CreateAwardType)
 				awardTypes.GET("", r.award.GetAllAwardTypes)
+				awardTypes.GET("/:id", r.award.GetAwardTypeByID)
+				awardTypes.PUT("/:id", r.award.UpdateAwardType)
+				awardTypes.DELETE("/:id", r.award.DeleteAwardType)
 			}
 		}
 

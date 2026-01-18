@@ -545,6 +545,15 @@ func (q *Queries) DeleteAward(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteAwardType = `-- name: DeleteAwardType :exec
+DELETE FROM award_types WHERE id = $1
+`
+
+func (q *Queries) DeleteAwardType(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAwardType, id)
+	return err
+}
+
 const deleteGroupsNotInKeycloak = `-- name: DeleteGroupsNotInKeycloak :exec
 DELETE FROM groups
 WHERE keycloak_id NOT IN (
@@ -1360,6 +1369,25 @@ func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusPa
 		arg.Reason,
 		arg.Methodist,
 	)
+	return err
+}
+
+const updateAwardType = `-- name: UpdateAwardType :exec
+UPDATE award_types
+SET
+	name = $2,
+	variants = $3
+WHERE id = $1 RETURNING id, name, variants
+`
+
+type UpdateAwardTypeParams struct {
+	ID       uuid.UUID   `json:"id"`
+	Name     string      `json:"name"`
+	Variants []uuid.UUID `json:"variants"`
+}
+
+func (q *Queries) UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error {
+	_, err := q.db.Exec(ctx, updateAwardType, arg.ID, arg.Name, arg.Variants)
 	return err
 }
 

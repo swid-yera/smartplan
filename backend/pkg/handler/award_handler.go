@@ -335,3 +335,63 @@ func (h *AwardHandler) GetAllAwardTypes(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, awardTypes)
 }
+
+func (h *AwardHandler) GetAwardTypeByID(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award type ID"})
+		return
+	}
+	awardType, err := h.service.GetAwardTypeByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, awardType)
+}
+
+func (h *AwardHandler) UpdateAwardType(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid AwardType ID"})
+		return
+	}
+
+	var req service.CreateAwardTypeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid JSON format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	awardType, err := h.service.UpdateAwardType(c.Request.Context(), id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to update AwardType",
+			"details": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, awardType)
+}
+
+func (h *AwardHandler) DeleteAwardType(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid AwardType ID"})
+		return
+	}
+
+	err = h.service.DeleteAward(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "AwardType deleted successfully"})
+}

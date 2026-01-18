@@ -2,12 +2,20 @@ type: folder
 model: folder
 id: fl_RSWsGmeehe
 createdAt: 2026-01-15T07:34:31.786145100
-updatedAt: 2026-01-15T14:34:06.775907500
+updatedAt: 2026-01-18T17:00:38.828259700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_fh7jNUikxF
 authentication: {}
 authenticationType: null
 description: ''
-headers: []
+headers:
+- enabled: false
+  name: ''
+  value: ''
+  id: RdbkYiCYwW
+- enabled: true
+  name: ''
+  value: ''
+  id: SHNduTBBsm
 name: types
 sortPriority: 333.3333333333333

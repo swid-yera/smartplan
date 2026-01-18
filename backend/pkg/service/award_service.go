@@ -30,6 +30,12 @@ type AwardTypeVariant struct {
 	BonusCriteria []AwardTypeCriteria `json:"bonusCriteria"`
 }
 
+type CreateAwardTypeRequest struct {
+	ID       uuid.UUID          `json:"id"`
+	Name     string             `json:"name"`
+	Variants []AwardTypeVariant `json:"variants"`
+}
+
 // AwardTypeCriteria представляет критерий типа награды
 type AwardTypeCriteria struct {
 	Name   string                     `json:"name"`
@@ -41,6 +47,22 @@ type AwardTypeCriteria struct {
 type CreateFullAwardTypeParams struct {
 	Name     string             `json:"name"`
 	Variants []AwardTypeVariant `json:"variants"`
+}
+
+// FullAwardTypeResponse represents the full award type structure for response.
+type FullAwardTypeResponse struct {
+	ID       uuid.UUID              `json:"id"`
+	Name     string                 `json:"name"`
+	Variants []FullAwardTypeVariant `json:"variants"`
+}
+
+// FullAwardTypeVariant represents the full variant structure for response.
+type FullAwardTypeVariant struct {
+	ID            uuid.UUID           `json:"id"`
+	Name          string              `json:"name"`
+	Description   string              `json:"description"`
+	Criteria      []AwardTypeCriteria `json:"criteria"`
+	BonusCriteria []AwardTypeCriteria `json:"bonusCriteria"`
 }
 
 type UpdateAwardRequest struct {
@@ -84,6 +106,92 @@ func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (storage.
 
 func (s *AwardService) GetAllAwardTypes(ctx context.Context) ([]storage.AwardType, error) {
 	return s.repo.GetAllAwardTypes(ctx)
+}
+
+func (s *AwardService) GetAllFullAwardTypes(ctx context.Context) ([]FullAwardTypeResponse, error) {
+	awardTypes, err := s.repo.GetAllAwardTypes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []FullAwardTypeResponse
+	for _, at := range awardTypes {
+		var variants []FullAwardTypeVariant
+		for _, variantID := range at.Variants {
+			// The GetAwardTypeVariantByID method returns `any, any`.
+			// We need to cast the first `any` to `storage.AwardTypeVariant`
+			// to access its fields.
+			variantAny, err := s.repo.GetAwardTypeVariantByID(ctx, variantID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get variant %s: %w", variantID, err)
+			}
+			variant, ok := variantAny.(storage.AwardTypeVariant)
+			if !ok {
+				return nil, fmt.Errorf("failed to cast variant %s to storage.AwardTypeVariant", variantID)
+			}
+
+			var criteria []AwardTypeCriteria
+			for _, cID := range variant.Criteria {
+				crit, err := s.repo.GetAwardTypeCriteriaByID(ctx, cID)
+				if err != nil || crit == nil {
+					return nil, fmt.Errorf("failed to get criteria %s: %w", cID, err)
+				}
+				criteria = append(criteria, AwardTypeCriteria{
+					Name:   crit.(storage.AwardTypeCriterium).Name,
+					Points: crit.(storage.AwardTypeCriterium).Points,
+					Method: crit.(storage.AwardTypeCriterium).Method,
+				})
+			}
+
+			var bonusCriteria []AwardTypeCriteria
+			for _, cID := range variant.Bonuscriteria {
+				crit, err := s.repo.GetAwardTypeCriteriaByID(ctx, cID)
+				if err != nil || crit == nil {
+					return nil, fmt.Errorf("failed to get bonus criteria %s: %w", cID, err)
+				}
+				bonusCriteria = append(bonusCriteria, AwardTypeCriteria{
+					Name:   crit.(storage.AwardTypeCriterium).Name,
+					Points: crit.(storage.AwardTypeCriterium).Points,
+					Method: crit.(storage.AwardTypeCriterium).Method,
+				})
+			}
+
+			variants = append(variants, FullAwardTypeVariant{
+				ID:            variant.ID,
+				Name:          variant.Name,
+				Description:   variant.Description.String,
+				Criteria:      criteria,
+				BonusCriteria: bonusCriteria,
+			})
+		}
+
+		result = append(result, FullAwardTypeResponse{
+			ID:       at.ID,
+			Name:     at.Name,
+			Variants: variants,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *AwardService) GetAwardTypeByID(ctx context.Context, id uuid.UUID) (storage.AwardType, error) {
+	return s.repo.GetAwardTypeByID(ctx, id)
+}
+
+func (s *AwardService) UpdateAwardType(ctx context.Context, id uuid.UUID, req CreateAwardTypeRequest) (storage.AwardType, error) {
+	// Create variants with their criteria
+	variantIDs, err := s.createAwardTypeVariantsWithCriteria(ctx, req.Variants)
+	if err != nil {
+		return storage.AwardType{}, fmt.Errorf("create variants failed: %w", err)
+	}
+
+	params := storage.UpdateAwardTypeParams{
+		ID:       id,
+		Name:     req.Name,
+		Variants: variantIDs,
+	}
+	return s.repo.UpdateAwardType(ctx, params)
 }
 
 func (s *AwardService) GetAllAwards(ctx context.Context) ([]storage.Award, error) {
