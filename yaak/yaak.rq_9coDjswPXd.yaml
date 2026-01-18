@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_9coDjswPXd
 createdAt: 2026-01-15T20:09:38.855577800
-updatedAt: 2026-01-16T10:01:51.809200100
+updatedAt: 2026-01-18T12:16:39.024770300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -23,5 +23,5 @@ headers:
 method: GET
 name: methodists
 sortPriority: 1000.001
-url: ${[ url ]}/api/rups/methodist/720447e1-3bab-4aa1-9704-f3366fd50cdd
+url: ${[ url ]}/api/rups/methodist/e03f5d94-1497-4514-9c92-16bb559a1cc8
 urlParameters: []
