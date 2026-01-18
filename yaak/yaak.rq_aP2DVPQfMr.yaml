@@ -2,24 +2,21 @@ type: http_request
 model: http_request
 id: rq_aP2DVPQfMr
 createdAt: 2026-01-14T14:38:21.382290500
-updatedAt: 2026-01-18T13:59:38.218409800
+updatedAt: 2026-01-18T18:14:18.149032800
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_YjpbbUVpPX
+folderId: fl_K53iQSXBTw
 authentication: {}
 authenticationType: null
 body:
   text: |
     {
-      "status": "APPROVED",
-      "reason": "иди нахуй"
+      "status": "REJECTED",
+      "reason": "иди нахуй",
+      "methodist": "e03f5d94-1497-4514-9c92-16bb559a1cc8"
     }
 bodyType: application/json
 description: ''
 headers:
-- enabled: false
-  name: Cookie
-  value: ${[ sid ]}
-  id: PdYB9EAGtq
 - enabled: true
   name: Content-Type
   value: application/json
@@ -27,9 +24,9 @@ headers:
 - enabled: true
   name: ''
   value: ''
-  id: ziRVz5HU2H
+  id: eygsrsatFR
 method: PUT
 name: status
-sortPriority: 3000.0
-url: ${[ url ]}/api/rups/e4c65e2f-0966-43dc-9315-7e6e6db9ede3/status
+sortPriority: 2000.0
+url: ${[ url ]}/api/rups/243bc56b-e208-4793-88b5-b3f54a046d31/status
 urlParameters: []

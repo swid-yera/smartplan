@@ -2,9 +2,9 @@ type: http_request
 model: http_request
 id: rq_LnxzkwdGaK
 createdAt: 2026-01-15T18:14:23.750593100
-updatedAt: 2026-01-15T23:57:11.995625600
+updatedAt: 2026-01-18T18:11:48.781973900
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_YjpbbUVpPX
+folderId: fl_K53iQSXBTw
 authentication: {}
 authenticationType: null
 body:
@@ -12,16 +12,12 @@ body:
 bodyType: null
 description: ''
 headers:
-- enabled: false
-  name: Cookie
-  value: ${[ sid ]}
-  id: PdYB9EAGtq
 - enabled: true
   name: ''
   value: ''
-  id: JR23fAaJHp
+  id: 8GVsvSqqvP
 method: DELETE
 name: delete
-sortPriority: 4000.0
-url: ${[ url ]}/api/rups/8c0461d0-025d-4cc0-b19a-fd5aa7390cb6
+sortPriority: 3000.0
+url: ${[ url ]}/api/rups/67af3d7e-d474-416c-baeb-cb55f4a046aa
 urlParameters: []

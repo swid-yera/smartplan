@@ -83,11 +83,29 @@ func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (storage.
 }
 
 func (s *AwardService) GetAllAwardTypes(ctx context.Context) ([]storage.AwardType, error) {
-	return s.repo.GetAllAwardTypes(ctx)
+	dbAwardTypes, err := s.repo.GetAllAwardTypes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(dbAwardTypes) == 0 {
+		return []storage.AwardType{}, nil
+	}
+
+	return dbAwardTypes, nil
 }
 
 func (s *AwardService) GetAllAwards(ctx context.Context) ([]storage.Award, error) {
-	return s.repo.GetAllAwards(ctx)
+	dbAwards, err := s.repo.GetAllAwards(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(dbAwards) == 0 {
+		return []storage.Award{}, nil
+	}
+
+	return dbAwards, nil
 }
 
 func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (storage.Award, error) {
@@ -99,7 +117,16 @@ func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *AwardService) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Award, error) {
-	return s.repo.GetAwardsByMethodist(ctx, methodist)
+	dbAwards, err := s.repo.GetAwardsByMethodist(ctx, methodist)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(dbAwards) == 0 {
+		return []storage.Award{}, nil
+	}
+
+	return dbAwards, nil
 }
 
 func (s *AwardService) createAwardType(ctx context.Context, params *storage.CreateAwardTypeParams) (storage.AwardType, error) {

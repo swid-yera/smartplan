@@ -267,7 +267,7 @@ func (s *rupService) GetAllRups(ctx context.Context) ([]*ListAllRupsResponse, er
 		return nil, err
 	}
 
-	// if rups empty len will be 0 and json return [] not null
+	// if empty, len will be 0, json return [] not null
 	responses := make([]*ListAllRupsResponse, 0, len(rups))
 
 	for _, rup := range rups {
@@ -352,6 +352,10 @@ func (s *rupService) UpdateRupStatus(
 	methodistUUID := pgtype.UUID{
 		Bytes: methodistID,
 		Valid: methodistID != uuid.Nil,
+	}
+	_, err := s.repo.GetUserByID(ctx, methodistID)
+	if err != nil {
+		return err
 	}
 
 	// 4. обновляем статус в БД
@@ -563,7 +567,9 @@ func (s *rupService) GetRupsByMethodist(ctx context.Context, methodistID uuid.UU
 		return nil, err
 	}
 
-	var responses []*RupResponse
+	// if empty, len will be 0, json return [] not null
+	responses := make([]*RupResponse, 0, len(rups))
+
 	for _, rup := range rups {
 		response, err := s.buildRupResponse(ctx, rup)
 		if err != nil {
@@ -582,7 +588,9 @@ func (s *rupService) GetRupsByTeacher(ctx context.Context, teacherID uuid.UUID) 
 		return nil, err
 	}
 
-	var responses []*RupResponse
+	// if empty, len will be 0, json return [] not null
+	responses := make([]*RupResponse, 0, len(rups))
+
 	for _, rup := range rups {
 		response, err := s.buildRupResponse(ctx, rup)
 		if err != nil {

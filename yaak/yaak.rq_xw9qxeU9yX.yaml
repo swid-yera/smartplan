@@ -2,28 +2,24 @@ type: http_request
 model: http_request
 id: rq_xw9qxeU9yX
 createdAt: 2026-01-13T08:08:03.936537100
-updatedAt: 2026-01-15T14:38:33.830836300
+updatedAt: 2026-01-18T18:49:29.685896500
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_zvfDpAtxLh
+folderId: fl_oAFVcfRqht
 authentication: {}
 authenticationType: null
 body:
   form:
   - enabled: true
-    file: C:\Users\KIRKANATOR\Desktop\job\templator\output\generated-rup-20251213_131837.docx
+    file: C:\Users\justs\OneDrive\Pictures\Screenshots 1\Screenshot 2025-10-14 053822.png
     id: ZI3btwrTwn
     name: file
   - enabled: true
-    id: 7nGdPVZ9Vg
+    id: sGIxRfC6rn
     name: ''
     value: ''
 bodyType: multipart/form-data
 description: ''
 headers:
-- enabled: true
-  name: Cookie
-  value: ${[ sid ]}
-  id: ParhRHb0zu
 - enabled: true
   name: Content-Type
   value: multipart/form-data
@@ -31,9 +27,13 @@ headers:
 - enabled: true
   name: ''
   value: ''
-  id: IeHWPaxhhy
+  id: agzEmcegZg
 method: POST
 name: upload file
-sortPriority: 1000.0
-url: http://localhost:8080/api/awards/upload
-urlParameters: []
+sortPriority: 0.0
+url: ${[ url ]}/api/awards/upload
+urlParameters:
+- enabled: true
+  name: ''
+  value: ''
+  id: wqfYDYWgtQ
