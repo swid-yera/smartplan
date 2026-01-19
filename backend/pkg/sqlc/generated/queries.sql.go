@@ -20,8 +20,7 @@ INSERT INTO
         type,
         total_points,
         text,
-        images,
-        document,
+        files,
         links
     )
 VALUES (
@@ -31,9 +30,8 @@ VALUES (
         $4,
         $5,
         $6,
-        $7,
-        $8
-    ) RETURNING id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at
+        $7
+    ) RETURNING id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at
 `
 
 type CreateAwardParams struct {
@@ -42,8 +40,7 @@ type CreateAwardParams struct {
 	Type        pgtype.UUID  `json:"type"`
 	TotalPoints int32        `json:"total_points"`
 	Text        pgtype.Text  `json:"text"`
-	Images      []string     `json:"images"`
-	Document    pgtype.Text  `json:"document"`
+	Files       []string     `json:"files"`
 	Links       []string     `json:"links"`
 }
 
@@ -54,8 +51,7 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		arg.Type,
 		arg.TotalPoints,
 		arg.Text,
-		arg.Images,
-		arg.Document,
+		arg.Files,
 		arg.Links,
 	)
 	var i Award
@@ -68,8 +64,7 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		&i.TotalPoints,
 		&i.Type,
 		&i.Text,
-		&i.Images,
-		&i.Document,
+		&i.Files,
 		&i.Links,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -668,7 +663,7 @@ func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
 }
 
 const getAllAwards = `-- name: GetAllAwards :many
-SELECT id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at FROM awards
+SELECT id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at FROM awards
 `
 
 func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
@@ -689,8 +684,7 @@ func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
 			&i.TotalPoints,
 			&i.Type,
 			&i.Text,
-			&i.Images,
-			&i.Document,
+			&i.Files,
 			&i.Links,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -905,7 +899,7 @@ func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const getAwardByID = `-- name: GetAwardByID :one
-SELECT id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at FROM awards WHERE id = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at FROM awards WHERE id = $1
 `
 
 func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error) {
@@ -920,8 +914,7 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 		&i.TotalPoints,
 		&i.Type,
 		&i.Text,
-		&i.Images,
-		&i.Document,
+		&i.Files,
 		&i.Links,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -974,7 +967,7 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 }
 
 const getAwardsByMethodist = `-- name: GetAwardsByMethodist :many
-SELECT id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at FROM awards WHERE methodist = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at FROM awards WHERE methodist = $1
 `
 
 func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error) {
@@ -995,8 +988,7 @@ func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUI
 			&i.TotalPoints,
 			&i.Type,
 			&i.Text,
-			&i.Images,
-			&i.Document,
+			&i.Files,
 			&i.Links,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -1276,12 +1268,11 @@ SET
     type = $5,
     total_points = $6,
     text = $7,
-    images = $8,
-    document = $9,
-    links = $10,
+    files = $8,
+    links = $9,
     updated_at = NOW()
 WHERE
-    id = $1 RETURNING id, status, reason, methodist, teacher, total_points, type, text, images, document, links, created_at, updated_at
+    id = $1 RETURNING id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at
 `
 
 type UpdateAwardParams struct {
@@ -1292,8 +1283,7 @@ type UpdateAwardParams struct {
 	Type        pgtype.UUID  `json:"type"`
 	TotalPoints int32        `json:"total_points"`
 	Text        pgtype.Text  `json:"text"`
-	Images      []string     `json:"images"`
-	Document    pgtype.Text  `json:"document"`
+	Files       []string     `json:"files"`
 	Links       []string     `json:"links"`
 }
 
@@ -1306,8 +1296,7 @@ func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award
 		arg.Type,
 		arg.TotalPoints,
 		arg.Text,
-		arg.Images,
-		arg.Document,
+		arg.Files,
 		arg.Links,
 	)
 	var i Award
@@ -1320,8 +1309,7 @@ func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award
 		&i.TotalPoints,
 		&i.Type,
 		&i.Text,
-		&i.Images,
-		&i.Document,
+		&i.Files,
 		&i.Links,
 		&i.CreatedAt,
 		&i.UpdatedAt,

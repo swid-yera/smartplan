@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_doZXMJESQg
 createdAt: 2026-01-13T03:16:48.377937500
-updatedAt: 2026-01-18T18:50:00.804600400
+updatedAt: 2026-01-19T12:16:17.852457900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -22,6 +22,6 @@ headers:
   id: JxThxdbDqJ
 method: PUT
 name: status
-sortPriority: 1000.0
-url: ${[ url ]}/api/awards/c5319420-ba7e-4821-9d8f-9dd761f01eb5/status
+sortPriority: 2000.0
+url: ${[ url ]}/awards/c5319420-ba7e-4821-9d8f-9dd761f01eb5/status
 urlParameters: []

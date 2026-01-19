@@ -1,0 +1,56 @@
+type: http_request
+model: http_request
+id: rq_NKNzwuPNSE
+createdAt: 2026-01-19T12:03:08.633091100
+updatedAt: 2026-01-19T12:03:55.109508700
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_RSWsGmeehe
+authentication:
+  prefix: 'Bearer '
+  token: ''
+authenticationType: bearer
+body:
+  text: |-
+    {
+        "name": "Лучший студент2",
+        "variants": [
+          {
+            "name": "Вариант ",
+            "description": "Описание варианта 1",
+            "criteria": [
+              {
+                "name": "Критерий 1",
+                "points": [20],
+                "method": "NORMAL"
+              }
+            ],
+             "bonus_criteria": [
+              {
+                "name": "Критерий 1",
+                "points": [20],
+                "method": "MEASURING"
+              }
+            ]
+          }
+        ]
+      }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: tUVAhNTsUr
+- enabled: true
+  name: ''
+  value: ''
+  id: zbd2xcPZrw
+method: PUT
+name: update
+sortPriority: 1000.001
+url: ${[ url ]}/awards/types/03906968-6f88-46da-b764-5f9508abfc39
+urlParameters:
+- enabled: true
+  name: ''
+  value: ''
+  id: DRdSvgzZTv

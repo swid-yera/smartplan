@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_gZwb8MbmmP
 createdAt: 2026-01-13T03:16:50.993879100
-updatedAt: 2026-01-18T18:16:00.412107500
+updatedAt: 2026-01-19T11:58:59.601804600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -18,5 +18,5 @@ headers:
 method: GET
 name: methodist
 sortPriority: 1000.0
-url: ${[ url ]}/api/awards/methodist/:id
+url: ${[ url ]}/awards/methodist/:id
 urlParameters: []

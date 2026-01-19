@@ -365,8 +365,7 @@ type Award struct {
 	TotalPoints int32              `json:"total_points"`
 	Type        pgtype.UUID        `json:"type"`
 	Text        pgtype.Text        `json:"text"`
-	Images      []string           `json:"images"`
-	Document    pgtype.Text        `json:"document"`
+	Files       []string           `json:"files"`
 	Links       []string           `json:"links"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
