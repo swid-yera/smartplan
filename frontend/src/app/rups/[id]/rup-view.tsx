@@ -416,6 +416,7 @@ const CommentControl: FC<{
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
+
 			{isCommenting && (
 				<Dialog open={isCommenting} onOpenChange={setIsCommenting}>
 					<DialogContent>

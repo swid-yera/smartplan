@@ -6,12 +6,12 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Forbidden, Loader } from '@components'
-import { hasRole } from '@helpers'
+import { isRupCreator } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateRupRequest, RupTypeEnum, StudyFormEnum, UserRoleEnum } from '@types'
+import { type IUpdateRupRequest, RupTypeEnum, StudyFormEnum } from '@types'
 import { Button, ButtonGroup, Heading } from '@ui'
 import { ArrowLeft, EyeIcon, RotateCcw, SaveIcon } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
@@ -36,7 +36,7 @@ const defaultValues: RUPFormData = {
 	type: RupTypeEnum.PRACTICE,
 	studyForm: StudyFormEnum.FULL_TIME,
 	studyYear: '2025-2026',
-	groupId: '', // groupId
+	groupId: '',
 	course: 1,
 
 	basis: '',
@@ -75,13 +75,15 @@ const EditPage: FC = () => {
 	useEffect(() => {
 		if (!rupData) return
 
+		console.log('this is group id', rupData.groups)
+
 		methods.reset({
 			...rupData,
 			...rupData.explorationNote,
 			disciplines: rupData?.disciplines ?? [],
-			groupId: rupData.groups[0]?.keycloak_id,
+			groupId: rupData.groups[0]?.keycloakId,
 			// @ts-ignore
-			contacts: rupData.contacts.map((c) => c?.keycloak_id),
+			contacts: rupData.contacts.map((c) => c?.keycloakId),
 		})
 	}, [rupData, methods.reset])
 
@@ -103,7 +105,6 @@ const EditPage: FC = () => {
 
 	const onSubmit = (newData: RUPFormData) => {
 		if (!rupData) return
-		console.log(newData)
 
 		// mapped disciplines
 		const mappedDisciplines = newData.disciplines.map((discipline) => ({
@@ -169,7 +170,7 @@ const EditPage: FC = () => {
 	if (!user) return notFound()
 	if (!rupData) notFound()
 	// Redirect if not allowed to edit
-	if (hasRole(user.role, UserRoleEnum.TEACHER) && rupData?.teacher.keycloakID) return <Forbidden />
+	if (!isRupCreator(user.role, user.keycloakId, rupData.teacher.keycloakId)) return <Forbidden />
 
 	return (
 		<FormProvider {...methods}>
@@ -254,6 +255,7 @@ const EditPage: FC = () => {
 							title='Технические средства и материалы'
 						/>
 					</div>
+
 					<DisciplineCard />
 					<TopicsCard />
 				</div>

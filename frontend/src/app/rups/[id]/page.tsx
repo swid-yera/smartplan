@@ -133,7 +133,7 @@ const Page: FC = () => {
 	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER)
 	const isStatusForEdit = rupData.status === RupStatusEnum.DRAFT || rupData.status === RupStatusEnum.REJECTED
 	// @ts-ignore
-	const isUserCreator = hasRole(user.role, UserRoleEnum.TEACHER) && rupData?.teacher?.keycloak_id == user.keycloakID
+	const isUserCreator = hasRole(user.role, UserRoleEnum.TEACHER) && rupData.teacher.keycloakId == user.keycloakID
 	// conditions
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
 	const canDownload = rupData.status === RupStatusEnum.APPROVED

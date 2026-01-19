@@ -44,13 +44,13 @@ export function ContactsCard<T extends ContactsValues>() {
 		enabled: true,
 	})
 
-	const creatorId = form.getValues()?.teacher?.keycloak_id
+	const creatorId = form.getValues()?.teacher?.keycloakId
 
 	// use memo, kills abandon renders
 	const contactsData = useMemo(() => {
 		if (!isSuccess) return []
 
-		return watchedContacts.map((id) => teachersData.find((t) => t?.keycloak_id === id)).filter(Boolean) as IUser[]
+		return watchedContacts.map((id) => teachersData.find((t) => t?.keycloakId === id)).filter(Boolean) as IUser[]
 	}, [teachersData, isSuccess, watchedContacts])
 
 	const handleAddTeacher = (id: string) => {
@@ -95,14 +95,14 @@ export function ContactsCard<T extends ContactsValues>() {
 						</TableHeader>
 						<TableBody>
 							{contactsData.map((teacher) => (
-								<TableRow key={teacher.keycloak_id} className='group'>
+								<TableRow key={teacher.keycloakId} className='group'>
 									<TableCell className='pl-6 font-medium'>
 										<div className='flex items-center gap-3'>
 											<div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary'>
 												<User className='h-4 w-4' />
 											</div>
 											<span>
-												{teacher.first_name} {teacher.last_name}
+												{teacher.firstName} {teacher.lastName}
 											</span>
 										</div>
 									</TableCell>
@@ -121,10 +121,10 @@ export function ContactsCard<T extends ContactsValues>() {
 									<TableCell className='pr-6 text-right'>
 										<Button
 											className='opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10'
-											disabled={teacher?.keycloak_id == creatorId}
+											disabled={teacher?.keycloakId == creatorId}
 											size='icon'
 											variant='ghost'
-											onClick={() => handleRemoveTeacher(teacher.keycloak_id)}
+											onClick={() => handleRemoveTeacher(teacher.keycloakId)}
 										>
 											<Trash2 className='h-4 w-4' />
 										</Button>
@@ -174,22 +174,22 @@ const TeacherSelector: FC<ITeacherSelector> = ({ onSelect, teachersData, watched
 						<CommandEmpty>Преподаватель не найден.</CommandEmpty>
 						<CommandGroup heading='Доступные преподаватели'>
 							{teachersData.map((teacher) => {
-								const isAdded = watchedContacts.includes(teacher.keycloak_id)
+								const isAdded = watchedContacts.includes(teacher.keycloakId)
 
 								return (
 									<CommandItem
-										key={teacher.keycloak_id}
+										key={teacher.keycloakId}
 										className='flex items-center justify-between py-3'
 										disabled={isAdded}
-										value={teacher.keycloak_id}
+										value={teacher.keycloakId}
 										onSelect={() => {
-											onSelect(teacher.keycloak_id)
+											onSelect(teacher.keycloakId)
 											setOpen(false)
 										}}
 									>
 										<div className='flex flex-col gap-0.5'>
 											<span className='font-medium'>
-												{teacher.first_name} {teacher.last_name}
+												{teacher.firstName} {teacher.lastName}
 											</span>
 											<span className='text-xs text-muted-foreground flex items-center gap-1'>
 												<Mail className='h-2 w-2' /> {teacher.email}

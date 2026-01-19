@@ -3,10 +3,10 @@ import type { badgeVariants } from '@ui'
 import type { VariantProps } from 'class-variance-authority'
 
 // has role
-export const hasRole = (current: UserRoleEnum, target: UserRoleEnum): boolean => {
+export const hasRole = (current: UserRoleEnum, target: UserRoleEnum, highestRole = true): boolean => {
 	switch (current) {
 		case UserRoleEnum.ADMIN:
-			return true
+			return highestRole ? true : target === UserRoleEnum.ADMIN
 		case UserRoleEnum.METHODIST:
 			return target === UserRoleEnum.METHODIST
 		case UserRoleEnum.TEACHER:
@@ -14,6 +14,18 @@ export const hasRole = (current: UserRoleEnum, target: UserRoleEnum): boolean =>
 		default:
 			return false
 	}
+}
+
+// is rup creator
+export const isRupCreator = (role: UserRoleEnum, current: string, target: string): boolean => {
+	if (role === UserRoleEnum.ADMIN) {
+		return true
+	}
+	if (role === UserRoleEnum.TEACHER) {
+		return current === target
+	}
+
+	return false
 }
 
 // user role button variants
