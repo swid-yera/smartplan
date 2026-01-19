@@ -23,11 +23,11 @@ def generate_rup_docx(data: dict) -> Path:
     # mapping data from json
     logger.info("generating rup document, mapping data from json")
 
-    rup_name = f"{data.get("code", "")} {data.get("name", "")}"
+    rup_name = data.get("name", "")
     totalHours = int(data.get("totalHours"))
-    totalCredits = int(int(data.get("totalHours")) / 24)
+    totalCredits = int(totalHours / 24)
 
-    group = data.get("group")
+    group = data.get("groups", [])[0]
 
     contacts = build_contacts(data.get("contacts", []))
     developers = build_developers(data.get("contacts", []))
@@ -44,22 +44,22 @@ def generate_rup_docx(data: dict) -> Path:
         # base information
         "name": rup_name,
         "specialty": group.get("specialty"),
-        "qualification": data["group"]["qualification"],
-        "form": decode_study_form(data.get("studyForm")),
+        "qualification": group.get("qualification"),
+        "form": decode_study_form(data.get("studyForm", "")),
         "totalHours": totalHours,
         "credits": totalCredits,
-        "course": data.get("course"),
+        "course": data.get("course", 0),
         "group_name": group.get("name"),
         # developers
         "developer1": developers[0],
         "developer2": developers[1],
         "developer3": developers[2],
         # exploration note
-        "basis": explorationNote.get("basis"),
-        "goals": explorationNote.get("goals"),
-        "competencies": explorationNote.get("competencies"),
-        "prerequisites": explorationNote.get("prerequisites"),
-        "postrequisites": explorationNote.get("postrequisites"),
+        "basis": explorationNote.get("basis", ""),
+        "goals": explorationNote.get("goals", ""),
+        "competencies": explorationNote.get("competencies", ""),
+        "prerequisites": explorationNote.get("prerequisites", ""),
+        "postrequisites": explorationNote.get("postrequisites", ""),
         # resources
         "internet_resources": internet_resources,
         "technical_resources": technical_resources,
