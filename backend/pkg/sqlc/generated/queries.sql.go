@@ -125,16 +125,16 @@ INSERT INTO
         name,
         description,
         criteria,
-        bonusCriteria
+        bonus_criteria
     )
-VALUES ($1, $2, $3, $4) RETURNING id, name, description, criteria, bonuscriteria
+VALUES ($1, $2, $3, $4) RETURNING id, name, description, criteria, bonus_criteria
 `
 
 type CreateAwardTypesVariantParams struct {
 	Name          string      `json:"name"`
 	Description   pgtype.Text `json:"description"`
 	Criteria      []uuid.UUID `json:"criteria"`
-	Bonuscriteria []uuid.UUID `json:"bonuscriteria"`
+	BonusCriteria []uuid.UUID `json:"bonus_criteria"`
 }
 
 func (q *Queries) CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTypesVariantParams) (AwardTypeVariant, error) {
@@ -142,7 +142,7 @@ func (q *Queries) CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTy
 		arg.Name,
 		arg.Description,
 		arg.Criteria,
-		arg.Bonuscriteria,
+		arg.BonusCriteria,
 	)
 	var i AwardTypeVariant
 	err := row.Scan(
@@ -150,7 +150,7 @@ func (q *Queries) CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTy
 		&i.Name,
 		&i.Description,
 		&i.Criteria,
-		&i.Bonuscriteria,
+		&i.BonusCriteria,
 	)
 	return i, err
 }
@@ -541,6 +541,15 @@ func (q *Queries) DeleteAward(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteAwardType = `-- name: DeleteAwardType :exec
+DELETE FROM award_types WHERE id = $1
+`
+
+func (q *Queries) DeleteAwardType(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAwardType, id)
+	return err
+}
+
 const deleteGroupsNotInKeycloak = `-- name: DeleteGroupsNotInKeycloak :exec
 DELETE FROM groups
 WHERE keycloak_id NOT IN (
@@ -610,7 +619,7 @@ func (q *Queries) GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCrite
 }
 
 const getAllAwardTypeVariants = `-- name: GetAllAwardTypeVariants :many
-SELECT id, name, description, criteria, bonuscriteria FROM award_type_variants
+SELECT id, name, description, criteria, bonus_criteria FROM award_type_variants
 `
 
 func (q *Queries) GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error) {
@@ -627,7 +636,7 @@ func (q *Queries) GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVaria
 			&i.Name,
 			&i.Description,
 			&i.Criteria,
-			&i.Bonuscriteria,
+			&i.BonusCriteria,
 		); err != nil {
 			return nil, err
 		}
@@ -955,7 +964,7 @@ func (q *Queries) GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (A
 }
 
 const getAwardTypeVariantByID = `-- name: GetAwardTypeVariantByID :one
-SELECT id, name, description, criteria, bonuscriteria FROM award_type_variants WHERE id = $1
+SELECT id, name, description, criteria, bonus_criteria FROM award_type_variants WHERE id = $1
 `
 
 func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error) {
@@ -966,7 +975,7 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 		&i.Name,
 		&i.Description,
 		&i.Criteria,
-		&i.Bonuscriteria,
+		&i.BonusCriteria,
 	)
 	return i, err
 }
@@ -1356,6 +1365,25 @@ func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusPa
 		arg.Reason,
 		arg.Methodist,
 	)
+	return err
+}
+
+const updateAwardType = `-- name: UpdateAwardType :exec
+UPDATE award_types
+SET
+	name = $2,
+	variants = $3
+WHERE id = $1 RETURNING id, name, variants
+`
+
+type UpdateAwardTypeParams struct {
+	ID       uuid.UUID   `json:"id"`
+	Name     string      `json:"name"`
+	Variants []uuid.UUID `json:"variants"`
+}
+
+func (q *Queries) UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error {
+	_, err := q.db.Exec(ctx, updateAwardType, arg.ID, arg.Name, arg.Variants)
 	return err
 }
 

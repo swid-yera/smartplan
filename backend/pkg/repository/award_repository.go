@@ -15,6 +15,14 @@ type AwardRepository struct {
 	minio   *MinioRepository
 }
 
+func (r *AwardRepository) GetAwardTypeVariantByID(ctx context.Context, vID uuid.UUID) (storage.AwardTypeVariant, error) {
+	return r.queries.GetAwardTypeVariantByID(ctx, vID)
+}
+
+func (r *AwardRepository) GetAwardTypeCriteriaByID(ctx context.Context, cID uuid.UUID) (storage.AwardTypeCriterium, error) {
+	return r.queries.GetAwardTypeCriteriaByID(ctx, cID)
+}
+
 func NewAwardRepository(queries *storage.Queries, minio *MinioRepository) *AwardRepository {
 	return &AwardRepository{queries: queries, minio: minio}
 }
@@ -43,6 +51,18 @@ func (r *AwardRepository) GetAllAwards(ctx context.Context) ([]storage.Award, er
 
 func (r *AwardRepository) GetAllAwardTypes(ctx context.Context) ([]storage.AwardType, error) {
 	return r.queries.GetAllAwardTypes(ctx)
+}
+
+func (r *AwardRepository) GetAwardTypeByID(ctx context.Context, id uuid.UUID) (storage.AwardType, error) {
+	return r.queries.GetAwardTypeByID(ctx, id)
+}
+
+func (r *AwardRepository) UpdateAwardType(ctx context.Context, params storage.UpdateAwardTypeParams) (storage.AwardType, error) {
+	err := r.queries.UpdateAwardType(ctx, params)
+	if err != nil {
+		return storage.AwardType{}, err
+	}
+	return r.queries.GetAwardTypeByID(ctx, params.ID)
 }
 
 func (r *AwardRepository) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (storage.Award, error) {
