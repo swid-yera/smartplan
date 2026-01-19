@@ -28,5 +28,13 @@ headers:
 method: PUT
 name: status
 sortPriority: 2000.0
-url: ${[ url ]}/rups/d5ac786f-46cb-42d0-820b-f8a58499f9ea/status
-urlParameters: []
+url: ${[ url ]}/rups/:id/status
+urlParameters:
+- enabled: true
+  name: :id
+  value: aab96dec-fc7a-43e1-9020-c316dee40d7b
+  id: wsGq79GFtr
+- enabled: true
+  name: ''
+  value: ''
+  id: KycQ9rCpqN
