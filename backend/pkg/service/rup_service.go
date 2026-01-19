@@ -224,13 +224,21 @@ func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupR
 		return nil, fmt.Errorf("create exploration note failed: %w", err)
 	}
 
+	// Calculate total hours
+	var totalHours int32
+	for _, d := range req.Disciplines {
+		for _, s := range d.Semesters {
+			totalHours += s.TotalHours
+		}
+	}
+
 	disciplineIDs, err := s.createDisciplines(ctx, req.Disciplines)
 	if err != nil {
 		return nil, fmt.Errorf("create disciplines failed: %w", err)
 	}
 
 	// Преобразование в параметры для repository
-	params := s.convertToCreateParams(req, explorationNoteID, disciplineIDs)
+	params := s.convertToCreateParams(req, explorationNoteID, disciplineIDs, totalHours)
 
 	// Создание RUP
 	rup, err := s.repo.CreateRup(ctx, params)
@@ -375,6 +383,14 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 		return nil, fmt.Errorf("create exploration note failed: %w", err)
 	}
 
+	// Calculate total hours
+	var totalHours int32
+	for _, d := range req.Disciplines {
+		for _, s := range d.Semesters {
+			totalHours += s.TotalHours
+		}
+	}
+
 	disciplineIDs, err := s.createDisciplines(ctx, req.Disciplines)
 	if err != nil {
 		return nil, fmt.Errorf("create disciplines failed: %w", err)
@@ -382,7 +398,7 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 
 	// 4. Prepare update params
 	// We preserve the existing status
-	params := s.convertToUpdateParams(id, req, existingRup.Status, explorationNoteID, disciplineIDs)
+	params := s.convertToUpdateParams(id, req, existingRup.Status, explorationNoteID, disciplineIDs, totalHours)
 
 	// 5. Update RUP
 	updatedRup, err := s.repo.UpdateRup(ctx, params)
@@ -673,7 +689,7 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 	return nil
 }
 
-func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID) storage.CreateRupsParams {
+func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID, totalHours int32) storage.CreateRupsParams {
 	var teacherUUID pgtype.UUID
 	var explorationNoteUUID pgtype.UUID
 
@@ -722,11 +738,12 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 		Teacher:           teacherUUID,
 		ExplorationNoteID: explorationNoteUUID,
 		Disciplines:       disciplineIDs,
+		TotalHours:        totalHours,
 	}
 
 }
 
-func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, status storage.RupsStatus, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID) storage.UpdateRupParams {
+func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, status storage.RupsStatus, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID, totalHours int32) storage.UpdateRupParams {
 	var explorationNoteUUID pgtype.UUID
 
 	if explorationNoteID != nil {
@@ -767,6 +784,7 @@ func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, s
 		GroupIds:          req.Groups,
 		ExplorationNoteID: explorationNoteUUID,
 		Disciplines:       disciplineIDs,
+		TotalHours:        totalHours,
 	}
 }
 
@@ -838,9 +856,15 @@ func (s *rupService) createDisciplines(ctx context.Context, disciplines []*Disci
 			return nil, err
 		}
 
+		// Calculate discipline total hours
+		var discTotalHours int32
+		for _, sem := range disc.Semesters {
+			discTotalHours += sem.TotalHours
+		}
+
 		params := storage.CreateRupDisciplineParams{
 			Name:       disc.Name,
-			TotalHours: 0, // Calculate later
+			TotalHours: discTotalHours,
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
 		}

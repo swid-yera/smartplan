@@ -183,7 +183,8 @@ INSERT INTO
         group_ids,
         teacher,
         exploration_note_id,
-        disciplines
+        disciplines,
+        total_hours
     )
 VALUES (
         $1,
@@ -196,7 +197,8 @@ VALUES (
         $8,
         $9,
         $10,
-        $11
+        $11,
+        $12
     ) RETURNING *;
 
 -- name: GetAllRups :many
@@ -217,6 +219,7 @@ SET
     group_ids = $8,
     exploration_note_id = $9,
     disciplines = $10,
+    total_hours = $11,
     updated_at = NOW()
 WHERE
     id = $1;
