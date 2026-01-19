@@ -132,12 +132,10 @@ const Page: FC = () => {
 	const isAdmin = hasRole(user.role, UserRoleEnum.ADMIN)
 	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER)
 	const isStatusForEdit = rupData.status === RupStatusEnum.DRAFT || rupData.status === RupStatusEnum.REJECTED
-	const isRupCreator2 = isAuthor(user, rupData.teacher.keycloakId)
+	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	// conditions
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
 	const canDownload = rupData.status === RupStatusEnum.APPROVED
-	const canSendToReview = isUserCreator && rupData.status === RupStatusEnum.DRAFT
-	const canDelete = isAdmin || (isUserCreator && rupData.status === RupStatusEnum.DRAFT)
 
 	return (
 		<>
@@ -155,7 +153,7 @@ const Page: FC = () => {
 								Поменять статус
 							</Button>
 						)}
-						{canDelete && (
+						{isRupCreator && (
 							<Button
 								className='hover:text-destructive'
 								size='sm'
@@ -179,7 +177,7 @@ const Page: FC = () => {
 								Скачать файл
 							</Button>
 						)}
-						{canSendToReview && (
+						{isRupCreator && (
 							<Button
 								className='hover:text-primary'
 								size='sm'
