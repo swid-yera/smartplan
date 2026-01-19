@@ -125,16 +125,16 @@ INSERT INTO
         name,
         description,
         criteria,
-        bonusCriteria
+        bonus_criteria
     )
-VALUES ($1, $2, $3, $4) RETURNING id, name, description, criteria, bonuscriteria
+VALUES ($1, $2, $3, $4) RETURNING id, name, description, criteria, bonus_criteria
 `
 
 type CreateAwardTypesVariantParams struct {
 	Name          string      `json:"name"`
 	Description   pgtype.Text `json:"description"`
 	Criteria      []uuid.UUID `json:"criteria"`
-	Bonuscriteria []uuid.UUID `json:"bonuscriteria"`
+	BonusCriteria []uuid.UUID `json:"bonus_criteria"`
 }
 
 func (q *Queries) CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTypesVariantParams) (AwardTypeVariant, error) {
@@ -142,7 +142,7 @@ func (q *Queries) CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTy
 		arg.Name,
 		arg.Description,
 		arg.Criteria,
-		arg.Bonuscriteria,
+		arg.BonusCriteria,
 	)
 	var i AwardTypeVariant
 	err := row.Scan(
@@ -150,7 +150,7 @@ func (q *Queries) CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTy
 		&i.Name,
 		&i.Description,
 		&i.Criteria,
-		&i.Bonuscriteria,
+		&i.BonusCriteria,
 	)
 	return i, err
 }
@@ -276,17 +276,15 @@ const createRupDiscipline = `-- name: CreateRupDiscipline :one
 INSERT INTO
     rup_disciplines (
         name,
-        code,
         total_hours,
         semesters,
         topics
     )
-VALUES ($1, $2, $3, $4, $5) RETURNING id, name, code, total_hours, semesters, topics
+VALUES ($1, $2, $3, $4) RETURNING id, name, total_hours, semesters, topics
 `
 
 type CreateRupDisciplineParams struct {
 	Name       string      `json:"name"`
-	Code       pgtype.Text `json:"code"`
 	TotalHours int32       `json:"total_hours"`
 	Semesters  []uuid.UUID `json:"semesters"`
 	Topics     []uuid.UUID `json:"topics"`
@@ -295,7 +293,6 @@ type CreateRupDisciplineParams struct {
 func (q *Queries) CreateRupDiscipline(ctx context.Context, arg CreateRupDisciplineParams) (RupDiscipline, error) {
 	row := q.db.QueryRow(ctx, createRupDiscipline,
 		arg.Name,
-		arg.Code,
 		arg.TotalHours,
 		arg.Semesters,
 		arg.Topics,
@@ -304,7 +301,6 @@ func (q *Queries) CreateRupDiscipline(ctx context.Context, arg CreateRupDiscipli
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Code,
 		&i.TotalHours,
 		&i.Semesters,
 		&i.Topics,
@@ -395,7 +391,6 @@ const createRups = `-- name: CreateRups :one
 INSERT INTO
     rups (
         name,
-        code,
         status,
         course,
         study_form,
@@ -418,14 +413,12 @@ VALUES (
         $8,
         $9,
         $10,
-        $11,
-        $12
-    ) RETURNING id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+        $11
+    ) RETURNING id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 `
 
 type CreateRupsParams struct {
 	Name              string        `json:"name"`
-	Code              pgtype.Text   `json:"code"`
 	Status            RupsStatus    `json:"status"`
 	Course            int32         `json:"course"`
 	StudyForm         StudyFormEnum `json:"study_form"`
@@ -441,7 +434,6 @@ type CreateRupsParams struct {
 func (q *Queries) CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error) {
 	row := q.db.QueryRow(ctx, createRups,
 		arg.Name,
-		arg.Code,
 		arg.Status,
 		arg.Course,
 		arg.StudyForm,
@@ -457,7 +449,6 @@ func (q *Queries) CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, er
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Code,
 		&i.Status,
 		&i.Reason,
 		&i.Course,
@@ -541,6 +532,15 @@ func (q *Queries) DeleteAward(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteAwardType = `-- name: DeleteAwardType :exec
+DELETE FROM award_types WHERE id = $1
+`
+
+func (q *Queries) DeleteAwardType(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAwardType, id)
+	return err
+}
+
 const deleteGroupsNotInKeycloak = `-- name: DeleteGroupsNotInKeycloak :exec
 DELETE FROM groups
 WHERE keycloak_id NOT IN (
@@ -610,7 +610,7 @@ func (q *Queries) GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCrite
 }
 
 const getAllAwardTypeVariants = `-- name: GetAllAwardTypeVariants :many
-SELECT id, name, description, criteria, bonuscriteria FROM award_type_variants
+SELECT id, name, description, criteria, bonus_criteria FROM award_type_variants
 `
 
 func (q *Queries) GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error) {
@@ -627,7 +627,7 @@ func (q *Queries) GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVaria
 			&i.Name,
 			&i.Description,
 			&i.Criteria,
-			&i.Bonuscriteria,
+			&i.BonusCriteria,
 		); err != nil {
 			return nil, err
 		}
@@ -765,7 +765,7 @@ func (q *Queries) GetAllGroups(ctx context.Context) ([]Group, error) {
 }
 
 const getAllRupDisciplines = `-- name: GetAllRupDisciplines :many
-SELECT id, name, code, total_hours, semesters, topics FROM rup_disciplines
+SELECT id, name, total_hours, semesters, topics FROM rup_disciplines
 `
 
 func (q *Queries) GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, error) {
@@ -780,7 +780,6 @@ func (q *Queries) GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, er
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Code,
 			&i.TotalHours,
 			&i.Semesters,
 			&i.Topics,
@@ -820,7 +819,7 @@ func (q *Queries) GetAllRupResources(ctx context.Context) ([]RupResource, error)
 }
 
 const getAllRups = `-- name: GetAllRups :many
-SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups ORDER BY created_at DESC
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups ORDER BY created_at DESC
 `
 
 func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
@@ -835,7 +834,6 @@ func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Code,
 			&i.Status,
 			&i.Reason,
 			&i.Course,
@@ -955,7 +953,7 @@ func (q *Queries) GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (A
 }
 
 const getAwardTypeVariantByID = `-- name: GetAwardTypeVariantByID :one
-SELECT id, name, description, criteria, bonuscriteria FROM award_type_variants WHERE id = $1
+SELECT id, name, description, criteria, bonus_criteria FROM award_type_variants WHERE id = $1
 `
 
 func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error) {
@@ -966,7 +964,7 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 		&i.Name,
 		&i.Description,
 		&i.Criteria,
-		&i.Bonuscriteria,
+		&i.BonusCriteria,
 	)
 	return i, err
 }
@@ -1065,7 +1063,7 @@ func (q *Queries) GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID
 }
 
 const getRupDisciplineByID = `-- name: GetRupDisciplineByID :one
-SELECT id, name, code, total_hours, semesters, topics FROM rup_disciplines WHERE id = $1
+SELECT id, name, total_hours, semesters, topics FROM rup_disciplines WHERE id = $1
 `
 
 func (q *Queries) GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDiscipline, error) {
@@ -1074,7 +1072,6 @@ func (q *Queries) GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDi
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Code,
 		&i.TotalHours,
 		&i.Semesters,
 		&i.Topics,
@@ -1127,7 +1124,7 @@ func (q *Queries) GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupReso
 }
 
 const getRupsByID = `-- name: GetRupsByID :one
-SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE id = $1
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE id = $1
 `
 
 func (q *Queries) GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error) {
@@ -1136,7 +1133,6 @@ func (q *Queries) GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Code,
 		&i.Status,
 		&i.Reason,
 		&i.Course,
@@ -1157,7 +1153,7 @@ func (q *Queries) GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error) {
 }
 
 const getRupsByMethodist = `-- name: GetRupsByMethodist :many
-SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE methodist = $1 ORDER BY created_at DESC
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE methodist = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error) {
@@ -1172,7 +1168,6 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Code,
 			&i.Status,
 			&i.Reason,
 			&i.Course,
@@ -1200,7 +1195,7 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 }
 
 const getRupsByTeacher = `-- name: GetRupsByTeacher :many
-SELECT id, name, code, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE teacher = $1 ORDER BY created_at DESC
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE teacher = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error) {
@@ -1215,7 +1210,6 @@ func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Code,
 			&i.Status,
 			&i.Reason,
 			&i.Course,
@@ -1359,6 +1353,25 @@ func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusPa
 	return err
 }
 
+const updateAwardType = `-- name: UpdateAwardType :exec
+UPDATE award_types
+SET
+	name = $2,
+	variants = $3
+WHERE id = $1 RETURNING id, name, variants
+`
+
+type UpdateAwardTypeParams struct {
+	ID       uuid.UUID   `json:"id"`
+	Name     string      `json:"name"`
+	Variants []uuid.UUID `json:"variants"`
+}
+
+func (q *Queries) UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error {
+	_, err := q.db.Exec(ctx, updateAwardType, arg.ID, arg.Name, arg.Variants)
+	return err
+}
+
 const updateAwardTypeVariants = `-- name: UpdateAwardTypeVariants :one
 UPDATE award_types SET variants = $2 WHERE id = $1 RETURNING id, name, variants
 `
@@ -1379,15 +1392,14 @@ const updateRup = `-- name: UpdateRup :exec
 UPDATE rups
 SET
     name = $2,
-    code = $3,
-    course = $4,
-    study_form = $5,
-    study_year = $6,
-    type = $7,
-    contacts = $8,
-    group_ids = $9,
-    exploration_note_id = $10,
-    disciplines = $11,
+    course = $3,
+    study_form = $4,
+    study_year = $5,
+    type = $6,
+    contacts = $7,
+    group_ids = $8,
+    exploration_note_id = $9,
+    disciplines = $10,
     updated_at = NOW()
 WHERE
     id = $1
@@ -1396,7 +1408,6 @@ WHERE
 type UpdateRupParams struct {
 	ID                uuid.UUID     `json:"id"`
 	Name              string        `json:"name"`
-	Code              pgtype.Text   `json:"code"`
 	Course            int32         `json:"course"`
 	StudyForm         StudyFormEnum `json:"study_form"`
 	StudyYear         string        `json:"study_year"`
@@ -1411,7 +1422,6 @@ func (q *Queries) UpdateRup(ctx context.Context, arg UpdateRupParams) error {
 	_, err := q.db.Exec(ctx, updateRup,
 		arg.ID,
 		arg.Name,
-		arg.Code,
 		arg.Course,
 		arg.StudyForm,
 		arg.StudyYear,

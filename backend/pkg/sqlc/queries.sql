@@ -158,12 +158,11 @@ SELECT * FROM discipline_topics;
 INSERT INTO
     rup_disciplines (
         name,
-        code,
         total_hours,
         semesters,
         topics
     )
-VALUES ($1, $2, $3, $4, $5) RETURNING *;
+VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: GetRupDisciplineByID :one
 SELECT * FROM rup_disciplines WHERE id = $1;
@@ -175,7 +174,6 @@ SELECT * FROM rup_disciplines;
 INSERT INTO
     rups (
         name,
-        code,
         status,
         course,
         study_form,
@@ -198,8 +196,7 @@ VALUES (
         $8,
         $9,
         $10,
-        $11,
-        $12
+        $11
     ) RETURNING *;
 
 -- name: GetAllRups :many
@@ -212,15 +209,14 @@ SELECT * FROM rups WHERE id = $1;
 UPDATE rups
 SET
     name = $2,
-    code = $3,
-    course = $4,
-    study_form = $5,
-    study_year = $6,
-    type = $7,
-    contacts = $8,
-    group_ids = $9,
-    exploration_note_id = $10,
-    disciplines = $11,
+    course = $3,
+    study_form = $4,
+    study_year = $5,
+    type = $6,
+    contacts = $7,
+    group_ids = $8,
+    exploration_note_id = $9,
+    disciplines = $10,
     updated_at = NOW()
 WHERE
     id = $1;
@@ -316,13 +312,23 @@ SELECT * FROM award_types WHERE id = $1;
 -- name: GetAllAwardTypes :many
 SELECT * FROM award_types;
 
+-- name: UpdateAwardType :exec
+UPDATE award_types
+SET
+	name = $2,
+	variants = $3
+WHERE id = $1 RETURNING *;
+
+-- name: DeleteAwardType :exec
+DELETE FROM award_types WHERE id = $1;
+
 -- name: CreateAwardTypesVariant :one
 INSERT INTO
     award_type_variants (
         name,
         description,
         criteria,
-        bonusCriteria
+        bonus_criteria
     )
 VALUES ($1, $2, $3, $4) RETURNING *;
 

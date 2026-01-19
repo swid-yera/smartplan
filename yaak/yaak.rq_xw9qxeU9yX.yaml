@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_xw9qxeU9yX
 createdAt: 2026-01-13T08:08:03.936537100
-updatedAt: 2026-01-18T18:49:29.685896500
+updatedAt: 2026-01-19T09:50:52.992847
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -10,11 +10,11 @@ authenticationType: null
 body:
   form:
   - enabled: true
-    file: C:\Users\justs\OneDrive\Pictures\Screenshots 1\Screenshot 2025-10-14 053822.png
+    file: C:\Users\KIRKANATOR\Downloads\Без названия.jpg
     id: ZI3btwrTwn
     name: file
   - enabled: true
-    id: sGIxRfC6rn
+    id: DSt2Tz9tqP
     name: ''
     value: ''
 bodyType: multipart/form-data

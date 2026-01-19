@@ -114,7 +114,6 @@ CREATE TABLE discipline_topics (
 CREATE TABLE rup_disciplines (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    code TEXT,
     total_hours INT NOT NULL DEFAULT 0,
 
     semesters UUID[],
@@ -129,7 +128,6 @@ CREATE TABLE rup_disciplines (
 CREATE TABLE rups (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    code TEXT,
     status rups_status NOT NULL,
     reason TEXT,
     course INT NOT NULL CHECK (course BETWEEN 1 AND 4),
@@ -171,7 +169,7 @@ CREATE TABLE award_type_variants (
     name TEXT NOT NULL,
     description TEXT,
     criteria UUID[],
-    bonusCriteria UUID[]
+    bonus_criteria UUID[]
 );
 
 -- =====================
@@ -194,18 +192,18 @@ CREATE TABLE awards (
     reason TEXT,
     methodist UUID,
     teacher UUID NOT NULL REFERENCES users(keycloak_id),
-    
-    
+
+
     total_points INT NOT NULL DEFAULT 0,
     type UUID REFERENCES award_types(id),
-    
+
     text TEXT,
     images TEXT[] DEFAULT '{}',
     document TEXT DEFAULT '{}',
     links TEXT[] DEFAULT '{}',
-    
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    
+
     CONSTRAINT fk_award_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id)
 );
