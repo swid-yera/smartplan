@@ -400,7 +400,8 @@ INSERT INTO
         group_ids,
         teacher,
         exploration_note_id,
-        disciplines
+        disciplines,
+        total_hours
     )
 VALUES (
         $1,
@@ -413,7 +414,8 @@ VALUES (
         $8,
         $9,
         $10,
-        $11
+        $11,
+        $12
     ) RETURNING id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 `
 
@@ -429,6 +431,7 @@ type CreateRupsParams struct {
 	Teacher           pgtype.UUID   `json:"teacher"`
 	ExplorationNoteID pgtype.UUID   `json:"exploration_note_id"`
 	Disciplines       []uuid.UUID   `json:"disciplines"`
+	TotalHours        int32         `json:"total_hours"`
 }
 
 func (q *Queries) CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error) {
@@ -444,6 +447,7 @@ func (q *Queries) CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, er
 		arg.Teacher,
 		arg.ExplorationNoteID,
 		arg.Disciplines,
+		arg.TotalHours,
 	)
 	var i Rup
 	err := row.Scan(
@@ -1400,6 +1404,7 @@ SET
     group_ids = $8,
     exploration_note_id = $9,
     disciplines = $10,
+    total_hours = $11,
     updated_at = NOW()
 WHERE
     id = $1
@@ -1416,6 +1421,7 @@ type UpdateRupParams struct {
 	GroupIds          []string      `json:"group_ids"`
 	ExplorationNoteID pgtype.UUID   `json:"exploration_note_id"`
 	Disciplines       []uuid.UUID   `json:"disciplines"`
+	TotalHours        int32         `json:"total_hours"`
 }
 
 func (q *Queries) UpdateRup(ctx context.Context, arg UpdateRupParams) error {
@@ -1430,6 +1436,7 @@ func (q *Queries) UpdateRup(ctx context.Context, arg UpdateRupParams) error {
 		arg.GroupIds,
 		arg.ExplorationNoteID,
 		arg.Disciplines,
+		arg.TotalHours,
 	)
 	return err
 }
