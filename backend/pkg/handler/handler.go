@@ -99,11 +99,13 @@ func (r *Router) Init() *gin.Engine {
 		{
 			awards.GET("", r.award.GetAllAwards)
 			awards.GET("/:id", r.award.GetAwardByID)
-			awards.POST("/upload", r.award.UploadAwardFile)
 			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
-			awards.POST("/upload-data", r.award.CreateAwardWithTypes)
-			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
+
+			awards.POST("", r.award.CreateAward)
+
 			awards.PUT("/:id", r.award.UpdateAward)
+			awards.PUT("/:id/status", r.award.UpdateAwardStatus)
+
 			awards.DELETE("/:id", r.award.DeleteAward)
 
 			awardTypes := awards.Group("/types")

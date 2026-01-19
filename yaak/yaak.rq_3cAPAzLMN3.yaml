@@ -1,0 +1,30 @@
+type: http_request
+model: http_request
+id: rq_3cAPAzLMN3
+createdAt: 2026-01-19T12:19:39.683890800
+updatedAt: 2026-01-19T12:20:17.796054800
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_ammwUQh5ZG
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: ''
+  value: ''
+  id: 9SDsjUd3sk
+method: GET
+name: teacher
+sortPriority: 1000.001
+url: ${[ url ]}/awards/methodist/:id
+urlParameters:
+- enabled: false
+  name: :id
+  value: ''
+  id: Wp5JyuF6G3
+- enabled: true
+  name: ''
+  value: ''
+  id: 3RUuuXbfem

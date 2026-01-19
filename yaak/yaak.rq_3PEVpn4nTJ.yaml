@@ -1,0 +1,33 @@
+type: http_request
+model: http_request
+id: rq_3PEVpn4nTJ
+createdAt: 2026-01-19T12:20:28.897108600
+updatedAt: 2026-01-19T12:20:47.526360200
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_oAFVcfRqht
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "status": "DRAFT",
+      "text": "Описание награды",
+      "document": "",
+      "type": "03906968-6f88-46da-b764-5f9508abfc39"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: G7Bv0HQNNt
+- enabled: true
+  name: ''
+  value: ''
+  id: JxThxdbDqJ
+method: PUT
+name: update
+sortPriority: 1333.3333333333333
+url: ${[ url ]}/awards/:id/status
+urlParameters: []

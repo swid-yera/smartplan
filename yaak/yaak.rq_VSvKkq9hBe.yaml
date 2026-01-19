@@ -1,0 +1,53 @@
+type: http_request
+model: http_request
+id: rq_VSvKkq9hBe
+createdAt: 2026-01-19T12:00:23.657903500
+updatedAt: 2026-01-19T12:01:11.662771500
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_RSWsGmeehe
+authentication:
+  prefix: 'Bearer '
+  token: ''
+authenticationType: bearer
+body:
+  form:
+  - enabled: true
+    file: C:\Users\KIRKANATOR\Desktop\job\templator\output\generated-rup-20251213_131837.docx
+    id: WAD5ZhbkJS
+    name: file
+  - enabled: true
+    id: TRXjEuBDag
+    name: status
+    value: DRAFT
+  - enabled: true
+    id: HYhkYGaiKI
+    name: methodist
+    value: b83882bd-7761-46bd-b657-cb156950309d
+  - enabled: true
+    id: gQ5Hgcf6th
+    name: type
+    value: ''
+  - enabled: true
+    id: z3VxFSyVa7
+    name: ''
+    value: ''
+bodyType: null
+description: ''
+headers:
+- enabled: false
+  name: Cookie
+  value: ${[ sid ]}
+  id: IbqKxWm6Xg
+- enabled: true
+  name: ''
+  value: ''
+  id: U2Y6htZg2K
+method: DELETE
+name: delete
+sortPriority: 2000.0
+url: ${[ url ]}/awards/types/03906968-6f88-46da-b764-5f9508abfc39
+urlParameters:
+- enabled: true
+  name: ''
+  value: ''
+  id: DRdSvgzZTv

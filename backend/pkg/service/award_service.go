@@ -22,6 +22,13 @@ type CreateAwardWithTypesParams struct {
 	Links       []string             `json:"links"`
 }
 
+// CreateAwardWithTypesParams представляет параметры для создания award с типами, вариантами и критериями
+type TestParams struct {
+	AwardType uuid.UUID   `json:"type"`
+	Text      pgtype.Text `json:"text"`
+	Links     []string    `json:"links"`
+}
+
 // AwardTypeVariant представляет вариант типа награды
 type AwardTypeVariant struct {
 	Name          string              `json:"name"`
@@ -83,20 +90,7 @@ func NewAwardService(repo *repository.AwardRepository) *AwardService {
 	return &AwardService{repo: repo}
 }
 
-func (s *AwardService) CreateAwardWithFile(ctx context.Context, params *storage.CreateAwardParams, file io.Reader, size int64, fileName string) (storage.Award, error) {
-	// 1. Upload to MinIO
-	objectKey, err := s.repo.UploadToMinIO(ctx, fileName, file, size)
-	if err != nil {
-		return storage.Award{}, err
-	}
-
-	// 2. Set the text or a specific field to the object key/URL
-	params.Document = pgtype.Text{
-		String: objectKey,
-		Valid:  true,
-	}
-
-	// 3. Save to Database
+func (s *AwardService) CreateAward(ctx context.Context, params *storage.CreateAwardParams) (storage.Award, error) {
 	return s.repo.CreateAward(ctx, params)
 }
 
@@ -268,32 +262,6 @@ func (s *AwardService) CreateFullAwardType(ctx context.Context, params *CreateFu
 	return awardType, nil
 }
 
-func (s *AwardService) CreateAwardWithTypes(ctx context.Context, teacherID uuid.UUID, params *CreateAwardWithTypesParams) (storage.Award, error) {
-	// Validation
-	if err := s.validateCreateAwardWithTypesParams(ctx, params); err != nil {
-		return storage.Award{}, fmt.Errorf("validation failed: %w", err)
-	}
-
-	// Validate teacher exists
-	if _, err := s.repo.GetUserByID(ctx, teacherID); err != nil {
-		return storage.Award{}, fmt.Errorf("teacher with ID %s does not exist: %w", teacherID, err)
-	}
-
-	// Create award
-	awardParams := storage.CreateAwardParams{
-		Status:      params.Status,
-		Teacher:     teacherID,
-		Type:        pgtype.UUID{Bytes: params.AwardType, Valid: true},
-		Text:        params.Text,
-		Document:    params.Document,
-		Images:      params.Images,
-		Links:       params.Links,
-		TotalPoints: params.TotalPoints,
-	}
-
-	return s.repo.CreateAward(ctx, &awardParams)
-}
-
 func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (storage.Award, error) {
 	// 1. Проверка существования
 	_, err := s.repo.GetAwardByID(ctx, id)
@@ -308,8 +276,6 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 		Type:        pgtype.UUID{Bytes: req.AwardType, Valid: req.AwardType != uuid.Nil},
 		TotalPoints: req.TotalPoints,
 		Text:        req.Text,
-		Images:      req.Images,
-		Document:    req.Document,
 		Links:       req.Links,
 	}
 

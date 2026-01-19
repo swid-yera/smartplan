@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_7vw9nWxEkQ
 createdAt: 2026-01-15T08:10:01.378255200
-updatedAt: 2026-01-18T18:17:01.829521100
+updatedAt: 2026-01-19T12:00:25.840892400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -48,7 +48,7 @@ headers:
 method: POST
 name: create
 sortPriority: 1000.0
-url: ${[ url ]}/api/awards/types
+url: ${[ url ]}/awards/types
 urlParameters:
 - enabled: true
   name: ''

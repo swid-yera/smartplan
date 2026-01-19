@@ -1,0 +1,40 @@
+type: http_request
+model: http_request
+id: rq_qqfDmCHsmQ
+createdAt: 2026-01-19T12:32:14.599350900
+updatedAt: 2026-01-19T14:11:29.224265500
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_fh7jNUikxF
+authentication: {}
+authenticationType: null
+body:
+  form:
+  - contentType: application/json
+    enabled: true
+    id: qpBCnz9myC
+    name: data
+    value: |-
+      {
+        "text": "Описание награды",
+        "type": "aa692c53-5827-4f18-88c4-6ea989e7151a"
+      }
+  - enabled: true
+    file: C:\Users\KIRKANATOR\Downloads\Без названия — копия (2).jpg
+    id: fv6frVG4Hk
+    name: files
+  - enabled: true
+    id: N3EycGS7kf
+    name: ''
+    value: ''
+bodyType: multipart/form-data
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: multipart/form-data
+  id: b00t42WSuY
+method: POST
+name: test
+sortPriority: 333.3333333333333
+url: ${[ url ]}/awards
+urlParameters: []

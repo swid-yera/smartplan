@@ -198,8 +198,7 @@ CREATE TABLE awards (
     type UUID REFERENCES award_types(id),
 
     text TEXT,
-    images TEXT[] DEFAULT '{}',
-    document TEXT DEFAULT '{}',
+    files TEXT[] DEFAULT '{}',
     links TEXT[] DEFAULT '{}',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -251,8 +251,7 @@ INSERT INTO
         type,
         total_points,
         text,
-        images,
-        document,
+        files,
         links
     )
 VALUES (
@@ -262,8 +261,7 @@ VALUES (
         $4,
         $5,
         $6,
-        $7,
-        $8
+        $7
     ) RETURNING *;
 
 -- name: GetAllAwards :many
@@ -291,9 +289,8 @@ SET
     type = $5,
     total_points = $6,
     text = $7,
-    images = $8,
-    document = $9,
-    links = $10,
+    files = $8,
+    links = $9,
     updated_at = NOW()
 WHERE
     id = $1 RETURNING *;
