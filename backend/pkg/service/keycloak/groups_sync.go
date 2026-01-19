@@ -23,12 +23,38 @@ type GroupsSyncService struct {
 	repo repository.GroupsRepository
 }
 
+type GetAllGroupsResponse struct {
+	KeycloakID    uuid.UUID `json:"keycloakId"`
+	Name          string    `json:"name"`
+	Qualification string    `json:"qualification"`
+	Specialty     string    `json:"specialty"`
+}
+
 func NewGroupsSyncService(kc *Client, repo repository.GroupsRepository) *GroupsSyncService {
 	return &GroupsSyncService{kc: kc, repo: repo}
 }
 
-func (s *GroupsSyncService) GetAllGroups(ctx context.Context) ([]storage.Group, error) {
-	return s.repo.GetAllGroups(ctx)
+func (s *GroupsSyncService) GetAllGroups(ctx context.Context) ([]*GetAllGroupsResponse, error) {
+	dbGroups, err := s.repo.GetAllGroups(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// if empty, len will be 0, json return [] not null
+	responses := make([]*GetAllGroupsResponse, 0, len(dbGroups))
+
+	for _, group := range dbGroups {
+		response := &GetAllGroupsResponse{
+			KeycloakID:    group.KeycloakID,
+			Name:          group.Name,
+			Qualification: group.Qualification.String,
+			Specialty:     group.Specialty.String,
+		}
+
+		responses = append(responses, response)
+	}
+
+	return responses, nil
 }
 
 // SyncGroups:
