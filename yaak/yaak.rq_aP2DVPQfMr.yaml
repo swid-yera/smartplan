@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_aP2DVPQfMr
 createdAt: 2026-01-14T14:38:21.382290500
-updatedAt: 2026-01-19T09:47:04.188385500
+updatedAt: 2026-01-19T14:54:14.363007
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_K53iQSXBTw
 authentication: {}
@@ -28,5 +28,13 @@ headers:
 method: PUT
 name: status
 sortPriority: 2000.0
-url: ${[ url ]}/api/rups/279bb9cd-b248-4bf0-8e59-13dfbabadaf0/status
-urlParameters: []
+url: ${[ url ]}/rups/:id/status
+urlParameters:
+- enabled: true
+  name: :id
+  value: aab96dec-fc7a-43e1-9020-c316dee40d7b
+  id: wsGq79GFtr
+- enabled: true
+  name: ''
+  value: ''
+  id: KycQ9rCpqN

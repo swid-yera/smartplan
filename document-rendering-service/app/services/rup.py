@@ -27,7 +27,7 @@ def generate_rup_docx(data: dict) -> Path:
     totalHours = int(data.get("totalHours"))
     totalCredits = int(totalHours / 24)
 
-    group = data.get("groups", [])[0]
+    group = data.get("group")
 
     contacts = build_contacts(data.get("contacts", []))
     developers = build_developers(data.get("contacts", []))

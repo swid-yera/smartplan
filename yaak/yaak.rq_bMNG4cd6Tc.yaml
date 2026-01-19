@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_bMNG4cd6Tc
 createdAt: 2026-01-15T08:26:15.143395800
-updatedAt: 2026-01-19T09:48:35.736846900
+updatedAt: 2026-01-19T14:54:19.680668600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -18,5 +18,13 @@ headers:
 method: GET
 name: download rup
 sortPriority: 2000.0
-url: ${[ url ]}/api/rups/279bb9cd-b248-4bf0-8e59-13dfbabadaf0/download
-urlParameters: []
+url: ${[ url ]}/rups/:id/download
+urlParameters:
+- enabled: true
+  name: :id
+  value: aab96dec-fc7a-43e1-9020-c316dee40d7b
+  id: SM8fzPiymk
+- enabled: true
+  name: ''
+  value: ''
+  id: Zhb0EkS3kn
