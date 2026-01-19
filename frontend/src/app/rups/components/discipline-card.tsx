@@ -67,9 +67,7 @@ type DisciplineCardValues = FieldValues & {
 }
 
 export function DisciplineCard<T extends DisciplineCardValues>() {
-	const { control, watch, formState } = useFormContext<T>()
-
-	console.log(formState.errors)
+	const { control, watch } = useFormContext<T>()
 
 	const {
 		fields: disciplineFields,

@@ -64,7 +64,7 @@ export function GroupCard<T extends GroupValues>() {
 	useEffect(() => {
 		if (isLoading || !isSuccess || !watchedGroupId) return
 
-		const foundGroup = groupsData.find((g) => g.keycloak_id == watchedGroupId)
+		const foundGroup = groupsData.find((g) => g.keycloakId == watchedGroupId)
 
 		if (!foundGroup) return
 		setSelectedGroup(foundGroup)
@@ -107,7 +107,7 @@ export function GroupCard<T extends GroupValues>() {
 												variant='outline'
 											>
 												{field.value
-													? groupsData.find((group) => group.keycloak_id === field.value)?.name
+													? groupsData.find((group) => group.keycloakId === field.value)?.name
 													: 'Выбрать группу...'}
 												<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
 											</Button>
@@ -121,12 +121,12 @@ export function GroupCard<T extends GroupValues>() {
 												<CommandGroup>
 													{groupsData.map((group) => (
 														<CommandItem
-															key={group.keycloak_id}
+															key={group.keycloakId}
 															value={group.name}
 															onSelect={() => {
 																form.setValue(
 																	'groupId' as Path<T>,
-																	group.keycloak_id as PathValue<T, Path<T>>,
+																	group.keycloakId as PathValue<T, Path<T>>,
 																)
 																setOpen(false)
 															}}
@@ -134,7 +134,7 @@ export function GroupCard<T extends GroupValues>() {
 															<Check
 																className={cn(
 																	'mr-2 h-4 w-4',
-																	group.keycloak_id === field.value ? 'opacity-100' : 'opacity-0',
+																	group.keycloakId === field.value ? 'opacity-100' : 'opacity-0',
 																)}
 															/>
 															{group.name}

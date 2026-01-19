@@ -8,7 +8,7 @@ export enum UserRoleEnum {
 }
 
 export interface IGroup {
-	keycloak_id: string
+	keycloakId: string
 	name: string
 	specialty?: string
 	qualification?: string

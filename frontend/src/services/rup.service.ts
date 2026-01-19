@@ -1,6 +1,6 @@
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
-import type { IMessageResponse, IRup, IUpdateRupRequest, IUpdateRupStatusRequest } from '@types'
+import type { IDownloadResponse, IMessageResponse, IRup, IUpdateRupRequest, IUpdateRupStatusRequest } from '@types'
 
 export class RupService {
 	// get all
@@ -95,6 +95,20 @@ export class RupService {
 				queryClient.removeQueries({
 					queryKey: ['rup', deletedId],
 				})
+			},
+		})
+	}
+
+	// get by id
+	getDownloadUrlOptions = (id: string) => {
+		return queryOptions<IDownloadResponse>({
+			queryKey: [],
+			queryFn: async () => {
+				const { data, status, statusText } = await api.get<IDownloadResponse>(`/api/rups/${id}/download`)
+
+				if (status !== 200) throw new Error(statusText)
+
+				return data
 			},
 		})
 	}

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { getHoursStyle } from '@helpers'
+import { cn } from '@lib'
 import { Button, FormControl, FormField, FormItem, FormMessage, Input, TableCell } from '@ui'
 import { type FieldPath, type FieldValues, type UseFormReturn, useWatch } from 'react-hook-form'
 
@@ -55,7 +57,7 @@ function EditableHourCell<TFieldValues extends FieldValues>({
 	return (
 		<TableCell className='align-middle'>
 			<Button
-				className='w-16 h-auto py-2 mx-auto'
+				className={cn('w-16 h-auto py-2 mx-auto', getHoursStyle(hours))}
 				size='sm'
 				type='button'
 				variant='ghost'

@@ -44,12 +44,17 @@ export interface ICreateRupRequest {
 
 // update
 export interface IUpdateRupRequest extends ICreateRupRequest {
-	methodist?: string // IUser.keycloak_id
+	methodist?: string // IUser.keycloakId
 }
 
 // update status
 export interface IUpdateRupStatusRequest {
-	id: IRup['id'] // IUser.keycloak_id
-	status: IRup['status'] // IUser.keycloak_id
+	id: IRup['id'] // IUser.keycloakId
+	status: IRup['status'] // IUser.keycloakId
 	reason?: IRup['reason']
+}
+
+// download response
+export interface IDownloadResponse {
+	url: string
 }

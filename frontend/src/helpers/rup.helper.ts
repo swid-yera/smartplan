@@ -1,3 +1,4 @@
+import { cn } from '@lib'
 import type { ICreateDiscipline, IDiscipline, RupStatusEnum, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
 
 // status
@@ -48,6 +49,14 @@ export const topicTypeLabels: Record<TopicTypeEnum, string> = {
 
 export const normalizeTopicType = (studyForm: TopicTypeEnum): string => {
 	return topicTypeLabels[studyForm] ?? ''
+}
+
+// hours styles
+export const getHoursStyle = (value: number | undefined, customClass?: string, customGhostClass?: string): string => {
+	const className = customClass ?? 'text-foreground'
+	const ghostClassName = customGhostClass ?? 'text-muted-foreground/80'
+
+	return cn('text-center', (Number(value) || 0) === 0 ? ghostClassName : className)
 }
 
 // generate study years

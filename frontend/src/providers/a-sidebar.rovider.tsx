@@ -6,7 +6,7 @@ import { SidebarProvider } from '@ui'
 
 export const ASidebarProvider: FC<PropsWithChildren> = async ({ children }) => {
 	const cookieStore = await cookies()
-	const defaultOpen = cookieStore.get('sidebar:state')?.value === 'true'
+	const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true'
 
 	return (
 		<SidebarProvider suppressHydrationWarning defaultOpen={defaultOpen}>
