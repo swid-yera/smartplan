@@ -390,7 +390,7 @@ type AwardTypeVariant struct {
 	Name          string      `json:"name"`
 	Description   pgtype.Text `json:"description"`
 	Criteria      []uuid.UUID `json:"criteria"`
-	Bonuscriteria []uuid.UUID `json:"bonuscriteria"`
+	BonusCriteria []uuid.UUID `json:"bonus_criteria"`
 }
 
 type DisciplineSemester struct {

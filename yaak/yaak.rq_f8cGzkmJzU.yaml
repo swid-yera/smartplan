@@ -1,0 +1,30 @@
+type: http_request
+model: http_request
+id: rq_f8cGzkmJzU
+createdAt: 2026-01-19T09:51:11.484196300
+updatedAt: 2026-01-19T09:56:50.820452300
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_oAFVcfRqht
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "status": "DRAFT",
+      "text": "Описание награды",
+      "totalPoints": 89,
+      "document": "99423118-71fd-44bd-b0b6-8a61bce1d00d_Без названия.jpg",
+      "type": "03906968-6f88-46da-b764-5f9508abfc39"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: iHnxu0tSAj
+method: POST
+name: upload data
+sortPriority: 0.0
+url: http://localhost:8080/api/awards/upload-data
+urlParameters: []

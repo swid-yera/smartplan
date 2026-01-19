@@ -46,6 +46,7 @@ type CreateRupRequest struct {
 type ExplorationNoteRequest struct {
 	Basis              string             `json:"basis"`
 	Goals              string             `json:"goals"`
+	Summary            string             `json:"summary"`
 	Competencies       string             `json:"competencies"`
 	Prerequisites      string             `json:"prerequisites"`
 	Postrequisites     string             `json:"postrequisites"`
@@ -805,7 +806,7 @@ func (s *rupService) createExplorationNote(ctx context.Context, note *Exploratio
 	params := storage.CreateRupExplorationNoteParams{
 		Basis:              pgtype.Text{String: note.Basis, Valid: note.Basis != ""},
 		Goals:              pgtype.Text{String: note.Goals, Valid: note.Goals != ""},
-		Summary:            pgtype.Text{String: "", Valid: false}, // Not in request
+		Summary:            pgtype.Text{String: note.Summary, Valid: note.Summary != ""},
 		Competencies:       pgtype.Text{String: note.Competencies, Valid: note.Competencies != ""},
 		Prerequisites:      pgtype.Text{String: note.Prerequisites, Valid: note.Prerequisites != ""},
 		Postrequisites:     pgtype.Text{String: note.Postrequisites, Valid: note.Postrequisites != ""},

@@ -25,6 +25,7 @@ type Querier interface {
 	CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
+	DeleteAwardType(ctx context.Context, id uuid.UUID) error
 	DeleteGroupsNotInKeycloak(ctx context.Context, dollar_1 []uuid.UUID) error
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
@@ -56,6 +57,7 @@ type Querier interface {
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error)
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
+	UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error
 	UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTypeVariantsParams) (AwardType, error)
 	UpdateRup(ctx context.Context, arg UpdateRupParams) error
 	UpdateRupResource(ctx context.Context, arg UpdateRupResourceParams) error

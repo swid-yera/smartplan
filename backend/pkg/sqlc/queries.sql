@@ -312,13 +312,23 @@ SELECT * FROM award_types WHERE id = $1;
 -- name: GetAllAwardTypes :many
 SELECT * FROM award_types;
 
+-- name: UpdateAwardType :exec
+UPDATE award_types
+SET
+	name = $2,
+	variants = $3
+WHERE id = $1 RETURNING *;
+
+-- name: DeleteAwardType :exec
+DELETE FROM award_types WHERE id = $1;
+
 -- name: CreateAwardTypesVariant :one
 INSERT INTO
     award_type_variants (
         name,
         description,
         criteria,
-        bonusCriteria
+        bonus_criteria
     )
 VALUES ($1, $2, $3, $4) RETURNING *;
 
