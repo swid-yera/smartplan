@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
-import { hasRole, normalizeRupStatus } from '@helpers'
+import { hasRole, isAuthor, normalizeRupStatus } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -132,8 +132,7 @@ const Page: FC = () => {
 	const isAdmin = hasRole(user.role, UserRoleEnum.ADMIN)
 	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER)
 	const isStatusForEdit = rupData.status === RupStatusEnum.DRAFT || rupData.status === RupStatusEnum.REJECTED
-	// @ts-ignore
-	const isUserCreator = hasRole(user.role, UserRoleEnum.TEACHER) && rupData.teacher.keycloakId == user.keycloakID
+	const isRupCreator2 = isAuthor(user, rupData.teacher.keycloakId)
 	// conditions
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
 	const canDownload = rupData.status === RupStatusEnum.APPROVED

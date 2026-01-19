@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Forbidden, Loader } from '@components'
-import { isRupCreator } from '@helpers'
+import { isAuthor } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { services } from '@services'
 import { useAuthStore } from '@store'
@@ -74,8 +74,6 @@ const EditPage: FC = () => {
 	// form update default values
 	useEffect(() => {
 		if (!rupData) return
-
-		console.log('this is group id', rupData.groups)
 
 		methods.reset({
 			...rupData,
@@ -170,7 +168,7 @@ const EditPage: FC = () => {
 	if (!user) return notFound()
 	if (!rupData) notFound()
 	// Redirect if not allowed to edit
-	if (!isRupCreator(user.role, user.keycloakId, rupData.teacher.keycloakId)) return <Forbidden />
+	if (!isAuthor(user, rupData.teacher.keycloakId)) return <Forbidden />
 
 	return (
 		<FormProvider {...methods}>

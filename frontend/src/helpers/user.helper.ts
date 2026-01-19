@@ -1,4 +1,4 @@
-import { UserRoleEnum } from '@types'
+import { type IUser, UserRoleEnum } from '@types'
 import type { badgeVariants } from '@ui'
 import type { VariantProps } from 'class-variance-authority'
 
@@ -17,12 +17,12 @@ export const hasRole = (current: UserRoleEnum, target: UserRoleEnum, highestRole
 }
 
 // is rup creator
-export const isRupCreator = (role: UserRoleEnum, current: string, target: string): boolean => {
-	if (role === UserRoleEnum.ADMIN) {
+export const isAuthor = (user: IUser, target: string): boolean => {
+	if (user.role === UserRoleEnum.ADMIN) {
 		return true
 	}
-	if (role === UserRoleEnum.TEACHER) {
-		return current === target
+	if (user.role === UserRoleEnum.TEACHER) {
+		return user.keycloakId === target
 	}
 
 	return false

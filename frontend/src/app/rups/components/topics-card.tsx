@@ -15,7 +15,7 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { normalizeTopicType } from '@helpers'
+import { getHoursStyle, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
@@ -221,11 +221,12 @@ function DisciplineBlock<T extends TopicsCardValues>({
 	return (
 		<div className='border rounded-lg overflow-hidden mb-6'>
 			<div className='flex items-center p-3 bg-muted/50'>
-				<div className='font-bold w-16'>{discipline.code}</div>
-				<div className='flex-1 font-medium'>{discipline.name}</div>
+				<div className='font-bold'>{discipline.code}</div>
+				<div className='ml-2 flex-1 font-medium'>{discipline.name}</div>
 				<div className='flex gap-2'>
 					<Button
 						size='sm'
+						type='button'
 						variant='outline'
 						onClick={() => {
 							append(newTopic as FieldArray<T, ArrayPath<T>>)
@@ -234,7 +235,7 @@ function DisciplineBlock<T extends TopicsCardValues>({
 					>
 						<Plus className='h-4 w-4 mr-1' /> Тема
 					</Button>
-					<Button size='sm' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
+					<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
 						<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />
 					</Button>
 				</div>
@@ -413,10 +414,10 @@ const TopicRow = ({ id, disciplineIndex, topicIndex, rupType, setTopicToDelete }
 					render={({ field }) => <Input className='h-8' placeholder='Тема...' {...field} />}
 				/>
 			</TableCell>
-			<TableCell className='text-center font-bold'>{currentTotal}ч</TableCell>
-			<TableCell className='text-center'>{topic?.theoryHours}</TableCell>
-			<TableCell className='text-center'>{topic?.practiceHours}</TableCell>
-			<TableCell className='text-center'>{topic?.individualHours}</TableCell>
+			<TableCell className={cn(getHoursStyle(currentTotal), 'font-semibold')}>{currentTotal}ч</TableCell>
+			<TableCell className={getHoursStyle(topic?.theoryHours)}>{topic?.theoryHours}</TableCell>
+			<TableCell className={getHoursStyle(topic?.practiceHours)}>{topic?.practiceHours}</TableCell>
+			<TableCell className={getHoursStyle(topic?.individualHours)}>{topic?.individualHours}</TableCell>
 			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours`} form={form} />
 			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours`} form={form} />
 			<TableCell>
@@ -443,6 +444,7 @@ const TopicRow = ({ id, disciplineIndex, topicIndex, rupType, setTopicToDelete }
 				<Button
 					className='h-8 w-8 text-destructive'
 					size='icon'
+					type='button'
 					variant='ghost'
 					onClick={() => setTopicToDelete(topicIndex)}
 				>
