@@ -319,7 +319,7 @@ const Page: NextPage = () => {
 								{currentIndex === tabs.length - 1 ? (
 									<Button disabled={isSubmitting} size='lg' type='submit' variant='secondary'>
 										{isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-										{isSubmitting ? 'Сохранение...' : 'Завершить'}
+										{isSubmitting ? 'Сохранение...' : 'Сохранить'}
 									</Button>
 								) : (
 									<Button size='lg' type='button' onClick={goNext}>

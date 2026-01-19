@@ -1,7 +1,12 @@
+'use client'
+
+import { useState } from 'react'
+
 import { formatHours, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import type { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
+	Button,
 	Card,
 	CardContent,
 	CardDescription,
@@ -19,7 +24,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@ui'
-import { Info } from 'lucide-react'
+import { ChevronDown, Info } from 'lucide-react'
 
 type Topic = {
 	name: string
@@ -102,6 +107,7 @@ export function TopicsCardView({ type: rupModuleType, disciplines }: TopicsCardV
 }
 
 function DisciplineBlockView({ discipline, rupModuleType }: { discipline: Discipline; rupModuleType: string }) {
+	const [isCollapsed, setIsCollapsed] = useState(false)
 	const sectionTotal = {
 		totalHours: 0,
 		theoryHours: 0,
@@ -128,78 +134,83 @@ function DisciplineBlockView({ discipline, rupModuleType }: { discipline: Discip
 			<div className='flex items-center p-4 bg-accent z-10 sticky top-0'>
 				<div className='font-semibold pr-4'>{discipline.code}</div>
 				<div className='flex-1 font-medium text-left'>{discipline.name}</div>
+				<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
+					<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />
+				</Button>
 			</div>
 
 			{/* Topics Table */}
-			<div className='p-4'>
-				<Table>
-					<TableHeader>
-						<TableRow className='*:p-2'>
-							<TableHead className='w-12 text-center'>№</TableHead>
-							<TableHead>Темы занятий</TableHead>
-							<TableHead className='w-20 text-center'>Всего</TableHead>
-							<TableHead className='w-20 text-center'>Теория</TableHead>
-							<TableHead className='w-20 text-center'>Практика</TableHead>
-							<TableHead className='w-20 text-center'>Индивидуальная</TableHead>
-							<TableHead className='w-20 text-center'>
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
-											СРСП <Info className='w-3 h-3' />
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>Самостоятельная работа студента с преподавателем</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-							</TableHead>
-							<TableHead className='w-20 text-center'>
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
-											СРС <Info className='w-3 h-3' />
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>Самостоятельная работа студента</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-							</TableHead>
-							<TableHead className='w-48 text-end'>Тип занятия</TableHead>
-						</TableRow>
-					</TableHeader>
+			{!isCollapsed && (
+				<div>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead className='w-12 text-center'>№</TableHead>
+								<TableHead>Темы занятий</TableHead>
+								<TableHead className='w-20 text-center'>Всего</TableHead>
+								<TableHead className='w-20 text-center'>Теория</TableHead>
+								<TableHead className='w-20 text-center'>Практика</TableHead>
+								<TableHead className='w-20 text-center'>Индивидуальная</TableHead>
+								<TableHead className='w-20 text-center'>
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
+												СРСП <Info className='w-3 h-3' />
+											</TooltipTrigger>
+											<TooltipContent>
+												<p>Самостоятельная работа студента с преподавателем</p>
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								</TableHead>
+								<TableHead className='w-20 text-center'>
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
+												СРС <Info className='w-3 h-3' />
+											</TooltipTrigger>
+											<TooltipContent>
+												<p>Самостоятельная работа студента</p>
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								</TableHead>
+								<TableHead className='w-48 text-end'>Тип занятия</TableHead>
+							</TableRow>
+						</TableHeader>
 
-					<TableBody>
-						{discipline.topics.map((topic, topicIndex) => (
-							<TopicRowView
-								key={topicIndex}
-								rupModuleType={rupModuleType}
-								topic={topic}
-								topicIndex={topicIndex}
-							/>
-						))}
-					</TableBody>
+						<TableBody>
+							{discipline.topics.map((topic, topicIndex) => (
+								<TopicRowView
+									key={topicIndex}
+									rupModuleType={rupModuleType}
+									topic={topic}
+									topicIndex={topicIndex}
+								/>
+							))}
+						</TableBody>
 
-					<TableFooter>
-						<TableRow>
-							<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
-								Итого по разделу:
-							</TableCell>
-							<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
-								{formatHours(sectionTotal.totalHours)}
-							</TableCell>
-							<TableCell className='font-bold text-center'>{sectionTotal.theoryHours}ч</TableCell>
-							<TableCell className='font-bold text-center'>{sectionTotal.practiceHours}ч</TableCell>
-							<TableCell className='font-bold text-center'>{sectionTotal.individualHours}ч</TableCell>
-							<TableCell className='font-bold text-center'>{sectionTotal.srspHours}ч</TableCell>
-							<TableCell className='font-bold text-center'>{sectionTotal.srsHours}ч</TableCell>
-							<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
-								Заявлено: {formatHours(discipline.totalHours)}
-							</TableCell>
-						</TableRow>
-					</TableFooter>
-				</Table>
-			</div>
+						<TableFooter>
+							<TableRow>
+								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
+									Итого по разделу:
+								</TableCell>
+								<TableCell className={cn('font-bold text-center', hasError && 'text-destructive')}>
+									{formatHours(sectionTotal.totalHours)}
+								</TableCell>
+								<TableCell className='font-bold text-center'>{sectionTotal.theoryHours}ч</TableCell>
+								<TableCell className='font-bold text-center'>{sectionTotal.practiceHours}ч</TableCell>
+								<TableCell className='font-bold text-center'>{sectionTotal.individualHours}ч</TableCell>
+								<TableCell className='font-bold text-center'>{sectionTotal.srspHours}ч</TableCell>
+								<TableCell className='font-bold text-center'>{sectionTotal.srsHours}ч</TableCell>
+								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
+									Заявлено: {formatHours(discipline.totalHours)}
+								</TableCell>
+							</TableRow>
+						</TableFooter>
+					</Table>
+				</div>
+			)}
 		</div>
 	)
 }

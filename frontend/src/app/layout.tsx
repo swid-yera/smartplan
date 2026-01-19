@@ -11,6 +11,9 @@ import './globals.css'
 export const metadata: Metadata = {
 	title: 'Testing?',
 	description: 'testing',
+	icons: {
+		icon: '/favicon.svg',
+	},
 }
 
 // layout

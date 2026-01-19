@@ -122,16 +122,13 @@ type ListAllRupsResponse struct {
 }
 
 type UserResponse struct {
-	KeycloakID  uuid.UUID `json:"keycloakId"`
-	Email       string    `json:"email"`
-	Username    string    `json:"username"`
-	FirstName   string    `json:"firstName"`
-	LastName    string    `json:"lastName"`
-	Phone       string    `json:"phone"`
-	Roles       string    `json:"roles"`
-	TotalPoints int32     `json:"totalPoints"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	KeycloakID uuid.UUID `json:"keycloakId"`
+	Email      string    `json:"email"`
+	Username   string    `json:"username"`
+	FirstName  string    `json:"firstName"`
+	LastName   string    `json:"lastName"`
+	Phone      string    `json:"phone"`
+	Roles      string    `json:"roles"`
 }
 
 type GroupResponse struct {
@@ -271,7 +268,9 @@ func (s *rupService) GetAllRups(ctx context.Context) ([]*ListAllRupsResponse, er
 		return nil, err
 	}
 
-	var responses []*ListAllRupsResponse
+	// if empty, len will be 0, json return [] not null
+	responses := make([]*ListAllRupsResponse, 0, len(rups))
+
 	for _, rup := range rups {
 		response, err := s.buildListAllRupsResponse(ctx, rup)
 		if err != nil {
@@ -354,6 +353,10 @@ func (s *rupService) UpdateRupStatus(
 	methodistUUID := pgtype.UUID{
 		Bytes: methodistID,
 		Valid: methodistID != uuid.Nil,
+	}
+	_, err := s.repo.GetUserByID(ctx, methodistID)
+	if err != nil {
+		return err
 	}
 
 	// 4. обновляем статус в БД
@@ -565,7 +568,9 @@ func (s *rupService) GetRupsByMethodist(ctx context.Context, methodistID uuid.UU
 		return nil, err
 	}
 
-	var responses []*RupResponse
+	// if empty, len will be 0, json return [] not null
+	responses := make([]*RupResponse, 0, len(rups))
+
 	for _, rup := range rups {
 		response, err := s.buildRupResponse(ctx, rup)
 		if err != nil {
@@ -584,7 +589,9 @@ func (s *rupService) GetRupsByTeacher(ctx context.Context, teacherID uuid.UUID) 
 		return nil, err
 	}
 
-	var responses []*RupResponse
+	// if empty, len will be 0, json return [] not null
+	responses := make([]*RupResponse, 0, len(rups))
+
 	for _, rup := range rups {
 		response, err := s.buildRupResponse(ctx, rup)
 		if err != nil {
@@ -676,15 +683,8 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 }
 
 func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID) storage.CreateRupsParams {
-	var methodistUUID pgtype.UUID
 	var teacherUUID pgtype.UUID
 	var explorationNoteUUID pgtype.UUID
-
-	if req.Methodist != "" {
-		if id, err := uuid.Parse(req.Methodist); err == nil {
-			methodistUUID = pgtype.UUID{Bytes: id, Valid: true}
-		}
-	}
 
 	if req.Teacher != "" {
 		if id, err := uuid.Parse(req.Teacher); err == nil {
@@ -729,7 +729,6 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 		Type:              rupType,
 		Contacts:          contacts,
 		GroupIds:          req.Groups,
-		Methodist:         methodistUUID,
 		Teacher:           teacherUUID,
 		ExplorationNoteID: explorationNoteUUID,
 		Disciplines:       disciplineIDs,
@@ -738,21 +737,7 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 }
 
 func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, status storage.RupsStatus, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID) storage.UpdateRupParams {
-	var methodistUUID pgtype.UUID
-	var teacherUUID pgtype.UUID
 	var explorationNoteUUID pgtype.UUID
-
-	if req.Methodist != "" {
-		if uid, err := uuid.Parse(req.Methodist); err == nil {
-			methodistUUID = pgtype.UUID{Bytes: uid, Valid: true}
-		}
-	}
-
-	if req.Teacher != "" {
-		if uid, err := uuid.Parse(req.Teacher); err == nil {
-			teacherUUID = pgtype.UUID{Bytes: uid, Valid: true}
-		}
-	}
 
 	if explorationNoteID != nil {
 		explorationNoteUUID = pgtype.UUID{Bytes: *explorationNoteID, Valid: true}
@@ -791,8 +776,6 @@ func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, s
 		Type:              rupType,
 		Contacts:          contacts,
 		GroupIds:          req.Groups,
-		Methodist:         methodistUUID,
-		Teacher:           teacherUUID,
 		ExplorationNoteID: explorationNoteUUID,
 		Disciplines:       disciplineIDs,
 	}
@@ -1103,16 +1086,13 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 
 func (s *rupService) convertToUserResponse(user storage.User) *UserResponse {
 	return &UserResponse{
-		KeycloakID:  user.KeycloakID,
-		Email:       user.Email,
-		Username:    user.Username,
-		FirstName:   user.FirstName.String,
-		LastName:    user.LastName.String,
-		Phone:       user.Phone.String,
-		Roles:       string(user.Role),
-		TotalPoints: user.TotalPoints,
-		CreatedAt:   user.CreatedAt.Time,
-		UpdatedAt:   user.UpdatedAt.Time,
+		KeycloakID: user.KeycloakID,
+		Email:      user.Email,
+		Username:   user.Username,
+		FirstName:  user.FirstName.String,
+		LastName:   user.LastName.String,
+		Phone:      user.Phone.String,
+		Roles:      string(user.Role),
 	}
 }
 

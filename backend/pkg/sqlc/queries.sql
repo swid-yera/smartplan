@@ -6,9 +6,10 @@ INSERT INTO
         username,
         first_name,
         last_name,
-        role
+        role,
+        phone
     )
-VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 -- name: GetUserByKeycloakID :one
 SELECT * FROM users WHERE keycloak_id = $1;
@@ -20,6 +21,8 @@ SET
     username = $3,
     first_name = $4,
     last_name = $5,
+    phone = $6,
+    role = $7,
     updated_at = NOW()
 WHERE
     keycloak_id = $1;
@@ -180,7 +183,6 @@ INSERT INTO
         type,
         contacts,
         group_ids,
-        methodist,
         teacher,
         exploration_note_id,
         disciplines
@@ -197,8 +199,7 @@ VALUES (
         $9,
         $10,
         $11,
-        $12,
-        $13
+        $12
     ) RETURNING *;
 
 -- name: GetAllRups :many
@@ -218,10 +219,8 @@ SET
     type = $7,
     contacts = $8,
     group_ids = $9,
-    methodist = $10,
-    teacher = $11,
-    exploration_note_id = $12,
-    disciplines = $13,
+    exploration_note_id = $10,
+    disciplines = $11,
     updated_at = NOW()
 WHERE
     id = $1;

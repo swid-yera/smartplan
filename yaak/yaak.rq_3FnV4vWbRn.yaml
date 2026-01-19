@@ -2,26 +2,22 @@ type: http_request
 model: http_request
 id: rq_3FnV4vWbRn
 createdAt: 2026-01-15T20:10:19.309558700
-updatedAt: 2026-01-15T21:50:11.724449800
+updatedAt: 2026-01-18T18:11:39.933004500
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_YjpbbUVpPX
+folderId: fl_K53iQSXBTw
 authentication: {}
 authenticationType: null
 body:
-  text: "{\n  \"name\": \"rup module\",\n  \"code\": \"RM1\",\n  \"type\": \"PRACTICE\",\n  \"course\": 4,\n  \"studyForm\": \"FULL_TIME\",\n  \"studyYear\": \"2025-2026\",\n  \"contacts\": [\"b83882bd-7761-46bd-b657-cb156950309d\"],\n  \"groups\": [\"ce4bcacb-f31a-49d5-bc3b-7657688759ff\"],\n\n  \"methodist\": \"b83882bd-7761-46bd-b657-cb156950309d\",\n  \n  \"explorationNote\": {\n    \"basis\": \"basis note\",             \n    \"goals\": \"goals note\",            \n    \"competencies\": \"competencies goals\",      \n    \"prerequisites\": \"prerequisites\",     \n    \"postrequisites\": \"postrequisites\",   \n    \n    \"internetResources\": [\n      { \"name\": \"internet_resources 1\", \"link\": \"\" },\n      { \"name\": \"internet_resources 2\", \"link\": \"\" },\n      { \"name\": \"internet_resources 4\", \"link\": \"\" }\n    ], \n    \"technicalResources\": [\n      { \"name\": \"technical_resources 3\", \"link\": \"\" },\n      { \"name\": \"technical_resources 2\", \"link\": \"\" }\n    ]\n  },\n  \"disciplines\": [\n    {\n      \"name\": \"discipline\",\n      \"code\": \"dc1\",\n      \"semesters\": [\n        { \"semester\": 1, \"totalHours\": 0 },\n        { \"semester\": 2, \"totalHours\": 0 },\n        { \"semester\": 3, \"totalHours\": 0 },\n        { \"semester\": 4, \"totalHours\": 0 },\n        { \"semester\": 5, \"totalHours\": 6 },\n        { \"semester\": 6, \"totalHours\": 0 },\n        { \"semester\": 7, \"totalHours\": 0 },\n        { \"semester\": 8, \"totalHours\": 0 }\n      ],\n      \"topics\": [\n        {\n          \"name\": \"topic 1\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 6,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        },\n        {\n          \"name\": \"topic 2\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 2,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        },\n        {\n          \"name\": \"topic 3\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 2,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        }\n      ]\n    }\n  ]\n}"
+  text: "{\n  \"name\": \"rup module\",\n  \"code\": \"RM1\",\n  \"type\": \"PRACTICE\",\n  \"course\": 4,\n  \"studyForm\": \"FULL_TIME\",\n  \"studyYear\": \"2025-2026\",\n  \"groups\": [\"ca2eec3f-8ab4-41f1-8a13-2210240296f9\"],\n  \"methodist\": \"f2546909-a510-49e7-9185-bd576e76784c\", \n  \"explorationNote\": {\n    \"basis\": \"basis note\",             \n    \"goals\": \"goals note\",            \n    \"competencies\": \"competencies goals\",      \n    \"prerequisites\": \"prerequisites\",     \n    \"postrequisites\": \"postrequisites\",   \n    \n    \"internetResources\": [\n      { \"name\": \"internet_resources 1\", \"link\": \"\" },\n      { \"name\": \"internet_resources 2\", \"link\": \"\" },\n      { \"name\": \"internet_resources 4\", \"link\": \"\" }\n    ], \n    \"technicalResources\": [\n      { \"name\": \"technical_resources 3\", \"link\": \"\" },\n      { \"name\": \"technical_resources 2\", \"link\": \"\" }\n    ]\n  },\n  \"disciplines\": [\n    {\n      \"name\": \"discipline\",\n      \"code\": \"dc1\",\n      \"semesters\": [\n        { \"semester\": 1, \"totalHours\": 0 },\n        { \"semester\": 2, \"totalHours\": 0 },\n        { \"semester\": 3, \"totalHours\": 0 },\n        { \"semester\": 4, \"totalHours\": 0 },\n        { \"semester\": 5, \"totalHours\": 6 },\n        { \"semester\": 6, \"totalHours\": 0 },\n        { \"semester\": 7, \"totalHours\": 0 },\n        { \"semester\": 8, \"totalHours\": 0 }\n      ],\n      \"topics\": [\n        {\n          \"name\": \"topic 1\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 6,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        },\n        {\n          \"name\": \"topic 2\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 2,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        },\n        {\n          \"name\": \"topic 3\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 2,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        }\n      ]\n    }\n  ]\n}"
 bodyType: application/json
 description: ''
 headers:
 - enabled: true
-  name: Content-Type
-  value: application/json
-  id: fzKzVzIFxd
-- enabled: true
   name: ''
   value: ''
-  id: NZKYqBy3I2
+  id: NNnbmMh6eF
 method: PUT
 name: update
-sortPriority: 2000.001
-url: ${[ url ]}/api/rups/8c0461d0-025d-4cc0-b19a-fd5aa7390cb6
+sortPriority: 1000.0
+url: ${[ url ]}/api/rups/243bc56b-e208-4793-88b5-b3f54a046d31
 urlParameters: []

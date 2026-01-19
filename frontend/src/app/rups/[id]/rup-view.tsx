@@ -29,6 +29,7 @@ import {
 	TooltipTrigger,
 } from '@ui'
 import { ArrowLeft, CheckCircle, ExternalLink, MessageSquarePlus, MessageSquareText, SendToBack } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { DisciplineCardView } from '../components/discipline-card-view'
 import { TopicsCardView } from '../components/topics-view'
@@ -80,7 +81,15 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								className='hover:text-destructive'
 								size='sm'
 								variant='outline'
-								onClick={() => onStatusChange(RupStatusEnum.REJECTED, generalComment)}
+								onClick={() => {
+									if (!generalComment.trim()) {
+										toast.error('Пожалуйста, укажите причину отклонения в поле "Общий комментарий"')
+
+										return
+									}
+
+									onStatusChange(RupStatusEnum.REJECTED, generalComment)
+								}}
 							>
 								<SendToBack className='mr-2 h-4 w-4' />
 								Отклонить
@@ -407,6 +416,7 @@ const CommentControl: FC<{
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
+
 			{isCommenting && (
 				<Dialog open={isCommenting} onOpenChange={setIsCommenting}>
 					<DialogContent>

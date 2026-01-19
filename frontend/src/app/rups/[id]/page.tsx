@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
-import { hasRole, normalizeRupStatus } from '@helpers'
+import { hasRole, isAuthor, normalizeRupStatus } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -50,8 +50,12 @@ const Page: FC = () => {
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-	// get data on initial
+	// queries
 	const { data: rupData, isLoading } = useQuery({ ...services.rup.getByIdOptions(params.id), enabled: !!params.id })
+	const { refetch: getDownloadUrl } = useQuery({
+		...services.rup.getDownloadUrlOptions(params.id),
+		enabled: false,
+	})
 	// mutations
 	const updateStatusMutation = useMutation(services.rup.updateStatusOptions())
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
@@ -97,13 +101,27 @@ const Page: FC = () => {
 		})
 	}
 
-	// TODO: realize it
 	const onDownload = () => {
-		toast.promise(() => new Promise((resolve) => setTimeout(() => resolve({ name: 'Event' }), 2000)), {
-			loading: 'Загрузка...',
-			success: (data) => `${data} has been created`,
-			error: 'Error',
-		})
+		toast.promise(
+			async () => {
+				const { data } = await getDownloadUrl()
+
+				if (!data) throw new Error('Не удалось получить ссылку на файл')
+
+				const link = document.createElement('a')
+
+				link.href = data.url
+				link.setAttribute('download', `RUP_${rupData?.code || 'file'}.docx`)
+				document.body.appendChild(link)
+				link.click()
+				link.remove()
+			},
+			{
+				loading: 'Подготовка файла...',
+				success: 'Файл скачивается',
+				error: 'Ошибка при скачивании',
+			},
+		)
 	}
 
 	// loading
@@ -114,13 +132,10 @@ const Page: FC = () => {
 	const isAdmin = hasRole(user.role, UserRoleEnum.ADMIN)
 	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER)
 	const isStatusForEdit = rupData.status === RupStatusEnum.DRAFT || rupData.status === RupStatusEnum.REJECTED
-	// @ts-ignore
-	const isUserCreator = hasRole(user.role, UserRoleEnum.TEACHER) && rupData?.teacher?.keycloak_id == user.keycloakID
+	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	// conditions
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
 	const canDownload = rupData.status === RupStatusEnum.APPROVED
-	const canSendToReview = isUserCreator && rupData.status === RupStatusEnum.DRAFT
-	const canDelete = isAdmin || (isUserCreator && rupData.status === RupStatusEnum.DRAFT)
 
 	return (
 		<>
@@ -138,7 +153,7 @@ const Page: FC = () => {
 								Поменять статус
 							</Button>
 						)}
-						{canDelete && (
+						{isRupCreator && (
 							<Button
 								className='hover:text-destructive'
 								size='sm'
@@ -162,7 +177,7 @@ const Page: FC = () => {
 								Скачать файл
 							</Button>
 						)}
-						{canSendToReview && (
+						{isRupCreator && (
 							<Button
 								className='hover:text-primary'
 								size='sm'

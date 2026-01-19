@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ep6Qmnhfd3
 createdAt: 2025-12-20T13:06:37.558153800
-updatedAt: 2026-01-14T11:06:27.428097900
+updatedAt: 2026-01-18T11:35:57.935042500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_cC5D8rXnWh
 authentication: {}
@@ -16,16 +16,16 @@ headers:
   name: Content-Type
   value: application/json
   id: hapc05uK5j
-- enabled: true
+- enabled: false
   name: x-api-key
-  value: ZI32IzUIRFLh1EgCd6sAL6uzp3yIZtK
+  value: ZI32IzUIRFLh1EgCd6sAML6uzp3yIZtK
   id: BYepR3duZB
 - enabled: true
   name: ''
   value: ''
-  id: fdkzI7xHQ4
+  id: kpk4p2XDTJ
 method: POST
 name: generate-rup
 sortPriority: -1763638414427.0
-url: http://192.168.49.16:8000/generate-rup
+url: https://eduplan.aspc.kz/generate/generate-rup
 urlParameters: []

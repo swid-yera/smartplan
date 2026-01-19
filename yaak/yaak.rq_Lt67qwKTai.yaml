@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_Lt67qwKTai
 createdAt: 2025-11-26T12:01:09.074135900
-updatedAt: 2026-01-14T14:49:08.183056300
+updatedAt: 2026-01-18T11:39:59.967789700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_wRXcNsMiL3
 authentication: {}
@@ -39,6 +39,6 @@ headers:
   id: r2w0vNsbG7
 method: POST
 name: access token
-sortPriority: 3000.0
-url: https://auth.aspc.kz/realms/test/protocol/openid-connect/token
+sortPriority: 0.0
+url: https://auth.aspc.kz/realms/master/protocol/openid-connect/token
 urlParameters: []
