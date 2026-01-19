@@ -66,16 +66,22 @@ func (r *Router) Init() *gin.Engine {
 	engine.GET("/callback", middleware.ValidateQueryParams("code"), r.auth.Callback)
 	engine.GET("/logout", r.auth.Logout)
 
-	// --- API ---
-	api := engine.Group("/api")
-	api.Use(r.sessionAuthMiddleware) // Use the field from struct
+	webhooks := engine.Group("/webhooks")
 	{
-		api.GET("/me", r.user.GetMe)
-		api.GET("/users", r.user.GetAllUsers)
-		api.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
+		webhooks.POST("/keycloak", r.webhooks.KeycloakWebhook)
+	}
 
-		// RUP routes
-		rups := api.Group("/rups")
+	// --- API ---
+	protected := engine.Group("/")
+	protected.Use(r.sessionAuthMiddleware)
+	{
+		// --- USER ---
+		protected.GET("/me", r.user.GetMe)
+		protected.GET("/users", r.user.GetAllUsers)
+		protected.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
+
+		// --- RUPS ---
+		rups := protected.Group("/rups")
 		{
 			rups.GET("", r.rup.GetAllRups)
 			rups.GET("/:id", r.rup.GetRupByID)
@@ -88,8 +94,8 @@ func (r *Router) Init() *gin.Engine {
 			rups.GET("/:id/download", r.rup.DownloadRup)
 		}
 
-		// --- AWARD ROUTES ---
-		awards := api.Group("/awards")
+		// --- AWARDS ---
+		awards := protected.Group("/awards")
 		{
 			awards.GET("", r.award.GetAllAwards)
 			awards.GET("/:id", r.award.GetAwardByID)
@@ -110,17 +116,12 @@ func (r *Router) Init() *gin.Engine {
 			}
 		}
 
-		groups := api.Group("/groups")
+		// --- GROUPS ---
+		groups := protected.Group("/groups")
 		{
 			groups.GET("", r.groups.GetAllGroups)
-			groups.POST("/sync", r.groups.SyncGroups) // ⚠ protected
+			groups.POST("/sync", r.groups.SyncGroups)
 		}
-	}
-
-	// --- WEBHOOKS ---
-	webhooksGroup := engine.Group("/webhooks")
-	{
-		webhooksGroup.POST("/keycloak", r.webhooks.KeycloakWebhook)
 	}
 
 	return engine
