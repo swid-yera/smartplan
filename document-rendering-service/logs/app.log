@@ -9,3 +9,9 @@
 2025-12-20 19:33:17,279 | INFO | document_service | deleted file: I:\www\eduplan\document-rendering-service\out\pm6-obespechen_2025-12-20_19-32-52.docx
 2025-12-20 19:33:17,280 | INFO | document_service | deleted file: I:\www\eduplan\document-rendering-service\out\pm6-obespechen_2025-12-20_19-32-58.docx
 2025-12-20 19:33:17,280 | INFO | document_service | deleted success: 3, with error 0
+2026-01-19 14:48:23,585 | INFO | document_service | /generate-rup, request to generate document: rup module
+2026-01-19 14:48:23,586 | INFO | document_service | generating rup document, mapping data from json
+2026-01-19 14:48:23,587 | INFO | document_service | generating rup document, rendering document: RM1 rup module
+2026-01-19 14:48:23,889 | INFO | document_service | generating rup document, saving document: RM1 rup module
+2026-01-19 14:48:23,904 | INFO | document_service | generating rup document, applying vertical merge: RM1 rup module
+2026-01-19 14:48:23,948 | INFO | document_service | /generate-rup, document generated successfully: I:\www\eduplan\document-rendering-service\out\rm1-rup-modul_2026-01-19_14-48-23.docx
