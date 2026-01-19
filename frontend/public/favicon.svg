@@ -1,0 +1,55 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 256 256"
+  fill="none"
+>
+  <!-- Внешний круг -->
+  <circle
+    cx="128"
+    cy="128"
+    r="120"
+    stroke="#4d3a26"
+    stroke-width="10"
+  />
+
+  <!-- Книга -->
+  <path
+    d="M64 96c20-10 44-10 64 0v88c-20-10-44-10-64 0V96z"
+    fill="#684d31"
+  />
+  <path
+    d="M128 96c20-10 44-10 64 0v88c-20-10-44-10-64 0V96z"
+    fill="#684d31"
+  />
+
+  <!-- Линии страниц -->
+  <path d="M148 118h36M148 132h36M148 146h36M148 160h36"
+    stroke="#4d3a26"
+    stroke-width="4"
+    stroke-linecap="round"
+  />
+
+  <!-- Академическая шапка -->
+  <path
+    d="M96 72l32-14 32 14-32 14-32-14z"
+    fill="#4d3a26"
+  />
+  <path
+    d="M112 72v18h32V72"
+    fill="#4d3a26"
+  />
+  <line
+    x1="160"
+    y1="72"
+    x2="160"
+    y2="92"
+    stroke="#4d3a26"
+    stroke-width="3"
+  />
+  <circle
+    cx="160"
+    cy="94"
+    r="3"
+    fill="#4d3a26"
+  />
+</svg>

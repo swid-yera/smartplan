@@ -205,10 +205,7 @@ function Page() {
 				<Form {...form}>
 					<form
 						className='space-y-4'
-						onSubmit={form.handleSubmit((data) => {
-							console.log(data)
-							setSuccessMessage('Email submitted successfully!')
-						})}
+						onSubmit={form.handleSubmit((_) => setSuccessMessage('Email submitted successfully!'))}
 					>
 						<FormField
 							name='email'

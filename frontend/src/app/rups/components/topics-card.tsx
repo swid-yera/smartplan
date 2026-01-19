@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { EditableHourCell } from '@components'
 import {
@@ -15,7 +15,7 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { normalizeTopicType } from '@helpers'
+import { getHoursStyle, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
@@ -48,7 +48,15 @@ import {
 	TableRow,
 } from '@ui'
 import { ChevronDown, GripVertical, Plus, Trash } from 'lucide-react'
-import { type ArrayPath, type FieldValues, type Path, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import {
+	type ArrayPath,
+	type FieldArray,
+	type FieldValues,
+	type Path,
+	useFieldArray,
+	useFormContext,
+	useWatch,
+} from 'react-hook-form'
 
 // --- Types ---
 type Topic = {
@@ -77,7 +85,7 @@ type TopicsCardValues = FieldValues & {
 
 const newTopic: Topic = {
 	name: '',
-	type: TopicTypeEnum.SNZ,
+	type: TopicTypeEnum.PRACTICAL,
 	theoryHours: 0,
 	practiceHours: 0,
 	individualHours: 0,
@@ -87,7 +95,7 @@ const newTopic: Topic = {
 
 export function TopicsCard<T extends TopicsCardValues>() {
 	const form = useFormContext<T>()
-	const rupModuleType = useWatch({ control: form.control, name: 'type' as Path<T> }) ?? ''
+	const rupType = useWatch({ control: form.control, name: 'type' as Path<T> }) ?? ''
 	const disciplines = (useWatch({ control: form.control, name: 'disciplines' as Path<T> }) ?? []) as Discipline[]
 
 	// Расчет итогов по всей карточке (модулю)
@@ -130,7 +138,7 @@ export function TopicsCard<T extends TopicsCardValues>() {
 						<DisciplineBlock
 							key={fieldId || index} // Используйте стабильный ID
 							disciplineIndex={index}
-							rupModuleType={rupModuleType}
+							rupType={rupType as RupTypeEnum | ''}
 						/>
 					)
 				})}
@@ -162,10 +170,10 @@ export function TopicsCard<T extends TopicsCardValues>() {
 
 function DisciplineBlock<T extends TopicsCardValues>({
 	disciplineIndex,
-	rupModuleType,
+	rupType,
 }: {
 	disciplineIndex: number
-	rupModuleType: string
+	rupType: RupTypeEnum | ''
 }) {
 	const form = useFormContext<T>()
 	const [isCollapsed, setIsCollapsed] = useState(false)
@@ -199,6 +207,7 @@ function DisciplineBlock<T extends TopicsCardValues>({
 			acc.individualHours += Number(t.individualHours) || 0
 			acc.srspHours += Number(t.srspHours) || 0
 			acc.srsHours += Number(t.srsHours) || 0
+
 			return acc
 		},
 		{ totalHours: 0, theoryHours: 0, practiceHours: 0, individualHours: 0, srspHours: 0, srsHours: 0 },
@@ -212,20 +221,21 @@ function DisciplineBlock<T extends TopicsCardValues>({
 	return (
 		<div className='border rounded-lg overflow-hidden mb-6'>
 			<div className='flex items-center p-3 bg-muted/50'>
-				<div className='font-bold w-16'>{discipline.code}</div>
-				<div className='flex-1 font-medium'>{discipline.name}</div>
+				<div className='font-bold'>{discipline.code}</div>
+				<div className='ml-2 flex-1 font-medium'>{discipline.name}</div>
 				<div className='flex gap-2'>
 					<Button
 						size='sm'
+						type='button'
 						variant='outline'
 						onClick={() => {
-							append(newTopic as any)
+							append(newTopic as FieldArray<T, ArrayPath<T>>)
 							setIsCollapsed(false)
 						}}
 					>
 						<Plus className='h-4 w-4 mr-1' /> Тема
 					</Button>
-					<Button size='sm' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
+					<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
 						<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />
 					</Button>
 				</div>
@@ -267,18 +277,18 @@ function DisciplineBlock<T extends TopicsCardValues>({
 								{topicFields.map((field, index) => (
 									<TopicRow
 										key={field.key}
-										id={field.key}
 										disciplineIndex={disciplineIndex}
-										topicIndex={index}
-										rupModuleType={rupModuleType}
+										id={field.key}
+										rupType={rupType}
 										setTopicToDelete={setTopicToDelete}
+										topicIndex={index}
 									/>
 								))}
 							</TableBody>
 						</SortableContext>
 						<TableFooter>
 							<TableRow className='bg-muted/5'>
-								<TableCell colSpan={2} className={cn('text-right font-bold', hasError && 'text-destructive')}>
+								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
 									Итого по разделу:
 								</TableCell>
 								<TableCell className='text-center font-bold'>{sectionTotal.totalHours}ч</TableCell>
@@ -291,7 +301,7 @@ function DisciplineBlock<T extends TopicsCardValues>({
 								</TableCell>
 								<TableCell className='text-center text-muted-foreground'>{sectionTotal.srspHours}</TableCell>
 								<TableCell className='text-center text-muted-foreground'>{sectionTotal.srsHours}</TableCell>
-								<TableCell colSpan={2} className={cn('text-right font-medium', hasError && 'text-destructive')}>
+								<TableCell className={cn('text-right font-medium', hasError && 'text-destructive')} colSpan={2}>
 									Заявлено: {declaredForThisDiscipline}ч
 								</TableCell>
 							</TableRow>
@@ -317,34 +327,69 @@ function DisciplineBlock<T extends TopicsCardValues>({
 	)
 }
 
-const TopicRow = ({ id, disciplineIndex, topicIndex, rupModuleType, setTopicToDelete }: any) => {
+// topic row
+interface ITopicRowProps {
+	id: string
+	disciplineIndex: number
+	topicIndex: number
+	rupType: RupTypeEnum | ''
+	setTopicToDelete: (index: number | null) => void
+}
+
+const TopicRow = ({ id, disciplineIndex, topicIndex, rupType, setTopicToDelete }: ITopicRowProps) => {
 	const form = useFormContext()
 	const topic = useWatch({ name: `disciplines.${disciplineIndex}.topics.${topicIndex}` }) as Topic
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 
-	// Логика автоматического распределения часов при смене ТИПА темы
-	useEffect(() => {
-		if (!topic?.type || !rupModuleType) return
-		const h = rupModuleType === RupTypeEnum.PRACTICE ? 6 : 2
+	// filter topic type depend from rup type
+	const availableTopicTypes = useMemo(() => {
+		const allTypes = Object.values(TopicTypeEnum)
 
-		const map: Record<string, Partial<Topic>> = {
-			[TopicTypeEnum.SNZ]: { theoryHours: 0, practiceHours: 0, individualHours: h },
-			[TopicTypeEnum.COMBINED]: { theoryHours: h, practiceHours: 0, individualHours: 0 },
-			[TopicTypeEnum.PRACTICAL]: { theoryHours: 0, practiceHours: h, individualHours: 0 },
+		if (rupType === RupTypeEnum.PRACTICE) {
+			// Убираем SNZ, если это практический модуль
+			return allTypes.filter((type) => type !== TopicTypeEnum.SNZ)
 		}
 
-		const updates = map[topic.type]
+		return allTypes
+	}, [rupType])
 
-		if (updates) {
-			Object.entries(updates).forEach(([key, val]) => {
+	// logic for automatic distribution of hours when changing the rup type
+	useEffect(() => {
+		if (!topic?.type || !rupType) return
+
+		const hours = rupType === RupTypeEnum.PRACTICE ? 6 : 2
+
+		// snz
+		const snzPracticalHours = rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ ? 6 : 0
+		const snzIndividualHours = rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ ? 0 : 2
+		const snzType =
+			rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ
+				? TopicTypeEnum.PRACTICAL
+				: TopicTypeEnum.SNZ
+
+		const mapHours: Record<string, Partial<Topic>> = {
+			[TopicTypeEnum.SNZ]: {
+				theoryHours: 0,
+				practiceHours: snzPracticalHours,
+				individualHours: snzIndividualHours,
+				type: snzType,
+			},
+			[TopicTypeEnum.COMBINED]: { theoryHours: hours, practiceHours: 0, individualHours: 0 },
+			[TopicTypeEnum.PRACTICAL]: { theoryHours: 0, practiceHours: hours, individualHours: 0 },
+		}
+
+		const updatesHours = mapHours[topic.type]
+
+		if (updatesHours) {
+			Object.entries(updatesHours).forEach(([key, val]) => {
 				const path = `disciplines.${disciplineIndex}.topics.${topicIndex}.${key}`
 
-				if (form.getValues(path as any) !== val) {
-					form.setValue(path as any, val)
+				if (form.getValues(path) !== val) {
+					form.setValue(path, val)
 				}
 			})
 		}
-	}, [topic?.type, rupModuleType])
+	}, [topic?.type, rupType])
 
 	const currentTotal =
 		(Number(topic?.theoryHours) || 0) + (Number(topic?.practiceHours) || 0) + (Number(topic?.individualHours) || 0)
@@ -366,13 +411,13 @@ const TopicRow = ({ id, disciplineIndex, topicIndex, rupModuleType, setTopicToDe
 				<FormField
 					control={form.control}
 					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name`}
-					render={({ field }) => <Input {...field} placeholder='Тема...' className='h-8' />}
+					render={({ field }) => <Input className='h-8' placeholder='Тема...' {...field} />}
 				/>
 			</TableCell>
-			<TableCell className='text-center font-bold'>{currentTotal}ч</TableCell>
-			<TableCell className='text-center'>{topic?.theoryHours}</TableCell>
-			<TableCell className='text-center'>{topic?.practiceHours}</TableCell>
-			<TableCell className='text-center'>{topic?.individualHours}</TableCell>
+			<TableCell className={cn(getHoursStyle(currentTotal), 'font-semibold')}>{currentTotal}ч</TableCell>
+			<TableCell className={getHoursStyle(topic?.theoryHours)}>{topic?.theoryHours}</TableCell>
+			<TableCell className={getHoursStyle(topic?.practiceHours)}>{topic?.practiceHours}</TableCell>
+			<TableCell className={getHoursStyle(topic?.individualHours)}>{topic?.individualHours}</TableCell>
 			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours`} form={form} />
 			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours`} form={form} />
 			<TableCell>
@@ -385,7 +430,7 @@ const TopicRow = ({ id, disciplineIndex, topicIndex, rupModuleType, setTopicToDe
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								{Object.values(TopicTypeEnum).map((type) => (
+								{availableTopicTypes.map((type) => (
 									<SelectItem key={type} value={type}>
 										{normalizeTopicType(type)}
 									</SelectItem>
@@ -399,6 +444,7 @@ const TopicRow = ({ id, disciplineIndex, topicIndex, rupModuleType, setTopicToDe
 				<Button
 					className='h-8 w-8 text-destructive'
 					size='icon'
+					type='button'
 					variant='ghost'
 					onClick={() => setTopicToDelete(topicIndex)}
 				>
