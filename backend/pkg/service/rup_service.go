@@ -31,7 +31,6 @@ type RupService interface {
 
 type CreateRupRequest struct {
 	Name            string                  `json:"name"`
-	Code            string                  `json:"code"`
 	Type            string                  `json:"type"`
 	StudyYear       string                  `json:"studyYear"`
 	Course          int32                   `json:"course"`
@@ -61,7 +60,6 @@ type ResourceRequest struct {
 
 type DisciplineRequest struct {
 	Name      string             `json:"name"`
-	Code      string             `json:"code"`
 	Semesters []*SemesterRequest `json:"semesters"`
 	Topics    []*TopicRequest    `json:"topics"`
 }
@@ -84,7 +82,6 @@ type TopicRequest struct {
 type RupResponse struct {
 	ID              uuid.UUID               `json:"id"`
 	Name            string                  `json:"name"`
-	Code            string                  `json:"code"`
 	Status          string                  `json:"status"`
 	Reason          string                  `json:"reason"`
 	Course          int32                   `json:"course"`
@@ -105,7 +102,6 @@ type RupResponse struct {
 type ListAllRupsResponse struct {
 	ID         uuid.UUID        `json:"id"`
 	Name       string           `json:"name"`
-	Code       string           `json:"code"`
 	Status     string           `json:"status"`
 	Reason     string           `json:"reason"`
 	Course     int32            `json:"course"`
@@ -159,7 +155,6 @@ type ResourceResponse struct {
 type DisciplineResponse struct {
 	ID         uuid.UUID           `json:"id"`
 	Name       string              `json:"name"`
-	Code       string              `json:"code"`
 	TotalHours int32               `json:"totalHours"`
 	Semesters  []*SemesterResponse `json:"semesters"`
 	Topics     []*TopicResponse    `json:"topics"`
@@ -194,7 +189,6 @@ type rupService struct {
 
 type RupDocumentPayload struct {
 	RupID       string              `json:"rupId"`
-	Code        string              `json:"code"`
 	Name        string              `json:"name"`
 	TotalHours  int32               `json:"totalHours"`
 	StudyForm   string              `json:"studyForm"`
@@ -279,7 +273,6 @@ func (s *rupService) GetAllRups(ctx context.Context) ([]*ListAllRupsResponse, er
 		simplifiedResponse := &ListAllRupsResponse{
 			ID:         response.ID,
 			Name:       response.Name,
-			Code:       response.Code,
 			Status:     response.Status,
 			Reason:     response.Reason,
 			Course:     response.Course,
@@ -497,7 +490,6 @@ func buildPayload(rup *RupResponse) RupDocumentPayload {
 
 		disciplines = append(disciplines, map[string]any{
 			"name":      d.Name,
-			"code":      d.Code,
 			"semesters": semesters,
 			"topics":    topics,
 		})
@@ -534,7 +526,6 @@ func buildPayload(rup *RupResponse) RupDocumentPayload {
 
 	return RupDocumentPayload{
 		RupID:       rup.ID.String(),
-		Code:        rup.Code,
 		Name:        rup.Name,
 		TotalHours:  rup.TotalHours,
 		StudyForm:   rup.StudyForm,
@@ -720,7 +711,6 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 
 	return storage.CreateRupsParams{
 		Name:              req.Name,
-		Code:              pgtype.Text{String: req.Code, Valid: req.Code != ""},
 		Status:            storage.RupsStatusDRAFT,
 		Course:            req.Course,
 		StudyForm:         studyForm,
@@ -768,7 +758,6 @@ func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, s
 	return storage.UpdateRupParams{
 		ID:                id,
 		Name:              req.Name,
-		Code:              pgtype.Text{String: req.Code, Valid: req.Code != ""},
 		Course:            req.Course,
 		StudyForm:         studyForm,
 		StudyYear:         req.StudyYear,
@@ -850,7 +839,6 @@ func (s *rupService) createDisciplines(ctx context.Context, disciplines []*Disci
 
 		params := storage.CreateRupDisciplineParams{
 			Name:       disc.Name,
-			Code:       pgtype.Text{String: disc.Code, Valid: disc.Code != ""},
 			TotalHours: 0, // Calculate later
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
@@ -969,7 +957,6 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 	return &RupResponse{
 		ID:         rup.ID,
 		Name:       rup.Name,
-		Code:       rup.Code.String,
 		Status:     string(rup.Status),
 		Reason:     rup.Reason.String,
 		Course:     rup.Course,
@@ -1064,7 +1051,6 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	return &RupResponse{
 		ID:              rup.ID,
 		Name:            rup.Name,
-		Code:            rup.Code.String,
 		Status:          string(rup.Status),
 		Reason:          rup.Reason.String,
 		Course:          rup.Course,
@@ -1182,7 +1168,6 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 	return &DisciplineResponse{
 		ID:         disc.ID,
 		Name:       disc.Name,
-		Code:       disc.Code.String,
 		TotalHours: disc.TotalHours,
 		Semesters:  semesters,
 		Topics:     topics,

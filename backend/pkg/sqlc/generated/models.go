@@ -421,7 +421,6 @@ type Group struct {
 type Rup struct {
 	ID                uuid.UUID          `json:"id"`
 	Name              string             `json:"name"`
-	Code              pgtype.Text        `json:"code"`
 	Status            RupsStatus         `json:"status"`
 	Reason            pgtype.Text        `json:"reason"`
 	Course            int32              `json:"course"`
@@ -442,7 +441,6 @@ type Rup struct {
 type RupDiscipline struct {
 	ID         uuid.UUID   `json:"id"`
 	Name       string      `json:"name"`
-	Code       pgtype.Text `json:"code"`
 	TotalHours int32       `json:"total_hours"`
 	Semesters  []uuid.UUID `json:"semesters"`
 	Topics     []uuid.UUID `json:"topics"`
