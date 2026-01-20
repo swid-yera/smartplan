@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_8ABDZvnzJ3
 createdAt: 2026-01-13T03:20:49.883142700
-updatedAt: 2026-01-18T18:11:58.700932300
+updatedAt: 2026-01-20T12:44:40.342660
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_KEgdPSdZmC
 authentication: {}
@@ -18,5 +18,5 @@ headers:
 method: GET
 name: students
 sortPriority: 0.0
-url: ${[ url ]}/api/groups
+url: ${[ url ]}/groups
 urlParameters: []

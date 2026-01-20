@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_dxN8mcLjmh
 createdAt: 2026-01-13T03:19:28.262373
-updatedAt: 2026-01-18T18:11:55.799195600
+updatedAt: 2026-01-20T12:44:42.354621700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_KEgdPSdZmC
 authentication: {}
@@ -18,5 +18,5 @@ headers:
 method: POST
 name: sync
 sortPriority: 1000.0
-url: ${[ url ]}/api/groups/sync
+url: ${[ url ]}/groups/sync
 urlParameters: []
