@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_rTHv64pmT9
 createdAt: 2026-01-14T14:34:26.714382500
-updatedAt: 2026-01-15T14:38:16.231962500
+updatedAt: 2026-01-20T14:18:08.870865600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -22,5 +22,5 @@ headers:
 method: GET
 name: me
 sortPriority: 0.001
-url: http://localhost:8080/api/me
+url: http://localhost:8080/me
 urlParameters: []

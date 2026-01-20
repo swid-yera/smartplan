@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	storage "eduplan/backend/pkg/sqlc/generated"
+	"fmt"
 	"io"
 
 	"github.com/google/uuid"
@@ -30,7 +31,14 @@ func NewAwardRepository(queries *storage.Queries, minio *MinioRepository) *Award
 func (r *AwardRepository) UploadToMinIO(ctx context.Context, fileName string, reader io.Reader, size int64) (string, error) {
 	uniqueName := uuid.New().String() + "_" + fileName
 
-	_, err := r.minio.Client.PutObject(ctx, r.minio.Bucket, uniqueName, reader, size, minio.PutObjectOptions{})
+	// Check if the file already exists in MinIO
+	_, err := r.minio.Client.StatObject(ctx, r.minio.Bucket, uniqueName, minio.StatObjectOptions{})
+	if err == nil {
+		// File already exists
+		return "", fmt.Errorf("file already exists in MinIO")
+	}
+	// If the file does not exist, proceed with uploading
+	_, err = r.minio.Client.PutObject(ctx, r.minio.Bucket, uniqueName, reader, size, minio.PutObjectOptions{})
 	if err != nil {
 		return "", err
 	}

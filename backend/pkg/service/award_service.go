@@ -176,11 +176,66 @@ func (s *AwardService) GetAwardTypeByID(ctx context.Context, id uuid.UUID) (stor
 	return s.repo.GetAwardTypeByID(ctx, id)
 }
 
-func (s *AwardService) UpdateAwardType(ctx context.Context, id uuid.UUID, req CreateAwardTypeRequest) (storage.AwardType, error) {
+func (s *AwardService) GetFullAwardTypeByID(ctx context.Context, id uuid.UUID) (FullAwardTypeResponse, error) {
+	awardType, err := s.repo.GetAwardTypeByID(ctx, id)
+	if err != nil {
+		return FullAwardTypeResponse{}, err
+	}
+
+	var variants []FullAwardTypeVariant
+	for _, variantID := range awardType.Variants {
+		variant, err := s.repo.GetAwardTypeVariantByID(ctx, variantID)
+		if err != nil {
+			return FullAwardTypeResponse{}, fmt.Errorf("failed to get variant %s: %w", variantID, err)
+		}
+
+		var criteria []AwardTypeCriteria
+		for _, cID := range variant.Criteria {
+			crit, err := s.repo.GetAwardTypeCriteriaByID(ctx, cID)
+			if err != nil {
+				return FullAwardTypeResponse{}, fmt.Errorf("failed to get criteria %s: %w", cID, err)
+			}
+			criteria = append(criteria, AwardTypeCriteria{
+				Name:   crit.Name,
+				Points: crit.Points,
+				Method: crit.Method,
+			})
+		}
+
+		var bonusCriteria []AwardTypeCriteria
+		for _, cID := range variant.BonusCriteria {
+			crit, err := s.repo.GetAwardTypeCriteriaByID(ctx, cID)
+			if err != nil {
+				return FullAwardTypeResponse{}, fmt.Errorf("failed to get bonus criteria %s: %w", cID, err)
+			}
+			bonusCriteria = append(bonusCriteria, AwardTypeCriteria{
+				Name:   crit.Name,
+				Points: crit.Points,
+				Method: crit.Method,
+			})
+		}
+
+		variants = append(variants, FullAwardTypeVariant{
+			ID:            variant.ID,
+			Name:          variant.Name,
+			Description:   variant.Description.String,
+			Criteria:      criteria,
+			BonusCriteria: bonusCriteria,
+		})
+	}
+
+	return FullAwardTypeResponse{
+		ID:       awardType.ID,
+		Name:     awardType.Name,
+		Variants: variants,
+	}, nil
+}
+
+func (s *AwardService) UpdateAwardType(ctx context.Context, id uuid.UUID, req CreateAwardTypeRequest) (FullAwardTypeResponse, error) {
 	// Create variants with their criteria
 	variantIDs, err := s.createAwardTypeVariantsWithCriteria(ctx, req.Variants)
 	if err != nil {
-		return storage.AwardType{}, fmt.Errorf("create variants failed: %w", err)
+		return FullAwardTypeResponse{}, fmt.Errorf("create variants failed: %w", err)
 	}
 
 	params := storage.UpdateAwardTypeParams{
@@ -188,7 +243,13 @@ func (s *AwardService) UpdateAwardType(ctx context.Context, id uuid.UUID, req Cr
 		Name:     req.Name,
 		Variants: variantIDs,
 	}
-	return s.repo.UpdateAwardType(ctx, params)
+	updatedType, err := s.repo.UpdateAwardType(ctx, params)
+	if err != nil {
+		return FullAwardTypeResponse{}, err
+	}
+
+	// Get full award type data
+	return s.GetFullAwardTypeByID(ctx, updatedType.ID)
 }
 
 func (s *AwardService) GetAllAwards(ctx context.Context) ([]storage.Award, error) {
@@ -237,16 +298,16 @@ func (s *AwardService) CreateAwardTypeCriteria(ctx context.Context, params *stor
 	return s.repo.CreateAwardTypeCriteria(ctx, params)
 }
 
-func (s *AwardService) CreateFullAwardType(ctx context.Context, params *CreateFullAwardTypeParams) (storage.AwardType, error) {
+func (s *AwardService) CreateFullAwardType(ctx context.Context, params *CreateFullAwardTypeParams) (FullAwardTypeResponse, error) {
 	// Validation
 	if err := s.validateCreateFullAwardTypeParams(ctx, params); err != nil {
-		return storage.AwardType{}, fmt.Errorf("validation failed: %w", err)
+		return FullAwardTypeResponse{}, fmt.Errorf("validation failed: %w", err)
 	}
 
 	// Create variants with their criteria
 	variantIDs, err := s.createAwardTypeVariantsWithCriteria(ctx, params.Variants)
 	if err != nil {
-		return storage.AwardType{}, fmt.Errorf("create variants failed: %w", err)
+		return FullAwardTypeResponse{}, fmt.Errorf("create variants failed: %w", err)
 	}
 
 	// Create type
@@ -256,10 +317,11 @@ func (s *AwardService) CreateFullAwardType(ctx context.Context, params *CreateFu
 	}
 	awardType, err := s.createAwardType(ctx, &typeParams)
 	if err != nil {
-		return storage.AwardType{}, fmt.Errorf("create type failed: %w", err)
+		return FullAwardTypeResponse{}, fmt.Errorf("create type failed: %w", err)
 	}
 
-	return awardType, nil
+	// Get full award type data
+	return s.GetFullAwardTypeByID(ctx, awardType.ID)
 }
 
 func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (storage.Award, error) {

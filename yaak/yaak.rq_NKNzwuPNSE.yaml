@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_NKNzwuPNSE
 createdAt: 2026-01-19T12:03:08.633091100
-updatedAt: 2026-01-19T12:03:55.109508700
+updatedAt: 2026-01-20T13:39:32.223363600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -48,7 +48,7 @@ headers:
 method: PUT
 name: update
 sortPriority: 1000.001
-url: ${[ url ]}/awards/types/03906968-6f88-46da-b764-5f9508abfc39
+url: ${[ url ]}/awards/types/c3f3d0c3-7081-46b5-a4a1-0a4e8ef2f3bc
 urlParameters:
 - enabled: true
   name: ''

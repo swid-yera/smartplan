@@ -2,7 +2,9 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
@@ -24,6 +26,18 @@ func NewAwardHandler(service *service.AwardService) *AwardHandler {
 	return &AwardHandler{
 		service: service,
 	}
+}
+
+// generateFileURL generates a public URL for a file stored in MinIO
+func (h *AwardHandler) generateFileURL(objectKey string) string {
+	// Extract only the unique identifier from objectKey
+	// For example, if objectKey is "aa1a8f6f-1a6c-4008-9b0d-985b35e76332_Без названия — копия (2).jpg",
+	// we can split it to get only the UUID part
+	parts := strings.Split(objectKey, "_")
+	if len(parts) > 0 {
+		return fmt.Sprintf("https://s3.aspc.kz/eduplan/awards/%s", parts[0])
+	}
+	return fmt.Sprintf("https://s3.aspc.kz/eduplan/awards/%s", objectKey)
 }
 
 // parseUUIDPgtype is a helper to convert form strings to pgtype.UUID
@@ -54,6 +68,15 @@ func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 		return
 	}
 
+	// Convert file keys to URLs for each award
+	for i := range awards {
+		var fileURLs []string
+		for _, fileKey := range awards[i].Files {
+			fileURLs = append(fileURLs, h.generateFileURL(fileKey))
+		}
+		awards[i].Files = fileURLs
+	}
+
 	c.JSON(http.StatusOK, awards)
 }
 
@@ -70,6 +93,14 @@ func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Convert file keys to URLs
+	var fileURLs []string
+	for _, fileKey := range award.Files {
+		fileURLs = append(fileURLs, h.generateFileURL(fileKey))
+	}
+	award.Files = fileURLs
+
 	c.JSON(http.StatusOK, award)
 }
 
@@ -134,6 +165,15 @@ func (h *AwardHandler) GetAwardsByMethodist(c *gin.Context) {
 		return
 	}
 
+	// Convert file keys to URLs for each award
+	for i := range awards {
+		var fileURLs []string
+		for _, fileKey := range awards[i].Files {
+			fileURLs = append(fileURLs, h.generateFileURL(fileKey))
+		}
+		awards[i].Files = fileURLs
+	}
+
 	c.JSON(http.StatusOK, awards)
 }
 
@@ -188,16 +228,9 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	// files
 	var fileKeys []string
 
-	// if there are no links, check for files
-	if len(params.Links) == 0 {
-		// parse files from multipart form
-		files := form.File["files"]
-		if len(files) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "no files uploaded"})
-			return
-		}
-
-		// process files (just checking they can be opened here)
+	// parse files from multipart form
+	files := form.File["files"]
+	if len(files) > 0 {
 		for _, fileHeader := range files {
 			f, err := fileHeader.Open()
 			if err != nil {
@@ -212,9 +245,16 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 				continue // TODO: handle error properly
 			}
 
-			fileKeys = append(fileKeys, objectKey)
-
+			// Convert file key to URL
+			fileURL := h.generateFileURL(objectKey)
+			fileKeys = append(fileKeys, fileURL)
 		}
+	}
+
+	// Check if at least one of files or links is provided
+	if len(files) == 0 && len(params.Links) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "either files or links must be provided"})
+		return
 	}
 
 	award, err := h.service.CreateAward(c.Request.Context(), &storage.CreateAwardParams{
@@ -296,7 +336,7 @@ func (h *AwardHandler) GetAwardTypeByID(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award type ID"})
 		return
 	}
-	awardType, err := h.service.GetAwardTypeByID(c.Request.Context(), id)
+	awardType, err := h.service.GetFullAwardTypeByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
