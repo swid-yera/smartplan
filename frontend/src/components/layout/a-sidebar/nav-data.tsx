@@ -1,4 +1,4 @@
-import { Award, BookOpen, Headset, LayoutDashboard, PenIcon, University } from 'lucide-react'
+import { Award, BookOpen, Headset, LayoutDashboard, PenIcon, Users } from 'lucide-react'
 
 export const navMain = [
 	{
@@ -22,9 +22,9 @@ export const navMain = [
 		icon: Award,
 	},
 	{
-		title: 'Преподаватели',
-		url: '/teachers',
-		icon: University,
+		title: 'Пользователи',
+		url: '/users',
+		icon: Users,
 	},
 ]
 
