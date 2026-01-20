@@ -139,6 +139,10 @@ def build_content_table(disciplineData: dict) -> list:
             d_stats["srsp"] += t_srsp
             d_stats["srs"] += t_srs
 
+            # name and type
+            t_name = topic.get("name")
+            t_type = topic.get("type")
+
             # display logic:
             # if this is the first topic (i == 0), show the course code and name
             # otherwise show an empty string
@@ -151,14 +155,14 @@ def build_content_table(disciplineData: dict) -> list:
                 {
                     "num": str(global_counter) + ".",
                     "discipline": disc_name,
-                    "topic": topic.get("name"),
+                    "topic": t_name,
                     "total": zero_to_empty(t_total),
                     "theory": zero_to_empty(t_theory),
                     "practice": zero_to_empty(t_practice),
                     "individual": zero_to_empty(t_ind),
                     "srsp": zero_to_empty(t_srsp),
                     "srs": zero_to_empty(t_srs),
-                    "type": decode_lesson_type(topic.get("type")),
+                    "type": decode_lesson_type(t_type),
                 }
             )
 

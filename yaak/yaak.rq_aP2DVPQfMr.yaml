@@ -8,23 +8,43 @@ folderId: fl_K53iQSXBTw
 authentication: {}
 authenticationType: null
 body:
-  text: |
-    {
-      "status": "APPROVED",
-      "reason": "иди нахуй",
-      "methodist": "f387d51c-6df1-421f-b38b-a97140998177"
-    }
+   text: |
+      {
+        "status": "APPROVED",
+        "reason": "иди нахуй",
+        "methodist": "f387d51c-6df1-421f-b38b-a97140998177"
+      }
+   text: |
+      {
+        "status": "APPROVED",
+        "reason": "иди нахуй",
+        "methodist": "f387d51c-6df1-421f-b38b-a97140998177"
+      }
+   text: |
+      {
+        "status": "APPROVED",
+        "reason": "иди нахуй",
+        "methodist": "f387d51c-6df1-421f-b38b-a97140998177"
+      }
 bodyType: application/json
 description: ''
 headers:
-- enabled: true
-  name: Content-Type
-  value: application/json
-  id: Fi05S3wP97
-- enabled: true
-  name: ''
-  value: ''
-  id: eygsrsatFR
+   - enabled: true
+     name: Content-Type
+     value: application/json
+     id: Fi05S3wP97
+   - enabled: true
+     name: ''
+     value: ''
+     id: eygsrsatFR
+   - enabled: true
+     name: Content-Type
+     value: application/json
+     id: Fi05S3wP97
+   - enabled: true
+     name: ''
+     value: ''
+     id: eygsrsatFR
 method: PUT
 name: status
 sortPriority: 2000.0

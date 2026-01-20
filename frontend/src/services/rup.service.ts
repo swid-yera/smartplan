@@ -8,7 +8,7 @@ export class RupService {
 		return queryOptions<IRup[]>({
 			queryKey: ['rups'],
 			queryFn: async () => {
-				const { data } = await api.get<IRup[]>('/api/rups')
+				const { data } = await api.get<IRup[]>('/rups')
 
 				if (!data) return []
 
@@ -22,7 +22,7 @@ export class RupService {
 		return queryOptions<IRup>({
 			queryKey: ['rup', id],
 			queryFn: async () => {
-				const { data } = await api.get<IRup>(`/api/rups/${id}`)
+				const { data } = await api.get<IRup>(`/rups/${id}`)
 
 				return data
 			},
@@ -34,8 +34,7 @@ export class RupService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) =>
-				api.post<IRup>('/api/rups', newRup).then((r) => r.data),
+			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) => api.post<IRup>('/rups', newRup).then((r) => r.data),
 
 			onSuccess: (createdRup) => {
 				queryClient.setQueryData(['rup', createdRup.id], createdRup)
@@ -49,7 +48,7 @@ export class RupService {
 
 		return mutationOptions({
 			mutationFn: ({ id, changedRup }: { id: string; changedRup: IUpdateRupRequest }) =>
-				api.put<IRup>(`/api/rups/${id}`, changedRup).then((r) => r.data),
+				api.put<IRup>(`/rups/${id}`, changedRup).then((r) => r.data),
 
 			onSuccess: (updatedRup, { id }) => {
 				queryClient.setQueryData(['rup', id], updatedRup)
@@ -63,7 +62,7 @@ export class RupService {
 
 		return mutationOptions({
 			mutationFn: ({ id, ...payload }: IUpdateRupStatusRequest) =>
-				api.put<IMessageResponse>(`/api/rups/${id}/status`, payload).then((r) => r.data),
+				api.put<IMessageResponse>(`/rups/${id}/status`, payload).then((r) => r.data),
 
 			onSuccess: (messageResponse, { id }) => {
 				queryClient.invalidateQueries({ queryKey: ['rup', id] })
@@ -78,7 +77,7 @@ export class RupService {
 
 		return mutationOptions({
 			mutationFn: async (id: string) => {
-				const { data, statusText } = await api.delete<IMessageResponse>(`/api/rups/${id}`)
+				const { data, statusText } = await api.delete<IMessageResponse>(`/rups/${id}`)
 
 				if (statusText !== 'OK') throw new Error(data.message)
 
@@ -104,7 +103,7 @@ export class RupService {
 		return queryOptions<IDownloadResponse>({
 			queryKey: [],
 			queryFn: async () => {
-				const { data, status, statusText } = await api.get<IDownloadResponse>(`/api/rups/${id}/download`)
+				const { data, status, statusText } = await api.get<IDownloadResponse>(`/rups/${id}/download`)
 
 				if (status !== 200) throw new Error(statusText)
 

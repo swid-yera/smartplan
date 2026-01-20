@@ -100,6 +100,20 @@ type RupResponse struct {
 	UpdatedAt       time.Time               `json:"updatedAt"`
 }
 
+type RupDocumentPayload struct {
+	ID              uuid.UUID               `json:"id"`
+	Name            string                  `json:"name"`
+	Course          int32                   `json:"course"`
+	StudyForm       string                  `json:"studyForm"`
+	StudyYear       string                  `json:"studyYear"`
+	Type            string                  `json:"type"`
+	TotalHours      int32                   `json:"totalHours"`
+	Contacts        []*UserResponse         `json:"contacts"`
+	Group           *GroupResponse          `json:"group"`
+	ExplorationNote ExplorationNoteResponse `json:"explorationNote"`
+	Disciplines     []*DisciplineResponse   `json:"disciplines"`
+}
+
 type ListAllRupsResponse struct {
 	ID         uuid.UUID        `json:"id"`
 	Name       string           `json:"name"`
@@ -186,18 +200,6 @@ type rupService struct {
 	cfg         *config.DocumentRenderConfig
 	httpClient  *http.Client
 	fileStorage FileStorage
-}
-
-type RupDocumentPayload struct {
-	RupID       string              `json:"rupId"`
-	Name        string              `json:"name"`
-	TotalHours  int32               `json:"totalHours"`
-	StudyForm   string              `json:"studyForm"`
-	Course      int32               `json:"course"`
-	Group       map[string]any      `json:"group"`
-	Contacts    []map[string]string `json:"contacts"`
-	Disciplines []map[string]any    `json:"disciplines"`
-	Exploration map[string]any      `json:"explorationNote"`
 }
 
 func NewRupService(repo repository.RupRepository, cfg *config.DocumentRenderConfig, httpClient *http.Client, fileStorage FileStorage) RupService {
@@ -463,94 +465,105 @@ func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byt
 func buildPayload(rup *RupResponse) RupDocumentPayload {
 
 	// ---------- GROUP (один!) ----------
-	group := map[string]any{}
+	group := GroupResponse{}
 	if len(rup.Groups) > 0 {
-		group = map[string]any{
-			"name":          rup.Groups[0].Name,
-			"specialty":     rup.Groups[0].Specialty,
-			"qualification": rup.Groups[0].Qualification,
+		group = GroupResponse{
+			Name:          rup.Groups[0].Name,
+			Specialty:     rup.Groups[0].Specialty,
+			Qualification: rup.Groups[0].Qualification,
+			KeycloakID:    rup.Groups[0].KeycloakID,
 		}
 	}
 
 	// ---------- CONTACTS ----------
-	contacts := make([]map[string]string, 0, len(rup.Contacts))
+	contacts := []*UserResponse{}
 	for _, c := range rup.Contacts {
-		contacts = append(contacts, map[string]string{
-			"firstName": c.FirstName,
-			"lastName":  c.LastName,
-			"email":     c.Email,
+		contacts = append(contacts, &UserResponse{
+			KeycloakID: c.KeycloakID,
+			Email:      c.Email,
+			Username:   c.Username,
+			FirstName:  c.FirstName,
+			LastName:   c.LastName,
+			Phone:      c.Phone,
+			Roles:      c.Roles,
 		})
 	}
 
 	// ---------- DISCIPLINES ----------
-	disciplines := make([]map[string]any, 0, len(rup.Disciplines))
+	disciplines := make([]*DisciplineResponse, 0, len(rup.Disciplines))
 	for _, d := range rup.Disciplines {
 
-		semesters := []map[string]int32{}
+		semesters := []*SemesterResponse{}
 		for _, s := range d.Semesters {
-			semesters = append(semesters, map[string]int32{
-				"semester":   s.Semester,
-				"totalHours": s.TotalHours,
+			semesters = append(semesters, &SemesterResponse{
+				Semester:   s.Semester,
+				TotalHours: s.TotalHours,
 			})
 		}
 
-		topics := []map[string]int32{}
+		topics := []*TopicResponse{}
 		for _, t := range d.Topics {
-			topics = append(topics, map[string]int32{
-				"theoryHours":     t.TheoryHours,
-				"practiceHours":   t.PracticeHours,
-				"individualHours": t.IndividualHours,
-				"srspHours":       t.SrspHours,
-				"srsHours":        t.SrsHours,
+			topics = append(topics, &TopicResponse{
+				ID:              t.ID,
+				Name:            t.Name,
+				Type:            t.Type,
+				TotalHours:      t.TotalHours,
+				TheoryHours:     t.TheoryHours,
+				PracticeHours:   t.PracticeHours,
+				IndividualHours: t.IndividualHours,
+				SrspHours:       t.SrspHours,
+				SrsHours:        t.SrsHours,
 			})
 		}
 
-		disciplines = append(disciplines, map[string]any{
-			"name":      d.Name,
-			"semesters": semesters,
-			"topics":    topics,
+		disciplines = append(disciplines, &DisciplineResponse{
+			Name:      d.Name,
+			Semesters: semesters,
+			Topics:    topics,
 		})
 	}
 
 	// ---------- EXPLORATION NOTE ----------
-	exploration := map[string]any{}
+	exploration := ExplorationNoteResponse{}
 	en := rup.ExplorationNote
 
-	exploration["basis"] = en.Basis
-	exploration["goals"] = en.Goals
-	exploration["competencies"] = en.Competencies
-	exploration["prerequisites"] = en.Prerequisites
-	exploration["postrequisites"] = en.Postrequisites
+	exploration.Basis = en.Basis
+	exploration.Goals = en.Goals
+	exploration.Competencies = en.Competencies
+	exploration.Prerequisites = en.Prerequisites
+	exploration.Postrequisites = en.Postrequisites
 
-	internet := []map[string]string{}
+	internet := []*ResourceResponse{}
 	for _, r := range en.InternetResources {
-		internet = append(internet, map[string]string{
-			"name": r.Name,
-			"link": r.Link,
+		internet = append(internet, &ResourceResponse{
+			Name: r.Name,
+			Link: r.Link,
 		})
 	}
 
-	technical := []map[string]string{}
+	technical := []*ResourceResponse{}
 	for _, r := range en.TechnicalResources {
-		technical = append(technical, map[string]string{
-			"name": r.Name,
-			"link": r.Link,
+		technical = append(technical, &ResourceResponse{
+			Name: r.Name,
+			Link: r.Link,
 		})
 	}
 
-	exploration["internetResources"] = internet
-	exploration["technicalResources"] = technical
+	exploration.InternetResources = internet
+	exploration.TechnicalResources = technical
 
 	return RupDocumentPayload{
-		RupID:       rup.ID.String(),
-		Name:        rup.Name,
-		TotalHours:  rup.TotalHours,
-		StudyForm:   rup.StudyForm,
-		Course:      rup.Course,
-		Group:       group,
-		Contacts:    contacts,
-		Disciplines: disciplines,
-		Exploration: exploration,
+		ID:              rup.ID,
+		Name:            rup.Name,
+		Type:            rup.Type,
+		StudyForm:       rup.StudyForm,
+		StudyYear:       rup.StudyYear,
+		Group:           &group,
+		Course:          rup.Course,
+		TotalHours:      rup.TotalHours,
+		Contacts:        contacts,
+		Disciplines:     disciplines,
+		ExplorationNote: exploration,
 	}
 }
 

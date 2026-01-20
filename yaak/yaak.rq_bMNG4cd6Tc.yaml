@@ -11,10 +11,14 @@ body: {}
 bodyType: null
 description: ''
 headers:
-- enabled: true
-  name: ''
-  value: ''
-  id: 9p60YuAUg3
+   - enabled: true
+     name: ''
+     value: ''
+     id: 9p60YuAUg3
+   - enabled: true
+     name: ''
+     value: ''
+     id: 9p60YuAUg3
 method: GET
 name: download rup
 sortPriority: 4000.0

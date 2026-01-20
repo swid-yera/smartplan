@@ -8,7 +8,7 @@ export class GroupService {
 		return queryOptions({
 			queryKey: [],
 			queryFn: async () => {
-				const { data } = await api.post<IGroupSyncResponse | null>('/api/groups/sync')
+				const { data } = await api.post<IGroupSyncResponse | null>('/groups/sync')
 
 				return data
 			},
@@ -21,7 +21,7 @@ export class GroupService {
 		return queryOptions({
 			queryKey: ['groups'],
 			queryFn: async () => {
-				const { data } = await api.get<IGroup[] | null>('/api/groups')
+				const { data } = await api.get<IGroup[] | null>('/groups')
 
 				if (!data) return []
 
