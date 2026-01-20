@@ -16,7 +16,7 @@ def build_disciplines_table(disciplines_data: dict) -> tuple[list, list]:
     for discipline in disciplines_data:
 
         row = {
-            "name": f"{discipline.get('code')} {discipline.get('name')}",
+            "name": discipline.get("name", ""),
             "total": zero_to_empty(discipline.get("totalHours", 0)),
         }
 
@@ -47,8 +47,8 @@ def build_developers(contacts: list, max_count: int = 3) -> list:
     for i in range(max_count):
         if i < len(contacts):
             dev = short_name(
-                contacts[i].get("firstName"),
-                contacts[i].get("lastName"),
+                contacts[i].get("firstName", ""),
+                contacts[i].get("lastName", ""),
             )
             developers.append(dev)
         else:
@@ -63,17 +63,17 @@ def build_contacts(contacts: list) -> list:
 
     for c in contacts:
         full_name = short_name(
-            c.get("firstName"),
-            c.get("lastName"),
+            c.get("firstName", ""),
+            c.get("lastName", ""),
         )
 
         result.append(
             {
                 "full_name": full_name,
-                "first_name": c.get("firstName"),
-                "last_name": c.get("lastName"),
-                "email": c.get("email"),
-                "phone": c.get("phone"),
+                "first_name": c.get("firstName", ""),
+                "last_name": c.get("lastName", ""),
+                "email": c.get("email", ""),
+                "phone": c.get("phone", ""),
             }
         )
 
@@ -85,7 +85,7 @@ def build_resources(resources: dict) -> list:
     result = []
 
     for item in resources:
-        result.append(item.get("name"))
+        result.append(item.get("name", ""))
 
     return result
 
@@ -143,7 +143,7 @@ def build_content_table(disciplineData: dict) -> list:
             # if this is the first topic (i == 0), show the course code and name
             # otherwise show an empty string
             if i == 0:
-                disc_name = f"{discipline.get('code')} {discipline.get('name')}"
+                disc_name = discipline.get("name", "")
             else:
                 disc_name = ""
 
