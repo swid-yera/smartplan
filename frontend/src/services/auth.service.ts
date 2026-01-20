@@ -39,8 +39,9 @@ export class AuthService {
 			queryKey: ['me'],
 			queryFn: async () => {
 				const { data } = await api.get<IUser | null>('/me')
-
+				console.log(data)
 				this.assertUser(data)
+				console.log('finish')
 
 				return data
 			},

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_cQruLBCDA5
 createdAt: 2026-01-15T14:31:01.786455
-updatedAt: 2026-01-18T18:12:05.952426100
+updatedAt: 2026-01-20T12:04:16.784191500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -18,5 +18,5 @@ headers:
 method: GET
 name: user by id
 sortPriority: 2000.0
-url: ${[ url ]}/api/users/b83882bd-7761-46bd-b657-cb156950309d
+url: ${[ url ]}/users/:id
 urlParameters: []

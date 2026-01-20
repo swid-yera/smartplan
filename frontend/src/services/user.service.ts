@@ -8,7 +8,7 @@ export class UserService {
 		return queryOptions<IUser[]>({
 			queryKey: ['users'],
 			queryFn: async () => {
-				const { data } = await api.get<IUser[]>('/api/users')
+				const { data } = await api.get<IUser[]>('/users')
 
 				if (!data) return []
 
@@ -22,7 +22,7 @@ export class UserService {
 		return queryOptions<IUser>({
 			queryKey: ['user', id],
 			queryFn: async () => {
-				const { data } = await api.get<IUser>(`/api/users/${id}`)
+				const { data } = await api.get<IUser>(`/users/${id}`)
 
 				return data
 			},
