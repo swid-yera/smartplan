@@ -9,11 +9,13 @@ authentication: {}
 authenticationType: null
 description: ''
 headers:
-   - enabled: true
-     name: Cookie
-     id: BiDn5hQpms
-   - enabled: true
-     name: ''
-     value: ''
+- enabled: true
+  name: Cookie
+  value: sid=cd917e10-25e1-4114-bd4b-12d6e3d8fd5d
+  id: BiDn5hQpms
+- enabled: true
+  name: ''
+  value: ''
+  id: 7EyzSpMYH4
 name: back
 sortPriority: -1768400678559.0

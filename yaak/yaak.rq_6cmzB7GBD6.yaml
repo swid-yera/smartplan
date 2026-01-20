@@ -20,5 +20,4 @@ method: GET
 name: all
 sortPriority: 0.0
 url: ${[ url ]}/rups
-url: ${[ url ]}/rups
 urlParameters: []
