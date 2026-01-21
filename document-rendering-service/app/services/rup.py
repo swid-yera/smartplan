@@ -20,6 +20,8 @@ from app.post_process import apply_vertical_merge
 def generate_rup_docx(data: dict) -> Path:
     OUT_DIR.mkdir(exist_ok=True)
 
+    print(data)
+
     # mapping data from json
     logger.info("generating rup document, mapping data from json")
 
