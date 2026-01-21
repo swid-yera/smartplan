@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { Loader } from '@components'
+import { Loader, PageTitle } from '@components'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
@@ -58,13 +58,10 @@ function Page() {
 	}
 
 	return (
-		<div className='container mx-auto py-10 space-y-8 max-w-7xl'>
-			<div className='flex flex-col space-y-2'>
-				<h1 className='text-3xl font-bold tracking-tight'>Пользователи сайта</h1>
-				<p className='text-muted-foreground'>
-					Управляйте списком пользователей, просматривайте их контактные данные и роли.
-				</p>
-			</div>
+		<div className='w-full mx-auto py-10 px-2 md:px-4 space-y-8'>
+			<PageTitle description='Управляйте списком пользователей, просматривайте их контактные данные и роли.'>
+				Пользователи сайта
+			</PageTitle>
 
 			<Card>
 				<CardHeader>
@@ -72,7 +69,7 @@ function Page() {
 					<CardDescription>Всего пользователи: {users.length}. Используйте поиск для фильтрации.</CardDescription>
 				</CardHeader>
 
-				<CardContent>
+				<CardContent className='min-w-0 flex-1'>
 					<UsersFilter
 						role={selectedRole}
 						search={search}

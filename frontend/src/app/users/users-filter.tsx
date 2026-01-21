@@ -11,10 +11,12 @@ interface UsersFilterProps {
 
 export function UsersFilter({ search, onSearchChange, role, onRoleChange, onSortToggle }: UsersFilterProps) {
 	return (
-		<div className='flex flex-col md:flex-row items-center justify-between mb-6 gap-4'>
-			<div className='flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto'>
-				<div className='relative w-full sm:w-72'>
+		<div className='flex flex-col lg:flex-row items-center justify-between mb-6 gap-4'>
+			<div className='flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto'>
+				{/* search */}
+				<div className='relative w-full lg:w-72'>
 					<Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
+
 					<Input
 						className='pl-8'
 						placeholder='Поиск по имени или email...'
@@ -22,8 +24,10 @@ export function UsersFilter({ search, onSearchChange, role, onRoleChange, onSort
 						onChange={(e) => onSearchChange(e.target.value)}
 					/>
 				</div>
+
+				{/* role  */}
 				<Select value={role} onValueChange={onRoleChange}>
-					<SelectTrigger className='w-full sm:w-[180px]'>
+					<SelectTrigger className='w-full lg:w-[180px]'>
 						<SelectValue placeholder='Выберите роль' />
 					</SelectTrigger>
 					<SelectContent>
@@ -34,7 +38,8 @@ export function UsersFilter({ search, onSearchChange, role, onRoleChange, onSort
 					</SelectContent>
 				</Select>
 			</div>
-			<Button className='w-full md:w-auto' size='sm' variant='outline' onClick={onSortToggle}>
+
+			<Button className='w-full lg:w-auto' size='sm' variant='outline' onClick={onSortToggle}>
 				Сортировка
 				<ArrowUpDown className='ml-2 h-4 w-4' />
 			</Button>

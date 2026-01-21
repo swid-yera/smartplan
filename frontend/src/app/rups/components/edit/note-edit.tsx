@@ -15,38 +15,50 @@ import {
 } from '@ui'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 
-type ExplorationNoteValues = FieldValues & {
-	explorationNote?: string
+interface IProps<T extends FieldValues> {
+	name: Path<T>
+	title: string
+	description: string
+	label: string
+	placeholder: string
+	rows?: number
+	aiType?: 'annotation' | 'goals' // Based on your AiGenerateButton requirements
 }
 
-export function ExplorationNoteCard<T extends ExplorationNoteValues>() {
+export function NoteEdit<T extends FieldValues>({
+	name,
+	title,
+	description,
+	label,
+	placeholder,
+	rows = 8,
+	aiType = 'annotation',
+}: IProps<T>) {
 	const form = useFormContext<T>()
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Пояснительная записка</CardTitle>
-				<CardDescription>
-					Введите текст раздела рабочей учебной программы (описание модуля, на основе приказа, результаты и другое)
-				</CardDescription>
+				<CardTitle>{title}</CardTitle>
+				<CardDescription>{description}</CardDescription>
 			</CardHeader>
 
 			<CardContent className='space-y-2 text-sm'>
 				<FormField
 					control={form.control}
-					name={'basis' as Path<T>}
+					name={name}
 					render={({ field }) => (
 						<FormItem>
 							<div className='flex items-end justify-between'>
-								<span className='text-xs'>Описание</span>
+								<span className='text-xs'>{label}</span>
 
 								<AiGenerateButton
-									defaultType='annotation'
-									onGenerated={(t) => form.setValue('basis' as Path<T>, t as PathValue<T, Path<T>>)}
+									defaultType={aiType}
+									onGenerated={(t) => form.setValue(name, t as PathValue<T, Path<T>>, { shouldDirty: true })}
 								/>
 							</div>
 							<FormControl>
-								<Textarea rows={8} {...field} />
+								<Textarea className='h-full' placeholder={placeholder} rows={rows} {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>

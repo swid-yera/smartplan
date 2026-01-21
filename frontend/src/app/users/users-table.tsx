@@ -11,8 +11,8 @@ interface UsersTableProps {
 
 export function UsersTable({ users }: UsersTableProps) {
 	return (
-		<div className='rounded-md border'>
-			<Table>
+		<div className='relative w-full min-w-0 overflow-x-auto'>
+			<Table className='min-w-[900px]'>
 				<TableHeader>
 					<TableRow>
 						<TableHead className='font-semibold pl-4 max-w-[300px]'>ФИО</TableHead>

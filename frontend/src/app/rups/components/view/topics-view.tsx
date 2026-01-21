@@ -38,18 +38,17 @@ type Topic = {
 }
 
 type Discipline = {
-	code: string
 	name: string
 	totalHours: number
 	topics: Topic[]
 }
 
-interface TopicsCardViewProps {
+interface IProps {
 	type: RupTypeEnum
 	disciplines: Discipline[]
 }
 
-export function TopicsCardView({ type: rupModuleType, disciplines }: TopicsCardViewProps) {
+export function TopicsView({ type: rupModuleType, disciplines }: IProps) {
 	const total = {
 		totalHours: 0,
 		theoryHours: 0,
@@ -78,7 +77,7 @@ export function TopicsCardView({ type: rupModuleType, disciplines }: TopicsCardV
 			</CardHeader>
 			<CardContent className='space-y-4'>
 				{disciplines.map((discipline) => (
-					<DisciplineBlockView key={discipline.code} discipline={discipline} rupModuleType={rupModuleType} />
+					<DisciplineBlockView key={discipline.name} discipline={discipline} rupModuleType={rupModuleType} />
 				))}
 				<div className='flex justify-end items-center pt-4 pr-6 space-x-4'>
 					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
@@ -132,7 +131,7 @@ function DisciplineBlockView({ discipline, rupModuleType }: { discipline: Discip
 		<div className='border rounded-lg rounded-t-none'>
 			{/* Discipline Header */}
 			<div className='flex items-center p-4 bg-accent z-10 sticky top-0'>
-				<div className='font-semibold pr-4'>{discipline.code}</div>
+				<div className='font-semibold pr-4'>{discipline.name}</div>
 				<div className='flex-1 font-medium text-left'>{discipline.name}</div>
 				<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
 					<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />

@@ -2,27 +2,38 @@
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader } from '@components'
-import { normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
+import { Loader, PageTitle } from '@components'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
-import { ArrowLeft, Mail, Phone, User as UserIcon } from 'lucide-react'
+import { Button } from '@ui'
+import { ArrowLeft } from 'lucide-react'
+
+import { UserCard } from './user-card'
+import { UserRups } from './user-rups'
 
 export default function UserPage() {
 	const router = useRouter()
 	const params = useParams<{ id: string }>()
 
+	// queries
 	const {
 		data: user,
-		isLoading,
+		isLoading: userLoading,
 		isError,
 	} = useQuery({
 		...services.user.getByIdOptions(params.id),
 		enabled: !!params.id,
 	})
+	const { data: createdRups = [], isLoading: createdRupsLoading } = useQuery({
+		...services.rup.getByTeacherIdOptions(params.id),
+		enabled: !userLoading && !isError,
+	})
+	const { data: assessmentRups = [], isLoading: assessmentRupsLoading } = useQuery({
+		...services.rup.getByMethodistIdOptions(params.id),
+		enabled: !userLoading && !isError,
+	})
 
-	if (isLoading) {
+	if (userLoading) {
 		return <Loader />
 	}
 
@@ -38,70 +49,26 @@ export default function UserPage() {
 	}
 
 	return (
-		<div className='container mx-auto py-10 space-y-8 max-w-4xl'>
-			<Button size='sm' variant='outline' onClick={() => router.push('/users')}>
-				<ArrowLeft className='mr-2 h-4 w-4' />К списку пользователей
-			</Button>
-			<Card>
-				<CardHeader className='flex items-center gap-4'>
-					<div className='flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary'>
-						<UserIcon className='h-8 w-8' />
+		<section className='mx-auto pb-10 pt-5 px-4 space-y-8 w-full'>
+			<PageTitle
+				actions={
+					<div>
+						<Button className='' size='sm' variant='outline' onClick={() => router.push('/users')}>
+							<ArrowLeft className='mr-2 h-4 w-4' />К списку пользователей
+						</Button>
 					</div>
-					<div className='flex-1'>
-						<CardTitle className='text-2xl capitalize'>
-							{user.firstName} {user.lastName}
-						</CardTitle>
-						<CardDescription>
-							<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role)}</Badge>
-						</CardDescription>
-					</div>
+				}
+			>
+				Данные пользователя {user.firstName} {user.lastName}
+			</PageTitle>
 
-					<Badge variant='outline'>{user.keycloakId}</Badge>
-				</CardHeader>
+			<UserCard user={user} />
 
-				<CardContent className='space-y-6'>
-					<div className='grid gap-4 md:grid-cols-2'>
-						<div className='space-y-1'>
-							<p className='text-sm font-medium text-muted-foreground'>Имя</p>
-							<p className='flex items-center gap-2'>{user.firstName}</p>
-						</div>
-
-						<div className='space-y-1'>
-							<p className='text-sm font-medium text-muted-foreground'>Фамилия</p>
-							<p className=''>{user.lastName}</p>
-						</div>
-
-						<div className='space-y-1'>
-							<p className='text-sm font-medium text-muted-foreground'>Логин</p>
-							<p>{user.userName}</p>
-						</div>
-
-						<div className='space-y-1'>
-							<p className='text-sm font-medium text-muted-foreground'>Email</p>
-							<p className='flex items-center gap-2'>
-								{user.email && (
-									<>
-										<Mail className='h-4 w-4 text-muted-foreground' />
-										{user.email}
-									</>
-								)}
-							</p>
-						</div>
-
-						<div className='space-y-1'>
-							<p className='text-sm font-medium text-muted-foreground'>Телефон</p>
-							<p className='flex items-center gap-2'>
-								{user.phone && (
-									<>
-										<Phone className='h-4 w-4 text-muted-foreground' />
-										{prettifyPhone(user.phone)}
-									</>
-								)}
-							</p>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
+			<UserRups
+				assessmentRups={assessmentRups}
+				createdRups={createdRups}
+				isLoading={createdRupsLoading || assessmentRupsLoading}
+			/>
+		</section>
 	)
 }

@@ -31,8 +31,8 @@ import {
 import { ArrowLeft, CheckCircle, ExternalLink, MessageSquarePlus, MessageSquareText, SendToBack } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { DisciplineCardView } from '../components/discipline-card-view'
-import { TopicsCardView } from '../components/topics-view'
+import { DisciplineView } from '../components/view/discipline-view'
+import { TopicsView } from '../components/view/topics-view'
 
 interface IRupViewProps {
 	data: IRup
@@ -130,7 +130,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								}
 								label='Наименование модуля'
 							>
-								{data?.code} {data?.name}
+								{data?.name}
 							</InfoItem>
 							<InfoItem
 								commentSlot={
@@ -358,7 +358,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 				</Card>
 
 				{/* disciplines view */}
-				<DisciplineCardView
+				<DisciplineView
 					commentSlot={
 						isMethodistReview && (
 							<CommentControl comments={comments} fieldId='disciplines' onCommentChange={handleCommentChange} />
@@ -368,7 +368,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 				/>
 
 				{/* topics view */}
-				<TopicsCardView disciplines={data.disciplines} type={data.type} />
+				<TopicsView disciplines={data.disciplines} type={data.type} />
 
 				{isMethodistReview && (
 					<Card>

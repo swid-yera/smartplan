@@ -29,16 +29,15 @@ import { useFormContext } from 'react-hook-form'
 
 // Define a base shape for the form data that this component needs.
 // Any form passed to this component must have at least these fields.
-type BasicDataValues = FieldValues & {
+type IProps = FieldValues & {
 	name: string
-	code: string
 	type: RupTypeEnum
 	studyForm: StudyFormEnum
 	prerequisites?: string
 	postrequisites?: string
 }
 
-export function BasicDataCard<T extends BasicDataValues>() {
+export function BasicProps<T extends IProps>() {
 	const { control } = useFormContext<T>()
 
 	return (
@@ -49,35 +48,19 @@ export function BasicDataCard<T extends BasicDataValues>() {
 			</CardHeader>
 
 			<CardContent className='space-y-3 text-sm'>
-				<div className='grid gap-5 sm:grid-cols-[minmax(0.3,0.5fr)_minmax(1,2fr)]'>
-					<FormField
-						control={control}
-						name={'code' as Path<T>}
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel className='flex items-center'>Код</FormLabel>
-								<FormControl>
-									<Input placeholder='Код' {...field} />
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-
-					<FormField
-						control={control}
-						name={'name' as Path<T>}
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel className='flex items-center'>Наименование модуля</FormLabel>
-								<FormControl>
-									<Input placeholder='Введите называние модуля' {...field} />
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-				</div>
+				<FormField
+					control={control}
+					name={'name' as Path<T>}
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel className='flex items-center'>Наименование модуля</FormLabel>
+							<FormControl>
+								<Input placeholder='Введите называние модуля' {...field} />
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
 
 				<div className='grid lg:grid-cols-[minmax(1,2fr)_minmax(0.6,0.8fr)] gap-5'>
 					<FormField

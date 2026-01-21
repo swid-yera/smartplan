@@ -88,7 +88,6 @@ export const generateTemplateDisciplines = (
 	for (let i = 0; i < count; i++) {
 		result.push({
 			name: '',
-			code: '',
 			totalHours: 0,
 			semesters: [],
 			topics: [],

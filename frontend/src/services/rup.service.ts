@@ -29,6 +29,34 @@ export class RupService {
 		})
 	}
 
+	// get by teacher id
+	getByTeacherIdOptions = (teacherId: string) => {
+		return queryOptions<IRup[]>({
+			queryKey: ['teacher-rups', teacherId],
+			queryFn: async () => {
+				const { data } = await api.get<IRup[]>(`/rups/teacher/${teacherId}`)
+
+				if (!data) return []
+
+				return data
+			},
+		})
+	}
+
+	// get by methodist id
+	getByMethodistIdOptions = (methodistId: string) => {
+		return queryOptions<IRup[]>({
+			queryKey: ['methodist-rups', methodistId],
+			queryFn: async () => {
+				const { data } = await api.get<IRup[]>(`/rups/methodist/${methodistId}`)
+
+				if (!data) return []
+
+				return data
+			},
+		})
+	}
+
 	// create
 	createOptions = () => {
 		const queryClient = useQueryClient()
