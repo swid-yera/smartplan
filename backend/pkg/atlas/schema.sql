@@ -191,7 +191,7 @@ CREATE TABLE awards (
     status awards_status NOT NULL,
     reason TEXT,
     methodist UUID,
-    teacher UUID NOT NULL REFERENCES users(keycloak_id),
+    teacher UUID,
 
 
     total_points INT NOT NULL DEFAULT 0,

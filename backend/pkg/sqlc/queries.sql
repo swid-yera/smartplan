@@ -285,12 +285,11 @@ UPDATE awards
 SET
     status = $2,
     reason = $3,
-    teacher = $4,
-    type = $5,
-    total_points = $6,
-    text = $7,
-    files = $8,
-    links = $9,
+    type = $4,
+    total_points = $5,
+    text = $6,
+    files = $7,
+    links = $8,
     updated_at = NOW()
 WHERE
     id = $1 RETURNING *;
@@ -300,6 +299,9 @@ DELETE FROM awards WHERE id = $1;
 
 -- name: GetAwardsByMethodist :many
 SELECT * FROM awards WHERE methodist = $1;
+
+-- name: GetAwardsByTeacher :many
+SELECT * FROM awards WHERE teacher = $1;
 
 -- name: CreateAwardType :one
 INSERT INTO

@@ -13,7 +13,7 @@ import (
 type User struct {
 	KeycloakID uuid.UUID `json:"keycloakId"`
 	Email      string    `json:"email"`
-	Username   string    `json:"userName"`
+	Username   string    `json:"username"`
 	FirstName  *string   `json:"firstName"`
 	LastName   *string   `json:"lastName"`
 	Role       string    `json:"role"`
@@ -23,7 +23,7 @@ type User struct {
 type MeResponse struct {
 	KeycloakID uuid.UUID `json:"keycloakId"`
 	Email      string    `json:"email"`
-	Username   string    `json:"userName"`
+	Username   string    `json:"username"`
 	FirstName  string    `json:"firstName,omitempty"`
 	LastName   string    `json:"lastName,omitempty"`
 	Role       string    `json:"role"`

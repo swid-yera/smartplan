@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_3PEVpn4nTJ
 createdAt: 2026-01-19T12:20:28.897108600
-updatedAt: 2026-01-19T12:20:47.526360200
+updatedAt: 2026-01-20T14:24:07.721712600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -30,4 +30,12 @@ method: PUT
 name: update
 sortPriority: 1333.3333333333333
 url: ${[ url ]}/awards/:id/status
-urlParameters: []
+urlParameters:
+- enabled: true
+  name: :id
+  value: 528d0e88-a5ef-4f43-a4af-38f92c12c63d
+  id: RV9YRIbIwS
+- enabled: true
+  name: ''
+  value: ''
+  id: dvEQNU2KET

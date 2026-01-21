@@ -2,28 +2,39 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-01-19T12:16:20.106921
+updatedAt: 2026-01-21T05:04:16.278247900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
 authenticationType: null
 body:
-  text: |-
-    {
-      "status": "DRAFT",
-      "text": "Описание награды",
-      "document": "",
-      "type": "03906968-6f88-46da-b764-5f9508abfc39"
-    }
-bodyType: application/json
+  form:
+  - contentType: application/json
+    enabled: true
+    id: Uiz6hGf6Nm
+    name: data
+    value: |-
+      {
+        "text": "Описание награды",
+        "type": "b20361c6-9f99-471e-aa50-7a2c8c45d163"
+      }
+  - enabled: true
+    file: C:\Users\KIRKANATOR\Downloads\ПМ6 РУП Т22-4Б 288ч 2025-2025 уч год (1) (2).docx
+    id: iy8E9PK07W
+    name: files
+  - enabled: true
+    id: CqJGhIQ3ZQ
+    name: ''
+    value: ''
+bodyType: multipart/form-data
 description: ''
 headers:
 - enabled: true
   name: Content-Type
-  value: application/json
-  id: iHnxu0tSAj
+  value: multipart/form-data
+  id: y9KS7qT5db
 method: POST
 name: create
 sortPriority: 0.0
-url: ${[ url ]}/awards/upload-data
+url: ${[ url ]}/awards
 urlParameters: []

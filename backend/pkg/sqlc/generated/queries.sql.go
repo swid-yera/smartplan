@@ -36,7 +36,7 @@ VALUES (
 
 type CreateAwardParams struct {
 	Status      AwardsStatus `json:"status"`
-	Teacher     uuid.UUID    `json:"teacher"`
+	Teacher     pgtype.UUID  `json:"teacher"`
 	Type        pgtype.UUID  `json:"type"`
 	TotalPoints int32        `json:"total_points"`
 	Text        pgtype.Text  `json:"text"`
@@ -1003,6 +1003,43 @@ func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUI
 	return items, nil
 }
 
+const getAwardsByTeacher = `-- name: GetAwardsByTeacher :many
+SELECT id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at FROM awards WHERE teacher = $1
+`
+
+func (q *Queries) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Award, error) {
+	rows, err := q.db.Query(ctx, getAwardsByTeacher, teacher)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Award
+	for rows.Next() {
+		var i Award
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.Reason,
+			&i.Methodist,
+			&i.Teacher,
+			&i.TotalPoints,
+			&i.Type,
+			&i.Text,
+			&i.Files,
+			&i.Links,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDisciplineSemesterByID = `-- name: GetDisciplineSemesterByID :one
 SELECT id, semester, total_hours FROM discipline_semesters WHERE id = $1
 `
@@ -1264,12 +1301,11 @@ UPDATE awards
 SET
     status = $2,
     reason = $3,
-    teacher = $4,
-    type = $5,
-    total_points = $6,
-    text = $7,
-    files = $8,
-    links = $9,
+    type = $4,
+    total_points = $5,
+    text = $6,
+    files = $7,
+    links = $8,
     updated_at = NOW()
 WHERE
     id = $1 RETURNING id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at
@@ -1279,7 +1315,6 @@ type UpdateAwardParams struct {
 	ID          uuid.UUID    `json:"id"`
 	Status      AwardsStatus `json:"status"`
 	Reason      pgtype.Text  `json:"reason"`
-	Teacher     uuid.UUID    `json:"teacher"`
 	Type        pgtype.UUID  `json:"type"`
 	TotalPoints int32        `json:"total_points"`
 	Text        pgtype.Text  `json:"text"`
@@ -1292,7 +1327,6 @@ func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award
 		arg.ID,
 		arg.Status,
 		arg.Reason,
-		arg.Teacher,
 		arg.Type,
 		arg.TotalPoints,
 		arg.Text,

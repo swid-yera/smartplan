@@ -45,6 +45,7 @@ type Querier interface {
 	GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (AwardTypeCriterium, error)
 	GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error)
 	GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error)
+	GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Award, error)
 	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
 	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error)
