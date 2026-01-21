@@ -28,7 +28,7 @@ export class AuthService {
 			throw new Error('data is not exist')
 		}
 
-		if (!data?.keycloakId || !data?.userName) {
+		if (!data?.keycloakId || !data?.username) {
 			throw new Error('invalid user data')
 		}
 	}

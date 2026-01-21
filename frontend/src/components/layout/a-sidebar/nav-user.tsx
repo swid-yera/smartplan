@@ -40,8 +40,8 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 							size='lg'
 						>
 							<Avatar className='h-8 w-8 rounded-lg'>
-								<AvatarImage alt={user.userName} src='https://avatars.githubusercontent.com/u/1486366' />
-								<AvatarFallback className='rounded-lg'>{user.userName}</AvatarFallback>
+								<AvatarImage alt={user.username} src='https://avatars.githubusercontent.com/u/1486366' />
+								<AvatarFallback className='rounded-lg'>{user.username}</AvatarFallback>
 							</Avatar>
 
 							<div className='grid flex-1 text-left text-sm leading-tight'>
@@ -62,8 +62,8 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 						<DropdownMenuLabel className='p-0 font-normal'>
 							<div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
 								<Avatar className='h-8 w-8 rounded-lg'>
-									<AvatarImage alt={user.userName} src='https://avatars.githubusercontent.com/u/1486366' />
-									<AvatarFallback className='rounded-lg'>{user.userName}</AvatarFallback>
+									<AvatarImage alt={user.username} src='https://avatars.githubusercontent.com/u/1486366' />
+									<AvatarFallback className='rounded-lg'>{user.username}</AvatarFallback>
 								</Avatar>
 								<div className='grid flex-1 text-left text-sm leading-tight'>
 									<span className='truncate font-medium'>{user.firstName}</span>
@@ -75,7 +75,7 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 						<DropdownMenuGroup>
 							<DropdownMenuItem>
 								<User />
-								{user.userName}
+								{user.username}
 							</DropdownMenuItem>
 							<DropdownMenuItem>
 								<ShieldUser />

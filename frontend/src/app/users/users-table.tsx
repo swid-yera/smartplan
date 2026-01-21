@@ -37,7 +37,7 @@ export function UsersTable({ users }: UsersTableProps) {
 									</Link>
 								</TableCell>
 
-								<TableCell>{user.userName}</TableCell>
+								<TableCell>{user.username}</TableCell>
 								<TableCell>{user.email}</TableCell>
 								<TableCell>{prettifyPhone(user.phone)}</TableCell>
 

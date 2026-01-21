@@ -17,7 +17,7 @@ export interface IGroup {
 export interface IUser {
 	keycloakId: string
 
-	userName: string
+	username: string
 	email?: string
 	role: UserRoleEnum
 

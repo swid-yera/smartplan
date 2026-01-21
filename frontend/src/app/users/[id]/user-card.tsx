@@ -42,7 +42,7 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 
 					<div className='space-y-1'>
 						<p className='text-sm font-medium text-muted-foreground'>Логин</p>
-						<p>{user.userName}</p>
+						<p>{user.username}</p>
 					</div>
 
 					<div className='space-y-1'>
