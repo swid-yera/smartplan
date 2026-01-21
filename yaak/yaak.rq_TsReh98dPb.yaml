@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_TsReh98dPb
 createdAt: 2026-01-13T03:16:39.883243600
-updatedAt: 2026-01-20T13:12:10.235455600
+updatedAt: 2026-01-21T06:36:37.211170700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -18,5 +18,13 @@ headers:
 method: GET
 name: by id
 sortPriority: 333.3333333333333
-url: ${[ url ]}/awards/07d4f0ab-0a64-4b85-ba1c-9e81617e317b
-urlParameters: []
+url: ${[ url ]}/awards/:id
+urlParameters:
+- enabled: true
+  name: :id
+  value: 3238c70d-38b9-40bd-8eac-ce03f61a4bc1
+  id: 7RVniVeGfi
+- enabled: true
+  name: ''
+  value: ''
+  id: m47g4AxnH8
