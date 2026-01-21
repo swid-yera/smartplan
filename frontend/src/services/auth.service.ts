@@ -38,7 +38,7 @@ export class AuthService {
 		return queryOptions({
 			queryKey: ['me'],
 			queryFn: async () => {
-				const { data } = await api.get<IUser | null>('/api/me')
+				const { data } = await api.get<IUser | null>('/me')
 
 				this.assertUser(data)
 

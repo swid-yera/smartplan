@@ -1,11 +1,11 @@
 import type { ComponentProps, FC } from 'react'
 
 import { rupStatusLabels, rupStatusVariants } from '@helpers'
-import type { RupModuleStatus } from '@types'
+import type { RupStatusEnum } from '@types'
 import { Badge } from '@ui'
 
 interface IProps extends ComponentProps<'span'> {
-	status: RupModuleStatus
+	status: RupStatusEnum
 	asChild: boolean
 }
 

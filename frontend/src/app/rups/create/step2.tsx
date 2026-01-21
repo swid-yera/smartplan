@@ -1,15 +1,29 @@
 import type { FC } from 'react'
 
-import { ContactsCard, ResourceListCard } from '../components'
+import { Loader } from '@components'
+import { services } from '@services'
+import { useAuthStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
+
+import { ContactsEdit, ResourceEdit } from '../components'
 
 export const Step2: FC = () => {
+	const { authLoading, user } = useAuthStore()
+
+	const { data: teachersData = [], isLoading } = useQuery({
+		...services.user.getAllOptions(),
+		enabled: true,
+	})
+
+	if (authLoading || !user || isLoading) return <Loader type='data' />
+
 	return (
 		<div className='w-full space-y-5'>
-			<ContactsCard />
+			<ContactsEdit creatorId={user.keycloakId} teachersData={teachersData} />
 
-			<div className='grid md:grid-cols-2 gap-4'>
+			<div className='grid xl:grid-cols-2 gap-4'>
 				{/* internet  */}
-				<ResourceListCard
+				<ResourceEdit
 					buttonText='Добавить ресурс'
 					description={
 						<>
@@ -23,7 +37,7 @@ export const Step2: FC = () => {
 				/>
 
 				{/* technical */}
-				<ResourceListCard
+				<ResourceEdit
 					buttonText='Добавить материал'
 					description='Введите список технических средств которые обязательны для учебного плана'
 					label='Технические средства и материалы'

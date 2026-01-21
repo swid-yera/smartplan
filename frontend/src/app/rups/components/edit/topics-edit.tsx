@@ -15,7 +15,7 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getHoursStyle, normalizeTopicType } from '@helpers'
+import { formatHours, getHoursStyle, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
@@ -72,13 +72,12 @@ type Topic = {
 type Semester = { semester: number; totalHours: number }
 
 type Discipline = {
-	code: string
 	name: string
 	semesters: Semester[]
 	topics: Topic[]
 }
 
-type TopicsCardValues = FieldValues & {
+type IProps = FieldValues & {
 	type: string
 	disciplines: Discipline[]
 }
@@ -93,12 +92,12 @@ const newTopic: Topic = {
 	srsHours: 0,
 }
 
-export function TopicsCard<T extends TopicsCardValues>() {
+export function TopicsEdit<T extends IProps>() {
 	const form = useFormContext<T>()
 	const rupType = useWatch({ control: form.control, name: 'type' as Path<T> }) ?? ''
 	const disciplines = (useWatch({ control: form.control, name: 'disciplines' as Path<T> }) ?? []) as Discipline[]
 
-	// Расчет итогов по всей карточке (модулю)
+	// global total hours
 	const total = disciplines.reduce(
 		(acc, disc) => {
 			disc.topics?.forEach((t) => {
@@ -107,7 +106,7 @@ export function TopicsCard<T extends TopicsCardValues>() {
 				acc.individualHours += Number(t.individualHours) || 0
 				acc.srspHours += Number(t.srspHours) || 0
 				acc.srsHours += Number(t.srsHours) || 0
-				// totalHours вычисляем как сумму составляющих
+
 				acc.totalHours +=
 					(Number(t.theoryHours) || 0) + (Number(t.practiceHours) || 0) + (Number(t.individualHours) || 0)
 			})
@@ -117,7 +116,7 @@ export function TopicsCard<T extends TopicsCardValues>() {
 		{ totalHours: 0, theoryHours: 0, practiceHours: 0, individualHours: 0, srspHours: 0, srsHours: 0 },
 	)
 
-	// Общее количество "Заявленных" часов (сумма по всем семестрам всех дисциплин)
+	// declared total hours
 	const totalDeclaredHours = disciplines.reduce(
 		(sum, d) => sum + (d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0),
 		0,
@@ -131,44 +130,89 @@ export function TopicsCard<T extends TopicsCardValues>() {
 			</CardHeader>
 			<CardContent className='space-y-4'>
 				{disciplines.map((_, index) => {
-					// Если вы используете useFieldArray для дисциплин здесь:
 					const fieldId = _[index]?.id
 
 					return (
 						<DisciplineBlock
-							key={fieldId || index} // Используйте стабильный ID
+							key={fieldId || index}
 							disciplineIndex={index}
 							rupType={rupType as RupTypeEnum | ''}
 						/>
 					)
 				})}
 
-				<div className='flex justify-end items-center pt-4 pr-6 space-x-4 border-t'>
-					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
-						<p className='font-medium'>Заявлено часов в плане:</p>
-						<p className='font-bold text-2xl'>{totalDeclaredHours}</p>
-
-						<p className='font-medium'>Распределено тем (часов):</p>
-						<div
-							className={cn(
-								'font-bold text-right text-2xl',
-								total.totalHours !== totalDeclaredHours && 'text-destructive',
-							)}
-						>
-							<p>{total.totalHours}</p>
-							<p className='text-xs font-normal text-muted-foreground'>
-								(Т: {total.theoryHours} / П: {total.practiceHours} / И: {total.individualHours} / СРСП:{' '}
-								{total.srspHours} / СРС: {total.srsHours})
-							</p>
-						</div>
+				{/* summary section */}
+				<div className='mt-10 rounded-xl border p-1'>
+					<div className='px-4 py-2 font-semibold italic uppercase tracking-wider text-xs'>
+						Сводная информация по всем дисциплинам
 					</div>
+					<Table>
+						<TableHeader>
+							<TableRow className=''>
+								<TableHead className='text-right font-medium text-muted-foreground' colSpan={2}>
+									Категория
+								</TableHead>
+								<TableHead className='w-24 text-center font-bold text-foreground'>Всего</TableHead>
+								<TableHead className='w-20 text-center text-xs'>Теор</TableHead>
+								<TableHead className='w-20 text-center text-xs'>Прак</TableHead>
+								<TableHead className='w-20 text-center text-xs'>Инд</TableHead>
+								<TableHead className='w-20 text-center text-xs text-blue-600/80'>СРСП</TableHead>
+								<TableHead className='w-20 text-center text-xs text-blue-600/80'>СРС</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{/* Итого распределено */}
+							<TableRow className='hover:bg-primary/5 transition-colors'>
+								<TableCell className='text-right font-medium' colSpan={2}>
+									Всего часов:
+								</TableCell>
+								<TableCell className='text-center'>
+									<span
+										className={cn(
+											'inline-flex items-center justify-center rounded-md px-2 py-1 min-w-12 font-bold shadow-sm',
+											total.totalHours !== totalDeclaredHours &&
+												'bg-destructive/10 text-destructive ring-1 ring-destructive/20',
+										)}
+									>
+										{total.totalHours}
+									</span>
+								</TableCell>
+								<TableCell className='text-center font-medium'>{total.theoryHours || 0}</TableCell>
+								<TableCell className='text-center font-medium'>{total.practiceHours || 0}</TableCell>
+								<TableCell className='text-center font-medium'>{total.individualHours || 0}</TableCell>
+								<TableCell className='text-center text-muted-foreground italic'>
+									{total.srspHours || 0}
+								</TableCell>
+								<TableCell className='text-center text-muted-foreground italic'>
+									{total.srsHours || 0}
+								</TableCell>
+							</TableRow>
+
+							{/* Заявлено в плане */}
+							<TableRow className='border-t border-dashed'>
+								<TableCell className='text-right text-muted-foreground' colSpan={2}>
+									Заявлено в учебном плане:
+								</TableCell>
+								<TableCell className='text-center font-bold text-lg text-foreground/70'>
+									{totalDeclaredHours}
+								</TableCell>
+								<TableCell className='text-left py-0' colSpan={5}>
+									{total.totalHours !== totalDeclaredHours && (
+										<span className='text-sm font-medium text-destructive animate-pulse duration-1000'>
+											← Несоответствие: {formatHours(Math.abs(totalDeclaredHours - total.totalHours))}
+										</span>
+									)}
+								</TableCell>
+							</TableRow>
+						</TableBody>
+					</Table>
 				</div>
 			</CardContent>
 		</Card>
 	)
 }
 
-function DisciplineBlock<T extends TopicsCardValues>({
+function DisciplineBlock<T extends IProps>({
 	disciplineIndex,
 	rupType,
 }: {
@@ -196,7 +240,6 @@ function DisciplineBlock<T extends TopicsCardValues>({
 
 	if (!discipline) return null
 
-	// Расчет итогов внутри одной дисциплины
 	const sectionTotal = (discipline.topics || []).reduce(
 		(acc, t) => {
 			const tHours = (Number(t.theoryHours) || 0) + (Number(t.practiceHours) || 0) + (Number(t.individualHours) || 0)
@@ -221,7 +264,6 @@ function DisciplineBlock<T extends TopicsCardValues>({
 	return (
 		<div className='border rounded-lg overflow-hidden mb-6'>
 			<div className='flex items-center p-3 bg-muted/50'>
-				<div className='font-bold'>{discipline.code}</div>
 				<div className='ml-2 flex-1 font-medium'>{discipline.name}</div>
 				<div className='flex gap-2'>
 					<Button
@@ -274,35 +316,51 @@ function DisciplineBlock<T extends TopicsCardValues>({
 						</TableHeader>
 						<SortableContext items={topicFields.map((f) => f.key)} strategy={verticalListSortingStrategy}>
 							<TableBody>
-								{topicFields.map((field, index) => (
-									<TopicRow
-										key={field.key}
-										disciplineIndex={disciplineIndex}
-										id={field.key}
-										rupType={rupType}
-										setTopicToDelete={setTopicToDelete}
-										topicIndex={index}
-									/>
-								))}
+								{topicFields.length > 0 ? (
+									topicFields.map((field, index) => (
+										<TopicRow
+											key={field.key}
+											disciplineIndex={disciplineIndex}
+											id={field.key}
+											rupType={rupType}
+											setTopicToDelete={setTopicToDelete}
+											topicIndex={index}
+										/>
+									))
+								) : (
+									<TableRow>
+										<TableCell className='h-24 text-center text-muted-foreground' colSpan={10}>
+											Критерии оценки и/или темы занятий не добавлены.
+										</TableCell>
+									</TableRow>
+								)}
 							</TableBody>
 						</SortableContext>
 						<TableFooter>
 							<TableRow className='bg-muted/5'>
 								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
-									Итого по разделу:
+									Всего часов:
 								</TableCell>
-								<TableCell className='text-center font-bold'>{sectionTotal.totalHours}ч</TableCell>
-								<TableCell className='text-center text-muted-foreground'>{sectionTotal.theoryHours}</TableCell>
-								<TableCell className='text-center text-muted-foreground'>
-									{sectionTotal.practiceHours}
+								<TableCell className='text-center font-bold'>
+									{sectionTotal.totalHours == 0 ? '—' : sectionTotal.totalHours}
 								</TableCell>
-								<TableCell className='text-center text-muted-foreground'>
-									{sectionTotal.individualHours}
+								<TableCell className='text-center'>
+									{sectionTotal.theoryHours == 0 ? '—' : sectionTotal.theoryHours}
 								</TableCell>
-								<TableCell className='text-center text-muted-foreground'>{sectionTotal.srspHours}</TableCell>
-								<TableCell className='text-center text-muted-foreground'>{sectionTotal.srsHours}</TableCell>
+								<TableCell className='text-center'>
+									{sectionTotal.practiceHours == 0 ? '—' : sectionTotal.practiceHours}
+								</TableCell>
+								<TableCell className='text-center'>
+									{sectionTotal.individualHours == 0 ? '—' : sectionTotal.individualHours}
+								</TableCell>
+								<TableCell className='text-center'>
+									{sectionTotal.srspHours == 0 ? '—' : sectionTotal.srspHours}
+								</TableCell>
+								<TableCell className='text-center'>
+									{sectionTotal.srsHours == 0 ? '—' : sectionTotal.srsHours}
+								</TableCell>
 								<TableCell className={cn('text-right font-medium', hasError && 'text-destructive')} colSpan={2}>
-									Заявлено: {declaredForThisDiscipline}ч
+									Заявлено: {formatHours(declaredForThisDiscipline)}
 								</TableCell>
 							</TableRow>
 						</TableFooter>
@@ -346,7 +404,7 @@ const TopicRow = ({ id, disciplineIndex, topicIndex, rupType, setTopicToDelete }
 		const allTypes = Object.values(TopicTypeEnum)
 
 		if (rupType === RupTypeEnum.PRACTICE) {
-			// Убираем SNZ, если это практический модуль
+			// remove SNZ if practice module
 			return allTypes.filter((type) => type !== TopicTypeEnum.SNZ)
 		}
 
@@ -414,10 +472,18 @@ const TopicRow = ({ id, disciplineIndex, topicIndex, rupType, setTopicToDelete }
 					render={({ field }) => <Input className='h-8' placeholder='Тема...' {...field} />}
 				/>
 			</TableCell>
-			<TableCell className={cn(getHoursStyle(currentTotal), 'font-semibold')}>{currentTotal}ч</TableCell>
-			<TableCell className={getHoursStyle(topic?.theoryHours)}>{topic?.theoryHours}</TableCell>
-			<TableCell className={getHoursStyle(topic?.practiceHours)}>{topic?.practiceHours}</TableCell>
-			<TableCell className={getHoursStyle(topic?.individualHours)}>{topic?.individualHours}</TableCell>
+			<TableCell className={cn(getHoursStyle(currentTotal), 'font-semibold')}>
+				{currentTotal == 0 ? '—' : currentTotal}
+			</TableCell>
+			<TableCell className={getHoursStyle(topic?.theoryHours)}>
+				{topic?.theoryHours == 0 ? '—' : topic?.theoryHours}
+			</TableCell>
+			<TableCell className={getHoursStyle(topic?.practiceHours)}>
+				{topic?.practiceHours == 0 ? '—' : topic?.practiceHours}
+			</TableCell>
+			<TableCell className={getHoursStyle(topic?.individualHours)}>
+				{topic?.individualHours == 0 ? '—' : topic?.individualHours}
+			</TableCell>
 			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours`} form={form} />
 			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours`} form={form} />
 			<TableCell>

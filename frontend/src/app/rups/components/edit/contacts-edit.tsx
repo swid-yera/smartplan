@@ -1,9 +1,7 @@
 'use client'
 
-import { type FC, useMemo, useState } from 'react'
+import { type FC, useEffect, useMemo, useState } from 'react'
 
-import { services } from '@services'
-import { useQuery } from '@tanstack/react-query'
 import type { IUser } from '@types'
 import {
 	Button,
@@ -31,27 +29,34 @@ import {
 import { ChevronsUpDown, Mail, Phone, Trash2, User, UserPlus } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext, useWatch } from 'react-hook-form'
 
-type ContactsValues = FieldValues & {
+type IProps = FieldValues & {
 	contacts: string[]
+	creatorId: string
+	teachersData: IUser[]
 }
 
-export function ContactsCard<T extends ContactsValues>() {
+export function ContactsEdit<T extends IProps>({
+	creatorId,
+	teachersData,
+}: {
+	creatorId: string
+	teachersData: IUser[]
+}) {
 	const form = useFormContext<T>()
-	const watchedContacts = useWatch({ control: form.control, name: 'contacts' as Path<T> }) || []
+	const watchedContacts = (useWatch({ control: form.control, name: 'contacts' as Path<T> }) as string[]) || []
 
-	const { data: teachersData = [], isSuccess } = useQuery({
-		...services.user.getAllOptions(),
-		enabled: true,
-	})
+	// automatically add creatorId if not present
+	useEffect(() => {
+		if (creatorId && !watchedContacts.includes(creatorId)) {
+			form.setValue('contacts' as Path<T>, [...watchedContacts, creatorId] as PathValue<T, Path<T>>, {
+				shouldDirty: false, // usually false for auto-fills, change to true if needed
+			})
+		}
+	}, [creatorId, watchedContacts, form])
 
-	const creatorId = form.getValues()?.teacher?.keycloakId
-
-	// use memo, kills abandon renders
 	const contactsData = useMemo(() => {
-		if (!isSuccess) return []
-
 		return watchedContacts.map((id) => teachersData.find((t) => t?.keycloakId === id)).filter(Boolean) as IUser[]
-	}, [teachersData, isSuccess, watchedContacts])
+	}, [teachersData, watchedContacts])
 
 	const handleAddTeacher = (id: string) => {
 		if (watchedContacts.includes(id)) return
@@ -61,6 +66,9 @@ export function ContactsCard<T extends ContactsValues>() {
 	}
 
 	const handleRemoveTeacher = (id: string) => {
+		// prevent user from removing themselves the creator
+		if (id === creatorId) return
+
 		const filtered = watchedContacts.filter((contactId) => contactId !== id)
 
 		form.setValue('contacts' as Path<T>, filtered as PathValue<T, Path<T>>, {
@@ -70,7 +78,7 @@ export function ContactsCard<T extends ContactsValues>() {
 
 	return (
 		<Card className='overflow-hidden'>
-			<CardHeader className='flex flex-row items-center justify-between space-y-0 bg-muted/30 pb-4'>
+			<CardHeader className='flex flex-row items-center justify-between space-y-0'>
 				<div className='space-y-1'>
 					<CardTitle className='text-xl'>Педагогический состав</CardTitle>
 					<CardDescription>Укажите преподавателей, ответственных за данный план</CardDescription>
@@ -94,43 +102,54 @@ export function ContactsCard<T extends ContactsValues>() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{contactsData.map((teacher) => (
-								<TableRow key={teacher.keycloakId} className='group'>
-									<TableCell className='pl-6 font-medium'>
-										<div className='flex items-center gap-3'>
-											<div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary'>
-												<User className='h-4 w-4' />
+							{contactsData.map((teacher) => {
+								const isCreator = teacher.keycloakId === creatorId
+
+								return (
+									<TableRow key={teacher.keycloakId} className='group'>
+										<TableCell className='pl-6 font-medium'>
+											<div className='flex items-center gap-3'>
+												<div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary'>
+													<User className='h-4 w-4' />
+												</div>
+												<div className='flex flex-col'>
+													<span>
+														{teacher.firstName} {teacher.lastName}
+													</span>
+													{isCreator && (
+														<span className='text-[10px] text-primary font-normal'>(Создатель)</span>
+													)}
+												</div>
 											</div>
-											<span>
-												{teacher.firstName} {teacher.lastName}
-											</span>
-										</div>
-									</TableCell>
-									<TableCell>
-										<div className='flex items-center gap-2 text-muted-foreground'>
-											<Phone className='h-3 w-3' />
-											{teacher.phone || '—'}
-										</div>
-									</TableCell>
-									<TableCell>
-										<div className='flex items-center gap-2 text-muted-foreground'>
-											<Mail className='h-3 w-3' />
-											{teacher.email}
-										</div>
-									</TableCell>
-									<TableCell className='pr-6 text-right'>
-										<Button
-											className='opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10'
-											disabled={teacher?.keycloakId == creatorId}
-											size='icon'
-											variant='ghost'
-											onClick={() => handleRemoveTeacher(teacher.keycloakId)}
-										>
-											<Trash2 className='h-4 w-4' />
-										</Button>
-									</TableCell>
-								</TableRow>
-							))}
+										</TableCell>
+										<TableCell>
+											<div className='flex items-center gap-2 text-muted-foreground'>
+												<Phone className='h-3 w-3' />
+												{teacher.phone || '—'}
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className='flex items-center gap-2 text-muted-foreground'>
+												<Mail className='h-3 w-3' />
+												{teacher.email}
+											</div>
+										</TableCell>
+										<TableCell className='pr-6 text-right'>
+											{/* disable button and hide if its the creator */}
+											{!isCreator && (
+												<Button
+													className='opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10'
+													size='icon'
+													variant='ghost'
+													onClick={() => handleRemoveTeacher(teacher.keycloakId)}
+												>
+													<Trash2 className='h-4 w-4' />
+												</Button>
+											)}
+										</TableCell>
+									</TableRow>
+								)
+							})}
 						</TableBody>
 					</Table>
 				) : (
@@ -149,6 +168,7 @@ export function ContactsCard<T extends ContactsValues>() {
 	)
 }
 
+// teacher selector
 interface ITeacherSelector {
 	onSelect: (id: string) => void
 	teachersData: IUser[]

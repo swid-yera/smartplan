@@ -56,15 +56,17 @@ function EditableHourCell<TFieldValues extends FieldValues>({
 
 	return (
 		<TableCell className='align-middle'>
-			<Button
-				className={cn('w-16 h-auto py-2 mx-auto', getHoursStyle(hours))}
-				size='sm'
-				type='button'
-				variant='ghost'
-				onClick={() => setIsEditing(true)}
-			>
-				{hours || 0}ч
-			</Button>
+			<div className='flex justify-center'>
+				<Button
+					className={cn('w-16 h-auto py-2 mx-auto', getHoursStyle(hours))}
+					size='sm'
+					type='button'
+					variant='ghost'
+					onClick={() => setIsEditing(true)}
+				>
+					{hours || '—'}
+				</Button>
+			</div>
 		</TableCell>
 	)
 }

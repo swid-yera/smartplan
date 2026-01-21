@@ -1,9 +1,17 @@
-export * from './basic-data-card'
-export * from './contacts-card'
-export * from './discipline-card'
-export * from './exploration-note-card'
-export * from './goals-card'
-export * from './group-card'
-export * from './resource-list-card'
+// edit
+export * from './edit/basic-edit'
+export * from './edit/contacts-edit'
+export * from './edit/discipline-edit'
+export * from './edit/group-edit'
+export * from './edit/note-edit'
+export * from './edit/resource-edit'
+export * from './edit/topics-edit'
+
+// ui
+export * from './new-rup-card'
 export * from './rup-status-badge'
-export * from './topics-card'
+export * from './rups-filter-card'
+
+// view
+export * from './view/discipline-view'
+export * from './view/topics-view'

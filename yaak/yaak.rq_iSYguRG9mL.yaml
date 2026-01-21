@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_iSYguRG9mL
 createdAt: 2026-01-15T14:30:12.726977300
-updatedAt: 2026-01-18T18:12:03.578351200
+updatedAt: 2026-01-20T12:04:08.599515700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -18,5 +18,5 @@ headers:
 method: GET
 name: users
 sortPriority: 1000.0
-url: ${[ url ]}/api/users
+url: ${[ url ]}/users
 urlParameters: []

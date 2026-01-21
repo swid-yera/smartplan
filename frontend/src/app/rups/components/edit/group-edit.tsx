@@ -37,13 +37,15 @@ import {
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 
-type GroupValues = FieldValues & {
+type IProps = FieldValues & {
 	groupId: string
 	studyYear: string
 	course: number
 }
 
-export function GroupCard<T extends GroupValues>() {
+const generatedStudyYears = generateStudyYears(6)
+
+export function GroupEdit<T extends IProps>() {
 	const form = useFormContext<T>()
 
 	const [selectedGroup, setSelectedGroup] = useState<IGroup | undefined>(undefined)
@@ -51,8 +53,6 @@ export function GroupCard<T extends GroupValues>() {
 	const [open, setOpen] = useState(false)
 	const watchedGroupId = form.watch('groupId' as Path<T>)
 	const watchedYear = form.watch('studyYear' as Path<T>)
-
-	const generatedStudyYears = generateStudyYears(6)
 
 	const {
 		data: groupsData = [],
@@ -73,9 +73,7 @@ export function GroupCard<T extends GroupValues>() {
 		const foundCourse = formatCourseFromYearAndGroupName(foundGroup.name, watchedYear)
 
 		setFormattedCourse(foundCourse)
-
-		if (typeof foundCourse != 'number') form.setValue('course' as Path<T>, 0 as PathValue<T, Path<T>>)
-		form.setValue('course' as Path<T>, foundCourse as PathValue<T, Path<T>>)
+		form.setValue('course' as Path<T>, (typeof foundCourse === 'number' ? foundCourse : 0) as PathValue<T, Path<T>>)
 	}, [isSuccess, isLoading, groupsData, watchedGroupId, watchedYear])
 
 	return (
@@ -84,8 +82,8 @@ export function GroupCard<T extends GroupValues>() {
 				<CardTitle>Группа</CardTitle>
 				<CardDescription>
 					Выберите группу и проверьте специальность и квалификацию.
-					<span className='text-primary'>
-						Информация о квалификации и специальности автоматически получиться от типа группы. Информация о курсе
+					<span className='text-primary '>
+						Информация о квалификации и специальности автоматически получиться от типа группы. Данные о курсе
 						получится от года обучения.
 					</span>
 				</CardDescription>
@@ -156,18 +154,21 @@ export function GroupCard<T extends GroupValues>() {
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>Год обучения</FormLabel>
-								<Select disabled={!watchedGroupId} value={field.value} onValueChange={field.onChange}>
-									<SelectTrigger>
-										<SelectValue placeholder='Выберите год' />
+
+								<Select value={field.value} onValueChange={field.onChange}>
+									<SelectTrigger className='w-full'>
+										<SelectValue placeholder='Выберите год обучения' />
 									</SelectTrigger>
+
 									<SelectContent>
-										{generatedStudyYears.map((studyYears) => (
-											<SelectItem key={studyYears} value={studyYears}>
-												{studyYears}
+										{generatedStudyYears.map((year) => (
+											<SelectItem key={year} value={year}>
+												{year}
 											</SelectItem>
 										))}
 									</SelectContent>
 								</Select>
+
 								<FormMessage />
 							</FormItem>
 						)}

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_sb4PTUAMXB
 createdAt: 2026-01-14T14:37:15.839580800
-updatedAt: 2026-01-18T18:11:30.977826
+updatedAt: 2026-01-20T20:05:44.022803400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_XZaE2gEbts
 authentication: {}
@@ -19,5 +19,13 @@ headers:
 method: GET
 name: by id
 sortPriority: 1000.0
-url: ${[ url ]}/api/rups/243bc56b-e208-4793-88b5-b3f54a046d31
-urlParameters: []
+url: ${[ url ]}/rups/:id
+urlParameters:
+- enabled: true
+  name: :id
+  value: c11b9006-362d-4a1c-89b4-d44fc15d54a6
+  id: K70uQRQRmh
+- enabled: true
+  name: ''
+  value: ''
+  id: Um089VB3tq

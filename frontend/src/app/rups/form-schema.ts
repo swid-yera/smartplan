@@ -3,7 +3,6 @@ import { z } from 'zod'
 
 const disciplineSchema = z.object({
 	name: z.string().min(1, 'Название не может быть пустым'),
-	code: z.string().min(1, 'Код не может быть пустым'),
 
 	semesters: z
 		.array(
@@ -17,27 +16,24 @@ const disciplineSchema = z.object({
 })
 
 const disciplineWithTopicsSchema = disciplineSchema.extend({
-	topics: z
-		.array(
-			z.object({
-				name: z.string().min(1, 'Называние занятия не может быть пустым'),
-				type: z.enum(TopicTypeEnum, {
-					error: () => ({ message: 'Выберите корректный тип занятия' }),
-				}),
-				theoryHours: z.number().nonnegative('Часы не могут быть отрицательными'),
-				practiceHours: z.number().nonnegative('Часы не могут быть отрицательными'),
-				individualHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
-				srspHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
-				srsHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
+	topics: z.array(
+		z.object({
+			name: z.string().min(1, 'Называние занятия не может быть пустым'),
+			type: z.enum(TopicTypeEnum, {
+				error: () => ({ message: 'Выберите корректный тип занятия' }),
 			}),
-		)
-		.min(1, 'У дисциплины должен быть как минимум одна тема'),
+			theoryHours: z.number().nonnegative('Часы не могут быть отрицательными'),
+			practiceHours: z.number().nonnegative('Часы не могут быть отрицательными'),
+			individualHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
+			srspHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
+			srsHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
+		}),
+	),
 })
 
 export const formSchema = z.object({
 	// Step 1
 	name: z.string().min(1, 'Наименование модуля обязательно'),
-	code: z.string().min(1, 'Код модуля обязательно'),
 	type: z.enum(RupTypeEnum, {
 		error: () => ({ message: 'Выберите корректный тип модуля' }),
 	}),

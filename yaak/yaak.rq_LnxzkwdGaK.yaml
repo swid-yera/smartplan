@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_LnxzkwdGaK
 createdAt: 2026-01-15T18:14:23.750593100
-updatedAt: 2026-01-18T18:11:48.781973900
+updatedAt: 2026-01-20T12:45:22.718245400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_K53iQSXBTw
 authentication: {}
@@ -19,5 +19,5 @@ headers:
 method: DELETE
 name: delete
 sortPriority: 3000.0
-url: ${[ url ]}/api/rups/67af3d7e-d474-416c-baeb-cb55f4a046aa
+url: ${[ url ]}/rups/:id
 urlParameters: []
