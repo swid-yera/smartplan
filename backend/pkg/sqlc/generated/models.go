@@ -361,7 +361,7 @@ type Award struct {
 	Status      AwardsStatus       `json:"status"`
 	Reason      pgtype.Text        `json:"reason"`
 	Methodist   pgtype.UUID        `json:"methodist"`
-	Teacher     uuid.UUID          `json:"teacher"`
+	Teacher     pgtype.UUID        `json:"teacher"`
 	TotalPoints int32              `json:"total_points"`
 	Type        pgtype.UUID        `json:"type"`
 	Text        pgtype.Text        `json:"text"`

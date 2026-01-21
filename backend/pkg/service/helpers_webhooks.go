@@ -3,7 +3,19 @@ package service
 import (
 	"eduplan/backend/pkg/service/keycloak"
 	storage "eduplan/backend/pkg/sqlc/generated"
+
+	"github.com/google/uuid"
 )
+
+type UserResponse struct {
+	KeycloakID uuid.UUID `json:"keycloakId"`
+	Email      string    `json:"email"`
+	Username   string    `json:"username"`
+	FirstName  string    `json:"firstName"`
+	LastName   string    `json:"lastName"`
+	Phone      string    `json:"phone"`
+	Roles      string    `json:"roles"`
+}
 
 func extractRoles(event *keycloak.KeycloakEvent) storage.UserRole {
 	raw, ok := event.Details["roles"].([]interface{})
@@ -28,4 +40,16 @@ func extractRoles(event *keycloak.KeycloakEvent) storage.UserRole {
 	}
 
 	return storage.UserRoleTEACHER
+}
+
+func convertToUserResponse(user storage.User) *UserResponse {
+	return &UserResponse{
+		KeycloakID: user.KeycloakID,
+		Email:      user.Email,
+		Username:   user.Username,
+		FirstName:  user.FirstName.String,
+		LastName:   user.LastName.String,
+		Phone:      user.Phone.String,
+		Roles:      string(user.Role),
+	}
 }

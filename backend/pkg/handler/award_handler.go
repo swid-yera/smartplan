@@ -205,7 +205,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	}
 
 	// unmarshal json data to struct
-	var params service.TestParams
+	var params service.CreateAwardParams
 	if err := json.Unmarshal([]byte(jsonData), &params); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON format inside data field", "details": err.Error()})
 		return
@@ -259,7 +259,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 
 	award, err := h.service.CreateAward(c.Request.Context(), &storage.CreateAwardParams{
 		Status:      storage.AwardsStatusDRAFT,
-		Teacher:     currentUser.KeycloakID,
+		Teacher:     parseUUIDPgtype(currentUser.KeycloakID.String()),
 		Type:        parseUUIDPgtype(typeID.String()),
 		Text:        params.Text,
 		Files:       fileKeys,
@@ -305,13 +305,13 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 
 // --- award type
 func (h *AwardHandler) CreateAwardType(c *gin.Context) {
-	var req service.CreateFullAwardTypeParams
+	var req service.CreateTypeParams
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}
 
-	awardType, err := h.service.CreateFullAwardType(c.Request.Context(), &req)
+	awardType, err := h.service.CreateType(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

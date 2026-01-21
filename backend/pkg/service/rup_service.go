@@ -117,16 +117,6 @@ type ListAllRupsResponse struct {
 	UpdatedAt  time.Time        `json:"updatedAt"`
 }
 
-type UserResponse struct {
-	KeycloakID uuid.UUID `json:"keycloakId"`
-	Email      string    `json:"email"`
-	Username   string    `json:"username"`
-	FirstName  string    `json:"firstName"`
-	LastName   string    `json:"lastName"`
-	Phone      string    `json:"phone"`
-	Roles      string    `json:"roles"`
-}
-
 type GroupResponse struct {
 	KeycloakID    uuid.UUID `json:"keycloakId"`
 	Name          string    `json:"name"`
@@ -181,13 +171,6 @@ type TopicResponse struct {
 	SrsHours        int32     `json:"srsHours"`
 }
 
-type rupService struct {
-	repo        repository.RupRepository
-	cfg         *config.DocumentRenderConfig
-	httpClient  *http.Client
-	fileStorage FileStorage
-}
-
 type RupDocumentPayload struct {
 	RupID       string              `json:"rupId"`
 	Name        string              `json:"name"`
@@ -198,6 +181,13 @@ type RupDocumentPayload struct {
 	Contacts    []map[string]string `json:"contacts"`
 	Disciplines []map[string]any    `json:"disciplines"`
 	Exploration map[string]any      `json:"explorationNote"`
+}
+
+type rupService struct {
+	repo        repository.RupRepository
+	cfg         *config.DocumentRenderConfig
+	httpClient  *http.Client
+	fileStorage FileStorage
 }
 
 func NewRupService(repo repository.RupRepository, cfg *config.DocumentRenderConfig, httpClient *http.Client, fileStorage FileStorage) RupService {
@@ -966,7 +956,7 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 	if rup.Methodist.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
 		if err == nil {
-			methodist = s.convertToUserResponse(*user)
+			methodist = convertToUserResponse(*user)
 		}
 	}
 
@@ -975,7 +965,7 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 	if rup.Teacher.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
 		if err == nil {
-			teacher = s.convertToUserResponse(*user)
+			teacher = convertToUserResponse(*user)
 		}
 	}
 
@@ -1005,7 +995,7 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 		if err != nil {
 			continue // Skip if not found
 		}
-		contacts = append(contacts, s.convertToUserResponse(*user))
+		contacts = append(contacts, convertToUserResponse(*user))
 	}
 
 	// Get groups
@@ -1027,7 +1017,7 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	if rup.Methodist.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
 		if err == nil {
-			methodist = s.convertToUserResponse(*user)
+			methodist = convertToUserResponse(*user)
 		}
 	}
 
@@ -1036,7 +1026,7 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	if rup.Teacher.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
 		if err == nil {
-			teacher = s.convertToUserResponse(*user)
+			teacher = convertToUserResponse(*user)
 		}
 	}
 
@@ -1092,18 +1082,6 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 		CreatedAt:       rup.CreatedAt.Time,
 		UpdatedAt:       rup.UpdatedAt.Time,
 	}, nil
-}
-
-func (s *rupService) convertToUserResponse(user storage.User) *UserResponse {
-	return &UserResponse{
-		KeycloakID: user.KeycloakID,
-		Email:      user.Email,
-		Username:   user.Username,
-		FirstName:  user.FirstName.String,
-		LastName:   user.LastName.String,
-		Phone:      user.Phone.String,
-		Roles:      string(user.Role),
-	}
 }
 
 func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse {
