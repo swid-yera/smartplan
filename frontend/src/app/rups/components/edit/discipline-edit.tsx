@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react'
 
 import { EditableHourCell } from '@components'
-import { formatHours } from '@helpers'
-import { TopicTypeEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -42,31 +40,19 @@ import {
 	useFormContext,
 } from 'react-hook-form'
 
-type Topic = {
-	name: string
-	type: TopicTypeEnum
-	theoryHours: number
-	practiceHours: number
-	individualHours: number
-	srspHours?: number
-	srsHours?: number
-}
-
 type Semester = { semester: number; totalHours: number }
 
 type Discipline = {
-	code: string
 	name: string
-	totalHours: number // Добавил в тип, так как вы его используете
+	totalHours: number
 	semesters: Semester[]
-	topic: Topic[]
 }
 
-type DisciplineCardValues = FieldValues & {
+type IProps = FieldValues & {
 	disciplines: Discipline[]
 }
 
-export function DisciplineCard<T extends DisciplineCardValues>() {
+export function DisciplineEdit<T extends IProps>() {
 	const { control, watch } = useFormContext<T>()
 
 	const {
@@ -80,32 +66,19 @@ export function DisciplineCard<T extends DisciplineCardValues>() {
 
 	const [disciplineToDelete, setDisciplineToDelete] = useState<number | null>(null)
 
-	// Заменяем useWatch на watch()
-	// Это заставит компонент ререндериться при любом изменении в массиве disciplines
 	const disciplines = watch('disciplines' as Path<T>) as Discipline[]
 
 	const newDiscipline = {
-		code: '',
 		name: '',
 		totalHours: 0,
 		semesters: Array.from({ length: 8 }, (_, i) => ({
 			semester: i + 1,
 			totalHours: 0,
 		})),
-		topics: [
-			{
-				name: '1',
-				type: TopicTypeEnum.SNZ,
-				theoryHours: 0,
-				practiceHours: 0,
-				individualHours: 0,
-				srspHours: 0,
-				srsHours: 0,
-			},
-		],
+		topics: [],
 	}
 
-	// Вычисления итогов
+	// result
 	const totalModuleHours =
 		disciplines?.reduce((acc, d) => {
 			const disciplineSum = d.semesters?.reduce((sum, s) => sum + (Number(s.totalHours) || 0), 0) || 0
@@ -125,20 +98,26 @@ export function DisciplineCard<T extends DisciplineCardValues>() {
 
 	return (
 		<Card>
-			<CardHeader>
-				<CardTitle>Распределение часов</CardTitle>
-				<CardDescription>Создание дисциплин и расчет часов</CardDescription>
+			<CardHeader className='flex justify-between items-start'>
+				<div>
+					<CardTitle>Распределение часов</CardTitle>
+					<CardDescription>Создание дисциплин и расчет часов</CardDescription>
+				</div>
+
+				<Button type='button' variant='outline' onClick={() => append(newDiscipline as PathValue<T, ArrayPath<T>>)}>
+					Добавить дисциплину
+				</Button>
 			</CardHeader>
 			<CardContent>
 				<div className='overflow-x-auto'>
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead className='w-[35%]' rowSpan={3}>
-									Код и название
+								<TableHead className='w-full' rowSpan={3}>
+									Код и название дисциплины/модуля:
 								</TableHead>
-								<TableHead className='text-center' rowSpan={3}>
-									Общее кол-во
+								<TableHead className='text-center wrap-break-words whitespace-normal' rowSpan={3}>
+									Общее количество часов в модуле
 								</TableHead>
 								<TableHead className='text-center' colSpan={8}>
 									По семестрам
@@ -160,35 +139,38 @@ export function DisciplineCard<T extends DisciplineCardValues>() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{disciplineFields.map((field, index) => (
-								<DisciplineRow
-									key={field.id}
-									disciplineIndex={index}
-									setDisciplineToDelete={setDisciplineToDelete}
-								/>
-							))}
+							{disciplineFields.length > 0 ? (
+								<>
+									<ModuleRow />
+									{disciplineFields.map((field, index) => (
+										<DisciplineRow
+											key={field.id}
+											disciplineIndex={index}
+											setDisciplineToDelete={setDisciplineToDelete}
+										/>
+									))}
+								</>
+							) : (
+								<TableRow>
+									<TableCell className='h-24 text-center text-muted-foreground' colSpan={10}>
+										Дисциплины не добавлены.
+									</TableCell>
+								</TableRow>
+							)}
 						</TableBody>
 						<TableFooter>
 							<TableRow>
-								<TableCell className='font-bold'>Всего:</TableCell>
-								<TableCell className='text-right font-bold'>{formatHours(totalModuleHours)}</TableCell>
+								<TableCell className='w-full font-bold'>Всего:</TableCell>
+								<TableCell className='text-center font-bold'>{totalModuleHours}</TableCell>
 								{semesterTotals.map((total, i) => (
 									<TableCell key={i} className='text-center font-bold'>
-										{total}ч
+										{total == 0 ? '—' : total}
 									</TableCell>
 								))}
 							</TableRow>
 						</TableFooter>
 					</Table>
 				</div>
-				<Button
-					className='mt-4'
-					type='button'
-					variant='outline'
-					onClick={() => append(newDiscipline as PathValue<T, ArrayPath<T>>)}
-				>
-					Добавить дисциплину
-				</Button>
 
 				<AlertDialog
 					open={disciplineToDelete !== null}
@@ -198,7 +180,7 @@ export function DisciplineCard<T extends DisciplineCardValues>() {
 						<AlertDialogHeader>
 							<AlertDialogTitle>Подтверждение</AlertDialogTitle>
 							<AlertDialogDescription>
-								Удалить дисциплину {disciplineToDelete !== null && disciplines?.[disciplineToDelete]?.code}?
+								Удалить дисциплину {disciplineToDelete !== null && disciplines?.[disciplineToDelete]?.name}?
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
@@ -222,7 +204,23 @@ export function DisciplineCard<T extends DisciplineCardValues>() {
 	)
 }
 
-function DisciplineRow<T extends DisciplineCardValues>({
+function ModuleRow<T extends IProps>() {
+	const form = useFormContext<T>()
+
+	const watchedRupName = form.watch('name' as Path<T>) as string
+
+	return (
+		<TableRow className='[&>:not(:last-child)]:border-r h-16'>
+			<TableCell className='w-full wrap-break-words whitespace-normal'>{watchedRupName}</TableCell>
+			<TableCell className='text-center font-medium' />
+			{Array.from({ length: 8 }).map((_, semesterIndex) => (
+				<TableCell key={semesterIndex} className='text-center font-medium' />
+			))}
+		</TableRow>
+	)
+}
+
+function DisciplineRow<T extends IProps>({
 	disciplineIndex,
 	setDisciplineToDelete,
 }: {
@@ -231,7 +229,6 @@ function DisciplineRow<T extends DisciplineCardValues>({
 }) {
 	const form = useFormContext<T>()
 
-	// Заменяем useWatch на watch для конкретной строки
 	const watchedSemesters = form.watch(`disciplines.${disciplineIndex}.semesters` as Path<T>) as Discipline['semesters']
 
 	const totalHours = watchedSemesters?.reduce((acc, sem) => acc + (Number(sem.totalHours) || 0), 0) || 0
@@ -247,23 +244,21 @@ function DisciplineRow<T extends DisciplineCardValues>({
 	}, [totalHours, disciplineIndex, form])
 
 	return (
-		<TableRow className='[&>:not(:last-child)]:border-r'>
+		<TableRow className='[&>:not(:last-child)]:border-r h-16'>
 			<TableCell>
 				<div className='space-y-2'>
 					<div className='flex items-start gap-2 min-w-64'>
-						<div className='grow'>
-							<FormField
-								control={form.control}
-								name={`disciplines.${disciplineIndex}.code` as Path<T>}
-								render={({ field }) => (
-									<FormItem>
-										<FormControl>
-											<Input placeholder='Код' {...field} />
-										</FormControl>
-									</FormItem>
-								)}
-							/>
-						</div>
+						<FormField
+							control={form.control}
+							name={`disciplines.${disciplineIndex}.name` as Path<T>}
+							render={({ field }) => (
+								<FormItem className='grow'>
+									<FormControl>
+										<Input placeholder='Название' {...field} />
+									</FormControl>
+								</FormItem>
+							)}
+						/>
 						<Button
 							size='icon'
 							type='button'
@@ -273,20 +268,9 @@ function DisciplineRow<T extends DisciplineCardValues>({
 							<Trash className='h-4 w-4' />
 						</Button>
 					</div>
-					<FormField
-						control={form.control}
-						name={`disciplines.${disciplineIndex}.name` as Path<T>}
-						render={({ field }) => (
-							<FormItem>
-								<FormControl>
-									<Input placeholder='Название' {...field} />
-								</FormControl>
-							</FormItem>
-						)}
-					/>
 				</div>
 			</TableCell>
-			<TableCell className='text-center font-medium'>{formatHours(totalHours)}</TableCell>
+			<TableCell className='text-center font-medium'>{totalHours}</TableCell>
 			{Array.from({ length: 8 }).map((_, semesterIndex) => (
 				<EditableHourCell
 					key={semesterIndex}

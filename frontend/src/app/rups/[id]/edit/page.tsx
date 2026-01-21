@@ -17,21 +17,11 @@ import { ArrowLeft, EyeIcon, RotateCcw, SaveIcon } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import {
-	BasicDataCard,
-	ContactsCard,
-	DisciplineCard,
-	ExplorationNoteCard,
-	GoalsCard,
-	GroupCard,
-	ResourceListCard,
-	TopicsCard,
-} from '../../components'
+import { DisciplineEdit, GroupEdit, NoteEdit, ResourceEdit, TopicsEdit } from '../../components'
 import { type RUPFormData, formSchema } from '../../form-schema'
 
 const defaultValues: RUPFormData = {
 	name: '',
-	code: '',
 
 	type: RupTypeEnum.PRACTICE,
 	studyForm: StudyFormEnum.FULL_TIME,
@@ -145,11 +135,11 @@ const EditPage: FC = () => {
 			{ id: rupData.id, changedRup: mappedData },
 			{
 				onSuccess: (updatedRup) => {
-					toast.success(`${updatedRup.code} успешно обновлен`, { id: toastId })
+					toast.success(`${updatedRup.name} успешно обновлен`, { id: toastId })
 					replace(`/rups/${updatedRup.id}`)
 				},
 				onError: (err) => {
-					toast.error(`Произошла ошибка при обновлений ${mappedData.code}`, {
+					toast.error(`Произошла ошибка при обновлений ${mappedData.name}`, {
 						id: toastId,
 						description: err.message,
 					})
@@ -223,16 +213,35 @@ const EditPage: FC = () => {
 
 				<div className='w-full space-y-5'>
 					<div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)]'>
-						<BasicDataCard />
-						<GroupCard />
+						<NoteEdit
+							description='Нормативно-правовая и профессиональная база разработки рабочей учебной программы.'
+							label='Описание'
+							name='basis'
+							placeholder='Рабочая учебная программа по профессиональному модулю «ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet» разработана в соответствии с Приказом Министра просвещения Республики Казахстан от 3 августа 2022 года №348 с учетом изменений, внесенных 15.04.2025 года. Программа основана на профессиональном стандарте «Сетевые, системные администраторы и администраторы серверов» (дополнение №5 к приказу заместителя председателя правления Национальной палаты предпринимателей Республики Казахстан «Атамекен» №222 от 05.12.2022), а также на стандартах WorldSkills по направлению «Сетевое и системное администрирование». Рабочая учебная программа предназначена для реализации в рамках специальности 06120100 «Вычислительная техника и информационные сети» (по видам) и квалификации 4S06120102 «Техник сетевого и системного администрирования».'
+							rows={8}
+							title='Основание разработки рабочей учебной программы'
+						/>
+						<GroupEdit />
 					</div>
 					<div className='grid gap-4 md:grid-cols-2'>
-						<GoalsCard />
-						<ExplorationNoteCard />
+						<NoteEdit
+							description='Цель освоения профессионального модуля.'
+							label='Цели и задачи'
+							name='goals'
+							placeholder='Целью освоения профессионального модуля является формирование у обучающихся профессиональных знаний, умений и практических навыков в области обеспечения информационной безопасности локальных вычислительных сетей и сети Internet. В процессе освоения модуля обучающиеся изучают архитектуру и основные компоненты локальных вычислительных сетей, принципы их функционирования, методы мониторинга и анализа угроз и уязвимостей информации. Профессиональный модуль направлен на подготовку обучающихся к выполнению работ по настройке, конфигурированию и администрированию средств защиты информации, а также к обеспечению устойчивой и безопасной работы сетевых устройств и программного обеспечения.'
+							title='Образовательная цель профессионального модуля.'
+						/>
+						<NoteEdit
+							description='Формируемые профессиональные компетенции.'
+							label='Компетенции'
+							name='competencies'
+							placeholder='В результате освоения профессионального модуля у обучающихся формируются следующие профессиональные компетенции:\n– владение методами и средствами обеспечения информационной безопасности локальных вычислительных сетей и подключенных к ним информационных ресурсов с соблюдением требований охраны труда и техники безопасности;\n– выполнение работ по установке, настройке и администрированию операционных систем и программного обеспечения;\n– управление сетевыми и программными ресурсами, обеспечение их защиты, обновления и сопровождения;\n– анализ угроз информационной безопасности, выявление уязвимостей и реализация мер по их предотвращению.'
+							title='Перечень профессиональных компетенций, формируемых в результате освоения модуля.'
+						/>
 					</div>
-					<ContactsCard />
+					{/* <ContactsEdit creatorId={user} /> */}
 					<div className='grid md:grid-cols-2 gap-4'>
-						<ResourceListCard
+						<ResourceEdit
 							buttonText='Добавить ресурс'
 							description={
 								<>
@@ -244,7 +253,7 @@ const EditPage: FC = () => {
 							placeholder='Откуда был взят материал для учебного плана'
 							title='Учебно-методическое оснащение, справочная литература/интернет-ресурсы'
 						/>
-						<ResourceListCard
+						<ResourceEdit
 							buttonText='Добавить материал'
 							description='Введите список технических средств которые обязательны для учебного плана'
 							label='Технические средства и материалы'
@@ -254,8 +263,8 @@ const EditPage: FC = () => {
 						/>
 					</div>
 
-					<DisciplineCard />
-					<TopicsCard />
+					<DisciplineEdit />
+					<TopicsEdit />
 				</div>
 
 				<div className='flex justify-end gap-4 '>

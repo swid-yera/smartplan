@@ -8,7 +8,6 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	SidebarTrigger,
 	Skeleton,
 	Tooltip,
 	TooltipContent,
@@ -19,7 +18,7 @@ import { LogInIcon } from 'lucide-react'
 
 import { NavUser } from './nav-user'
 
-export function AppSidebarHeader() {
+export function ASidebarHeader() {
 	const { user, isAuthenticated, authLoading } = useAuthStore()
 	const { state, isMobile } = useSidebar()
 
@@ -29,7 +28,8 @@ export function AppSidebarHeader() {
 				<div className='font-bold text-primary whitespace-nowrap overflow-hidden transition-all duration-200 max-w-40 opacity-100 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0'>
 					EduPlan
 				</div>
-				<SidebarTrigger />
+
+				{/* logotype */}
 			</div>
 
 			{authLoading ? (

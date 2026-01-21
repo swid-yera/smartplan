@@ -3,6 +3,15 @@
 import { cn } from '@lib'
 // или ваш путь к утилите классов
 import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
 	Button,
 	Card,
 	CardContent,
@@ -33,7 +42,7 @@ type ResourceListValues = FieldValues & {
 	[key: string]: { name: string; link: string }[] | undefined
 }
 
-interface ResourceListCardProps<T extends ResourceListValues> {
+interface IProps<T extends ResourceListValues> {
 	name: ArrayPath<T>
 	title: string
 	description: React.ReactNode
@@ -42,14 +51,14 @@ interface ResourceListCardProps<T extends ResourceListValues> {
 	buttonText: string
 }
 
-export function ResourceListCard<T extends ResourceListValues>({
+export function ResourceEdit<T extends ResourceListValues>({
 	name,
 	title,
 	description,
 	label,
 	placeholder,
 	buttonText,
-}: ResourceListCardProps<T>) {
+}: IProps<T>) {
 	const { control, watch } = useFormContext<T>()
 	const { fields, append, remove } = useFieldArray({
 		control,
@@ -126,16 +135,39 @@ export function ResourceListCard<T extends ResourceListValues>({
 										)}
 									/>
 
-									{/* Кнопка Удаления */}
-									<Button
-										className='text-destructive hover:bg-destructive/10'
-										size='icon'
-										type='button'
-										variant='outline'
-										onClick={() => remove(index)}
-									>
-										<Trash className='h-4 w-4' />
-									</Button>
+									<AlertDialog>
+										<AlertDialogTrigger asChild>
+											<Button
+												className='text-destructive hover:bg-destructive/10'
+												size='icon'
+												type='button'
+												variant='outline'
+											>
+												<Trash className='h-4 w-4' />
+											</Button>
+										</AlertDialogTrigger>
+										<AlertDialogContent>
+											<AlertDialogHeader>
+												<AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+												<AlertDialogDescription>
+													Это действие удалит ресурс
+													<strong className='text-foreground ml-1'>
+														{((fields[index] as { name?: string }).name as string) || `№${index + 1}`}
+													</strong>
+													. Отменить это действие будет невозможно.
+												</AlertDialogDescription>
+											</AlertDialogHeader>
+											<AlertDialogFooter>
+												<AlertDialogCancel>Отмена</AlertDialogCancel>
+												<AlertDialogAction
+													className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+													onClick={() => remove(index)}
+												>
+													Удалить
+												</AlertDialogAction>
+											</AlertDialogFooter>
+										</AlertDialogContent>
+									</AlertDialog>
 								</li>
 							)
 						})}

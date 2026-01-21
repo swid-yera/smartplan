@@ -4,6 +4,8 @@ import type { FC } from 'react'
 
 import { useSearchParams } from 'next/navigation'
 
+import { normalizeRupType } from '@helpers'
+import { RupTypeEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -26,12 +28,13 @@ interface IProps {
 	role: string
 }
 
-export const FilterCard: FC<IProps> = ({ className, role }) => {
+export const RupsFilterCard: FC<IProps> = ({ className, role }) => {
 	const searchParams = useSearchParams()
 	const q = (searchParams.get('q') ?? '').toLowerCase().trim()
 	const statusFilter = searchParams.get('status') ?? 'ALL'
-	const yearFilter = (searchParams.get('year') ?? '').trim()
-	const specialtyFilter = (searchParams.get('specialty') ?? '').trim()
+	const yearFilter = (searchParams.get('year') ?? 'ALL').trim()
+	const specialtyFilter = (searchParams.get('specialty') ?? 'ALL').trim()
+	const typeFilter = (searchParams.get('type') ?? 'ALL').trim()
 
 	const distinctYears = ['2025-2026', '2026-2027', '2024-2025', '2023-2024']
 	const distinctSpecialties = ['a', 'b']
@@ -44,8 +47,9 @@ export const FilterCard: FC<IProps> = ({ className, role }) => {
 			</CardHeader>
 			<CardContent className='h-full'>
 				<form className='h-full flex flex-col justify-between gap-3' method='GET'>
-					<div className='grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_repeat(3,minmax(0,1fr))_auto]'>
-						<div className='space-y-1'>
+					<div className='grid gap-3 lg:grid-cols-2'>
+						{/* search */}
+						<div className='space-y-1 col-span-2'>
 							<Label>Поиск</Label>
 							<Input
 								defaultValue={q}
@@ -99,6 +103,23 @@ export const FilterCard: FC<IProps> = ({ className, role }) => {
 									{distinctSpecialties.map((s) => (
 										<SelectItem key={s as string} value={s as string}>
 											{s}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className='space-y-1'>
+							<Label>Тип модуля</Label>
+							<Select defaultValue={typeFilter} name='type'>
+								<SelectTrigger className='w-full'>
+									<SelectValue placeholder='Выберите тип модуля' />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='ALL'>Все типы модулей</SelectItem>
+									{Object.values(RupTypeEnum).map((t) => (
+										<SelectItem key={t as string} value={t as string}>
+											{normalizeRupType(t)}
 										</SelectItem>
 									))}
 								</SelectContent>

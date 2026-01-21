@@ -31,8 +31,9 @@ export default function RootLayout({
 					<QueryProvider>
 						<ASidebarProvider>
 							<AuthInitializer />
+
 							<ASidebar />
-							<SidebarInset className='flex flex-col justify-between'>
+							<SidebarInset className='flex-1 min-w-0 overflow-x-hidden justify-between items-stretch'>
 								{children}
 
 								<Toaster position='top-right' />

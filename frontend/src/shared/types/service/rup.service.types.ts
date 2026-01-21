@@ -28,7 +28,6 @@ export type ICreateDiscipline = Omit<IDiscipline, 'totalHours' | 'semesters' | '
 
 export interface ICreateRupRequest {
 	name: string
-	code: string
 
 	type: RupTypeEnum
 	course: number

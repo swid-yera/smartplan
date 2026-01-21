@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_CkfPCV3vRF
 createdAt: 2026-01-16T10:10:46.214015500
-updatedAt: 2026-01-20T12:45:00.932597400
+updatedAt: 2026-01-20T20:07:21.754438400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_XZaE2gEbts
 authentication: {}
@@ -23,5 +23,13 @@ headers:
 method: GET
 name: teachers
 sortPriority: 3000.0
-url: ${[ url ]}/api/rups/teacher/:id
-urlParameters: []
+url: ${[ url ]}/rups/teacher/:teacher-id
+urlParameters:
+- enabled: true
+  name: :teacher-id
+  value: f2546909-a510-49e7-9185-bd576e76784c
+  id: F5tRgf5uT8
+- enabled: true
+  name: ''
+  value: ''
+  id: 8TibtKHBj0

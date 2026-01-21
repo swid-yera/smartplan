@@ -86,7 +86,7 @@ const Page: FC = () => {
 		setIsDeleteDialogOpen(false)
 
 		const toastId = `rup-${rupData.id}-delete`
-		const rupName = rupData.code || 'РУП'
+		const rupName = rupData.name || 'РУП'
 
 		toast.loading(`Удаление ${rupName}...`, { id: toastId })
 
@@ -111,7 +111,7 @@ const Page: FC = () => {
 				const link = document.createElement('a')
 
 				link.href = data.url
-				link.setAttribute('download', `RUP_${rupData?.code || 'file'}.docx`)
+				link.setAttribute('download', `RUP_${rupData?.name || 'file'}.docx`)
 				document.body.appendChild(link)
 				link.click()
 				link.remove()

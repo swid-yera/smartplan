@@ -5,12 +5,13 @@ import { type JSX, type KeyboardEvent, useEffect, useState } from 'react'
 import type { NextPage } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
+import { Loader, PageTitle } from '@components'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
 import { services } from '@services'
 import { useMutation } from '@tanstack/react-query'
 import { type ICreateRupRequest, RupTypeEnum, StudyFormEnum } from '@types'
-import { Badge, Button, Heading, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
+import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -26,21 +27,24 @@ const HIGHEST_STEP_STORAGE_KEY = 'rup-create-highest-step'
 
 const defaultValues: RUPFormData = {
 	name: '',
-	code: '',
 	type: RupTypeEnum.THEORY,
 	studyForm: StudyFormEnum.FULL_TIME,
+	studyYear: '',
+
 	basis: '',
+	goals: '',
 	competencies: '',
 	summary: '',
 	course: 0,
-	goals: '',
+
 	prerequisites: '',
 	postrequisites: '',
-	studyYear: '',
-	groupId: '',
-	contacts: [],
+
 	internetResources: [],
 	technicalResources: [],
+
+	groupId: '',
+	contacts: [],
 	disciplines: [],
 }
 
@@ -159,37 +163,46 @@ const Page: NextPage = () => {
 		// mapped disciplines
 		const mappedDisciplines = newData.disciplines.map((discipline) => ({
 			...discipline,
+			name: (discipline.name ?? '').trim(),
+
 			topics: discipline.topics.map((topic) => ({
 				...topic,
-				// Заменяем undefined на 0 для всех числовых полей
+				name: (topic.name ?? '').trim(),
+
+				// undefined to 0
 				individualHours: topic.individualHours ?? 0,
 				srspHours: topic.srspHours ?? 0,
 				srsHours: topic.srsHours ?? 0,
 			})),
 		}))
 
+		const mappedExplorationNote = {
+			basis: (newData.basis ?? '').trim(),
+			goals: (newData.goals ?? '').trim(),
+			competencies: (newData.competencies ?? '').trim(),
+			summary: '',
+
+			prerequisites: (newData.prerequisites ?? '').trim(),
+			postrequisites: (newData.postrequisites ?? '').trim(),
+
+			internetResources: newData.internetResources,
+			technicalResources: newData.technicalResources,
+		}
+
 		// mapped data
 		const mappedData: ICreateRupRequest = {
 			...newData,
+
+			name: (newData.name ?? '').trim(),
 			groups: [newData.groupId],
-			explorationNote: {
-				basis: newData.basis ?? '',
-				goals: newData.goals ?? '',
-				competencies: newData.competencies ?? '',
-				summary: '',
-
-				prerequisites: newData.prerequisites ?? '',
-				postrequisites: newData.postrequisites ?? '',
-
-				internetResources: newData.internetResources,
-				technicalResources: newData.technicalResources,
-			},
 			disciplines: mappedDisciplines,
+
+			explorationNote: mappedExplorationNote,
 		}
 
 		const toastId = `rup-create`
 
-		toast.loading(`Создание ${mappedData.code}...`, { id: toastId })
+		toast.loading(`Создание ${mappedData.name}...`, { id: toastId })
 
 		setIsSubmitting(true)
 		createMutation.mutate(
@@ -200,14 +213,14 @@ const Page: NextPage = () => {
 					window.localStorage.removeItem(LOCAL_STORAGE_KEY)
 					window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
 
-					toast.success(`${createdRup.code} успешно создан`, { id: toastId })
+					toast.success(`${createdRup.name} успешно создан`, { id: toastId })
 
 					router.push(`/rups/${createdRup.id}`)
 				},
 				onError: (err) => {
 					setIsSubmitting(false)
 
-					toast.error(`Произошла ошибка при обновлений ${mappedData.code}`, {
+					toast.error(`Произошла ошибка при обновлений ${mappedData.name}`, {
 						id: toastId,
 						description: err.message,
 					})
@@ -224,113 +237,105 @@ const Page: NextPage = () => {
 
 	return (
 		<FormProvider {...methods}>
-			{isHydrating && (
-				<div className='absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm'>
-					<div className='flex items-center gap-2 text-muted-foreground'>
-						<Loader2 className='h-6 w-6 animate-spin' />
-						<p className='text-lg'>Загрузка данных...</p>
-					</div>
-				</div>
-			)}
+			{isHydrating ? (
+				<Loader type='data' />
+			) : (
+				<form onKeyDown={handleKeyDown} onSubmit={methods.handleSubmit(onSubmit)}>
+					<Tabs className='w-full mx-auto px-4 py-6' value={currentStep} onValueChange={handleStepChange}>
+						<TabsList className='flex w-full justify-between bg-background border-0 p-0 rounded-none my-5'>
+							{tabs.map((step, index) => {
+								const isCompleted = currentStep > step.id
+								const isActive = currentStep === step.id
+								const isDisabled = index + 1 > highestStep
 
-			<form onKeyDown={handleKeyDown} onSubmit={methods.handleSubmit(onSubmit)}>
-				<Tabs className='w-full mx-auto px-4 py-6 space-y-4' value={currentStep} onValueChange={handleStepChange}>
-					<TabsList className='flex w-full justify-between bg-background border-0 p-0 rounded-none my-6'>
-						{tabs.map((step, index) => {
-							const isCompleted = currentStep > step.id
-							const isActive = currentStep === step.id
-							const isDisabled = index + 1 > highestStep
-
-							return (
-								<div key={step.id} className='relative flex flex-1 flex-col items-center'>
-									<TabsTrigger
-										className='group flex flex-col items-center gap-2 bg-transparent! border-0 p-0 shadow-none!'
-										disabled={isDisabled}
-										type='button'
-										value={step.id}
-										onClick={(e) => {
-											e.preventDefault()
-											setCurrentStep(step.id)
-										}}
-									>
-										{/* Circle */}
-										<div
-											className={cn(
-												'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors duration-300',
-												isCompleted
-													? 'bg-primary text-primary-foreground'
-													: isActive
+								return (
+									<div key={step.id} className='relative flex flex-1 flex-col items-center'>
+										<TabsTrigger
+											className='group flex flex-col items-center gap-2 bg-transparent! border-0 p-0 shadow-none!'
+											disabled={isDisabled}
+											type='button'
+											value={step.id}
+											onClick={(e) => {
+												e.preventDefault()
+												setCurrentStep(step.id)
+											}}
+										>
+											{/* Circle */}
+											<div
+												className={cn(
+													'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors duration-300',
+													isCompleted
 														? 'bg-primary text-primary-foreground'
-														: 'bg-accent text-accent-foreground',
-											)}
-										>
-											{isCompleted ? <Check className='h-5 w-5' /> : step.id}
-										</div>
+														: isActive
+															? 'bg-primary text-primary-foreground'
+															: 'bg-accent text-accent-foreground',
+												)}
+											>
+												{isCompleted ? <Check className='h-5 w-5' /> : step.id}
+											</div>
 
-										{/* Title */}
-										<div
-											className={cn(
-												'text-center text-sm font-medium transition-colors',
-												isActive || isCompleted ? 'text-primary' : 'text-accent-foreground',
-											)}
-										>
-											{step.title}
-										</div>
-									</TabsTrigger>
+											{/* Title */}
+											<div
+												className={cn(
+													'text-center text-sm font-medium transition-colors',
+													isActive || isCompleted ? 'text-primary' : 'text-accent-foreground',
+												)}
+											>
+												{step.title}
+											</div>
+										</TabsTrigger>
 
-									{/* Connector line */}
-									{index < tabs.length - 1 && (
-										<div
-											className={cn(
-												'absolute top-5 left-[calc(50%+20px)] h-0.5 w-[calc(100%-40px)] -translate-y-1/2 bg-accent transition-colors duration-300',
-												isCompleted && 'bg-primary',
-											)}
-										/>
+										{/* Connector line */}
+										{index < tabs.length - 1 && (
+											<div
+												className={cn(
+													'absolute top-5 left-[calc(50%+20px)] h-0.5 w-[calc(100%-40px)] -translate-y-1/2 bg-accent transition-colors duration-300',
+													isCompleted && 'bg-primary',
+												)}
+											/>
+										)}
+									</div>
+								)
+							})}
+						</TabsList>
+
+						{tabs.map((tab) => (
+							<TabsContent key={tab.id} className={cn(isHydrating && 'invisible')} value={tab.id}>
+								{/* heading */}
+								<PageTitle className='mb-5' description={tab.description}>
+									{tab.fullTitle} <Badge variant='outline'>Черновик</Badge>
+								</PageTitle>
+
+								{/* content */}
+								{tab.content}
+
+								<div className='flex justify-between items-center gap-4 mt-4'>
+									<Button
+										disabled={currentIndex === 0}
+										size='lg'
+										type='button'
+										variant='outline'
+										onClick={goBack}
+									>
+										<ChevronLeft /> Назад
+									</Button>
+
+									{currentIndex === tabs.length - 1 ? (
+										<Button disabled={isSubmitting} size='lg' type='submit' variant='secondary'>
+											{isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+											{isSubmitting ? 'Сохранение...' : 'Сохранить'}
+										</Button>
+									) : (
+										<Button size='lg' type='button' onClick={goNext}>
+											Далее <ChevronRight />
+										</Button>
 									)}
 								</div>
-							)
-						})}
-					</TabsList>
-
-					{tabs.map((tab) => (
-						<TabsContent key={tab.id} className={cn(isHydrating && 'invisible')} value={tab.id}>
-							{/* heading */}
-							<div className='mb-4'>
-								<Heading align='left' size='h2'>
-									{tab.fullTitle} <Badge variant='outline'>Черновик</Badge>
-								</Heading>
-								<p className='text-muted-foreground'>{tab.description}</p>
-							</div>
-
-							{/* content */}
-							{tab.content}
-
-							<div className='flex justify-between items-center gap-4 mt-4'>
-								<Button
-									disabled={currentIndex === 0}
-									size='lg'
-									type='button'
-									variant='outline'
-									onClick={goBack}
-								>
-									<ChevronLeft /> Назад
-								</Button>
-
-								{currentIndex === tabs.length - 1 ? (
-									<Button disabled={isSubmitting} size='lg' type='submit' variant='secondary'>
-										{isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-										{isSubmitting ? 'Сохранение...' : 'Сохранить'}
-									</Button>
-								) : (
-									<Button size='lg' type='button' onClick={goNext}>
-										Далее <ChevronRight />
-									</Button>
-								)}
-							</div>
-						</TabsContent>
-					))}
-				</Tabs>
-			</form>
+							</TabsContent>
+						))}
+					</Tabs>
+				</form>
+			)}
 		</FormProvider>
 	)
 }
@@ -382,7 +387,7 @@ const tabs: ITab[] = [
 		id: '3',
 		title: 'Распределение часов',
 		fullTitle: 'Распределение часов по семестру',
-		description: 'Добавьте дисциплины и распределите кредиты по семестрам',
+		description: 'Добавьте дисциплины и распределите часы по семестрам',
 		content: <Step3 />,
 	},
 	{

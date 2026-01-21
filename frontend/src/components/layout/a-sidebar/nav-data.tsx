@@ -7,7 +7,7 @@ export const navMain = [
 		icon: LayoutDashboard,
 	},
 	{
-		title: 'Модули РУП',
+		title: 'Рабочие Учебные Планы',
 		url: '/rups',
 		icon: PenIcon,
 	},

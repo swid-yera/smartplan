@@ -32,9 +32,7 @@ export interface IHours {
 
 export interface IRup {
 	id: string
-
 	name: string
-	code: string
 
 	status: RupStatusEnum
 	reason?: string
@@ -89,7 +87,6 @@ export interface ISemester {
 
 export interface IDiscipline {
 	name: string
-	code: string
 	totalHours: number
 	semesters: ISemester[]
 	topics: ITopics[]

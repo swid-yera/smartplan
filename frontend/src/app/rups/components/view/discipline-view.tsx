@@ -19,12 +19,12 @@ import {
 	TableRow,
 } from '@ui'
 
-interface DisciplineCardViewProps {
+interface IProps {
 	disciplines: IDiscipline[]
 	commentSlot?: ReactNode
 }
 
-export const DisciplineCardView: FC<DisciplineCardViewProps> = ({ disciplines = [], commentSlot }) => {
+export const DisciplineView: FC<IProps> = ({ disciplines = [], commentSlot }) => {
 	const totalModuleHours = disciplines.reduce((acc, d) => acc + d.totalHours, 0)
 
 	const semesterTotals = Array(8).fill(0)
@@ -115,10 +115,7 @@ const DisciplineRowView: FC<{ discipline: IDiscipline }> = ({ discipline }) => {
 	return (
 		<TableRow className='*:border-border [&>:not(:last-child)]:border-r'>
 			<TableCell>
-				<div className='space-y-1 min-w-64'>
-					<p className='font-medium'>{discipline.code || '—'}</p>
-					<p className='text-sm text-muted-foreground'>{discipline.name || '—'}</p>
-				</div>
+				<p className='text-sm text-muted-foreground'>{discipline.name || '—'}</p>
 			</TableCell>
 			<TableCell className='align-middle text-center w-24 font-medium'>
 				<p>{formatHours(discipline.totalHours)}</p>
