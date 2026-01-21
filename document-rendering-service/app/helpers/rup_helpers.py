@@ -26,7 +26,7 @@ def short_name(first_name: str | None, last_name: str | None) -> str:
 # lesson type
 LESSON_TYPE_MAP = {
     "COMBINED": "комбинированный",
-    "PRACTICE": "практический",
+    "PRACTICAL": "практический",
     "SNZ": "СНЗ",
 }
 

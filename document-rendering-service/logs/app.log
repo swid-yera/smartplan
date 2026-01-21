@@ -178,3 +178,29 @@ KeyError: 'name'
 2026-01-19 19:19:47,955 | INFO | document_service | generating rup document, saving document: rup module
 2026-01-19 19:19:47,969 | INFO | document_service | generating rup document, applying vertical merge: rup module
 2026-01-19 19:19:48,019 | INFO | document_service | /generate-rup, document generated successfully: C:\Users\kokimoki\eduplan\document-rendering-service\out\rup-module_2026-01-19_19-19-47.docx
+2026-01-21 11:34:21,664 | INFO | document_service | /generate-rup, request to generate document: ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet
+2026-01-21 11:34:21,666 | INFO | document_service | deleted file: C:\Users\kokimoki\eduplan\document-rendering-service\out\rup-module_2026-01-19_19-19-47.docx
+2026-01-21 11:34:21,666 | INFO | document_service | deleted success: 1, with error 0
+2026-01-21 11:34:21,668 | INFO | document_service | generating rup document, mapping data from json
+2026-01-21 11:34:21,668 | INFO | document_service | generating rup document, rendering document: ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet
+2026-01-21 11:34:21,867 | INFO | document_service | generating rup document, saving document: ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet
+2026-01-21 11:34:21,883 | INFO | document_service | generating rup document, applying vertical merge: ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet
+2026-01-21 11:34:21,982 | INFO | document_service | /generate-rup, document generated successfully: C:\Users\kokimoki\eduplan\document-rendering-service\out\pm6-obespechen_2026-01-21_11-34-21.docx
+2026-01-21 11:42:46,766 | INFO | document_service | /generate-rup, request to generate document: dfbd
+2026-01-21 11:42:46,767 | INFO | document_service | deleted file: C:\Users\kokimoki\eduplan\document-rendering-service\out\rup-module_2026-01-19_19-21-10.docx
+2026-01-21 11:42:46,767 | INFO | document_service | deleted success: 1, with error 0
+2026-01-21 11:42:46,768 | INFO | document_service | generating rup document, mapping data from json
+2026-01-21 11:42:46,768 | ERROR | document_service | /generate-rup, error while generating document
+Traceback (most recent call last):
+  File "C:\Users\kokimoki\eduplan\document-rendering-service\app\main.py", line 28, in generate_document
+    file_path = generate_rup_docx(payload)
+  File "C:\Users\kokimoki\eduplan\document-rendering-service\app\services\rup.py", line 48, in generate_rup_docx
+    "specialty": group.get("specialty"),
+                 ^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'
+2026-01-21 11:44:16,395 | INFO | document_service | /generate-rup, request to generate document: ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet
+2026-01-21 11:44:16,397 | INFO | document_service | generating rup document, mapping data from json
+2026-01-21 11:44:16,397 | INFO | document_service | generating rup document, rendering document: ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet
+2026-01-21 11:44:16,608 | INFO | document_service | generating rup document, saving document: ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet
+2026-01-21 11:44:16,623 | INFO | document_service | generating rup document, applying vertical merge: ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet
+2026-01-21 11:44:16,730 | INFO | document_service | /generate-rup, document generated successfully: C:\Users\kokimoki\eduplan\document-rendering-service\out\pm6-obespechen_2026-01-21_11-44-16.docx

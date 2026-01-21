@@ -174,15 +174,15 @@ type SemesterResponse struct {
 }
 
 type TopicResponse struct {
-	ID              uuid.UUID `json:"id"`
-	Name            string    `json:"name"`
-	Type            string    `json:"type"`
-	TotalHours      int32     `json:"totalHours"`
-	TheoryHours     int32     `json:"theoryHours"`
-	PracticeHours   int32     `json:"practiceHours"`
-	IndividualHours int32     `json:"individualHours"`
-	SrspHours       int32     `json:"srspHours"`
-	SrsHours        int32     `json:"srsHours"`
+	ID              uuid.UUID                   `json:"id"`
+	Name            string                      `json:"name"`
+	Type            storage.DisciplineTopicType `json:"type"`
+	TotalHours      int32                       `json:"totalHours"`
+	TheoryHours     int32                       `json:"theoryHours"`
+	PracticeHours   int32                       `json:"practiceHours"`
+	IndividualHours int32                       `json:"individualHours"`
+	SrspHours       int32                       `json:"srspHours"`
+	SrsHours        int32                       `json:"srsHours"`
 }
 
 type rupService struct {
@@ -1168,10 +1168,11 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 		if err != nil {
 			continue
 		}
+
 		topics = append(topics, &TopicResponse{
 			ID:              topic.ID,
 			Name:            topic.Name,
-			Type:            string(topic.Type),
+			Type:            topic.Type,
 			TotalHours:      topic.TotalHours,
 			TheoryHours:     topic.TheoryHours,
 			PracticeHours:   topic.PracticeHours,
