@@ -8,8 +8,8 @@ export * from './edit/resource-edit'
 export * from './edit/topics-edit'
 
 // ui
+export * from '../../../components/ui/rup-status-badge'
 export * from './new-rup-card'
-export * from './rup-status-badge'
 export * from './rups-filter-card'
 
 // view

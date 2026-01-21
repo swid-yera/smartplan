@@ -6,7 +6,7 @@ import { Badge } from '@ui'
 
 interface IProps extends ComponentProps<'span'> {
 	status: RupStatusEnum
-	asChild: boolean
+	asChild?: boolean
 }
 
 export const RupStatusBadge: FC<IProps> = ({ status, ...props }) => {

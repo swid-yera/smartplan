@@ -133,7 +133,7 @@ export function DisciplineEdit<T extends IProps>() {
 							<TableRow>
 								{Array.from({ length: 8 }, (_, i) => (
 									<TableHead key={i} className='text-center border-r'>
-										{i + 1}
+										<div className='w-20'>{i + 1}</div>
 									</TableHead>
 								))}
 							</TableRow>

@@ -36,7 +36,7 @@ export default function RootLayout({
 							<SidebarInset className='flex-1 min-w-0 overflow-x-hidden justify-between items-stretch'>
 								{children}
 
-								<Toaster position='top-right' />
+								<Toaster position='top-center' />
 								<Footer />
 							</SidebarInset>
 						</ASidebarProvider>

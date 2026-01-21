@@ -140,6 +140,13 @@ const Page: NextPage = () => {
 		router.push(`${pathname}?step=${newStep}`, { scroll: false })
 	}
 
+	const onReset = () => {
+		window.localStorage.removeItem(LOCAL_STORAGE_KEY)
+		window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
+
+		methods.reset(defaultValues)
+	}
+
 	const goNext = async () => {
 		const fields = stepFields[currentStep as keyof typeof stepFields]
 		const isValid = await methods.trigger(fields as (keyof RUPFormData)[], { shouldFocus: true })
@@ -310,15 +317,15 @@ const Page: NextPage = () => {
 								{tab.content}
 
 								<div className='flex justify-between items-center gap-4 mt-4'>
-									<Button
-										disabled={currentIndex === 0}
-										size='lg'
-										type='button'
-										variant='outline'
-										onClick={goBack}
-									>
-										<ChevronLeft /> Назад
-									</Button>
+									{currentIndex === 0 ? (
+										<Button size='lg' type='reset' variant='outline' onClick={onReset}>
+											Сбросить
+										</Button>
+									) : (
+										<Button size='lg' type='button' variant='outline' onClick={goBack}>
+											<ChevronLeft /> Назад
+										</Button>
+									)}
 
 									{currentIndex === tabs.length - 1 ? (
 										<Button disabled={isSubmitting} size='lg' type='submit' variant='secondary'>
