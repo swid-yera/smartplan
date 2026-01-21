@@ -81,12 +81,12 @@ func (r *AwardRepository) UpdateAwardStatus(ctx context.Context, params storage.
 	return r.queries.GetAwardByID(ctx, params.ID)
 }
 
-func (r *AwardRepository) UpdateAward(ctx context.Context, params storage.UpdateAwardParams) (*storage.Award, error) {
+func (r *AwardRepository) UpdateAward(ctx context.Context, params storage.UpdateAwardParams) (storage.Award, error) {
 	award, err := r.queries.UpdateAward(ctx, params)
 	if err != nil {
-		return nil, err
+		return storage.Award{}, err
 	}
-	return &award, nil
+	return award, nil
 }
 
 func (r *AwardRepository) DeleteAward(ctx context.Context, id uuid.UUID) error {
@@ -97,8 +97,16 @@ func (r *AwardRepository) GetAwardsByMethodist(ctx context.Context, methodist pg
 	return r.queries.GetAwardsByMethodist(ctx, methodist)
 }
 
+func (r *AwardRepository) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]storage.Award, error) {
+	return r.queries.GetAwardsByTeacher(ctx, teacher)
+}
+
 func (r *AwardRepository) CreateAwardType(ctx context.Context, params *storage.CreateAwardTypeParams) (storage.AwardType, error) {
 	return r.queries.CreateAwardType(ctx, *params)
+}
+
+func (r *AwardRepository) DeleteType(ctx context.Context, id uuid.UUID) error {
+	return r.queries.DeleteAwardType(ctx, id)
 }
 
 func (r *AwardRepository) CreateAwardTypeVariant(ctx context.Context, params *storage.CreateAwardTypesVariantParams) (storage.AwardTypeVariant, error) {

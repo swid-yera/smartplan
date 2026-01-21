@@ -100,6 +100,7 @@ func (r *Router) Init() *gin.Engine {
 			awards.GET("", r.award.GetAllAwards)
 			awards.GET("/:id", r.award.GetAwardByID)
 			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
+			awards.GET("/teacher/:id", r.award.GetAwardsByTeacher)
 
 			awards.POST("", r.award.CreateAward)
 
@@ -114,7 +115,7 @@ func (r *Router) Init() *gin.Engine {
 				awardTypes.POST("", r.award.CreateAwardType)
 				awardTypes.GET("/:id", r.award.GetAwardTypeByID)
 				awardTypes.PUT("/:id", r.award.UpdateAwardType)
-				awardTypes.DELETE("/:id", r.award.DeleteAwardType)
+				awardTypes.DELETE("/:id", r.award.DeleteType)
 			}
 		}
 

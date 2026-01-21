@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_3PEVpn4nTJ
 createdAt: 2026-01-19T12:20:28.897108600
-updatedAt: 2026-01-20T14:24:07.721712600
+updatedAt: 2026-01-21T11:06:12.393798300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -10,10 +10,9 @@ authenticationType: null
 body:
   text: |-
     {
-      "status": "DRAFT",
+      "status": "APPROVED",
       "text": "Описание награды",
-      "document": "",
-      "type": "03906968-6f88-46da-b764-5f9508abfc39"
+      "type": "4a4aecba-a02c-4141-8d48-ed8d125e8b21"
     }
 bodyType: application/json
 description: ''
@@ -29,13 +28,13 @@ headers:
 method: PUT
 name: update
 sortPriority: 1333.3333333333333
-url: ${[ url ]}/awards/:id/status
+url: ${[ url ]}/awards/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: 528d0e88-a5ef-4f43-a4af-38f92c12c63d
+  value: b6d4d62e-0ada-44f6-9b23-2942c55570ec
   id: RV9YRIbIwS
 - enabled: true
   name: ''
   value: ''
-  id: dvEQNU2KET
+  id: THxfVhch2s

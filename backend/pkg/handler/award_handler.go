@@ -177,6 +177,28 @@ func (h *AwardHandler) GetAwardsByMethodist(c *gin.Context) {
 	c.JSON(http.StatusOK, awards)
 }
 
+func (h *AwardHandler) GetAwardsByTeacher(c *gin.Context) {
+	idParam := c.Param("id")
+	teacherUUID := parseUUIDPgtype(idParam)
+
+	awards, err := h.service.GetAwardsByTeacher(c.Request.Context(), teacherUUID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Convert file keys to URLs for each award
+	for i := range awards {
+		var fileURLs []string
+		for _, fileKey := range awards[i].Files {
+			fileURLs = append(fileURLs, h.generateFileURL(fileKey))
+		}
+		awards[i].Files = fileURLs
+	}
+
+	c.JSON(http.StatusOK, awards)
+}
+
 func (h *AwardHandler) CreateAward(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
@@ -219,7 +241,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	}
 
 	// type check db exist
-	_, err = h.service.GetAwardTypeByID(c.Request.Context(), typeID)
+	_, err = h.service.GetTypeByID(c.Request.Context(), typeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check AwardType existence", "details": err.Error()})
 		return
@@ -321,7 +343,7 @@ func (h *AwardHandler) CreateAwardType(c *gin.Context) {
 }
 
 func (h *AwardHandler) GetAllAwardTypes(c *gin.Context) {
-	awardTypes, err := h.service.GetAllFullAwardTypes(c.Request.Context())
+	awardTypes, err := h.service.GetAllFullTypes(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -336,7 +358,7 @@ func (h *AwardHandler) GetAwardTypeByID(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award type ID"})
 		return
 	}
-	awardType, err := h.service.GetFullAwardTypeByID(c.Request.Context(), id)
+	awardType, err := h.service.GetTypeByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -361,7 +383,7 @@ func (h *AwardHandler) UpdateAwardType(c *gin.Context) {
 		return
 	}
 
-	awardType, err := h.service.UpdateAwardType(c.Request.Context(), id, req)
+	awardType, err := h.service.UpdateType(c.Request.Context(), id, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to update AwardType",
@@ -372,7 +394,7 @@ func (h *AwardHandler) UpdateAwardType(c *gin.Context) {
 	c.JSON(http.StatusOK, awardType)
 }
 
-func (h *AwardHandler) DeleteAwardType(c *gin.Context) {
+func (h *AwardHandler) DeleteType(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -380,7 +402,7 @@ func (h *AwardHandler) DeleteAwardType(c *gin.Context) {
 		return
 	}
 
-	err = h.service.DeleteAward(c.Request.Context(), id)
+	err = h.service.DeleteType(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

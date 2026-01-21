@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_3cAPAzLMN3
 createdAt: 2026-01-19T12:19:39.683890800
-updatedAt: 2026-01-20T14:18:56.502837600
+updatedAt: 2026-01-21T11:02:43.070617800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -18,13 +18,13 @@ headers:
 method: GET
 name: teacher
 sortPriority: 1000.001
-url: ${[ url ]}/awards/teacher/
+url: ${[ url ]}/awards/teacher/:id
 urlParameters:
-- enabled: false
+- enabled: true
   name: :id
-  value: ''
+  value: e03f5d94-1497-4514-9c92-16bb559a1cc8
   id: Wp5JyuF6G3
 - enabled: true
   name: ''
   value: ''
-  id: 3RUuuXbfem
+  id: azjiQGPgyN
