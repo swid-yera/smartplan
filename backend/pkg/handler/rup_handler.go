@@ -3,6 +3,8 @@ package handler
 import (
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
@@ -94,17 +96,37 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 
 // GetAllRups получает все RUP
 func (h *RupHandler) GetAllRups(c *gin.Context) {
-	rups, err := h.rupService.GetAllRups(c.Request.Context())
+	page := 1
+	pageSize := 10
+
+	if v := c.Query("currentPage"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if v := c.Query("pageSize"); v != "" {
+		if ps, err := strconv.Atoi(v); err == nil && ps > 0 && ps <= 100 {
+			pageSize = ps
+		}
+	}
+
+	search := strings.TrimSpace(c.Query("search"))
+
+	result, err := h.rupService.GetRupPaginated(
+		c.Request.Context(),
+		page,
+		pageSize,
+		search,
+	)
 	if err != nil {
-		h.log.WithError(err).Error("failed to get RUPs")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to get RUPs",
-			"details": err.Error(),
+			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, rups)
+	c.JSON(http.StatusOK, result)
 }
 
 // UpdateRupStatus обновляет статус RUP
@@ -296,4 +318,34 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "RUP deleted successfully"})
+}
+func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "")
+	pageSizeStr := c.DefaultQuery("pageSize", "10")
+	search := c.DefaultQuery("search", "")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 {
+		pageSize = 10
+	}
+
+	log.Println("PAGE:", page, "PAGE_SIZE:", pageSize) // 🔥 ОБЯЗАТЕЛЬНО
+
+	resp, err := h.rupService.GetRupPaginated(
+		c.Request.Context(),
+		page,
+		pageSize,
+		search,
+	)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, resp)
 }

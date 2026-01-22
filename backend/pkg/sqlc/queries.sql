@@ -238,7 +238,38 @@ VALUES (
     ) RETURNING *;
 
 -- name: GetAllRups :many
-SELECT * FROM rups ORDER BY created_at DESC;
+SELECT * FROM rups ORDER BY created_at DESC LIMIT $1 OFFSET $2;
+
+-- name: GetRupsPaginated :many
+SELECT *
+FROM rups
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND id = $1::uuid
+        ) OR
+        COALESCE(name, '') ILIKE '%' || $1 || '%'
+    )
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
+-- name: CountRupsFiltered :one
+SELECT COUNT(*)
+FROM rups
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND id = $1::uuid
+        ) OR
+        COALESCE(name, '') ILIKE '%' || $1 || '%'
+    );
+
+-- name: CountRups :one
+SELECT COUNT(*) FROM rups;
 
 -- name: GetRupsByID :one
 SELECT * FROM rups WHERE id = $1;
