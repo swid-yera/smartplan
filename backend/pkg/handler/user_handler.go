@@ -35,12 +35,12 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 }
 
 func (h *UserHandler) GetUsers(c *gin.Context) {
-	page := 1
+	currentPage := 1
 	pageSize := 10
 
 	if v := c.Query("currentPage"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
-			page = p
+			currentPage = p
 		}
 	}
 
@@ -54,7 +54,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 
 	result, err := h.userService.GetUsersPaginated(
 		c.Request.Context(),
-		page,
+		currentPage,
 		pageSize,
 		search,
 	)

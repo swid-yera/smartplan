@@ -21,14 +21,11 @@ import (
 type RupService interface {
 	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
-	GetAllRups(ctx context.Context, limit int32, offset int32) ([]*ListAllRupsResponse, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string, methodistID uuid.UUID) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
-	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
-	GetRupsByTeacher(ctx context.Context, teacherID uuid.UUID) ([]*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
-	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string) (*PaginatedRupsResponse, error)
+	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (*PaginatedRupsResponse, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
@@ -215,9 +212,9 @@ type rupService struct {
 }
 
 type GetRupsInput struct {
-	Search string
-	Page   int
-	Limit  int
+	Search      string
+	currentPage int
+	Limit       int
 
 	UserID uuid.UUID
 	Role   string // teacher | methodist | admin
@@ -285,25 +282,6 @@ func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse
 	}
 
 	return s.buildRupResponse(ctx, *rup)
-}
-
-func (s *rupService) GetAllRups(ctx context.Context, limit int32, offset int32) ([]*ListAllRupsResponse, error) {
-	rups, err := s.repo.GetAllRups(ctx, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-
-	responses := make([]*ListAllRupsResponse, 0, len(rups))
-
-	for _, rup := range rups {
-		resp, err := s.buildListAllRupsResponse(ctx, rup)
-		if err != nil {
-			continue
-		}
-		responses = append(responses, resp)
-	}
-
-	return responses, nil
 }
 
 func (s *rupService) UpdateRupStatus(
@@ -582,48 +560,6 @@ func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID) (strin
 		objectName,
 		10*time.Minute,
 	)
-}
-
-func (s *rupService) GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error) {
-	methodistUUID := pgtype.UUID{Bytes: methodistID, Valid: true}
-	rups, err := s.repo.GetRupsByMethodist(ctx, methodistUUID)
-	if err != nil {
-		return nil, err
-	}
-
-	// if empty, len will be 0, json return [] not null
-	responses := make([]*RupResponse, 0, len(rups))
-
-	for _, rup := range rups {
-		response, err := s.buildRupResponse(ctx, rup)
-		if err != nil {
-			continue // Skip failed conversions
-		}
-		responses = append(responses, response)
-	}
-
-	return responses, nil
-}
-
-func (s *rupService) GetRupsByTeacher(ctx context.Context, teacherID uuid.UUID) ([]*RupResponse, error) {
-	teacherUUID := pgtype.UUID{Bytes: teacherID, Valid: true}
-	rups, err := s.repo.GetRupsByTeacher(ctx, teacherUUID)
-	if err != nil {
-		return nil, err
-	}
-
-	// if empty, len will be 0, json return [] not null
-	responses := make([]*RupResponse, 0, len(rups))
-
-	for _, rup := range rups {
-		response, err := s.buildRupResponse(ctx, rup)
-		if err != nil {
-			continue // Skip failed conversions
-		}
-		responses = append(responses, response)
-	}
-
-	return responses, nil
 }
 
 func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {
@@ -1209,13 +1145,16 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 func (s *rupService) CountRups(ctx context.Context) (int64, error) {
 	return s.repo.CountRups(ctx)
 }
+
 func (s *rupService) GetRupPaginated(
 	ctx context.Context,
 	currentPage int,
 	pageSize int,
 	search string,
+	teacher pgtype.UUID,
+	methodist pgtype.UUID,
+	status []string,
 ) (*PaginatedRupsResponse, error) {
-
 	if currentPage < 1 {
 		currentPage = 1
 	}
@@ -1225,7 +1164,13 @@ func (s *rupService) GetRupPaginated(
 
 	offset := (currentPage - 1) * pageSize
 
-	total, err := s.repo.CountRupsFiltered(ctx, search)
+	total, err := s.repo.CountRupsFiltered(
+		ctx,
+		search,
+		teacher,
+		methodist,
+		status, // 👈 всё ещё строки
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1235,6 +1180,9 @@ func (s *rupService) GetRupPaginated(
 		int32(pageSize),
 		int32(offset),
 		search,
+		teacher,
+		methodist,
+		status,
 	)
 	if err != nil {
 		return nil, err
@@ -1242,13 +1190,10 @@ func (s *rupService) GetRupPaginated(
 
 	rups := make([]*ListAllRupsResponse, 0, len(dbRups))
 	for _, rup := range dbRups {
-
 		resp, err := s.buildListAllRupsResponse(ctx, rup)
-		if err != nil {
-			continue
+		if err == nil {
+			rups = append(rups, resp)
 		}
-
-		rups = append(rups, resp)
 	}
 
 	pages := int(math.Ceil(float64(total) / float64(pageSize)))

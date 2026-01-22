@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
 )
 
@@ -92,41 +92,6 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, rup)
-}
-
-// GetAllRups получает все RUP
-func (h *RupHandler) GetAllRups(c *gin.Context) {
-	page := 1
-	pageSize := 10
-
-	if v := c.Query("currentPage"); v != "" {
-		if p, err := strconv.Atoi(v); err == nil && p > 0 {
-			page = p
-		}
-	}
-
-	if v := c.Query("pageSize"); v != "" {
-		if ps, err := strconv.Atoi(v); err == nil && ps > 0 && ps <= 100 {
-			pageSize = ps
-		}
-	}
-
-	search := strings.TrimSpace(c.Query("search"))
-
-	result, err := h.rupService.GetRupPaginated(
-		c.Request.Context(),
-		page,
-		pageSize,
-		search,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
 }
 
 // UpdateRupStatus обновляет статус RUP
@@ -238,65 +203,6 @@ func (h *RupHandler) DownloadRup(c *gin.Context) {
 	// c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-// GetRupsByMethodist получает RUP по методисту
-func (h *RupHandler) GetRupsByMethodist(c *gin.Context) {
-	methodistIDStr := c.Param("id")
-	log.Println(methodistIDStr)
-	if methodistIDStr == "" {
-		h.log.Error("methodist ID is required")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "methodist ID is required"})
-		return
-	}
-
-	methodistID, err := uuid.Parse(methodistIDStr)
-	if err != nil {
-		h.log.WithError(err).Error("invalid methodist ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid methodist ID"})
-		return
-	}
-
-	rups, err := h.rupService.GetRupsByMethodist(c.Request.Context(), methodistID)
-	if err != nil {
-		h.log.WithError(err).Error("failed to get RUPs by methodist")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to get RUPs by methodist",
-			"details": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, rups)
-}
-
-// GetRupsByTeacher получает RUP по преподавателю
-func (h *RupHandler) GetRupsByTeacher(c *gin.Context) {
-	teacherIDStr := c.Param("id")
-	if teacherIDStr == "" {
-		h.log.Error("teacher ID is required")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "teacher ID is required"})
-		return
-	}
-
-	teacherID, err := uuid.Parse(teacherIDStr)
-	if err != nil {
-		h.log.WithError(err).Error("invalid teacher ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher ID"})
-		return
-	}
-
-	rups, err := h.rupService.GetRupsByTeacher(c.Request.Context(), teacherID)
-	if err != nil {
-		h.log.WithError(err).Error("failed to get RUPs by teacher")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to get RUPs by teacher",
-			"details": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, rups)
-}
-
 // DeleteRup удаляет RUP по ID
 func (h *RupHandler) DeleteRup(c *gin.Context) {
 	idStr := c.Param("id")
@@ -319,33 +225,64 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "RUP deleted successfully"})
 }
+
 func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
-	pageStr := c.DefaultQuery("page", "")
-	pageSizeStr := c.DefaultQuery("pageSize", "10")
-	search := c.DefaultQuery("search", "")
+	currentPage := 1
+	pageSize := 10
 
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		page = 1
+	// status=APPROVED,REJECTED
+	var statuses []string
+	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
+		statuses = strings.Split(raw, ",")
 	}
 
-	pageSize, err := strconv.Atoi(pageSizeStr)
-	if err != nil || pageSize < 1 {
-		pageSize = 10
+	if v := c.Query("currentPage"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			currentPage = p
+		}
 	}
 
-	log.Println("PAGE:", page, "PAGE_SIZE:", pageSize) // 🔥 ОБЯЗАТЕЛЬНО
+	if v := c.Query("pageSize"); v != "" {
+		if ps, err := strconv.Atoi(v); err == nil && ps <= 100 {
+			pageSize = ps
+		}
+	}
 
-	resp, err := h.rupService.GetRupPaginated(
+	search := strings.TrimSpace(c.Query("search"))
+
+	var teacherID pgtype.UUID
+	if v := c.Query("teacher"); v != "" {
+		id, err := uuid.Parse(v)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "invalid teacher id"})
+			return
+		}
+		teacherID = pgtype.UUID{Bytes: id, Valid: true}
+	}
+
+	var methodistID pgtype.UUID
+	if v := c.Query("methodist"); v != "" {
+		id, err := uuid.Parse(v)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "invalid methodist id"})
+			return
+		}
+		methodistID = pgtype.UUID{Bytes: id, Valid: true}
+	}
+
+	result, err := h.rupService.GetRupPaginated(
 		c.Request.Context(),
-		page,
+		currentPage,
 		pageSize,
 		search,
+		teacherID,
+		methodistID,
+		statuses, // 👈 ВСЕГДА []string
 	)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, resp)
+	c.JSON(200, result)
 }

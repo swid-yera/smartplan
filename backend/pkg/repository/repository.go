@@ -30,9 +30,8 @@ type Auth interface {
 type Rup interface {
 	CreateRup(ctx context.Context, params storage.CreateRupsParams) (*storage.Rup, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Rup, error)
-	GetAllRups(ctx context.Context, limit int32, offset int32) ([]storage.Rup, error)
-	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodist pgtype.UUID) error
-	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Rup, error)
+	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error
+	UpdateRup(ctx context.Context, params storage.UpdateRupParams) (*storage.Rup, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 
 	// Additional methods for related entities
@@ -49,6 +48,10 @@ type Rup interface {
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*storage.RupResource, error)
 	GetSemesterByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineSemester, error)
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
+
+	CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
+	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
+	CountRups(ctx context.Context) (int64, error)
 }
 
 type Lessons interface {

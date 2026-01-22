@@ -241,17 +241,19 @@ VALUES (
 SELECT * FROM rups ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 
 -- name: GetRupsPaginated :many
-SELECT *
-FROM rups
-WHERE
+SELECT * 
+FROM rups WHERE 
     (
-        $1 = '' OR
-        (
-            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND id = $1::uuid
-        ) OR
-        COALESCE(name, '') ILIKE '%' || $1 || '%'
-    )
+        $1 = '' 
+        OR name ILIKE '%' || $1 || '%'
+    ) 
+    AND (
+        sqlc.narg('teacher')::uuid IS NULL 
+        OR teacher = sqlc.narg('teacher')::uuid
+    ) AND (
+        sqlc.narg('methodist')::uuid IS NULL 
+        OR methodist = sqlc.narg('methodist')::uuid
+    )AND status = ANY(sqlc.arg(status)::text[]::rups_status[])
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -260,13 +262,22 @@ SELECT COUNT(*)
 FROM rups
 WHERE
     (
-        $1 = '' OR
-        (
-            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        $1 = ''
+        OR name ILIKE '%' || $1 || '%'
+        OR (
+            $1 ~* '^[0-9a-f-]{36}$'
             AND id = $1::uuid
-        ) OR
-        COALESCE(name, '') ILIKE '%' || $1 || '%'
-    );
+        )
+    )
+    AND (
+        sqlc.narg('teacher')::uuid IS NULL
+        OR teacher = sqlc.narg('teacher')::uuid
+    )
+    AND (
+        sqlc.narg('methodist')::uuid IS NULL
+        OR methodist = sqlc.narg('methodist')::uuid
+    )
+    AND status = ANY(sqlc.arg(status)::text[]::rups_status[]);
 
 -- name: CountRups :one
 SELECT COUNT(*) FROM rups;
@@ -339,6 +350,44 @@ VALUES (
 
 -- name: GetAllAwards :many
 SELECT * FROM awards;
+
+-- name: GetAwardsPaginated :many
+SELECT * FROM awards
+WHERE
+    (
+        sqlc.narg('teacher')::uuid IS NULL
+        OR teacher = sqlc.narg('teacher')::uuid
+    )
+    AND (
+        sqlc.narg('methodist')::uuid IS NULL
+        OR methodist = sqlc.narg('methodist')::uuid
+    )
+    AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::awards_status[])
+    )
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountAwardsFiltered :one
+SELECT COUNT(*)
+FROM awards
+WHERE
+    (
+        sqlc.narg('teacher')::uuid IS NULL
+        OR teacher = sqlc.narg('teacher')::uuid
+    )
+    AND (
+        sqlc.narg('methodist')::uuid IS NULL
+        OR methodist = sqlc.narg('methodist')::uuid
+    )
+    AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::awards_status[])
+    );
+
+-- name: CountAwards :one
+SELECT COUNT(*) FROM awards;
 
 -- name: GetAwardByID :one
 SELECT * FROM awards WHERE id = $1;
