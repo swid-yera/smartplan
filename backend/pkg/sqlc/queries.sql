@@ -476,3 +476,114 @@ DELETE FROM groups
 WHERE keycloak_id NOT IN (
     SELECT unnest($1::uuid[])
 );
+
+-- name: CerateLessons :one
+INSERT INTO
+    lessons (
+        rup_name,
+        discipline_name,
+        topic_name,
+        teacher_id, 
+        event_date,
+        group_id,
+        type,
+        goals,
+        tasks,
+        expected,
+        internet_resources,
+        technical_resources
+)VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10,
+        $11,
+        $12
+    ) RETURNING id;
+
+-- name: UpdateLesson :exec
+UPDATE lessons
+SET
+    rup_name = $2, 
+    discipline_name = $3,
+    topic_name = $4,
+    event_date = $5,
+    group_id = $6,
+    type = $7,
+    goals = $8,
+    tasks = $9,
+    expected = $10,
+    internet_resources = $11,
+    technical_resources = $12,
+    updated_at = NOW()
+WHERE
+    id = $1;
+
+-- name: GetLessonByID :one
+SELECT * FROM lessons WHERE id = $1;
+
+-- name: GetLessons :many
+SELECT * FROM lessons
+WHERE
+    event_date >= $1 AND
+    event_date <= $2
+ORDER BY event_date DESC
+LIMIT $3 OFFSET $4;
+
+-- name: GetLessonsTeacher :many
+SELECT * FROM lessons
+WHERE
+    teacher_id = $1 AND
+    event_date >= $2 AND
+    event_date <= $3
+ORDER BY event_date DESC
+LIMIT $4 OFFSET $5;
+
+-- name: DeleteLesson :exec
+DELETE FROM lessons WHERE id = $1;
+
+-- name: CreateLessonProgress :one
+INSERT INTO
+    lesson_progress (
+        lesson_id,
+        name,
+        start_minute,
+        end_minute,
+        content
+) VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5
+    ) RETURNING id;
+
+-- name: UpdateLessonProgress :exec
+UPDATE lesson_progress
+SET
+    name = $2,
+    start_minute = $3,
+    end_minute = $4,
+    content = $5
+WHERE
+    id = $1;
+
+-- name: GetLessonProgressByID :one
+SELECT * FROM lesson_progress WHERE id = $1;
+
+-- name: GetLessonProgressByLessonID :many
+SELECT * FROM lesson_progress
+WHERE
+    lesson_id = $1
+ORDER BY name ASC;
+
+-- name: DeleteLessonProgress :exec
+DELETE FROM lesson_progress WHERE id = $1;
+
+
