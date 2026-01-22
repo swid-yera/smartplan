@@ -6,6 +6,7 @@ import (
 	storage "eduplan/backend/pkg/sqlc/generated"
 	"fmt"
 	"io"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,6 +50,11 @@ type AwardResponse struct {
 type SelectedTypeResponse struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
+}
+
+type PaginatedAwardsResponse struct {
+	Data []storage.Award `json:"data"`
+	Meta PaginationMeta  `json:"meta"`
 }
 
 type SelectedVariantResponse struct {
@@ -657,4 +663,65 @@ func (s *AwardService) UploadFile(ctx context.Context, fileName string, reader i
 
 func (s *AwardService) GetFileDownloadURL(ctx context.Context, key string) (string, error) {
 	return s.fileStorage.GetDownloadFileURL(ctx, key, 10*time.Minute)
+}
+
+func (s *AwardService) CountAwards(ctx context.Context) (int64, error) {
+	return s.repo.CountAwards(ctx)
+}
+
+func (s *AwardService) GetAwardPaginated(
+	ctx context.Context,
+	currentPage int,
+	pageSize int,
+	teacher pgtype.UUID,
+	methodist pgtype.UUID,
+	status []string,
+) (*PaginatedAwardsResponse, error) {
+	if currentPage < 1 {
+		currentPage = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	// 👇 КРИТИЧЕСКИЙ ФИКС
+	if len(status) == 0 {
+		status = nil
+	}
+
+	offset := (currentPage - 1) * pageSize
+
+	total, err := s.repo.CountAwardsFiltered(
+		ctx,
+		teacher,
+		methodist,
+		status,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	dbAwards, err := s.repo.GetAwardsPaginated(
+		ctx,
+		int32(pageSize),
+		int32(offset),
+		teacher,
+		methodist,
+		status,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	pages := int(math.Ceil(float64(total) / float64(pageSize)))
+
+	return &PaginatedAwardsResponse{
+		Data: dbAwards,
+		Meta: PaginationMeta{
+			CurrentPage: currentPage,
+			Pages:       pages,
+			Total:       int(total),
+			PageSize:    pageSize,
+		},
+	}, nil
 }

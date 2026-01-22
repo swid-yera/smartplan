@@ -351,6 +351,44 @@ VALUES (
 -- name: GetAllAwards :many
 SELECT * FROM awards;
 
+-- name: GetAwardsPaginated :many
+SELECT * FROM awards
+WHERE
+    (
+        sqlc.narg('teacher')::uuid IS NULL
+        OR teacher = sqlc.narg('teacher')::uuid
+    )
+    AND (
+        sqlc.narg('methodist')::uuid IS NULL
+        OR methodist = sqlc.narg('methodist')::uuid
+    )
+    AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::awards_status[])
+    )
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountAwardsFiltered :one
+SELECT COUNT(*)
+FROM awards
+WHERE
+    (
+        sqlc.narg('teacher')::uuid IS NULL
+        OR teacher = sqlc.narg('teacher')::uuid
+    )
+    AND (
+        sqlc.narg('methodist')::uuid IS NULL
+        OR methodist = sqlc.narg('methodist')::uuid
+    )
+    AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::awards_status[])
+    );
+
+-- name: CountAwards :one
+SELECT COUNT(*) FROM awards;
+
 -- name: GetAwardByID :one
 SELECT * FROM awards WHERE id = $1;
 
