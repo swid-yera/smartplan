@@ -1,16 +1,31 @@
+import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
-import type { IDownloadResponse, IMessageResponse, IRup, IUpdateRupRequest, IUpdateRupStatusRequest } from '@types'
+import type {
+	IDownloadResponse,
+	IMessageResponse,
+	IPagination,
+	IPaginationRequest,
+	IRup,
+	IUpdateRupRequest,
+	IUpdateRupStatusRequest,
+} from '@types'
 
 export class RupService {
 	// get all
-	getAllOptions = () => {
-		return queryOptions<IRup[]>({
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '' }: IPaginationRequest) => {
+		return queryOptions<IPagination<IRup>>({
 			queryKey: ['rups'],
 			queryFn: async () => {
-				const { data } = await api.get<IRup[]>('/rups')
+				const { data } = await api.get<IPagination<IRup>>('/rups', {
+					params: {
+						currentPage,
+						pageSize,
+						search,
+					},
+				})
 
-				if (!data) return []
+				if (!data) return { data: [], meta: generateEmptyMetaPagination() }
 
 				return data
 			},

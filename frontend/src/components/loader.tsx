@@ -6,9 +6,10 @@ import { EthernetPort, FileText, Image as ImageIcon } from 'lucide-react'
 
 interface IProps extends ComponentProps<'div'> {
 	type?: 'file' | 'image' | 'data' | 'default'
+	fullScreen?: boolean
 }
 
-export const Loader: FC<IProps> = ({ type = 'default', className, ...props }) => {
+export const Loader: FC<IProps> = ({ type = 'default', className, fullScreen = true, ...props }) => {
 	let content
 	let message
 
@@ -30,6 +31,15 @@ export const Loader: FC<IProps> = ({ type = 'default', className, ...props }) =>
 			content = <Spinner className='size-10 text-primary' />
 			message = 'Загрузка...'
 			break
+	}
+
+	if (!fullScreen) {
+		return (
+			<div className={className} {...props}>
+				{content}
+				<p className='text-muted-foreground text-lg'>{message}</p>
+			</div>
+		)
 	}
 
 	return (

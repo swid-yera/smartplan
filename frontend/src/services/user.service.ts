@@ -1,16 +1,23 @@
+import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { queryOptions } from '@tanstack/react-query'
-import type { IUser } from '@types'
+import type { IPagination, IPaginationRequest, IUser } from '@types'
 
 export class UserService {
 	// get all
-	getAllOptions = () => {
-		return queryOptions<IUser[]>({
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '' }: IPaginationRequest) => {
+		return queryOptions<IPagination<IUser>>({
 			queryKey: ['users'],
 			queryFn: async () => {
-				const { data } = await api.get<IUser[]>('/users')
+				const { data } = await api.get<IPagination<IUser>>('/users', {
+					params: {
+						currentPage,
+						pageSize,
+						search,
+					},
+				})
 
-				if (!data) return []
+				if (!data) return { data: [], meta: generateEmptyMetaPagination() }
 
 				return data
 			},

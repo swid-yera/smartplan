@@ -2,7 +2,7 @@ import { type FC, type ReactNode, useState } from 'react'
 
 import { PageTitle, RupStatusBadge } from '@components'
 import { formatHours, hasRole, normalizeStudyForm } from '@helpers'
-import { type IRup, RupStatusEnum, UserRoleEnum } from '@types'
+import { type IRup, StatusEnum, UserRoleEnum } from '@types'
 import {
 	Button,
 	ButtonGroup,
@@ -24,14 +24,14 @@ import { BasicView } from '../components/view/basic-view'
 interface IRupViewProps {
 	data: IRup
 	role: UserRoleEnum
-	onStatusChange: (newStatus: RupStatusEnum, reason?: string) => void
+	onStatusChange: (newStatus: StatusEnum, reason?: string) => void
 	actions?: ReactNode
 }
 
 export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions }) => {
 	const [generalComment, setGeneralComment] = useState('')
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
-	const isMethodistReview = hasRole(role, UserRoleEnum.METHODIST, true) && data.status === RupStatusEnum.IN_REVIEW
+	const isMethodistReview = hasRole(role, UserRoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
 
 	console.log(data)
 
@@ -57,7 +57,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 									className='hover:text-primary'
 									size='sm'
 									variant='outline'
-									onClick={() => onStatusChange(RupStatusEnum.APPROVED)}
+									onClick={() => onStatusChange(StatusEnum.APPROVED)}
 								>
 									<CheckCircle className='mr-2 h-4 w-4' />
 									Утвердить
@@ -79,7 +79,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 			</PageTitle>
 
 			<div className='space-y-6 px-4 py-6'>
-				{data.status === RupStatusEnum.REJECTED && (
+				{data.status === StatusEnum.REJECTED && (
 					<div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive'>
 						<div className='flex items-center gap-2 font-medium'>
 							<ShieldAlert className='h-5 w-5' />
@@ -181,7 +181,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 
 									return
 								}
-								onStatusChange(RupStatusEnum.REJECTED, generalComment)
+								onStatusChange(StatusEnum.REJECTED, generalComment)
 								setIsRejectSheetOpen(false)
 							}}
 						>

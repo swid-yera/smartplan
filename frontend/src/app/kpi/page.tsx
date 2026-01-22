@@ -1,24 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { Loader, PageTitle } from '@components'
+import { hasRole } from '@helpers'
+import { useAuthStore } from '@store'
+import { UserRoleEnum } from '@types'
 
-import { Button } from '@ui'
-
-import { MethodistView } from './components/methodist-view'
-import { TeacherView } from './components/teacher-view'
+import { CreateCard, HeroCard } from './components'
 
 const Page = () => {
-	const [role, setRole] = useState<'teacher' | 'methodist'>('methodist')
+	const { user, authLoading } = useAuthStore()
+
+	if (!user || authLoading) return <Loader type='data' />
+
+	const isMethodist = hasRole(user.role, UserRoleEnum.METHODIST, false)
 
 	return (
-		<div className='space-y-4'>
-			<div className='flex justify-end px-4 pt-4'>
-				<Button variant='outline' onClick={() => setRole((r) => (r === 'teacher' ? 'methodist' : 'teacher'))}>
-					Переключить на {role === 'teacher' ? 'Методиста' : 'Преподавателя'}
-				</Button>
+		<section className='p-4 w-full'>
+			<PageTitle description='Рейтинг преподавателей'>KPI</PageTitle>
+
+			<div className='grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.7fr)] mt-4'>
+				<HeroCard className={isMethodist ? 'col-span-2' : 'col-span-1'} />
+				{!isMethodist && <CreateCard />}
 			</div>
-			{role === 'methodist' ? <MethodistView /> : <TeacherView />}
-		</div>
+		</section>
 	)
 }
 

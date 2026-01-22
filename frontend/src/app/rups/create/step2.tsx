@@ -10,8 +10,8 @@ import { ContactsEdit, ResourceEdit } from '../components'
 export const Step2: FC = () => {
 	const { authLoading, user } = useAuthStore()
 
-	const { data: teachersData = [], isLoading } = useQuery({
-		...services.user.getAllOptions(),
+	const { data: teachersData, isLoading } = useQuery({
+		...services.user.getAllOptions({ currentPage: 1, pageSize: 100, search: '' }),
 		enabled: true,
 	})
 
@@ -19,7 +19,7 @@ export const Step2: FC = () => {
 
 	return (
 		<div className='w-full space-y-5'>
-			<ContactsEdit creatorId={user.keycloakId} teachersData={teachersData} />
+			<ContactsEdit creatorId={user.keycloakId} teachersData={teachersData?.data || []} />
 
 			<div className='grid xl:grid-cols-2 gap-4'>
 				{/* internet  */}

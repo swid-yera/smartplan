@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-
 import type { NextPage } from 'next'
 import { notFound } from 'next/navigation'
 
@@ -17,23 +15,21 @@ import { NewCard, RupsFilterCard } from './components/'
 const Page: NextPage = () => {
 	const { authLoading, user } = useAuthStore()
 
-	// states
-	const [currentPage, setCurrentPage] = useState(1)
-
 	// queries
-	const { data: allRups = [], isLoading } = useQuery({
-		...services.rup.getAllOptions(),
+	const { data: rupsData, isLoading } = useQuery({
+		...services.rup.getAllOptions({ currentPage: 1, pageSize: 10 }),
 		enabled: !authLoading && !!user,
 	})
 
-	if (isLoading || authLoading) return <Loader />
+	const setCurrentPage = (newPage: number) => {
+		console.log(newPage)
+	}
+
+	if (authLoading) return <Loader />
 	if (!user) return notFound()
 
 	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER, false)
 	const canCreate = hasRole(user.role, UserRoleEnum.TEACHER, true)
-
-	const totalPages = Math.ceil(allRups.length / 10)
-	const paginatedRups = allRups.slice((currentPage - 1) * 10, currentPage * 10)
 
 	return (
 		<div className='space-y-6 p-6'>
@@ -60,10 +56,11 @@ const Page: NextPage = () => {
 			</div>
 
 			<RupsCard
-				currentPage={currentPage}
-				rups={paginatedRups}
+				currentPage={rupsData?.meta.currentPage || 1}
+				isLoading={isLoading}
+				rups={rupsData?.data || []}
 				title={isTeacher ? 'Мои рабочие учебные планы' : 'Все рабочие учебные планы'}
-				totalPages={totalPages}
+				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>
 		</div>
