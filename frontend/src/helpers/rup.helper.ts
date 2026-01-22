@@ -1,5 +1,10 @@
+import type { ForwardRefExoticComponent, RefAttributes } from 'react'
+
 import { cn } from '@lib'
 import type { ICreateDiscipline, IDiscipline, RupStatusEnum, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
+import type { badgeVariants } from '@ui'
+import type { VariantProps } from 'class-variance-authority'
+import { Ban, CheckCheck, Combine, FlaskConical, type LucideProps, NotebookPen, Pencil, TextSearch } from 'lucide-react'
 
 // status
 export const rupStatusLabels: Record<RupStatusEnum, string> = {
@@ -9,7 +14,17 @@ export const rupStatusLabels: Record<RupStatusEnum, string> = {
 	REJECTED: 'Отклонен',
 }
 
-export const rupStatusVariants: Record<RupStatusEnum, 'default' | 'destructive' | 'outline' | 'secondary'> = {
+export const rupStatusIcons: Record<
+	RupStatusEnum,
+	ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>
+> = {
+	DRAFT: Pencil,
+	IN_REVIEW: TextSearch,
+	APPROVED: CheckCheck,
+	REJECTED: Ban,
+}
+
+export const rupStatusVariants: Record<RupStatusEnum, VariantProps<typeof badgeVariants>['variant']> = {
 	DRAFT: 'outline',
 	IN_REVIEW: 'secondary',
 	APPROVED: 'default',
@@ -45,6 +60,21 @@ export const topicTypeLabels: Record<TopicTypeEnum, string> = {
 	COMBINED: 'Комбинированный',
 	PRACTICAL: 'Практический',
 	SNZ: 'СНЗ',
+}
+
+export const topicTypeVariants: Record<TopicTypeEnum, VariantProps<typeof badgeVariants>['variant']> = {
+	COMBINED: 'default',
+	PRACTICAL: 'secondary',
+	SNZ: 'outline',
+}
+
+export const topicTypeIcons: Record<
+	TopicTypeEnum,
+	ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>
+> = {
+	COMBINED: Combine,
+	PRACTICAL: FlaskConical,
+	SNZ: NotebookPen,
 }
 
 export const normalizeTopicType = (studyForm: TopicTypeEnum): string => {

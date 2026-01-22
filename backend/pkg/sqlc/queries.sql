@@ -325,12 +325,26 @@ INSERT INTO
         status,
         teacher,
         type,
+        variant,
+        criteria,
+        bonus_criteria,
         total_points,
         text,
         files,
         links
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10
+    ) RETURNING *;
 
 -- name: GetAllAwards :many
 SELECT * FROM awards;
@@ -351,13 +365,15 @@ WHERE
 -- name: UpdateAward :one
 UPDATE awards
 SET
-    status = $2,
-    reason = $3,
-    type = $4,
-    total_points = $5,
-    text = $6,
-    files = $7,
-    links = $8,
+    reason = $2,
+    type = $3,
+    variant = $4,
+    criteria = $5,
+    bonus_criteria = $6,
+    total_points = $7,
+    text = $8,
+    files = $9,
+    links = $10,
     updated_at = NOW()
 WHERE
     id = $1 RETURNING *;

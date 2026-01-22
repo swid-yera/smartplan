@@ -357,18 +357,21 @@ func (ns NullViolationEnum) Value() (driver.Value, error) {
 }
 
 type Award struct {
-	ID          uuid.UUID          `json:"id"`
-	Status      AwardsStatus       `json:"status"`
-	Reason      pgtype.Text        `json:"reason"`
-	Methodist   pgtype.UUID        `json:"methodist"`
-	Teacher     pgtype.UUID        `json:"teacher"`
-	TotalPoints int32              `json:"total_points"`
-	Type        pgtype.UUID        `json:"type"`
-	Text        pgtype.Text        `json:"text"`
-	Files       []string           `json:"files"`
-	Links       []string           `json:"links"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID            uuid.UUID          `json:"id"`
+	Status        AwardsStatus       `json:"status"`
+	Reason        pgtype.Text        `json:"reason"`
+	Methodist     pgtype.UUID        `json:"methodist"`
+	Teacher       pgtype.UUID        `json:"teacher"`
+	TotalPoints   int32              `json:"total_points"`
+	Type          pgtype.UUID        `json:"type"`
+	Variant       pgtype.UUID        `json:"variant"`
+	Criteria      pgtype.UUID        `json:"criteria"`
+	BonusCriteria pgtype.UUID        `json:"bonus_criteria"`
+	Text          pgtype.Text        `json:"text"`
+	Files         []string           `json:"files"`
+	Links         []string           `json:"links"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
 type AwardType struct {

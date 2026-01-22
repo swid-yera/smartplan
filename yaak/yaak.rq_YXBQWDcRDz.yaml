@@ -1,0 +1,22 @@
+type: http_request
+model: http_request
+id: rq_YXBQWDcRDz
+createdAt: 2026-01-21T10:56:13.692290100
+updatedAt: 2026-01-21T10:56:29.029236700
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_KEgdPSdZmC
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: ''
+  value: ''
+  id: zvwMc7JPWp
+method: GET
+name: all
+sortPriority: 333.3333333333333
+url: ${[ url ]}/groups
+urlParameters: []

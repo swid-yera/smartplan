@@ -54,7 +54,7 @@ function Page() {
 	const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
 	if (isLoading || authLoading) {
-		return <Loader />
+		return <Loader type='data' />
 	}
 
 	return (

@@ -2,13 +2,17 @@ type: http_request
 model: http_request
 id: rq_doZXMJESQg
 createdAt: 2026-01-13T03:16:48.377937500
-updatedAt: 2026-01-20T14:23:56.261834700
+updatedAt: 2026-01-22T13:02:21.035212900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
 authenticationType: null
 body:
-  text: "{\n  \"status\": \"REJECTED\",\n  \"reason\": \"а потому что некуй\"\n  \n}"
+  text: |-
+    {
+      "status": "REJECTED",
+      "reason": "комментарий к обновлению статуса"
+    }
 bodyType: application/json
 description: ''
 headers:
@@ -23,5 +27,13 @@ headers:
 method: PUT
 name: status
 sortPriority: 2000.0
-url: ${[ url ]}/awards/528d0e88-a5ef-4f43-a4af-38f92c12c63d/status
-urlParameters: []
+url: ${[ url ]}/awards/:id/status
+urlParameters:
+- enabled: true
+  name: :id
+  value: adc47b29-f174-41e5-a6b0-daf3bf23fbcd
+  id: nGb2JTJE3E
+- enabled: true
+  name: ''
+  value: ''
+  id: m9H5bR5XPX

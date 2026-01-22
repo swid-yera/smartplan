@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UGzRzai8Bc
 createdAt: 2026-01-13T03:16:46.890644700
-updatedAt: 2026-01-19T11:58:56.880394
+updatedAt: 2026-01-22T11:39:49.241873400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -18,5 +18,5 @@ headers:
 method: GET
 name: all
 sortPriority: 0.0
-url: ${[ url ]}/awards/
+url: ${[ url ]}/awards
 urlParameters: []

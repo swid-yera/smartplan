@@ -18,7 +18,7 @@ const disciplineSchema = z.object({
 const disciplineWithTopicsSchema = disciplineSchema.extend({
 	topics: z.array(
 		z.object({
-			name: z.string().min(1, 'Называние занятия не может быть пустым'),
+			name: z.string(),
 			type: z.enum(TopicTypeEnum, {
 				error: () => ({ message: 'Выберите корректный тип занятия' }),
 			}),
