@@ -177,7 +177,7 @@ const Page: FC = () => {
 								Скачать файл
 							</Button>
 						)}
-						{isRupCreator && (
+						{isStatusForEdit && (
 							<Button
 								className='hover:text-primary'
 								size='sm'

@@ -4,7 +4,6 @@ interface InfoTableRow {
 	label: string
 	value?: ReactNode
 	subLabel?: string
-	commentSlot?: ReactNode
 }
 
 interface InfoTableProps {
@@ -12,7 +11,7 @@ interface InfoTableProps {
 	rows: InfoTableRow[]
 }
 
-export const InfoTable: FC<InfoTableProps> = ({ title, rows }) => {
+export const BasicView: FC<InfoTableProps> = ({ title, rows }) => {
 	return (
 		<div className='border rounded-md overflow-hidden bg-background'>
 			{title && <div className='px-4 py-2 text-center font-semibold text-sm border-b'>{title}</div>}
@@ -29,7 +28,6 @@ export const InfoTable: FC<InfoTableProps> = ({ title, rows }) => {
 							<td className='px-4 py-3 align-top'>
 								<div className='flex items-start justify-between gap-4'>
 									<div className='font-semibold'>{row.value || '—'}</div>
-									{row.commentSlot}
 								</div>
 							</td>
 						</tr>

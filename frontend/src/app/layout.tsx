@@ -33,7 +33,7 @@ export default function RootLayout({
 							<AuthInitializer />
 
 							<ASidebar />
-							<SidebarInset className='flex-1 min-w-0 overflow-x-hidden justify-between items-stretch'>
+							<SidebarInset className='flex-1 min-w-0 justify-between items-stretch'>
 								{children}
 
 								<Toaster position='top-center' />

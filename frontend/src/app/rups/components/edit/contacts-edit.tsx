@@ -2,6 +2,7 @@
 
 import { type FC, useEffect, useMemo, useState } from 'react'
 
+import { formatAsDash } from '@helpers'
 import type { IUser } from '@types'
 import {
 	Button,
@@ -125,7 +126,7 @@ export function ContactsEdit<T extends IProps>({
 										<TableCell>
 											<div className='flex items-center gap-2 text-muted-foreground'>
 												<Phone className='h-3 w-3' />
-												{teacher.phone || '—'}
+												{formatAsDash(teacher.phone)}
 											</div>
 										</TableCell>
 										<TableCell>

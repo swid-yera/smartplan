@@ -3,7 +3,7 @@
 import { type FC, useState } from 'react'
 
 import { AwardStatusBadge } from '@components'
-import { awardCountDocument } from '@helpers'
+import { awardCountDocument, formatAsDash } from '@helpers'
 import type { IAward } from '@types'
 import {
 	Card,
@@ -64,9 +64,9 @@ export const AwardsTable: FC<IProps> = ({ className, awards: data, isMethodist }
 
 									<TableCell>{awardCountDocument(award.images, award.document)} файл(а)</TableCell>
 
-									<TableCell>{award.methodist?.name ?? '—'}</TableCell>
+									<TableCell>{formatAsDash(award.methodist?.firstName)}</TableCell>
 
-									<TableCell>{award.teacher.name}</TableCell>
+									<TableCell>{award.teacher.firstName}</TableCell>
 
 									<TableCell>{award.createdAt}</TableCell>
 								</TableRow>

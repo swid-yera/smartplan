@@ -3,10 +3,9 @@ import { useState } from 'react'
 
 import Link from 'next/link'
 
-import { normalizeRupType, normalizeStudyForm, rupStatusLabels, rupStatusVariants } from '@helpers'
+import { formatAsDash, formatHours, normalizeStudyForm } from '@helpers'
 import { type IRup } from '@types'
 import {
-	Badge,
 	Button,
 	Card,
 	CardContent,
@@ -14,8 +13,9 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-	RupStatusBadge,
+	Separator,
 	Sheet,
+	SheetClose,
 	SheetContent,
 	SheetDescription,
 	SheetFooter,
@@ -28,7 +28,9 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ui'
-import { BookOpen, Calendar, ChevronLeft, ChevronRight, FileText, User } from 'lucide-react'
+import { BookOpen, ChevronLeft, ChevronRight, Clock, ComponentIcon, Users } from 'lucide-react'
+
+import { RupStatusBadge } from './rup-status-badge'
 
 interface IRupsProps {
 	rups: IRup[]
@@ -65,9 +67,6 @@ export const RupsCard: FC<IRupsProps> = ({ rups, currentPage, totalPages, onPage
 							</TableHeader>
 							<TableBody>
 								{rups.map((item) => {
-									const status = item.status ?? 'DRAFT'
-									const specialty = item.groups[0]?.specialty
-
 									return (
 										<TableRow
 											key={item.id}
@@ -75,15 +74,21 @@ export const RupsCard: FC<IRupsProps> = ({ rups, currentPage, totalPages, onPage
 											className='cursor-pointer hover:bg-muted/50 transition-colors'
 											onClick={() => setSelectedRup(item)}
 										>
-											<TableCell className='font-medium'>{item?.name || 'Без названия'}</TableCell>
-											<TableCell>{item?.teacher?.firstName || 'Неизвестно'}</TableCell>
-											<TableCell>{specialty || '—'}</TableCell>
-											<TableCell>{item?.groups[0]?.qualification || '—'}</TableCell>
-											<TableCell>{item?.studyYear || '—'}</TableCell>
+											<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
+												{item?.name || 'Без названия'}
+											</TableCell>
+											<TableCell className='whitespace-break-spaces min-w-[100px]'>
+												{item?.teacher?.firstName || 'Неизвестно'}
+											</TableCell>
+											<TableCell className='whitespace-break-spaces min-w-[200px]'>
+												{formatAsDash(item?.groups[0]?.specialty)}
+											</TableCell>
+											<TableCell className='whitespace-break-spaces min-w-[200px]'>
+												{formatAsDash(item?.groups[0]?.qualification)}
+											</TableCell>
+											<TableCell>{formatAsDash(item?.studyYear)}</TableCell>
 											<TableCell className='text-right'>
-												<Badge variant={rupStatusVariants[status] ?? 'default'}>
-													{rupStatusLabels[status] ?? status}
-												</Badge>
+												<RupStatusBadge status={item.status} />
 											</TableCell>
 										</TableRow>
 									)
@@ -144,70 +149,114 @@ export const RupsCard: FC<IRupsProps> = ({ rups, currentPage, totalPages, onPage
 									<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
 										<BookOpen className='w-4 h-4 mr-2' /> Основное
 									</h4>
-									<div className='grid grid-cols-2 gap-2 text-sm'>
-										<div className='font-medium'>Тип:</div>
-										<div>{normalizeRupType(selectedRup.type)}</div>
-										<div className='font-medium'>Форма обучения:</div>
-										<div>{normalizeStudyForm(selectedRup.studyForm)}</div>
-										<div className='font-medium'>Курс:</div>
-										<div>{selectedRup.course}</div>
-										<div className='font-medium'>Учебный год:</div>
-										<div>{selectedRup.studyYear}</div>
-									</div>
-								</div>
 
-								<hr className='border-gray-100 dark:border-gray-800' />
+									<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
+										<p className='font-medium'>Статус:</p>
+										<RupStatusBadge status={selectedRup.status} />
 
-								<div className='space-y-3'>
-									<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-										<User className='w-4 h-4 mr-2' /> Ответственные
-									</h4>
-									<div className='grid grid-cols-2 gap-2 text-sm'>
-										<div className='font-medium'>Преподаватель:</div>
-										<div>
-											{selectedRup.teacher?.firstName} {selectedRup.teacher?.lastName}
-										</div>
-										{selectedRup.methodist && (
+										{selectedRup?.reason && (
 											<>
-												<div className='font-medium'>Методист:</div>
-												<div>
-													{selectedRup.methodist.firstName} {selectedRup.methodist.lastName}
-												</div>
+												<p className='font-medium'>Причина отказа:</p>
+												<p>{selectedRup?.reason}</p>
 											</>
 										)}
+
+										<p className='font-medium'>Наименование:</p>
+										<p>{selectedRup.name}</p>
+
+										<p className='font-medium'>Форма обучения:</p>
+										<p>{normalizeStudyForm(selectedRup.studyForm)}</p>
 									</div>
 								</div>
 
-								<hr className='border-gray-100 dark:border-gray-800' />
+								<Separator />
 
 								<div className='space-y-3'>
 									<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-										<Calendar className='w-4 h-4 mr-2' /> Часы
+										<Users className='w-4 h-4 mr-2' /> Ответственные
 									</h4>
-									<div className='grid grid-cols-2 gap-2 text-sm'>
-										<div className='font-medium'>Всего часов:</div>
-										<div>{selectedRup.totalHours} ч.</div>
+
+									<div className='grid grid-cols-[1fr_2fr] space-y-3 text-sm'>
+										<p className='font-medium'>Преподаватель:</p>
+										<p>
+											{selectedRup.teacher ? (
+												<Link
+													className='hover:underline hover:text-primary font-semibold'
+													href={`/users/${selectedRup.teacher.keycloakId}`}
+												>
+													{selectedRup.teacher.firstName} {selectedRup.teacher.lastName}
+												</Link>
+											) : (
+												'пусто'
+											)}
+										</p>
+
+										<p className='font-medium'>Методист:</p>
+										<p>
+											{selectedRup.methodist ? (
+												<Link
+													className='hover:underline hover:text-primary font-semibold'
+													href={`/users/${selectedRup.methodist.keycloakId}`}
+												>
+													{selectedRup.methodist.firstName} {selectedRup.methodist.lastName}
+												</Link>
+											) : (
+												'пусто'
+											)}
+										</p>
 									</div>
 								</div>
 
-								{selectedRup.explorationNote && (
-									<div className='space-y-2'>
-										<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-											<FileText className='w-4 h-4 mr-2' /> Цели и задачи
-										</h4>
-										<p className='text-sm text-muted-foreground line-clamp-4'>
-											{selectedRup.explorationNote.goals ||
-												selectedRup.explorationNote.summary ||
-												'Описание отсутствует'}
-										</p>
-									</div>
+								{selectedRup.groups[0] && (
+									<>
+										<Separator />
+
+										<div className='space-y-3'>
+											<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+												<ComponentIcon className='w-4 h-4 mr-2' /> Группа
+											</h4>
+
+											<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
+												<p className='font-medium'>Называние:</p>
+												<p>{selectedRup.groups[0]?.name}</p>
+
+												<p className='font-medium'>Курс:</p>
+												<p>{selectedRup.course}</p>
+
+												<p className='font-medium'>Учебный год:</p>
+												<p>{selectedRup.studyYear}</p>
+
+												<p className='font-medium'>Специальность:</p>
+												<p>{selectedRup.groups[0]?.specialty}</p>
+
+												<p className='font-medium'>Квалификация:</p>
+												<p>{selectedRup.groups[0]?.qualification}</p>
+											</div>
+										</div>
+									</>
 								)}
+
+								<Separator />
+
+								<div className='space-y-3'>
+									<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+										<Clock className='w-4 h-4 mr-2' /> Часы
+									</h4>
+
+									<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
+										<p className='font-medium'>Всего часов:</p>
+										<p>{formatHours(selectedRup.totalHours)}</p>
+									</div>
+								</div>
 							</div>
 
 							<SheetFooter className='mt-4'>
 								<Button asChild className='w-full'>
 									<Link href={`/rups/${selectedRup.id}`}>Открыть полную страницу</Link>
 								</Button>
+								<SheetClose asChild>
+									<Button variant='outline'>Закрыть</Button>
+								</SheetClose>
 							</SheetFooter>
 						</>
 					)}

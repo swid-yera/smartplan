@@ -1,8 +1,8 @@
 'use client'
 
-import type { FC, ReactNode } from 'react'
+import type { FC } from 'react'
 
-import { formatHours } from '@helpers'
+import { formatAsDash } from '@helpers'
 import type { IDiscipline } from '@types'
 import {
 	Card,
@@ -21,10 +21,10 @@ import {
 
 interface IProps {
 	disciplines: IDiscipline[]
-	commentSlot?: ReactNode
+	rupName: string
 }
 
-export const DisciplineView: FC<IProps> = ({ disciplines = [], commentSlot }) => {
+export const DisciplineView: FC<IProps> = ({ disciplines = [], rupName }) => {
 	const totalModuleHours = disciplines.reduce((acc, d) => acc + d.totalHours, 0)
 
 	const semesterTotals = Array(8).fill(0)
@@ -44,18 +44,20 @@ export const DisciplineView: FC<IProps> = ({ disciplines = [], commentSlot }) =>
 						Общее количество часов и распределение по семестрам для каждой дисциплины в модуле.
 					</CardDescription>
 				</div>
-				{commentSlot}
 			</CardHeader>
 			<CardContent>
 				<div className='overflow-x-auto'>
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead className='align-bottom w-[35%] pb-2' rowSpan={3}>
+								<TableHead className='align-bottom w-full pb-2' rowSpan={3}>
 									Код и название дисциплины
 								</TableHead>
-								<TableHead className='align-bottom text-center pb-2' rowSpan={3}>
-									Общее количество <br /> часов в модуле
+								<TableHead
+									className='align-bottom p-2 text-center wrap-break-words whitespace-normal'
+									rowSpan={3}
+								>
+									Общее количество часов в модуле
 								</TableHead>
 								<TableHead className='text-center' colSpan={8}>
 									Из них по семестрам
@@ -70,7 +72,7 @@ export const DisciplineView: FC<IProps> = ({ disciplines = [], commentSlot }) =>
 							</TableRow>
 							<TableRow>
 								{Array.from({ length: 8 }, (_, i) => (
-									<TableHead key={i} className='text-xs text-center border-r last:border-r-0 py-2'>
+									<TableHead key={i} className='text-xs text-center border-r last:border-r-0 py-2 px-6'>
 										{i + 1}
 										<br />
 										семестр
@@ -80,9 +82,12 @@ export const DisciplineView: FC<IProps> = ({ disciplines = [], commentSlot }) =>
 						</TableHeader>
 						<TableBody>
 							{disciplines?.length > 0 ? (
-								disciplines.map((discipline, disciplineIndex) => (
-									<DisciplineRowView key={disciplineIndex} discipline={discipline} />
-								))
+								<>
+									<RupRow rupName={rupName} />
+									{disciplines.map((discipline, disciplineIndex) => (
+										<DisciplineRowView key={disciplineIndex} discipline={discipline} />
+									))}
+								</>
 							) : (
 								<TableRow>
 									<TableCell className='h-24 text-center text-muted-foreground' colSpan={10}>
@@ -94,11 +99,22 @@ export const DisciplineView: FC<IProps> = ({ disciplines = [], commentSlot }) =>
 						{disciplines?.length > 0 && (
 							<TableFooter>
 								<TableRow>
-									<TableCell className='text-left font-bold'>Всего по модулю:</TableCell>
-									<TableCell className='text-right font-bold'>{formatHours(totalModuleHours)}</TableCell>
+									<TableCell className='text-left font-bold'>Всего:</TableCell>
+									<TableCell className='text-center font-bold border-x'>{totalModuleHours}</TableCell>
 									{semesterTotals.map((totalHours, i) => (
 										<TableCell key={i} className='text-center font-bold border-r last:border-r-0'>
-											<p>{totalHours > 0 ? `${totalHours}ч` : '—'}</p>
+											<p>{formatAsDash(totalHours)}</p>
+										</TableCell>
+									))}
+								</TableRow>
+								<TableRow>
+									<TableCell className='text-left font-bold whitespace-break-spaces'>
+										Общее количество часов на обучение по модулю :
+									</TableCell>
+									<TableCell className='text-center font-bold border-x'>{totalModuleHours}</TableCell>
+									{semesterTotals.map((totalHours, i) => (
+										<TableCell key={i} className='text-center font-bold border-r last:border-r-0'>
+											<p>{formatAsDash(totalHours)}</p>
 										</TableCell>
 									))}
 								</TableRow>
@@ -111,18 +127,32 @@ export const DisciplineView: FC<IProps> = ({ disciplines = [], commentSlot }) =>
 	)
 }
 
+const RupRow: FC<{ rupName: string }> = ({ rupName }) => {
+	return (
+		<TableRow className='*:border-border [&>:not(:last-child)]:border-r'>
+			<TableCell className='whitespace-break-spaces text-sm text-muted-foreground py-2'>
+				{formatAsDash(rupName)}
+			</TableCell>
+			<TableCell className='align-middle text-center w-24 font-medium' />
+			{[0, 1, 2, 3, 4, 5, 6, 7].map((semester) => (
+				<TableCell key={semester} className='align-middle text-center text-sm' />
+			))}
+		</TableRow>
+	)
+}
+
 const DisciplineRowView: FC<{ discipline: IDiscipline }> = ({ discipline }) => {
 	return (
 		<TableRow className='*:border-border [&>:not(:last-child)]:border-r'>
-			<TableCell>
-				<p className='text-sm text-muted-foreground'>{discipline.name || '—'}</p>
+			<TableCell className='text-sm text-muted-foreground py-2 whitespace-break-spaces'>
+				{formatAsDash(discipline.name)}
 			</TableCell>
 			<TableCell className='align-middle text-center w-24 font-medium'>
-				<p>{formatHours(discipline.totalHours)}</p>
+				<p>{discipline.totalHours}</p>
 			</TableCell>
 			{discipline.semesters.map((semester, semesterIndex) => (
 				<TableCell key={semesterIndex} className='align-middle text-center text-sm'>
-					{semester.totalHours > 0 ? `${semester.totalHours}ч` : '—'}
+					{formatAsDash(semester.totalHours)}
 				</TableCell>
 			))}
 		</TableRow>
