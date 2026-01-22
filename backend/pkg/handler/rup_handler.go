@@ -230,6 +230,12 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	currentPage := 1
 	pageSize := 10
 
+	// status=APPROVED,REJECTED
+	var statuses []string
+	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
+		statuses = strings.Split(raw, ",")
+	}
+
 	if v := c.Query("currentPage"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
 			currentPage = p
@@ -237,42 +243,31 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	}
 
 	if v := c.Query("pageSize"); v != "" {
-		if ps, err := strconv.Atoi(v); err == nil && ps > 0 && ps <= 100 {
+		if ps, err := strconv.Atoi(v); err == nil && ps <= 100 {
 			pageSize = ps
 		}
 	}
 
 	search := strings.TrimSpace(c.Query("search"))
 
-	// 👇 ВОТ ЭТОГО У ТЕБЯ НЕ ХВАТАЕТ
 	var teacherID pgtype.UUID
-	if v := strings.TrimSpace(c.Query("teacher")); v != "" {
+	if v := c.Query("teacher"); v != "" {
 		id, err := uuid.Parse(v)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "invalid teacher id",
-			})
+			c.JSON(400, gin.H{"error": "invalid teacher id"})
 			return
 		}
-		teacherID = pgtype.UUID{
-			Bytes: id,
-			Valid: true,
-		}
+		teacherID = pgtype.UUID{Bytes: id, Valid: true}
 	}
 
 	var methodistID pgtype.UUID
-	if v := strings.TrimSpace(c.Query("methodist")); v != "" {
+	if v := c.Query("methodist"); v != "" {
 		id, err := uuid.Parse(v)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "invalid methodist id",
-			})
+			c.JSON(400, gin.H{"error": "invalid methodist id"})
 			return
 		}
-		methodistID = pgtype.UUID{
-			Bytes: id,
-			Valid: true,
-		}
+		methodistID = pgtype.UUID{Bytes: id, Valid: true}
 	}
 
 	result, err := h.rupService.GetRupPaginated(
@@ -282,13 +277,12 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 		search,
 		teacherID,
 		methodistID,
+		statuses, // 👈 ВСЕГДА []string
 	)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+	c.JSON(200, result)
 }

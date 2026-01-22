@@ -31,8 +31,8 @@ type RupRepository interface {
 	GetSemesterByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineSemester, error)
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
 
-	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID) (int64, error)
-	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID) ([]storage.Rup, error)
+	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
+	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
@@ -197,9 +197,10 @@ func (r *RupPostgres) CountRups(ctx context.Context) (int64, error) {
 	return r.queries.CountRups(ctx)
 }
 
-func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID) ([]storage.Rup, error) {
+func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error) {
 	return r.queries.GetRupsPaginated(ctx, storage.GetRupsPaginatedParams{
 		Column1:   search,
+		Status:    status,
 		Limit:     limit,
 		Offset:    offset,
 		Teacher:   teacher,
@@ -207,9 +208,10 @@ func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset 
 	})
 }
 
-func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID) (int64, error) {
+func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error) {
 	return r.queries.CountRupsFiltered(ctx, storage.CountRupsFilteredParams{
 		Column1:   search,
+		Status:    status,
 		Teacher:   teacher,
 		Methodist: methodist,
 	})
