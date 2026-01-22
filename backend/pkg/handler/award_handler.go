@@ -112,10 +112,21 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		return
 	}
 
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
 	var req struct {
-		Status    storage.AwardsStatus `json:"status"`
-		Reason    pgtype.Text          `json:"reason"`
-		Methodist pgtype.UUID          `json:"methodist"`
+		Status storage.AwardsStatus `json:"status"`
+		Reason pgtype.Text          `json:"reason"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -127,7 +138,7 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		ID:        id,
 		Status:    req.Status,
 		Reason:    req.Reason,
-		Methodist: req.Methodist,
+		Methodist: parseUUIDPgtype(currentUser.KeycloakID.String()),
 	}
 
 	award, err := h.service.UpdateAwardStatus(c.Request.Context(), params)
@@ -240,10 +251,21 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		return
 	}
 
-	// type check db exist
-	_, err = h.service.GetTypeByID(c.Request.Context(), typeID)
+	variantID, err := uuid.Parse(params.AwardVariant.String())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check AwardType existence", "details": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid VariantID UUID format"})
+		return
+	}
+
+	criteriaID, err := uuid.Parse(params.AwardCriteria.String())
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid CriteriaID UUID format"})
+		return
+	}
+
+	bonusCriteriaID, err := uuid.Parse(params.AwardBonusCriteria.String())
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid BonusCriteriaID UUID format"})
 		return
 	}
 
@@ -280,13 +302,16 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	}
 
 	award, err := h.service.CreateAward(c.Request.Context(), &storage.CreateAwardParams{
-		Status:      storage.AwardsStatusDRAFT,
-		Teacher:     parseUUIDPgtype(currentUser.KeycloakID.String()),
-		Type:        parseUUIDPgtype(typeID.String()),
-		Text:        params.Text,
-		Files:       fileKeys,
-		Links:       params.Links,
-		TotalPoints: 0,
+		Status:        storage.AwardsStatusDRAFT,
+		Teacher:       parseUUIDPgtype(currentUser.KeycloakID.String()),
+		Type:          parseUUIDPgtype(typeID.String()),
+		Variant:       parseUUIDPgtype(variantID.String()),
+		Criteria:      parseUUIDPgtype(criteriaID.String()),
+		BonusCriteria: parseUUIDPgtype(bonusCriteriaID.String()),
+		Text:          params.Text,
+		Files:         fileKeys,
+		Links:         params.Links,
+		TotalPoints:   0,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create award", "details": err.Error()})

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_VSvKkq9hBe
 createdAt: 2026-01-19T12:00:23.657903500
-updatedAt: 2026-01-21T05:04:04.583354200
+updatedAt: 2026-01-22T08:06:44.398773800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -45,9 +45,13 @@ headers:
 method: DELETE
 name: delete
 sortPriority: 2000.0
-url: ${[ url ]}/awards/types/b20361c6-9f99-471e-aa50-7a2c8c45d163
+url: ${[ url ]}/awards/types/:id
 urlParameters:
+- enabled: true
+  name: :id
+  value: 1704a132-fa1e-4b2c-bc90-63a2a30c6ca7
+  id: TgBK970imx
 - enabled: true
   name: ''
   value: ''
-  id: DRdSvgzZTv
+  id: IRvs7gRStG
