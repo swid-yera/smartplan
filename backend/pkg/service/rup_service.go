@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"time"
 
@@ -20,16 +21,37 @@ import (
 type RupService interface {
 	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
-	GetAllRups(ctx context.Context) ([]*ListAllRupsResponse, error)
+	GetAllRups(ctx context.Context, limit int32, offset int32) ([]*ListAllRupsResponse, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string, methodistID uuid.UUID) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	GetRupsByMethodist(ctx context.Context, methodistID uuid.UUID) ([]*RupResponse, error)
 	GetRupsByTeacher(ctx context.Context, teacherID uuid.UUID) ([]*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
+	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string) (*PaginatedRupsResponse, error)
+	CountRups(ctx context.Context) (int64, error)
+}
+
+type PaginatedRupsResponse struct {
+	Data []*ListAllRupsResponse `json:"data"`
+	Meta PaginationMeta         `json:"meta"`
 }
 
 type CreateRupRequest struct {
+	Name            string                  `json:"name"`
+	Type            string                  `json:"type"`
+	StudyYear       string                  `json:"studyYear"`
+	Course          int32                   `json:"course"`
+	StudyForm       string                  `json:"studyForm"`
+	Contacts        []string                `json:"contacts"`
+	Groups          []string                `json:"groups"`
+	Methodist       string                  `json:"methodist"`
+	Teacher         string                  `json:"teacher"`
+	ExplorationNote *ExplorationNoteRequest `json:"explorationNote"`
+	Disciplines     []*DisciplineRequest    `json:"disciplines"`
+}
+
+type Rup struct {
 	Name            string                  `json:"name"`
 	Type            string                  `json:"type"`
 	StudyYear       string                  `json:"studyYear"`
@@ -192,6 +214,15 @@ type rupService struct {
 	fileStorage FileStorage
 }
 
+type GetRupsInput struct {
+	Search string
+	Page   int
+	Limit  int
+
+	UserID uuid.UUID
+	Role   string // teacher | methodist | admin
+}
+
 func NewRupService(repo repository.RupRepository, cfg *config.DocumentRenderConfig, httpClient *http.Client, fileStorage FileStorage) RupService {
 	return &rupService{
 		repo:        repo,
@@ -256,38 +287,20 @@ func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse
 	return s.buildRupResponse(ctx, *rup)
 }
 
-func (s *rupService) GetAllRups(ctx context.Context) ([]*ListAllRupsResponse, error) {
-	rups, err := s.repo.GetAllRups(ctx)
+func (s *rupService) GetAllRups(ctx context.Context, limit int32, offset int32) ([]*ListAllRupsResponse, error) {
+	rups, err := s.repo.GetAllRups(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	// if empty, len will be 0, json return [] not null
 	responses := make([]*ListAllRupsResponse, 0, len(rups))
 
 	for _, rup := range rups {
-		response, err := s.buildListAllRupsResponse(ctx, rup)
+		resp, err := s.buildListAllRupsResponse(ctx, rup)
 		if err != nil {
-			continue // Skip failed conversions
+			continue
 		}
-		// Create a simplified response without unnecessary fields
-		simplifiedResponse := &ListAllRupsResponse{
-			ID:         response.ID,
-			Name:       response.Name,
-			Status:     response.Status,
-			Reason:     response.Reason,
-			Course:     response.Course,
-			StudyForm:  response.StudyForm,
-			StudyYear:  response.StudyYear,
-			Type:       response.Type,
-			TotalHours: response.TotalHours,
-			Groups:     response.Groups,
-			Methodist:  response.Methodist,
-			Teacher:    response.Teacher,
-			CreatedAt:  response.CreatedAt,
-			UpdatedAt:  response.UpdatedAt,
-		}
-		responses = append(responses, simplifiedResponse)
+		responses = append(responses, resp)
 	}
 
 	return responses, nil
@@ -948,7 +961,7 @@ func (s *rupService) toPgUUID(id *uuid.UUID) pgtype.UUID {
 	return pgtype.UUID{Bytes: *id, Valid: true}
 }
 
-func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.Rup) (*RupResponse, error) {
+func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.Rup) (*ListAllRupsResponse, error) {
 
 	// Get groups
 	groups := []*GroupResponse{}
@@ -982,7 +995,7 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 		}
 	}
 
-	return &RupResponse{
+	return &ListAllRupsResponse{
 		ID:         rup.ID,
 		Name:       rup.Name,
 		Status:     string(rup.Status),
@@ -1190,5 +1203,63 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 		Topics:     topics,
 		CreatedAt:  time.Now(), // Placeholder
 		UpdatedAt:  time.Now(), // Placeholder
+	}, nil
+}
+
+func (s *rupService) CountRups(ctx context.Context) (int64, error) {
+	return s.repo.CountRups(ctx)
+}
+func (s *rupService) GetRupPaginated(
+	ctx context.Context,
+	currentPage int,
+	pageSize int,
+	search string,
+) (*PaginatedRupsResponse, error) {
+
+	if currentPage < 1 {
+		currentPage = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	offset := (currentPage - 1) * pageSize
+
+	total, err := s.repo.CountRupsFiltered(ctx, search)
+	if err != nil {
+		return nil, err
+	}
+
+	dbRups, err := s.repo.GetRupsPaginated(
+		ctx,
+		int32(pageSize),
+		int32(offset),
+		search,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	rups := make([]*ListAllRupsResponse, 0, len(dbRups))
+	for _, rup := range dbRups {
+
+		resp, err := s.buildListAllRupsResponse(ctx, rup)
+		if err != nil {
+			continue
+		}
+
+		rups = append(rups, resp)
+	}
+
+	pages := int(math.Ceil(float64(total) / float64(pageSize)))
+
+	return &PaginatedRupsResponse{
+		Data: rups,
+		Meta: PaginationMeta{
+			CurrentPage: currentPage,
+			Pages:       pages,
+			Total:       int(total),
+			PageSize:    pageSize,
+		},
 	}, nil
 }

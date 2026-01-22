@@ -137,18 +137,6 @@ func (s *userService) GetUsersPaginated(
 	}, nil
 }
 
-func toServiceUsers(u storage.User) *User {
-	return &User{
-		KeycloakID: u.KeycloakID,
-		Email:      u.Email,
-		Username:   u.Username,
-		FirstName:  u.FirstName.String,
-		LastName:   u.LastName.String,
-		Role:       string(u.Role),
-		Phone:      u.Phone.String,
-	}
-}
-
 func toServiceUser(u *storage.User) *User {
 	firstName := ""
 	lastName := ""
