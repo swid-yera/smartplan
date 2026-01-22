@@ -1339,6 +1339,7 @@ WHERE
         ) OR
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username) ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 ORDER BY created_at DESC
