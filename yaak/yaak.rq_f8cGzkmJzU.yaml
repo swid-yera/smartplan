@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-01-22T12:51:35.176731600
+updatedAt: 2026-01-22T20:57:14.532274700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -15,18 +15,18 @@ body:
     name: data
     value: |-
       {
-        "text": "Описание награды",
-        "type": "b22d2c73-2f81-4325-8ddd-69406e9d2c84",
-        "variant": "bd2d8cdf-92e6-4a27-8bf5-c6aba56fefc5",
-        "criteria": "41c4f074-171b-4c0b-b199-b0eb5f625c0b",
-        "bonusCriteria": "a4ff694f-d318-4cf7-94ec-0ce6dd551aca"
+        "text": "Описание ",
+        "type": "b66de603-0684-48f8-be91-f06164cf2657",
+        "variant": "6367fa1e-6b43-4d55-bff8-ab1bfcd2954a",
+        "criteria": "b8069b09-b8a6-4e58-a592-aaabdd558218",
+        "bonusCriteria": "f5e8e3c9-fa74-436c-bd7d-a1758867ea75"
       }
   - enabled: true
-    file: C:\Users\KIRKANATOR\Downloads\Без названия — копия (2).jpg
+    file: C:\Users\KIRKANATOR\Downloads\ПМ6 РУП Т22-4Б 288ч 2025-2025 уч год (1) (2) (2).docx
     id: H2zgvD0mut
     name: files
   - enabled: true
-    id: emiavwn9aN
+    id: qdwIkawHS9
     name: ''
     value: ''
 bodyType: multipart/form-data

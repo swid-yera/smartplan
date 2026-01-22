@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_7vw9nWxEkQ
 createdAt: 2026-01-15T08:10:01.378255200
-updatedAt: 2026-01-19T12:00:25.840892400
+updatedAt: 2026-01-22T17:07:05.469712100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -12,28 +12,45 @@ authenticationType: bearer
 body:
   text: |-
     {
-        "name": "Лучший студент",
-        "variants": [
-          {
-            "name": "Вариант 1",
-            "description": "Описание варианта 1",
-            "criteria": [
-              {
-                "name": "Критерий 1",
-                "points": [20],
-                "method": "NORMAL"
-              }
-            ],
-             "bonus_criteria": [
-              {
-                "name": "Критерий 1",
-                "points": [20],
-                "method": "MEASURING"
-              }
-            ]
-          }
-        ]
-      }
+      "name": "Благодарственные письма, похвальные листы и почётные грамоты",
+      "variants": [
+        {
+          "name": "Почетная грамота, грамоты, благодарственные письма педагогов",
+          "description": "каждое грамота умножается на тот балл, который прописан ниже по уровням",
+          "criteria": [
+            {
+              "name": "внутриколледжный",
+              "points": [
+                2
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "городской",
+              "points": [
+                3
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "республиканский",
+              "points": [
+                5
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "международный",
+              "points": [
+                10
+              ],
+              "method": "NORMAL"
+            }
+          ],
+          "bonus_criteria": []
+        }
+      ]
+    }
 bodyType: application/json
 description: ''
 headers:
