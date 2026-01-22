@@ -43,16 +43,23 @@ WHERE
         $3::uuid IS NULL
         OR methodist = $3::uuid
     )
+    AND status = ANY($4::text[]::rups_status[])
 `
 
 type CountRupsFilteredParams struct {
 	Column1   interface{} `json:"column_1"`
 	Teacher   pgtype.UUID `json:"teacher"`
 	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
 }
 
 func (q *Queries) CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countRupsFiltered, arg.Column1, arg.Teacher, arg.Methodist)
+	row := q.db.QueryRow(ctx, countRupsFiltered,
+		arg.Column1,
+		arg.Teacher,
+		arg.Methodist,
+		arg.Status,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -1387,18 +1394,19 @@ func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]
 }
 
 const getRupsPaginated = `-- name: GetRupsPaginated :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
-FROM rups
-WHERE
-    ($1 = '' OR name ILIKE '%' || $1 || '%')
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at 
+FROM rups WHERE 
+    (
+        $1 = '' 
+        OR name ILIKE '%' || $1 || '%'
+    ) 
     AND (
-        $4::uuid IS NULL
+        $4::uuid IS NULL 
         OR teacher = $4::uuid
-    )
-    AND (
-        $5::uuid IS NULL
+    ) AND (
+        $5::uuid IS NULL 
         OR methodist = $5::uuid
-    )
+    )AND status = ANY($6::text[]::rups_status[])
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
@@ -1409,6 +1417,7 @@ type GetRupsPaginatedParams struct {
 	Offset    int32       `json:"offset"`
 	Teacher   pgtype.UUID `json:"teacher"`
 	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
 }
 
 func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error) {
@@ -1418,6 +1427,7 @@ func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedPara
 		arg.Offset,
 		arg.Teacher,
 		arg.Methodist,
+		arg.Status,
 	)
 	if err != nil {
 		return nil, err

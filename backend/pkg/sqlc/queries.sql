@@ -241,18 +241,19 @@ VALUES (
 SELECT * FROM rups ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 
 -- name: GetRupsPaginated :many
-SELECT *
-FROM rups
-WHERE
-    ($1 = '' OR name ILIKE '%' || $1 || '%')
+SELECT * 
+FROM rups WHERE 
+    (
+        $1 = '' 
+        OR name ILIKE '%' || $1 || '%'
+    ) 
     AND (
-        sqlc.narg('teacher')::uuid IS NULL
+        sqlc.narg('teacher')::uuid IS NULL 
         OR teacher = sqlc.narg('teacher')::uuid
-    )
-    AND (
-        sqlc.narg('methodist')::uuid IS NULL
+    ) AND (
+        sqlc.narg('methodist')::uuid IS NULL 
         OR methodist = sqlc.narg('methodist')::uuid
-    )
+    )AND status = ANY(sqlc.arg(status)::text[]::rups_status[])
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -275,7 +276,8 @@ WHERE
     AND (
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
-    );
+    )
+    AND status = ANY(sqlc.arg(status)::text[]::rups_status[]);
 
 -- name: CountRups :one
 SELECT COUNT(*) FROM rups;
