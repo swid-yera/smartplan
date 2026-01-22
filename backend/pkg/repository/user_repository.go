@@ -11,15 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type UsersRepository interface {
-	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
-	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
-	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
-	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles storage.UserRole) error
-	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
-	GetAllUsers(ctx context.Context) ([]storage.User, error)
-}
-
 type UsersPostgres struct {
 	queries *storage.Queries
 }
@@ -91,6 +82,24 @@ func (r *UsersPostgres) UpdateRoles(
 	)
 }
 
-func (r *UsersPostgres) GetAllUsers(ctx context.Context) ([]storage.User, error) {
-	return r.queries.GetAllUsers(ctx)
+func (r *UsersPostgres) GetAllUsers(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error) {
+	return r.queries.GetAllUsers(ctx, storage.GetAllUsersParams{
+		Limit:  limit,
+		Offset: offset,
+	})
+}
+func (r *UsersPostgres) CountUsers(ctx context.Context) (int64, error) {
+	return r.queries.CountUsers(ctx)
+}
+
+func (r *UsersPostgres) GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error) {
+	return r.queries.GetUsersPaginated(ctx, storage.GetUsersPaginatedParams{
+		Column1: search,
+		Limit:   limit,
+		Offset:  offset,
+	})
+}
+
+func (r *UsersPostgres) CountUsersFiltered(ctx context.Context, search string) (int64, error) {
+	return r.queries.CountUsersFiltered(ctx, search)
 }

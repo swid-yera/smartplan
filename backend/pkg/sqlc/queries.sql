@@ -54,7 +54,43 @@ WHERE
 DELETE FROM users WHERE keycloak_id = $1;
 
 -- name: GetAllUsers :many
-SELECT * FROM users ORDER BY created_at DESC;
+SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2;
+
+-- name: GetUsersPaginated :many
+SELECT *
+FROM users
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username) ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    )
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
+-- name: CountUsersFiltered :one
+SELECT COUNT(*)
+FROM users
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    );
+
+-- name: CountUsers :one
+SELECT COUNT(*) FROM users;
 
 -- name: CreateRupResource :one
 INSERT INTO
@@ -254,15 +290,7 @@ INSERT INTO
         files,
         links
     )
-VALUES (
-        $1,
-        $2,
-        $3,
-        $4,
-        $5,
-        $6,
-        $7
-    ) RETURNING *;
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 -- name: GetAllAwards :many
 SELECT * FROM awards;
@@ -317,9 +345,10 @@ SELECT * FROM award_types;
 -- name: UpdateAwardType :exec
 UPDATE award_types
 SET
-	name = $2,
-	variants = $3
-WHERE id = $1 RETURNING *;
+    name = $2,
+    variants = $3
+WHERE
+    id = $1 RETURNING *;
 
 -- name: DeleteAwardType :exec
 DELETE FROM award_types WHERE id = $1;

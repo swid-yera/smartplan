@@ -77,7 +77,7 @@ func (r *Router) Init() *gin.Engine {
 	{
 		// --- USER ---
 		protected.GET("/me", r.user.GetMe)
-		protected.GET("/users", r.user.GetAllUsers)
+		protected.GET("/users", r.user.GetUsers)
 		protected.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 
 		// --- RUPS ---
