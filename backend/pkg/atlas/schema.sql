@@ -195,7 +195,10 @@ CREATE TABLE awards (
 
 
     total_points INT NOT NULL DEFAULT 0,
-    type UUID REFERENCES award_types(id),
+    type UUID,
+    variant UUID,
+    criteria UUID,
+    bonus_criteria UUID,
 
     text TEXT,
     files TEXT[] DEFAULT '{}',

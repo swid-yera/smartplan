@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_cQruLBCDA5
 createdAt: 2026-01-15T14:31:01.786455
-updatedAt: 2026-01-20T13:06:00.590462700
+updatedAt: 2026-01-22T12:05:10.688104
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -22,9 +22,9 @@ url: ${[ url ]}/users/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: asdf-asdf-asdf-asdf
+  value: e03f5d94-1497-4514-9c92-16bb559a1cc8
   id: 4XQnYpq560
 - enabled: true
   name: ''
   value: ''
-  id: sJfhKvPH6z
+  id: MapWiyyqFv
