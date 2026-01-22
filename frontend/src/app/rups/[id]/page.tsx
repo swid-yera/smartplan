@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
-import { hasRole, isAuthor, normalizeRupStatus } from '@helpers'
+import { hasRole, isAuthor, normalizeStatus } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -248,7 +248,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 							<SelectContent>
 								{Object.values(StatusEnum).map((status) => (
 									<SelectItem key={status} value={status}>
-										{normalizeRupStatus(status)}
+										{normalizeStatus(status)}
 									</SelectItem>
 								))}
 							</SelectContent>

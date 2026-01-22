@@ -7,7 +7,7 @@ export class UserService {
 	// get all
 	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '' }: IPaginationRequest) => {
 		return queryOptions<IPagination<IUser>>({
-			queryKey: ['users'],
+			queryKey: ['users', { currentPage, pageSize, search }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IUser>>('/users', {
 					params: {

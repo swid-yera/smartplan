@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
-import { RupsCard } from '@components'
+import { PageTitle, RupsCard } from '@components'
 import { isCurrentDay } from '@helpers'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
@@ -57,10 +57,7 @@ export const MethodistDashboard = () => {
 
 	return (
 		<div className='space-y-6'>
-			<div className='space-y-1'>
-				<h1 className='text-2xl font-bold tracking-tight'>Дашборд методиста</h1>
-				<p className='text-muted-foreground'>Управление проверками РУП и KPI преподавателей.</p>
-			</div>
+			<PageTitle description='Управление проверками РУП и KPI преподавателей.'>Дашборд методиста</PageTitle>
 
 			<div className='grid gap-6 md:grid-cols-2'>
 				<Card>

@@ -31,7 +31,7 @@ import {
 import { BookOpen, ChevronLeft, ChevronRight, Clock, ComponentIcon, Users } from 'lucide-react'
 
 import { Loader } from './loader'
-import { RupStatusBadge } from './rup-status-badge'
+import { StatusBadge } from './status-badge'
 
 interface IRupsProps {
 	rups: IRup[]
@@ -154,7 +154,7 @@ const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {
 			</TableCell>
 			<TableCell>{formatAsDash(rup?.studyYear)}</TableCell>
 			<TableCell className='text-right'>
-				<RupStatusBadge status={rup.status} />
+				<StatusBadge status={rup.status} />
 			</TableCell>
 		</TableRow>
 	)
@@ -174,7 +174,7 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 						<SheetHeader>
 							<SheetTitle className='mt-2'>
 								{rup.name + ' '}
-								<RupStatusBadge status={rup.status} />
+								<StatusBadge status={rup.status} />
 							</SheetTitle>
 							<SheetDescription>Краткая информация о рабочем учебном плане.</SheetDescription>
 						</SheetHeader>
@@ -187,7 +187,7 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 
 								<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
 									<p className='font-medium'>Статус:</p>
-									<RupStatusBadge status={rup.status} />
+									<StatusBadge status={rup.status} />
 
 									{rup?.reason && (
 										<>

@@ -1,3 +1,4 @@
+import type { StatusEnum } from '../global.types'
 import type {
 	IDiscipline,
 	IResources,
@@ -8,6 +9,7 @@ import type {
 	RupTypeEnum,
 	StudyFormEnum,
 } from '../rup.types'
+import type { IPaginationRequest } from './global.service.types'
 
 // create
 export type ICreateResource = Omit<IResources, 'id'>
@@ -56,4 +58,11 @@ export interface IUpdateRupStatusRequest {
 // download response
 export interface IDownloadResponse {
 	url: string
+}
+
+// get all
+export interface IGetAllRequest extends IPaginationRequest {
+	methodist?: string
+	teacher?: string
+	status?: StatusEnum[]
 }

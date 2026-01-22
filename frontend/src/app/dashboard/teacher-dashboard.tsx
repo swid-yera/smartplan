@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import Link from 'next/link'
 
+import { PageTitle } from '@components'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from '@ui'
 import { AlertTriangle, CheckCircle, Clock, FileText, Plus, XCircle } from 'lucide-react'
 
@@ -12,10 +13,9 @@ export const TeacherDashboard = () => {
 
 	return (
 		<div className='space-y-6'>
-			<div className='space-y-1'>
-				<h1 className='text-2xl font-bold tracking-tight'>Дашборд преподавателя</h1>
-				<p className='text-muted-foreground'>Обзор вашей текущей деятельности, задач и статусов документов.</p>
-			</div>
+			<PageTitle description='Обзор вашей текущей деятельности, задач и статусов документов.'>
+				Дашборд преподавателя
+			</PageTitle>
 
 			<div className='grid gap-6 md:grid-cols-2'>
 				<Card>

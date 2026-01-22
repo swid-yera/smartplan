@@ -3,9 +3,9 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
 	IDownloadResponse,
+	IGetAllRequest,
 	IMessageResponse,
 	IPagination,
-	IPaginationRequest,
 	IRup,
 	IUpdateRupRequest,
 	IUpdateRupStatusRequest,
@@ -13,15 +13,18 @@ import type {
 
 export class RupService {
 	// get all
-	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '' }: IPaginationRequest) => {
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, teacher, status }: IGetAllRequest) => {
 		return queryOptions<IPagination<IRup>>({
-			queryKey: ['rups'],
+			queryKey: ['rups', { currentPage, pageSize, search, methodist, teacher, status }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IRup>>('/rups', {
 					params: {
 						currentPage,
 						pageSize,
 						search,
+						methodist,
+						teacher,
+						status,
 					},
 				})
 
@@ -38,34 +41,6 @@ export class RupService {
 			queryKey: ['rup', id],
 			queryFn: async () => {
 				const { data } = await api.get<IRup>(`/rups/${id}`)
-
-				return data
-			},
-		})
-	}
-
-	// get by teacher id
-	getByTeacherIdOptions = (teacherId: string) => {
-		return queryOptions<IRup[]>({
-			queryKey: ['teacher-rups', teacherId],
-			queryFn: async () => {
-				const { data } = await api.get<IRup[]>(`/rups/teacher/${teacherId}`)
-
-				if (!data) return []
-
-				return data
-			},
-		})
-	}
-
-	// get by methodist id
-	getByMethodistIdOptions = (methodistId: string) => {
-		return queryOptions<IRup[]>({
-			queryKey: ['methodist-rups', methodistId],
-			queryFn: async () => {
-				const { data } = await api.get<IRup[]>(`/rups/methodist/${methodistId}`)
-
-				if (!data) return []
 
 				return data
 			},

@@ -1,6 +1,6 @@
 import { type FC, type ReactNode, useState } from 'react'
 
-import { PageTitle, RupStatusBadge } from '@components'
+import { PageTitle, StatusBadge } from '@components'
 import { formatHours, hasRole, normalizeStudyForm } from '@helpers'
 import { type IRup, StatusEnum, UserRoleEnum } from '@types'
 import {
@@ -75,7 +75,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 				sticky={true}
 			>
 				{` ${data.name || 'Рабочий учебный план'} `}
-				<RupStatusBadge status={data.status} />
+				<StatusBadge status={data.status} />
 			</PageTitle>
 
 			<div className='space-y-6 px-4 py-6'>

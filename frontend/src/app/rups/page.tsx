@@ -1,28 +1,38 @@
 'use client'
 
 import type { NextPage } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, RupsCard } from '@components'
 import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { UserRoleEnum } from '@types'
+import { StatusEnum, UserRoleEnum } from '@types'
 
 import { NewCard, RupsFilterCard } from './components/'
 
 const Page: NextPage = () => {
+	const searchParams = useSearchParams()
+	const router = useRouter()
+	const pathname = usePathname()
 	const { authLoading, user } = useAuthStore()
+
+	const page = Number(searchParams.get('page')) || 1
+	const q = searchParams.get('q') || ''
+	const status = (searchParams.get('status') || '').split(',') as StatusEnum[]
 
 	// queries
 	const { data: rupsData, isLoading } = useQuery({
-		...services.rup.getAllOptions({ currentPage: 1, pageSize: 10 }),
+		...services.rup.getAllOptions({ currentPage: page, pageSize: 10, search: q, status }),
 		enabled: !authLoading && !!user,
 	})
 
 	const setCurrentPage = (newPage: number) => {
-		console.log(newPage)
+		const params = new URLSearchParams(searchParams.toString())
+
+		params.set('page', String(newPage))
+		router.push(`${pathname}?${params.toString()}`)
 	}
 
 	if (authLoading) return <Loader />
@@ -45,7 +55,7 @@ const Page: NextPage = () => {
 
 			<div className='grid gap-6 lg:grid-cols-5'>
 				<div className={canCreate ? 'lg:col-span-3' : 'lg:col-span-5'}>
-					<RupsFilterCard className='h-full' role={'METHODIST'} />
+					<RupsFilterCard className='h-full' />
 				</div>
 
 				{canCreate && (

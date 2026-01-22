@@ -28,17 +28,31 @@ SELECT COUNT(*)
 FROM rups
 WHERE
     (
-        $1 = '' OR
-        (
-            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        $1 = ''
+        OR name ILIKE '%' || $1 || '%'
+        OR (
+            $1 ~* '^[0-9a-f-]{36}$'
             AND id = $1::uuid
-        ) OR
-        COALESCE(name, '') ILIKE '%' || $1 || '%'
+        )
+    )
+    AND (
+        $2::uuid IS NULL
+        OR teacher = $2::uuid
+    )
+    AND (
+        $3::uuid IS NULL
+        OR methodist = $3::uuid
     )
 `
 
-func (q *Queries) CountRupsFiltered(ctx context.Context, dollar_1 interface{}) (int64, error) {
-	row := q.db.QueryRow(ctx, countRupsFiltered, dollar_1)
+type CountRupsFilteredParams struct {
+	Column1   interface{} `json:"column_1"`
+	Teacher   pgtype.UUID `json:"teacher"`
+	Methodist pgtype.UUID `json:"methodist"`
+}
+
+func (q *Queries) CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countRupsFiltered, arg.Column1, arg.Teacher, arg.Methodist)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -84,22 +98,39 @@ INSERT INTO
         status,
         teacher,
         type,
+        variant,
+        criteria,
+        bonus_criteria,
         total_points,
         text,
         files,
         links
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10
+    ) RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at
 `
 
 type CreateAwardParams struct {
-	Status      AwardsStatus `json:"status"`
-	Teacher     pgtype.UUID  `json:"teacher"`
-	Type        pgtype.UUID  `json:"type"`
-	TotalPoints int32        `json:"total_points"`
-	Text        pgtype.Text  `json:"text"`
-	Files       []string     `json:"files"`
-	Links       []string     `json:"links"`
+	Status        AwardsStatus `json:"status"`
+	Teacher       pgtype.UUID  `json:"teacher"`
+	Type          pgtype.UUID  `json:"type"`
+	Variant       pgtype.UUID  `json:"variant"`
+	Criteria      pgtype.UUID  `json:"criteria"`
+	BonusCriteria pgtype.UUID  `json:"bonus_criteria"`
+	TotalPoints   int32        `json:"total_points"`
+	Text          pgtype.Text  `json:"text"`
+	Files         []string     `json:"files"`
+	Links         []string     `json:"links"`
 }
 
 func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error) {
@@ -107,6 +138,9 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		arg.Status,
 		arg.Teacher,
 		arg.Type,
+		arg.Variant,
+		arg.Criteria,
+		arg.BonusCriteria,
 		arg.TotalPoints,
 		arg.Text,
 		arg.Files,
@@ -121,6 +155,9 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		&i.Teacher,
 		&i.TotalPoints,
 		&i.Type,
+		&i.Variant,
+		&i.Criteria,
+		&i.BonusCriteria,
 		&i.Text,
 		&i.Files,
 		&i.Links,
@@ -721,7 +758,7 @@ func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
 }
 
 const getAllAwards = `-- name: GetAllAwards :many
-SELECT id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at FROM awards
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards
 `
 
 func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
@@ -741,6 +778,9 @@ func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
 			&i.Teacher,
 			&i.TotalPoints,
 			&i.Type,
+			&i.Variant,
+			&i.Criteria,
+			&i.BonusCriteria,
 			&i.Text,
 			&i.Files,
 			&i.Links,
@@ -967,7 +1007,7 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 }
 
 const getAwardByID = `-- name: GetAwardByID :one
-SELECT id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at FROM awards WHERE id = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards WHERE id = $1
 `
 
 func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error) {
@@ -981,6 +1021,9 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 		&i.Teacher,
 		&i.TotalPoints,
 		&i.Type,
+		&i.Variant,
+		&i.Criteria,
+		&i.BonusCriteria,
 		&i.Text,
 		&i.Files,
 		&i.Links,
@@ -1035,7 +1078,7 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 }
 
 const getAwardsByMethodist = `-- name: GetAwardsByMethodist :many
-SELECT id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at FROM awards WHERE methodist = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards WHERE methodist = $1
 `
 
 func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error) {
@@ -1055,6 +1098,9 @@ func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUI
 			&i.Teacher,
 			&i.TotalPoints,
 			&i.Type,
+			&i.Variant,
+			&i.Criteria,
+			&i.BonusCriteria,
 			&i.Text,
 			&i.Files,
 			&i.Links,
@@ -1072,7 +1118,7 @@ func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUI
 }
 
 const getAwardsByTeacher = `-- name: GetAwardsByTeacher :many
-SELECT id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at FROM awards WHERE teacher = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards WHERE teacher = $1
 `
 
 func (q *Queries) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Award, error) {
@@ -1092,6 +1138,9 @@ func (q *Queries) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) (
 			&i.Teacher,
 			&i.TotalPoints,
 			&i.Type,
+			&i.Variant,
+			&i.Criteria,
+			&i.BonusCriteria,
 			&i.Text,
 			&i.Files,
 			&i.Links,
@@ -1341,26 +1390,35 @@ const getRupsPaginated = `-- name: GetRupsPaginated :many
 SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 FROM rups
 WHERE
-    (
-        $1 = '' OR
-        (
-            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND id = $1::uuid
-        ) OR
-        COALESCE(name, '') ILIKE '%' || $1 || '%'
+    ($1 = '' OR name ILIKE '%' || $1 || '%')
+    AND (
+        $4::uuid IS NULL
+        OR teacher = $4::uuid
+    )
+    AND (
+        $5::uuid IS NULL
+        OR methodist = $5::uuid
     )
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type GetRupsPaginatedParams struct {
-	Column1 interface{} `json:"column_1"`
-	Limit   int32       `json:"limit"`
-	Offset  int32       `json:"offset"`
+	Column1   interface{} `json:"column_1"`
+	Limit     int32       `json:"limit"`
+	Offset    int32       `json:"offset"`
+	Teacher   pgtype.UUID `json:"teacher"`
+	Methodist pgtype.UUID `json:"methodist"`
 }
 
 func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error) {
-	rows, err := q.db.Query(ctx, getRupsPaginated, arg.Column1, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, getRupsPaginated,
+		arg.Column1,
+		arg.Limit,
+		arg.Offset,
+		arg.Teacher,
+		arg.Methodist,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1488,35 +1546,41 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 const updateAward = `-- name: UpdateAward :one
 UPDATE awards
 SET
-    status = $2,
-    reason = $3,
-    type = $4,
-    total_points = $5,
-    text = $6,
-    files = $7,
-    links = $8,
+    reason = $2,
+    type = $3,
+    variant = $4,
+    criteria = $5,
+    bonus_criteria = $6,
+    total_points = $7,
+    text = $8,
+    files = $9,
+    links = $10,
     updated_at = NOW()
 WHERE
-    id = $1 RETURNING id, status, reason, methodist, teacher, total_points, type, text, files, links, created_at, updated_at
+    id = $1 RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at
 `
 
 type UpdateAwardParams struct {
-	ID          uuid.UUID    `json:"id"`
-	Status      AwardsStatus `json:"status"`
-	Reason      pgtype.Text  `json:"reason"`
-	Type        pgtype.UUID  `json:"type"`
-	TotalPoints int32        `json:"total_points"`
-	Text        pgtype.Text  `json:"text"`
-	Files       []string     `json:"files"`
-	Links       []string     `json:"links"`
+	ID            uuid.UUID   `json:"id"`
+	Reason        pgtype.Text `json:"reason"`
+	Type          pgtype.UUID `json:"type"`
+	Variant       pgtype.UUID `json:"variant"`
+	Criteria      pgtype.UUID `json:"criteria"`
+	BonusCriteria pgtype.UUID `json:"bonus_criteria"`
+	TotalPoints   int32       `json:"total_points"`
+	Text          pgtype.Text `json:"text"`
+	Files         []string    `json:"files"`
+	Links         []string    `json:"links"`
 }
 
 func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error) {
 	row := q.db.QueryRow(ctx, updateAward,
 		arg.ID,
-		arg.Status,
 		arg.Reason,
 		arg.Type,
+		arg.Variant,
+		arg.Criteria,
+		arg.BonusCriteria,
 		arg.TotalPoints,
 		arg.Text,
 		arg.Files,
@@ -1531,6 +1595,9 @@ func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award
 		&i.Teacher,
 		&i.TotalPoints,
 		&i.Type,
+		&i.Variant,
+		&i.Criteria,
+		&i.BonusCriteria,
 		&i.Text,
 		&i.Files,
 		&i.Links,
