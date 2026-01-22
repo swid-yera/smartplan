@@ -13,7 +13,7 @@ import (
 
 type Querier interface {
 	CountRups(ctx context.Context) (int64, error)
-	CountRupsFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
+	CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CountUsersFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
 	CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error)

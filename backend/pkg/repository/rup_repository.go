@@ -12,11 +12,8 @@ import (
 type RupRepository interface {
 	CreateRup(ctx context.Context, params storage.CreateRupsParams) (*storage.Rup, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Rup, error)
-	GetAllRups(ctx context.Context, limit int32, offset int32) ([]storage.Rup, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error
 	UpdateRup(ctx context.Context, params storage.UpdateRupParams) (*storage.Rup, error)
-	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Rup, error)
-	GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]storage.Rup, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 
 	// Additional methods for related entities
@@ -34,8 +31,8 @@ type RupRepository interface {
 	GetSemesterByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineSemester, error)
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
 
-	CountRupsFiltered(ctx context.Context, search string) (int64, error)
-	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.Rup, error)
+	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
+	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
@@ -200,14 +197,22 @@ func (r *RupPostgres) CountRups(ctx context.Context) (int64, error) {
 	return r.queries.CountRups(ctx)
 }
 
-func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.Rup, error) {
+func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error) {
 	return r.queries.GetRupsPaginated(ctx, storage.GetRupsPaginatedParams{
-		Column1: search,
-		Limit:   limit,
-		Offset:  offset,
+		Column1:   search,
+		Status:    status,
+		Limit:     limit,
+		Offset:    offset,
+		Teacher:   teacher,
+		Methodist: methodist,
 	})
 }
 
-func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string) (int64, error) {
-	return r.queries.CountRupsFiltered(ctx, search)
+func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error) {
+	return r.queries.CountRupsFiltered(ctx, storage.CountRupsFilteredParams{
+		Column1:   search,
+		Status:    status,
+		Teacher:   teacher,
+		Methodist: methodist,
+	})
 }
