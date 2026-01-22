@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
@@ -28,16 +28,16 @@ func NewAwardHandler(service *service.AwardService) *AwardHandler {
 	}
 }
 
-// generateFileURL generates a public URL for a file stored in MinIO
-func (h *AwardHandler) generateFileURL(objectKey string) string {
-	// Extract only the unique identifier from objectKey
-	// For example, if objectKey is "aa1a8f6f-1a6c-4008-9b0d-985b35e76332_Без названия — копия (2).jpg",
-	// we can split it to get only the UUID part
-	parts := strings.Split(objectKey, "_")
-	if len(parts) > 0 {
-		return fmt.Sprintf("https://s3.aspc.kz/eduplan/awards/%s", parts[0])
+// resolveFileURLs generates presigned URLs for files stored in MinIO
+func (h *AwardHandler) resolveFileURLs(ctx context.Context, fileKeys []string) []string {
+	fileURLs := make([]string, 0, len(fileKeys))
+	for _, key := range fileKeys {
+		url, err := h.service.GetFileDownloadURL(ctx, key)
+		if err == nil {
+			fileURLs = append(fileURLs, url)
+		}
 	}
-	return fmt.Sprintf("https://s3.aspc.kz/eduplan/awards/%s", objectKey)
+	return fileURLs
 }
 
 // parseUUIDPgtype is a helper to convert form strings to pgtype.UUID
@@ -70,11 +70,7 @@ func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 
 	// Convert file keys to URLs for each award
 	for i := range awards {
-		var fileURLs []string
-		for _, fileKey := range awards[i].Files {
-			fileURLs = append(fileURLs, h.generateFileURL(fileKey))
-		}
-		awards[i].Files = fileURLs
+		awards[i].Files = h.resolveFileURLs(c.Request.Context(), awards[i].Files)
 	}
 
 	c.JSON(http.StatusOK, awards)
@@ -82,6 +78,7 @@ func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 
 func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 	idParam := c.Param("id")
+
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
@@ -95,11 +92,7 @@ func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 	}
 
 	// Convert file keys to URLs
-	var fileURLs []string
-	for _, fileKey := range award.Files {
-		fileURLs = append(fileURLs, h.generateFileURL(fileKey))
-	}
-	award.Files = fileURLs
+	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
 
 	c.JSON(http.StatusOK, award)
 }
@@ -178,11 +171,7 @@ func (h *AwardHandler) GetAwardsByMethodist(c *gin.Context) {
 
 	// Convert file keys to URLs for each award
 	for i := range awards {
-		var fileURLs []string
-		for _, fileKey := range awards[i].Files {
-			fileURLs = append(fileURLs, h.generateFileURL(fileKey))
-		}
-		awards[i].Files = fileURLs
+		awards[i].Files = h.resolveFileURLs(c.Request.Context(), awards[i].Files)
 	}
 
 	c.JSON(http.StatusOK, awards)
@@ -200,11 +189,7 @@ func (h *AwardHandler) GetAwardsByTeacher(c *gin.Context) {
 
 	// Convert file keys to URLs for each award
 	for i := range awards {
-		var fileURLs []string
-		for _, fileKey := range awards[i].Files {
-			fileURLs = append(fileURLs, h.generateFileURL(fileKey))
-		}
-		awards[i].Files = fileURLs
+		awards[i].Files = h.resolveFileURLs(c.Request.Context(), awards[i].Files)
 	}
 
 	c.JSON(http.StatusOK, awards)
@@ -282,16 +267,17 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 			}
 			f.Close()
 
+			// Generate object key with awards/ prefix and UUID
+			objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
+
 			// saving
-			objectKey, err := h.service.UploadFile(c.Request.Context(), fileHeader.Filename, f, fileHeader.Size)
+			fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				continue // TODO: handle error properly
 			}
 
-			// Convert file key to URL
-			fileURL := h.generateFileURL(objectKey)
-			fileKeys = append(fileKeys, fileURL)
+			fileKeys = append(fileKeys, fileKey)
 		}
 	}
 
@@ -317,6 +303,9 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create award", "details": err.Error()})
 		return
 	}
+
+	// Convert file keys to URLs
+	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
 
 	c.JSON(http.StatusOK, award)
 }

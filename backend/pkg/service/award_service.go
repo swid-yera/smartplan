@@ -6,6 +6,7 @@ import (
 	storage "eduplan/backend/pkg/sqlc/generated"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -115,12 +116,13 @@ type UpdateAwardRequest struct {
 }
 
 type AwardService struct {
-	repo *repository.AwardRepository
-	log  *logrus.Logger
+	repo        *repository.AwardRepository
+	log         *logrus.Logger
+	fileStorage FileStorage
 }
 
-func NewAwardService(repo *repository.AwardRepository, log *logrus.Logger) *AwardService {
-	return &AwardService{repo: repo, log: log}
+func NewAwardService(repo *repository.AwardRepository, fileStorage FileStorage, log *logrus.Logger) *AwardService {
+	return &AwardService{repo: repo, fileStorage: fileStorage, log: log}
 }
 
 // awards
@@ -647,5 +649,12 @@ func (s *AwardService) createVariantsWithCriteria(ctx context.Context, variants 
 }
 
 func (s *AwardService) UploadFile(ctx context.Context, fileName string, reader io.Reader, size int64) (string, error) {
-	return s.repo.UploadToMinIO(ctx, fileName, reader, size)
+	if err := s.fileStorage.UploadFile(ctx, fileName, reader, size); err != nil {
+		return "", err
+	}
+	return fileName, nil
+}
+
+func (s *AwardService) GetFileDownloadURL(ctx context.Context, key string) (string, error) {
+	return s.fileStorage.GetDownloadFileURL(ctx, key, 10*time.Minute)
 }
