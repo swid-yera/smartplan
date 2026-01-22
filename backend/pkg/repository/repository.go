@@ -51,10 +51,27 @@ type Rup interface {
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
 }
 
+type Lessons interface {
+	CreateLesson(ctx context.Context, params storage.CreateLessonsParams) error
+	UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error
+	DeleteLesson(ctx context.Context, id uuid.UUID) error
+	GetAllLessons(ctx context.Context, limit int32, offset int32) ([]storage.Lesson, error)
+	GetLesson(ctx context.Context, id uuid.UUID) (storage.Lesson, error)
+	GetLessonsTeacher(ctx context.Context, teacherID uuid.UUID, from pgtype.Timestamptz, to pgtype.Timestamptz, limit int32, offset int32) ([]storage.Lesson, error)
+	GetLessonByID(ctx context.Context, id uuid.UUID) (*storage.Lesson, error)
+
+	CreateLessonProgress(ctx context.Context, params storage.CreateLessonProgressParams) error
+	UpdateLessonProgress(ctx context.Context, params storage.UpdateLessonProgressParams) error
+	DeleteLessonProgress(ctx context.Context, id uuid.UUID) error
+	GetLessonProgressByID(ctx context.Context, id uuid.UUID) (storage.LessonProgress, error)
+	GetLessonProgressByLessonID(ctx context.Context, lessonID uuid.UUID) ([]storage.LessonProgress, error)
+}
+
 type Repository struct {
 	Users UsersRepository
 	Auth  Auth
 	Rup   Rup
+	Lessons Lessons
 }
 
 func NewRepository(queries *storage.Queries) *Repository {
@@ -62,5 +79,6 @@ func NewRepository(queries *storage.Queries) *Repository {
 		Users: NewUsersPostgres(queries),
 		Auth:  NewAuthPostgres(queries),
 		Rup:   NewRupPostgres(queries),
+		Lessons: NewLessonRepository(queries),
 	}
 }

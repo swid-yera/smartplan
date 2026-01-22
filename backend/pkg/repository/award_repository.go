@@ -16,16 +16,16 @@ type AwardRepository struct {
 	minio   *MinioRepository
 }
 
+func NewAwardRepository(queries *storage.Queries, minio *MinioRepository) *AwardRepository {
+	return &AwardRepository{queries: queries, minio: minio}
+}
+
 func (r *AwardRepository) GetAwardTypeVariantByID(ctx context.Context, vID uuid.UUID) (storage.AwardTypeVariant, error) {
 	return r.queries.GetAwardTypeVariantByID(ctx, vID)
 }
 
 func (r *AwardRepository) GetAwardTypeCriteriaByID(ctx context.Context, cID uuid.UUID) (storage.AwardTypeCriterium, error) {
 	return r.queries.GetAwardTypeCriteriaByID(ctx, cID)
-}
-
-func NewAwardRepository(queries *storage.Queries, minio *MinioRepository) *AwardRepository {
-	return &AwardRepository{queries: queries, minio: minio}
 }
 
 func (r *AwardRepository) UploadToMinIO(ctx context.Context, fileName string, reader io.Reader, size int64) (string, error) {
