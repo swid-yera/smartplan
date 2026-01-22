@@ -15,7 +15,7 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { formatHours, getHoursStyle, normalizeTopicType } from '@helpers'
+import { formatAsDash, formatHours, getHoursStyle, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
@@ -27,11 +27,6 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
 	FormField,
 	Input,
 	Select,
@@ -123,92 +118,78 @@ export function TopicsEdit<T extends IProps>() {
 	)
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Содержание учебной рабочей программы</CardTitle>
-				<CardDescription>Добавьте темы занятий для каждой дисциплины.</CardDescription>
-			</CardHeader>
-			<CardContent className='space-y-4'>
-				{disciplines.map((_, index) => {
-					const fieldId = _[index]?.id
+		<div className='space-y-4'>
+			{disciplines.map((_, index) => {
+				const fieldId = _[index]?.id
 
-					return (
-						<DisciplineBlock
-							key={fieldId || index}
-							disciplineIndex={index}
-							rupType={rupType as RupTypeEnum | ''}
-						/>
-					)
-				})}
+				return (
+					<DisciplineBlock key={fieldId || index} disciplineIndex={index} rupType={rupType as RupTypeEnum | ''} />
+				)
+			})}
 
-				{/* summary section */}
-				<div className='mt-10 rounded-xl border p-1'>
-					<div className='px-4 py-2 font-semibold italic uppercase tracking-wider text-xs'>
-						Сводная информация по всем дисциплинам
-					</div>
-					<Table>
-						<TableHeader>
-							<TableRow className=''>
-								<TableHead className='text-right font-medium text-muted-foreground' colSpan={2}>
-									Категория
-								</TableHead>
-								<TableHead className='w-24 text-center font-bold text-foreground'>Всего</TableHead>
-								<TableHead className='w-20 text-center text-xs'>Теор</TableHead>
-								<TableHead className='w-20 text-center text-xs'>Прак</TableHead>
-								<TableHead className='w-20 text-center text-xs'>Инд</TableHead>
-								<TableHead className='w-20 text-center text-xs text-blue-600/80'>СРСП</TableHead>
-								<TableHead className='w-20 text-center text-xs text-blue-600/80'>СРС</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{/* Итого распределено */}
-							<TableRow className='hover:bg-primary/5 transition-colors'>
-								<TableCell className='text-right font-medium' colSpan={2}>
-									Всего часов:
-								</TableCell>
-								<TableCell className='text-center'>
-									<span
-										className={cn(
-											'inline-flex items-center justify-center rounded-md px-2 py-1 min-w-12 font-bold shadow-sm',
-											total.totalHours !== totalDeclaredHours &&
-												'bg-destructive/10 text-destructive ring-1 ring-destructive/20',
-										)}
-									>
-										{total.totalHours}
-									</span>
-								</TableCell>
-								<TableCell className='text-center font-medium'>{total.theoryHours || 0}</TableCell>
-								<TableCell className='text-center font-medium'>{total.practiceHours || 0}</TableCell>
-								<TableCell className='text-center font-medium'>{total.individualHours || 0}</TableCell>
-								<TableCell className='text-center text-muted-foreground italic'>
-									{total.srspHours || 0}
-								</TableCell>
-								<TableCell className='text-center text-muted-foreground italic'>
-									{total.srsHours || 0}
-								</TableCell>
-							</TableRow>
-
-							{/* Заявлено в плане */}
-							<TableRow className='border-t border-dashed'>
-								<TableCell className='text-right text-muted-foreground' colSpan={2}>
-									Заявлено в учебном плане:
-								</TableCell>
-								<TableCell className='text-center font-bold text-lg text-foreground/70'>
-									{totalDeclaredHours}
-								</TableCell>
-								<TableCell className='text-left py-0' colSpan={5}>
-									{total.totalHours !== totalDeclaredHours && (
-										<span className='text-sm font-medium text-destructive animate-pulse duration-1000'>
-											← Несоответствие: {formatHours(Math.abs(totalDeclaredHours - total.totalHours))}
-										</span>
-									)}
-								</TableCell>
-							</TableRow>
-						</TableBody>
-					</Table>
+			{/* summary section */}
+			<div className='mt-10 rounded-xl border p-1'>
+				<div className='px-4 py-2 font-semibold italic uppercase tracking-wider text-xs'>
+					Сводная информация по всем дисциплинам
 				</div>
-			</CardContent>
-		</Card>
+				<Table>
+					<TableHeader>
+						<TableRow className=''>
+							<TableHead className='text-right font-medium text-muted-foreground' colSpan={2}>
+								Категория
+							</TableHead>
+							<TableHead className='w-24 text-center font-bold text-foreground'>Всего</TableHead>
+							<TableHead className='w-20 text-center text-xs'>Теор</TableHead>
+							<TableHead className='w-20 text-center text-xs'>Прак</TableHead>
+							<TableHead className='w-20 text-center text-xs'>Инд</TableHead>
+							<TableHead className='w-20 text-center text-xs text-blue-600/80'>СРСП</TableHead>
+							<TableHead className='w-20 text-center text-xs text-blue-600/80'>СРС</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{/* Итого распределено */}
+						<TableRow className='hover:bg-primary/5 transition-colors'>
+							<TableCell className='text-right font-medium' colSpan={2}>
+								Всего часов:
+							</TableCell>
+							<TableCell className='text-center'>
+								<span
+									className={cn(
+										'inline-flex items-center justify-center rounded-md px-2 py-1 min-w-12 font-bold shadow-sm',
+										total.totalHours !== totalDeclaredHours &&
+											'bg-destructive/10 text-destructive ring-1 ring-destructive/20',
+									)}
+								>
+									{total.totalHours}
+								</span>
+							</TableCell>
+							<TableCell className='text-center font-medium'>{total.theoryHours || 0}</TableCell>
+							<TableCell className='text-center font-medium'>{total.practiceHours || 0}</TableCell>
+							<TableCell className='text-center font-medium'>{total.individualHours || 0}</TableCell>
+							<TableCell className='text-center text-muted-foreground italic'>{total.srspHours || 0}</TableCell>
+							<TableCell className='text-center text-muted-foreground italic'>{total.srsHours || 0}</TableCell>
+						</TableRow>
+
+						{/* Заявлено в плане */}
+						<TableRow className='border-t border-dashed'>
+							<TableCell className='text-right text-muted-foreground' colSpan={2}>
+								Заявлено в учебном плане:
+							</TableCell>
+							<TableCell className='text-center font-bold text-lg text-foreground/70'>
+								{totalDeclaredHours}
+							</TableCell>
+							<TableCell className='text-left py-0' colSpan={5}>
+								{total.totalHours !== totalDeclaredHours && (
+									<span className='text-sm font-medium text-destructive animate-pulse duration-1000'>
+										← Несоответствие: {formatHours(Math.abs(totalDeclaredHours - total.totalHours))}
+									</span>
+								)}
+							</TableCell>
+						</TableRow>
+					</TableBody>
+				</Table>
+			</div>
+		</div>
 	)
 }
 
@@ -341,24 +322,12 @@ function DisciplineBlock<T extends IProps>({
 								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
 									Всего часов:
 								</TableCell>
-								<TableCell className='text-center font-bold'>
-									{sectionTotal.totalHours == 0 ? '—' : sectionTotal.totalHours}
-								</TableCell>
-								<TableCell className='text-center'>
-									{sectionTotal.theoryHours == 0 ? '—' : sectionTotal.theoryHours}
-								</TableCell>
-								<TableCell className='text-center'>
-									{sectionTotal.practiceHours == 0 ? '—' : sectionTotal.practiceHours}
-								</TableCell>
-								<TableCell className='text-center'>
-									{sectionTotal.individualHours == 0 ? '—' : sectionTotal.individualHours}
-								</TableCell>
-								<TableCell className='text-center'>
-									{sectionTotal.srspHours == 0 ? '—' : sectionTotal.srspHours}
-								</TableCell>
-								<TableCell className='text-center'>
-									{sectionTotal.srsHours == 0 ? '—' : sectionTotal.srsHours}
-								</TableCell>
+								<TableCell className='text-center font-bold'>{formatAsDash(sectionTotal.totalHours)}</TableCell>
+								<TableCell className='text-center'>{formatAsDash(sectionTotal.theoryHours)}</TableCell>
+								<TableCell className='text-center'>{formatAsDash(sectionTotal.practiceHours)}</TableCell>
+								<TableCell className='text-center'>{formatAsDash(sectionTotal.individualHours)}</TableCell>
+								<TableCell className='text-center'>{formatAsDash(sectionTotal.srspHours)}</TableCell>
+								<TableCell className='text-center'>{formatAsDash(sectionTotal.srsHours)}</TableCell>
 								<TableCell className={cn('text-right font-medium', hasError && 'text-destructive')} colSpan={2}>
 									Заявлено: {formatHours(declaredForThisDiscipline)}
 								</TableCell>
@@ -473,17 +442,11 @@ const TopicRow = ({ id, disciplineIndex, topicIndex, rupType, setTopicToDelete }
 				/>
 			</TableCell>
 			<TableCell className={cn(getHoursStyle(currentTotal), 'font-semibold')}>
-				{currentTotal == 0 ? '—' : currentTotal}
+				{formatAsDash(currentTotal)}
 			</TableCell>
-			<TableCell className={getHoursStyle(topic?.theoryHours)}>
-				{topic?.theoryHours == 0 ? '—' : topic?.theoryHours}
-			</TableCell>
-			<TableCell className={getHoursStyle(topic?.practiceHours)}>
-				{topic?.practiceHours == 0 ? '—' : topic?.practiceHours}
-			</TableCell>
-			<TableCell className={getHoursStyle(topic?.individualHours)}>
-				{topic?.individualHours == 0 ? '—' : topic?.individualHours}
-			</TableCell>
+			<TableCell className={getHoursStyle(topic?.theoryHours)}>{formatAsDash(topic?.theoryHours)}</TableCell>
+			<TableCell className={getHoursStyle(topic?.practiceHours)}>{formatAsDash(topic?.practiceHours)}</TableCell>
+			<TableCell className={getHoursStyle(topic?.individualHours)}>{formatAsDash(topic?.individualHours)}</TableCell>
 			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours`} form={form} />
 			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours`} form={form} />
 			<TableCell>

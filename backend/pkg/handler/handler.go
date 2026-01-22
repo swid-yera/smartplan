@@ -77,13 +77,13 @@ func (r *Router) Init() *gin.Engine {
 	{
 		// --- USER ---
 		protected.GET("/me", r.user.GetMe)
-		protected.GET("/users", r.user.GetAllUsers)
+		protected.GET("/users", r.user.GetUsers)
 		protected.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 
 		// --- RUPS ---
 		rups := protected.Group("/rups")
 		{
-			rups.GET("", r.rup.GetAllRups)
+			rups.GET("", r.rup.GetRupsPaginated)
 			rups.GET("/:id", r.rup.GetRupByID)
 			rups.GET("/teacher/:id", r.rup.GetRupsByTeacher)
 			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)

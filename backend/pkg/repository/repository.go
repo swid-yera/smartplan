@@ -10,13 +10,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Users interface {
+type UsersRepository interface {
 	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
 	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdatePasswordChangedAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
 	UpdateRoles(ctx context.Context, keycloakID uuid.UUID, roles storage.UserRole) error
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
-	GetAllUsers(ctx context.Context) ([]storage.User, error)
+	GetAllUsers(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error)
+	CountUsers(ctx context.Context) (int64, error)
+	GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error)
+
+	CountUsersFiltered(ctx context.Context, search string) (int64, error)
 }
 
 type Auth interface {
@@ -26,7 +30,7 @@ type Auth interface {
 type Rup interface {
 	CreateRup(ctx context.Context, params storage.CreateRupsParams) (*storage.Rup, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Rup, error)
-	GetAllRups(ctx context.Context) ([]storage.Rup, error)
+	GetAllRups(ctx context.Context, limit int32, offset int32) ([]storage.Rup, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodist pgtype.UUID) error
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Rup, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
@@ -48,7 +52,7 @@ type Rup interface {
 }
 
 type Repository struct {
-	Users Users
+	Users UsersRepository
 	Auth  Auth
 	Rup   Rup
 }
@@ -59,8 +63,4 @@ func NewRepository(queries *storage.Queries) *Repository {
 		Auth:  NewAuthPostgres(queries),
 		Rup:   NewRupPostgres(queries),
 	}
-}
-
-func (r *AuthPostgres) GetAllUsers(ctx context.Context) ([]storage.User, error) {
-	return r.queries.GetAllUsers(ctx)
 }

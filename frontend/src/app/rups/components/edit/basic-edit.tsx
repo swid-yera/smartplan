@@ -37,7 +37,7 @@ type IProps = FieldValues & {
 	postrequisites?: string
 }
 
-export function BasicProps<T extends IProps>() {
+export function BasicEdit<T extends IProps>() {
 	const { control } = useFormContext<T>()
 
 	return (
@@ -86,14 +86,14 @@ export function BasicProps<T extends IProps>() {
 									</Tooltip>
 								</FormLabel>
 								<FormControl>
-									<Select value={field.value ?? ''} onValueChange={field.onChange}>
+									<Select key={field.value} value={field.value} onValueChange={field.onChange}>
 										<SelectTrigger className='w-full'>
-											<SelectValue placeholder='Теоретическая или практическая' />
+											<SelectValue placeholder='Выберите тип модуля' />
 										</SelectTrigger>
 										<SelectContent position='popper'>
-											{Object.keys(RupTypeEnum).map((rupType) => (
-												<SelectItem key={rupType} value={RupTypeEnum[rupType]}>
-													{normalizeRupType(rupType as RupTypeEnum)}
+											{Object.values(RupTypeEnum).map((val) => (
+												<SelectItem key={val} value={val}>
+													{normalizeRupType(val)}
 												</SelectItem>
 											))}
 										</SelectContent>

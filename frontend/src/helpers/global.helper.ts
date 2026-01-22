@@ -23,3 +23,12 @@ export const formatHours = (count: number): string => {
 
 	return `${count} ${word}`
 }
+
+// format value as dash
+export const formatAsDash = (value: number | string = 0): string => {
+	if (typeof value == 'number') {
+		return value == 0 ? '—' : value.toString()
+	}
+
+	return !value ? '—' : value
+}

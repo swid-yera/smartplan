@@ -12,6 +12,72 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countRups = `-- name: CountRups :one
+SELECT COUNT(*) FROM rups
+`
+
+func (q *Queries) CountRups(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countRups)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countRupsFiltered = `-- name: CountRupsFiltered :one
+SELECT COUNT(*)
+FROM rups
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND id = $1::uuid
+        ) OR
+        COALESCE(name, '') ILIKE '%' || $1 || '%'
+    )
+`
+
+func (q *Queries) CountRupsFiltered(ctx context.Context, dollar_1 interface{}) (int64, error) {
+	row := q.db.QueryRow(ctx, countRupsFiltered, dollar_1)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countUsers = `-- name: CountUsers :one
+SELECT COUNT(*) FROM users
+`
+
+func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countUsersFiltered = `-- name: CountUsersFiltered :one
+SELECT COUNT(*)
+FROM users
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    )
+`
+
+func (q *Queries) CountUsersFiltered(ctx context.Context, dollar_1 interface{}) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsersFiltered, dollar_1)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createAward = `-- name: CreateAward :one
 INSERT INTO
     awards (
@@ -835,11 +901,16 @@ func (q *Queries) GetAllRupResources(ctx context.Context) ([]RupResource, error)
 }
 
 const getAllRups = `-- name: GetAllRups :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups ORDER BY created_at DESC
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
-func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
-	rows, err := q.db.Query(ctx, getAllRups)
+type GetAllRupsParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) GetAllRups(ctx context.Context, arg GetAllRupsParams) ([]Rup, error) {
+	rows, err := q.db.Query(ctx, getAllRups, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -877,11 +948,16 @@ func (q *Queries) GetAllRups(ctx context.Context) ([]Rup, error) {
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
-func (q *Queries) GetAllUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.Query(ctx, getAllUsers)
+type GetAllUsersParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, getAllUsers, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -1296,6 +1372,66 @@ func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]
 	return items, nil
 }
 
+const getRupsPaginated = `-- name: GetRupsPaginated :many
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+FROM rups
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND id = $1::uuid
+        ) OR
+        COALESCE(name, '') ILIKE '%' || $1 || '%'
+    )
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetRupsPaginatedParams struct {
+	Column1 interface{} `json:"column_1"`
+	Limit   int32       `json:"limit"`
+	Offset  int32       `json:"offset"`
+}
+
+func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error) {
+	rows, err := q.db.Query(ctx, getRupsPaginated, arg.Column1, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Rup
+	for rows.Next() {
+		var i Rup
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Status,
+			&i.Reason,
+			&i.Course,
+			&i.StudyForm,
+			&i.StudyYear,
+			&i.Type,
+			&i.TotalHours,
+			&i.Contacts,
+			&i.GroupIds,
+			&i.Methodist,
+			&i.Teacher,
+			&i.ExplorationNoteID,
+			&i.Disciplines,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
 SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
 `
@@ -1321,6 +1457,67 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getUsersPaginated = `-- name: GetUsersPaginated :many
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+FROM users
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username) ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    )
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetUsersPaginatedParams struct {
+	Column1 interface{} `json:"column_1"`
+	Limit   int32       `json:"limit"`
+	Offset  int32       `json:"offset"`
+}
+
+func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, getUsersPaginated, arg.Column1, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.KeycloakID,
+			&i.Email,
+			&i.Username,
+			&i.FirstName,
+			&i.LastName,
+			&i.Phone,
+			&i.Role,
+			&i.Rups,
+			&i.TotalPoints,
+			&i.Awards,
+			&i.Violation,
+			&i.PasswordChangedAt,
+			&i.LastSeenAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateAward = `-- name: UpdateAward :one
@@ -1418,9 +1615,10 @@ func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusPa
 const updateAwardType = `-- name: UpdateAwardType :exec
 UPDATE award_types
 SET
-	name = $2,
-	variants = $3
-WHERE id = $1 RETURNING id, name, variants
+    name = $2,
+    variants = $3
+WHERE
+    id = $1 RETURNING id, name, variants
 `
 
 type UpdateAwardTypeParams struct {

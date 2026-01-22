@@ -1,3 +1,4 @@
+import { formatAsDash } from '@helpers'
 import { ColumnDef } from '@tanstack/react-table'
 import type { AwardStatusEnum, IAward } from '@types'
 import { Badge } from '@ui'
@@ -39,7 +40,7 @@ export const awardColumns: ColumnDef<IAward>[] = [
 	{
 		accessorKey: 'methodist',
 		header: 'Методист',
-		cell: ({ row }) => row.original.methodist ?? '—',
+		cell: ({ row }) => formatAsDash(row.original.methodist),
 	},
 	{
 		accessorKey: 'teacher',

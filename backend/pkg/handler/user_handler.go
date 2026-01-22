@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
 
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
@@ -32,16 +34,38 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-func (h *UserHandler) GetAllUsers(c *gin.Context) {
-	users, err := h.userService.GetAllUsers(c.Request.Context())
+func (h *UserHandler) GetUsers(c *gin.Context) {
+	page := 1
+	pageSize := 10
+
+	if v := c.Query("currentPage"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if v := c.Query("pageSize"); v != "" {
+		if ps, err := strconv.Atoi(v); err == nil && ps > 0 && ps <= 100 {
+			pageSize = ps
+		}
+	}
+
+	search := strings.TrimSpace(c.Query("search"))
+
+	result, err := h.userService.GetUsersPaginated(
+		c.Request.Context(),
+		page,
+		pageSize,
+		search,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to get users",
+			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, users)
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *UserHandler) GetUserByKeycloakID(c *gin.Context) {

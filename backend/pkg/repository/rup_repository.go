@@ -12,7 +12,7 @@ import (
 type RupRepository interface {
 	CreateRup(ctx context.Context, params storage.CreateRupsParams) (*storage.Rup, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Rup, error)
-	GetAllRups(ctx context.Context) ([]storage.Rup, error)
+	GetAllRups(ctx context.Context, limit int32, offset int32) ([]storage.Rup, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error
 	UpdateRup(ctx context.Context, params storage.UpdateRupParams) (*storage.Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Rup, error)
@@ -33,6 +33,10 @@ type RupRepository interface {
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*storage.RupResource, error)
 	GetSemesterByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineSemester, error)
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
+
+	CountRupsFiltered(ctx context.Context, search string) (int64, error)
+	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.Rup, error)
+	CountRups(ctx context.Context) (int64, error)
 }
 
 type RupPostgres struct {
@@ -59,8 +63,11 @@ func (r *RupPostgres) GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Ru
 	return &rup, nil
 }
 
-func (r *RupPostgres) GetAllRups(ctx context.Context) ([]storage.Rup, error) {
-	return r.queries.GetAllRups(ctx)
+func (r *RupPostgres) GetAllRups(ctx context.Context, limit int32, offset int32) ([]storage.Rup, error) {
+	return r.queries.GetAllRups(ctx, storage.GetAllRupsParams{
+		Limit:  limit,
+		Offset: offset,
+	})
 }
 
 func (r *RupPostgres) UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error {
@@ -187,4 +194,20 @@ func (r *RupPostgres) GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.
 		return nil, err
 	}
 	return &topic, nil
+}
+
+func (r *RupPostgres) CountRups(ctx context.Context) (int64, error) {
+	return r.queries.CountRups(ctx)
+}
+
+func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.Rup, error) {
+	return r.queries.GetRupsPaginated(ctx, storage.GetRupsPaginatedParams{
+		Column1: search,
+		Limit:   limit,
+		Offset:  offset,
+	})
+}
+
+func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string) (int64, error) {
+	return r.queries.CountRupsFiltered(ctx, search)
 }

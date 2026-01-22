@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import { EditableHourCell } from '@components'
+import { formatAsDash } from '@helpers'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -133,7 +134,7 @@ export function DisciplineEdit<T extends IProps>() {
 							<TableRow>
 								{Array.from({ length: 8 }, (_, i) => (
 									<TableHead key={i} className='text-center border-r'>
-										{i + 1}
+										<div className='w-20'>{i + 1}</div>
 									</TableHead>
 								))}
 							</TableRow>
@@ -164,7 +165,7 @@ export function DisciplineEdit<T extends IProps>() {
 								<TableCell className='text-center font-bold'>{totalModuleHours}</TableCell>
 								{semesterTotals.map((total, i) => (
 									<TableCell key={i} className='text-center font-bold'>
-										{total == 0 ? '—' : total}
+										{formatAsDash(total)}
 									</TableCell>
 								))}
 							</TableRow>

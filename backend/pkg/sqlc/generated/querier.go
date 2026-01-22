@@ -12,6 +12,10 @@ import (
 )
 
 type Querier interface {
+	CountRups(ctx context.Context) (int64, error)
+	CountRupsFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
+	CountUsers(ctx context.Context) (int64, error)
+	CountUsersFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
 	CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error)
 	CreateAwardType(ctx context.Context, arg CreateAwardTypeParams) (AwardType, error)
 	CreateAwardTypeCriteria(ctx context.Context, arg CreateAwardTypeCriteriaParams) (AwardTypeCriterium, error)
@@ -38,8 +42,8 @@ type Querier interface {
 	GetAllGroups(ctx context.Context) ([]Group, error)
 	GetAllRupDisciplines(ctx context.Context) ([]RupDiscipline, error)
 	GetAllRupResources(ctx context.Context) ([]RupResource, error)
-	GetAllRups(ctx context.Context) ([]Rup, error)
-	GetAllUsers(ctx context.Context) ([]User, error)
+	GetAllRups(ctx context.Context, arg GetAllRupsParams) ([]Rup, error)
+	GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]User, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 	GetAwardTypeByID(ctx context.Context, id uuid.UUID) (AwardType, error)
 	GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (AwardTypeCriterium, error)
@@ -55,7 +59,9 @@ type Querier interface {
 	GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error)
 	GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error)
+	GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error)
+	GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error)
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
 	UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error

@@ -47,7 +47,7 @@ const Page: NextPage = () => {
 					</CardFooter>
 				</Card>
 
-				<Card className='relative flex h-full flex-col justify-between border-primary/40 shadow-md transition-all hover:-translate-y-1 hover:border-primary/100 hover:shadow-xl'>
+				<Card className='relative flex h-full flex-col justify-between border-primary/40 shadow-md transition-all hover:-translate-y-1 hover:border-primary hover:shadow-xl'>
 					<div className='absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm'>
 						Рекомендуем
 					</div>
