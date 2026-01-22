@@ -100,12 +100,8 @@ func main() {
 	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
-<<<<<<< HEAD
-	awardService := service.NewAwardService(awardRepo, log)
 	lessonService := service.NewLessonService(lessonRepo, log)
-=======
 	awardService := service.NewAwardService(awardRepo, minioRepo, log)
->>>>>>> 999298b59f2fa7ce4186e419c58b7594d0c992a7
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	syncGuard := service.NewSyncGuard(1 * time.Minute)
 
