@@ -15,6 +15,7 @@ type Router struct {
 	rup                   *RupHandler
 	award                 *AwardHandler
 	groups                *GroupsHandler
+	lesson                *LessonHandler
 	webhooks              *WebhooksHandler
 	sessionAuthMiddleware gin.HandlerFunc
 }
@@ -25,6 +26,7 @@ func NewRouter(
 	rup *RupHandler,
 	award *AwardHandler,
 	groups *GroupsHandler,
+	lesson *LessonHandler,
 	webhooks *WebhooksHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
 ) *Router {
@@ -35,6 +37,7 @@ func NewRouter(
 		award:                 award,
 		webhooks:              webhooks,
 		groups:                groups,
+		lesson:                lesson,
 		sessionAuthMiddleware: sessionAuthMiddleware,
 	}
 }
@@ -124,6 +127,20 @@ func (r *Router) Init() *gin.Engine {
 		{
 			groups.GET("", r.groups.GetAllGroups)
 			groups.POST("/sync", r.groups.SyncGroups)
+		}
+
+		// --- LESSONS ---
+		lessons := protected.Group("/lessons")
+		{
+			lessons.GET("", r.lesson.GetAllLessons)
+			lessons.GET("/:id", r.lesson.GetLessonByID)
+			lessons.GET("/teacher", r.lesson.GetLessonsByTeacher)
+			lessons.POST("", r.lesson.CreateLesson)
+			lessons.PUT("/:id", r.lesson.UpdateLesson)
+			lessons.DELETE("/:id", r.lesson.DeleteLesson)
+
+			lessons.GET("/:id/progress", r.lesson.GetLessonProgress)
+			lessons.POST("/:id/progress", r.lesson.RecordLessonProgress)
 		}
 	}
 
