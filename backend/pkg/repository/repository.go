@@ -55,8 +55,7 @@ type Lessons interface {
 	CreateLesson(ctx context.Context, params storage.CreateLessonsParams) error
 	UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
-	GetAllLessons(ctx context.Context, limit int32, offset int32) ([]storage.Lesson, error)
-	GetLesson(ctx context.Context, id uuid.UUID) (storage.Lesson, error)
+	GetAllLessons(ctx context.Context, from pgtype.Timestamptz, to pgtype.Timestamptz, limit int32, offset int32) ([]storage.Lesson, error)
 	GetLessonsTeacher(ctx context.Context, teacherID uuid.UUID, from pgtype.Timestamptz, to pgtype.Timestamptz, limit int32, offset int32) ([]storage.Lesson, error)
 	GetLessonByID(ctx context.Context, id uuid.UUID) (*storage.Lesson, error)
 
@@ -68,17 +67,17 @@ type Lessons interface {
 }
 
 type Repository struct {
-	Users UsersRepository
-	Auth  Auth
-	Rup   Rup
+	Users   UsersRepository
+	Auth    Auth
+	Rup     Rup
 	Lessons Lessons
 }
 
 func NewRepository(queries *storage.Queries) *Repository {
 	return &Repository{
-		Users: NewUsersPostgres(queries),
-		Auth:  NewAuthPostgres(queries),
-		Rup:   NewRupPostgres(queries),
+		Users:   NewUsersPostgres(queries),
+		Auth:    NewAuthPostgres(queries),
+		Rup:     NewRupPostgres(queries),
 		Lessons: NewLessonRepository(queries),
 	}
 }

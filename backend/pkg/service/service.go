@@ -6,4 +6,5 @@ type Service struct {
 	Webhooks WebhooksService
 	Rup      RupService
 	Award    AwardService
+	Lesson   LessonService
 }
