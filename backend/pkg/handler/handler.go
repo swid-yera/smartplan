@@ -77,13 +77,13 @@ func (r *Router) Init() *gin.Engine {
 	{
 		// --- USER ---
 		protected.GET("/me", r.user.GetMe)
-		protected.GET("/users", r.user.GetAllUsers)
+		protected.GET("/users", r.user.GetUsers)
 		protected.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 
 		// --- RUPS ---
 		rups := protected.Group("/rups")
 		{
-			rups.GET("", r.rup.GetAllRups)
+			rups.GET("", r.rup.GetRupsPaginated)
 			rups.GET("/:id", r.rup.GetRupByID)
 			rups.GET("/teacher/:id", r.rup.GetRupsByTeacher)
 			rups.GET("/methodist/:id", r.rup.GetRupsByMethodist)
@@ -100,6 +100,7 @@ func (r *Router) Init() *gin.Engine {
 			awards.GET("", r.award.GetAllAwards)
 			awards.GET("/:id", r.award.GetAwardByID)
 			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
+			awards.GET("/teacher/:id", r.award.GetAwardsByTeacher)
 
 			awards.POST("", r.award.CreateAward)
 
@@ -114,7 +115,7 @@ func (r *Router) Init() *gin.Engine {
 				awardTypes.POST("", r.award.CreateAwardType)
 				awardTypes.GET("/:id", r.award.GetAwardTypeByID)
 				awardTypes.PUT("/:id", r.award.UpdateAwardType)
-				awardTypes.DELETE("/:id", r.award.DeleteAwardType)
+				awardTypes.DELETE("/:id", r.award.DeleteType)
 			}
 		}
 

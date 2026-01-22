@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"math"
 
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
@@ -14,27 +15,30 @@ type User struct {
 	KeycloakID uuid.UUID `json:"keycloakId"`
 	Email      string    `json:"email"`
 	Username   string    `json:"username"`
-	FirstName  *string   `json:"firstName"`
-	LastName   *string   `json:"lastName"`
+	FirstName  string    `json:"firstName"`
+	LastName   string    `json:"lastName"`
 	Role       string    `json:"role"`
-	Phone      *string   `json:"phone"`
+	Phone      string    `json:"phone"`
 }
 
-type MeResponse struct {
-	KeycloakID uuid.UUID `json:"keycloakId"`
-	Email      string    `json:"email"`
-	Username   string    `json:"username"`
-	FirstName  string    `json:"firstName,omitempty"`
-	LastName   string    `json:"lastName,omitempty"`
-	Role       string    `json:"role"`
-	Phone      *string   `json:"phone"`
+type PaginationMeta struct {
+	CurrentPage int `json:"currentPage"`
+	Pages       int `json:"pages"`
+	Total       int `json:"total"`
+	PageSize    int `json:"pageSize"`
+}
+
+type PaginatedUsersResponse struct {
+	Data []*User        `json:"data"`
+	Meta PaginationMeta `json:"meta"`
 }
 
 type UserService interface {
 	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error)
-	GetAllUsers(ctx context.Context) ([]*User, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error)
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
+	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string) (*PaginatedUsersResponse, error)
+	CountUsers(ctx context.Context) (int64, error)
 }
 
 type userService struct {
@@ -84,17 +88,68 @@ func (s *userService) GetUserBySessionIDFromStorageUser(ctx context.Context, ses
 	return s.repo.GetUserByKeycloakID(ctx, keycloakID)
 }
 
+func (s *userService) GetUsersPaginated(
+	ctx context.Context,
+	currentPage int,
+	pageSize int,
+	search string,
+) (*PaginatedUsersResponse, error) {
+
+	if currentPage < 1 {
+		currentPage = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	offset := (currentPage - 1) * pageSize
+
+	total, err := s.repo.CountUsersFiltered(ctx, search)
+	if err != nil {
+		return nil, err
+	}
+
+	dbUsers, err := s.repo.GetUsersPaginated(
+		ctx,
+		int32(pageSize),
+		int32(offset),
+		search,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]*User, 0, len(dbUsers))
+	for _, u := range dbUsers {
+		users = append(users, toServiceUser(&u))
+	}
+
+	pages := int(math.Ceil(float64(total) / float64(pageSize)))
+
+	return &PaginatedUsersResponse{
+		Data: users,
+		Meta: PaginationMeta{
+			CurrentPage: currentPage,
+			Pages:       pages,
+			Total:       int(total),
+			PageSize:    pageSize,
+		},
+	}, nil
+}
+
 func toServiceUser(u *storage.User) *User {
-	var firstName, lastName, phone *string
+	firstName := ""
+	lastName := ""
+	phone := ""
 
 	if u.FirstName.Valid {
-		firstName = &u.FirstName.String
+		firstName = u.FirstName.String
 	}
 	if u.LastName.Valid {
-		lastName = &u.LastName.String
+		lastName = u.LastName.String
 	}
 	if u.Phone.Valid {
-		phone = &u.Phone.String
+		phone = u.Phone.String
 	}
 
 	return &User{
@@ -108,26 +163,6 @@ func toServiceUser(u *storage.User) *User {
 	}
 }
 
-func (s *userService) GetAllUsers(ctx context.Context) ([]*User, error) {
-	dbUsers, err := s.repo.GetAllUsers(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(dbUsers) == 0 {
-		return []*User{}, nil
-	}
-
-	serviceUsers := make([]*User, 0, len(dbUsers))
-
-	for i := range dbUsers {
-		u := toServiceUser(&dbUsers[i])
-		serviceUsers = append(serviceUsers, u)
-	}
-
-	return serviceUsers, nil
-}
-
 func (s *userService) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error) {
 	dbUser, err := s.repo.GetUserByKeycloakID(ctx, keycloakID)
 	if err != nil {
@@ -135,4 +170,8 @@ func (s *userService) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.U
 	}
 
 	return toServiceUser(dbUser), nil
+}
+
+func (r *userService) CountUsers(ctx context.Context) (int64, error) {
+	return r.repo.CountUsers(ctx)
 }

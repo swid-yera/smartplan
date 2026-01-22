@@ -11,17 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// CreateAwardWithTypesParams представляет параметры для создания award с типами, вариантами и критериями
-type CreateAwardWithTypesParams struct {
-	Status      storage.AwardsStatus `json:"status"`
-	AwardType   uuid.UUID            `json:"type"`
-	TotalPoints int32                `json:"totalPoints"`
-	Text        pgtype.Text          `json:"text"`
-	Images      []string             `json:"images"`
-	Document    pgtype.Text          `json:"document"`
-	Links       []string             `json:"links"`
-}
-
 type CreateAwardParams struct {
 	AwardType uuid.UUID   `json:"type"`
 	Text      pgtype.Text `json:"text"`
@@ -94,8 +83,7 @@ type UpdateAwardRequest struct {
 	AwardType   uuid.UUID            `json:"type"`
 	TotalPoints int32                `json:"totalPoints"`
 	Text        pgtype.Text          `json:"text"`
-	Images      []string             `json:"images"`
-	Document    pgtype.Text          `json:"document"`
+	Files       []string             `json:"files"`
 	Links       []string             `json:"links"`
 }
 
@@ -107,64 +95,169 @@ func NewAwardService(repo *repository.AwardRepository) *AwardService {
 	return &AwardService{repo: repo}
 }
 
+// awards
 func (s *AwardService) CreateAward(ctx context.Context, params *storage.CreateAwardParams) (AwardResponse, error) {
 	dbAward, err := s.repo.CreateAward(ctx, params)
 	if err != nil {
 		return AwardResponse{}, err
 	}
 
-	// payload
-	// type
-	dbType, err := s.repo.GetAwardTypeByID(ctx, dbAward.Type.Bytes)
+	res, err := s.buildAwardResponse(ctx, dbAward)
 	if err != nil {
 		return AwardResponse{}, err
 	}
 
-	typePayload, err := s.BuildAwardType(ctx, dbType)
-	if err != nil {
-		return AwardResponse{}, err
-	}
-
-	// teacher
-	var teacher *UserResponse
-	if dbAward.Teacher.Valid {
-		user, err := s.repo.GetUserByID(ctx, dbAward.Teacher.Bytes)
-		if err == nil {
-			teacher = convertToUserResponse(user)
-		}
-	}
-
-	return AwardResponse{
-		ID:          dbAward.ID,
-		Status:      dbAward.Status,
-		Type:        typePayload,
-		Teacher:     teacher,
-		Reason:      dbAward.Reason,
-		TotalPoints: dbAward.TotalPoints,
-		Text:        dbAward.Text,
-		Files:       dbAward.Files,
-		Links:       dbAward.Files,
-	}, nil
+	return res, nil
 }
 
-func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (storage.Award, error) {
-	return s.repo.GetAwardByID(ctx, id)
-}
-
-func (s *AwardService) GetAllAwardTypes(ctx context.Context) ([]storage.AwardType, error) {
-	dbAwardTypes, err := s.repo.GetAllAwardTypes(ctx)
+func (s *AwardService) GetAllAwards(ctx context.Context) ([]AwardResponse, error) {
+	dbAwards, err := s.repo.GetAllAwards(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(dbAwardTypes) == 0 {
-		return []storage.AwardType{}, nil
+	var result []AwardResponse
+	for _, dbAward := range dbAwards {
+		award, err := s.buildAwardResponse(ctx, dbAward)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, award)
 	}
 
-	return dbAwardTypes, nil
+	return result, nil
 }
 
-func (s *AwardService) GetAllFullAwardTypes(ctx context.Context) ([]TypeResponse, error) {
+func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (AwardResponse, error) {
+	dbAward, err := s.repo.GetAwardByID(ctx, id)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	res, err := s.buildAwardResponse(ctx, dbAward)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	return res, nil
+}
+
+func (s *AwardService) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]AwardResponse, error) {
+	dbAwards, err := s.repo.GetAwardsByMethodist(ctx, methodist)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []AwardResponse
+	for _, dbAward := range dbAwards {
+		award, err := s.buildAwardResponse(ctx, dbAward)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, award)
+	}
+
+	return result, nil
+}
+
+func (s *AwardService) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]AwardResponse, error) {
+	dbAwards, err := s.repo.GetAwardsByTeacher(ctx, teacher)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []AwardResponse
+	for _, dbAward := range dbAwards {
+		award, err := s.buildAwardResponse(ctx, dbAward)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, award)
+	}
+
+	return result, nil
+}
+
+func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error) {
+	// 1. Проверка существования
+	_, err := s.repo.GetAwardByID(ctx, id)
+	if err != nil {
+		return AwardResponse{}, fmt.Errorf("award not found: %w", err)
+	}
+
+	// 2. Обновление основных полей Award
+	params := storage.UpdateAwardParams{
+		ID:          id,
+		Status:      req.Status,
+		Type:        pgtype.UUID{Bytes: req.AwardType, Valid: req.AwardType != uuid.Nil},
+		TotalPoints: req.TotalPoints,
+		Text:        req.Text,
+		Files:       req.Files,
+		Links:       req.Links,
+	}
+
+	updatedAward, err := s.repo.UpdateAward(ctx, params)
+	if err != nil {
+		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
+	}
+
+	res, err := s.buildAwardResponse(ctx, updatedAward)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	return res, nil
+}
+
+func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (AwardResponse, error) {
+	updatedAward, err := s.repo.UpdateAwardStatus(ctx, params)
+	if err != nil {
+		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
+	}
+
+	res, err := s.buildAwardResponse(ctx, updatedAward)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	return res, nil
+}
+
+func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
+	return s.repo.DeleteAward(ctx, id)
+}
+
+// types
+func (s *AwardService) CreateType(ctx context.Context, params *CreateTypeParams) (TypeResponse, error) {
+	// validation
+	if err := s.validateCreateFullTypeParams(ctx, params); err != nil {
+		return TypeResponse{}, fmt.Errorf("validation failed: %w", err)
+	}
+
+	// create variants with their criteria
+	variantIDs, err := s.createVariantsWithCriteria(ctx, params.Variants)
+	if err != nil {
+		return TypeResponse{}, fmt.Errorf("create variants failed: %w", err)
+	}
+
+	// Create type
+	typeParams := storage.CreateAwardTypeParams{
+		Name:     params.Name,
+		Variants: variantIDs,
+	}
+	awardType, err := s.repo.CreateAwardType(ctx, &typeParams)
+	if err != nil {
+		return TypeResponse{}, fmt.Errorf("create type failed: %w", err)
+	}
+
+	// Get full award type data
+	return s.GetTypeByID(ctx, awardType.ID)
+}
+
+func (s *AwardService) GetAllFullTypes(ctx context.Context) ([]TypeResponse, error) {
 	dbAwardTypes, err := s.repo.GetAllAwardTypes(ctx)
 	if err != nil {
 		return nil, err
@@ -172,7 +265,7 @@ func (s *AwardService) GetAllFullAwardTypes(ctx context.Context) ([]TypeResponse
 
 	var result []TypeResponse
 	for _, at := range dbAwardTypes {
-		payload, err := s.BuildAwardType(ctx, at)
+		payload, err := s.BuildType(ctx, at)
 		if err != nil {
 			return nil, err
 		}
@@ -187,7 +280,7 @@ func (s *AwardService) GetAllFullAwardTypes(ctx context.Context) ([]TypeResponse
 	return result, nil
 }
 
-func (s *AwardService) BuildAwardType(ctx context.Context, awardType storage.AwardType) (TypeResponse, error) {
+func (s *AwardService) BuildType(ctx context.Context, awardType storage.AwardType) (TypeResponse, error) {
 	var variants []VariantResponse
 	for _, variantID := range awardType.Variants {
 		// The GetAwardTypeVariantByID method returns `storage.AwardTypeVariant`.
@@ -217,6 +310,7 @@ func (s *AwardService) BuildAwardType(ctx context.Context, awardType storage.Awa
 				return TypeResponse{}, fmt.Errorf("failed to get bonus criteria %s: %w", cID, err)
 			}
 			bonusCriteria = append(bonusCriteria, CriteriaResponse{
+				ID:     crit.ID,
 				Name:   crit.Name,
 				Points: crit.Points,
 				Method: crit.Method,
@@ -240,17 +334,13 @@ func (s *AwardService) BuildAwardType(ctx context.Context, awardType storage.Awa
 
 }
 
-func (s *AwardService) GetAwardTypeByID(ctx context.Context, id uuid.UUID) (storage.AwardType, error) {
-	return s.repo.GetAwardTypeByID(ctx, id)
-}
-
-func (s *AwardService) GetFullAwardTypeByID(ctx context.Context, id uuid.UUID) (TypeResponse, error) {
+func (s *AwardService) GetTypeByID(ctx context.Context, id uuid.UUID) (TypeResponse, error) {
 	awardType, err := s.repo.GetAwardTypeByID(ctx, id)
 	if err != nil {
 		return TypeResponse{}, err
 	}
 
-	payload, err := s.BuildAwardType(ctx, awardType)
+	payload, err := s.BuildType(ctx, awardType)
 	if err != nil {
 		return TypeResponse{}, err
 	}
@@ -258,9 +348,9 @@ func (s *AwardService) GetFullAwardTypeByID(ctx context.Context, id uuid.UUID) (
 	return payload, nil
 }
 
-func (s *AwardService) UpdateAwardType(ctx context.Context, id uuid.UUID, req CreateAwardTypeRequest) (TypeResponse, error) {
+func (s *AwardService) UpdateType(ctx context.Context, id uuid.UUID, req CreateAwardTypeRequest) (TypeResponse, error) {
 	// Create variants with their criteria
-	variantIDs, err := s.createAwardTypeVariantsWithCriteria(ctx, req.Variants)
+	variantIDs, err := s.createVariantsWithCriteria(ctx, req.Variants)
 	if err != nil {
 		return TypeResponse{}, fmt.Errorf("create variants failed: %w", err)
 	}
@@ -281,7 +371,7 @@ func (s *AwardService) UpdateAwardType(ctx context.Context, id uuid.UUID, req Cr
 		return TypeResponse{}, err
 	}
 
-	payload, err := s.BuildAwardType(ctx, dbType)
+	payload, err := s.BuildType(ctx, dbType)
 	if err != nil {
 		return TypeResponse{}, err
 	}
@@ -289,103 +379,21 @@ func (s *AwardService) UpdateAwardType(ctx context.Context, id uuid.UUID, req Cr
 	return payload, nil
 }
 
-func (s *AwardService) GetAllAwards(ctx context.Context) ([]storage.Award, error) {
-	dbAwards, err := s.repo.GetAllAwards(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(dbAwards) == 0 {
-		return []storage.Award{}, nil
-	}
-
-	return dbAwards, nil
+func (s *AwardService) DeleteType(ctx context.Context, id uuid.UUID) error {
+	return s.repo.DeleteType(ctx, id)
 }
 
-func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (storage.Award, error) {
-	return s.repo.UpdateAwardStatus(ctx, params)
-}
-
-func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
-	return s.repo.DeleteAward(ctx, id)
-}
-
-func (s *AwardService) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]storage.Award, error) {
-	dbAwards, err := s.repo.GetAwardsByMethodist(ctx, methodist)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(dbAwards) == 0 {
-		return []storage.Award{}, nil
-	}
-
-	return dbAwards, nil
-}
-
-func (s *AwardService) createAwardType(ctx context.Context, params *storage.CreateAwardTypeParams) (storage.AwardType, error) {
-	return s.repo.CreateAwardType(ctx, params)
-}
-
-func (s *AwardService) CreateAwardTypesVariant(ctx context.Context, params *storage.CreateAwardTypesVariantParams) (storage.AwardTypeVariant, error) {
+// variants
+func (s *AwardService) CreateVariant(ctx context.Context, params *storage.CreateAwardTypesVariantParams) (storage.AwardTypeVariant, error) {
 	return s.repo.CreateAwardTypeVariant(ctx, params)
 }
 
-func (s *AwardService) CreateAwardTypeCriteria(ctx context.Context, params *storage.CreateAwardTypeCriteriaParams) (storage.AwardTypeCriterium, error) {
+// criteria
+func (s *AwardService) CreateCriteria(ctx context.Context, params *storage.CreateAwardTypeCriteriaParams) (storage.AwardTypeCriterium, error) {
 	return s.repo.CreateAwardTypeCriteria(ctx, params)
 }
 
-func (s *AwardService) CreateType(ctx context.Context, params *CreateTypeParams) (TypeResponse, error) {
-	// validation
-	if err := s.validateCreateFullAwardTypeParams(ctx, params); err != nil {
-		return TypeResponse{}, fmt.Errorf("validation failed: %w", err)
-	}
-
-	// create variants with their criteria
-	variantIDs, err := s.createAwardTypeVariantsWithCriteria(ctx, params.Variants)
-	if err != nil {
-		return TypeResponse{}, fmt.Errorf("create variants failed: %w", err)
-	}
-
-	// Create type
-	typeParams := storage.CreateAwardTypeParams{
-		Name:     params.Name,
-		Variants: variantIDs,
-	}
-	awardType, err := s.createAwardType(ctx, &typeParams)
-	if err != nil {
-		return TypeResponse{}, fmt.Errorf("create type failed: %w", err)
-	}
-
-	// Get full award type data
-	return s.GetFullAwardTypeByID(ctx, awardType.ID)
-}
-
-func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (storage.Award, error) {
-	// 1. Проверка существования
-	_, err := s.repo.GetAwardByID(ctx, id)
-	if err != nil {
-		return storage.Award{}, fmt.Errorf("award not found: %w", err)
-	}
-
-	// 2. Обновление основных полей Award
-	params := storage.UpdateAwardParams{
-		ID:          id,
-		Status:      req.Status,
-		Type:        pgtype.UUID{Bytes: req.AwardType, Valid: req.AwardType != uuid.Nil},
-		TotalPoints: req.TotalPoints,
-		Text:        req.Text,
-		Links:       req.Links,
-	}
-
-	updatedAward, err := s.repo.UpdateAward(ctx, params)
-	if err != nil {
-		return storage.Award{}, fmt.Errorf("update award failed: %w", err)
-	}
-	return *updatedAward, nil
-}
-
-func (s *AwardService) validateCreateFullAwardTypeParams(ctx context.Context, params *CreateTypeParams) error {
+func (s *AwardService) validateCreateFullTypeParams(ctx context.Context, params *CreateTypeParams) error {
 	if params.Name == "" {
 		return fmt.Errorf("award type name is required")
 	}
@@ -396,15 +404,7 @@ func (s *AwardService) validateCreateFullAwardTypeParams(ctx context.Context, pa
 	return nil
 }
 
-func (s *AwardService) validateCreateAwardWithTypesParams(ctx context.Context, params *CreateAwardWithTypesParams) error {
-	if params.AwardType == uuid.Nil {
-		return fmt.Errorf("award type ID is required")
-	}
-
-	return nil
-}
-
-func (s *AwardService) createAwardTypeVariantsWithCriteria(ctx context.Context, variants []VariantRequest) ([]uuid.UUID, error) {
+func (s *AwardService) createVariantsWithCriteria(ctx context.Context, variants []VariantRequest) ([]uuid.UUID, error) {
 	var variantIDs []uuid.UUID
 
 	for _, variant := range variants {
@@ -457,4 +457,50 @@ func (s *AwardService) createAwardTypeVariantsWithCriteria(ctx context.Context, 
 
 func (s *AwardService) UploadFile(ctx context.Context, fileName string, reader io.Reader, size int64) (string, error) {
 	return s.repo.UploadToMinIO(ctx, fileName, reader, size)
+}
+
+func (s *AwardService) buildAwardResponse(ctx context.Context, award storage.Award) (AwardResponse, error) {
+	// Get methodist
+	var methodist *UserResponse
+	if award.Methodist.Valid {
+		user, err := s.repo.GetUserByID(ctx, award.Methodist.Bytes)
+		if err == nil {
+			methodist = convertToUserResponse(user)
+		}
+	}
+
+	// Get teacher
+	var teacher *UserResponse
+	if award.Teacher.Valid {
+		user, err := s.repo.GetUserByID(ctx, award.Teacher.Bytes)
+		if err == nil {
+			teacher = convertToUserResponse(user)
+		}
+	}
+
+	// payload
+	// type
+	dbType, err := s.repo.GetAwardTypeByID(ctx, award.Type.Bytes)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	// Get type
+	typePayload, err := s.BuildType(ctx, dbType)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	return AwardResponse{
+		ID:          award.ID,
+		Status:      award.Status,
+		Type:        typePayload,
+		Reason:      award.Reason,
+		Methodist:   methodist,
+		Teacher:     teacher,
+		TotalPoints: award.TotalPoints,
+		Text:        award.Text,
+		Files:       award.Files,
+		Links:       award.Links,
+	}, nil
 }
