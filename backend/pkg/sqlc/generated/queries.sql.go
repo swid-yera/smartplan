@@ -12,6 +12,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAwards = `-- name: CountAwards :one
+SELECT COUNT(*) FROM awards
+`
+
+func (q *Queries) CountAwards(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAwards)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countAwardsFiltered = `-- name: CountAwardsFiltered :one
+SELECT COUNT(*)
+FROM awards
+WHERE
+    (
+        $1::uuid IS NULL
+        OR teacher = $1::uuid
+    )
+    AND (
+        $2::uuid IS NULL
+        OR methodist = $2::uuid
+    )
+    AND (
+        $3::text[] IS NULL
+        OR status = ANY($3::text[]::awards_status[])
+    )
+`
+
+type CountAwardsFilteredParams struct {
+	Teacher   pgtype.UUID `json:"teacher"`
+	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
+}
+
+func (q *Queries) CountAwardsFiltered(ctx context.Context, arg CountAwardsFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countAwardsFiltered, arg.Teacher, arg.Methodist, arg.Status)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countRups = `-- name: CountRups :one
 SELECT COUNT(*) FROM rups
 `
@@ -1130,6 +1172,75 @@ SELECT id, status, reason, methodist, teacher, total_points, type, variant, crit
 
 func (q *Queries) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Award, error) {
 	rows, err := q.db.Query(ctx, getAwardsByTeacher, teacher)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Award
+	for rows.Next() {
+		var i Award
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.Reason,
+			&i.Methodist,
+			&i.Teacher,
+			&i.TotalPoints,
+			&i.Type,
+			&i.Variant,
+			&i.Criteria,
+			&i.BonusCriteria,
+			&i.Text,
+			&i.Files,
+			&i.Links,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAwardsPaginated = `-- name: GetAwardsPaginated :many
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards
+WHERE
+    (
+        $3::uuid IS NULL
+        OR teacher = $3::uuid
+    )
+    AND (
+        $4::uuid IS NULL
+        OR methodist = $4::uuid
+    )
+    AND (
+        $5::text[] IS NULL
+        OR status = ANY($5::text[]::awards_status[])
+    )
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type GetAwardsPaginatedParams struct {
+	Limit     int32       `json:"limit"`
+	Offset    int32       `json:"offset"`
+	Teacher   pgtype.UUID `json:"teacher"`
+	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
+}
+
+func (q *Queries) GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginatedParams) ([]Award, error) {
+	rows, err := q.db.Query(ctx, getAwardsPaginated,
+		arg.Limit,
+		arg.Offset,
+		arg.Teacher,
+		arg.Methodist,
+		arg.Status,
+	)
 	if err != nil {
 		return nil, err
 	}
