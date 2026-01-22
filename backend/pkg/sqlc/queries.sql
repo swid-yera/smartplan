@@ -477,7 +477,7 @@ WHERE keycloak_id NOT IN (
     SELECT unnest($1::uuid[])
 );
 
--- name: CerateLessons :one
+-- name: CreateLessons :one
 INSERT INTO
     lessons (
         rup_name,

@@ -12,72 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const cerateLessons = `-- name: CerateLessons :one
-INSERT INTO
-    lessons (
-        rup_name,
-        discipline_name,
-        topic_name,
-        teacher_id, 
-        event_date,
-        group_id,
-        type,
-        goals,
-        tasks,
-        expected,
-        internet_resources,
-        technical_resources
-)VALUES (
-        $1,
-        $2,
-        $3,
-        $4,
-        $5,
-        $6,
-        $7,
-        $8,
-        $9,
-        $10,
-        $11,
-        $12
-    ) RETURNING id
-`
-
-type CerateLessonsParams struct {
-	RupName            string             `json:"rup_name"`
-	DisciplineName     pgtype.Text        `json:"discipline_name"`
-	TopicName          pgtype.Text        `json:"topic_name"`
-	TeacherID          uuid.UUID          `json:"teacher_id"`
-	EventDate          pgtype.Timestamptz `json:"event_date"`
-	GroupID            uuid.UUID          `json:"group_id"`
-	Type               EnumLessonType     `json:"type"`
-	Goals              pgtype.Text        `json:"goals"`
-	Tasks              pgtype.Text        `json:"tasks"`
-	Expected           pgtype.Text        `json:"expected"`
-	InternetResources  []uuid.UUID        `json:"internet_resources"`
-	TechnicalResources []uuid.UUID        `json:"technical_resources"`
-}
-
-func (q *Queries) CerateLessons(ctx context.Context, arg CerateLessonsParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, cerateLessons,
-		arg.RupName,
-		arg.DisciplineName,
-		arg.TopicName,
-		arg.TeacherID,
-		arg.EventDate,
-		arg.GroupID,
-		arg.Type,
-		arg.Goals,
-		arg.Tasks,
-		arg.Expected,
-		arg.InternetResources,
-		arg.TechnicalResources,
-	)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
-}
-
 const countRups = `-- name: CountRups :one
 SELECT COUNT(*) FROM rups
 `
@@ -446,6 +380,72 @@ func (q *Queries) CreateLessonProgress(ctx context.Context, arg CreateLessonProg
 		arg.StartMinute,
 		arg.EndMinute,
 		arg.Content,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createLessons = `-- name: CreateLessons :one
+INSERT INTO
+    lessons (
+        rup_name,
+        discipline_name,
+        topic_name,
+        teacher_id, 
+        event_date,
+        group_id,
+        type,
+        goals,
+        tasks,
+        expected,
+        internet_resources,
+        technical_resources
+)VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10,
+        $11,
+        $12
+    ) RETURNING id
+`
+
+type CreateLessonsParams struct {
+	RupName            string             `json:"rup_name"`
+	DisciplineName     pgtype.Text        `json:"discipline_name"`
+	TopicName          pgtype.Text        `json:"topic_name"`
+	TeacherID          uuid.UUID          `json:"teacher_id"`
+	EventDate          pgtype.Timestamptz `json:"event_date"`
+	GroupID            uuid.UUID          `json:"group_id"`
+	Type               EnumLessonType     `json:"type"`
+	Goals              pgtype.Text        `json:"goals"`
+	Tasks              pgtype.Text        `json:"tasks"`
+	Expected           pgtype.Text        `json:"expected"`
+	InternetResources  []uuid.UUID        `json:"internet_resources"`
+	TechnicalResources []uuid.UUID        `json:"technical_resources"`
+}
+
+func (q *Queries) CreateLessons(ctx context.Context, arg CreateLessonsParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createLessons,
+		arg.RupName,
+		arg.DisciplineName,
+		arg.TopicName,
+		arg.TeacherID,
+		arg.EventDate,
+		arg.GroupID,
+		arg.Type,
+		arg.Goals,
+		arg.Tasks,
+		arg.Expected,
+		arg.InternetResources,
+		arg.TechnicalResources,
 	)
 	var id uuid.UUID
 	err := row.Scan(&id)

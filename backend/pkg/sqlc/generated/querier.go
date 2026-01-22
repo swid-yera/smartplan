@@ -12,7 +12,6 @@ import (
 )
 
 type Querier interface {
-	CerateLessons(ctx context.Context, arg CerateLessonsParams) (uuid.UUID, error)
 	CountRups(ctx context.Context) (int64, error)
 	CountRupsFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
@@ -25,6 +24,7 @@ type Querier interface {
 	CreateDisciplineTopic(ctx context.Context, arg CreateDisciplineTopicParams) (DisciplineTopic, error)
 	CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error)
 	CreateLessonProgress(ctx context.Context, arg CreateLessonProgressParams) (uuid.UUID, error)
+	CreateLessons(ctx context.Context, arg CreateLessonsParams) (uuid.UUID, error)
 	CreateRupDiscipline(ctx context.Context, arg CreateRupDisciplineParams) (RupDiscipline, error)
 	CreateRupExplorationNote(ctx context.Context, arg CreateRupExplorationNoteParams) (RupExplorationNote, error)
 	CreateRupResource(ctx context.Context, arg CreateRupResourceParams) (RupResource, error)
