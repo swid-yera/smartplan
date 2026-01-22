@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 
 import { AwardStatusBadge } from '@components'
+import { formatAsDash } from '@helpers'
 import type { IAward } from '@types'
 import { Button, Separator, Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@ui'
 
@@ -27,11 +28,11 @@ export const AwardDetailsSheet: FC<IProps> = ({ award, onClose, isMethodist }) =
 							</div>
 
 							<div>
-								<strong>Преподаватель:</strong> {award.teacher.name}
+								<strong>Преподаватель:</strong> {award.teacher.lastName}
 							</div>
 
 							<div>
-								<strong>Методист:</strong> {award?.methodist?.name ?? '—'}
+								<strong>Методист:</strong> {formatAsDash(award?.methodist?.firstName)}
 							</div>
 
 							<div>

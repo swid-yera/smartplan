@@ -2,22 +2,24 @@
 
 import { type FC, type KeyboardEvent, useEffect } from 'react'
 
-import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader } from '@components'
+import { Forbidden, Loader, PageTitle } from '@components'
 import { isAuthor } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type IUpdateRupRequest, RupTypeEnum, StudyFormEnum } from '@types'
-import { Button, ButtonGroup, Heading } from '@ui'
-import { ArrowLeft, EyeIcon, RotateCcw, SaveIcon } from 'lucide-react'
+import { Button, ButtonGroup } from '@ui'
+import { RotateCcw, SaveIcon } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { DisciplineEdit, GroupEdit, NoteEdit, ResourceEdit, TopicsEdit } from '../../components'
+import { Step1 } from '../../create/step1'
+import { Step2 } from '../../create/step2'
+import { Step3 } from '../../create/step3'
+import { Step4 } from '../../create/step4'
 import { type RUPFormData, formSchema } from '../../form-schema'
 
 const defaultValues: RUPFormData = {
@@ -58,22 +60,51 @@ const EditPage: FC = () => {
 		resolver: zodResolver(formSchema),
 		mode: 'onChange',
 		shouldUnregister: false,
-		defaultValues,
+		values: rupData
+			? {
+					...rupData,
+					...rupData.explorationNote,
+					internetResources:
+						rupData.explorationNote?.internetResources?.map((r) => ({
+							name: r.name ?? '',
+							link: r.link ?? '', // Превращаем undefined в ""
+						})) ?? [],
+					technicalResources:
+						rupData.explorationNote?.technicalResources?.map((r) => ({
+							name: r.name ?? '',
+							link: r.link ?? '',
+						})) ?? [],
+					disciplines: rupData.disciplines ?? [],
+					groupId: rupData.groups[0]?.keycloakId,
+					contacts: rupData.contacts.map((c) => c.keycloakId),
+				}
+			: defaultValues,
 	})
 
 	// form update default values
 	useEffect(() => {
 		if (!rupData) return
 
-		methods.reset({
+		const mappedValues: RUPFormData = {
 			...rupData,
 			...rupData.explorationNote,
+			internetResources:
+				rupData.explorationNote?.internetResources?.map((r) => ({
+					name: r.name ?? '',
+					link: r.link ?? '',
+				})) ?? [],
+			technicalResources:
+				rupData.explorationNote?.technicalResources?.map((r) => ({
+					name: r.name ?? '',
+					link: r.link ?? '',
+				})) ?? [],
 			disciplines: rupData?.disciplines ?? [],
 			groupId: rupData.groups[0]?.keycloakId,
-			// @ts-ignore
 			contacts: rupData.contacts.map((c) => c?.keycloakId),
-		})
-	}, [rupData, methods.reset])
+		}
+
+		methods.reset(mappedValues, { keepDirty: false, keepTouched: false })
+	}, [rupData, methods])
 
 	// Warn user about unsaved changes before leaving the page.
 	// NOTE: This works for page reloads, closing the tab, or navigating away.
@@ -167,120 +198,43 @@ const EditPage: FC = () => {
 				onKeyDown={handleKeyDown}
 				onSubmit={methods.handleSubmit(onSubmit)}
 			>
-				<div className='flex items-center gap-4'>
-					<Button asChild size='icon' type='button' variant='outline'>
-						<Link href={`/rups/${id}`}>
-							<ArrowLeft />
-						</Link>
-					</Button>
+				<PageTitle
+					actions={
+						<ButtonGroup>
+							<Button
+								className='hover:text-destructive'
+								disabled={!methods.formState.isDirty}
+								size='sm'
+								type='button'
+								variant='outline'
+								onClick={() => methods.reset()}
+							>
+								<RotateCcw className='mr-2 h-4 w-4' />
+								Сбросить изменения
+							</Button>
+							<Button
+								className='hover:text-primary'
+								disabled={!methods.formState.isDirty}
+								size='sm'
+								type='submit'
+								variant='outline'
+							>
+								<SaveIcon className='mr-2 h-4 w-4' />
+								Сохранить
+							</Button>
+						</ButtonGroup>
+					}
+					backHref={`/rups/${rupData.id}`}
+					description='Редактирование рабочей учебной программы'
+					sticky={true}
+				>
+					Редактирование: {rupData.name || 'Рабочий учебный план'}
+				</PageTitle>
 
-					<div className='w-full'>
-						<Heading align='left' size='h1'>
-							Редактирование: {rupData.name || 'Рабочий учебный план'}
-						</Heading>
-					</div>
-
-					<ButtonGroup>
-						<Button asChild size='sm' type='button' variant='outline'>
-							<Link href={`/rups/${rupData.id}`}>
-								<EyeIcon />
-								Просмотр
-							</Link>
-						</Button>
-						<Button
-							className='hover:text-destructive'
-							disabled={!methods.formState.isDirty}
-							size='sm'
-							type='button'
-							variant='outline'
-							onClick={() => methods.reset()}
-						>
-							<RotateCcw className='mr-2 h-4 w-4' />
-							Сбросить изменения
-						</Button>
-						<Button
-							className='hover:text-primary'
-							disabled={!methods.formState.isDirty}
-							size='sm'
-							type='submit'
-							variant='outline'
-						>
-							<SaveIcon className='mr-2 h-4 w-4' />
-							Сохранить
-						</Button>
-					</ButtonGroup>
-				</div>
-
-				<div className='w-full space-y-5'>
-					<div className='grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)]'>
-						<NoteEdit
-							description='Нормативно-правовая и профессиональная база разработки рабочей учебной программы.'
-							label='Описание'
-							name='basis'
-							placeholder='Рабочая учебная программа по профессиональному модулю «ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet» разработана в соответствии с Приказом Министра просвещения Республики Казахстан от 3 августа 2022 года №348 с учетом изменений, внесенных 15.04.2025 года. Программа основана на профессиональном стандарте «Сетевые, системные администраторы и администраторы серверов» (дополнение №5 к приказу заместителя председателя правления Национальной палаты предпринимателей Республики Казахстан «Атамекен» №222 от 05.12.2022), а также на стандартах WorldSkills по направлению «Сетевое и системное администрирование». Рабочая учебная программа предназначена для реализации в рамках специальности 06120100 «Вычислительная техника и информационные сети» (по видам) и квалификации 4S06120102 «Техник сетевого и системного администрирования».'
-							rows={8}
-							title='Основание разработки рабочей учебной программы'
-						/>
-						<GroupEdit />
-					</div>
-					<div className='grid gap-4 md:grid-cols-2'>
-						<NoteEdit
-							description='Цель освоения профессионального модуля.'
-							label='Цели и задачи'
-							name='goals'
-							placeholder='Целью освоения профессионального модуля является формирование у обучающихся профессиональных знаний, умений и практических навыков в области обеспечения информационной безопасности локальных вычислительных сетей и сети Internet. В процессе освоения модуля обучающиеся изучают архитектуру и основные компоненты локальных вычислительных сетей, принципы их функционирования, методы мониторинга и анализа угроз и уязвимостей информации. Профессиональный модуль направлен на подготовку обучающихся к выполнению работ по настройке, конфигурированию и администрированию средств защиты информации, а также к обеспечению устойчивой и безопасной работы сетевых устройств и программного обеспечения.'
-							title='Образовательная цель профессионального модуля.'
-						/>
-						<NoteEdit
-							description='Формируемые профессиональные компетенции.'
-							label='Компетенции'
-							name='competencies'
-							placeholder='В результате освоения профессионального модуля у обучающихся формируются следующие профессиональные компетенции:\n– владение методами и средствами обеспечения информационной безопасности локальных вычислительных сетей и подключенных к ним информационных ресурсов с соблюдением требований охраны труда и техники безопасности;\n– выполнение работ по установке, настройке и администрированию операционных систем и программного обеспечения;\n– управление сетевыми и программными ресурсами, обеспечение их защиты, обновления и сопровождения;\n– анализ угроз информационной безопасности, выявление уязвимостей и реализация мер по их предотвращению.'
-							title='Перечень профессиональных компетенций, формируемых в результате освоения модуля.'
-						/>
-					</div>
-					{/* <ContactsEdit creatorId={user} /> */}
-					<div className='grid md:grid-cols-2 gap-4'>
-						<ResourceEdit
-							buttonText='Добавить ресурс'
-							description={
-								<>
-									Введите список ресурсов откуда был взят материал, <u>ресурс должен быть не старше 5 лет</u>
-								</>
-							}
-							label='Учебно-методический ресурсы'
-							name='internetResources'
-							placeholder='Откуда был взят материал для учебного плана'
-							title='Учебно-методическое оснащение, справочная литература/интернет-ресурсы'
-						/>
-						<ResourceEdit
-							buttonText='Добавить материал'
-							description='Введите список технических средств которые обязательны для учебного плана'
-							label='Технические средства и материалы'
-							name='technicalResources'
-							placeholder='Что нужно при прохождении учебного плана'
-							title='Технические средства и материалы'
-						/>
-					</div>
-
-					<DisciplineEdit />
-					<TopicsEdit />
-				</div>
-
-				<div className='flex justify-end gap-4 '>
-					<Button
-						disabled={!methods.formState.isDirty}
-						size='lg'
-						type='button'
-						variant='ghost'
-						onClick={() => methods.reset()}
-					>
-						Сбросить изменения
-					</Button>
-					<Button disabled={!methods.formState.isDirty} size='lg' type='submit' variant='default'>
-						Сохранить изменения
-					</Button>
-				</div>
+				<Step1 />
+				<Step2 />
+				<Step3 />
+				<Step4 />
 			</form>
 		</FormProvider>
 	)

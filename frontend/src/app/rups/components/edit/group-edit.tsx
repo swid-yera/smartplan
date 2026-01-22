@@ -51,30 +51,39 @@ export function GroupEdit<T extends IProps>() {
 	const [selectedGroup, setSelectedGroup] = useState<IGroup | undefined>(undefined)
 	const [formattedCourse, setFormattedCourse] = useState<number | string | undefined>('')
 	const [open, setOpen] = useState(false)
+
 	const watchedGroupId = form.watch('groupId' as Path<T>)
 	const watchedYear = form.watch('studyYear' as Path<T>)
 
-	const {
-		data: groupsData = [],
-		isLoading,
-		isSuccess,
-	} = useQuery({ ...services.group.getAllOptions(), enabled: true })
+	const { data: groupsData = [], isLoading } = useQuery({ ...services.group.getAllOptions(), enabled: true })
 
 	// set selected group
 	useEffect(() => {
-		if (isLoading || !isSuccess || !watchedGroupId) return
+		// Если данных еще нет, ничего не делаем
+		if (groupsData.length === 0 || !watchedGroupId) {
+			setSelectedGroup(undefined)
 
-		const foundGroup = groupsData.find((g) => g.keycloakId == watchedGroupId)
+			return
+		}
 
-		if (!foundGroup) return
-		setSelectedGroup(foundGroup)
+		const foundGroup = groupsData.find((g) => g.keycloakId === watchedGroupId)
 
-		if (!watchedYear) return
-		const foundCourse = formatCourseFromYearAndGroupName(foundGroup.name, watchedYear)
+		if (foundGroup) {
+			setSelectedGroup(foundGroup)
 
-		setFormattedCourse(foundCourse)
-		form.setValue('course' as Path<T>, (typeof foundCourse === 'number' ? foundCourse : 0) as PathValue<T, Path<T>>)
-	}, [isSuccess, isLoading, groupsData, watchedGroupId, watchedYear])
+			if (watchedYear) {
+				const foundCourse = formatCourseFromYearAndGroupName(foundGroup.name, watchedYear)
+
+				setFormattedCourse(foundCourse)
+
+				const numericCourse = typeof foundCourse === 'number' ? foundCourse : 0
+
+				if (form.getValues('course' as Path<T>) !== numericCourse) {
+					form.setValue('course' as Path<T>, numericCourse as PathValue<T, Path<T>>)
+				}
+			}
+		}
+	}, [groupsData, watchedGroupId, watchedYear, form])
 
 	return (
 		<Card>
@@ -104,9 +113,12 @@ export function GroupEdit<T extends IProps>() {
 												role='combobox'
 												variant='outline'
 											>
-												{field.value
-													? groupsData.find((group) => group.keycloakId === field.value)?.name
-													: 'Выбрать группу...'}
+												{field.value && groupsData.length > 0
+													? groupsData.find((group) => group.keycloakId === field.value)?.name ||
+														'Группа не найдена'
+													: isLoading
+														? 'Загрузка...'
+														: 'Выбрать группу...'}
 												<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
 											</Button>
 										</FormControl>
@@ -155,7 +167,7 @@ export function GroupEdit<T extends IProps>() {
 							<FormItem>
 								<FormLabel>Год обучения</FormLabel>
 
-								<Select value={field.value} onValueChange={field.onChange}>
+								<Select key={field.value} value={field.value} onValueChange={field.onChange}>
 									<SelectTrigger className='w-full'>
 										<SelectValue placeholder='Выберите год обучения' />
 									</SelectTrigger>

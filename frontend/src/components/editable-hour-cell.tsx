@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { getHoursStyle } from '@helpers'
+import { formatAsDash, getHoursStyle } from '@helpers'
 import { cn } from '@lib'
 import { Button, FormControl, FormField, FormItem, FormMessage, Input, TableCell } from '@ui'
 import { type FieldPath, type FieldValues, type UseFormReturn, useWatch } from 'react-hook-form'
@@ -64,7 +64,7 @@ function EditableHourCell<TFieldValues extends FieldValues>({
 					variant='ghost'
 					onClick={() => setIsEditing(true)}
 				>
-					{hours || '—'}
+					{formatAsDash(hours)}
 				</Button>
 			</div>
 		</TableCell>

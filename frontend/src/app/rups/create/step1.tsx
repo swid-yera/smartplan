@@ -1,12 +1,12 @@
 import type { FC } from 'react'
 
-import { BasicProps, GroupEdit, NoteEdit } from '../components'
+import { BasicEdit, GroupEdit, NoteEdit } from '../components'
 
 export const Step1: FC = () => {
 	return (
 		<div className='w-full space-y-5'>
 			<div className='grid gap-4 xl:grid-cols-2'>
-				<BasicProps />
+				<BasicEdit />
 				<GroupEdit />
 			</div>
 
