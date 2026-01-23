@@ -50,11 +50,22 @@ export class AwardService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ newAward }: { newAward: ICreateAwardRequest }) =>
-				api.post<IAward>('/awards', newAward).then((r) => r.data),
+			mutationFn: async ({ newAward, files }: { newAward: ICreateAwardRequest; files: File[] }) => {
+				const formData = new FormData()
+
+				formData.append('data', JSON.stringify(newAward))
+				formData.append('files', files[0])
+
+				const { data } = await api.post<IAward>('/awards', formData, {
+					headers: { 'Content-Type': 'multipart/form-data' },
+				})
+
+				return data
+			},
 
 			onSuccess: (createdAward) => {
 				queryClient.setQueryData(['award', createdAward.id], createdAward)
+				queryClient.invalidateQueries({ queryKey: ['awards'] })
 			},
 		})
 	}

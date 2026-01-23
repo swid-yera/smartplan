@@ -1,23 +1,13 @@
 'use client'
 
 import { Loader, PageTitle } from '@components'
-import { hasRole } from '@helpers'
-import { services } from '@services'
 import { useAuthStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
-import { UserRoleEnum } from '@types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Separator } from '@ui'
 
 const Page = () => {
 	const { user, authLoading } = useAuthStore()
-	// query
-	const { data = [], isLoading } = useQuery({ ...services.award.getAllTypesOptions(), enabled: true })
 
-	if (!user || authLoading || isLoading) return <Loader type='data' />
-
-	const isMethodist = hasRole(user.role, UserRoleEnum.METHODIST, false)
-
-	console.log(data)
+	if (!user || authLoading) return <Loader type='data' />
 
 	return (
 		<section className='p-4 w-full space-y-4'>

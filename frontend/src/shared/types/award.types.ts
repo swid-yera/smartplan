@@ -18,9 +18,6 @@ export interface IAward {
 	status: StatusEnum
 	reason?: string
 
-	title: string
-	totalPoints: number
-
 	teacher: IUser
 	methodist?: IUser
 
@@ -29,6 +26,7 @@ export interface IAward {
 	criteria: ICriteria
 	bonusCriteria?: ICriteria
 
+	totalPoints: number
 	text: string
 	files?: string[]
 	links?: string[]

@@ -29,7 +29,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ui'
-import { BookOpen, ChevronLeft, ChevronRight, Users } from 'lucide-react'
+import { BookOpen, ChevronLeft, ChevronRight, SearchCode, Users } from 'lucide-react'
 
 import { Loader } from './loader'
 import { StatusBadge } from './status-badge'
@@ -65,14 +65,14 @@ export const AwardsCard: FC<IProps> = ({
 				</CardHeader>
 				<CardContent>
 					<div className='relative overflow-x-auto min-w-0'>
-						<Table className='min-w-[200px]'>
+						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Наименование</TableHead>
 									<TableHead>Преподаватель</TableHead>
-									<TableHead>Специальность</TableHead>
-									<TableHead>Квалификация</TableHead>
-									<TableHead>Учебный год</TableHead>
+									<TableHead>Критерия</TableHead>
+									<TableHead>Описание</TableHead>
+									<TableHead>Кол. баллов</TableHead>
+									<TableHead>Кол. файлов</TableHead>
 									<TableHead className='text-right'>Статус</TableHead>
 									{/* Убрали колонку "Действия", так как кликаем по строке */}
 								</TableRow>
@@ -141,12 +141,17 @@ interface IAwardRow {
 const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 	return (
 		<TableRow className='cursor-pointer hover:bg-muted/50 transition-colors' onClick={() => onSelect(award)}>
-			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-				{award?.title || 'Без названия'}
-			</TableCell>
-			<TableCell className='whitespace-break-spaces min-w-[100px]'>
+			<TableCell className='font-medium whitespace-break-spaces min-w-[100px]'>
 				{award?.teacher?.firstName || 'Неизвестно'}
 			</TableCell>
+			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
+				{`${award.variant.name}, ${award.criteria.name}`}
+			</TableCell>
+			<TableCell className='font-medium whitespace-break-spaces min-w-[200px] py-4'>
+				{award.text || 'Пусто'}
+			</TableCell>
+			<TableCell className='py-6'>{award.totalPoints || 0}</TableCell>
+			<TableCell className='py-6'>{award.files?.length || 0}</TableCell>
 			<TableCell className='text-right'>
 				<StatusBadge status={award.status} />
 			</TableCell>
@@ -167,7 +172,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 					<>
 						<SheetHeader>
 							<SheetTitle className='mt-2'>
-								{award.title + ' '}
+								{`${award.variant.name}, ${award.criteria.name} `}
 								<StatusBadge status={award.status} />
 							</SheetTitle>
 							<SheetDescription>Краткая информация о рабочем учебном плане.</SheetDescription>
@@ -190,8 +195,16 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 										</>
 									)}
 
-									<p className='font-medium'>Наименование:</p>
-									<p>{award.title}</p>
+									<p className='font-medium'>Критерия:</p>
+									<p>
+										{award.variant.name}, {award.criteria.name}
+									</p>
+
+									<p className='font-medium'>Количество баллов:</p>
+									<p>{award.totalPoints}</p>
+
+									<p className='font-medium'>Описание:</p>
+									<p>{award.text || 'Пусто'}</p>
 								</div>
 							</div>
 
@@ -232,11 +245,33 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 									</p>
 								</div>
 							</div>
+
+							<Separator />
+
+							<div className='space-y-3'>
+								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+									<SearchCode className='w-4 h-4 mr-2' /> Подробности
+								</h4>
+
+								<div className='grid grid-cols-[1fr_2fr] space-y-3 text-sm'>
+									<p className='font-medium'>Критерия оценок:</p>
+									<p>{award.type.name || 'Пусто'}</p>
+
+									<p className='font-medium'>Вариант:</p>
+									<p>{award.variant.name || 'Пусто'}</p>
+
+									<p className='font-medium'>Критерий:</p>
+									<p className='font-semibold'>{award.criteria.name || 'Пусто'}</p>
+
+									<p className='font-medium'>Количество баллов:</p>
+									<p className='font-bold'>{award.criteria.points.join('-') || 'Пусто'}</p>
+								</div>
+							</div>
 						</div>
 
 						<SheetFooter className='mt-4'>
 							<Button asChild className='w-full'>
-								<Link href={`/awards/${award.id}`}>Открыть полную страницу</Link>
+								<Link href={`/kpi/${award.id}`}>Открыть полную страницу</Link>
 							</Button>
 							<SheetClose asChild>
 								<Button variant='outline'>Закрыть</Button>

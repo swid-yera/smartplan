@@ -230,10 +230,9 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	currentPage := 1
 	pageSize := 10
 
-	// status=APPROVED,REJECTED
-	var statuses []string
+	var status []string
 	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
-		statuses = strings.Split(raw, ",")
+		status = strings.Split(raw, ",")
 	}
 
 	if v := c.Query("currentPage"); v != "" {
@@ -277,7 +276,7 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 		search,
 		teacherID,
 		methodistID,
-		statuses, // 👈 ВСЕГДА []string
+		status,
 	)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})

@@ -37,7 +37,7 @@ export interface ITypeResponse {
 	variants: IVariantResponse[]
 }
 
-interface IVariantResponse {
+export interface IVariantResponse {
 	id: string
 	name: string
 	description: string
@@ -45,33 +45,9 @@ interface IVariantResponse {
 	bonusCriteria?: ICriteriaResponse[]
 }
 
-interface ICriteriaResponse {
+export interface ICriteriaResponse {
 	id: string
 	name: string
 	points: number[]
 	method: CriteriaMethodEnum
 }
-
-// // update
-// export interface IUpdateRupRequest extends ICreateRupRequest {
-// 	methodist?: string // IUser.keycloakId
-// }
-
-// // update status
-// export interface IUpdateRupStatusRequest {
-// 	id: IRup['id'] // IUser.keycloakId
-// 	status: IRup['status'] // IUser.keycloakId
-// 	reason?: IRup['reason']
-// }
-
-// // download response
-// export interface IDownloadResponse {
-// 	url: string
-// }
-
-// // get all
-// export interface IGetAllRequest extends IPaginationRequest {
-// 	methodist?: string
-// 	teacher?: string
-// 	status?: StatusEnum[]
-// }

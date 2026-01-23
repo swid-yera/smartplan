@@ -15,8 +15,6 @@ const Page = () => {
 
 	if (isLoading) return <Loader />
 
-	console.log(data)
-
 	return (
 		<section className='p-4 w-full space-y-6'>
 			<PageTitle
