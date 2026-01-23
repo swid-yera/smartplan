@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_7vw9nWxEkQ
 createdAt: 2026-01-15T08:10:01.378255200
-updatedAt: 2026-01-19T12:00:25.840892400
+updatedAt: 2026-01-22T22:32:29.742026
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -12,28 +12,46 @@ authenticationType: bearer
 body:
   text: |-
     {
-        "name": "Лучший студент",
-        "variants": [
-          {
-            "name": "Вариант 1",
-            "description": "Описание варианта 1",
-            "criteria": [
-              {
-                "name": "Критерий 1",
-                "points": [20],
-                "method": "NORMAL"
-              }
-            ],
-             "bonus_criteria": [
-              {
-                "name": "Критерий 1",
-                "points": [20],
-                "method": "MEASURING"
-              }
-            ]
-          }
-        ]
-      }
+      "name": "Прохождение курсов повышения квалификации и стажировка.",
+      "variants": [
+        {
+          "name": "Прохождение курсов повышения квалификации",
+          "description": "",
+          "criteria": [
+            {
+              "name": "Курсы по рекомендации колледжа",
+              "points": [
+                3
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "On-line курсы ведущих вендоров",
+              "points": [
+                5
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "Профессиональные курсы",
+              "points": [
+                10
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "Стажировка",
+              "points": [
+                15
+              ],
+              "method": "NORMAL"
+            }
+          ],
+          "bonus_criteria": [
+          ]
+        }
+      ]
+    }
 bodyType: application/json
 description: ''
 headers:

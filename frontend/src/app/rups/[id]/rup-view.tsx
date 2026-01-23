@@ -33,11 +33,10 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
 	const isMethodistReview = hasRole(role, UserRoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
 
-	console.log(data)
-
 	return (
 		<div className='w-full mx-auto relative'>
 			<PageTitle
+				sticky
 				actions={
 					<ButtonGroup>
 						{actions}
@@ -72,7 +71,6 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 						? 'Проверка рабочего учебного плана.'
 						: 'Просмотр рабочего учебного плана. Редактирование запрещено.'
 				}
-				sticky={true}
 			>
 				{` ${data.name || 'Рабочий учебный план'} `}
 				<StatusBadge status={data.status} />

@@ -2,7 +2,6 @@ import type { StatusEnum } from '../global.types'
 import type {
 	IDiscipline,
 	IResources,
-	IRup,
 	IRupExplorationNote,
 	ISemester,
 	ITopics,
@@ -46,13 +45,6 @@ export interface ICreateRupRequest {
 // update
 export interface IUpdateRupRequest extends ICreateRupRequest {
 	methodist?: string // IUser.keycloakId
-}
-
-// update status
-export interface IUpdateRupStatusRequest {
-	id: IRup['id'] // IUser.keycloakId
-	status: IRup['status'] // IUser.keycloakId
-	reason?: IRup['reason']
 }
 
 // download response

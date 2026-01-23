@@ -10,7 +10,7 @@ import { hasRole, isAuthor, normalizeStatus } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateRupStatusRequest, StatusEnum, UserRoleEnum } from '@types'
+import { type IUpdateStatusRequest, StatusEnum, UserRoleEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -68,7 +68,7 @@ const Page: FC = () => {
 		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
 
 		toast.loading('Изменение статуса...', { id: toastId })
-		const updateStatusPayload: IUpdateRupStatusRequest = { id: rupData.id, status: newStatus, reason }
+		const updateStatusPayload: IUpdateStatusRequest = { id: rupData.id, status: newStatus, reason }
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {

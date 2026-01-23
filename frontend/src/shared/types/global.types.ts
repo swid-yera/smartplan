@@ -1,4 +1,4 @@
-import type { AwardViolationEnum, IAward } from './award.types'
+import type { IAward, ViolationEnum } from './award.types'
 import type { IRup } from './rup.types'
 
 export enum StatusEnum {
@@ -45,7 +45,7 @@ export interface IUser {
 	rups?: IRup[]
 	totalPoint?: number
 	awards?: IAward[]
-	violation?: AwardViolationEnum
+	violation?: ViolationEnum
 
 	createdAt: string
 	updatedAt: string

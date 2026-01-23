@@ -1,59 +1,59 @@
 import type { IUser, StatusEnum } from './global.types'
 
-export enum AwardViolationEnum {
+export enum ViolationEnum {
 	NONE = 'NONE',
 	REMARK = 'REMARK',
 	REBUKE = 'REBUKE',
 	SEVERE_REPRIMAND = 'SEVERE_REPRIMAND',
 }
 
-export enum IAwardTypeCriteriaMethodEnum {
+export enum CriteriaMethodEnum {
 	NORMAL = 'NORMAL',
 	MEASURING = 'MEASURING',
-	PENALTY = 'PENALTY',
 }
 
 export interface IAward {
 	id: string
 
-	title: string
 	status: StatusEnum
-	teacher: IUser
-
-	methodist?: IUser
 	reason?: string
 
+	title: string
 	totalPoints: number
-	type: IAwardType
-	variant: IAwardTypeVariant
-	criteria: IAwardTypeCriteria
 
-	text?: string
-	images?: string[]
-	document?: string
+	teacher: IUser
+	methodist?: IUser
+
+	type: IType
+	variant: IVariant
+	criteria: ICriteria
+	bonusCriteria?: ICriteria
+
+	text: string
+	files?: string[]
 	links?: string[]
 
 	createdAt: string
 	updatedAt: string
 }
 
-export interface IAwardType {
+export interface IType {
 	id: string
 	name: string
-	variants?: IAwardTypeVariant[]
+	variants: IVariant[]
 }
 
-export interface IAwardTypeVariant {
+export interface IVariant {
 	id: string
 	name: string
 	description: string
-	criteria?: IAwardTypeCriteria[]
-	bonusCriteria?: IAwardTypeCriteria[]
+	criteria: ICriteria[]
+	bonusCriteria: ICriteria[]
 }
 
-export interface IAwardTypeCriteria {
+export interface ICriteria {
 	id: string
 	name: string
 	points: number[]
-	method: IAwardTypeCriteriaMethodEnum
+	method: CriteriaMethodEnum
 }

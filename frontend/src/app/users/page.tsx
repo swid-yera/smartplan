@@ -69,8 +69,6 @@ function Page() {
 	const totalPages = usersData?.meta.pages || 1
 	const paginatedUsers = usersData?.data || []
 
-	console.log(isRefetching)
-
 	return (
 		<div className='w-full mx-auto py-10 px-2 md:px-4 space-y-8'>
 			<PageTitle description='Управляйте списком пользователей, просматривайте их контактные данные и роли.'>

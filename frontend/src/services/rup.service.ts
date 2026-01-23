@@ -8,7 +8,7 @@ import type {
 	IPagination,
 	IRup,
 	IUpdateRupRequest,
-	IUpdateRupStatusRequest,
+	IUpdateStatusRequest,
 } from '@types'
 
 export class RupService {
@@ -79,7 +79,7 @@ export class RupService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ id, ...payload }: IUpdateRupStatusRequest) =>
+			mutationFn: ({ id, ...payload }: IUpdateStatusRequest) =>
 				api.put<IMessageResponse>(`/rups/${id}/status`, payload).then((r) => r.data),
 
 			onSuccess: (messageResponse, { id }) => {
