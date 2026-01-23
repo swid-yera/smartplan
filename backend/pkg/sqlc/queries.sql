@@ -253,7 +253,10 @@ FROM rups WHERE
     ) AND (
         sqlc.narg('methodist')::uuid IS NULL 
         OR methodist = sqlc.narg('methodist')::uuid
-    )AND status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    )AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    )
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -277,7 +280,10 @@ WHERE
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
     )
-    AND status = ANY(sqlc.arg(status)::text[]::rups_status[]);
+    AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    );
 
 -- name: CountRups :one
 SELECT COUNT(*) FROM rups;
