@@ -1162,6 +1162,11 @@ func (s *rupService) GetRupPaginated(
 		pageSize = 10
 	}
 
+	// 👇 КРИТИЧЕСКИЙ ФИКС
+	if len(status) == 0 {
+		status = nil
+	}
+
 	offset := (currentPage - 1) * pageSize
 
 	total, err := s.repo.CountRupsFiltered(
