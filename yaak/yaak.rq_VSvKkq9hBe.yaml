@@ -2,56 +2,56 @@ type: http_request
 model: http_request
 id: rq_VSvKkq9hBe
 createdAt: 2026-01-19T12:00:23.657903500
-updatedAt: 2026-01-22T22:32:39.029557700
+updatedAt: 2026-01-22T17:56:00.685456600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
-  prefix: 'Bearer '
-  token: ''
+   prefix: 'Bearer '
+   token: ''
 authenticationType: bearer
 body:
-  form:
-  - enabled: true
-    file: C:\Users\KIRKANATOR\Desktop\job\templator\output\generated-rup-20251213_131837.docx
-    id: WAD5ZhbkJS
-    name: file
-  - enabled: true
-    id: TRXjEuBDag
-    name: status
-    value: DRAFT
-  - enabled: true
-    id: HYhkYGaiKI
-    name: methodist
-    value: b83882bd-7761-46bd-b657-cb156950309d
-  - enabled: true
-    id: gQ5Hgcf6th
-    name: type
-    value: ''
-  - enabled: true
-    id: z3VxFSyVa7
-    name: ''
-    value: ''
+   form:
+      - enabled: true
+        file: C:\Users\KIRKANATOR\Desktop\job\templator\output\generated-rup-20251213_131837.docx
+        id: WAD5ZhbkJS
+        name: file
+      - enabled: true
+        id: TRXjEuBDag
+        name: status
+        value: DRAFT
+      - enabled: true
+        id: HYhkYGaiKI
+        name: methodist
+        value: b83882bd-7761-46bd-b657-cb156950309d
+      - enabled: true
+        id: gQ5Hgcf6th
+        name: type
+        value: ''
+      - enabled: true
+        id: z3VxFSyVa7
+        name: ''
+        value: ''
 bodyType: null
 description: ''
 headers:
-- enabled: false
-  name: Cookie
-  value: ${[ sid ]}
-  id: IbqKxWm6Xg
-- enabled: true
-  name: ''
-  value: ''
-  id: U2Y6htZg2K
+   - enabled: false
+     name: Cookie
+     value: ${[ sid ]}
+     id: IbqKxWm6Xg
+   - enabled: true
+     name: ''
+     value: ''
+     id: U2Y6htZg2K
 method: DELETE
 name: delete
 sortPriority: 2000.0
 url: ${[ url ]}/awards/types/:id
 urlParameters:
-- enabled: true
-  name: :id
-  value: 8830cc4a-d0cd-4bdf-8307-5e4d5c4b4367
-  id: TgBK970imx
-- enabled: true
-  name: ''
-  value: ''
-  id: zgMzSP6us9
+   - enabled: true
+     name: :id
+     value: b22d2c73-2f81-4325-8ddd-69406e9d2c84
+     id: TgBK970imx
+   - enabled: true
+     name: ''
+     value: ''
+     id: dWk2hJWyRh

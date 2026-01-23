@@ -6,6 +6,8 @@ import (
 	storage "eduplan/backend/pkg/sqlc/generated"
 	"fmt"
 	"io"
+	"math"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -48,6 +50,11 @@ type AwardResponse struct {
 type SelectedTypeResponse struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
+}
+
+type PaginatedAwardsResponse struct {
+	Data []storage.Award `json:"data"`
+	Meta PaginationMeta  `json:"meta"`
 }
 
 type SelectedVariantResponse struct {
@@ -115,12 +122,13 @@ type UpdateAwardRequest struct {
 }
 
 type AwardService struct {
-	repo *repository.AwardRepository
-	log  *logrus.Logger
+	repo        *repository.AwardRepository
+	log         *logrus.Logger
+	fileStorage FileStorage
 }
 
-func NewAwardService(repo *repository.AwardRepository, log *logrus.Logger) *AwardService {
-	return &AwardService{repo: repo, log: log}
+func NewAwardService(repo *repository.AwardRepository, fileStorage FileStorage, log *logrus.Logger) *AwardService {
+	return &AwardService{repo: repo, fileStorage: fileStorage, log: log}
 }
 
 // awards
@@ -647,5 +655,73 @@ func (s *AwardService) createVariantsWithCriteria(ctx context.Context, variants 
 }
 
 func (s *AwardService) UploadFile(ctx context.Context, fileName string, reader io.Reader, size int64) (string, error) {
-	return s.repo.UploadToMinIO(ctx, fileName, reader, size)
+	if err := s.fileStorage.UploadFile(ctx, fileName, reader, size); err != nil {
+		return "", err
+	}
+	return fileName, nil
+}
+
+func (s *AwardService) GetFileDownloadURL(ctx context.Context, key string) (string, error) {
+	return s.fileStorage.GetDownloadFileURL(ctx, key, 10*time.Minute)
+}
+
+func (s *AwardService) CountAwards(ctx context.Context) (int64, error) {
+	return s.repo.CountAwards(ctx)
+}
+
+func (s *AwardService) GetAwardPaginated(
+	ctx context.Context,
+	currentPage int,
+	pageSize int,
+	teacher pgtype.UUID,
+	methodist pgtype.UUID,
+	status []string,
+) (*PaginatedAwardsResponse, error) {
+	if currentPage < 1 {
+		currentPage = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	// 👇 КРИТИЧЕСКИЙ ФИКС
+	if len(status) == 0 {
+		status = nil
+	}
+
+	offset := (currentPage - 1) * pageSize
+
+	total, err := s.repo.CountAwardsFiltered(
+		ctx,
+		teacher,
+		methodist,
+		status,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	dbAwards, err := s.repo.GetAwardsPaginated(
+		ctx,
+		int32(pageSize),
+		int32(offset),
+		teacher,
+		methodist,
+		status,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	pages := int(math.Ceil(float64(total) / float64(pageSize)))
+
+	return &PaginatedAwardsResponse{
+		Data: dbAwards,
+		Meta: PaginationMeta{
+			CurrentPage: currentPage,
+			Pages:       pages,
+			Total:       int(total),
+			PageSize:    pageSize,
+		},
+	}, nil
 }

@@ -12,6 +12,8 @@ import (
 )
 
 type Querier interface {
+	CountAwards(ctx context.Context) (int64, error)
+	CountAwardsFiltered(ctx context.Context, arg CountAwardsFilteredParams) (int64, error)
 	CountRups(ctx context.Context) (int64, error)
 	CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
@@ -50,6 +52,7 @@ type Querier interface {
 	GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error)
 	GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error)
 	GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Award, error)
+	GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginatedParams) ([]Award, error)
 	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
 	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error)

@@ -54,7 +54,7 @@ export const AwardsCard: FC<IProps> = ({
 	isLoading,
 }) => {
 	const [selectedAward, setSelectedAward] = useState<IAward | null>(null)
-	const isExist = awards.length > 0 || !isLoading
+	const isExist = awards.length > 0 && !isLoading
 
 	return (
 		<>
@@ -83,7 +83,7 @@ export const AwardsCard: FC<IProps> = ({
 									awards.map((item) => <AwardRow key={item.id} award={item} onSelect={setSelectedAward} />)
 								) : (
 									<TableRow>
-										<TableCell className='h-40 text-center' colSpan={5}>
+										<TableCell className='h-44 text-center' colSpan={5}>
 											{isLoading ? (
 												<Loader
 													className='flex flex-col justify-center items-center'

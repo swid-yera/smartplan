@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-01-22T12:51:35.176731600
+updatedAt: 2026-01-23T01:41:04.859860800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -15,18 +15,18 @@ body:
     name: data
     value: |-
       {
-        "text": "Описание награды",
-        "type": "b22d2c73-2f81-4325-8ddd-69406e9d2c84",
-        "variant": "bd2d8cdf-92e6-4a27-8bf5-c6aba56fefc5",
-        "criteria": "41c4f074-171b-4c0b-b199-b0eb5f625c0b",
-        "bonusCriteria": "a4ff694f-d318-4cf7-94ec-0ce6dd551aca"
+        "text": "Описание ",
+        "type": "332fc408-84e7-4a0a-a8dc-666fbfb84527",
+        "variant": "5dd76cc9-efac-4ea6-a4bf-753d67be9897",
+        "criteria": "43a1688b-4c5f-4665-be38-ddab4d1e7f82",
+        "bonusCriteria": "116d9b55-462e-4bb3-bd3a-10add1d23345"
       }
   - enabled: true
-    file: C:\Users\KIRKANATOR\Downloads\Без названия — копия (2).jpg
+    file: C:\Users\justs\OneDrive\Pictures\IMG_5284.JPG
     id: H2zgvD0mut
     name: files
   - enabled: true
-    id: emiavwn9aN
+    id: YSG7AVndDH
     name: ''
     value: ''
 bodyType: multipart/form-data

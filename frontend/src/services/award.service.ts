@@ -1,3 +1,4 @@
+import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
@@ -5,19 +6,27 @@ import type {
 	ICreateAwardRequest,
 	ICreateTypesRequest,
 	IMessageResponse,
+	IPagination,
+	IPaginationRequest,
 	ITypeResponse,
 	IUpdateStatusRequest,
 } from '@types'
 
 export class AwardService {
 	// get all awards
-	getAllOptions = () => {
-		return queryOptions<IAward[]>({
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search }: IPaginationRequest) => {
+		return queryOptions<IPagination<IAward>>({
 			queryKey: ['awards'],
 			queryFn: async () => {
-				const { data } = await api.get<IAward[]>('/awards')
+				const { data } = await api.get<IPagination<IAward>>('/awards', {
+					params: {
+						currentPage,
+						pageSize,
+						search,
+					},
+				})
 
-				if (!data) return []
+				if (!data) return { data: [], meta: generateEmptyMetaPagination() }
 
 				return data
 			},

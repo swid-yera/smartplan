@@ -2,73 +2,72 @@ type: http_request
 model: http_request
 id: rq_7vw9nWxEkQ
 createdAt: 2026-01-15T08:10:01.378255200
-updatedAt: 2026-01-22T22:32:29.742026
+updatedAt: 2026-01-22T17:07:05.469712100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
-  prefix: 'Bearer '
-  token: ''
+   prefix: 'Bearer '
+   token: ''
 authenticationType: bearer
 body:
-  text: |-
-    {
-      "name": "Прохождение курсов повышения квалификации и стажировка.",
-      "variants": [
-        {
-          "name": "Прохождение курсов повышения квалификации",
-          "description": "",
-          "criteria": [
-            {
-              "name": "Курсы по рекомендации колледжа",
-              "points": [
-                3
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "On-line курсы ведущих вендоров",
-              "points": [
-                5
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "Профессиональные курсы",
-              "points": [
-                10
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "Стажировка",
-              "points": [
-                15
-              ],
-              "method": "NORMAL"
-            }
-          ],
-          "bonus_criteria": [
-          ]
-        }
-      ]
-    }
+   text: |-
+      {
+        "name": "Благодарственные письма, похвальные листы и почётные грамоты",
+        "variants": [
+          {
+            "name": "Почетная грамота, грамоты, благодарственные письма педагогов",
+            "description": "каждое грамота умножается на тот балл, который прописан ниже по уровням",
+            "criteria": [
+              {
+                "name": "внутриколледжный",
+                "points": [
+                  2
+                ],
+                "method": "NORMAL"
+              },
+              {
+                "name": "городской",
+                "points": [
+                  3
+                ],
+                "method": "NORMAL"
+              },
+              {
+                "name": "республиканский",
+                "points": [
+                  5
+                ],
+                "method": "NORMAL"
+              },
+              {
+                "name": "международный",
+                "points": [
+                  10
+                ],
+                "method": "NORMAL"
+              }
+            ],
+            "bonus_criteria": []
+          }
+        ]
+      }
 bodyType: application/json
 description: ''
 headers:
-- enabled: true
-  name: Content-Type
-  value: application/json
-  id: tUVAhNTsUr
-- enabled: true
-  name: ''
-  value: ''
-  id: zbd2xcPZrw
+   - enabled: true
+     name: Content-Type
+     value: application/json
+     id: tUVAhNTsUr
+   - enabled: true
+     name: ''
+     value: ''
+     id: zbd2xcPZrw
 method: POST
 name: create
 sortPriority: 1000.0
 url: ${[ url ]}/awards/types
 urlParameters:
-- enabled: true
-  name: ''
-  value: ''
-  id: DRdSvgzZTv
+   - enabled: true
+     name: ''
+     value: ''
+     id: DRdSvgzZTv

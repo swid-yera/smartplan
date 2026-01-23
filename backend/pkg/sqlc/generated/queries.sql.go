@@ -12,6 +12,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAwards = `-- name: CountAwards :one
+SELECT COUNT(*) FROM awards
+`
+
+func (q *Queries) CountAwards(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAwards)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countAwardsFiltered = `-- name: CountAwardsFiltered :one
+SELECT COUNT(*)
+FROM awards
+WHERE
+    (
+        $1::uuid IS NULL
+        OR teacher = $1::uuid
+    )
+    AND (
+        $2::uuid IS NULL
+        OR methodist = $2::uuid
+    )
+    AND (
+        $3::text[] IS NULL
+        OR status = ANY($3::text[]::awards_status[])
+    )
+`
+
+type CountAwardsFilteredParams struct {
+	Teacher   pgtype.UUID `json:"teacher"`
+	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
+}
+
+func (q *Queries) CountAwardsFiltered(ctx context.Context, arg CountAwardsFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countAwardsFiltered, arg.Teacher, arg.Methodist, arg.Status)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countRups = `-- name: CountRups :one
 SELECT COUNT(*) FROM rups
 `
@@ -43,16 +85,23 @@ WHERE
         $3::uuid IS NULL
         OR methodist = $3::uuid
     )
+    AND status = ANY($4::text[]::rups_status[])
 `
 
 type CountRupsFilteredParams struct {
 	Column1   interface{} `json:"column_1"`
 	Teacher   pgtype.UUID `json:"teacher"`
 	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
 }
 
 func (q *Queries) CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countRupsFiltered, arg.Column1, arg.Teacher, arg.Methodist)
+	row := q.db.QueryRow(ctx, countRupsFiltered,
+		arg.Column1,
+		arg.Teacher,
+		arg.Methodist,
+		arg.Status,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -1157,6 +1206,75 @@ func (q *Queries) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) (
 	return items, nil
 }
 
+const getAwardsPaginated = `-- name: GetAwardsPaginated :many
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards
+WHERE
+    (
+        $3::uuid IS NULL
+        OR teacher = $3::uuid
+    )
+    AND (
+        $4::uuid IS NULL
+        OR methodist = $4::uuid
+    )
+    AND (
+        $5::text[] IS NULL
+        OR status = ANY($5::text[]::awards_status[])
+    )
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type GetAwardsPaginatedParams struct {
+	Limit     int32       `json:"limit"`
+	Offset    int32       `json:"offset"`
+	Teacher   pgtype.UUID `json:"teacher"`
+	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
+}
+
+func (q *Queries) GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginatedParams) ([]Award, error) {
+	rows, err := q.db.Query(ctx, getAwardsPaginated,
+		arg.Limit,
+		arg.Offset,
+		arg.Teacher,
+		arg.Methodist,
+		arg.Status,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Award
+	for rows.Next() {
+		var i Award
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.Reason,
+			&i.Methodist,
+			&i.Teacher,
+			&i.TotalPoints,
+			&i.Type,
+			&i.Variant,
+			&i.Criteria,
+			&i.BonusCriteria,
+			&i.Text,
+			&i.Files,
+			&i.Links,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getDisciplineSemesterByID = `-- name: GetDisciplineSemesterByID :one
 SELECT id, semester, total_hours FROM discipline_semesters WHERE id = $1
 `
@@ -1387,18 +1505,19 @@ func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]
 }
 
 const getRupsPaginated = `-- name: GetRupsPaginated :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
-FROM rups
-WHERE
-    ($1 = '' OR name ILIKE '%' || $1 || '%')
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at 
+FROM rups WHERE 
+    (
+        $1 = '' 
+        OR name ILIKE '%' || $1 || '%'
+    ) 
     AND (
-        $4::uuid IS NULL
+        $4::uuid IS NULL 
         OR teacher = $4::uuid
-    )
-    AND (
-        $5::uuid IS NULL
+    ) AND (
+        $5::uuid IS NULL 
         OR methodist = $5::uuid
-    )
+    )AND status = ANY($6::text[]::rups_status[])
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
@@ -1409,6 +1528,7 @@ type GetRupsPaginatedParams struct {
 	Offset    int32       `json:"offset"`
 	Teacher   pgtype.UUID `json:"teacher"`
 	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
 }
 
 func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error) {
@@ -1418,6 +1538,7 @@ func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedPara
 		arg.Offset,
 		arg.Teacher,
 		arg.Methodist,
+		arg.Status,
 	)
 	if err != nil {
 		return nil, err

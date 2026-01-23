@@ -1,6 +1,8 @@
 'use client'
 
-import { Loader, PageTitle } from '@components'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+
+import { AwardsCard, Loader, PageTitle } from '@components'
 import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
@@ -10,15 +12,30 @@ import { UserRoleEnum } from '@types'
 import { CreateCard, HeroCard } from './components'
 
 const Page = () => {
+	const searchParams = useSearchParams()
+	const router = useRouter()
+	const pathname = usePathname()
+
+	const page = Number(searchParams.get('page')) || 1
+
+	// store
 	const { user, authLoading } = useAuthStore()
 	// query
-	const { data = [], isLoading } = useQuery({ ...services.award.getAllTypesOptions(), enabled: true })
+	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
+		...services.award.getAllOptions({ currentPage: page, pageSize: 10 }),
+		enabled: !!user,
+	})
 
-	if (!user || authLoading || isLoading) return <Loader type='data' />
+	const setCurrentPage = (newPage: number) => {
+		const params = new URLSearchParams(searchParams.toString())
+
+		params.set('page', String(newPage))
+		router.push(`${pathname}?${params.toString()}`)
+	}
+
+	if (!user || authLoading) return <Loader type='data' />
 
 	const isMethodist = hasRole(user.role, UserRoleEnum.METHODIST, false)
-
-	console.log(data)
 
 	return (
 		<section className='p-4 w-full space-y-4'>
@@ -29,9 +46,14 @@ const Page = () => {
 				{!isMethodist && <CreateCard />}
 			</div>
 
-			{/* <AwardsCard
-			 	awards={data}
-			 /> */}
+			<AwardsCard
+				awards={awardsData?.data || []}
+				currentPage={awardsData?.meta.currentPage || 1}
+				isLoading={isAwardsLoading}
+				title='Список достижений'
+				totalPages={awardsData?.meta.pages || 1}
+				onPageChange={setCurrentPage}
+			/>
 		</section>
 	)
 }

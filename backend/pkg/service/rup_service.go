@@ -25,7 +25,7 @@ type RupService interface {
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
-	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, teacher pgtype.UUID, methodist pgtype.UUID) (*PaginatedRupsResponse, error)
+	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (*PaginatedRupsResponse, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
@@ -1145,6 +1145,7 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 func (s *rupService) CountRups(ctx context.Context) (int64, error) {
 	return s.repo.CountRups(ctx)
 }
+
 func (s *rupService) GetRupPaginated(
 	ctx context.Context,
 	currentPage int,
@@ -1152,8 +1153,8 @@ func (s *rupService) GetRupPaginated(
 	search string,
 	teacher pgtype.UUID,
 	methodist pgtype.UUID,
+	status []string,
 ) (*PaginatedRupsResponse, error) {
-
 	if currentPage < 1 {
 		currentPage = 1
 	}
@@ -1163,7 +1164,13 @@ func (s *rupService) GetRupPaginated(
 
 	offset := (currentPage - 1) * pageSize
 
-	total, err := s.repo.CountRupsFiltered(ctx, search, teacher, methodist)
+	total, err := s.repo.CountRupsFiltered(
+		ctx,
+		search,
+		teacher,
+		methodist,
+		status, // 👈 всё ещё строки
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1175,6 +1182,7 @@ func (s *rupService) GetRupPaginated(
 		search,
 		teacher,
 		methodist,
+		status,
 	)
 	if err != nil {
 		return nil, err
@@ -1182,13 +1190,10 @@ func (s *rupService) GetRupPaginated(
 
 	rups := make([]*ListAllRupsResponse, 0, len(dbRups))
 	for _, rup := range dbRups {
-
 		resp, err := s.buildListAllRupsResponse(ctx, rup)
-		if err != nil {
-			continue
+		if err == nil {
+			rups = append(rups, resp)
 		}
-
-		rups = append(rups, resp)
 	}
 
 	pages := int(math.Ceil(float64(total) / float64(pageSize)))
