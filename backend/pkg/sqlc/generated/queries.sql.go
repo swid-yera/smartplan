@@ -1734,16 +1734,18 @@ SET
     status = $2,
     reason = $3,
     methodist = $4,
+    total_points = $5,
     updated_at = NOW()
 WHERE
     id = $1
 `
 
 type UpdateAwardStatusParams struct {
-	ID        uuid.UUID    `json:"id"`
-	Status    AwardsStatus `json:"status"`
-	Reason    pgtype.Text  `json:"reason"`
-	Methodist pgtype.UUID  `json:"methodist"`
+	ID          uuid.UUID    `json:"id"`
+	Status      AwardsStatus `json:"status"`
+	Reason      pgtype.Text  `json:"reason"`
+	Methodist   pgtype.UUID  `json:"methodist"`
+	TotalPoints int32        `json:"total_points"`
 }
 
 func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error {
@@ -1752,6 +1754,7 @@ func (q *Queries) UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusPa
 		arg.Status,
 		arg.Reason,
 		arg.Methodist,
+		arg.TotalPoints,
 	)
 	return err
 }

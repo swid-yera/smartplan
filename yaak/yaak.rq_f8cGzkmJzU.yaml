@@ -8,34 +8,34 @@ folderId: fl_oAFVcfRqht
 authentication: {}
 authenticationType: null
 body:
-  form:
-  - contentType: application/json
-    enabled: true
-    id: Yny8zZ9arh
-    name: data
-    value: |-
-      {
-        "text": "Описание ",
-        "type": "332fc408-84e7-4a0a-a8dc-666fbfb84527",
-        "variant": "5dd76cc9-efac-4ea6-a4bf-753d67be9897",
-        "criteria": "43a1688b-4c5f-4665-be38-ddab4d1e7f82",
-        "bonusCriteria": "116d9b55-462e-4bb3-bd3a-10add1d23345"
-      }
-  - enabled: true
-    file: C:\Users\justs\OneDrive\Pictures\IMG_5284.JPG
-    id: H2zgvD0mut
-    name: files
-  - enabled: true
-    id: YSG7AVndDH
-    name: ''
-    value: ''
+   form:
+      - contentType: application/json
+        enabled: true
+        id: Yny8zZ9arh
+        name: data
+        value: |-
+           {
+             "text": "Описание ",
+             "type": "332fc408-84e7-4a0a-a8dc-666fbfb84527",
+             "variant": "5dd76cc9-efac-4ea6-a4bf-753d67be9897",
+             "criteria": "43a1688b-4c5f-4665-be38-ddab4d1e7f82",
+             "bonusCriteria": "116d9b55-462e-4bb3-bd3a-10add1d23345"
+           }
+      - enabled: true
+        file: C:\Users\justs\OneDrive\Pictures\IMG_5284.JPG
+        id: H2zgvD0mut
+        name: files
+      - enabled: true
+        id: YSG7AVndDH
+        name: ''
+        value: ''
 bodyType: multipart/form-data
 description: ''
 headers:
-- enabled: true
-  name: Content-Type
-  value: multipart/form-data
-  id: Au60NHsqZd
+   - enabled: true
+     name: Content-Type
+     value: multipart/form-data
+     id: Au60NHsqZd
 method: POST
 name: create
 sortPriority: 0.0

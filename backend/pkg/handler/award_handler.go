@@ -120,8 +120,9 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status storage.AwardsStatus `json:"status"`
-		Reason pgtype.Text          `json:"reason"`
+		Status      storage.AwardsStatus `json:"status"`
+		Reason      pgtype.Text          `json:"reason"`
+		TotalPoints int                  `json:"total_points"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -130,10 +131,11 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	}
 
 	params := storage.UpdateAwardStatusParams{
-		ID:        id,
-		Status:    req.Status,
-		Reason:    req.Reason,
-		Methodist: parseUUIDPgtype(currentUser.KeycloakID.String()),
+		ID:          id,
+		Status:      req.Status,
+		Reason:      req.Reason,
+		Methodist:   parseUUIDPgtype(currentUser.KeycloakID.String()),
+		TotalPoints: int32(req.TotalPoints),
 	}
 
 	award, err := h.service.UpdateAwardStatus(c.Request.Context(), params)
@@ -250,10 +252,14 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		return
 	}
 
-	bonusCriteriaID, err := uuid.Parse(params.AwardBonusCriteria.String())
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid BonusCriteriaID UUID format"})
-		return
+	var bonusCriteriaPg pgtype.UUID
+	if params.AwardBonusCriteria.Valid {
+		parsed, err := uuid.Parse(params.AwardBonusCriteria.String())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid BonusCriteriaID UUID format"})
+			return
+		}
+		bonusCriteriaPg = pgtype.UUID{Bytes: parsed, Valid: true}
 	}
 
 	// files
@@ -295,7 +301,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		Type:          parseUUIDPgtype(typeID.String()),
 		Variant:       parseUUIDPgtype(variantID.String()),
 		Criteria:      parseUUIDPgtype(criteriaID.String()),
-		BonusCriteria: parseUUIDPgtype(bonusCriteriaID.String()),
+		BonusCriteria: bonusCriteriaPg,
 		Text:          params.Text,
 		Files:         fileKeys,
 		Links:         params.Links,
