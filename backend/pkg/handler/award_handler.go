@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
@@ -429,4 +431,62 @@ func (h *AwardHandler) DeleteType(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "AwardType deleted successfully"})
+}
+
+func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
+	currentPage := 1
+	pageSize := 10
+
+	// status=APPROVED,REJECTED
+	var status []string
+	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
+		status = strings.Split(raw, ",")
+	}
+
+	if v := c.Query("currentPage"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			currentPage = p
+		}
+	}
+
+	if v := c.Query("pageSize"); v != "" {
+		if ps, err := strconv.Atoi(v); err == nil && ps <= 100 {
+			pageSize = ps
+		}
+	}
+
+	var teacherID pgtype.UUID
+	if v := c.Query("teacher"); v != "" {
+		id, err := uuid.Parse(v)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "invalid teacher id"})
+			return
+		}
+		teacherID = pgtype.UUID{Bytes: id, Valid: true}
+	}
+
+	var methodistID pgtype.UUID
+	if v := c.Query("methodist"); v != "" {
+		id, err := uuid.Parse(v)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "invalid methodist id"})
+			return
+		}
+		methodistID = pgtype.UUID{Bytes: id, Valid: true}
+	}
+
+	result, err := h.service.GetAwardPaginated(
+		c.Request.Context(),
+		currentPage,
+		pageSize,
+		teacherID,
+		methodistID,
+		status, // 👈 ВСЕГДА []string
+	)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, result)
 }

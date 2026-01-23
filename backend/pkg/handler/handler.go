@@ -95,7 +95,7 @@ func (r *Router) Init() *gin.Engine {
 		// --- AWARDS ---
 		awards := protected.Group("/awards")
 		{
-			awards.GET("", r.award.GetAllAwards)
+			awards.GET("", r.award.GetAwardsPaginated)
 			awards.GET("/:id", r.award.GetAwardByID)
 			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
 			awards.GET("/teacher/:id", r.award.GetAwardsByTeacher)
