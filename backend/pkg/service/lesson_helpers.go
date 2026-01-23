@@ -1,6 +1,10 @@
 package service
 
-import "time"
+import (
+	"errors"
+	"strings"
+	"time"
+)
 
 func ptrToString(value *string) string {
 	if value == nil {
@@ -10,6 +14,9 @@ func ptrToString(value *string) string {
 }
 
 func parseTime(value string) (time.Time, error) {
+	if strings.TrimSpace(value) == "" {
+		return time.Time{}, errors.New("event_date is required")
+	}
 	parsed, err := time.Parse(time.RFC3339, value)
 	if err == nil {
 		return parsed, nil
