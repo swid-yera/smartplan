@@ -32,19 +32,19 @@ type CreateTypeParams struct {
 }
 
 type AwardResponse struct {
-	ID            uuid.UUID                `json:"id"`
-	Status        storage.AwardsStatus     `json:"status"`
-	Type          SelectedTypeResponse     `json:"type"`
-	Variant       SelectedVariantResponse  `json:"variant"`
-	Criteria      SelectedCriteriaResponse `json:"criteria"`
-	BonusCriteria SelectedCriteriaResponse `json:"bonus_criteria"`
-	Reason        pgtype.Text              `json:"reason"`
-	Methodist     *UserResponse            `json:"methodist"`
-	Teacher       *UserResponse            `json:"teacher"`
-	TotalPoints   int32                    `json:"totalPoints"`
-	Text          pgtype.Text              `json:"text"`
-	Files         []string                 `json:"files"`
-	Links         []string                 `json:"links"`
+	ID            uuid.UUID                 `json:"id"`
+	Status        storage.AwardsStatus      `json:"status"`
+	Type          SelectedTypeResponse      `json:"type"`
+	Variant       SelectedVariantResponse   `json:"variant"`
+	Criteria      SelectedCriteriaResponse  `json:"criteria"`
+	BonusCriteria *SelectedCriteriaResponse `json:"bonus_criteria"`
+	Reason        pgtype.Text               `json:"reason"`
+	Methodist     *UserResponse             `json:"methodist"`
+	Teacher       *UserResponse             `json:"teacher"`
+	TotalPoints   int32                     `json:"totalPoints"`
+	Text          pgtype.Text               `json:"text"`
+	Files         []string                  `json:"files"`
+	Links         []string                  `json:"links"`
 }
 
 type SelectedTypeResponse struct {
@@ -155,10 +155,12 @@ func (s *AwardService) CreateAward(ctx context.Context, params *storage.CreateAw
 	}
 
 	// check is exist
-	_, err = s.repo.GetAwardTypeCriteriaByID(ctx, params.BonusCriteria.Bytes)
-	if err != nil {
-		s.log.Error("create award error: get award bonus criteria by id error: ", err)
-		return AwardResponse{}, err
+	if params.BonusCriteria.Valid {
+		_, err = s.repo.GetAwardTypeCriteriaByID(ctx, params.BonusCriteria.Bytes)
+		if err != nil {
+			s.log.Error("create award error: get award bonus criteria by id error: ", err)
+			return AwardResponse{}, err
+		}
 	}
 
 	dbAward, err := s.repo.CreateAward(ctx, params)
@@ -281,10 +283,12 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 	}
 
 	// check is exist
-	_, err = s.repo.GetAwardTypeCriteriaByID(ctx, req.BonusCriteria.Bytes)
-	if err != nil {
-		s.log.Error("update award error: get award bonus criteria by id error: ", err)
-		return AwardResponse{}, err
+	if req.BonusCriteria.Valid {
+		_, err = s.repo.GetAwardTypeCriteriaByID(ctx, req.BonusCriteria.Bytes)
+		if err != nil {
+			s.log.Error("update award error: get award bonus criteria by id error: ", err)
+			return AwardResponse{}, err
+		}
 	}
 
 	// 2. Обновление основных полей Award
@@ -476,7 +480,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 	}
 
 	// bonus criteria
-	var mappedBonusCriteria SelectedCriteriaResponse
+	var mappedBonusCriteria *SelectedCriteriaResponse
 	if award.BonusCriteria.Valid {
 		dbBonusCriteria, err := s.repo.GetAwardTypeCriteriaByID(ctx, award.BonusCriteria.Bytes)
 		if err != nil {
@@ -484,7 +488,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 			return AwardResponse{}, err
 		}
 
-		mappedBonusCriteria = SelectedCriteriaResponse{
+		mappedBonusCriteria = &SelectedCriteriaResponse{
 			ID:     dbBonusCriteria.ID,
 			Name:   dbBonusCriteria.Name,
 			Points: dbBonusCriteria.Points,
