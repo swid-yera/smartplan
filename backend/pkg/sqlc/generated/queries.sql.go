@@ -85,7 +85,10 @@ WHERE
         $3::uuid IS NULL
         OR methodist = $3::uuid
     )
-    AND status = ANY($4::text[]::rups_status[])
+    AND (
+        $4::text[] IS NULL
+        OR status = ANY($4::text[]::rups_status[])
+    )
 `
 
 type CountRupsFilteredParams struct {
@@ -1517,7 +1520,10 @@ FROM rups WHERE
     ) AND (
         $5::uuid IS NULL 
         OR methodist = $5::uuid
-    )AND status = ANY($6::text[]::rups_status[])
+    )AND (
+        $6::text[] IS NULL
+        OR status = ANY($6::text[]::rups_status[])
+    )
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
