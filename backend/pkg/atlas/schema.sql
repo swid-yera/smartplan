@@ -222,7 +222,7 @@ CREATE TABLE lessons (
     discipline_name TEXT,
     topic_name TEXT,
     teacher_id UUID NOT NULL,
-    event_date TIMESTAMPTZ NOT NULL,
+    event_date TIMESTAMPTZ,
     group_id UUID NOT NULL,
     type enum_lesson_type NOT NULL,
     goals TEXT,
@@ -249,3 +249,4 @@ CREATE TABLE lesson_progress(
     content TEXT[],
     CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id)
 );
+

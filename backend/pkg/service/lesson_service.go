@@ -64,7 +64,7 @@ func NewLessonService(repo repository.Lessons, logger *logrus.Logger) *LessonSer
 }
 
 func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) error {
-	eventDate, err := parseTime(params.EventDate)
+	eventDate, eventDateValid, err := parseTimeOptional(params.EventDate)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) e
 		DisciplineName:     pgtype.Text{String: ptrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
 		TopicName:          pgtype.Text{String: ptrToString(params.TopicName), Valid: params.TopicName != nil},
 		TeacherID:          params.TeacherID,
-		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: true},
+		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
 		Type:               storage.EnumLessonType(params.Type),
 		Goals:              pgtype.Text{String: ptrToString(params.Goals), Valid: params.Goals != nil},
@@ -86,7 +86,7 @@ func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) e
 }
 
 func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params LessonParams, progress []LessonProgressParams) error {
-	eventDate, err := parseTime(params.EventDate)
+	eventDate, eventDateValid, err := parseTimeOptional(params.EventDate)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params L
 		RupName:            params.RupName,
 		DisciplineName:     pgtype.Text{String: ptrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
 		TopicName:          pgtype.Text{String: ptrToString(params.TopicName), Valid: params.TopicName != nil},
-		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: true},
+		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
 		Type:               storage.EnumLessonType(params.Type),
 		Goals:              pgtype.Text{String: ptrToString(params.Goals), Valid: params.Goals != nil},
@@ -136,11 +136,11 @@ func (s *LessonService) DeleteLesson(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *LessonService) GetAllLessons(ctx context.Context, from string, to string, limit int32, offset int32) ([]storage.Lesson, error) {
-	fromTime, err := parseTime(from)
+	fromTime, err := parseTimeRequired(from)
 	if err != nil {
 		return nil, err
 	}
-	toTime, err := parseTime(to)
+	toTime, err := parseTimeRequired(to)
 	if err != nil {
 		return nil, err
 	}
@@ -148,11 +148,11 @@ func (s *LessonService) GetAllLessons(ctx context.Context, from string, to strin
 }
 
 func (s *LessonService) GetLessonsTeacher(ctx context.Context, teacherID uuid.UUID, from string, to string, limit int32, offset int32) ([]storage.Lesson, error) {
-	fromTime, err := parseTime(from)
+	fromTime, err := parseTimeRequired(from)
 	if err != nil {
 		return nil, err
 	}
-	toTime, err := parseTime(to)
+	toTime, err := parseTimeRequired(to)
 	if err != nil {
 		return nil, err
 	}
