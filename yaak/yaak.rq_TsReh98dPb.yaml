@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_TsReh98dPb
 createdAt: 2026-01-13T03:16:39.883243600
-updatedAt: 2026-01-22T20:54:34.830569800
+updatedAt: 2026-01-23T01:58:50.910810800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -22,9 +22,9 @@ url: ${[ url ]}/awards/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: bc7d9487-37d5-4333-84b4-c2e120e62ebd
+  value: 14015cd8-7051-4a79-a8e9-028e9cd99b83
   id: 7RVniVeGfi
 - enabled: true
   name: ''
   value: ''
-  id: 8XmEAQefgW
+  id: xpZYiHAcGa

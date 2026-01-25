@@ -24,12 +24,12 @@ export default function UserPage() {
 		...services.user.getByIdOptions(params.id),
 		enabled: !!params.id,
 	})
-	const { data: createdRups = [], isLoading: createdRupsLoading } = useQuery({
-		...services.rup.getByTeacherIdOptions(params.id),
+	const { data: createdRups, isLoading: createdRupsLoading } = useQuery({
+		...services.rup.getAllOptions({ teacher: params.id }),
 		enabled: !userLoading && !isError,
 	})
-	const { data: assessmentRups = [], isLoading: assessmentRupsLoading } = useQuery({
-		...services.rup.getByMethodistIdOptions(params.id),
+	const { data: assessmentRups, isLoading: assessmentRupsLoading } = useQuery({
+		...services.rup.getAllOptions({ methodist: params.id }),
 		enabled: !userLoading && !isError,
 	})
 
@@ -65,8 +65,8 @@ export default function UserPage() {
 			<UserCard user={user} />
 
 			<UserRups
-				assessmentRups={assessmentRups}
-				createdRups={createdRups}
+				assessmentRups={assessmentRups?.data || []}
+				createdRups={createdRups?.data || []}
 				isLoading={createdRupsLoading || assessmentRupsLoading}
 			/>
 		</section>

@@ -1,24 +1,60 @@
 'use client'
 
-import { useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Button } from '@ui'
+import { AwardsCard, Loader, PageTitle } from '@components'
+import { hasRole } from '@helpers'
+import { services } from '@services'
+import { useAuthStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
+import { UserRoleEnum } from '@types'
 
-import { MethodistView } from './components/methodist-view'
-import { TeacherView } from './components/teacher-view'
+import { CreateCard, HeroCard } from './components'
 
 const Page = () => {
-	const [role, setRole] = useState<'teacher' | 'methodist'>('methodist')
+	const searchParams = useSearchParams()
+	const router = useRouter()
+	const pathname = usePathname()
+
+	const page = Number(searchParams.get('page')) || 1
+
+	// store
+	const { user, authLoading } = useAuthStore()
+	// query
+	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
+		...services.award.getAllOptions({ currentPage: page, pageSize: 10 }),
+		enabled: !!user,
+	})
+
+	const setCurrentPage = (newPage: number) => {
+		const params = new URLSearchParams(searchParams.toString())
+
+		params.set('page', String(newPage))
+		router.push(`${pathname}?${params.toString()}`)
+	}
+
+	if (!user || authLoading) return <Loader type='data' />
+
+	const isMethodist = hasRole(user.role, UserRoleEnum.METHODIST, false)
 
 	return (
-		<div className='space-y-4'>
-			<div className='flex justify-end px-4 pt-4'>
-				<Button variant='outline' onClick={() => setRole((r) => (r === 'teacher' ? 'methodist' : 'teacher'))}>
-					Переключить на {role === 'teacher' ? 'Методиста' : 'Преподавателя'}
-				</Button>
+		<section className='p-4 w-full space-y-4'>
+			<PageTitle description='Рейтинг преподавателей'>KPI</PageTitle>
+
+			<div className='grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.7fr)] mt-4'>
+				<HeroCard className={isMethodist ? 'col-span-2' : 'col-span-1'} />
+				{!isMethodist && <CreateCard />}
 			</div>
-			{role === 'methodist' ? <MethodistView /> : <TeacherView />}
-		</div>
+
+			<AwardsCard
+				awards={awardsData?.data || []}
+				currentPage={awardsData?.meta.currentPage || 1}
+				isLoading={isAwardsLoading}
+				title='Список достижений'
+				totalPages={awardsData?.meta.pages || 1}
+				onPageChange={setCurrentPage}
+			/>
+		</section>
 	)
 }
 

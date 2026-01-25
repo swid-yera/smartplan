@@ -437,7 +437,6 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 	currentPage := 1
 	pageSize := 10
 
-	// status=APPROVED,REJECTED
 	var status []string
 	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
 		status = strings.Split(raw, ",")
@@ -481,11 +480,16 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 		pageSize,
 		teacherID,
 		methodistID,
-		status, // 👈 ВСЕГДА []string
+		status,
 	)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Convert file keys to URLs for each award
+	for i := range result.Data {
+		result.Data[i].Files = h.resolveFileURLs(c.Request.Context(), result.Data[i].Files)
 	}
 
 	c.JSON(200, result)

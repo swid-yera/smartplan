@@ -1,28 +1,9 @@
-// pluralize
-const pluralize = (number: number, one: string, two: string, five: string): string => {
-	let n = Math.abs(number)
+import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 
-	n %= 100
-	if (n >= 5 && n <= 20) {
-		return five
-	}
-	n %= 10
-	if (n === 1) {
-		return one
-	}
-	if (n >= 2 && n <= 4) {
-		return two
-	}
-
-	return five
-}
-
-// format hours
-export const formatHours = (count: number): string => {
-	const word = pluralize(count, 'час', 'часа', 'часов')
-
-	return `${count} ${word}`
-}
+import type { IPagination, StatusEnum } from '@types'
+import type { badgeVariants } from '@ui'
+import type { VariantProps } from 'class-variance-authority'
+import { BanIcon, CheckCheckIcon, type LucideProps, PencilIcon, TextSearchIcon } from 'lucide-react'
 
 // format value as dash
 export const formatAsDash = (value: number | string = 0): string => {
@@ -31,4 +12,38 @@ export const formatAsDash = (value: number | string = 0): string => {
 	}
 
 	return !value ? '—' : value
+}
+
+// generate empty meta pagination
+export const generateEmptyMetaPagination = (): IPagination<''>['meta'] => {
+	return { currentPage: 1, pages: 1, total: 0, pageSize: 10 }
+}
+
+// status
+export const statusLabels: Record<StatusEnum, string> = {
+	DRAFT: 'Черновик',
+	IN_REVIEW: 'На согласовании',
+	APPROVED: 'Утверждён',
+	REJECTED: 'Отклонен',
+}
+
+export const statusIcons: Record<
+	StatusEnum,
+	ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>
+> = {
+	DRAFT: PencilIcon,
+	IN_REVIEW: TextSearchIcon,
+	APPROVED: CheckCheckIcon,
+	REJECTED: BanIcon,
+}
+
+export const statusVariants: Record<StatusEnum, VariantProps<typeof badgeVariants>['variant']> = {
+	DRAFT: 'outline',
+	IN_REVIEW: 'secondary',
+	APPROVED: 'default',
+	REJECTED: 'destructive',
+}
+
+export const normalizeStatus = (status: StatusEnum): string => {
+	return statusLabels[status] ?? ''
 }

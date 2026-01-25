@@ -1,41 +1,12 @@
 import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 
 import { cn } from '@lib'
-import type { ICreateDiscipline, IDiscipline, RupStatusEnum, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
+import type { ICreateDiscipline, IDiscipline, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
 import type { badgeVariants } from '@ui'
 import type { VariantProps } from 'class-variance-authority'
-import { Ban, CheckCheck, Combine, FlaskConical, type LucideProps, NotebookPen, Pencil, TextSearch } from 'lucide-react'
+import { Combine, FlaskConical, type LucideProps, NotebookPen } from 'lucide-react'
 
-// status
-export const rupStatusLabels: Record<RupStatusEnum, string> = {
-	DRAFT: 'Черновик',
-	IN_REVIEW: 'На согласовании',
-	APPROVED: 'Утверждён',
-	REJECTED: 'Отклонен',
-}
-
-export const rupStatusIcons: Record<
-	RupStatusEnum,
-	ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>
-> = {
-	DRAFT: Pencil,
-	IN_REVIEW: TextSearch,
-	APPROVED: CheckCheck,
-	REJECTED: Ban,
-}
-
-export const rupStatusVariants: Record<RupStatusEnum, VariantProps<typeof badgeVariants>['variant']> = {
-	DRAFT: 'outline',
-	IN_REVIEW: 'secondary',
-	APPROVED: 'default',
-	REJECTED: 'destructive',
-}
-
-export const normalizeRupStatus = (status: RupStatusEnum): string => {
-	return rupStatusLabels[status] ?? ''
-}
-
-// status
+// rup type
 export const rupTypeLabels: Record<RupTypeEnum, string> = {
 	PRACTICE: 'Производственно-практический',
 	THEORY: 'Теоретический',

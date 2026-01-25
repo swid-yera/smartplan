@@ -309,7 +309,7 @@ const Page: NextPage = () => {
 						{tabs.map((tab) => (
 							<TabsContent key={tab.id} className={cn(isHydrating && 'invisible')} value={tab.id}>
 								{/* heading */}
-								<PageTitle className='mb-5' description={tab.description} sticky={true}>
+								<PageTitle sticky className='mb-5' description={tab.description}>
 									{tab.fullTitle} <Badge variant='outline'>Черновик</Badge>
 								</PageTitle>
 

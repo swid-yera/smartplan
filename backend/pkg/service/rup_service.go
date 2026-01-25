@@ -1162,7 +1162,10 @@ func (s *rupService) GetRupPaginated(
 		pageSize = 10
 	}
 
+<<<<<<< HEAD
+=======
 	// 👇 КРИТИЧЕСКИЙ ФИКС
+>>>>>>> fa1a4cec32af069f326ebdb9a468f07e5db619a5
 	if len(status) == 0 {
 		status = nil
 	}
@@ -1174,7 +1177,7 @@ func (s *rupService) GetRupPaginated(
 		search,
 		teacher,
 		methodist,
-		status, // 👈 всё ещё строки
+		status,
 	)
 	if err != nil {
 		return nil, err
