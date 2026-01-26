@@ -4,14 +4,13 @@ import { useCallback, useMemo } from 'react'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { PageTitle } from '@components'
+import { PageTitle, Pagination } from '@components'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
 
 import { UsersFilter } from './users-filter'
-import { UsersPagination } from './users-pagination'
 import { UsersTable } from './users-table'
 
 function Page() {
@@ -90,12 +89,12 @@ function Page() {
 
 					<UsersTable isLoading={isLoading || authLoading || isFetching || isRefetching} users={paginatedUsers} />
 
-					<UsersPagination
-						currentPage={currentPage}
-						itemsPerPage={itemsPerPage}
+					<Pagination
+						page={currentPage}
+						pageSize={itemsPerPage}
 						totalPages={totalPages}
-						onItemsPerPageChange={(value) => handleUrlUpdate({ limit: value, page: 1 })}
 						onPageChange={(page) => handleUrlUpdate({ page })}
+						onPageSizeChange={(value) => handleUrlUpdate({ limit: value, page: 1 })}
 					/>
 				</CardContent>
 			</Card>
