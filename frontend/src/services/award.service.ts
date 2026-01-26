@@ -9,6 +9,7 @@ import type {
 	IPagination,
 	IPaginationRequest,
 	ITypeResponse,
+	IUpdateAwardRequest,
 	IUpdateStatusRequest,
 } from '@types'
 
@@ -75,7 +76,7 @@ export class AwardService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ id, changedAward }: { id: string; changedAward: ICreateAwardRequest }) =>
+			mutationFn: ({ id, changedAward }: { id: string; changedAward: IUpdateAwardRequest }) =>
 				api.put<IAward>(`/awards/${id}`, changedAward).then((r) => r.data),
 
 			onSuccess: (updatedAward, { id }) => {
