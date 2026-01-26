@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import Link from 'next/link'
 
-import { type IAward } from '@types'
+import { type IAward, StatusEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -29,7 +29,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ui'
-import { BookOpen, ChevronLeft, ChevronRight, SearchCode, Users } from 'lucide-react'
+import { BookOpen, ChevronLeft, ChevronRight, Download, FileText, Files, SearchCode, Users } from 'lucide-react'
 
 import { Loader } from './loader'
 import { StatusBadge } from './status-badge'
@@ -139,11 +139,11 @@ interface IAwardRow {
 }
 
 const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
+	const teacherName = `${award?.teacher?.firstName} ${award?.teacher.lastName}`.trim() || 'Неизвестно'
+
 	return (
 		<TableRow className='cursor-pointer hover:bg-muted/50 transition-colors' onClick={() => onSelect(award)}>
-			<TableCell className='font-medium whitespace-break-spaces min-w-[100px]'>
-				{award?.teacher?.firstName || 'Неизвестно'}
-			</TableCell>
+			<TableCell className='font-medium whitespace-break-spaces min-w-[100px]'>{teacherName}</TableCell>
 			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
 				{`${award.variant.name}, ${award.criteria.name}`}
 			</TableCell>
@@ -165,6 +165,9 @@ interface IAwardSheet {
 }
 
 export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
+	const totalPoints =
+		award?.status !== StatusEnum.APPROVED ? 'Баллы зачисляются после утверждений методиста' : award.totalPoints
+
 	return (
 		<Sheet open={!!award} onOpenChange={(open) => !open && onSelect(null)}>
 			<SheetContent className='overflow-y-auto sm:max-w-md w-full'>
@@ -201,7 +204,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 									</p>
 
 									<p className='font-medium'>Количество баллов:</p>
-									<p>{award.totalPoints}</p>
+									<p>{totalPoints}</p>
 
 									<p className='font-medium'>Описание:</p>
 									<p>{award.text || 'Пусто'}</p>
@@ -263,8 +266,62 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 									<p className='font-medium'>Критерий:</p>
 									<p className='font-semibold'>{award.criteria.name || 'Пусто'}</p>
 
-									<p className='font-medium'>Количество баллов:</p>
+									<p className='font-medium'>Баллы за критерию:</p>
 									<p className='font-bold'>{award.criteria.points.join('-') || 'Пусто'}</p>
+								</div>
+							</div>
+
+							<Separator />
+
+							<div className='space-y-3'>
+								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+									<Files className='w-4 h-4 mr-2' /> Документы
+								</h4>
+
+								<div className='space-y-4'>
+									{(award?.files || []).map((file, idx) => {
+										const isImage = /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(file)
+
+										if (isImage) {
+											return (
+												<div key={idx} className='space-y-2 max-w-md'>
+													<a
+														className='block rounded-md border overflow-hidden hover:opacity-90 transition-opacity'
+														href={file}
+														rel='noopener noreferrer'
+														target='_blank'
+													>
+														<img
+															alt={`File ${idx + 1}`}
+															className='w-full h-auto object-contain'
+															src={file}
+														/>
+													</a>
+													<Button asChild size='sm' variant='outline'>
+														<a download href={file} rel='noopener noreferrer' target='_blank'>
+															<Download className='mr-2 h-4 w-4' />
+															Скачать
+														</a>
+													</Button>
+												</div>
+											)
+										}
+
+										return (
+											<div key={idx} className='text-sm flex items-center gap-2'>
+												<FileText className='h-4 w-4 text-muted-foreground' />
+												<a
+													download
+													className='truncate max-w-[300px] hover:underline text-primary'
+													href={file}
+													rel='noopener noreferrer'
+													target='_blank'
+												>
+													{file}
+												</a>
+											</div>
+										)
+									})}
 								</div>
 							</div>
 						</div>
