@@ -81,6 +81,7 @@ export class AwardService {
 
 			onSuccess: (updatedAward, { id }) => {
 				queryClient.setQueryData(['award', id], updatedAward)
+				queryClient.invalidateQueries({ queryKey: ['awards'] })
 			},
 		})
 	}
@@ -94,8 +95,8 @@ export class AwardService {
 				api.put<IMessageResponse>(`/awards/${id}/status`, payload).then((r) => r.data),
 
 			onSuccess: (messageResponse, { id }) => {
-				queryClient.invalidateQueries({ queryKey: ['rup', id] })
-				queryClient.invalidateQueries({ queryKey: ['rups'] })
+				queryClient.invalidateQueries({ queryKey: ['award', id] })
+				queryClient.invalidateQueries({ queryKey: ['awards'] })
 			},
 		})
 	}
@@ -164,6 +165,7 @@ export class AwardService {
 
 			onSuccess: (createdType) => {
 				queryClient.setQueryData(['type', createdType.id], createdType)
+				queryClient.invalidateQueries({ queryKey: ['types'] })
 			},
 		})
 	}
@@ -178,6 +180,7 @@ export class AwardService {
 
 			onSuccess: (updatedType, { id }) => {
 				queryClient.setQueryData(['type', id], updatedType)
+				queryClient.invalidateQueries({ queryKey: ['types'] })
 			},
 		})
 	}

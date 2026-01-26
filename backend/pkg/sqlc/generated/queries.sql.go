@@ -1428,17 +1428,17 @@ func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]
 }
 
 const getRupsPaginated = `-- name: GetRupsPaginated :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at 
-FROM rups WHERE 
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+FROM rups WHERE
     (
-        $1 = '' 
+        $1 = ''
         OR name ILIKE '%' || $1 || '%'
-    ) 
+    )
     AND (
-        $4::uuid IS NULL 
+        $4::uuid IS NULL
         OR teacher = $4::uuid
     ) AND (
-        $5::uuid IS NULL 
+        $5::uuid IS NULL
         OR methodist = $5::uuid
     )AND (
         $6::text[] IS NULL
@@ -1594,8 +1594,7 @@ const getUsersRatingPaginated = `-- name: GetUsersRatingPaginated :many
 SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 WHERE
-    role 'teacher'
-    AND (
+    (
         $1 = '' OR
         (
             $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'

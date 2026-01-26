@@ -224,7 +224,7 @@ const Page = () => {
 						)}
 					</ButtonGroup>
 				}
-				backHref={`/kpi/${id}`}
+				backHref={`/kpi`}
 				description={'Просмотр'}
 			>
 				Детали достижения

@@ -1,0 +1,22 @@
+type: http_request
+model: http_request
+id: rq_aMY3nzwXrT
+createdAt: 2026-01-26T14:47:48.399089600
+updatedAt: 2026-01-26T14:47:54.301922100
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_3iv2xvWuAp
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: ''
+  value: ''
+  id: wUXc0jrq9V
+method: GET
+name: rating
+sortPriority: 1000.001
+url: ${[ url ]}/users/rating
+urlParameters: []

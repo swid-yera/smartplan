@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { Loader, Pagination } from '@components'
+import { Loader, PageTitle, Pagination } from '@components'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -20,7 +20,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ui'
-import { Crown, Medal, Search } from 'lucide-react'
+import { Crown, Medal, Search, SearchIcon } from 'lucide-react'
 
 const placeStyles = (index: number, showLeaders: boolean) => {
 	if (!showLeaders) return ''
@@ -68,14 +68,16 @@ export default function RatingPage() {
 	}
 
 	return (
-		<div className='mx-auto w-full max-w-5xl p-6 space-y-6'>
+		<section className='mx-auto w-full p-6 space-y-6'>
+			<PageTitle>Рейтинг преподавателей по программе KPI</PageTitle>
+
 			{/* HEADER */}
 			<Card>
 				<CardHeader>
 					<CardTitle>Рейтинг преподавателей</CardTitle>
 					<CardDescription>Рейтинг преподавателей по программе KPI</CardDescription>
 
-					<div className='flex gap-2 max-w-sm mt-4'>
+					<div className='flex gap-2 max-w-xl mt-4'>
 						<div className='relative flex-1'>
 							<Search className='absolute left-3 top-2.5 h-4 w-4 text-muted-foreground' />
 							<Input
@@ -91,7 +93,8 @@ export default function RatingPage() {
 							/>
 						</div>
 
-						<Button size='sm' variant='default' onClick={applySearch}>
+						<Button size='default' variant='default' onClick={applySearch}>
+							<SearchIcon />
 							Найти
 						</Button>
 					</div>
@@ -167,6 +170,6 @@ export default function RatingPage() {
 				onPageChange={(page) => setCurrentPage(page)}
 				onPageSizeChange={(size) => setPageSize(size)}
 			/>
-		</div>
+		</section>
 	)
 }

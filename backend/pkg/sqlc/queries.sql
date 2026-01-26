@@ -78,8 +78,7 @@ LIMIT $2 OFFSET $3;
 SELECT *
 FROM users
 WHERE
-    role 'teacher'
-    AND (
+    (
         $1 = '' OR
         (
             $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
@@ -267,17 +266,17 @@ VALUES (
 SELECT * FROM rups ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 
 -- name: GetRupsPaginated :many
-SELECT * 
-FROM rups WHERE 
+SELECT *
+FROM rups WHERE
     (
-        $1 = '' 
+        $1 = ''
         OR name ILIKE '%' || $1 || '%'
-    ) 
+    )
     AND (
-        sqlc.narg('teacher')::uuid IS NULL 
+        sqlc.narg('teacher')::uuid IS NULL
         OR teacher = sqlc.narg('teacher')::uuid
     ) AND (
-        sqlc.narg('methodist')::uuid IS NULL 
+        sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
     )AND (
         sqlc.narg('status')::text[] IS NULL
