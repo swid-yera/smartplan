@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
-import { PageTitle, RupsCard } from '@components'
+import { AwardsCard, PageTitle, RupsCard } from '@components'
 import { isCurrentDay } from '@helpers'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
@@ -20,11 +20,19 @@ export const MethodistDashboard = () => {
 	const { data: rupData, isLoading: rupLoading } = useQuery({
 		...services.rup.getAllOptions({ currentPage: 1, pageSize: 999 }),
 	})
+	const { data: awardData, isLoading: awardLoading } = useQuery({
+		...services.award.getAllOptions({ currentPage: 1, pageSize: 999 }),
+	})
 
 	const reviewRups = rupData?.data.filter((r) => r.status === StatusEnum.IN_REVIEW) || []
-	const reviewCount = reviewRups?.length || 0
-	const approvedCount =
+	const reviewRupsCount = reviewRups?.length || 0
+	const approvedRupsCount =
 		rupData?.data.filter((r) => r.status === StatusEnum.APPROVED && isCurrentDay(r.updatedAt)).length || 0
+
+	const reviewAwards = awardData?.data.filter((r) => r.status === StatusEnum.IN_REVIEW) || []
+	const reviewAwardsCount = reviewAwards?.length || 0
+	const approvedAwardsCount =
+		awardData?.data.filter((r) => r.status === StatusEnum.APPROVED && isCurrentDay(r.updatedAt)).length || 0
 
 	const chartData = useMemo(() => {
 		const today = new Date()
@@ -68,11 +76,11 @@ export const MethodistDashboard = () => {
 					<CardContent>
 						<div className='flex items-center justify-between'>
 							<div>
-								<div className='text-2xl font-bold'>{reviewCount}</div>
+								<div className='text-2xl font-bold'>{reviewRupsCount}</div>
 								<p className='text-xs text-muted-foreground'>Ожидают проверки</p>
 							</div>
 							<div className='text-right'>
-								<div className='text-2xl font-bold'>{approvedCount}</div>
+								<div className='text-2xl font-bold'>{approvedRupsCount}</div>
 								<p className='text-xs text-muted-foreground'>За сегодня проверено</p>
 							</div>
 						</div>
@@ -90,11 +98,11 @@ export const MethodistDashboard = () => {
 					<CardContent>
 						<div className='flex items-center justify-between'>
 							<div>
-								<div className='text-2xl font-bold'>5</div>
+								<div className='text-2xl font-bold'>{reviewAwardsCount}</div>
 								<p className='text-xs text-muted-foreground'>Ожидают проверки</p>
 							</div>
 							<div className='text-right'>
-								<div className='text-2xl font-bold'>2</div>
+								<div className='text-2xl font-bold'>{approvedAwardsCount}</div>
 								<p className='text-xs text-muted-foreground'>За сегодня проверено</p>
 							</div>
 						</div>
@@ -107,10 +115,20 @@ export const MethodistDashboard = () => {
 
 			<RupsCard
 				currentPage={1}
-				description='Рабочие учебные планы отправленные преподавателями на согласование.'
+				description='Ожидают проверки'
 				isLoading={rupLoading}
 				rups={reviewRups}
-				title='Ожидают проверки'
+				title='Рабочие учебные планы'
+				totalPages={1}
+				onPageChange={() => false}
+			/>
+
+			<AwardsCard
+				awards={reviewAwards}
+				currentPage={1}
+				description='Ожидают проверки'
+				isLoading={awardLoading}
+				title='KPI'
 				totalPages={1}
 				onPageChange={() => false}
 			/>

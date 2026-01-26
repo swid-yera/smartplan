@@ -276,7 +276,7 @@ interface IImageProps {
 
 const Image: FC<IImageProps> = ({ file, preview, onDelete }) => {
 	return (
-		<div className='relative w-36 h-36 border rounded-md overflow-hidden flex flex-col items-center justify-center bg-gray-50 dark:bg-zinc-900'>
+		<div className='relative aspect-square max-w-60 w-full border rounded-md overflow-hidden flex flex-col items-center justify-center bg-gray-50 dark:bg-zinc-900'>
 			{file && file.type === 'application/pdf' ? (
 				<p className='text-xs text-center px-1'>PDF</p>
 			) : (

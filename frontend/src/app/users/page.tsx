@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from 'react'
 
+import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { PageTitle, Pagination } from '@components'
@@ -77,7 +78,12 @@ function Page() {
 			<Card>
 				<CardHeader>
 					<CardTitle>Список пользователи</CardTitle>
-					<CardDescription>Всего пользователи: {totalUsers}. Используйте поиск для фильтрации.</CardDescription>
+					<CardDescription>
+						Всего пользователи: {totalUsers}. Используйте поиск для фильтрации.{' '}
+						<Link className='underline text-accent-foreground' href='/kpi/rating'>
+							Посмотреть рейтинг преподавателей
+						</Link>
+					</CardDescription>
 				</CardHeader>
 
 				<CardContent className='min-w-0 flex-1'>

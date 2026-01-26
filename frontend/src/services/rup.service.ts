@@ -56,6 +56,7 @@ export class RupService {
 
 			onSuccess: (createdRup) => {
 				queryClient.setQueryData(['rup', createdRup.id], createdRup)
+				queryClient.invalidateQueries({ queryKey: ['rups'] })
 			},
 		})
 	}
@@ -70,6 +71,7 @@ export class RupService {
 
 			onSuccess: (updatedRup, { id }) => {
 				queryClient.setQueryData(['rup', id], updatedRup)
+				queryClient.invalidateQueries({ queryKey: ['rups'] })
 			},
 		})
 	}

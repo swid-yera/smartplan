@@ -22,7 +22,7 @@ export const generateEmptyMetaPagination = (): IPagination<''>['meta'] => {
 // status
 export const statusLabels: Record<StatusEnum, string> = {
 	DRAFT: 'Черновик',
-	IN_REVIEW: 'На согласовании',
+	IN_REVIEW: 'На проверке',
 	APPROVED: 'Утверждён',
 	REJECTED: 'Отклонен',
 }
