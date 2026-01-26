@@ -130,8 +130,8 @@ type AwardService struct {
 	fileStorage FileStorage
 }
 
-func NewAwardService(repo *repository.AwardRepository, fileStorage FileStorage, log *logrus.Logger) *AwardService {
-	return &AwardService{repo: repo, fileStorage: fileStorage, log: log}
+func NewAwardService(repo *repository.AwardRepository, userRepo repository.UsersRepository, fileStorage FileStorage, log *logrus.Logger) *AwardService {
+	return &AwardService{repo: repo, userRepo: userRepo, fileStorage: fileStorage, log: log}
 }
 
 // awards
@@ -225,44 +225,6 @@ func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (AwardRes
 	return res, nil
 }
 
-func (s *AwardService) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]AwardResponse, error) {
-	dbAwards, err := s.repo.GetAwardsByMethodist(ctx, methodist)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []AwardResponse
-	for _, dbAward := range dbAwards {
-		award, err := s.BuildSelected(ctx, dbAward)
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, award)
-	}
-
-	return result, nil
-}
-
-func (s *AwardService) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]AwardResponse, error) {
-	dbAwards, err := s.repo.GetAwardsByTeacher(ctx, teacher)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []AwardResponse
-	for _, dbAward := range dbAwards {
-		award, err := s.BuildSelected(ctx, dbAward)
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, award)
-	}
-
-	return result, nil
-}
-
 func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error) {
 	// check is exist
 	_, err := s.repo.GetAwardTypeByID(ctx, req.Type.Bytes)
@@ -320,10 +282,7 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 	return res, nil
 }
 
-func (s *AwardService) UpdateAwardStatus(
-	ctx context.Context,
-	params storage.UpdateAwardStatusParams,
-) (AwardResponse, error) {
+func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (AwardResponse, error) {
 
 	// 1. Получаем текущее состояние award
 	award, err := s.repo.GetAwardByID(ctx, params.ID)
@@ -331,42 +290,46 @@ func (s *AwardService) UpdateAwardStatus(
 		return AwardResponse{}, err
 	}
 
-	// 2. Обновляем award
-	updatedAward, err := s.repo.UpdateAwardStatus(ctx, params)
+	// 2. Обновляем статус
+	updatedAward, err := s.repo.UpdateAwardStatus(ctx, storage.UpdateAwardStatusParams{
+		ID:          params.ID,
+		Status:      params.Status,
+		Reason:      params.Reason,
+		Methodist:   params.Methodist,
+		TotalPoints: params.TotalPoints,
+	})
 	if err != nil {
 		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
 	}
 
 	// 3. Обрабатываем points ТОЛЬКО при смене APPROVED
 	switch {
-	// не был APPROVED → стал APPROVED
 	case award.Status != storage.AwardsStatusAPPROVED &&
 		params.Status == storage.AwardsStatusAPPROVED:
 
 		err = s.userRepo.UpdateUserTotalPoints(
 			ctx,
-			award.Teacher.Bytes,
-			award.TotalPoints,
+			award.Teacher.Bytes,      // или updatedAward.Teacher
+			updatedAward.TotalPoints, // <- вот тут новое значение
 		)
 		if err != nil {
 			return AwardResponse{}, err
 		}
 
-	// был APPROVED → стал НЕ APPROVED
 	case award.Status == storage.AwardsStatusAPPROVED &&
 		params.Status != storage.AwardsStatusAPPROVED:
 
 		err = s.userRepo.UpdateUserTotalPoints(
 			ctx,
 			award.Teacher.Bytes,
-			award.TotalPoints,
+			-award.TotalPoints, // <- минус новое значение
 		)
 		if err != nil {
 			return AwardResponse{}, err
 		}
 	}
 
-	// 4. Response
+	// 4. Формируем response
 	res, err := s.BuildSelected(ctx, updatedAward)
 	if err != nil {
 		return AwardResponse{}, err

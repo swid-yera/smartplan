@@ -74,6 +74,24 @@ WHERE
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
+-- name: GetUsersRatingPaginated :many
+SELECT *
+FROM users
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    )
+ORDER BY total_points DESC, created_at DESC
+LIMIT $2 OFFSET $3;
+
 -- name: CountUsersFiltered :one
 SELECT COUNT(*)
 FROM users
@@ -434,12 +452,6 @@ WHERE
 
 -- name: DeleteAward :exec
 DELETE FROM awards WHERE id = $1;
-
--- name: GetAwardsByMethodist :many
-SELECT * FROM awards WHERE methodist = $1;
-
--- name: GetAwardsByTeacher :many
-SELECT * FROM awards WHERE teacher = $1;
 
 -- name: CreateAwardType :one
 INSERT INTO

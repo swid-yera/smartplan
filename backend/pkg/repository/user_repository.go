@@ -100,6 +100,14 @@ func (r *UsersPostgres) GetUsersPaginated(ctx context.Context, limit int32, offs
 	})
 }
 
+func (r *UsersPostgres) GetUsersRatingPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error) {
+	return r.queries.GetUsersRatingPaginated(ctx, storage.GetUsersRatingPaginatedParams{
+		Column1: search, // $1 — поисковый фильтр
+		Limit:   limit,  // $2 — лимит
+		Offset:  offset, // $3 — смещение
+	})
+}
+
 func (r *UsersPostgres) CountUsersFiltered(ctx context.Context, search string) (int64, error) {
 	return r.queries.CountUsersFiltered(ctx, search)
 }

@@ -12,13 +12,14 @@ import (
 )
 
 type User struct {
-	KeycloakID uuid.UUID `json:"keycloakId"`
-	Email      string    `json:"email"`
-	Username   string    `json:"username"`
-	FirstName  string    `json:"firstName"`
-	LastName   string    `json:"lastName"`
-	Role       string    `json:"role"`
-	Phone      string    `json:"phone"`
+	KeycloakID  uuid.UUID `json:"keycloakId"`
+	Email       string    `json:"email"`
+	Username    string    `json:"username"`
+	FirstName   string    `json:"firstName"`
+	LastName    string    `json:"lastName"`
+	Role        string    `json:"role"`
+	Phone       string    `json:"phone"`
+	TotalPoints int32     `json:"totalPoints"`
 }
 
 type PaginationMeta struct {
@@ -38,6 +39,7 @@ type UserService interface {
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error)
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
 	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string) (*PaginatedUsersResponse, error)
+	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string) (*PaginatedUsersResponse, error)
 	CountUsers(ctx context.Context) (int64, error)
 }
 
@@ -137,6 +139,55 @@ func (s *userService) GetUsersPaginated(
 	}, nil
 }
 
+func (s *userService) GetUsersRatingPaginated(
+	ctx context.Context,
+	currentPage int,
+	pageSize int,
+	search string,
+) (*PaginatedUsersResponse, error) {
+
+	if currentPage < 1 {
+		currentPage = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	offset := (currentPage - 1) * pageSize
+
+	total, err := s.repo.CountUsersFiltered(ctx, search)
+	if err != nil {
+		return nil, err
+	}
+
+	dbUsers, err := s.repo.GetUsersRatingPaginated(
+		ctx,
+		int32(pageSize),
+		int32(offset),
+		search,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]*User, 0, len(dbUsers))
+	for _, u := range dbUsers {
+		users = append(users, toServiceUser(&u))
+	}
+
+	pages := int(math.Ceil(float64(total) / float64(pageSize)))
+
+	return &PaginatedUsersResponse{
+		Data: users,
+		Meta: PaginationMeta{
+			CurrentPage: currentPage,
+			Pages:       pages,
+			Total:       int(total),
+			PageSize:    pageSize,
+		},
+	}, nil
+}
+
 func toServiceUser(u *storage.User) *User {
 	firstName := ""
 	lastName := ""
@@ -153,13 +204,14 @@ func toServiceUser(u *storage.User) *User {
 	}
 
 	return &User{
-		KeycloakID: u.KeycloakID,
-		Email:      u.Email,
-		Username:   u.Username,
-		FirstName:  firstName,
-		LastName:   lastName,
-		Role:       string(u.Role),
-		Phone:      phone,
+		KeycloakID:  u.KeycloakID,
+		Email:       u.Email,
+		Username:    u.Username,
+		FirstName:   firstName,
+		LastName:    lastName,
+		Role:        string(u.Role),
+		Phone:       phone,
+		TotalPoints: u.TotalPoints,
 	}
 }
 

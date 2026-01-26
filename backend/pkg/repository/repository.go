@@ -19,6 +19,7 @@ type UsersRepository interface {
 	GetAllUsers(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error)
 	CountUsers(ctx context.Context) (int64, error)
 	GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error)
+	GetUsersRatingPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error)
 
 	CountUsersFiltered(ctx context.Context, search string) (int64, error)
 
