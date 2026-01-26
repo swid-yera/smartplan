@@ -291,13 +291,64 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		return
 	}
 
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	// parse multipart form
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
+		return
+	}
+
+	// parse json data from form field
+	jsonData := c.PostForm("data")
+	if jsonData == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
+		return
+	}
+
 	var req service.UpdateAwardRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := json.Unmarshal([]byte(jsonData), &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
+			"error":   "invalid JSON format inside data field",
 			"details": err.Error(),
 		})
 		return
+	}
+
+	// parse files from multipart form
+	files := form.File["files"]
+	if len(files) > 0 {
+		for _, fileHeader := range files {
+			f, err := fileHeader.Open()
+			if err != nil {
+				continue
+			}
+
+			// Generate object key with awards/ prefix and UUID
+			objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
+
+			// saving
+			fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
+			f.Close()
+
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			req.Files = append(req.Files, fileKey)
+		}
 	}
 
 	award, err := h.service.UpdateAward(c.Request.Context(), id, req)
@@ -308,6 +359,10 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		})
 		return
 	}
+
+	// Convert file keys to URLs
+	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
+
 	c.JSON(http.StatusOK, award)
 }
 
