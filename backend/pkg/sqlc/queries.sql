@@ -74,6 +74,25 @@ WHERE
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
+-- name: GetUsersRatingPaginated :many
+SELECT *
+FROM users
+WHERE
+    role 'teacher'
+    AND (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    )
+ORDER BY total_points DESC, created_at DESC
+LIMIT $2 OFFSET $3;
+
 -- name: CountUsersFiltered :one
 SELECT COUNT(*)
 FROM users
@@ -91,6 +110,13 @@ WHERE
 
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
+
+-- name: UpdateUserTotalPoints :exec
+UPDATE users
+SET
+    total_points = total_points + $2
+WHERE
+    keycloak_id = $1;
 
 -- name: CreateRupResource :one
 INSERT INTO
@@ -253,7 +279,10 @@ FROM rups WHERE
     ) AND (
         sqlc.narg('methodist')::uuid IS NULL 
         OR methodist = sqlc.narg('methodist')::uuid
-    )AND status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    )AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    )
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -277,7 +306,10 @@ WHERE
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
     )
-    AND status = ANY(sqlc.arg(status)::text[]::rups_status[]);
+    AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    );
 
 -- name: CountRups :one
 SELECT COUNT(*) FROM rups;
@@ -421,12 +453,6 @@ WHERE
 
 -- name: DeleteAward :exec
 DELETE FROM awards WHERE id = $1;
-
--- name: GetAwardsByMethodist :many
-SELECT * FROM awards WHERE methodist = $1;
-
--- name: GetAwardsByTeacher :many
-SELECT * FROM awards WHERE teacher = $1;
 
 -- name: CreateAwardType :one
 INSERT INTO

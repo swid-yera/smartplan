@@ -1,9 +1,15 @@
+import type { FC } from 'react'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
 import { BarChart3, BookOpen, Clock, GraduationCap, MessageSquare } from 'lucide-react'
 
-export const HeroCard = () => {
+interface IProps {
+	className?: string
+}
+
+export const HeroCard: FC<IProps> = ({ className }) => {
 	return (
-		<Card>
+		<Card className={className}>
 			<CardHeader>
 				<CardTitle className='flex items-center gap-2'>
 					<BarChart3 className='h-5 w-5 text-primary' />

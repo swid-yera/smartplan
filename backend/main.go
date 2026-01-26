@@ -99,7 +99,7 @@ func main() {
 	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
-	awardService := service.NewAwardService(awardRepo, minioRepo, log)
+	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	syncGuard := service.NewSyncGuard(1 * time.Minute)
 

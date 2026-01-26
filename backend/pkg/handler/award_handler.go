@@ -122,7 +122,7 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	var req struct {
 		Status      storage.AwardsStatus `json:"status"`
 		Reason      pgtype.Text          `json:"reason"`
-		TotalPoints int                  `json:"total_points"`
+		TotalPoints int32                `json:"totalPoints"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -135,7 +135,7 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		Status:      req.Status,
 		Reason:      req.Reason,
 		Methodist:   parseUUIDPgtype(currentUser.KeycloakID.String()),
-		TotalPoints: int32(req.TotalPoints),
+		TotalPoints: req.TotalPoints,
 	}
 
 	award, err := h.service.UpdateAwardStatus(c.Request.Context(), params)
@@ -161,42 +161,6 @@ func (h *AwardHandler) DeleteAward(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
-}
-
-func (h *AwardHandler) GetAwardsByMethodist(c *gin.Context) {
-	idParam := c.Param("id")
-	methodistUUID := parseUUIDPgtype(idParam)
-
-	awards, err := h.service.GetAwardsByMethodist(c.Request.Context(), methodistUUID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Convert file keys to URLs for each award
-	for i := range awards {
-		awards[i].Files = h.resolveFileURLs(c.Request.Context(), awards[i].Files)
-	}
-
-	c.JSON(http.StatusOK, awards)
-}
-
-func (h *AwardHandler) GetAwardsByTeacher(c *gin.Context) {
-	idParam := c.Param("id")
-	teacherUUID := parseUUIDPgtype(idParam)
-
-	awards, err := h.service.GetAwardsByTeacher(c.Request.Context(), teacherUUID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Convert file keys to URLs for each award
-	for i := range awards {
-		awards[i].Files = h.resolveFileURLs(c.Request.Context(), awards[i].Files)
-	}
-
-	c.JSON(http.StatusOK, awards)
 }
 
 func (h *AwardHandler) CreateAward(c *gin.Context) {
@@ -437,7 +401,6 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 	currentPage := 1
 	pageSize := 10
 
-	// status=APPROVED,REJECTED
 	var status []string
 	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
 		status = strings.Split(raw, ",")
@@ -481,11 +444,16 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 		pageSize,
 		teacherID,
 		methodistID,
-		status, // 👈 ВСЕГДА []string
+		status,
 	)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Convert file keys to URLs for each award
+	for i := range result.Data {
+		result.Data[i].Files = h.resolveFileURLs(c.Request.Context(), result.Data[i].Files)
 	}
 
 	c.JSON(200, result)

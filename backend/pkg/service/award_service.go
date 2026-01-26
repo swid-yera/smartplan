@@ -45,6 +45,8 @@ type AwardResponse struct {
 	Text          pgtype.Text               `json:"text"`
 	Files         []string                  `json:"files"`
 	Links         []string                  `json:"links"`
+	UpdatedAt     time.Time                 `json:"updatedAt"`
+	CreatedAt     time.Time                 `json:"createdAt"`
 }
 
 type SelectedTypeResponse struct {
@@ -53,7 +55,7 @@ type SelectedTypeResponse struct {
 }
 
 type PaginatedAwardsResponse struct {
-	Data []storage.Award `json:"data"`
+	Data []AwardResponse `json:"data"`
 	Meta PaginationMeta  `json:"meta"`
 }
 
@@ -123,12 +125,13 @@ type UpdateAwardRequest struct {
 
 type AwardService struct {
 	repo        *repository.AwardRepository
+	userRepo    repository.UsersRepository
 	log         *logrus.Logger
 	fileStorage FileStorage
 }
 
-func NewAwardService(repo *repository.AwardRepository, fileStorage FileStorage, log *logrus.Logger) *AwardService {
-	return &AwardService{repo: repo, fileStorage: fileStorage, log: log}
+func NewAwardService(repo *repository.AwardRepository, userRepo repository.UsersRepository, fileStorage FileStorage, log *logrus.Logger) *AwardService {
+	return &AwardService{repo: repo, userRepo: userRepo, fileStorage: fileStorage, log: log}
 }
 
 // awards
@@ -222,44 +225,6 @@ func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (AwardRes
 	return res, nil
 }
 
-func (s *AwardService) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]AwardResponse, error) {
-	dbAwards, err := s.repo.GetAwardsByMethodist(ctx, methodist)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []AwardResponse
-	for _, dbAward := range dbAwards {
-		award, err := s.BuildSelected(ctx, dbAward)
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, award)
-	}
-
-	return result, nil
-}
-
-func (s *AwardService) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]AwardResponse, error) {
-	dbAwards, err := s.repo.GetAwardsByTeacher(ctx, teacher)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []AwardResponse
-	for _, dbAward := range dbAwards {
-		award, err := s.BuildSelected(ctx, dbAward)
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, award)
-	}
-
-	return result, nil
-}
-
 func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error) {
 	// check is exist
 	_, err := s.repo.GetAwardTypeByID(ctx, req.Type.Bytes)
@@ -318,11 +283,53 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 }
 
 func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (AwardResponse, error) {
-	updatedAward, err := s.repo.UpdateAwardStatus(ctx, params)
+
+	// 1. Получаем текущее состояние award
+	award, err := s.repo.GetAwardByID(ctx, params.ID)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	// 2. Обновляем статус
+	updatedAward, err := s.repo.UpdateAwardStatus(ctx, storage.UpdateAwardStatusParams{
+		ID:          params.ID,
+		Status:      params.Status,
+		Reason:      params.Reason,
+		Methodist:   params.Methodist,
+		TotalPoints: params.TotalPoints,
+	})
 	if err != nil {
 		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
 	}
 
+	// 3. Обрабатываем points ТОЛЬКО при смене APPROVED
+	switch {
+	case award.Status != storage.AwardsStatusAPPROVED &&
+		params.Status == storage.AwardsStatusAPPROVED:
+
+		err = s.userRepo.UpdateUserTotalPoints(
+			ctx,
+			award.Teacher.Bytes,      // или updatedAward.Teacher
+			updatedAward.TotalPoints, // <- вот тут новое значение
+		)
+		if err != nil {
+			return AwardResponse{}, err
+		}
+
+	case award.Status == storage.AwardsStatusAPPROVED &&
+		params.Status != storage.AwardsStatusAPPROVED:
+
+		err = s.userRepo.UpdateUserTotalPoints(
+			ctx,
+			award.Teacher.Bytes,
+			-award.TotalPoints, // <- минус новое значение
+		)
+		if err != nil {
+			return AwardResponse{}, err
+		}
+	}
+
+	// 4. Формируем response
 	res, err := s.BuildSelected(ctx, updatedAward)
 	if err != nil {
 		return AwardResponse{}, err
@@ -332,6 +339,24 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 }
 
 func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
+
+	award, err := s.repo.GetAwardByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// если award был APPROVED — списываем points
+	if award.Status == storage.AwardsStatusAPPROVED {
+		err = s.userRepo.UpdateUserTotalPoints(
+			ctx,
+			award.Teacher.Bytes,
+			award.TotalPoints,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	return s.repo.DeleteAward(ctx, id)
 }
 
@@ -534,6 +559,8 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 		Text:          award.Text,
 		Files:         award.Files,
 		Links:         award.Links,
+		UpdatedAt:     award.UpdatedAt.Time,
+		CreatedAt:     award.CreatedAt.Time,
 	}, err
 }
 
@@ -688,7 +715,6 @@ func (s *AwardService) GetAwardPaginated(
 		pageSize = 10
 	}
 
-	// 👇 КРИТИЧЕСКИЙ ФИКС
 	if len(status) == 0 {
 		status = nil
 	}
@@ -719,8 +745,24 @@ func (s *AwardService) GetAwardPaginated(
 
 	pages := int(math.Ceil(float64(total) / float64(pageSize)))
 
+	// build awards
+	var result []AwardResponse
+	for _, dbAward := range dbAwards {
+		award, err := s.BuildSelected(ctx, dbAward)
+		if err != nil {
+			s.log.Error(logrus.Fields{
+				"message": "build all awards error",
+				"error":   err,
+			})
+
+			return nil, err
+		}
+
+		result = append(result, award)
+	}
+
 	return &PaginatedAwardsResponse{
-		Data: dbAwards,
+		Data: result,
 		Meta: PaginationMeta{
 			CurrentPage: currentPage,
 			Pages:       pages,

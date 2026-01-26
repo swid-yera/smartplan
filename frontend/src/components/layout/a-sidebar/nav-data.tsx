@@ -1,4 +1,15 @@
-import { Award, BookOpen, Headset, LayoutDashboard, PenIcon, Users } from 'lucide-react'
+import {
+	Award,
+	BookCopy,
+	BookOpen,
+	Headset,
+	Kanban,
+	LayoutDashboard,
+	ListCheck,
+	Megaphone,
+	PenIcon,
+	Users,
+} from 'lucide-react'
 
 export const navMain = [
 	{
@@ -20,6 +31,28 @@ export const navMain = [
 		title: 'KPI',
 		url: '/kpi',
 		icon: Award,
+		items: [
+			{
+				icon: Kanban,
+				title: 'Управление',
+				url: '/kpi',
+			},
+			{
+				icon: BookCopy,
+				title: 'Подробнее',
+				url: '/kpi/info',
+			},
+			{
+				icon: Megaphone,
+				title: 'Рейтинг преподавателей',
+				url: '/kpi/rating',
+			},
+			{
+				icon: ListCheck,
+				title: 'Критерии оценивания',
+				url: '/kpi/types',
+			},
+		],
 	},
 	{
 		title: 'Пользователи',

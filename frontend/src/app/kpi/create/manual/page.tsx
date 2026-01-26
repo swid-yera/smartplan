@@ -2,191 +2,245 @@
 
 import { useState } from 'react'
 
-import type { NextPage } from 'next'
+import { useRouter } from 'next/navigation'
 
+import { PageTitle } from '@components'
+import { services } from '@services'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import type { ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
 import {
 	Button,
 	Card,
 	CardContent,
+	CardDescription,
 	CardFooter,
 	CardHeader,
 	CardTitle,
-	Checkbox,
 	Dropzone,
 	DropzoneContent,
 	DropzoneEmptyState,
-	Input,
 	Label,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
 	Textarea,
 } from '@ui'
+import { toast } from 'sonner'
 
-const Page: NextPage = () => {
-	const [files, setFiles] = useState<File[] | undefined>()
-	const [filePreview, setFilePreview] = useState<string | undefined>()
-	const [contentType, setContentType] = useState('photo')
+export default function CreateAwardPage() {
+	const { push } = useRouter()
+
+	const [selectedType, setSelectedType] = useState<ITypeResponse | null>(null)
+	const [selectedVariant, setSelectedVariant] = useState<IVariantResponse | null>(null)
+	const [selectedCriteria, setSelectedCriteria] = useState<ICriteriaResponse | null>(null)
+	const [selectedBonusCriteria, setSelectedBonusCriteria] = useState<ICriteriaResponse | null>(null)
+	const [files, setFiles] = useState<File[]>([])
+	const [text, setText] = useState('')
+
+	// Получаем все типы
+	const { data: types } = useQuery({
+		...services.award.getAllTypesOptions(),
+	})
+
+	const { mutate: mutateCreate, isPending } = useMutation({
+		...services.award.createOptions(),
+	})
+
+	const handleSubmit = () => {
+		if (!selectedType || !selectedVariant || !selectedCriteria) {
+			toast.error('Выберите тип, вариант и критерий!')
+
+			return
+		}
+
+		const newAward: ICreateAwardRequest = {
+			type: selectedType.id,
+			variant: selectedVariant.id,
+			criteria: selectedCriteria.id,
+			text,
+		}
+
+		const toastId = `award-${selectedType.name}-create`
+
+		toast.loading(`Создание награды с типом - ${selectedType.name}`, { id: toastId })
+
+		mutateCreate(
+			{ newAward, files },
+			{
+				onSuccess: (createdAward) => {
+					toast.success(`Награда успешно создался с типом - ${createdAward.type.name}`, { id: toastId })
+					push(`/kpi/${createdAward.id}`)
+				},
+				onError: () => {
+					toast.error(`Ошибка созданий награды - ${selectedType.name}`, { id: toastId })
+				},
+			},
+		)
+	}
 
 	const handleDrop = (files: File[]) => {
 		console.log(files)
 		setFiles(files)
-
-		if (files.length > 0) {
-			const reader = new FileReader()
-
-			reader.onload = (e) => {
-				if (typeof e.target?.result === 'string') {
-					setFilePreview(e.target?.result)
-				}
-			}
-			reader.readAsDataURL(files[0])
-		}
 	}
 
 	return (
-		<div className='p-4 sm:p-6 lg:p-8 space-y-6'>
-			<div className='space-y-1'>
-				<h1 className='text-2xl font-bold tracking-tight'>Отправьте свои достижения для рейтинга преподавателей</h1>
-				<p className='text-muted-foreground'>Добавление достижения</p>
-			</div>
+		<section className='mx-auto w-full p-6 space-y-6'>
+			<PageTitle backHref='/kpi' description='Выберите тип, вариант и критерий, загрузите подтверждающие файлы'>
+				Создание награды
+			</PageTitle>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Добавление сертификата</CardTitle>
+					<CardTitle>Создание награды</CardTitle>
+					<CardDescription>Выберите тип, вариант и критерий, загрузите подтверждающие файлы</CardDescription>
 				</CardHeader>
 
-				<CardContent className='space-y-6'>
-					<div className='grid gap-4 md:grid-cols-2'>
+				<CardContent className='space-y-4'>
+					{/* Выбор Type */}
+					<div className='space-y-2'>
+						<Label htmlFor='type'>Тип награды</Label>
+						<Select
+							value={selectedType?.id || ''}
+							onValueChange={(id: string) => {
+								const t = types?.find((t: ITypeResponse) => t.id === id) || null
+
+								setSelectedType(t)
+								setSelectedVariant(null)
+								setSelectedCriteria(null)
+							}}
+						>
+							<SelectTrigger className='w-full' id='type'>
+								<SelectValue placeholder='Выберите тип' />
+							</SelectTrigger>
+							<SelectContent>
+								{types?.map((t: ITypeResponse) => (
+									<SelectItem key={t.id} value={t.id}>
+										{t.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					{/* Выбор Variant */}
+					{selectedType && (
 						<div className='space-y-2'>
-							<Label htmlFor='name'>Название награды</Label>
-							<Input id='name' placeholder='Введите название' />
-						</div>
-						<div className='space-y-2'>
-							<Label htmlFor='type'>Тип / Вариант</Label>
-							<Select>
-								<SelectTrigger id='type'>
-									<SelectValue placeholder='Выберите тип' />
+							<Label htmlFor='variant'>Вариант</Label>
+							<Select
+								value={selectedVariant?.id || ''}
+								onValueChange={(id: string) => {
+									const v = selectedType.variants.find((v) => v.id === id) || null
+
+									setSelectedVariant(v)
+									setSelectedCriteria(null)
+								}}
+							>
+								<SelectTrigger className='w-full' id='variant'>
+									<SelectValue placeholder='Выберите вариант' />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value='type1'>Тип 1</SelectItem>
-									<SelectItem value='type2'>Тип 2</SelectItem>
+									{selectedType.variants.map((v) => (
+										<SelectItem key={v.id} value={v.id}>
+											{v.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							{selectedVariant?.description && (
+								<p className='ml-2 text-xs text-muted-foreground'>{selectedVariant?.description}</p>
+							)}
+						</div>
+					)}
+
+					{/* criteria */}
+					{selectedVariant && (
+						<div className='space-y-2'>
+							<Label htmlFor='criteria'>Критерий</Label>
+							<Select
+								value={selectedCriteria?.id || ''}
+								onValueChange={(id: string) => {
+									const c = selectedVariant.criteria.find((c) => c.id === id) || null
+
+									setSelectedCriteria(c)
+								}}
+							>
+								<SelectTrigger className='w-full' id='criteria'>
+									<SelectValue placeholder='Выберите критерий' />
+								</SelectTrigger>
+								<SelectContent>
+									{selectedVariant.criteria.map((c) => (
+										<SelectItem key={c.id} value={c.id}>
+											{c.name} ({c.points.join('-')} баллов)
+										</SelectItem>
+									))}
 								</SelectContent>
 							</Select>
 						</div>
-					</div>
+					)}
 
-					<div className='space-y-2'>
-						<Label htmlFor='reason'>Причина</Label>
-						<Textarea id='reason' placeholder='Укажите причину' />
-					</div>
+					{/* bonus criteria */}
+					{selectedVariant && selectedVariant?.bonusCriteria && (
+						<div className='space-y-2'>
+							<Label htmlFor='criteria'>Бонусный критерий</Label>
+							<Select
+								value={selectedBonusCriteria?.id || ''}
+								onValueChange={(id: string) => {
+									if (!selectedVariant?.bonusCriteria) return
 
-					<div className='space-y-2'>
-						<Label>Тип контента</Label>
-						<Tabs className='w-full' defaultValue='photo' onValueChange={setContentType}>
-							<TabsList className='grid w-full grid-cols-4'>
-								<TabsTrigger value='photo'>Фото</TabsTrigger>
-								<TabsTrigger value='video'>Видео</TabsTrigger>
-								<TabsTrigger value='text'>Текст</TabsTrigger>
-								<TabsTrigger value='link'>Ссылка</TabsTrigger>
-							</TabsList>
-							<div className='mt-4 rounded-md border p-4'>
-								<TabsContent className='mt-0' value='photo'>
-									<Dropzone
-										accept={{ 'image/*': ['.png', '.jpg', '.jpeg'] }}
-										src={files}
-										onDrop={handleDrop}
-										onError={console.error}
-									>
-										<DropzoneEmptyState />
-										<DropzoneContent>
-											{filePreview && (
-												<div className='h-[102px] w-full'>
-													<img
-														alt='Preview'
-														className='absolute top-0 left-0 h-full w-full object-cover'
-														src={filePreview}
-													/>
-												</div>
-											)}
-										</DropzoneContent>
-									</Dropzone>
-								</TabsContent>
-								<TabsContent className='mt-0' value='video'>
-									<Dropzone
-										accept={{ 'video/*': ['.mp4', '.mov', '.avi'] }}
-										src={files}
-										onDrop={handleDrop}
-										onError={console.error}
-									>
-										<DropzoneEmptyState />
-										<DropzoneContent>
-											<div className='flex h-full items-center justify-center text-sm text-muted-foreground'>
-												Видео файл загружен
-											</div>
-										</DropzoneContent>
-									</Dropzone>
-								</TabsContent>
-								<TabsContent className='mt-0' value='text'>
-									<Textarea className='min-h-[150px]' placeholder='Введите текст...' />
-								</TabsContent>
-								<TabsContent className='mt-0' value='link'>
-									<Input placeholder='https://example.com' />
-								</TabsContent>
-							</div>
-						</Tabs>
-					</div>
+									const c = selectedVariant.bonusCriteria.find((c) => c.id === id) || null
 
-					<div className='space-y-4'>
-						<Label>Критерии</Label>
-						<div className='grid gap-2'>
-							<div className='flex items-center space-x-2'>
-								<Checkbox id='c1' />
-								<Label className='font-normal' htmlFor='c1'>
-									Критерий 1
-								</Label>
-							</div>
-							<div className='flex items-center space-x-2'>
-								<Checkbox id='c2' />
-								<Label className='font-normal' htmlFor='c2'>
-									Критерий 2
-								</Label>
-							</div>
-							<div className='flex items-center space-x-2'>
-								<Checkbox id='c3' />
-								<Label className='font-normal' htmlFor='c3'>
-									Bonus критерий
-								</Label>
-							</div>
+									setSelectedBonusCriteria(c)
+								}}
+							>
+								<SelectTrigger className='w-full' id='criteria'>
+									<SelectValue placeholder='Выберите критерий' />
+								</SelectTrigger>
+								<SelectContent>
+									{selectedVariant.criteria.map((c) => (
+										<SelectItem key={c.id} value={c.id}>
+											{c.name} ({c.points.join('-')} бонусных баллов)
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</div>
+					)}
+
+					{/* Текст награды */}
+					<div className='space-y-2'>
+						<Label htmlFor='text'>Описание награды</Label>
+						<Textarea
+							id='text'
+							placeholder='Введите описание достижение/награды'
+							value={text}
+							onChange={(e) => setText(e.target.value)}
+						/>
+					</div>
+
+					{/* Загрузка файлов */}
+					<div className='space-y-2'>
+						<Label>Загрузить файлы</Label>
+						<Dropzone
+							accept={{ 'image/*': ['.png', '.jpg', '.jpeg'] }}
+							maxFiles={4}
+							src={files}
+							onDrop={handleDrop}
+							onError={console.error}
+						>
+							<DropzoneEmptyState />
+							<DropzoneContent />
+						</Dropzone>
 					</div>
 				</CardContent>
 
-				<CardFooter className='flex flex-col items-start justify-between space-y-4 border-t pt-6 sm:flex-row sm:items-center sm:space-y-0'>
-					<div className='flex flex-col space-y-1'>
-						<span className='text-sm text-muted-foreground'>
-							Статус: <span className='font-medium text-foreground'>Черновик</span>
-						</span>
-						<span className='text-sm text-muted-foreground'>
-							Итого баллов: <span className='font-medium text-foreground'>0</span>
-						</span>
-					</div>
-					<div className='flex w-full space-x-2 sm:w-auto'>
-						<Button className='w-full sm:w-auto' variant='outline'>
-							Сохранить
-						</Button>
-						<Button className='w-full sm:w-auto'>Отправить</Button>
-					</div>
+				<CardFooter className='flex justify-end'>
+					<Button disabled={isPending} variant='default' onClick={handleSubmit}>
+						Создать награду
+					</Button>
 				</CardFooter>
 			</Card>
-		</div>
+		</section>
 	)
 }
-
-export default Page
