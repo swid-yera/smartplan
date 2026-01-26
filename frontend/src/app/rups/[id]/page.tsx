@@ -185,7 +185,7 @@ const Page: FC = () => {
 								onClick={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 							>
 								<SendIcon />
-								Отправить на согласование
+								Отправить на проверке
 							</Button>
 						)}
 					</ButtonGroup>

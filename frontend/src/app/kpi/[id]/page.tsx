@@ -1,6 +1,6 @@
 'use client'
 
-import { type FC, useState } from 'react'
+import { type FC, useEffect, useState } from 'react'
 
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -10,7 +10,7 @@ import { hasRole, isAuthor, normalizeCriteriaMethod, normalizeStatus } from '@he
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateStatusRequest, StatusEnum, UserRoleEnum } from '@types'
+import { CriteriaMethodEnum, type ICriteria, type IUpdateStatusRequest, StatusEnum, UserRoleEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -27,6 +27,7 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
+	Input,
 	Label,
 	Select,
 	SelectContent,
@@ -42,7 +43,20 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@ui'
-import { Calendar, Download, Edit, FileText, Link as LinkIcon, SendIcon, ShieldAlert, Trash, User } from 'lucide-react'
+import {
+	Calendar,
+	CheckCircle,
+	Download,
+	Edit,
+	FileText,
+	Link as LinkIcon,
+	SendIcon,
+	SendToBack,
+	ShieldAlert,
+	Trash,
+	User,
+	UserSearch,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 const Page = () => {
@@ -51,10 +65,17 @@ const Page = () => {
 	// states
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+	const [generalComment, setGeneralComment] = useState('')
+	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
+	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
 	// store
 	const { user, authLoading } = useAuthStore()
 	// queries
-	const { data: award, isLoading } = useQuery({
+	const {
+		data: award,
+		isLoading,
+		refetch,
+	} = useQuery({
 		...services.award.getByIdOptions(id as string),
 		enabled: !!id && !authLoading,
 	})
@@ -74,18 +95,26 @@ const Page = () => {
 	}
 
 	// change award status
-	const handleStatusChange = (newStatus: StatusEnum, reason?: string) => {
+	const handleStatusChange = (newStatus: StatusEnum, reason?: string, totalPoints?: number) => {
 		if (!award) return
 		setIsSheetOpen(false)
 
 		const toastId = `award-${award.id}-status-update-${newStatus}`
+		const payloadTotalPoints: number = newStatus == StatusEnum.APPROVED ? totalPoints || 0 : 0
+		const payloadReason: string = newStatus == StatusEnum.REJECTED ? reason || '' : ''
 
 		toast.loading('Изменение статуса...', { id: toastId })
-		const updateStatusPayload: IUpdateStatusRequest = { id: award.id, status: newStatus, reason }
+		const updateStatusPayload: IUpdateStatusRequest = {
+			id: award.id,
+			status: newStatus,
+			reason: payloadReason,
+			totalPoints: payloadTotalPoints,
+		}
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
 				toast.success('Статус успешно изменен!', { id: toastId })
+				refetch()
 			},
 			onError: (err) => {
 				toast.error('Произошла ошибка при изменении статуса', { id: toastId, description: err.message })
@@ -120,51 +149,78 @@ const Page = () => {
 	const isAwardCreator = isAuthor(user, award.teacher.keycloakId)
 	// conditions
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
+	const isMethodistReview = hasRole(user.role, UserRoleEnum.METHODIST, true) && award.status === StatusEnum.IN_REVIEW
 
 	return (
 		<div className='space-y-6 p-6 w-full'>
 			<PageTitle
 				actions={
 					<ButtonGroup>
-						{isAdmin && (
-							<Button
-								className='hover:text-primary'
-								size='sm'
-								variant='outline'
-								onClick={() => setIsSheetOpen(true)}
-							>
-								<ShieldAlert />
-								Поменять статус
-							</Button>
-						)}
-						{isAwardCreator && (
-							<Button
-								className='hover:text-destructive'
-								size='sm'
-								variant='outline'
-								onClick={() => setIsDeleteDialogOpen(true)}
-							>
-								<Trash />
-								Удалить
-							</Button>
-						)}
-						{canEdit && (
-							<Button asChild size='sm' variant='outline'>
-								<Link href={`/kpi/${id}/edit`}>
-									<Edit /> Редактировать
-								</Link>
-							</Button>
-						)}
-						{isStatusForEdit && (
-							<Button
-								className='hover:text-primary'
-								size='sm'
-								variant='outline'
-								onClick={() => handleStatusChange(StatusEnum.IN_REVIEW)}
-							>
-								<SendIcon />
-								Отправить на согласование
-							</Button>
+						<ButtonGroup>
+							{isAdmin && (
+								<Button
+									className='hover:text-primary'
+									size='sm'
+									variant='outline'
+									onClick={() => setIsSheetOpen(true)}
+								>
+									<ShieldAlert />
+									Поменять статус
+								</Button>
+							)}
+							{isAwardCreator && (
+								<Button
+									className='hover:text-destructive'
+									size='sm'
+									variant='outline'
+									onClick={() => setIsDeleteDialogOpen(true)}
+								>
+									<Trash />
+									Удалить
+								</Button>
+							)}
+							{canEdit && (
+								<Button asChild size='sm' variant='outline'>
+									<Link href={`/kpi/${id}/edit`}>
+										<Edit /> Редактировать
+									</Link>
+								</Button>
+							)}
+							{isStatusForEdit && (
+								<Button
+									className='hover:text-primary'
+									size='sm'
+									variant='outline'
+									onClick={() => handleStatusChange(StatusEnum.IN_REVIEW)}
+								>
+									<SendIcon />
+									Отправить На проверку
+								</Button>
+							)}
+						</ButtonGroup>
+
+						{isMethodistReview && (
+							<ButtonGroup>
+								<Button
+									className='hover:text-destructive'
+									size='sm'
+									variant='outline'
+									onClick={() => setIsRejectSheetOpen(true)}
+								>
+									<SendToBack className='mr-2 h-4 w-4' />
+									Отклонить
+								</Button>
+
+								<Button
+									className='hover:text-primary'
+									size='sm'
+									variant='outline'
+									onClick={() => setIsApproveSheetOpen(true)}
+								>
+									<CheckCircle className='mr-2 h-4 w-4' />
+									Утвердить
+								</Button>
+							</ButtonGroup>
 						)}
 					</ButtonGroup>
 				}
@@ -174,17 +230,17 @@ const Page = () => {
 				Детали достижения
 			</PageTitle>
 
-			<div className='mt-6 grid gap-6 md:grid-cols-3'>
-				{award.status === StatusEnum.REJECTED && (
-					<div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive'>
-						<div className='flex items-center gap-2 font-medium'>
-							<ShieldAlert className='h-5 w-5' />
-							Причина отказа
-						</div>
-						<div className='mt-2 text-sm whitespace-pre-wrap'>{award.reason || 'Пусто'}</div>
+			{award.status === StatusEnum.REJECTED && (
+				<div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive'>
+					<div className='flex items-center gap-2 font-medium'>
+						<ShieldAlert className='h-5 w-5' />
+						Причина отказа
 					</div>
-				)}
+					<div className='mt-2 text-sm whitespace-pre-wrap'>{award.reason || 'Пусто'}</div>
+				</div>
+			)}
 
+			<div className='mt-6 grid gap-6 md:grid-cols-3'>
 				<Card className='md:col-span-2'>
 					<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
 						<CardTitle className='text-xl font-bold'>{award.variant.name}</CardTitle>
@@ -222,7 +278,7 @@ const Page = () => {
 					<CardHeader>
 						<CardTitle>Участники</CardTitle>
 					</CardHeader>
-					<CardContent className='space-y-6 flex-1'>
+					<CardContent className='space-y-3 flex-1'>
 						<div className='flex items-start gap-3'>
 							<User className='mt-1 h-5 w-5 text-muted-foreground' />
 							<div>
@@ -237,21 +293,18 @@ const Page = () => {
 						</div>
 
 						{award.methodist && (
-							<>
-								<Separator />
-								<div className='flex items-start gap-3'>
-									<User className='mt-1 h-5 w-5 text-muted-foreground' />
-									<div>
-										<p className='text-sm font-medium text-muted-foreground'>Методист</p>
-										<Link
-											className='font-medium hover:underline hover:text-primary'
-											href={`/users/${award.methodist.keycloakId}`}
-										>
-											{award.methodist.firstName} {award.methodist.lastName}
-										</Link>
-									</div>
+							<div className='flex items-start gap-3'>
+								<UserSearch className='mt-1 h-5 w-5 text-muted-foreground' />
+								<div>
+									<p className='text-sm font-medium text-muted-foreground'>Методист</p>
+									<Link
+										className='font-medium hover:underline hover:text-primary'
+										href={`/users/${award.methodist.keycloakId}`}
+									>
+										{award.methodist.firstName} {award.methodist.lastName}
+									</Link>
 								</div>
-							</>
+							</div>
 						)}
 					</CardContent>
 
@@ -369,10 +422,25 @@ const Page = () => {
 				setIsSheetOpen={setIsSheetOpen}
 			/>
 
+			<RejectSheet
+				generalComment={generalComment}
+				isRejectSheetOpen={isRejectSheetOpen}
+				setGeneralComment={setGeneralComment}
+				setIsRejectSheetOpen={setIsRejectSheetOpen}
+				onStatusChange={() => handleStatusChange(StatusEnum.REJECTED, generalComment)}
+			/>
+
 			<DeleteAlert
 				isDeleteDialogOpen={isDeleteDialogOpen}
 				setIsDeleteDialogOpen={setIsDeleteDialogOpen}
 				onDelete={handleDeleteAward}
+			/>
+
+			<ApproveSheet
+				criteria={award.criteria}
+				isApproveSheetOpen={isApproveSheetOpen}
+				setIsApproveSheetOpen={setIsApproveSheetOpen}
+				onStatusChange={(totalPoints: number) => handleStatusChange(StatusEnum.APPROVED, '', totalPoints)}
 			/>
 		</div>
 	)
@@ -436,6 +504,160 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 				<SheetFooter>
 					<Button disabled={!newStatus} onClick={onSheetSubmit}>
 						Сохранить
+					</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
+	)
+}
+
+// reject sheet
+interface IRejectSheet {
+	isRejectSheetOpen: boolean
+	setIsRejectSheetOpen: (state: boolean) => void
+	generalComment: string
+	setGeneralComment: (comment: string) => void
+	onStatusChange: () => void
+}
+
+const RejectSheet: FC<IRejectSheet> = ({
+	isRejectSheetOpen,
+	setIsRejectSheetOpen,
+	generalComment,
+	setGeneralComment,
+	onStatusChange,
+}) => {
+	return (
+		<Sheet open={isRejectSheetOpen} onOpenChange={setIsRejectSheetOpen}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Отклонить</SheetTitle>
+					<SheetDescription>
+						Укажите причину отклонения (проблемы), чтобы преподаватель мог их исправить.
+					</SheetDescription>
+				</SheetHeader>
+				<div className='px-4 grid gap-4 py-4'>
+					<div className='grid gap-2'>
+						<Label htmlFor='reject-reason'>Причина отказа</Label>
+						<Textarea
+							id='reject-reason'
+							placeholder='Опишите проблемы...'
+							rows={12}
+							value={generalComment}
+							onChange={(e) => setGeneralComment(e.target.value)}
+						/>
+					</div>
+				</div>
+				<SheetFooter>
+					<Button variant='outline' onClick={() => setIsRejectSheetOpen(false)}>
+						Отмена
+					</Button>
+					<Button
+						disabled={!generalComment}
+						variant='destructive'
+						onClick={() => {
+							if (!generalComment.trim()) {
+								toast.error('Пожалуйста, укажите причину отклонения')
+
+								return
+							}
+							onStatusChange()
+							setIsRejectSheetOpen(false)
+						}}
+					>
+						Отклонить
+					</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
+	)
+}
+
+// approve sheet
+interface IApproveSheet {
+	isApproveSheetOpen: boolean
+	setIsApproveSheetOpen: (state: boolean) => void
+	onStatusChange: (awardPoints: number) => void
+	criteria: ICriteria
+}
+
+const ApproveSheet: FC<IApproveSheet> = ({ isApproveSheetOpen, setIsApproveSheetOpen, onStatusChange, criteria }) => {
+	const isMeasuring = criteria.method === CriteriaMethodEnum.MEASURING
+
+	const min = criteria.points[0]
+	const max = criteria.points[1] ?? criteria.points[0]
+
+	const [awardPoints, setAwardPoints] = useState<number>(min)
+
+	useEffect(() => {
+		setAwardPoints(min)
+	}, [criteria.id])
+
+	const handleApprove = () => {
+		onStatusChange(awardPoints)
+		setIsApproveSheetOpen(false)
+	}
+
+	return (
+		<Sheet open={isApproveSheetOpen} onOpenChange={setIsApproveSheetOpen}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Утвердить</SheetTitle>
+					<SheetDescription>Проверка и утверждение баллов</SheetDescription>
+				</SheetHeader>
+
+				<div className='px-3 space-y-3 text-sm'>
+					<p>
+						<span className='text-muted-foreground'>Критерий:</span>{' '}
+						<span className='font-medium'>{criteria.name}</span>
+					</p>
+
+					<p>
+						<span className='text-muted-foreground'>Метод:</span>{' '}
+						<span className='font-medium'>
+							{criteria.method === CriteriaMethodEnum.NORMAL ? 'Фиксированный' : 'Измеряемый'}
+						</span>
+					</p>
+
+					{/* NORMAL */}
+					{criteria.method === CriteriaMethodEnum.NORMAL && (
+						<div className='rounded-md border px-3 py-2 bg-muted'>
+							<p>
+								Балл за критерий: <span className='font-semibold'>{criteria.points[0]}</span>
+							</p>
+						</div>
+					)}
+
+					{/* MEASURING */}
+					{isMeasuring && (
+						<div className='space-y-2'>
+							<Label htmlFor='points'>
+								Балл ({min} – {max})
+							</Label>
+							<Input
+								id='points'
+								max={max}
+								min={min}
+								type='number'
+								value={awardPoints}
+								onChange={(e) => {
+									const value = Number(e.target.value)
+
+									if (Number.isNaN(value)) return
+
+									setAwardPoints(Math.min(Math.max(value, min), max))
+								}}
+							/>
+						</div>
+					)}
+				</div>
+
+				<SheetFooter className='mt-4'>
+					<Button variant='outline' onClick={() => setIsApproveSheetOpen(false)}>
+						Отмена
+					</Button>
+					<Button variant='default' onClick={handleApprove}>
+						Утвердить
 					</Button>
 				</SheetFooter>
 			</SheetContent>

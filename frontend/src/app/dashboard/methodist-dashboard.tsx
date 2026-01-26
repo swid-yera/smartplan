@@ -107,7 +107,7 @@ export const MethodistDashboard = () => {
 
 			<RupsCard
 				currentPage={1}
-				description='Рабочие учебные планы отправленные преподавателями на согласование.'
+				description='Рабочие учебные планы отправленные преподавателями на проверку.'
 				isLoading={rupLoading}
 				rups={reviewRups}
 				title='Ожидают проверки'
