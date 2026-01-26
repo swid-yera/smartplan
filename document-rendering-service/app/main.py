@@ -12,7 +12,9 @@ app = FastAPI(title="Document Generator")
 
 
 @app.post("/generate-rup", response_class=FileResponse)
-def generate_document(payload: dict = Body(...)):
+def generate_document(
+    payload: dict = Body(...), api_key: str = Depends(verify_api_key)
+):
     try:
         logger.info(
             "/generate-rup, request to generate document: %s", payload.get("name")
@@ -42,7 +44,7 @@ def generate_document(payload: dict = Body(...)):
 
 
 @app.delete("/cleanup")
-async def delete_out_files():
+async def delete_out_files(api_key: str = Depends(verify_api_key)):
     """
     delete all files in /out folder
     """
