@@ -78,7 +78,8 @@ LIMIT $2 OFFSET $3;
 SELECT *
 FROM users
 WHERE
-    (
+    role 'teacher'
+    AND (
         $1 = '' OR
         (
             $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
