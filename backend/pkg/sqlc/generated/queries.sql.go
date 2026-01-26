@@ -1594,7 +1594,8 @@ const getUsersRatingPaginated = `-- name: GetUsersRatingPaginated :many
 SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 WHERE
-    (
+    role 'teacher'
+    AND (
         $1 = '' OR
         (
             $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
