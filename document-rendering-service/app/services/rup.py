@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from app.logger import logger
-from app.config import OUT_DIR, RUP_TEMPLATE_PATH
+from app.config import OUT_DIR, TEMPLATE_PATH
 
 from app.helpers.rup_helpers import decode_study_form, zero_to_empty
 from app.helpers.slugify import slugify_ru
@@ -84,7 +84,7 @@ def generate_rup_docx(data: dict) -> Path:
 
     # render
     logger.info("generating rup document, rendering document: %s", rup_name)
-    doc = DocxTemplate(RUP_TEMPLATE_PATH)
+    doc = DocxTemplate(TEMPLATE_PATH)
     doc.render(context)
 
     # save
@@ -92,7 +92,7 @@ def generate_rup_docx(data: dict) -> Path:
 
     slug = slugify_ru(rup_name[:13])
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"rup_{slug}_{timestamp}.docx"
+    filename = f"{slug}_{timestamp}.docx"
     output_path = OUT_DIR / filename
 
     doc.save(output_path)
