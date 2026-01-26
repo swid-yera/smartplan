@@ -76,6 +76,7 @@ type Querier interface {
 	UpdateUserPasswordChangedAt(ctx context.Context, arg UpdateUserPasswordChangedAtParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
+	UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error
 	UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error)
 }
 

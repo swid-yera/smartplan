@@ -1992,6 +1992,24 @@ func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) 
 	return err
 }
 
+const updateUserTotalPoints = `-- name: UpdateUserTotalPoints :exec
+UPDATE users
+SET
+    total_points = total_points + $2
+WHERE
+    keycloak_id = $1
+`
+
+type UpdateUserTotalPointsParams struct {
+	KeycloakID  uuid.UUID `json:"keycloak_id"`
+	TotalPoints int32     `json:"total_points"`
+}
+
+func (q *Queries) UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error {
+	_, err := q.db.Exec(ctx, updateUserTotalPoints, arg.KeycloakID, arg.TotalPoints)
+	return err
+}
+
 const upsertGroup = `-- name: UpsertGroup :one
 INSERT INTO
     groups (

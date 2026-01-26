@@ -123,6 +123,7 @@ type UpdateAwardRequest struct {
 
 type AwardService struct {
 	repo        *repository.AwardRepository
+	userRepo    repository.UsersRepository
 	log         *logrus.Logger
 	fileStorage FileStorage
 }
@@ -317,12 +318,53 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 	return res, nil
 }
 
-func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (AwardResponse, error) {
+func (s *AwardService) UpdateAwardStatus(
+	ctx context.Context,
+	params storage.UpdateAwardStatusParams,
+) (AwardResponse, error) {
+
+	// 1. Получаем текущее состояние award
+	award, err := s.repo.GetAwardByID(ctx, params.ID)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	// 2. Обновляем award
 	updatedAward, err := s.repo.UpdateAwardStatus(ctx, params)
 	if err != nil {
 		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
 	}
 
+	// 3. Обрабатываем points ТОЛЬКО при смене APPROVED
+	switch {
+	// не был APPROVED → стал APPROVED
+	case award.Status != storage.AwardsStatusAPPROVED &&
+		params.Status == storage.AwardsStatusAPPROVED:
+
+		err = s.userRepo.UpdateUserTotalPoints(
+			ctx,
+			award.Teacher.Bytes,
+			award.TotalPoints,
+		)
+		if err != nil {
+			return AwardResponse{}, err
+		}
+
+	// был APPROVED → стал НЕ APPROVED
+	case award.Status == storage.AwardsStatusAPPROVED &&
+		params.Status != storage.AwardsStatusAPPROVED:
+
+		err = s.userRepo.UpdateUserTotalPoints(
+			ctx,
+			award.Teacher.Bytes,
+			award.TotalPoints,
+		)
+		if err != nil {
+			return AwardResponse{}, err
+		}
+	}
+
+	// 4. Response
 	res, err := s.BuildSelected(ctx, updatedAward)
 	if err != nil {
 		return AwardResponse{}, err
@@ -332,6 +374,24 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 }
 
 func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
+
+	award, err := s.repo.GetAwardByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	// если award был APPROVED — списываем points
+	if award.Status == storage.AwardsStatusAPPROVED {
+		err = s.userRepo.UpdateUserTotalPoints(
+			ctx,
+			award.Teacher.Bytes,
+			award.TotalPoints,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	return s.repo.DeleteAward(ctx, id)
 }
 

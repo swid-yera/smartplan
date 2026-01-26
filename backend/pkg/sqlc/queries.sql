@@ -92,6 +92,13 @@ WHERE
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
 
+-- name: UpdateUserTotalPoints :exec
+UPDATE users
+SET
+    total_points = total_points + $2
+WHERE
+    keycloak_id = $1;
+
 -- name: CreateRupResource :one
 INSERT INTO
     rup_resources (name, link)
