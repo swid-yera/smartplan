@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_6cmzB7GBD6
 createdAt: 2026-01-15T18:12:50.578097400
-updatedAt: 2026-01-20T20:05:43.996480
+updatedAt: 2026-01-23T06:22:56.500770700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_XZaE2gEbts
 authentication: {}
@@ -18,6 +18,34 @@ headers:
   id: AaYnqA76Qn
 method: GET
 name: all
-sortPriority: 0.0
+sortPriority: 333.3333333333333
 url: ${[ url ]}/rups
-urlParameters: []
+urlParameters:
+- enabled: true
+  name: currentPage
+  value: '1'
+  id: ZZRgfIpUMU
+- enabled: true
+  name: pageSize
+  value: '10'
+  id: hxF3We6tRW
+- enabled: false
+  name: search
+  value: ''
+  id: zPBrhaFwkj
+- enabled: false
+  name: teacher
+  value: f2546909-a510-49e7-9185-bd576e76784c
+  id: 6F4EynMmxR
+- enabled: false
+  name: methodist
+  value: f2546909-a510-49e7-9185-bd576e76784c
+  id: DsQEKCy0b3
+- enabled: true
+  name: status
+  value: APPROVED,REJECTED
+  id: DdDi39PEN9
+- enabled: true
+  name: ''
+  value: ''
+  id: cxkreeFVKk

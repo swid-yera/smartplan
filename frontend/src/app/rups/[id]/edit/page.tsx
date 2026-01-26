@@ -199,6 +199,7 @@ const EditPage: FC = () => {
 				onSubmit={methods.handleSubmit(onSubmit)}
 			>
 				<PageTitle
+					sticky
 					actions={
 						<ButtonGroup>
 							<Button
@@ -226,7 +227,6 @@ const EditPage: FC = () => {
 					}
 					backHref={`/rups/${rupData.id}`}
 					description='Редактирование рабочей учебной программы'
-					sticky={true}
 				>
 					Редактирование: {rupData.name || 'Рабочий учебный план'}
 				</PageTitle>

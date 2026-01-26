@@ -1,16 +1,34 @@
+import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
-import type { IDownloadResponse, IMessageResponse, IRup, IUpdateRupRequest, IUpdateRupStatusRequest } from '@types'
+import type {
+	IDownloadResponse,
+	IGetAllRequest,
+	IMessageResponse,
+	IPagination,
+	IRup,
+	IUpdateRupRequest,
+	IUpdateStatusRequest,
+} from '@types'
 
 export class RupService {
 	// get all
-	getAllOptions = () => {
-		return queryOptions<IRup[]>({
-			queryKey: ['rups'],
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, teacher, status }: IGetAllRequest) => {
+		return queryOptions<IPagination<IRup>>({
+			queryKey: ['rups', { currentPage, pageSize, search, methodist, teacher, status }],
 			queryFn: async () => {
-				const { data } = await api.get<IRup[]>('/rups')
+				const { data } = await api.get<IPagination<IRup>>('/rups', {
+					params: {
+						currentPage,
+						pageSize,
+						search,
+						methodist,
+						teacher,
+						status,
+					},
+				})
 
-				if (!data) return []
+				if (!data) return { data: [], meta: generateEmptyMetaPagination() }
 
 				return data
 			},
@@ -23,34 +41,6 @@ export class RupService {
 			queryKey: ['rup', id],
 			queryFn: async () => {
 				const { data } = await api.get<IRup>(`/rups/${id}`)
-
-				return data
-			},
-		})
-	}
-
-	// get by teacher id
-	getByTeacherIdOptions = (teacherId: string) => {
-		return queryOptions<IRup[]>({
-			queryKey: ['teacher-rups', teacherId],
-			queryFn: async () => {
-				const { data } = await api.get<IRup[]>(`/rups/teacher/${teacherId}`)
-
-				if (!data) return []
-
-				return data
-			},
-		})
-	}
-
-	// get by methodist id
-	getByMethodistIdOptions = (methodistId: string) => {
-		return queryOptions<IRup[]>({
-			queryKey: ['methodist-rups', methodistId],
-			queryFn: async () => {
-				const { data } = await api.get<IRup[]>(`/rups/methodist/${methodistId}`)
-
-				if (!data) return []
 
 				return data
 			},
@@ -89,7 +79,7 @@ export class RupService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ id, ...payload }: IUpdateRupStatusRequest) =>
+			mutationFn: ({ id, ...payload }: IUpdateStatusRequest) =>
 				api.put<IMessageResponse>(`/rups/${id}/status`, payload).then((r) => r.data),
 
 			onSuccess: (messageResponse, { id }) => {

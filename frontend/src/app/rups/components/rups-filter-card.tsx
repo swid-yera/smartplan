@@ -1,11 +1,12 @@
 'use client'
 
-import type { FC } from 'react'
+import { type FC, type FormEvent, useState } from 'react'
 
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { normalizeRupType } from '@helpers'
-import { RupTypeEnum } from '@types'
+import { StatusBadge } from '@components'
+import { statusLabels } from '@helpers'
+import { StatusEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -13,8 +14,12 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
+	Checkbox,
 	Input,
 	Label,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -25,19 +30,46 @@ import { Filter } from 'lucide-react'
 
 interface IProps {
 	className?: string
-	role: string
 }
 
-export const RupsFilterCard: FC<IProps> = ({ className, role }) => {
+export const RupsFilterCard: FC<IProps> = ({ className }) => {
 	const searchParams = useSearchParams()
+	const router = useRouter()
+	const pathname = usePathname()
+
 	const q = (searchParams.get('q') ?? '').toLowerCase().trim()
-	const statusFilter = searchParams.get('status') ?? 'ALL'
+	const currentStatusParam = searchParams.get('status')
+	const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
+		currentStatusParam ? currentStatusParam.split(',') : [],
+	)
+
 	const yearFilter = (searchParams.get('year') ?? 'ALL').trim()
 	const specialtyFilter = (searchParams.get('specialty') ?? 'ALL').trim()
-	const typeFilter = (searchParams.get('type') ?? 'ALL').trim()
-
 	const distinctYears = ['2025-2026', '2026-2027', '2024-2025', '2023-2024']
 	const distinctSpecialties = ['a', 'b']
+
+	const toggleStatus = (status: string) => {
+		setSelectedStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]))
+	}
+
+	const handleSubmit = (e: FormEvent) => {
+		e.preventDefault()
+
+		const formData = new FormData(e.target as HTMLFormElement)
+		const params = new URLSearchParams(searchParams.toString())
+
+		const qValue = formData.get('q') as string
+
+		if (qValue) params.set('q', qValue)
+		else params.delete('q')
+
+		if (selectedStatuses.length > 0) params.set('status', selectedStatuses.join(','))
+		else params.delete('status')
+
+		params.set('page', '1')
+
+		router.replace(`${pathname}?${params.toString()}`)
+	}
 
 	return (
 		<Card className={className}>
@@ -46,38 +78,55 @@ export const RupsFilterCard: FC<IProps> = ({ className, role }) => {
 				<CardDescription>Можно быстро отфильтровать РУП по году, специальности и статусу.</CardDescription>
 			</CardHeader>
 			<CardContent className='h-full'>
-				<form className='h-full flex flex-col justify-between gap-3' method='GET'>
+				<form className='h-full flex flex-col justify-between gap-3' onSubmit={(e) => handleSubmit(e)}>
 					<div className='grid gap-3 lg:grid-cols-2'>
 						{/* search */}
 						<div className='space-y-1 col-span-2'>
 							<Label>Поиск</Label>
-							<Input
-								defaultValue={q}
-								name='q'
-								placeholder={
-									role == 'TEACHER' ? 'Наименование, специальность...' : 'Наименование, специальность, имя...'
-								}
-							/>
+							<Input defaultValue={q} name='q' placeholder='Наименование, специальность...' />
 						</div>
 
-						<div className='space-y-1'>
+						<div className='space-y-1 col-span-2'>
 							<Label>Статус</Label>
-							<Select defaultValue={statusFilter} name='status'>
-								<SelectTrigger className='w-full'>
-									<SelectValue placeholder='Выберите статус' />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value='ALL'>Все статусы</SelectItem>
-									<SelectItem value='DRAFT'>Черновик</SelectItem>
-									<SelectItem value='IN_REVIEW'>На согласовании</SelectItem>
-									<SelectItem value='APPROVED'>Утверждён</SelectItem>
-								</SelectContent>
-							</Select>
+							<Popover>
+								<PopoverTrigger asChild>
+									<Button className='w-full justify-start font-normal' variant='outline'>
+										{selectedStatuses.length > 0 ? (
+											<div className='flex gap-1 flex-wrap'>
+												{selectedStatuses.map((s) => (
+													<StatusBadge key={s} status={s as StatusEnum} />
+												))}
+											</div>
+										) : (
+											<span className='text-muted-foreground'>Выберите статусы</span>
+										)}
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-2'>
+									<div className='space-y-2'>
+										{Object.entries(statusLabels).map((option) => (
+											<div key={option[0]} className='flex items-center space-x-2'>
+												<Checkbox
+													checked={selectedStatuses.includes(option[0])}
+													id={option[0]}
+													onCheckedChange={() => toggleStatus(option[0])}
+												/>
+												<label
+													className='text-sm font-medium leading-none cursor-pointer select-none'
+													htmlFor={option[0]}
+												>
+													{option[1]}
+												</label>
+											</div>
+										))}
+									</div>
+								</PopoverContent>
+							</Popover>
 						</div>
 
 						<div className='space-y-1'>
 							<Label>Учебный год</Label>
-							<Select defaultValue={yearFilter} name='year'>
+							<Select disabled defaultValue={yearFilter} name='year'>
 								<SelectTrigger className='w-full'>
 									<SelectValue placeholder='Выберите год' />
 								</SelectTrigger>
@@ -94,7 +143,7 @@ export const RupsFilterCard: FC<IProps> = ({ className, role }) => {
 
 						<div className='space-y-1'>
 							<Label>Специальность</Label>
-							<Select defaultValue={specialtyFilter} name='specialty'>
+							<Select disabled defaultValue={specialtyFilter} name='specialty'>
 								<SelectTrigger className='w-full'>
 									<SelectValue placeholder='Выберите специальность' />
 								</SelectTrigger>
@@ -103,23 +152,6 @@ export const RupsFilterCard: FC<IProps> = ({ className, role }) => {
 									{distinctSpecialties.map((s) => (
 										<SelectItem key={s as string} value={s as string}>
 											{s}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div className='space-y-1'>
-							<Label>Тип модуля</Label>
-							<Select defaultValue={typeFilter} name='type'>
-								<SelectTrigger className='w-full'>
-									<SelectValue placeholder='Выберите тип модуля' />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value='ALL'>Все типы модулей</SelectItem>
-									{Object.values(RupTypeEnum).map((t) => (
-										<SelectItem key={t as string} value={t as string}>
-											{normalizeRupType(t)}
 										</SelectItem>
 									))}
 								</SelectContent>

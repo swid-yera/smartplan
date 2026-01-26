@@ -45,6 +45,8 @@ type AwardResponse struct {
 	Text          pgtype.Text               `json:"text"`
 	Files         []string                  `json:"files"`
 	Links         []string                  `json:"links"`
+	UpdatedAt     time.Time                 `json:"updatedAt"`
+	CreatedAt     time.Time                 `json:"createdAt"`
 }
 
 type SelectedTypeResponse struct {
@@ -53,7 +55,7 @@ type SelectedTypeResponse struct {
 }
 
 type PaginatedAwardsResponse struct {
-	Data []storage.Award `json:"data"`
+	Data []AwardResponse `json:"data"`
 	Meta PaginationMeta  `json:"meta"`
 }
 
@@ -594,6 +596,8 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 		Text:          award.Text,
 		Files:         award.Files,
 		Links:         award.Links,
+		UpdatedAt:     award.UpdatedAt.Time,
+		CreatedAt:     award.CreatedAt.Time,
 	}, err
 }
 
@@ -748,7 +752,6 @@ func (s *AwardService) GetAwardPaginated(
 		pageSize = 10
 	}
 
-	// 👇 КРИТИЧЕСКИЙ ФИКС
 	if len(status) == 0 {
 		status = nil
 	}
@@ -779,8 +782,24 @@ func (s *AwardService) GetAwardPaginated(
 
 	pages := int(math.Ceil(float64(total) / float64(pageSize)))
 
+	// build awards
+	var result []AwardResponse
+	for _, dbAward := range dbAwards {
+		award, err := s.BuildSelected(ctx, dbAward)
+		if err != nil {
+			s.log.Error(logrus.Fields{
+				"message": "build all awards error",
+				"error":   err,
+			})
+
+			return nil, err
+		}
+
+		result = append(result, award)
+	}
+
 	return &PaginatedAwardsResponse{
-		Data: dbAwards,
+		Data: result,
 		Meta: PaginationMeta{
 			CurrentPage: currentPage,
 			Pages:       pages,

@@ -1,66 +1,57 @@
-import type { IUser } from './global.types'
+import type { IUser, StatusEnum } from './global.types'
 
-export enum AwardStatusEnum {
-	DRAFT = 'DRAFT',
-	IN_REVIEW = 'IN_REVIEW',
-	APPROVED = 'APPROVED',
-	REJECTED = 'REJECTED',
-}
-
-export enum AwardViolationEnum {
+export enum ViolationEnum {
 	NONE = 'NONE',
 	REMARK = 'REMARK',
 	REBUKE = 'REBUKE',
 	SEVERE_REPRIMAND = 'SEVERE_REPRIMAND',
 }
 
-export enum IAwardTypeCriteriaMethodEnum {
+export enum CriteriaMethodEnum {
 	NORMAL = 'NORMAL',
 	MEASURING = 'MEASURING',
-	PENALTY = 'PENALTY',
 }
 
 export interface IAward {
 	id: string
 
-	title: string
-	status: AwardStatusEnum
-	teacher: IUser
-
-	methodist?: IUser
+	status: StatusEnum
 	reason?: string
 
-	totalPoints: number
-	type: IAwardType
-	variant: IAwardTypeVariant
-	criteria: IAwardTypeCriteria
+	teacher: IUser
+	methodist?: IUser
 
-	text?: string
-	images?: string[]
-	document?: string
+	type: IType
+	variant: IVariant
+	criteria: ICriteria
+	bonusCriteria?: ICriteria
+
+	totalPoints: number
+	text: string
+	files?: string[]
 	links?: string[]
 
 	createdAt: string
 	updatedAt: string
 }
 
-export interface IAwardType {
+export interface IType {
 	id: string
 	name: string
-	variants?: IAwardTypeVariant[]
+	variants: IVariant[]
 }
 
-export interface IAwardTypeVariant {
+export interface IVariant {
 	id: string
 	name: string
 	description: string
-	criteria?: IAwardTypeCriteria[]
-	bonusCriteria?: IAwardTypeCriteria[]
+	criteria: ICriteria[]
+	bonusCriteria: ICriteria[]
 }
 
-export interface IAwardTypeCriteria {
+export interface ICriteria {
 	id: string
 	name: string
 	points: number[]
-	method: IAwardTypeCriteriaMethodEnum
+	method: CriteriaMethodEnum
 }

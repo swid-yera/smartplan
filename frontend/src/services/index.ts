@@ -1,4 +1,5 @@
 import { AuthService } from './auth.service'
+import { AwardService } from './award.service'
 import { GroupService } from './group.service'
 import { RupService } from './rup.service'
 import { UserService } from './user.service'
@@ -9,4 +10,5 @@ export const services = {
 	user: new UserService(),
 	rup: new RupService(),
 	group: new GroupService(),
+	award: new AwardService(),
 }
