@@ -11,6 +11,8 @@ export interface ICreateAwardRequest {
 	bonusCriteria?: string
 }
 
+export type IUpdateAwardRequest = ICreateAwardRequest
+
 // create types
 export interface ICreateTypesRequest {
 	name: string

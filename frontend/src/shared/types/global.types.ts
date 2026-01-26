@@ -43,7 +43,7 @@ export interface IUser {
 	phone: string
 
 	rups?: IRup[]
-	totalPoint?: number
+	totalPoints?: number
 	awards?: IAward[]
 	violation?: ViolationEnum
 

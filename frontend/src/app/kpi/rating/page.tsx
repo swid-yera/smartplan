@@ -1,9 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
-import { Pagination } from '@components'
+import { Loader, Pagination } from '@components'
+import { services } from '@services'
+import { useQuery } from '@tanstack/react-query'
 import {
+	Button,
 	Card,
 	CardContent,
 	CardDescription,
@@ -19,30 +22,19 @@ import {
 } from '@ui'
 import { Crown, Medal, Search } from 'lucide-react'
 
-interface ITeacherRating {
-	id: string
-	name: string
-	points: number
-}
+const placeStyles = (index: number, showLeaders: boolean) => {
+	if (!showLeaders) return ''
 
-// ❗ временно mock, легко заменить на API
-const MOCK_DATA: ITeacherRating[] = Array.from({ length: 300 }).map((_, i) => ({
-	id: String(i + 1),
-	name: `Преподаватель ${i + 1}`,
-	points: Math.floor(Math.random() * 300 + 50),
-}))
-
-const PAGE_SIZE = 10
-
-const placeStyles = (index: number) => {
-	if (index === 0) return 'bg-yellow-50 text-yellow-600'
-	if (index === 1) return 'bg-gray-50 text-gray-600'
-	if (index === 2) return 'bg-orange-50 text-orange-600'
+	if (index === 0) return 'bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400'
+	if (index === 1) return 'bg-gray-50 text-gray-600 dark:bg-zinc-900 dark:text-zinc-300'
+	if (index === 2) return 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400'
 
 	return ''
 }
 
-const placeIcon = (index: number) => {
+const placeIcon = (index: number, showLeaders: boolean) => {
+	if (!showLeaders) return null
+
 	if (index === 0) return <Crown className='h-4 w-4 text-yellow-500' />
 	if (index === 1) return <Medal className='h-4 w-4 text-gray-500' />
 	if (index === 2) return <Medal className='h-4 w-4 text-orange-500' />
@@ -51,39 +43,57 @@ const placeIcon = (index: number) => {
 }
 
 export default function RatingPage() {
+	const [searchInput, setSearchInput] = useState('')
 	const [search, setSearch] = useState('')
-	const [page, setPage] = useState(1)
+	const [currentPage, setCurrentPage] = useState(1)
+	const [pageSize, setPageSize] = useState(10)
 
-	// сортировка + поиск
-	const filtered = useMemo(() => {
-		return [...MOCK_DATA]
-			.sort((a, b) => b.points - a.points)
-			.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
-	}, [search])
+	const showLeaders = search === ''
 
-	const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+	const applySearch = () => {
+		setCurrentPage(1)
+		setSearch(searchInput.trim())
+	}
 
-	const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+	const { data: usersData, isLoading } = useQuery({
+		...services.user.getAllRatingOptions({
+			currentPage,
+			pageSize,
+			search,
+		}),
+	})
+
+	if (isLoading || !usersData) {
+		return <Loader fullScreen type='default' />
+	}
 
 	return (
 		<div className='mx-auto w-full max-w-5xl p-6 space-y-6'>
-			{/* Header */}
+			{/* HEADER */}
 			<Card>
 				<CardHeader>
 					<CardTitle>Рейтинг преподавателей</CardTitle>
 					<CardDescription>Рейтинг преподавателей по программе KPI</CardDescription>
 
-					<div className='relative max-w-sm mt-4'>
-						<Search className='absolute left-3 top-2.5 h-4 w-4 text-muted-foreground' />
-						<Input
-							className='pl-9'
-							placeholder='Поиск по ФИО'
-							value={search}
-							onChange={(e) => {
-								setSearch(e.target.value)
-								setPage(1)
-							}}
-						/>
+					<div className='flex gap-2 max-w-sm mt-4'>
+						<div className='relative flex-1'>
+							<Search className='absolute left-3 top-2.5 h-4 w-4 text-muted-foreground' />
+							<Input
+								className='pl-9'
+								placeholder='Поиск по ФИО'
+								value={searchInput}
+								onChange={(e) => setSearchInput(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter') {
+										applySearch()
+									}
+								}}
+							/>
+						</div>
+
+						<Button size='sm' variant='default' onClick={applySearch}>
+							Найти
+						</Button>
 					</div>
 				</CardHeader>
 			</Card>
@@ -102,19 +112,19 @@ export default function RatingPage() {
 							</TableHeader>
 
 							<TableBody>
-								{pageData.map((t, i) => {
-									const globalIndex = (page - 1) * PAGE_SIZE + i
+								{usersData.data.map((u, i) => {
+									const globalIndex = (currentPage - 1) * usersData.meta.pageSize + i
 
 									return (
-										<TableRow key={t.id} className={placeStyles(globalIndex)}>
+										<TableRow key={u.keycloakId} className={placeStyles(globalIndex, showLeaders)}>
 											<TableCell className='text-center font-semibold'>{globalIndex + 1}</TableCell>
 
 											<TableCell className='flex items-center gap-2'>
-												{placeIcon(globalIndex)}
-												{t.name}
+												{placeIcon(globalIndex, showLeaders)}
+												{u.firstName} {u.lastName}
 											</TableCell>
 
-											<TableCell className='text-right font-medium'>{t.points}</TableCell>
+											<TableCell className='text-right font-medium'>{u.totalPoints}</TableCell>
 										</TableRow>
 									)
 								})}
@@ -126,22 +136,22 @@ export default function RatingPage() {
 
 			{/* MOBILE CARDS */}
 			<div className='md:hidden space-y-3'>
-				{pageData.map((t, i) => {
-					const globalIndex = (page - 1) * PAGE_SIZE + i
+				{usersData.data.map((u, i) => {
+					const globalIndex = (currentPage - 1) * usersData.meta.pageSize + i
 
 					return (
-						<Card key={t.id} className={placeStyles(globalIndex)}>
+						<Card key={u.keycloakId} className={placeStyles(globalIndex, showLeaders)}>
 							<CardContent className='flex items-center justify-between p-4'>
 								<div>
 									<p className='font-semibold'>
-										{globalIndex + 1}. {t.name}
+										{globalIndex + 1}. {u.firstName} {u.lastName}
 									</p>
 									<p className='text-sm text-muted-foreground'>KPI баллы</p>
 								</div>
 
 								<div className='flex items-center gap-2 font-semibold'>
-									{placeIcon(globalIndex)}
-									{t.points}
+									{placeIcon(globalIndex, showLeaders)}
+									{u.totalPoints}
 								</div>
 							</CardContent>
 						</Card>
@@ -149,12 +159,13 @@ export default function RatingPage() {
 				})}
 			</div>
 
+			{/* PAGINATION */}
 			<Pagination
-				page={page}
-				pageSize={10}
-				totalPages={totalPages}
-				onPageChange={(page) => setPage(page)}
-				onPageSizeChange={() => false}
+				page={usersData.meta.currentPage}
+				pageSize={usersData.meta.pageSize}
+				totalPages={usersData.meta.total}
+				onPageChange={(page) => setCurrentPage(page)}
+				onPageSizeChange={(size) => setPageSize(size)}
 			/>
 		</div>
 	)
