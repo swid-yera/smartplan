@@ -8,6 +8,7 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarTrigger,
 	Skeleton,
 	Tooltip,
 	TooltipContent,
@@ -25,11 +26,12 @@ export function ASidebarHeader() {
 	return (
 		<SidebarHeader>
 			<div className='flex items-center justify-between group-data-[collapsible=icon]:justify-center'>
-				<div className='font-bold text-primary whitespace-nowrap overflow-hidden transition-all duration-200 max-w-40 opacity-100 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0'>
+				<div className='font-bold text-primary whitespace-nowrap overflow-hidden transition-all duration-500 max-w-40 opacity-100 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0'>
 					EduPlan
 				</div>
 
 				{/* logotype */}
+				<SidebarTrigger className='hover:opacity-100 group-data-[collapsible=icon]:opacity-100 opacity-0' />
 			</div>
 
 			{authLoading ? (

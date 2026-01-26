@@ -41,7 +41,9 @@ const Page: NextPage = () => {
 
 	return (
 		<section className='mx-auto w-full p-6'>
-			<PageTitle>Создание критерия оценивания</PageTitle>
+			<PageTitle backHref='/kpi/types' description='Просмотр всех критериев оценивания'>
+				Создание критерия оценивания
+			</PageTitle>
 
 			<EditCard onSubmit={onSubmit} />
 		</section>

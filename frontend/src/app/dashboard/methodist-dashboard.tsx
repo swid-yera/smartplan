@@ -24,19 +24,22 @@ export const MethodistDashboard = () => {
 		...services.award.getAllOptions({ currentPage: 1, pageSize: 999 }),
 	})
 
-	const reviewRups = rupData?.data.filter((r) => r.status === StatusEnum.IN_REVIEW) || []
+	const rups = rupData?.data || []
+	const awards = awardData?.data || []
+
+	const reviewRups = rups.filter((r) => r.status === StatusEnum.IN_REVIEW) || []
 	const reviewRupsCount = reviewRups?.length || 0
 	const approvedRupsCount =
-		rupData?.data.filter((r) => r.status === StatusEnum.APPROVED && isCurrentDay(r.updatedAt)).length || 0
+		rups.filter((r) => r.status === StatusEnum.APPROVED && isCurrentDay(r.updatedAt)).length || 0
 
-	const reviewAwards = awardData?.data.filter((r) => r.status === StatusEnum.IN_REVIEW) || []
+	const reviewAwards = awards.filter((a) => a.status === StatusEnum.IN_REVIEW) || []
 	const reviewAwardsCount = reviewAwards?.length || 0
 	const approvedAwardsCount =
-		awardData?.data.filter((r) => r.status === StatusEnum.APPROVED && isCurrentDay(r.updatedAt)).length || 0
+		awards.filter((a) => a.status === StatusEnum.APPROVED && isCurrentDay(a.updatedAt)).length || 0
 
 	const chartData = useMemo(() => {
 		const today = new Date()
-		const data = rupData?.data || []
+		const data = rups || []
 
 		return Array.from({ length: 7 }).map((_, i) => {
 			const date = new Date(today)

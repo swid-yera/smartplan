@@ -59,7 +59,7 @@ export function GroupEdit<T extends IProps>() {
 
 	// set selected group
 	useEffect(() => {
-		// Если данных еще нет, ничего не делаем
+		// do nothing if nothing
 		if (groupsData.length === 0 || !watchedGroupId) {
 			setSelectedGroup(undefined)
 

@@ -55,7 +55,7 @@ export const RupsCard: FC<IRupsProps> = ({
 	isLoading,
 }) => {
 	const [selectedRup, setSelectedRup] = useState<IRup | null>(null)
-	const isExist = rups.length > 0 || !isLoading
+	const isExist = rups.length > 0 && !isLoading
 
 	return (
 		<>
@@ -84,7 +84,7 @@ export const RupsCard: FC<IRupsProps> = ({
 									rups.map((item) => <RupRow key={item.id} rup={item} onSelect={setSelectedRup} />)
 								) : (
 									<TableRow>
-										<TableCell className='h-40 text-center' colSpan={5}>
+										<TableCell className='h-40 text-center' colSpan={6}>
 											{isLoading ? (
 												<Loader
 													className='flex flex-col justify-center items-center'

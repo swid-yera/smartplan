@@ -2,6 +2,7 @@ import {
 	Award,
 	BookCopy,
 	BookOpen,
+	Group,
 	Headset,
 	Kanban,
 	LayoutDashboard,
@@ -58,6 +59,11 @@ export const navMain = [
 		title: 'Пользователи',
 		url: '/users',
 		icon: Users,
+	},
+	{
+		title: 'Группы',
+		url: '/groups',
+		icon: Group,
 	},
 ]
 

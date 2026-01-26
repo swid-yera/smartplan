@@ -1,0 +1,384 @@
+'use server'
+
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import type { IGroup, RupTypeEnum, StudyFormEnum } from '@types'
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+const GENERATION_CONFIG = {
+	responseMimeType: 'application/json',
+}
+
+// model config with 99.99% json response
+// const model = genAI.getGenerativeModel({
+// 	model: 'gemini-2.5-flash-lite',
+// 	generationConfig: GENERATION_CONFIG,
+// })
+
+// generate content with fallback
+async function generateContentWithFallback(prompt: string) {
+	// primary
+	const primaryModel = genAI.getGenerativeModel({
+		model: 'gemini-2.5-flash-lite',
+		generationConfig: GENERATION_CONFIG,
+	})
+
+	// fallback model
+	const fallbackModel = genAI.getGenerativeModel({
+		model: 'gemini-2.5-flash',
+		generationConfig: GENERATION_CONFIG,
+	})
+
+	// try with primary model
+	try {
+		const result = await primaryModel.generateContent(prompt)
+
+		return JSON.parse(result.response.text())
+	} catch (error) {
+		// check for quota
+		// @ts-ignore
+		const isRateLimit = error?.message?.includes('429') || error?.status === 429
+
+		if (isRateLimit) {
+			console.warn('Лимит исчерпан. Переключаюсь на запасную модель...')
+			// try with fallback model
+			try {
+				const fallbackResult = await fallbackModel.generateContent(prompt)
+
+				return JSON.parse(fallbackResult.response.text())
+			} catch (fallbackError) {
+				console.error('Обе модели недоступны')
+				throw fallbackError
+			}
+		}
+
+		// Если ошибка не связана с лимитами, просто пробрасываем её дальше
+		throw error
+	}
+}
+
+// generate rup meta
+export interface IGenerateRupMeta {
+	name: string
+	type: RupTypeEnum
+	studyForm: StudyFormEnum
+	studyYear: string
+	course: number
+	group: IGroup
+
+	prerequisites: string
+	postrequisites: string
+}
+
+export async function generateRupMeta(baseData: IGenerateRupMeta) {
+	const prompt = `
+Ты — методист и эксперт по разработке рабочих учебных программ (РУП)
+для организаций технического и профессионального образования
+Республики Казахстан.
+
+Ты хорошо знаком с:
+- Приказом Министра просвещения РК №348 от 03.08.2022
+- изменениями от 15.04.2025
+- профессиональными стандартами НПП «Атамекен»
+- стандартами WorldSkills
+- практикой оформления РУП и ПМ в колледжах РК
+
+ДАННЫЕ ПРОФЕССИОНАЛЬНОГО МОДУЛЯ:
+- Название: "${baseData.name}"
+- Тип обучения: "${baseData.type}" (THEORY — теоретическое, PRACTICE — практическое)
+- Форма обучения: "${baseData.studyForm}"
+- Пререквизиты: "${baseData.prerequisites}"
+- Постреквизиты: "${baseData.postrequisites}"
+- Учебный год: "${baseData.studyYear}"
+- Учебная группа: ${baseData.group.name}
+- Специальность группы: ${baseData.group.specialty}
+- Квалификация группы: ${baseData.group.qualification}
+- Курс: ${baseData.course}
+
+ТВОЯ ЗАДАЧА:
+Сгенерировать СТРОГО JSON-ОБЪЕКТ без markdown, без комментариев, без пояснений.
+
+ЗАПРЕЩЕНО:
+- использовать массивы для "basis", "goals", "competencies"
+- использовать списки, маркеры, нумерацию
+- сокращать официальные формулировки
+- добавлять вымышленные нормативные документы
+
+ОБЯЗАТЕЛЬНО:
+- стиль официально-деловой, методический
+- язык ответа: РУССКИЙ
+- текст должен быть пригоден для прямой вставки в РУП
+
+СТРОГИЙ ФОРМАТ ОТВЕТА:
+
+{
+  "basis": string,
+  "goals": string,
+  "competencies": string,
+}
+
+--------------------
+ТРЕБОВАНИЯ К ПОЛЯМ
+--------------------
+
+1. "basis":
+Один развернутый абзац официального текста.
+Текст ДОЛЖЕН БЫТЬ СТИЛИСТИЧЕСКИ ПОХОЖ на следующий пример:
+
+«Рабочая учебная программа по профессиональному модулю разработана на основе
+Приказа Министра просвещения Республики Казахстан от 3 августа 2022 года №348
+учитывая внесенные изменения от 15.04.2025 года, профессиональных стандартов
+„Сетевые, системные администраторы и администраторы серверов“
+(дополнение №5 к приказу НПП „Атамекен“ №222 от 05.12.2022),
+стандартов WorldSkills „Сетевое и системное администрирование“
+для специальности „06120100 Вычислительная техника и информационные сети“
+и квалификации „Техник сетевого и системного администрирования“».
+
+Обязательно упомянуть:
+- Приказ №348
+- изменения от 15.04.2025
+- НПП «Атамекен»
+- WorldSkills
+- специальность и квалификацию
+
+2. "goals":
+ОДИН связный текст.
+Начинать строго с фразы:
+«Целью освоения профессионального модуля является …»
+
+Текст должен быть ПОХОЖ по структуре, стилю и объему на данный пример:
+описание целей, затем перечисление знаний и навыков в рамках одного или двух предложений.
+
+Обязательно отразить:
+- обслуживание и администрирование ЛВС
+- обеспечение информационной безопасности
+- анализ угроз и уязвимостей
+- настройку и конфигурацию средств защиты
+- управление безопасностью сетевых устройств и ПО
+
+3. "competencies":
+ОДНА строка.
+Начинать строго с:
+«Формируемые компетенции:»
+
+Далее — связный текст через точку с запятой.
+Без кодов (ПК, ОК).
+
+Обязательно указать:
+- владение методами и средствами обеспечения безопасности ЛВС
+- работу с подключенными ресурсами
+- соблюдение охраны труда и техники безопасности
+- установку, настройку и управление операционными системами и ПО
+
+--------------------
+ФИНАЛЬНОЕ ТРЕБОВАНИЕ
+--------------------
+Верни ТОЛЬКО валидный JSON, полностью соответствующий структуре.
+`
+
+	try {
+		const result = await generateContentWithFallback(prompt)
+
+		return JSON.parse(result.response.text())
+	} catch (e) {
+		console.error('failed to generate rups meta data:', e)
+		throw new Error('Не удалось сгенерировать метаданные')
+	}
+}
+
+// generate resources
+export interface IGenerateResources {
+	name: string
+	prerequisites: string
+	postrequisites: string
+
+	basic: string
+	goals: string
+	competencies: string
+}
+
+export async function generateResources(baseData: IGenerateResources) {
+	const prompt = `
+Ты — эксперт по разработке учебных программ и образовательных ресурсов для колледжей и техникумов Республики Казахстан.
+Нужно сгенерировать учебные и технические ресурсы для курса, соответствующие профессиональному модулю.
+
+ДАННЫЕ ПРОФЕССИОНАЛЬНОГО МОДУЛЯ:
+- Название: "${baseData.name}"
+- Пререквизиты: "${baseData.prerequisites}"
+- Постреквизиты: "${baseData.postrequisites}"
+- Пояснительная записка: "${baseData.basic}"
+- Цели освоения профессионального модуля: "${baseData.goals}"
+- Формируемые компетенции: "${baseData.competencies}"
+
+1. Формат результата:
+Ты возвращаешь строго JSON, который соответствует интерфейсу:
+
+{
+  "internetResources": {
+    "name": string,
+    "link"?: string
+  }[],
+  "technicalResources": {
+    "name": string,
+    "link"?: string
+  }[]
+}
+
+Запрещено:
+- использовать title/url, только id/name/link
+- добавлять лишние поля
+- использовать markdown или комментарии
+- генерировать пустые или вымышленные ссылки (link опционально)
+
+Требования к содержимому:
+- internetResources: учебные материалы, книги, электронные комплексы, стандарты, пособия, статьи по теме курса. Можно без ссылок, но текст должен быть информативным и конкретным.
+- technicalResources: оборудование, программное обеспечение, операционные системы, инструменты, лабораторные стенды, цифровые ресурсы, комплексы тестов — всё, что нужно для практической части курса.
+
+- Каждому элементу присвоить уникальный id в виде строки ("1", "2", "3", …).
+- Каждое поле name должно быть связным текстом, максимально информативным, без списков или маркеров внутри.
+
+Пример желаемого формата:
+
+{
+  "internetResources": [
+    { "name": "Электронный учебно-методический комплекс «Введение в сетевые технологии» курса CCNA сетевой академии Cisco", "link": "https://www.csu.ru/faculties/Documents/IPKPK/%D0%92%D0%B2%D0%B5%D0%B4%D0%B5%D0%BD%D0%B8%D0%B5%20%D0%B2%20%D1%81%D0%B5%D1%82%D0%B5%D0%B2%D1%8B%D0%B5%20%D1%82%D0%B5%D1%85%D0%BD%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D0%B8.pdf" },
+    { "name": "Б. В. Левин, А. В. Левина, А. А. Кириллов. «Информационная безопасность сети». Подробное объяснение принципов, технологий и методов защиты сетей" }
+  ],
+  "technicalResources": [
+    { "name": "Программное обеспечение: Open Source инструменты; документация по использованию Snort, Wireshark для анализа сетевого трафика и обнаружения угроз", "link": "https://habr.com/ru/companies/selectel/articles/744478/" },
+    { "name": "Операционные системы: Windows, Linux, macOS" }
+  ]
+}
+
+Сгенерируй JSON с 5–7 ресурсами для internetResources и 4–6 для technicalResources, релевантными к курсу "${baseData.name}".
+`
+
+	try {
+		const result = await generateContentWithFallback(prompt)
+
+		return JSON.parse(result.response.text())
+	} catch (e) {
+		console.error('failed to generate rups resources data:', e)
+		throw new Error('Не удалось сгенерировать метаданные')
+	}
+}
+
+// generate rup disciplines
+export interface IGenerateDisciplines {
+	name: string
+	course: number
+	goals: string
+	competencies: string
+
+	wantsHours: number
+	disciplineCount: number
+}
+
+export async function generateDisciplines(baseData: IGenerateDisciplines) {
+	const prompt = `
+Ты — методист по разработке учебных программ для колледжей и техникумов РК.
+
+Задача: распределить ${baseData.wantsHours} часов по ${baseData.disciplineCount} дисциплинам
+для ${baseData.course}-го курса модуля "${baseData.name}".
+
+ДАННЫЕ ПРОФЕССИОНАЛЬНОГО МОДУЛЯ:
+- Название: "${baseData.name}"
+- Цели освоения профессионального модуля: "${baseData.goals}"
+- Формируемые компетенции: "${baseData.competencies}"
+
+Особые правила:
+
+1. JSON-формат строго:
+
+{
+  "disciplines": [
+    {
+      "name": string,
+      "code": string,  // уникальный код РО-01, РО-02 …
+      "semesters": [number, number, number, number, number, number, number, number]
+    }
+  ]
+}
+
+2. semesters:
+- массив из 8 чисел, по одному на каждый семестр
+- для семестров курса (см. ниже) распределяем часы
+  • курс 1 → семестры 1 и 2
+  • курс 2 → семестры 3 и 4
+  • курс 3 → семестры 5 и 6
+  • курс 4 → семестры 7 и 8
+- семестры вне курса = 0
+- сумма чисел в семестрах курса = общему количеству часов дисциплины
+- **последовательность дисциплин:** первая дисциплина начинает курс с самого начала семестра, следующая дисциплина начинается с того места, где закончилась предыдущая
+- часы можно распределять равномерно между двумя семестрами курса, но последовательность должна сохраняться
+
+3. Дисциплины:
+- количество = ${baseData.disciplineCount}
+- name: связное информативное название дисциплины
+- code: уникальный код РО-01, РО-02 и т.д.
+
+4. Не использовать markdown, комментарии или текст вне JSON
+
+Пример для 3-го курса (семестры 5 и 6), 2 дисциплины, 72 часа каждая, последовательность:
+
+{
+  "disciplines": [
+    {
+      "name": "Основы сетевых технологий",
+      "code": "РО-01",
+      "semesters": [0, 0, 0, 0, 36, 36, 0, 0]
+    },
+    {
+      "name": "Информационная безопасность ЛВС",
+      "code": "РО-02",
+      "semesters": [0, 0, 0, 0, 0, 72, 0, 0]
+    }
+  ]
+}
+
+Сгенерируй JSON для ${baseData.disciplineCount} дисциплин с распределением часов **последовательно по семестрам курса ${baseData.course}**.
+`
+
+	try {
+		const result = await generateContentWithFallback(prompt)
+
+		const data = JSON.parse(result.response.text())
+
+		const response = data.disciplines.map((d) => ({
+			name: `${d.code} ${d.name}`,
+			semesters: d.semesters.map((hours, index) => ({
+				semester: index + 1,
+				totalHours: hours,
+			})),
+			topics: [],
+		}))
+
+		return response
+	} catch (e) {
+		console.error('failed to generate rups disciplines:', e)
+		throw new Error('Ошибка распределения часов')
+	}
+}
+
+// --- ЭТАП 2.3: Генерация тем для ОДНОЙ дисциплины (для цикла) ---
+export async function generateTopicsForSubject(subjectName: string, totalHours: number, type: string) {
+	// Логика расчета количества тем (например, каждые 2 часа - новая тема)
+	const topicCount = Math.floor(totalHours / 2)
+
+	const prompt = `
+    Сгенерируй учебный план (темы уроков) для дисциплины "${subjectName}".
+    Общее количество часов: ${totalHours}. Количество тем: ${topicCount}.
+    Тип РУП: ${type}.
+    Верни массив объектов: { "name": string, "type": "theory" | "practice", "theoryHours": number, "practiceHours": number, "individualHours": number }.
+    Сумма всех hours должна совпадать с ${totalHours}.
+  `
+
+	try {
+		const result = await generateContentWithFallback(prompt)
+
+		return JSON.parse(result.response.text())
+	} catch (e) {
+		console.error(`Ошибка в темах для ${subjectName}:`, e)
+
+		return []
+	}
+}

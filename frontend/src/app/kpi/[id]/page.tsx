@@ -57,6 +57,7 @@ import {
 	User,
 	UserSearch,
 } from 'lucide-react'
+import Zoom from 'react-medium-image-zoom'
 import { toast } from 'sonner'
 
 const Page = () => {
@@ -194,7 +195,7 @@ const Page = () => {
 									onClick={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 								>
 									<SendIcon />
-									Отправить На проверку
+									Отправить на проверку
 								</Button>
 							)}
 						</ButtonGroup>
@@ -371,18 +372,15 @@ const Page = () => {
 											if (isImage) {
 												return (
 													<div key={idx} className='space-y-2 max-w-md'>
-														<a
-															className='block rounded-md border overflow-hidden hover:opacity-90 transition-opacity'
-															href={file}
-															rel='noopener noreferrer'
-															target='_blank'
-														>
+														<Zoom>
 															<img
-																alt={`File ${idx + 1}`}
-																className='w-full h-auto object-contain'
+																alt='preview'
+																className='cursor-zoom-in rounded-lg'
+																height={300}
 																src={file}
+																width={400}
 															/>
-														</a>
+														</Zoom>
 														<Button asChild size='sm' variant='outline'>
 															<a download href={file} rel='noopener noreferrer' target='_blank'>
 																<Download className='mr-2 h-4 w-4' />

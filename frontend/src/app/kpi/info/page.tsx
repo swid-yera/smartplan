@@ -1,8 +1,11 @@
 'use client'
 
+import type { FC, PropsWithChildren } from 'react'
+
 import { Loader, PageTitle } from '@components'
 import { useAuthStore } from '@store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Separator } from '@ui'
+import { CheckCircle, ClipboardList, type LucideIcon, TrendingUp, Users } from 'lucide-react'
 
 const Page = () => {
 	const { user, authLoading } = useAuthStore()
@@ -10,99 +13,138 @@ const Page = () => {
 	if (!user || authLoading) return <Loader type='data' />
 
 	return (
-		<section className='p-4 w-full space-y-4'>
+		<section className='mx-auto w-full max-w-6xl space-y-8 p-4'>
 			<PageTitle sticky backHref='/kpi' description='KPI'>
-				Подробнее о системе подсчетов KPI
+				Подробнее о системе подсчёта KPI
 			</PageTitle>
 
-			{/* content */}
+			{/* HERO / INFOGRAPHIC */}
+			<div className='relative overflow-hidden rounded-xl border bg-muted'>
+				<div className='p-6 sm:p-8'>
+					<h2 className='text-xl font-semibold'>KPI — инструмент развития, а не контроля</h2>
+					<p className='mt-2 max-w-2xl text-sm text-muted-foreground'>
+						Система ключевых показателей эффективности помогает объективно оценивать вклад преподавателей и
+						повышать качество образовательного процесса.
+					</p>
+				</div>
+			</div>
+
+			{/* KEY POINTS */}
+			<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+				<InfoCard icon={ClipboardList} title='Прозрачность'>
+					Единые и понятные критерии оценки
+				</InfoCard>
+				<InfoCard icon={TrendingUp} title='Эффективность'>
+					Рост качества и результативности работы
+				</InfoCard>
+				<InfoCard icon={Users} title='Справедливость'>
+					Сравнимая оценка деятельности сотрудников
+				</InfoCard>
+				<InfoCard icon={CheckCircle} title='Мотивация'>
+					Моральное и материальное поощрение
+				</InfoCard>
+			</div>
+
+			{/* MAIN CONTENT */}
 			<Card>
 				<CardHeader>
 					<CardTitle>KPI преподавателей и подразделений</CardTitle>
-					<CardDescription>
-						Общая информация о KPI и его значении для стратегического управления колледжем
-					</CardDescription>
+					<CardDescription>Общая информация о целях и принципах системы KPI</CardDescription>
 				</CardHeader>
 
-				<CardContent className='space-y-3 text-sm leading-relaxed'>
+				<CardContent className='space-y-4 text-sm leading-relaxed'>
 					<p>
-						KPI-оценка деятельности преподавательского состава колледжа и его основных подразделений по итогам
-						года является важной составляющей стратегического управления. Она позволяет сравнивать результаты
-						деятельности преподавателей и мастеров по показателям, характеризующим научную, учебную, методическую
-						и воспитательную работу.
+						KPI-оценка деятельности преподавательского состава колледжа и его подразделений проводится по итогам
+						учебного года и охватывает учебную, методическую, научную и воспитательную деятельность.
 					</p>
 
 					<p>
-						Конечной целью системы KPI является повышение эффективности работы и конкурентоспособности
-						научно-педагогического коллектива колледжа и, как следствие, улучшение качества подготовки
-						специалистов.
+						Основная цель внедрения KPI — повышение эффективности работы педагогического коллектива и качества
+						подготовки специалистов.
 					</p>
 
 					<Separator />
 
-					<p className='font-semibold'>Условия эффективности KPI-системы:</p>
-					<ul className='list-disc list-inside space-y-1 text-muted-foreground'>
-						<li>Охват всех видов деятельности преподавателя;</li>
-						<li>Обеспечение эффективного выполнения преподавателями своих должностных обязанностей;</li>
-						<li>Объективность оценки работы;</li>
-						<li>Гибкость системы, позволяющая изменять приоритеты и критерии;</li>
-						<li>Соответствие стандартам среднего профессионального образования;</li>
-						<li>Понятность и достижимость критериев для сотрудников;</li>
-						<li>Моральное и материальное поощрение работников;</li>
-						<li>Повышение мотивации и личной заинтересованности преподавателей;</li>
-						<li>Определение областей для улучшения и корректирующие мероприятия.</li>
-					</ul>
+					<div>
+						<p className='mb-2 font-semibold'>Условия эффективности KPI-системы:</p>
+						<ul className='space-y-2'>
+							<li className='flex gap-2'>
+								<CheckCircle className='mt-1 h-4 w-4 text-primary' />
+								<span>Охват всех видов деятельности преподавателя</span>
+							</li>
+							<li className='flex gap-2'>
+								<CheckCircle className='mt-1 h-4 w-4 text-primary' />
+								<span>Объективность и измеряемость показателей</span>
+							</li>
+							<li className='flex gap-2'>
+								<CheckCircle className='mt-1 h-4 w-4 text-primary' />
+								<span>Понятность и достижимость критериев</span>
+							</li>
+							<li className='flex gap-2'>
+								<CheckCircle className='mt-1 h-4 w-4 text-primary' />
+								<span>Мотивация и вовлечённость сотрудников</span>
+							</li>
+						</ul>
+					</div>
 				</CardContent>
 			</Card>
 
-			{/* Карточка 2: Методика расчёта и порядок проведения */}
+			{/* METHOD */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Методика расчёта и порядок проведения KPI</CardTitle>
-					<CardDescription>Информация о том, как проводится KPI-оценка, цели и задачи системы</CardDescription>
+					<CardTitle>Методика расчёта и порядок проведения</CardTitle>
+					<CardDescription>Как формируется итоговый KPI</CardDescription>
 				</CardHeader>
 
-				<CardContent className='space-y-3 text-sm leading-relaxed'>
-					<p className='font-semibold'>Цели KPI:</p>
-					<ul className='list-disc list-inside space-y-1 text-muted-foreground'>
-						<li>
-							Активизация и стимулирование профессиональной и общественно значимой деятельности преподавателей;
-						</li>
-						<li>Повышение качества образовательных услуг колледжа;</li>
-					</ul>
-
-					<p className='font-semibold'>Задачи KPI:</p>
-					<ul className='list-disc list-inside space-y-1 text-muted-foreground'>
-						<li>Создание системы внутреннего аудита эффективности преподавателей и подразделений;</li>
-						<li>Создание информационной базы данных по деятельности сотрудников;</li>
-						<li>Моральное и материальное стимулирование повышения квалификации и продуктивности работы;</li>
-						<li>Анализ результатов KPI для оперативного управления подразделениями.</li>
-					</ul>
+				<CardContent className='space-y-4 text-sm'>
+					<p>
+						KPI преподавателя определяется как сумма баллов по всем критериям KPI-карты, утверждённой
+						педагогическим советом.
+					</p>
 
 					<Separator />
 
-					<p className='font-semibold'>Методика расчёта:</p>
-					<p>
-						KPI преподавателя и мастера производственного обучения определяется как сумма баллов по результатам
-						заполнения KPI-карты.
-					</p>
-
-					<p className='font-semibold'>Порядок подведения итогов:</p>
-					<ul className='list-disc list-inside space-y-1 text-muted-foreground'>
-						<li>Ежегодное утверждение критериев KPI на педагогическом совете;</li>
-						<li>Использование оптимального числа объективных и измеряемых критериев;</li>
+					<ol className='space-y-4 border-l pl-4'>
 						<li>
-							Создание компьютерной базы данных и использование локальной сети колледжа для публикации
-							результатов;
+							<p className='font-semibold'>1. Утверждение критериев</p>
+							<p className='text-muted-foreground'>Педагогический совет колледжа</p>
 						</li>
-						<li>Организация KPI-комиссии для подведения итогов;</li>
-						<li>Учет квалификационного уровня и активности преподавателей;</li>
-						<li>Конфиденциальность результатов KPI для сотрудников.</li>
-					</ul>
+						<li>
+							<p className='font-semibold'>2. Сбор и проверка данных</p>
+							<p className='text-muted-foreground'>Заполнение и анализ KPI-карт</p>
+						</li>
+						<li>
+							<p className='font-semibold'>3. Подведение итогов</p>
+							<p className='text-muted-foreground'>Работа KPI-комиссии</p>
+						</li>
+					</ol>
 				</CardContent>
 			</Card>
+
+			{/* CALLOUT */}
+			<div className='rounded-lg border-l-4 border-primary bg-muted p-4 italic'>
+				«KPI — это инструмент роста и признания вклада каждого преподавателя, а не формальный контроль»
+			</div>
 		</section>
 	)
 }
 
 export default Page
+
+interface IInfoCard {
+	icon: LucideIcon
+	title: string
+	children: string
+}
+
+const InfoCard: FC<PropsWithChildren<IInfoCard>> = ({ icon: Icon, title, children }) => {
+	return (
+		<Card>
+			<CardContent>
+				<Icon className='mb-2 h-8 w-8 text-primary' />
+				<h4 className='font-semibold'>{title}</h4>
+				<p className='text-sm text-muted-foreground'>{children}</p>
+			</CardContent>
+		</Card>
+	)
+}

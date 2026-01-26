@@ -3,12 +3,14 @@
 import Link from 'next/link'
 
 import { Loader, PageTitle } from '@components'
+import { normalizeCriteriaMethod } from '@helpers'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
+import { CriteriaMethodEnum } from '@types'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Separator } from '@ui'
 import { Plus } from 'lucide-react'
 
-import { TypesCard } from './types-card'
+import { TypesList } from './types-list'
 
 const Page = () => {
 	const { data, isLoading } = useQuery({ ...services.award.getAllTypesOptions(), enabled: true })
@@ -85,10 +87,12 @@ const Page = () => {
 							<em>Points</em> могут быть двух типов:
 							<ul className='list-inside list-decimal space-y-1 text-muted-foreground ml-4'>
 								<li>
-									<strong>NORMAL</strong>: фиксированное количество баллов [x]
+									<strong>NORMAL - {normalizeCriteriaMethod(CriteriaMethodEnum.NORMAL)}</strong>: фиксированное
+									количество баллов [x]
 								</li>
 								<li>
-									<strong>MEASURING</strong>: диапазон баллов [min, max]
+									<strong>MEASURING - {normalizeCriteriaMethod(CriteriaMethodEnum.MEASURING)}</strong>:
+									диапазон баллов [min, max]
 								</li>
 							</ul>
 						</li>
@@ -102,7 +106,7 @@ const Page = () => {
 				</CardContent>
 			</Card>
 
-			<TypesCard types={data || []} />
+			<TypesList types={data || []} />
 		</section>
 	)
 }
