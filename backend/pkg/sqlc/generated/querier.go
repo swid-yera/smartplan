@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	CountAwards(ctx context.Context) (int64, error)
 	CountAwardsFiltered(ctx context.Context, arg CountAwardsFilteredParams) (int64, error)
+	CountLessonsFiltered(ctx context.Context, arg CountLessonsFilteredParams) (int64, error)
 	CountRups(ctx context.Context) (int64, error)
 	CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
@@ -25,6 +26,8 @@ type Querier interface {
 	CreateDisciplineSemester(ctx context.Context, arg CreateDisciplineSemesterParams) (DisciplineSemester, error)
 	CreateDisciplineTopic(ctx context.Context, arg CreateDisciplineTopicParams) (DisciplineTopic, error)
 	CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error)
+	CreateLessonProgress(ctx context.Context, arg CreateLessonProgressParams) (uuid.UUID, error)
+	CreateLessons(ctx context.Context, arg CreateLessonsParams) (uuid.UUID, error)
 	CreateRupDiscipline(ctx context.Context, arg CreateRupDisciplineParams) (RupDiscipline, error)
 	CreateRupExplorationNote(ctx context.Context, arg CreateRupExplorationNoteParams) (RupExplorationNote, error)
 	CreateRupResource(ctx context.Context, arg CreateRupResourceParams) (RupResource, error)
@@ -33,6 +36,8 @@ type Querier interface {
 	DeleteAward(ctx context.Context, id uuid.UUID) error
 	DeleteAwardType(ctx context.Context, id uuid.UUID) error
 	DeleteGroupsNotInKeycloak(ctx context.Context, dollar_1 []uuid.UUID) error
+	DeleteLesson(ctx context.Context, id uuid.UUID) error
+	DeleteLessonProgress(ctx context.Context, id uuid.UUID) error
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
@@ -54,6 +59,10 @@ type Querier interface {
 	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
 	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error)
+	GetLessonProgressByID(ctx context.Context, id uuid.UUID) (LessonProgress, error)
+	GetLessonProgressByLessonID(ctx context.Context, lessonID uuid.UUID) ([]LessonProgress, error)
+	GetLessons(ctx context.Context, arg GetLessonsParams) ([]Lesson, error)
+	GetLessonsByID(ctx context.Context, id uuid.UUID) (Lesson, error)
 	GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDiscipline, error)
 	GetRupExplorationNoteByID(ctx context.Context, id uuid.UUID) (RupExplorationNote, error)
 	GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupResource, error)
@@ -68,6 +77,8 @@ type Querier interface {
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
 	UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error
 	UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTypeVariantsParams) (AwardType, error)
+	UpdateLesson(ctx context.Context, arg UpdateLessonParams) error
+	UpdateLessonProgress(ctx context.Context, arg UpdateLessonProgressParams) error
 	UpdateRup(ctx context.Context, arg UpdateRupParams) error
 	UpdateRupResource(ctx context.Context, arg UpdateRupResourceParams) error
 	UpdateRupsStatus(ctx context.Context, arg UpdateRupsStatusParams) error

@@ -90,6 +90,7 @@ func main() {
 	// Passing our wrapped minioRepo to the AwardRepository
 	awardRepo := repository.NewAwardRepository(queries, minioRepo)
 	rupRepo := repository.NewRupPostgres(queries)
+	lessonRepo := repository.NewLessonRepository(queries)
 
 	kcSyncClient := kcservice.NewClient(
 		kcCfg,
@@ -99,6 +100,8 @@ func main() {
 	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
+	lessonService := service.NewLessonService(lessonRepo, log)
+
 	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	syncGuard := service.NewSyncGuard(1 * time.Minute)
@@ -123,12 +126,13 @@ func main() {
 	rupHandler := handler.NewRupHandler(rupService, log)
 	awardHandler := handler.NewAwardHandler(awardService)
 	groupsHandler := handler.NewGroupsHandler(groupsSyncService, syncGuard)
+	lessonHandler := handler.NewLessonHandler(lessonService, log)
 
 	// ---------- ROUTER ----------
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
 
 	// Ensure your NewRouter signature matches: (auth, user, rup, award, middleware)
-	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, groupsHandler, nil, sessionAuthMiddleware)
+	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, groupsHandler, lessonHandler, nil, sessionAuthMiddleware)
 	engine := router.Init()
 
 	port := getEnv("SERVER_PORT", "8080")
