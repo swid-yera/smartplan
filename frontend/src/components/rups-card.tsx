@@ -55,7 +55,7 @@ export const RupsCard: FC<IRupsProps> = ({
 	isLoading,
 }) => {
 	const [selectedRup, setSelectedRup] = useState<IRup | null>(null)
-	const isExist = rups.length > 0 || !isLoading
+	const isExist = rups.length > 0 || isLoading
 
 	return (
 		<>

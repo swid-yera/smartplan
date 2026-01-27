@@ -2,14 +2,15 @@
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, RupsCard } from '@components'
+import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
-import { Button } from '@ui'
+import { UserRoleEnum } from '@types'
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
 import { ArrowLeft } from 'lucide-react'
 
 import { UserCard } from './user-card'
-import { UserRups } from './user-rups'
 
 export default function UserPage() {
 	const router = useRouter()
@@ -17,7 +18,7 @@ export default function UserPage() {
 
 	// queries
 	const {
-		data: user,
+		data: userData,
 		isLoading: userLoading,
 		isError,
 	} = useQuery({
@@ -37,7 +38,7 @@ export default function UserPage() {
 		return <Loader />
 	}
 
-	if (isError || !user) {
+	if (isError || !userData) {
 		return (
 			<div className='container mx-auto py-10 space-y-8 max-w-7xl text-center'>
 				<h2 className='text-2xl font-bold'>Пользователь не найден</h2>
@@ -47,6 +48,8 @@ export default function UserPage() {
 			</div>
 		)
 	}
+
+	const isTeacher = hasRole(userData.role, UserRoleEnum.TEACHER, false)
 
 	return (
 		<section className='mx-auto pb-10 pt-5 px-4 space-y-8 w-full'>
@@ -59,16 +62,43 @@ export default function UserPage() {
 					</div>
 				}
 			>
-				Данные пользователя {user.firstName} {user.lastName}
+				Данные пользователя {userData.firstName} {userData.lastName}
 			</PageTitle>
 
-			<UserCard user={user} />
+			<UserCard user={userData} />
 
-			<UserRups
-				assessmentRups={assessmentRups?.data || []}
-				createdRups={createdRups?.data || []}
-				isLoading={createdRupsLoading || assessmentRupsLoading}
-			/>
+			<Tabs defaultValue={isTeacher ? 'created' : 'assessment'}>
+				<TabsList>
+					<TabsTrigger className='px-6' value='created'>
+						Созданные РУП
+					</TabsTrigger>
+					<TabsTrigger className='px-6' value='assessment'>
+						Проверяемые РУП
+					</TabsTrigger>
+				</TabsList>
+
+				<TabsContent value='created'>
+					<RupsCard
+						currentPage={createdRups?.meta.currentPage || 1}
+						isLoading={createdRupsLoading}
+						rups={createdRups?.data || []}
+						title='Рабочие учебные планы пользователя'
+						totalPages={createdRups?.meta.pages || 1}
+						onPageChange={() => true}
+					/>
+				</TabsContent>
+
+				<TabsContent value='assessment'>
+					<RupsCard
+						currentPage={assessmentRups?.meta.currentPage || 1}
+						isLoading={assessmentRupsLoading}
+						rups={assessmentRups?.data || []}
+						title='Методические работы пользователя'
+						totalPages={assessmentRups?.meta.pages || 1}
+						onPageChange={() => true}
+					/>
+				</TabsContent>
+			</Tabs>
 		</section>
 	)
 }
