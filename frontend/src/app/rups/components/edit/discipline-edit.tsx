@@ -114,7 +114,7 @@ export function DisciplineEdit<T extends IProps>() {
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead className='w-full' rowSpan={3}>
+								<TableHead className='w-full min-w-[400px]' rowSpan={3}>
 									Код и название дисциплины/модуля:
 								</TableHead>
 								<TableHead className='text-center wrap-break-words whitespace-normal' rowSpan={3}>

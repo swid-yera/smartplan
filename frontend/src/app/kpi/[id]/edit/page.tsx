@@ -28,6 +28,7 @@ import {
 	Textarea,
 } from '@ui'
 import { XIcon } from 'lucide-react'
+import Zoom from 'react-medium-image-zoom'
 import { toast } from 'sonner'
 
 const Page = () => {
@@ -280,7 +281,9 @@ const Image: FC<IImageProps> = ({ file, preview, onDelete }) => {
 			{file && file.type === 'application/pdf' ? (
 				<p className='text-xs text-center px-1'>PDF</p>
 			) : (
-				<img alt='file' className='object-cover w-full h-full' src={preview} />
+				<Zoom>
+					<img alt='preview' className='cursor-zoom-in rounded-lg' height={300} src={preview} width={400} />
+				</Zoom>
 			)}
 			<Button
 				className='w-full rounded-none hover:bg-destructive! hover:cursor-pointer'

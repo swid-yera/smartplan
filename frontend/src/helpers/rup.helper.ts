@@ -1,7 +1,15 @@
 import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 
 import { cn } from '@lib'
-import type { ICreateDiscipline, IDiscipline, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
+import type {
+	ICreateDiscipline,
+	ICreateSemester,
+	IDiscipline,
+	ISemester,
+	RupTypeEnum,
+	StudyFormEnum,
+	TopicTypeEnum,
+} from '@types'
 import type { badgeVariants } from '@ui'
 import type { VariantProps } from 'class-variance-authority'
 import { Combine, FlaskConical, type LucideProps, NotebookPen } from 'lucide-react'
@@ -135,4 +143,14 @@ export const formatCourseFromYearAndGroupName = (groupName: string, year: string
 	}
 
 	return course
+}
+
+// get total discipline hours
+export const getTotalDisciplineHours = (semesters: ISemester[] | ICreateSemester[]): number => {
+	return semesters.reduce((acc, curr) => acc + curr.totalHours, 0)
+}
+
+// get total hours for all disciplines
+export const getTotalHoursForAllDisciplines = (disciplines: IDiscipline[]): number => {
+	return disciplines.reduce((acc, disc) => acc + getTotalDisciplineHours(disc.semesters), 0)
 }

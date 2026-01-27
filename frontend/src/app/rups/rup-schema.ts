@@ -31,7 +31,7 @@ const disciplineWithTopicsSchema = disciplineSchema.extend({
 	),
 })
 
-export const formSchema = z.object({
+export const rupFormSchema = z.object({
 	// Step 1
 	name: z.string().min(1, 'Наименование модуля обязательно'),
 	type: z.enum(RupTypeEnum, {
@@ -44,33 +44,32 @@ export const formSchema = z.object({
 	course: z.number().min(1, 'yes').max(4, 'yes'),
 	groupId: z.string().min(1, 'Группа обязательна'),
 
+	prerequisites: z.string().optional(),
+	postrequisites: z.string().optional(),
+
 	// exploration note
 	basis: z.string().optional(),
 	goals: z.string().optional(),
 	competencies: z.string().optional(),
-	summary: z.string().optional(),
 
-	prerequisites: z.string().optional(),
-	postrequisites: z.string().optional(),
+	// Step 2
+	contacts: z.array(z.string().min(1, 'Выберите педагога')).min(1, 'Добавьте как минимум одного педагога'),
 
 	internetResources: z.array(
 		z.object({
 			name: z.string().min(1, 'Ресурс не может быть пустым'),
-			link: z.string(),
+			link: z.string().optional(),
 		}),
 	),
 	technicalResources: z.array(
 		z.object({
 			name: z.string().min(1, 'Материал не может быть пустым'),
-			link: z.string(),
+			link: z.string().optional(),
 		}),
 	),
-
-	// Step 2
-	contacts: z.array(z.string().min(1, 'Выберите педагога')).min(1, 'Добавьте как минимум одного педагога'),
 
 	// Step 3 & 4
 	disciplines: z.array(disciplineWithTopicsSchema),
 })
 
-export type RUPFormData = z.infer<typeof formSchema>
+export type RUPFormData = z.infer<typeof rupFormSchema>

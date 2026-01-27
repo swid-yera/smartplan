@@ -1,25 +1,86 @@
-import type { FC } from 'react'
+import { useState } from 'react'
 
+import { type IGenerateResources, generateResources } from '@actions'
 import { Loader } from '@components'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
 
-import { ContactsEdit, ResourceEdit } from '../components'
+import { ContactsEdit, GenerateCard, ResourceEdit } from '../components'
 
-export const Step2: FC = () => {
+type ResourcesType = {
+	name: string
+	link?: string
+}
+
+type IProps = FieldValues & {
+	name: string
+	prerequisites: string
+	postrequisites: string
+
+	basis: string
+	goals: string
+	competencies: string
+
+	internetResources: ResourcesType[]
+	technicalResources: ResourcesType[]
+}
+
+export function Step2<T extends IProps>() {
+	// store, form
 	const { authLoading, user } = useAuthStore()
+	const { getValues, setValue } = useFormContext<T>()
+	// states
+	const [isLoading, setIsLoading] = useState(false)
 
-	const { data: teachersData, isLoading } = useQuery({
+	const { data: teachersData, isLoading: teacherLoading } = useQuery({
 		...services.user.getAllOptions({ currentPage: 1, pageSize: 100, search: '' }),
 		enabled: true,
 	})
+
+	const handleGenerate = async () => {
+		if (isLoading || teacherLoading) return
+
+		try {
+			setIsLoading(true)
+
+			const values = getValues()
+
+			const mappedData: IGenerateResources = {
+				name: values.name,
+				prerequisites: values.prerequisites,
+				postrequisites: values.postrequisites,
+
+				basic: values.basis,
+				goals: values.goals,
+				competencies: values.competencies,
+			}
+
+			const resources = await generateResources(mappedData)
+
+			// write
+			setValue('internetResources' as Path<T>, resources.internetResources, { shouldDirty: true })
+			setValue('technicalResources' as Path<T>, resources.technicalResources, { shouldDirty: true })
+		} finally {
+			setIsLoading(false)
+		}
+	}
 
 	if (authLoading || !user || isLoading) return <Loader type='data' />
 
 	return (
 		<div className='w-full space-y-5'>
 			<ContactsEdit creatorId={user.keycloakId} teachersData={teachersData?.data || []} />
+
+			<GenerateCard
+				buttonText={isLoading ? 'Генерация…' : 'Сгенерировать'}
+				description='Тексты будут сформированы на основе базовых данных модуля и описания модуля. После генерации вы сможете отредактировать их вручную.'
+				disabled={isLoading || teacherLoading}
+				disabledReason='Заполните данные модуля и описание'
+				title='Автоматическая генерация ресурсов'
+				onClick={() => handleGenerate()}
+			/>
 
 			<div className='grid xl:grid-cols-2 gap-4'>
 				{/* internet  */}

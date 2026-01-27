@@ -20,7 +20,7 @@ import { Step1 } from '../../create/step1'
 import { Step2 } from '../../create/step2'
 import { Step3 } from '../../create/step3'
 import { Step4 } from '../../create/step4'
-import { type RUPFormData, formSchema } from '../../form-schema'
+import { type RUPFormData, rupFormSchema } from '../../rup-schema'
 
 const defaultValues: RUPFormData = {
 	name: '',
@@ -34,7 +34,6 @@ const defaultValues: RUPFormData = {
 	basis: '',
 	goals: '',
 	competencies: '',
-	summary: '',
 
 	prerequisites: '',
 	postrequisites: '',
@@ -57,7 +56,7 @@ const EditPage: FC = () => {
 
 	// form
 	const methods = useForm<RUPFormData>({
-		resolver: zodResolver(formSchema),
+		resolver: zodResolver(rupFormSchema),
 		mode: 'onChange',
 		shouldUnregister: false,
 		values: rupData
@@ -147,7 +146,7 @@ const EditPage: FC = () => {
 				basis: newData.basis ?? '',
 				goals: newData.goals ?? '',
 				competencies: newData.competencies ?? '',
-				summary: rupData?.explorationNote.summary ?? '',
+				summary: '',
 
 				prerequisites: newData.prerequisites ?? '',
 				postrequisites: newData.postrequisites ?? '',

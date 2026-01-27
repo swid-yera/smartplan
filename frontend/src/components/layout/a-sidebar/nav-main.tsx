@@ -16,6 +16,7 @@ import {
 	SidebarMenuSub,
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
+	useSidebar,
 } from '@ui'
 import { ChevronRight, type LucideIcon } from 'lucide-react'
 
@@ -32,12 +33,14 @@ export function NavMain({
 		}[]
 	}[]
 }) {
+	const { setOpen } = useSidebar()
+
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel>EduPlan</SidebarGroupLabel>
 			<SidebarMenu>
 				{items.map((item) => (
-					<MenuItem key={item.title} item={item} />
+					<MenuItem key={item.title} item={item} setOpen={setOpen} />
 				))}
 			</SidebarMenu>
 		</SidebarGroup>
@@ -55,12 +58,13 @@ interface IMenuItem {
 			url: string
 		}[]
 	}
+	setOpen: (open: boolean) => void
 }
 
-const MenuItem: FC<IMenuItem> = ({ item }) => {
+const MenuItem: FC<IMenuItem> = ({ item, setOpen }) => {
 	if (item.items) {
 		return (
-			<SidebarMenuItem>
+			<SidebarMenuItem onClick={() => setOpen(true)}>
 				<Collapsible defaultOpen>
 					<CollapsibleTrigger asChild>
 						<SidebarMenuButton tooltip={item.title}>

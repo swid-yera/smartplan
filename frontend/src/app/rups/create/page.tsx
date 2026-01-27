@@ -16,7 +16,7 @@ import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { type RUPFormData, formSchema } from '../form-schema'
+import { type RUPFormData, rupFormSchema } from '../rup-schema'
 import { Step1 } from './step1'
 import { Step2 } from './step2'
 import { Step3 } from './step3'
@@ -34,7 +34,6 @@ const defaultValues: RUPFormData = {
 	basis: '',
 	goals: '',
 	competencies: '',
-	summary: '',
 	course: 0,
 
 	prerequisites: '',
@@ -61,7 +60,7 @@ const Page: NextPage = () => {
 	const createMutation = useMutation(services.rup.createOptions())
 
 	const methods = useForm<RUPFormData>({
-		resolver: zodResolver(formSchema),
+		resolver: zodResolver(rupFormSchema),
 		mode: 'onChange',
 		shouldUnregister: false,
 		defaultValues,

@@ -12,7 +12,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
 	user: null,
 	isAuthenticated: false,
-	authLoading: true,
+	authLoading: false,
 
 	setUser: (user) => {
 		let isAuthenticated = true

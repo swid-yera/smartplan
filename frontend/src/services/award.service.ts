@@ -5,9 +5,9 @@ import type {
 	IAward,
 	ICreateAwardRequest,
 	ICreateTypesRequest,
+	IGetAllRequest,
 	IMessageResponse,
 	IPagination,
-	IPaginationRequest,
 	ITypeResponse,
 	IUpdateAwardRequest,
 	IUpdateStatusRequest,
@@ -15,15 +15,18 @@ import type {
 
 export class AwardService {
 	// get all awards
-	getAllOptions = ({ currentPage = 1, pageSize = 10, search }: IPaginationRequest) => {
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, status, teacher }: IGetAllRequest) => {
 		return queryOptions<IPagination<IAward>>({
-			queryKey: ['awards'],
+			queryKey: ['awards', { currentPage, pageSize, search, methodist, teacher, status }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IAward>>('/awards', {
 					params: {
 						currentPage,
 						pageSize,
 						search,
+						methodist,
+						teacher,
+						status,
 					},
 				})
 
