@@ -17,6 +17,8 @@ CREATE TYPE enum_criteria_method AS ENUM ('NORMAL', 'MEASURING');
 
 CREATE TYPE user_role AS ENUM ('ADMIN', 'TEACHER', 'METHODIST');
 
+CREATE TYPE enum_lesson_type AS ENUM ('PRACTICE', 'THEORY');
+
 -- =====================
 -- USERS
 -- =====================
@@ -208,4 +210,42 @@ CREATE TABLE awards (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT fk_award_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id)
+);
+
+-- =====================
+-- LESSON
+-- =====================
+
+CREATE TABLE lessons (
+    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    rup_name TEXT NOT NULL,
+    discipline_name TEXT,
+    topic_name TEXT,
+    teacher UUID NOT NULL,
+    event_date TIMESTAMPTZ,
+    group_id UUID NOT NULL,
+    type enum_lesson_type NOT NULL,
+    goals TEXT,
+    tasks TEXT,
+    expected TEXT,
+    internet_resources UUID[],
+    technical_resources UUID[],
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT fk_lesson_teacher FOREIGN KEY (teacher) REFERENCES users(keycloak_id),
+    CONSTRAINT fk_lesson_groups FOREIGN KEY (group_id) REFERENCES groups(keycloak_id)
+);
+
+-- =====================
+-- LESSON PRACTICE
+-- =====================
+
+CREATE TABLE lesson_progress(
+    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    lesson_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    start_minute INT[] NOT NULL,
+    end_minute INT[] NOT NULL,
+    content TEXT[],
+    CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id)
 );

@@ -112,7 +112,6 @@ func (r *AwardRepository) CreateAwardTypeCriteria(ctx context.Context, params *s
 func (r *AwardRepository) GetUserByID(ctx context.Context, id uuid.UUID) (storage.User, error) {
 	return r.queries.GetUserByKeycloakID(ctx, id)
 }
-
 func (r *AwardRepository) CountAwards(ctx context.Context) (int64, error) {
 	return r.queries.CountAwards(ctx)
 }

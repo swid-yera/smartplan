@@ -141,6 +141,48 @@ func (ns NullEnumCriteriaMethod) Value() (driver.Value, error) {
 	return string(ns.EnumCriteriaMethod), nil
 }
 
+type EnumLessonType string
+
+const (
+	EnumLessonTypePRACTICE EnumLessonType = "PRACTICE"
+	EnumLessonTypeTHEORY   EnumLessonType = "THEORY"
+)
+
+func (e *EnumLessonType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = EnumLessonType(s)
+	case string:
+		*e = EnumLessonType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for EnumLessonType: %T", src)
+	}
+	return nil
+}
+
+type NullEnumLessonType struct {
+	EnumLessonType EnumLessonType `json:"enum_lesson_type"`
+	Valid          bool           `json:"valid"` // Valid is true if EnumLessonType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullEnumLessonType) Scan(value interface{}) error {
+	if value == nil {
+		ns.EnumLessonType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.EnumLessonType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullEnumLessonType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.EnumLessonType), nil
+}
+
 type RupsStatus string
 
 const (
@@ -418,6 +460,33 @@ type Group struct {
 	Name          string      `json:"name"`
 	Qualification pgtype.Text `json:"qualification"`
 	Specialty     pgtype.Text `json:"specialty"`
+}
+
+type Lesson struct {
+	ID                 uuid.UUID          `json:"id"`
+	RupName            string             `json:"rup_name"`
+	DisciplineName     pgtype.Text        `json:"discipline_name"`
+	TopicName          pgtype.Text        `json:"topic_name"`
+	Teacher            uuid.UUID          `json:"teacher"`
+	EventDate          pgtype.Timestamptz `json:"event_date"`
+	GroupID            uuid.UUID          `json:"group_id"`
+	Type               EnumLessonType     `json:"type"`
+	Goals              pgtype.Text        `json:"goals"`
+	Tasks              pgtype.Text        `json:"tasks"`
+	Expected           pgtype.Text        `json:"expected"`
+	InternetResources  []uuid.UUID        `json:"internet_resources"`
+	TechnicalResources []uuid.UUID        `json:"technical_resources"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LessonProgress struct {
+	ID          uuid.UUID `json:"id"`
+	LessonID    uuid.UUID `json:"lesson_id"`
+	Name        string    `json:"name"`
+	StartMinute []int32   `json:"start_minute"`
+	EndMinute   []int32   `json:"end_minute"`
+	Content     []string  `json:"content"`
 }
 
 type Rup struct {
