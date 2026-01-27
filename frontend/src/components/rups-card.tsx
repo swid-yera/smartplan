@@ -43,6 +43,7 @@ interface IRupsProps {
 	title: ReactNode
 	description?: ReactNode
 	isLoading: boolean
+	className?: string
 }
 
 export const RupsCard: FC<IRupsProps> = ({
@@ -53,13 +54,14 @@ export const RupsCard: FC<IRupsProps> = ({
 	title,
 	description,
 	isLoading,
+	className,
 }) => {
 	const [selectedRup, setSelectedRup] = useState<IRup | null>(null)
 	const isExist = rups.length > 0 && !isLoading
 
 	return (
 		<>
-			<Card>
+			<Card className={className}>
 				<CardHeader>
 					<CardTitle>{title}</CardTitle>
 					{description && <CardDescription>{description}</CardDescription>}

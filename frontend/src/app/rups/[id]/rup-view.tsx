@@ -1,6 +1,6 @@
 import { type FC, type ReactNode, useState } from 'react'
 
-import { PageTitle, StatusBadge } from '@components'
+import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
 import { formatHours, hasRole, normalizeStudyForm } from '@helpers'
 import { type IRup, StatusEnum, UserRoleEnum } from '@types'
 import {
@@ -15,7 +15,7 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@ui'
-import { CheckCircle, SendToBack, ShieldAlert } from 'lucide-react'
+import { CheckCircle, Search, SendToBack, ShieldAlert, Timer } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { ContactsView, DisciplineView, ExplorationView, TopicsView } from '../components'
@@ -86,56 +86,91 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 						<div className='mt-2 text-sm whitespace-pre-wrap'>{data.reason || 'Пусто'}</div>
 					</div>
 				)}
-				<BasicView
-					rows={[
-						{
-							label: 'Наименование модуля',
-							subLabel: '(наименование модуля или дисциплины)',
-							value: data.name,
-						},
-						{
-							label: 'Специальность',
-							subLabel: '(код и наименование)',
-							value: data.groups[0]?.specialty,
-						},
-						{
-							label: 'Квалификация',
-							subLabel: '(код и наименование)',
-							value: data.groups[0]?.qualification,
-						},
-						{
-							label: 'Форма обучения',
-							value: normalizeStudyForm(data.studyForm),
-						},
-						{
-							label: 'Общее количество часов',
-							value: formatHours(data.totalHours),
-						},
-						{
-							label: 'Кредитов',
-							value: data.totalHours / 24,
-						},
-						{
-							label: 'Курс',
-							value: `${data.course} курс`,
-						},
-						{
-							label: 'Группа',
-							value: data.groups[0].name,
-						},
-						{
-							label: 'Разработчики',
-							value: (
-								<ul>
-									{data.contacts.map((c) => (
-										<li key={c.keycloakId}>{c.firstName + c.lastName}</li>
-									))}
-								</ul>
-							),
-						},
-					]}
-					title='Рабочая учебная программа по модулю'
-				/>
+				{data.status === StatusEnum.IN_REVIEW && (
+					<div className='rounded-lg border border-secondary/50 bg-secondary/5 p-4 text-secondary'>
+						<div className='flex items-center gap-2 font-semibold'>
+							<Timer className='h-5 w-5' />
+							Ожидайте пока методист проверит ваш документ
+						</div>
+					</div>
+				)}
+				{data.status === StatusEnum.DRAFT && (
+					<div className='rounded-lg border border-primary/50 bg-primary/5 p-4 text-primary'>
+						<div className='flex items-center gap-2 font-semibold'>
+							<Search className='h-5 w-5' />
+							Проверьте документ и отправьте на согласование
+						</div>
+					</div>
+				)}
+				{data.status === StatusEnum.APPROVED && (
+					<div className='rounded-lg border border-muted-foreground/50 bg-muted-foreground/5 p-4 text-muted-foreground'>
+						<div className='flex items-center gap-2 font-semibold'>
+							<Search className='h-5 w-5' />
+							Редактирование запрещено, файл сгенерирован.
+						</div>
+					</div>
+				)}
+
+				<div className='mt-6 grid gap-6 xl:grid-cols-4 lg:grid-cols-3'>
+					<BasicView
+						className='xl:col-span-3 lg:col-span-2'
+						rows={[
+							{
+								label: 'Наименование модуля',
+								subLabel: '(наименование модуля или дисциплины)',
+								value: data.name,
+							},
+							{
+								label: 'Специальность',
+								subLabel: '(код и наименование)',
+								value: data.groups[0]?.specialty,
+							},
+							{
+								label: 'Квалификация',
+								subLabel: '(код и наименование)',
+								value: data.groups[0]?.qualification,
+							},
+							{
+								label: 'Форма обучения',
+								value: normalizeStudyForm(data.studyForm),
+							},
+							{
+								label: 'Общее количество часов',
+								value: formatHours(data.totalHours),
+							},
+							{
+								label: 'Кредитов',
+								value: data.totalHours / 24,
+							},
+							{
+								label: 'Курс',
+								value: `${data.course} курс`,
+							},
+							{
+								label: 'Группа',
+								value: data.groups[0].name,
+							},
+							{
+								label: 'Разработчики',
+								value: (
+									<ul className='list-decimal ml-3'>
+										{data.contacts.map((c) => (
+											<li key={c.keycloakId}>{`${c.firstName} ${c.lastName}`}</li>
+										))}
+									</ul>
+								),
+							},
+						]}
+						title='Рабочая учебная программа по модулю'
+					/>
+
+					<ResponsibleUsersCard
+						createdAt={data.createdAt}
+						methodist={data.methodist}
+						teacher={data.teacher}
+						updatedAt={data.updatedAt}
+					/>
+				</div>
 
 				<ExplorationView data={data} />
 
