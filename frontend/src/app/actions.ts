@@ -1,7 +1,7 @@
 'use server'
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import type { IGroup, RupTypeEnum, StudyFormEnum } from '@types'
+import { type IGroup, RupTypeEnum, type StudyFormEnum, TopicTypeEnum } from '@types'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 const GENERATION_CONFIG = {
@@ -30,9 +30,7 @@ async function generateContentWithFallback(prompt: string) {
 
 	// try with primary model
 	try {
-		const result = await primaryModel.generateContent(prompt)
-
-		return JSON.parse(result.response.text())
+		return await primaryModel.generateContent(prompt)
 	} catch (error) {
 		// check for quota
 		// @ts-ignore
@@ -42,9 +40,7 @@ async function generateContentWithFallback(prompt: string) {
 			console.warn('Лимит исчерпан. Переключаюсь на запасную модель...')
 			// try with fallback model
 			try {
-				const fallbackResult = await fallbackModel.generateContent(prompt)
-
-				return JSON.parse(fallbackResult.response.text())
+				return await fallbackModel.generateContent(prompt)
 			} catch (fallbackError) {
 				console.error('Обе модели недоступны')
 				throw fallbackError
@@ -359,25 +355,114 @@ export async function generateDisciplines(baseData: IGenerateDisciplines) {
 	}
 }
 
-// --- ЭТАП 2.3: Генерация тем для ОДНОЙ дисциплины (для цикла) ---
-export async function generateTopicsForSubject(subjectName: string, totalHours: number, type: string) {
-	// Логика расчета количества тем (например, каждые 2 часа - новая тема)
-	const topicCount = Math.floor(totalHours / 2)
+// generate topics for one discipline (do loop)
+export interface IGenerateTopicsForDiscipline {
+	rupName: string
+	rupType: RupTypeEnum
+	goals: string
+	competencies: string
+
+	disciplineName: string
+	disciplineHours: number
+}
+
+export async function generateTopicsForDiscipline(baseData: IGenerateTopicsForDiscipline) {
+	const topicHours = baseData.rupType === RupTypeEnum.PRACTICE ? 6 : 2
+
+	// the logic for calculating the number of topics (if rup type == PRACTICE, every 6 hours - a new topic, if THEORY every 2 hours - a new topic)
+	const topicCount = Math.floor(baseData.disciplineHours / topicHours)
 
 	const prompt = `
-    Сгенерируй учебный план (темы уроков) для дисциплины "${subjectName}".
-    Общее количество часов: ${totalHours}. Количество тем: ${topicCount}.
-    Тип РУП: ${type}.
-    Верни массив объектов: { "name": string, "type": "theory" | "practice", "theoryHours": number, "practiceHours": number, "individualHours": number }.
-    Сумма всех hours должна совпадать с ${totalHours}.
-  `
+Ты — методист по разработке учебных программ для колледжей и техникумов Республики Казахстан.
+
+Сгенерируй учебный план (темы уроков) для дисциплины "${baseData.disciplineName}" модуля "${baseData.rupName}".
+Общее количество часов: ${baseData.disciplineHours}.
+
+ДАННЫЕ ПРОФЕССИОНАЛЬНОГО МОДУЛЯ:
+- Название: "${baseData.rupName}"
+- Тип РУП: ${baseData.rupType}.
+- Цели освоения профессионального модуля: "${baseData.goals}"
+- Формируемые компетенции: "${baseData.competencies}"
+- Называние дисциплины: "${baseData.disciplineName}"
+
+Правила генерации:
+
+1. Количество тем:
+- Если тип РУП = PRACTICE, каждая тема = 6 часов, все темы = "PRACTICAL"
+- Если тип РУП = THEORY, каждая тема = 2 часа, темы могут быть "COMBINED" или "PRACTICAL"
+
+2. Каждая тема — объект:
+{
+  "name": string,          // связное информативное название темы
+  "type": "COMBINED" | "PRACTICAL",  // для PRACTICE все темы = "PRACTICAL", для THEORY может быть mix
+  "theoryHours": number,   // часы теории в теме
+  "practiceHours": number  // часы практики в теме
+}
+
+3. Все часы суммируются в totalHours = ${baseData.disciplineHours}
+
+4. Названия тем должны быть связаны с целями (goals) и компетенциями (competencies) модуля
+
+5. JSON должен быть валидным, без комментариев, markdown или лишнего текста
+
+Пример для PRACTICE:
+
+[
+  {
+    "name": "Практическая работа: настройка локальной сети",
+    "type": "PRACTICAL",
+    "theoryHours": 0,
+    "practiceHours": 6
+  },
+  {
+    "name": "Практическая работа: установка и конфигурация серверов",
+    "type": "PRACTICAL",
+    "theoryHours": 0,
+    "practiceHours": 6
+  }
+]
+
+Пример для THEORY (смешанный тип):
+
+[
+  {
+    "name": "Основы сетевых технологий",
+    "type": "COMBINED",
+    "theoryHours": 2,
+    "practiceHours": 0
+  },
+  {
+    "name": "Практическая работа: настройка сетевого оборудования",
+    "type": "COMBINED",
+    "theoryHours": 0,
+    "practiceHours": 2
+  }
+]
+
+Сгенерируй массив для всех ${topicCount} тем строго соблюдая:
+- для PRACTICE все темы = "PRACTICAL"
+- для THEORY можно mix type, но каждая тема = 2 часа
+- суммарные часы = ${baseData.disciplineHours}.
+`
 
 	try {
 		const result = await generateContentWithFallback(prompt)
 
-		return JSON.parse(result.response.text())
+		const data = JSON.parse(result.response.text())
+
+		const response = data.map((topic) => ({
+			name: topic.name,
+			type: topic.type as TopicTypeEnum,
+			theoryHours: topic.theoryHours,
+			practiceHours: topic.practiceHours,
+			individualHours: 0,
+			srspHours: 0,
+			srsHours: 0,
+		}))
+
+		return response
 	} catch (e) {
-		console.error(`Ошибка в темах для ${subjectName}:`, e)
+		console.error(`Ошибка в темах для ${baseData.disciplineName}:`, e)
 
 		return []
 	}

@@ -60,7 +60,10 @@ export const GenerateCard: FC<PropsWithChildren<GenerateCardProps>> = ({
 			</CardHeader>
 
 			<CardContent className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-				{description && <p className='text-sm text-muted-foreground max-w-2xl'>{description}</p>}
+				<div className='max-w-2xl text-sm'>
+					{description && <p className='text-muted-foreground'>{description}</p>}
+					<p className='text-primary font-semibold'>ВСЕ ДАННЫЕ СБРОСЯТСЯ И БУДУТ СГЕНЕРИРОВАНЫ</p>
+				</div>
 
 				<div className='flex flex-col gap-3 items-end'>
 					<AlertDialog>

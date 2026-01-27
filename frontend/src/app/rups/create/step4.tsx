@@ -1,7 +1,10 @@
 import { useState } from 'react'
 
+import { type IGenerateTopicsForDiscipline, generateTopicsForDiscipline } from '@actions'
+import { getTotalDisciplineHours } from '@helpers'
 import type { RupTypeEnum, TopicTypeEnum } from '@types'
-import { type FieldValues, useFormContext } from 'react-hook-form'
+import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
+import { toast } from 'sonner'
 
 import { GenerateCard, TopicsEdit } from '../components'
 
@@ -37,44 +40,49 @@ export function Step4<T extends IProps>() {
 	// states
 	const [isLoading, setIsLoading] = useState(false)
 
-	// const handleGenerate = async () => {
-	// 	if (isLoading) return
-	// 	if (disciplineCount === 0 || wantsHours === 0) {
-	// 		return toast.error('заполните общее количество часов модуля и количество дисциплин')
-	// 	}
+	const handleGenerate = async () => {
+		if (isLoading) return
 
-	// 	try {
-	// 		setIsLoading(true)
+		try {
+			setIsLoading(true)
 
-	// 		const values = getValues()
+			const values = getValues()
 
-	// 		const mappedData: IGenerateDisciplines = {
-	// 			name: values.name,
-	// 			course: values.course,
-	// 			goals: values.goals,
-	// 			competencies: values.competencies,
+			for (let i = 0; i < values.disciplines.length; i++) {
+				const currentDiscipline = values.disciplines[i]
 
-	// 			wantsHours: wantsHours,
-	// 			disciplineCount: disciplineCount,
-	// 		}
+				const mappedData: IGenerateTopicsForDiscipline = {
+					rupName: values.name,
+					rupType: values.type,
+					goals: values.goals,
+					competencies: values.competencies,
 
-	// 		const generatedDisciplines = await generateDisciplines(mappedData)
+					disciplineName: currentDiscipline.name,
+					disciplineHours: getTotalDisciplineHours(currentDiscipline.semesters),
+				}
 
-	// 		// write
-	// 		setValue('disciplines' as Path<T>, generatedDisciplines, { shouldDirty: true })
-	// 	} finally {
-	// 		setIsLoading(false)
-	// 	}
-	// }
+				try {
+					const result = await generateTopicsForDiscipline(mappedData)
+
+					setValue(`disciplines.${i}.topics` as Path<T>, result)
+				} catch (error) {
+					console.error(`Ошибка при генерации тем для ${currentDiscipline.name}:`, error)
+					toast.error(`Ошибка при генерации тем для ${currentDiscipline.name}:`)
+				}
+			}
+		} finally {
+			setIsLoading(false)
+		}
+	}
 
 	return (
 		<div className='w-full space-y-5'>
 			<GenerateCard
 				buttonText={isLoading ? 'Генерация…' : 'Сгенерировать'}
-				description='Текст и часы будут сформированы на основе базовых данных модуля и описания модуля. Заполните общее количество часов модуля (например 288) и количество дисциплин (например 3), после Искусственный Интеллект распределит часы (288) на дисциплины (3). После генерации вы сможете отредактировать их вручную.'
+				description='Текст и часы будут сформированы на основе базовых данных модуля, называния и часов дисциплины. После генерации вы сможете отредактировать их вручную.'
 				disabled={isLoading}
-				disabledReason='Заполните данные модуля, описание и общее количество часов модуля'
-				title='Автоматическая генерация дисциплин'
+				disabledReason='Заполните данные модуля и дисциплины'
+				title='Автоматическая генерация тем занятий'
 				onClick={() => handleGenerate()}
 			/>
 
