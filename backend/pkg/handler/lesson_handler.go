@@ -8,8 +8,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
 )
+
+func parseQueryInt(c *gin.Context, key string, defaultValue int) (int, error) {
+	valStr := c.Query(key)
+	if valStr == "" {
+		return defaultValue, nil
+	}
+	val, err := strconv.Atoi(valStr)
+	if err != nil {
+		return 0, err
+	}
+	return val, nil
+}
 
 type LessonHandler struct {
 	lessonService *service.LessonService
@@ -46,6 +59,57 @@ func (h *LessonHandler) CreateLesson(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusCreated)
+}
+
+func (h *LessonHandler) GetLessons(c *gin.Context) {
+	// Парсим query-параметры
+	currentPage, err := parseQueryInt(c, "currentPage", 1)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page"})
+		return
+	}
+	pageSize, err := parseQueryInt(c, "pageSize", 10)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page_size"})
+		return
+	}
+
+	// Опциональные фильтры: teacher и lesson_id
+	var teacher pgtype.UUID
+	if teacherIDStr := c.Query("teacher"); teacherIDStr != "" {
+		id, err := uuid.Parse(teacherIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher ID"})
+			return
+		}
+		teacher = pgtype.UUID{
+			Bytes: id,
+			Valid: true,
+		}
+	}
+
+	var lessonID pgtype.UUID
+	if lessonIDStr := c.Query("lesson_id"); lessonIDStr != "" {
+		id, err := uuid.Parse(lessonIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+			return
+		}
+		lessonID = pgtype.UUID{
+			Bytes: id,
+			Valid: true,
+		}
+	}
+
+	// Вызов сервиса
+	resp, err := h.lessonService.GetAllLessons(c.Request.Context(), currentPage, pageSize, teacher, lessonID)
+	if err != nil {
+		h.log.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *LessonHandler) UpdateLesson(c *gin.Context) {
@@ -86,98 +150,6 @@ func (h *LessonHandler) DeleteLesson(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
-}
-
-func (h *LessonHandler) GetAllLessons(c *gin.Context) {
-	from := c.Query("from")
-	to := c.Query("to")
-	if from == "" || to == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "from and to are required"})
-		return
-	}
-
-	page := 1
-	pageSize := 10
-	if v := c.Query("currentPage"); v != "" {
-		if p, err := strconv.Atoi(v); err == nil && p > 0 {
-			page = p
-		}
-	}
-	if v := c.Query("pageSize"); v != "" {
-		if ps, err := strconv.Atoi(v); err == nil && ps > 0 && ps <= 100 {
-			pageSize = ps
-		}
-	}
-
-	limit := int32(pageSize)
-	offset := int32((page - 1) * pageSize)
-
-	lessons, err := h.lessonService.GetAllLessons(c.Request.Context(), from, to, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, lessons)
-}
-
-func (h *LessonHandler) GetLessonsByTeacher(c *gin.Context) {
-	userInterface, exists := c.Get(middleware.ContextUserKey)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-		return
-	}
-	currentUser, ok := userInterface.(*service.User)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
-		return
-	}
-
-	from := c.Query("from")
-	to := c.Query("to")
-	if from == "" || to == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "from and to are required"})
-		return
-	}
-
-	page := 1
-	pageSize := 10
-	if v := c.Query("currentPage"); v != "" {
-		if p, err := strconv.Atoi(v); err == nil && p > 0 {
-			page = p
-		}
-	}
-	if v := c.Query("pageSize"); v != "" {
-		if ps, err := strconv.Atoi(v); err == nil && ps > 0 && ps <= 100 {
-			pageSize = ps
-		}
-	}
-
-	limit := int32(pageSize)
-	offset := int32((page - 1) * pageSize)
-
-	lessons, err := h.lessonService.GetLessonsTeacher(c.Request.Context(), currentUser.KeycloakID, from, to, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, lessons)
-}
-
-func (h *LessonHandler) GetLessonByID(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
-		return
-	}
-
-	lesson, err := h.lessonService.GetLessonByID(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, lesson)
 }
 
 func (h *LessonHandler) RecordLessonProgress(c *gin.Context) {

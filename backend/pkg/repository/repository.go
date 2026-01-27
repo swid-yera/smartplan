@@ -61,9 +61,8 @@ type Lessons interface {
 	CreateLesson(ctx context.Context, params storage.CreateLessonsParams) error
 	UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
-	GetAllLessons(ctx context.Context, from pgtype.Timestamptz, to pgtype.Timestamptz, limit int32, offset int32) ([]storage.Lesson, error)
-	GetLessonsTeacher(ctx context.Context, teacherID uuid.UUID, from pgtype.Timestamptz, to pgtype.Timestamptz, limit int32, offset int32) ([]storage.Lesson, error)
-	GetLessonByID(ctx context.Context, id uuid.UUID) (*storage.Lesson, error)
+	GetLessons(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID, limit int32, offset int32) ([]storage.Lesson, error)
+	CountLessonsFiltered(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID) (int64, error)
 
 	CreateLessonProgress(ctx context.Context, params storage.CreateLessonProgressParams) error
 	UpdateLessonProgress(ctx context.Context, params storage.UpdateLessonProgressParams) error

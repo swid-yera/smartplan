@@ -221,7 +221,7 @@ CREATE TABLE lessons (
     rup_name TEXT NOT NULL,
     discipline_name TEXT,
     topic_name TEXT,
-    teacher_id UUID NOT NULL,
+    teacher UUID NOT NULL,
     event_date TIMESTAMPTZ,
     group_id UUID NOT NULL,
     type enum_lesson_type NOT NULL,
@@ -232,7 +232,7 @@ CREATE TABLE lessons (
     technical_resources UUID[],
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT fk_lesson_teacher FOREIGN KEY (teacher_id) REFERENCES users(keycloak_id),
+    CONSTRAINT fk_lesson_teacher FOREIGN KEY (teacher) REFERENCES users(keycloak_id),
     CONSTRAINT fk_lesson_groups FOREIGN KEY (group_id) REFERENCES groups(keycloak_id)
 );
 
@@ -249,4 +249,3 @@ CREATE TABLE lesson_progress(
     content TEXT[],
     CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id)
 );
-

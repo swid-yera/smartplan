@@ -129,9 +129,7 @@ func (r *Router) Init() *gin.Engine {
 		// --- LESSONS ---
 		lessons := protected.Group("/lessons")
 		{
-			lessons.GET("", r.lesson.GetAllLessons)
-			lessons.GET("/:id", r.lesson.GetLessonByID)
-			lessons.GET("/teacher", r.lesson.GetLessonsByTeacher)
+			lessons.GET("", r.lesson.GetLessons)
 			lessons.POST("", r.lesson.CreateLesson)
 			lessons.PUT("/:id", r.lesson.UpdateLesson)
 			lessons.DELETE("/:id", r.lesson.DeleteLesson)

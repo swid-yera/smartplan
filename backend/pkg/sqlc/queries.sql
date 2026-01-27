@@ -558,7 +558,7 @@ INSERT INTO
         rup_name,
         discipline_name,
         topic_name,
-        teacher_id,
+        teacher,
         event_date,
         group_id,
         type,
@@ -601,32 +601,6 @@ SET
 WHERE
     id = $1;
 
--- name: GetLessonByID :one
-SELECT * FROM lessons WHERE id = $1;
-
--- name: GetLessons :many
-SELECT *
-FROM lessons
-WHERE
-    event_date >= $1
-    AND event_date <= $2
-ORDER BY event_date DESC
-LIMIT $3
-OFFSET
-    $4;
-
--- name: GetLessonsTeacher :many
-SELECT *
-FROM lessons
-WHERE
-    teacher_id = $1
-    AND event_date >= $2
-    AND event_date <= $3
-ORDER BY event_date DESC
-LIMIT $4
-OFFSET
-    $5;
-
 -- name: DeleteLesson :exec
 DELETE FROM lessons WHERE id = $1;
 
@@ -663,3 +637,33 @@ ORDER BY name ASC;
 
 -- name: DeleteLessonProgress :exec
 DELETE FROM lesson_progress WHERE id = $1;
+
+-- name: GetLessonsByID :one
+SELECT * FROM lessons WHERE id = $1;
+
+-- name: GetLessons :many
+SELECT * FROM lessons
+WHERE
+    (
+        sqlc.narg('teacher')::uuid IS NULL
+        OR teacher = sqlc.narg('teacher')::uuid
+    ) AND
+    (
+        sqlc.narg('id')::uuid IS NULL
+        OR id = sqlc.narg('id')::uuid
+    )
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountLessonsFiltered :one
+SELECT COUNT(*)
+FROM lessons
+WHERE
+    (
+        sqlc.narg('teacher')::uuid IS NULL
+        OR teacher = sqlc.narg('teacher')::uuid
+    )
+    AND (
+        sqlc.narg('id')::uuid IS NULL
+        OR id = sqlc.narg('id')
+    );

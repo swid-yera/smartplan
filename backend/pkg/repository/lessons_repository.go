@@ -33,12 +33,12 @@ func (r *LessonRepository) DeleteLesson(ctx context.Context, id uuid.UUID) error
 	}
 }
 
-func (r *LessonRepository) GetAllLessons(ctx context.Context, from pgtype.Timestamptz, to pgtype.Timestamptz, limit int32, offset int32) ([]storage.Lesson, error) {
+func (r *LessonRepository) GetLessons(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID, limit int32, offset int32) ([]storage.Lesson, error) {
 	lessons, err := r.queries.GetLessons(ctx, storage.GetLessonsParams{
-		EventDate:   from,
-		EventDate_2: to,
-		Limit:       limit,
-		Offset:      offset,
+		Teacher: teacher,
+		ID:      id,
+		Limit:   limit,
+		Offset:  offset,
 	})
 	if err != nil {
 		return nil, err
@@ -46,33 +46,11 @@ func (r *LessonRepository) GetAllLessons(ctx context.Context, from pgtype.Timest
 	return lessons, nil
 }
 
-func (r *LessonRepository) GetLesson(ctx context.Context, id uuid.UUID) (storage.Lesson, error) {
-	lessons, err := r.queries.GetLessonByID(ctx, id)
-	if err != nil {
-		return storage.Lesson{}, err
-	}
-	return lessons, nil
-}
-func (r *LessonRepository) GetLessonsTeacher(ctx context.Context, teacherID uuid.UUID, from pgtype.Timestamptz, to pgtype.Timestamptz, limit int32, offset int32) ([]storage.Lesson, error) {
-	lessons, err := r.queries.GetLessonsTeacher(ctx, storage.GetLessonsTeacherParams{
-		TeacherID:   teacherID,
-		EventDate:   from,
-		EventDate_2: to,
-		Limit:       limit,
-		Offset:      offset,
+func (r *LessonRepository) CountLessonsFiltered(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID) (int64, error) {
+	return r.queries.CountLessonsFiltered(ctx, storage.CountLessonsFilteredParams{
+		Teacher: teacher,
+		ID:      id,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return lessons, nil
-}
-
-func (r *LessonRepository) GetLessonByID(ctx context.Context, id uuid.UUID) (*storage.Lesson, error) {
-	lesson, err := r.queries.GetLessonByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return &lesson, nil
 }
 
 func (r *LessonRepository) CreateLessonProgress(ctx context.Context, params storage.CreateLessonProgressParams) error {

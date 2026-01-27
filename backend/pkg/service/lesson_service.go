@@ -4,6 +4,8 @@ import (
 	"context"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
+	"math"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -43,6 +45,11 @@ type LessonResponse struct {
 	UpdatedAt          string      `json:"updated_at"`
 }
 
+type PaginatedLessonsResponse struct {
+	Data []LessonResponse `json:"data"`
+	Meta PaginationMeta   `json:"meta"`
+}
+
 type LessonProgressParams struct {
 	ID          uuid.UUID `json:"id"`
 	Name        string    `json:"name"`
@@ -52,14 +59,14 @@ type LessonProgressParams struct {
 }
 
 type LessonService struct {
-	repo    repository.Lessons
-	logoger *logrus.Logger
+	repo repository.Lessons
+	log  *logrus.Logger
 }
 
 func NewLessonService(repo repository.Lessons, logger *logrus.Logger) *LessonService {
 	return &LessonService{
-		repo:    repo,
-		logoger: logger,
+		repo: repo,
+		log:  logger,
 	}
 }
 
@@ -72,7 +79,7 @@ func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) e
 		RupName:            params.RupName,
 		DisciplineName:     pgtype.Text{String: ptrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
 		TopicName:          pgtype.Text{String: ptrToString(params.TopicName), Valid: params.TopicName != nil},
-		TeacherID:          params.TeacherID,
+		Teacher:            params.TeacherID,
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
 		Type:               storage.EnumLessonType(params.Type),
@@ -135,32 +142,68 @@ func (s *LessonService) DeleteLesson(ctx context.Context, id uuid.UUID) error {
 	return s.repo.DeleteLesson(ctx, id)
 }
 
-func (s *LessonService) GetAllLessons(ctx context.Context, from string, to string, limit int32, offset int32) ([]storage.Lesson, error) {
-	fromTime, err := parseTimeRequired(from)
-	if err != nil {
-		return nil, err
+func (s *LessonService) GetAllLessons(
+	ctx context.Context,
+	currentPage int,
+	pageSize int,
+	teacher pgtype.UUID,
+	id pgtype.UUID,
+) (*PaginatedLessonsResponse, error) {
+	if currentPage < 1 {
+		currentPage = 1
 	}
-	toTime, err := parseTimeRequired(to)
-	if err != nil {
-		return nil, err
+	if pageSize < 1 {
+		pageSize = 10
 	}
-	return s.repo.GetAllLessons(ctx, pgtype.Timestamptz{Time: fromTime, Valid: true}, pgtype.Timestamptz{Time: toTime, Valid: true}, limit, offset)
-}
 
-func (s *LessonService) GetLessonsTeacher(ctx context.Context, teacherID uuid.UUID, from string, to string, limit int32, offset int32) ([]storage.Lesson, error) {
-	fromTime, err := parseTimeRequired(from)
-	if err != nil {
-		return nil, err
-	}
-	toTime, err := parseTimeRequired(to)
-	if err != nil {
-		return nil, err
-	}
-	return s.repo.GetLessonsTeacher(ctx, teacherID, pgtype.Timestamptz{Time: fromTime, Valid: true}, pgtype.Timestamptz{Time: toTime, Valid: true}, limit, offset)
-}
+	offset := (currentPage - 1) * pageSize
 
-func (s *LessonService) GetLessonByID(ctx context.Context, id uuid.UUID) (*storage.Lesson, error) {
-	return s.repo.GetLessonByID(ctx, id)
+	// Получаем общее количество уроков с фильтром
+	total, err := s.repo.CountLessonsFiltered(ctx, teacher, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Получаем уроки с пагинацией
+	dbLessons, err := s.repo.GetLessons(ctx, teacher, id, int32(pageSize), int32(offset))
+	if err != nil {
+		return nil, err
+	}
+
+	pages := int(math.Ceil(float64(total) / float64(pageSize)))
+
+	// Если нужно, можно обработать уроки перед возвратом
+	var result []LessonResponse
+	for _, dbLesson := range dbLessons {
+		lesson := LessonResponse{
+			ID:                 dbLesson.ID,
+			RupName:            dbLesson.RupName,
+			DisciplineName:     pgTextToPtr(dbLesson.DisciplineName),
+			TopicName:          pgTextToPtr(dbLesson.TopicName),
+			TeacherID:          dbLesson.Teacher,
+			EventDate:          dbLesson.EventDate.Time.Format(time.RFC3339),
+			GroupID:            dbLesson.GroupID,
+			Type:               string(dbLesson.Type),
+			Goals:              pgTextToPtr(dbLesson.Goals),
+			Tasks:              pgTextToPtr(dbLesson.Tasks),
+			Expected:           pgTextToPtr(dbLesson.Expected),
+			InternetResources:  dbLesson.InternetResources,
+			TechnicalResources: dbLesson.TechnicalResources,
+			CreatedAt:          pgTimeToString(dbLesson.CreatedAt),
+			UpdatedAt:          pgTimeToString(dbLesson.UpdatedAt),
+		}
+		result = append(result, lesson)
+	}
+
+	return &PaginatedLessonsResponse{
+		Data: result,
+		Meta: PaginationMeta{
+			CurrentPage: currentPage,
+			Pages:       pages,
+			Total:       int(total),
+			PageSize:    pageSize,
+		},
+	}, nil
 }
 
 func (s *LessonService) CreateLessonProgress(ctx context.Context, params LessonProgressParams, lessonID uuid.UUID) error {
