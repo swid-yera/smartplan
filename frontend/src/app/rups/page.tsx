@@ -21,10 +21,17 @@ const Page: NextPage = () => {
 	const page = Number(searchParams.get('page')) || 1
 	const q = searchParams.get('q') || ''
 	const status = (searchParams.get('status') || '').split(',') as StatusEnum[]
+	const teacherId = hasRole(user?.role || UserRoleEnum.TEACHER, UserRoleEnum.TEACHER, false) ? user?.keycloakId : ''
 
 	// queries
 	const { data: rupsData, isLoading } = useQuery({
-		...services.rup.getAllOptions({ currentPage: page, pageSize: 10, search: q, status }),
+		...services.rup.getAllOptions({
+			currentPage: page,
+			pageSize: 100,
+			search: q,
+			status,
+			teacher: teacherId,
+		}),
 		enabled: !authLoading && !!user,
 	})
 

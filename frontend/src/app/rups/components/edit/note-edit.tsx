@@ -1,6 +1,5 @@
 'use client'
 
-import { AiGenerateButton } from '@components'
 import {
 	Card,
 	CardContent,
@@ -13,7 +12,7 @@ import {
 	FormMessage,
 	Textarea,
 } from '@ui'
-import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
+import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
 
 interface IProps<T extends FieldValues> {
 	name: Path<T>
@@ -22,18 +21,9 @@ interface IProps<T extends FieldValues> {
 	label: string
 	placeholder: string
 	rows?: number
-	aiType?: 'annotation' | 'goals' // Based on your AiGenerateButton requirements
 }
 
-export function NoteEdit<T extends FieldValues>({
-	name,
-	title,
-	description,
-	label,
-	placeholder,
-	rows = 8,
-	aiType = 'annotation',
-}: IProps<T>) {
+export function NoteEdit<T extends FieldValues>({ name, title, description, label, placeholder, rows = 8 }: IProps<T>) {
 	const form = useFormContext<T>()
 
 	return (
@@ -51,11 +41,6 @@ export function NoteEdit<T extends FieldValues>({
 						<FormItem>
 							<div className='flex items-end justify-between'>
 								<span className='text-xs'>{label}</span>
-
-								<AiGenerateButton
-									defaultType={aiType}
-									onGenerated={(t) => form.setValue(name, t as PathValue<T, Path<T>>, { shouldDirty: true })}
-								/>
 							</div>
 							<FormControl>
 								<Textarea className='h-full' placeholder={placeholder} rows={rows} {...field} />

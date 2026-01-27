@@ -1,14 +1,97 @@
-import type { FC } from 'react'
+import { useState } from 'react'
 
-import { BasicEdit, GroupEdit, NoteEdit } from '../components'
+import { type IGenerateRupMeta, generateRupMeta } from '@actions'
+import { services } from '@services'
+import { useQuery } from '@tanstack/react-query'
+import { RupTypeEnum, StudyFormEnum } from '@types'
+import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
 
-export const Step1: FC = () => {
+import { BasicEdit, GenerateCard, GroupEdit, NoteEdit } from '../components'
+
+type IProps = FieldValues & {
+	name: string
+	type: RupTypeEnum
+	studyForm: StudyFormEnum
+	prerequisites: string
+	postrequisites: string
+	studyYear: string
+	course: number
+	groupId: string
+
+	basis: string
+	goals: string
+	competencies: string
+}
+
+export function Step1<T extends IProps>() {
+	const { getValues, setValue } = useFormContext<T>()
+	// states
+	const [isLoading, setIsLoading] = useState(false)
+	// query
+	const { data: groupsData = [], isLoading: groupLoading } = useQuery({
+		...services.group.getAllOptions(),
+		enabled: true,
+	})
+
+	const isBasicFilled = Boolean(
+		getValues('name' as Path<T>) &&
+		getValues('type' as Path<T>) &&
+		getValues('postrequisites' as Path<T>) &&
+		getValues('prerequisites' as Path<T>) &&
+		getValues('studyForm' as Path<T>),
+	)
+	const isGroupFilled = Boolean(
+		getValues('groupId' as Path<T>) && getValues('course' as Path<T>) && getValues('studyYear' as Path<T>),
+	)
+
+	const handleGenerate = async () => {
+		if (isLoading || groupLoading || !isBasicFilled || !isGroupFilled) return
+
+		try {
+			setIsLoading(true)
+
+			const values = getValues()
+			const group = groupsData.find((g) => g.keycloakId === values.groupId)
+
+			if (!group) throw new Error('Group not found')
+
+			const mappedData: IGenerateRupMeta = {
+				name: values.name,
+				course: values.course,
+				group: group,
+				prerequisites: values.prerequisites,
+				postrequisites: values.postrequisites,
+				type: values.type,
+				studyForm: values.studyForm,
+				studyYear: values.studyYear,
+			}
+
+			const meta = await generateRupMeta(mappedData)
+
+			// write
+			setValue('basis' as Path<T>, meta.basis, { shouldDirty: true })
+			setValue('goals' as Path<T>, meta.goals, { shouldDirty: true })
+			setValue('competencies' as Path<T>, meta.competencies, { shouldDirty: true })
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
 	return (
 		<div className='w-full space-y-5'>
 			<div className='grid gap-4 xl:grid-cols-2'>
 				<BasicEdit />
 				<GroupEdit />
 			</div>
+
+			<GenerateCard
+				buttonText={isLoading ? 'Генерация…' : 'Сгенерировать'}
+				description='Тексты будут сформированы на основе данных модуля и учебной группы. После генерации вы сможете отредактировать их вручную.'
+				disabled={!isBasicFilled || !isGroupFilled || isLoading || groupLoading}
+				disabledReason='Заполните данные модуля и учебной группы'
+				title='Автоматическая генерация описаний'
+				onClick={() => handleGenerate()}
+			/>
 
 			<NoteEdit
 				description='Нормативно-правовая и профессиональная база разработки рабочей учебной программы.'

@@ -1,18 +1,22 @@
 import { api } from '@lib'
-import { queryOptions } from '@tanstack/react-query'
+import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type { IGroup, IGroupSyncResponse } from '@types'
 
 export class GroupService {
 	// sync
 	syncOptions = () => {
-		return queryOptions({
-			queryKey: [],
-			queryFn: async () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: async () => {
 				const { data } = await api.post<IGroupSyncResponse | null>('/groups/sync')
 
 				return data
 			},
-			retry: false,
+
+			onSuccess: () => {
+				queryClient.invalidateQueries({ queryKey: ['groups'] })
+			},
 		})
 	}
 

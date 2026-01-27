@@ -5,7 +5,7 @@ import { type FC, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, PageTitle, StatusBadge } from '@components'
+import { Loader, PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
 import { hasRole, isAuthor, normalizeCriteriaMethod, normalizeStatus } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
@@ -24,7 +24,6 @@ import {
 	ButtonGroup,
 	Card,
 	CardContent,
-	CardFooter,
 	CardHeader,
 	CardTitle,
 	Input,
@@ -34,7 +33,6 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Separator,
 	Sheet,
 	SheetContent,
 	SheetDescription,
@@ -44,7 +42,6 @@ import {
 	Textarea,
 } from '@ui'
 import {
-	Calendar,
 	CheckCircle,
 	Download,
 	Edit,
@@ -54,9 +51,8 @@ import {
 	SendToBack,
 	ShieldAlert,
 	Trash,
-	User,
-	UserSearch,
 } from 'lucide-react'
+import Zoom from 'react-medium-image-zoom'
 import { toast } from 'sonner'
 
 const Page = () => {
@@ -194,7 +190,7 @@ const Page = () => {
 									onClick={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 								>
 									<SendIcon />
-									Отправить На проверку
+									Отправить на проверку
 								</Button>
 							)}
 						</ButtonGroup>
@@ -274,54 +270,12 @@ const Page = () => {
 					</CardContent>
 				</Card>
 
-				<Card>
-					<CardHeader>
-						<CardTitle>Участники</CardTitle>
-					</CardHeader>
-					<CardContent className='space-y-3 flex-1'>
-						<div className='flex items-start gap-3'>
-							<User className='mt-1 h-5 w-5 text-muted-foreground' />
-							<div>
-								<p className='text-sm font-medium text-muted-foreground'>Преподаватель</p>
-								<Link
-									className='font-medium hover:underline hover:text-primary'
-									href={`/users/${award.teacher.keycloakId}`}
-								>
-									{award.teacher.firstName} {award.teacher.lastName}
-								</Link>
-							</div>
-						</div>
-
-						{award.methodist && (
-							<div className='flex items-start gap-3'>
-								<UserSearch className='mt-1 h-5 w-5 text-muted-foreground' />
-								<div>
-									<p className='text-sm font-medium text-muted-foreground'>Методист</p>
-									<Link
-										className='font-medium hover:underline hover:text-primary'
-										href={`/users/${award.methodist.keycloakId}`}
-									>
-										{award.methodist.firstName} {award.methodist.lastName}
-									</Link>
-								</div>
-							</div>
-						)}
-					</CardContent>
-
-					<CardFooter className='flex-col items-start'>
-						<Separator className='my-2' />
-
-						<div className='flex items-center gap-2 text-sm'>
-							<Calendar className='h-4 w-4' />
-							<span>Создано: {new Date(award.createdAt).toLocaleDateString()}</span>
-						</div>
-
-						<div className='flex items-center gap-2 text-sm'>
-							<Calendar className='h-4 w-4' />
-							<span>Обновлено: {new Date(award.updatedAt).toLocaleDateString()}</span>
-						</div>
-					</CardFooter>
-				</Card>
+				<ResponsibleUsersCard
+					createdAt={award.createdAt}
+					methodist={award.methodist}
+					teacher={award.teacher}
+					updatedAt={award.updatedAt}
+				/>
 
 				{/* Описание и файлы */}
 				<Card className='md:col-span-3'>
@@ -371,18 +325,15 @@ const Page = () => {
 											if (isImage) {
 												return (
 													<div key={idx} className='space-y-2 max-w-md'>
-														<a
-															className='block rounded-md border overflow-hidden hover:opacity-90 transition-opacity'
-															href={file}
-															rel='noopener noreferrer'
-															target='_blank'
-														>
+														<Zoom>
 															<img
-																alt={`File ${idx + 1}`}
-																className='w-full h-auto object-contain'
+																alt='preview'
+																className='cursor-zoom-in rounded-lg'
+																height={300}
 																src={file}
+																width={400}
 															/>
-														</a>
+														</Zoom>
 														<Button asChild size='sm' variant='outline'>
 															<a download href={file} rel='noopener noreferrer' target='_blank'>
 																<Download className='mr-2 h-4 w-4' />

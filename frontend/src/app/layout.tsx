@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 
 import { ASidebar, Footer } from '@layout'
-import { ASidebarProvider, QueryProvider, ThemeProvider } from '@providers'
-import { AuthInitializer } from '@store'
+import { ASidebarProvider, AuthProvider, QueryProvider, ThemeProvider } from '@providers'
 import { SidebarInset, Toaster } from '@ui'
+import 'react-medium-image-zoom/dist/styles.css'
 
 import './globals.css'
 
@@ -30,7 +30,7 @@ export default function RootLayout({
 				<ThemeProvider>
 					<QueryProvider>
 						<ASidebarProvider>
-							<AuthInitializer />
+							<AuthProvider />
 
 							<ASidebar />
 							<SidebarInset className='flex-1 min-w-0 justify-between items-stretch'>

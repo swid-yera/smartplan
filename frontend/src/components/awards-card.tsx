@@ -30,6 +30,7 @@ import {
 	TableRow,
 } from '@ui'
 import { BookOpen, ChevronLeft, ChevronRight, Download, FileText, Files, SearchCode, Users } from 'lucide-react'
+import Zoom from 'react-medium-image-zoom'
 
 import { Loader } from './loader'
 import { StatusBadge } from './status-badge'
@@ -83,7 +84,7 @@ export const AwardsCard: FC<IProps> = ({
 									awards.map((item) => <AwardRow key={item.id} award={item} onSelect={setSelectedAward} />)
 								) : (
 									<TableRow>
-										<TableCell className='h-44 text-center' colSpan={5}>
+										<TableCell className='h-44 text-center' colSpan={6}>
 											{isLoading ? (
 												<Loader
 													className='flex flex-col justify-center items-center'
@@ -91,7 +92,7 @@ export const AwardsCard: FC<IProps> = ({
 													type='data'
 												/>
 											) : (
-												'Пока нет ни одного модуля.'
+												'Пока ничего нет.'
 											)}
 										</TableCell>
 									</TableRow>
@@ -285,18 +286,15 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 										if (isImage) {
 											return (
 												<div key={idx} className='space-y-2 max-w-md'>
-													<a
-														className='block rounded-md border overflow-hidden hover:opacity-90 transition-opacity'
-														href={file}
-														rel='noopener noreferrer'
-														target='_blank'
-													>
+													<Zoom>
 														<img
-															alt={`File ${idx + 1}`}
-															className='w-full h-auto object-contain'
+															alt='preview'
+															className='cursor-zoom-in rounded-lg'
+															height={300}
 															src={file}
+															width={400}
 														/>
-													</a>
+													</Zoom>
 													<Button asChild size='sm' variant='outline'>
 														<a download href={file} rel='noopener noreferrer' target='_blank'>
 															<Download className='mr-2 h-4 w-4' />
