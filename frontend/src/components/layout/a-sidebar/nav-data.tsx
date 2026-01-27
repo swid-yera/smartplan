@@ -25,7 +25,7 @@ export const navMain = [
 	},
 	{
 		title: 'Поурочный план',
-		url: '/subjects',
+		url: '/lessons',
 		icon: BookOpen,
 	},
 	{

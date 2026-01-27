@@ -68,7 +68,7 @@ export default function RatingPage() {
 	}
 
 	return (
-		<section className='mx-auto w-full p-6 space-y-6'>
+		<section className='mx-auto w-full max-w-4xl p-6 space-y-6'>
 			<PageTitle>Рейтинг преподавателей по программе KPI</PageTitle>
 
 			{/* HEADER */}

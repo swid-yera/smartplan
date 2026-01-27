@@ -38,7 +38,7 @@ export const TypeView = ({ type }: IProps) => {
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
 	// query
-	const { mutate: deleteMutate } = useMutation(services.award.deleteMutationOptions())
+	const { mutate: deleteMutate } = useMutation(services.award.deleteTypeMutationOptions())
 
 	// delete
 	const handleDelete = () => {
