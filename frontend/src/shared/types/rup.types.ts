@@ -1,4 +1,4 @@
-import type { IGroup, IUser, StatusEnum } from './global.types'
+import type { IGroup, IResources, IUser, StatusEnum } from './global.types'
 
 export enum StudyFormEnum {
 	CORRESPONDENCE = 'CORRESPONDENCE',
@@ -50,12 +50,6 @@ export interface IRup {
 }
 
 // rup exploration note
-export interface IResources {
-	id: string
-	name: string
-	link?: string
-}
-
 export interface IRupExplorationNote {
 	id: string
 

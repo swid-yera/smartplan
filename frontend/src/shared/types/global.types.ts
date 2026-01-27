@@ -50,3 +50,10 @@ export interface IUser {
 	createdAt: string
 	updatedAt: string
 }
+
+// resources
+export interface IResources {
+	id: string
+	name: string
+	link?: string
+}
