@@ -57,16 +57,32 @@ type Rup interface {
 	CountRups(ctx context.Context) (int64, error)
 }
 
+type Lessons interface {
+	CreateLesson(ctx context.Context, params storage.CreateLessonsParams) error
+	UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error
+	DeleteLesson(ctx context.Context, id uuid.UUID) error
+	GetLessons(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID, limit int32, offset int32) ([]storage.Lesson, error)
+	CountLessonsFiltered(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID) (int64, error)
+
+	CreateLessonProgress(ctx context.Context, params storage.CreateLessonProgressParams) error
+	UpdateLessonProgress(ctx context.Context, params storage.UpdateLessonProgressParams) error
+	DeleteLessonProgress(ctx context.Context, id uuid.UUID) error
+	GetLessonProgressByID(ctx context.Context, id uuid.UUID) (storage.LessonProgress, error)
+	GetLessonProgressByLessonID(ctx context.Context, lessonID uuid.UUID) ([]storage.LessonProgress, error)
+}
+
 type Repository struct {
-	Users UsersRepository
-	Auth  Auth
-	Rup   Rup
+	Users   UsersRepository
+	Auth    Auth
+	Rup     Rup
+	Lessons Lessons
 }
 
 func NewRepository(queries *storage.Queries) *Repository {
 	return &Repository{
-		Users: NewUsersPostgres(queries),
-		Auth:  NewAuthPostgres(queries),
-		Rup:   NewRupPostgres(queries),
+		Users:   NewUsersPostgres(queries),
+		Auth:    NewAuthPostgres(queries),
+		Rup:     NewRupPostgres(queries),
+		Lessons: NewLessonRepository(queries),
 	}
 }
