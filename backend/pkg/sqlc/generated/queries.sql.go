@@ -85,7 +85,10 @@ WHERE
         $3::uuid IS NULL
         OR methodist = $3::uuid
     )
-    AND status = ANY($4::text[]::rups_status[])
+    AND (
+        $4::text[] IS NULL
+        OR status = ANY($4::text[]::rups_status[])
+    )
 `
 
 type CountRupsFilteredParams struct {
@@ -1248,86 +1251,6 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 	return i, err
 }
 
-const getAwardsByMethodist = `-- name: GetAwardsByMethodist :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards WHERE methodist = $1
-`
-
-func (q *Queries) GetAwardsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Award, error) {
-	rows, err := q.db.Query(ctx, getAwardsByMethodist, methodist)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Award
-	for rows.Next() {
-		var i Award
-		if err := rows.Scan(
-			&i.ID,
-			&i.Status,
-			&i.Reason,
-			&i.Methodist,
-			&i.Teacher,
-			&i.TotalPoints,
-			&i.Type,
-			&i.Variant,
-			&i.Criteria,
-			&i.BonusCriteria,
-			&i.Text,
-			&i.Files,
-			&i.Links,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAwardsByTeacher = `-- name: GetAwardsByTeacher :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards WHERE teacher = $1
-`
-
-func (q *Queries) GetAwardsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Award, error) {
-	rows, err := q.db.Query(ctx, getAwardsByTeacher, teacher)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Award
-	for rows.Next() {
-		var i Award
-		if err := rows.Scan(
-			&i.ID,
-			&i.Status,
-			&i.Reason,
-			&i.Methodist,
-			&i.Teacher,
-			&i.TotalPoints,
-			&i.Type,
-			&i.Variant,
-			&i.Criteria,
-			&i.BonusCriteria,
-			&i.Text,
-			&i.Files,
-			&i.Links,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getAwardsPaginated = `-- name: GetAwardsPaginated :many
 SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, text, files, links, created_at, updated_at FROM awards
 WHERE
@@ -1823,19 +1746,22 @@ func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]
 }
 
 const getRupsPaginated = `-- name: GetRupsPaginated :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at 
-FROM rups WHERE 
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+FROM rups WHERE
     (
-        $1 = '' 
+        $1 = ''
         OR name ILIKE '%' || $1 || '%'
-    ) 
+    )
     AND (
-        $4::uuid IS NULL 
+        $4::uuid IS NULL
         OR teacher = $4::uuid
     ) AND (
-        $5::uuid IS NULL 
+        $5::uuid IS NULL
         OR methodist = $5::uuid
-    )AND status = ANY($6::text[]::rups_status[])
+    )AND (
+        $6::text[] IS NULL
+        OR status = ANY($6::text[]::rups_status[])
+    )
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
 `
@@ -1948,6 +1874,67 @@ type GetUsersPaginatedParams struct {
 
 func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error) {
 	rows, err := q.db.Query(ctx, getUsersPaginated, arg.Column1, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.KeycloakID,
+			&i.Email,
+			&i.Username,
+			&i.FirstName,
+			&i.LastName,
+			&i.Phone,
+			&i.Role,
+			&i.Rups,
+			&i.TotalPoints,
+			&i.Awards,
+			&i.Violation,
+			&i.PasswordChangedAt,
+			&i.LastSeenAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUsersRatingPaginated = `-- name: GetUsersRatingPaginated :many
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+FROM users
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    )
+ORDER BY total_points DESC, created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetUsersRatingPaginatedParams struct {
+	Column1 interface{} `json:"column_1"`
+	Limit   int32       `json:"limit"`
+	Offset  int32       `json:"offset"`
+}
+
+func (q *Queries) GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatingPaginatedParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, getUsersRatingPaginated, arg.Column1, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -2383,6 +2370,24 @@ type UpdateUserRoleParams struct {
 
 func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {
 	_, err := q.db.Exec(ctx, updateUserRole, arg.KeycloakID, arg.Role)
+	return err
+}
+
+const updateUserTotalPoints = `-- name: UpdateUserTotalPoints :exec
+UPDATE users
+SET
+    total_points = total_points + $2
+WHERE
+    keycloak_id = $1
+`
+
+type UpdateUserTotalPointsParams struct {
+	KeycloakID  uuid.UUID `json:"keycloak_id"`
+	TotalPoints int32     `json:"total_points"`
+}
+
+func (q *Queries) UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error {
+	_, err := q.db.Exec(ctx, updateUserTotalPoints, arg.KeycloakID, arg.TotalPoints)
 	return err
 }
 

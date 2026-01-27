@@ -68,6 +68,40 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+func (h *UserHandler) GetUsersRating(c *gin.Context) {
+	currentPage := 1
+	pageSize := 10
+
+	if v := c.Query("currentPage"); v != "" {
+		if p, err := strconv.Atoi(v); err == nil && p > 0 {
+			currentPage = p
+		}
+	}
+
+	if v := c.Query("pageSize"); v != "" {
+		if ps, err := strconv.Atoi(v); err == nil && ps > 0 && ps <= 100 {
+			pageSize = ps
+		}
+	}
+
+	search := strings.TrimSpace(c.Query("search"))
+
+	result, err := h.userService.GetUsersRatingPaginated(
+		c.Request.Context(),
+		currentPage,
+		pageSize,
+		search,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 func (h *UserHandler) GetUserByKeycloakID(c *gin.Context) {
 	keycloakIDStr := c.Param("keycloak_id")
 	if keycloakIDStr == "" {

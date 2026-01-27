@@ -1,11 +1,4 @@
-import type { IGroup, IUser } from './global.types'
-
-export enum RupStatusEnum {
-	DRAFT = 'DRAFT',
-	IN_REVIEW = 'IN_REVIEW',
-	APPROVED = 'APPROVED',
-	REJECTED = 'REJECTED',
-}
+import type { IGroup, IUser, StatusEnum } from './global.types'
 
 export enum StudyFormEnum {
 	CORRESPONDENCE = 'CORRESPONDENCE',
@@ -34,7 +27,7 @@ export interface IRup {
 	id: string
 	name: string
 
-	status: RupStatusEnum
+	status: StatusEnum
 	reason?: string
 
 	type: RupTypeEnum

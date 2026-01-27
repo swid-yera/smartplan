@@ -1,5 +1,12 @@
-import type { AwardViolationEnum, IAward } from './award.types'
+import type { IAward, ViolationEnum } from './award.types'
 import type { IRup } from './rup.types'
+
+export enum StatusEnum {
+	DRAFT = 'DRAFT',
+	IN_REVIEW = 'IN_REVIEW',
+	APPROVED = 'APPROVED',
+	REJECTED = 'REJECTED',
+}
 
 export enum UserRoleEnum {
 	TEACHER = 'TEACHER',
@@ -14,6 +21,16 @@ export interface IGroup {
 	qualification?: string
 }
 
+export interface IPagination<T> {
+	data: T[]
+	meta: {
+		currentPage: number
+		pages: number
+		total: number
+		pageSize: number
+	}
+}
+
 export interface IUser {
 	keycloakId: string
 
@@ -26,9 +43,9 @@ export interface IUser {
 	phone: string
 
 	rups?: IRup[]
-	totalPoint?: number
+	totalPoints?: number
 	awards?: IAward[]
-	violation?: AwardViolationEnum
+	violation?: ViolationEnum
 
 	createdAt: string
 	updatedAt: string

@@ -1,47 +1,58 @@
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ui'
-import { ArrowUpDown, Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
+
+import { Button, Input } from '@ui'
+import { Filter, Search } from 'lucide-react'
 
 interface UsersFilterProps {
 	search: string
-	onSearchChange: (value: string) => void
-	role: string
-	onRoleChange: (value: string) => void
-	onSortToggle: () => void
+	onSearchSubmit: (value: string) => void
+	onRefetch: () => void
 }
 
-export function UsersFilter({ search, onSearchChange, role, onRoleChange, onSortToggle }: UsersFilterProps) {
+export function UsersFilter({ search, onSearchSubmit, onRefetch }: UsersFilterProps) {
+	const [inputValue, setInputValue] = useState(search)
+
+	useEffect(() => {
+		setInputValue(search)
+	}, [search])
+
+	const handleSearch = () => {
+		onSearchSubmit(inputValue)
+	}
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === 'Enter') {
+			handleSearch()
+			onRefetch()
+		}
+	}
+
 	return (
 		<div className='flex flex-col lg:flex-row items-center justify-between mb-6 gap-4'>
 			<div className='flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto'>
 				{/* search */}
 				<div className='relative w-full lg:w-72'>
-					<Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
-
+					<Button
+						className='absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8'
+						size='icon'
+						variant='ghost'
+						onClick={handleSearch}
+					>
+						<Search className='h-4 w-4 text-muted-foreground' />
+					</Button>
 					<Input
-						className='pl-8'
+						className='pl-10'
 						placeholder='Поиск по имени или email...'
-						value={search}
-						onChange={(e) => onSearchChange(e.target.value)}
+						value={inputValue}
+						onChange={(e) => setInputValue(e.target.value)}
+						onKeyDown={handleKeyDown}
 					/>
 				</div>
-
-				{/* role  */}
-				<Select value={role} onValueChange={onRoleChange}>
-					<SelectTrigger className='w-full lg:w-[180px]'>
-						<SelectValue placeholder='Выберите роль' />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value='all'>Все роли</SelectItem>
-						<SelectItem value='TEACHER'>Преподаватель</SelectItem>
-						<SelectItem value='ADMIN'>Администратор</SelectItem>
-						<SelectItem value='METHODIST'>Методист</SelectItem>
-					</SelectContent>
-				</Select>
 			</div>
 
-			<Button className='w-full lg:w-auto' size='sm' variant='outline' onClick={onSortToggle}>
-				Сортировка
-				<ArrowUpDown className='ml-2 h-4 w-4' />
+			<Button className='w-full lg:w-auto' size='default' variant='default' onClick={onRefetch}>
+				Применить
+				<Filter className='ml-2 h-4 w-4' />
 			</Button>
 		</div>
 	)

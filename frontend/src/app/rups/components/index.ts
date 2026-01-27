@@ -8,6 +8,7 @@ export * from './edit/resource-edit'
 export * from './edit/topics-edit'
 
 // ui
+export * from './generate-card'
 export * from './new-rup-card'
 export * from './rups-filter-card'
 

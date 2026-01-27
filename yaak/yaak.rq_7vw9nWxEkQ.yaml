@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_7vw9nWxEkQ
 createdAt: 2026-01-15T08:10:01.378255200
-updatedAt: 2026-01-22T17:07:05.469712100
+updatedAt: 2026-01-26T18:53:25.833454
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -10,39 +10,76 @@ authentication:
   token: ''
 authenticationType: bearer
 body:
-  text: |-
+  text: |
     {
-      "name": "Благодарственные письма, похвальные листы и почётные грамоты",
+      "name": "Подготовка и опубликование методических материалов, учебных программ, учебных пособий.",
       "variants": [
         {
-          "name": "Почетная грамота, грамоты, благодарственные письма педагогов",
-          "description": "каждое грамота умножается на тот балл, который прописан ниже по уровням",
+          "name": "Разработка учебно-методических материалов",
+          "description": "",
           "criteria": [
             {
-              "name": "внутриколледжный",
+              "name": "УКМД",
               "points": [
-                2
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "городской",
-              "points": [
+                1,
                 3
               ],
-              "method": "NORMAL"
-            },
+              "method": "MEASURING"
+            }
+          ],
+          "bonus_criteria": [
+          ]
+        },
+        {
+          "name": "Авторские работы",
+          "description": "",
+          "criteria": [
             {
-              "name": "республиканский",
+              "name": "Разработка или экспертиза тестовых заданий НЦТ",
               "points": [
-                5
+                10
               ],
               "method": "NORMAL"
             },
             {
-              "name": "международный",
+              "name": "Разработка методических пособий: - внутриколледжный",
               "points": [
                 10
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "Разработка методических пособий: - городской",
+              "points": [
+                15
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "Разработка образовательных программ: - внутриколледжный",
+              "points": [
+                10
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "Разработка образовательных программ: - городской",
+              "points": [
+                15
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "Учебное пособие и учебники: - внутриколледжный",
+              "points": [
+                10
+              ],
+              "method": "NORMAL"
+            },
+            {
+              "name": "Учебное пособие и учебники: - городской",
+              "points": [
+                15
               ],
               "method": "NORMAL"
             }

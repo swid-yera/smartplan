@@ -23,14 +23,14 @@ const StatusChart: FC<IStatusChart> = ({ data }) => {
 		if (containerRef.current) {
 			const { width } = containerRef.current.getBoundingClientRect()
 
-			setSize({ width, height: width / 2 })
+			setSize({ width: width * 0.8, height: width / 2 })
 		}
 	}, [])
 
 	return (
-		<div ref={containerRef} className='w-full h-96'>
+		<div ref={containerRef} className='w-full h-auto'>
 			{size.width > 0 && (
-				<LineChart data={data} height={size.height} width={size.width}>
+				<LineChart className='mx-auto' data={data} height={size.height} width={size.width}>
 					<CartesianGrid strokeDasharray='3 3' />
 					<XAxis dataKey='date' />
 					<YAxis />

@@ -54,7 +54,7 @@ export const CreateCard = () => {
 
 			<CardFooter>
 				<Button asChild className='w-full' size='lg' variant='default'>
-					<Link className='flex items-center gap-2' href='/kpi/create'>
+					<Link className='flex items-center gap-2' href='/kpi/create/manual'>
 						Опубликовать награду
 						<ArrowRight className='h-4 w-4' />
 					</Link>

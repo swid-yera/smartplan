@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
@@ -8,28 +8,33 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from './auth.store'
 
 // use auth bootstrap
-export const useAuthBootstrap = () => {
+export const useAuthBootstrap = (hasSid: boolean) => {
 	const setUser = useAuthStore((s) => s.setUser)
+	const isFirstRender = useRef(true)
 
 	const { data, isError } = useQuery({
 		...services.auth.getMeOptions(),
-		enabled: true,
+		enabled: hasSid, // Запрос не пойдет, если куки нет
 	})
 
-	useEffect(() => {
-		if (data) {
-			setUser(data)
+	if (isFirstRender.current) {
+		if (hasSid) {
+			useAuthStore.setState({ authLoading: true })
+		} else {
+			useAuthStore.setState({ authLoading: false })
 		}
+		isFirstRender.current = false
+	}
 
-		if (isError) {
-			setUser(null)
-		}
-	}, [data, isError, setUser])
+	useEffect(() => {
+		if (data) setUser(data)
+		if (isError || !hasSid) setUser(null)
+	}, [data, isError, hasSid, setUser])
 }
 
 // initializer/trigger
-export const AuthInitializer = () => {
-	useAuthBootstrap()
+export const AuthInitializer = ({ hasSid }: { hasSid: boolean }) => {
+	useAuthBootstrap(hasSid)
 
 	return null
 }

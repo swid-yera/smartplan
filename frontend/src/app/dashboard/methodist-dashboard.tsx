@@ -3,22 +3,13 @@ import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
-import {
-	Badge,
-	Button,
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ui'
-import { Activity, CheckCircle, FileText } from 'lucide-react'
+import { AwardsCard, PageTitle, RupsCard } from '@components'
+import { isCurrentDay } from '@helpers'
+import { services } from '@services'
+import { useQuery } from '@tanstack/react-query'
+import { StatusEnum } from '@types'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
+import { CheckCircle, FileText } from 'lucide-react'
 
 const StatusChart = dynamic(() => import('./status-chart'), {
 	ssr: false,
@@ -26,30 +17,58 @@ const StatusChart = dynamic(() => import('./status-chart'), {
 })
 
 export const MethodistDashboard = () => {
+	const { data: rupData, isLoading: rupLoading } = useQuery({
+		...services.rup.getAllOptions({ currentPage: 1, pageSize: 999 }),
+	})
+	const { data: awardData, isLoading: awardLoading } = useQuery({
+		...services.award.getAllOptions({ currentPage: 1, pageSize: 999 }),
+	})
+
+	const rups = rupData?.data || []
+	const awards = awardData?.data || []
+
+	const reviewRups = rups.filter((r) => r.status === StatusEnum.IN_REVIEW) || []
+	const reviewRupsCount = reviewRups?.length || 0
+	const approvedRupsCount =
+		rups.filter((r) => r.status === StatusEnum.APPROVED && isCurrentDay(r.updatedAt)).length || 0
+
+	const reviewAwards = awards.filter((a) => a.status === StatusEnum.IN_REVIEW) || []
+	const reviewAwardsCount = reviewAwards?.length || 0
+	const approvedAwardsCount =
+		awards.filter((a) => a.status === StatusEnum.APPROVED && isCurrentDay(a.updatedAt)).length || 0
+
 	const chartData = useMemo(() => {
 		const today = new Date()
+		const data = rups || []
 
 		return Array.from({ length: 7 }).map((_, i) => {
 			const date = new Date(today)
 
 			date.setDate(today.getDate() - (6 - i))
 
+			const dayRups = data.filter((r) => {
+				const rDate = new Date(r.updatedAt)
+
+				return (
+					rDate.getDate() === date.getDate() &&
+					rDate.getMonth() === date.getMonth() &&
+					rDate.getFullYear() === date.getFullYear()
+				)
+			})
+
 			return {
 				date: date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
-				approved: Math.floor(Math.random() * 20) + 20,
-				review: Math.floor(Math.random() * 10) + 5,
-				rejected: Math.floor(Math.random() * 5),
-				in_progress: Math.floor(Math.random() * 10) + 5,
+				approved: dayRups.filter((r) => r.status === StatusEnum.APPROVED).length,
+				review: dayRups.filter((r) => r.status === StatusEnum.IN_REVIEW).length,
+				rejected: dayRups.filter((r) => r.status === StatusEnum.REJECTED).length,
+				in_progress: dayRups.filter((r) => r.status === StatusEnum.DRAFT).length,
 			}
 		})
-	}, [])
+	}, [rupData])
 
 	return (
 		<div className='space-y-6'>
-			<div className='space-y-1'>
-				<h1 className='text-2xl font-bold tracking-tight'>Дашборд методиста</h1>
-				<p className='text-muted-foreground'>Управление проверками РУП и KPI преподавателей.</p>
-			</div>
+			<PageTitle description='Управление проверками РУП и KPI преподавателей.'>Дашборд методиста</PageTitle>
 
 			<div className='grid gap-6 md:grid-cols-2'>
 				<Card>
@@ -60,11 +79,11 @@ export const MethodistDashboard = () => {
 					<CardContent>
 						<div className='flex items-center justify-between'>
 							<div>
-								<div className='text-2xl font-bold'>12</div>
+								<div className='text-2xl font-bold'>{reviewRupsCount}</div>
 								<p className='text-xs text-muted-foreground'>Ожидают проверки</p>
 							</div>
 							<div className='text-right'>
-								<div className='text-2xl font-bold'>8</div>
+								<div className='text-2xl font-bold'>{approvedRupsCount}</div>
 								<p className='text-xs text-muted-foreground'>За сегодня проверено</p>
 							</div>
 						</div>
@@ -73,6 +92,7 @@ export const MethodistDashboard = () => {
 						</Button>
 					</CardContent>
 				</Card>
+
 				<Card>
 					<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
 						<CardTitle className='text-sm font-medium'>KPI</CardTitle>
@@ -81,11 +101,11 @@ export const MethodistDashboard = () => {
 					<CardContent>
 						<div className='flex items-center justify-between'>
 							<div>
-								<div className='text-2xl font-bold'>5</div>
+								<div className='text-2xl font-bold'>{reviewAwardsCount}</div>
 								<p className='text-xs text-muted-foreground'>Ожидают проверки</p>
 							</div>
 							<div className='text-right'>
-								<div className='text-2xl font-bold'>2</div>
+								<div className='text-2xl font-bold'>{approvedAwardsCount}</div>
 								<p className='text-xs text-muted-foreground'>За сегодня проверено</p>
 							</div>
 						</div>
@@ -96,157 +116,37 @@ export const MethodistDashboard = () => {
 				</Card>
 			</div>
 
-			<Card className='w-full'>
+			<RupsCard
+				currentPage={1}
+				description='Ожидают проверки'
+				isLoading={rupLoading}
+				rups={reviewRups}
+				title='Рабочие учебные планы'
+				totalPages={1}
+				onPageChange={() => false}
+			/>
+
+			<AwardsCard
+				awards={reviewAwards}
+				currentPage={1}
+				description='Ожидают проверки'
+				isLoading={awardLoading}
+				title='KPI'
+				totalPages={1}
+				onPageChange={() => false}
+			/>
+
+			<Card className='lg:col-span-4 min-w-0'>
 				<CardHeader>
-					<CardTitle>Ожидают проверки</CardTitle>
-					<CardDescription>Документы и показатели, отправленные преподавателями на согласование.</CardDescription>
+					<CardTitle>Динамика статусов Рабочих учебных планов</CardTitle>
+					<CardDescription>
+						Изменение количества рабочих учебных планов по статусам за последние 7 дней
+					</CardDescription>
 				</CardHeader>
-				<CardContent>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Преподаватель</TableHead>
-								<TableHead>Тип</TableHead>
-								<TableHead>Предмет / Категория</TableHead>
-								<TableHead>Дата подачи</TableHead>
-								<TableHead className='text-right'>Действие</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{pendingReviews.map((review) => (
-								<TableRow key={review.id}>
-									<TableCell className='font-medium'>{review.teacher}</TableCell>
-									<TableCell>
-										<Badge variant='outline'>{review.type}</Badge>
-									</TableCell>
-									<TableCell>{review.subject || review.category}</TableCell>
-									<TableCell>{new Date(review.date).toLocaleDateString('ru-RU')}</TableCell>
-									<TableCell className='text-right'>
-										<Button asChild size='sm'>
-											<Link href={review.link}>Проверить</Link>
-										</Button>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+				<CardContent className='min-w-0'>
+					<StatusChart data={chartData} />
 				</CardContent>
 			</Card>
-
-			<div className='grid gap-6 lg:grid-cols-7'>
-				<Card className='lg:col-span-4 min-w-0'>
-					<CardHeader>
-						<CardTitle>Динамика статусов документов</CardTitle>
-						<CardDescription>Изменение количества документов по статусам за последние 7 дней</CardDescription>
-					</CardHeader>
-					<CardContent className='min-w-0'>
-						<StatusChart data={chartData} />
-					</CardContent>
-				</Card>
-
-				<Card className='lg:col-span-3'>
-					<CardHeader>
-						<CardTitle>Последние события</CardTitle>
-						<CardDescription>Лента активности пользователей</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<div className='space-y-4'>
-							{recentEvents.map((event) => (
-								<Link
-									key={event.id}
-									className='flex items-start gap-4 border-b pb-4 last:border-0 last:pb-0 hover:underline'
-									href={`/rup/${event.id}`}
-								>
-									<div className='mt-1 bg-primary/10 p-2 rounded-full'>
-										<Activity className='h-4 w-4 text-primary' />
-									</div>
-									<div className='space-y-1'>
-										<p className='text-sm font-medium leading-none'>{event.user}</p>
-										<p className='text-xs text-muted-foreground'>
-											{event.action}: <span className='font-medium text-foreground'>{event.target}</span>
-										</p>
-										<p className='text-xs text-muted-foreground pt-1'>{event.date}</p>
-									</div>
-								</Link>
-							))}
-						</div>
-					</CardContent>
-				</Card>
-			</div>
 		</div>
 	)
 }
-
-// mock data
-const pendingReviews = [
-	{
-		id: 1,
-		teacher: 'Иванов И.И.',
-		type: 'РУП',
-		subject: 'Web-программирование',
-		date: '2024-08-25',
-		link: '/rups/review/1',
-	},
-	{
-		id: 2,
-		teacher: 'Петрова А.С.',
-		type: 'KPI',
-		category: 'Методическая работа',
-		date: '2024-08-26',
-		link: '/kpi/review/2',
-	},
-	{
-		id: 3,
-		teacher: 'Сидоров В.К.',
-		type: 'РУП',
-		subject: 'Базы данных',
-		date: '2024-08-27',
-		link: '/rups/review/3',
-	},
-	{
-		id: 4,
-		teacher: 'Алексеева О.Н.',
-		type: 'KPI',
-		category: 'Научная работа',
-		date: '2024-08-28',
-		link: '/kpi/review/4',
-	},
-]
-
-const recentEvents = [
-	{
-		id: 1,
-		user: 'Иванов И.И.',
-		action: 'Загрузил РУП',
-		target: 'Web-программирование',
-		date: '10 минут назад',
-	},
-	{
-		id: 2,
-		user: 'Петрова А.С.',
-		action: 'Обновила KPI',
-		target: 'Публикация статьи',
-		date: '1 час назад',
-	},
-	{
-		id: 3,
-		user: 'Сидоров В.К.',
-		action: 'Отправил на проверку',
-		target: 'Базы данных',
-		date: '3 часа назад',
-	},
-	{
-		id: 4,
-		user: 'Алексеева О.Н.',
-		action: 'Исправила замечания',
-		target: 'Научная работа',
-		date: '5 часов назад',
-	},
-	{
-		id: 5,
-		user: 'Иванов И.И.',
-		action: 'Обновил профиль',
-		target: 'Личные данные',
-		date: 'Вчера',
-	},
-]

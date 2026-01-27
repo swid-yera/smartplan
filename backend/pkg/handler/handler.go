@@ -82,6 +82,7 @@ func (r *Router) Init() *gin.Engine {
 		protected.GET("/me", r.user.GetMe)
 		protected.GET("/users", r.user.GetUsers)
 		protected.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
+		protected.GET("/users/rating", r.user.GetUsersRating)
 
 		// --- RUPS ---
 		rups := protected.Group("/rups")
@@ -100,8 +101,6 @@ func (r *Router) Init() *gin.Engine {
 		{
 			awards.GET("", r.award.GetAwardsPaginated)
 			awards.GET("/:id", r.award.GetAwardByID)
-			awards.GET("/methodist/:id", r.award.GetAwardsByMethodist)
-			awards.GET("/teacher/:id", r.award.GetAwardsByTeacher)
 
 			awards.POST("", r.award.CreateAward)
 

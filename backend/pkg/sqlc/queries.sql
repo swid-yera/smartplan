@@ -74,6 +74,24 @@ WHERE
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
+-- name: GetUsersRatingPaginated :many
+SELECT *
+FROM users
+WHERE
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    )
+ORDER BY total_points DESC, created_at DESC
+LIMIT $2 OFFSET $3;
+
 -- name: CountUsersFiltered :one
 SELECT COUNT(*)
 FROM users
@@ -91,6 +109,13 @@ WHERE
 
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
+
+-- name: UpdateUserTotalPoints :exec
+UPDATE users
+SET
+    total_points = total_points + $2
+WHERE
+    keycloak_id = $1;
 
 -- name: CreateRupResource :one
 INSERT INTO
@@ -241,19 +266,22 @@ VALUES (
 SELECT * FROM rups ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 
 -- name: GetRupsPaginated :many
-SELECT * 
-FROM rups WHERE 
+SELECT *
+FROM rups WHERE
     (
-        $1 = '' 
+        $1 = ''
         OR name ILIKE '%' || $1 || '%'
-    ) 
+    )
     AND (
-        sqlc.narg('teacher')::uuid IS NULL 
+        sqlc.narg('teacher')::uuid IS NULL
         OR teacher = sqlc.narg('teacher')::uuid
     ) AND (
-        sqlc.narg('methodist')::uuid IS NULL 
+        sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
-    )AND status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    )AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    )
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
@@ -277,7 +305,10 @@ WHERE
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
     )
-    AND status = ANY(sqlc.arg(status)::text[]::rups_status[]);
+    AND (
+        sqlc.narg('status')::text[] IS NULL
+        OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    );
 
 -- name: CountRups :one
 SELECT COUNT(*) FROM rups;
@@ -422,12 +453,6 @@ WHERE
 -- name: DeleteAward :exec
 DELETE FROM awards WHERE id = $1;
 
--- name: GetAwardsByMethodist :many
-SELECT * FROM awards WHERE methodist = $1;
-
--- name: GetAwardsByTeacher :many
-SELECT * FROM awards WHERE teacher = $1;
-
 -- name: CreateAwardType :one
 INSERT INTO
     award_types (name, variants)
@@ -533,7 +558,7 @@ INSERT INTO
         rup_name,
         discipline_name,
         topic_name,
-        teacher_id, 
+        teacher_id,
         event_date,
         group_id,
         type,
@@ -542,7 +567,8 @@ INSERT INTO
         expected,
         internet_resources,
         technical_resources
-)VALUES (
+    )
+VALUES (
         $1,
         $2,
         $3,
@@ -560,7 +586,7 @@ INSERT INTO
 -- name: UpdateLesson :exec
 UPDATE lessons
 SET
-    rup_name = $2, 
+    rup_name = $2,
     discipline_name = $3,
     topic_name = $4,
     event_date = $5,
@@ -579,21 +605,27 @@ WHERE
 SELECT * FROM lessons WHERE id = $1;
 
 -- name: GetLessons :many
-SELECT * FROM lessons
+SELECT *
+FROM lessons
 WHERE
-    event_date >= $1 AND
-    event_date <= $2
+    event_date >= $1
+    AND event_date <= $2
 ORDER BY event_date DESC
-LIMIT $3 OFFSET $4;
+LIMIT $3
+OFFSET
+    $4;
 
 -- name: GetLessonsTeacher :many
-SELECT * FROM lessons
+SELECT *
+FROM lessons
 WHERE
-    teacher_id = $1 AND
-    event_date >= $2 AND
-    event_date <= $3
+    teacher_id = $1
+    AND event_date >= $2
+    AND event_date <= $3
 ORDER BY event_date DESC
-LIMIT $4 OFFSET $5;
+LIMIT $4
+OFFSET
+    $5;
 
 -- name: DeleteLesson :exec
 DELETE FROM lessons WHERE id = $1;
@@ -606,13 +638,8 @@ INSERT INTO
         start_minute,
         end_minute,
         content
-) VALUES (
-        $1,
-        $2,
-        $3,
-        $4,
-        $5
-    ) RETURNING id;
+    )
+VALUES ($1, $2, $3, $4, $5) RETURNING id;
 
 -- name: UpdateLessonProgress :exec
 UPDATE lesson_progress
@@ -628,12 +655,11 @@ WHERE
 SELECT * FROM lesson_progress WHERE id = $1;
 
 -- name: GetLessonProgressByLessonID :many
-SELECT * FROM lesson_progress
+SELECT *
+FROM lesson_progress
 WHERE
     lesson_id = $1
 ORDER BY name ASC;
 
 -- name: DeleteLessonProgress :exec
 DELETE FROM lesson_progress WHERE id = $1;
-
-

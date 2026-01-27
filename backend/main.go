@@ -101,7 +101,8 @@ func main() {
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
 	lessonService := service.NewLessonService(lessonRepo, log)
-	awardService := service.NewAwardService(awardRepo, minioRepo, log)
+
+	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	syncGuard := service.NewSyncGuard(1 * time.Minute)
 

@@ -1,39 +1,52 @@
 'use client'
 
-import { useState } from 'react'
-
 import type { NextPage } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, RupsCard } from '@components'
 import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { UserRoleEnum } from '@types'
+import { StatusEnum, UserRoleEnum } from '@types'
 
 import { NewCard, RupsFilterCard } from './components/'
 
 const Page: NextPage = () => {
+	const searchParams = useSearchParams()
+	const router = useRouter()
+	const pathname = usePathname()
 	const { authLoading, user } = useAuthStore()
 
-	// states
-	const [currentPage, setCurrentPage] = useState(1)
+	const page = Number(searchParams.get('page')) || 1
+	const q = searchParams.get('q') || ''
+	const status = (searchParams.get('status') || '').split(',') as StatusEnum[]
+	const teacherId = hasRole(user?.role || UserRoleEnum.TEACHER, UserRoleEnum.TEACHER, false) ? user?.keycloakId : ''
 
 	// queries
-	const { data: allRups = [], isLoading } = useQuery({
-		...services.rup.getAllOptions(),
+	const { data: rupsData, isLoading } = useQuery({
+		...services.rup.getAllOptions({
+			currentPage: page,
+			pageSize: 100,
+			search: q,
+			status,
+			teacher: teacherId,
+		}),
 		enabled: !authLoading && !!user,
 	})
 
-	if (isLoading || authLoading) return <Loader />
+	const setCurrentPage = (newPage: number) => {
+		const params = new URLSearchParams(searchParams.toString())
+
+		params.set('page', String(newPage))
+		router.push(`${pathname}?${params.toString()}`)
+	}
+
+	if (authLoading) return <Loader />
 	if (!user) return notFound()
 
 	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER, false)
 	const canCreate = hasRole(user.role, UserRoleEnum.TEACHER, true)
-
-	const totalPages = Math.ceil(allRups.length / 10)
-	const paginatedRups = allRups.slice((currentPage - 1) * 10, currentPage * 10)
 
 	return (
 		<div className='space-y-6 p-6'>
@@ -49,7 +62,7 @@ const Page: NextPage = () => {
 
 			<div className='grid gap-6 lg:grid-cols-5'>
 				<div className={canCreate ? 'lg:col-span-3' : 'lg:col-span-5'}>
-					<RupsFilterCard className='h-full' role={'METHODIST'} />
+					<RupsFilterCard className='h-full' />
 				</div>
 
 				{canCreate && (
@@ -60,10 +73,11 @@ const Page: NextPage = () => {
 			</div>
 
 			<RupsCard
-				currentPage={currentPage}
-				rups={paginatedRups}
+				currentPage={rupsData?.meta.currentPage || 1}
+				isLoading={isLoading}
+				rups={rupsData?.data || []}
 				title={isTeacher ? 'Мои рабочие учебные планы' : 'Все рабочие учебные планы'}
-				totalPages={totalPages}
+				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>
 		</div>

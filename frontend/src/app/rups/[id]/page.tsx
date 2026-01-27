@@ -6,11 +6,11 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
-import { hasRole, isAuthor, normalizeRupStatus } from '@helpers'
+import { hasRole, isAuthor, normalizeStatus } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateRupStatusRequest, RupStatusEnum, UserRoleEnum } from '@types'
+import { type IUpdateStatusRequest, StatusEnum, UserRoleEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -61,14 +61,14 @@ const Page: FC = () => {
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
 
 	// change rup status
-	const handleStatusChange = (newStatus: RupStatusEnum, reason?: string) => {
+	const handleStatusChange = (newStatus: StatusEnum, reason?: string) => {
 		if (!rupData) return
 		setIsSheetOpen(false)
 
 		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
 
 		toast.loading('Изменение статуса...', { id: toastId })
-		const updateStatusPayload: IUpdateRupStatusRequest = { id: rupData.id, status: newStatus, reason }
+		const updateStatusPayload: IUpdateStatusRequest = { id: rupData.id, status: newStatus, reason }
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
@@ -130,12 +130,10 @@ const Page: FC = () => {
 
 	// bools
 	const isAdmin = hasRole(user.role, UserRoleEnum.ADMIN)
-	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER)
-	const isStatusForEdit = rupData.status === RupStatusEnum.DRAFT || rupData.status === RupStatusEnum.REJECTED
+	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	// conditions
-	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
-	const canDownload = rupData.status === RupStatusEnum.APPROVED
+	const canDownload = rupData.status === StatusEnum.APPROVED
 
 	return (
 		<>
@@ -153,7 +151,7 @@ const Page: FC = () => {
 								Поменять статус
 							</Button>
 						)}
-						{isRupCreator && (
+						{isRupCreator && isStatusForEdit && (
 							<Button
 								className='hover:text-destructive'
 								size='sm'
@@ -164,7 +162,7 @@ const Page: FC = () => {
 								Удалить
 							</Button>
 						)}
-						{canEdit && (
+						{isRupCreator && isStatusForEdit && (
 							<Button asChild size='sm' variant='outline'>
 								<Link href={`/rups/${params.id}/edit`}>
 									<Edit /> Редактировать
@@ -177,15 +175,15 @@ const Page: FC = () => {
 								Скачать файл
 							</Button>
 						)}
-						{isStatusForEdit && (
+						{isRupCreator && isStatusForEdit && (
 							<Button
 								className='hover:text-primary'
 								size='sm'
 								variant='outline'
-								onClick={() => handleStatusChange(RupStatusEnum.IN_REVIEW)}
+								onClick={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 							>
 								<SendIcon />
-								Отправить на согласование
+								Отправить на проверке
 							</Button>
 						)}
 					</ButtonGroup>
@@ -215,11 +213,11 @@ export default Page
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean
 	setIsSheetOpen: (state: boolean) => void
-	handleStatusChange: (newStatus: RupStatusEnum, reason: string) => void
+	handleStatusChange: (newStatus: StatusEnum, reason: string) => void
 }
 
 const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsSheetOpen, handleStatusChange }) => {
-	const [newStatus, setNewStatus] = useState<RupStatusEnum | undefined>(undefined)
+	const [newStatus, setNewStatus] = useState<StatusEnum | undefined>(undefined)
 	const [reason, setReason] = useState('')
 
 	const onSheetSubmit = () => {
@@ -241,14 +239,14 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 				<div className='grid flex-1 auto-rows-min gap-6 p-4'>
 					<div className='grid gap-2'>
 						<Label htmlFor='status'>Статус</Label>
-						<Select value={newStatus} onValueChange={(val) => setNewStatus(val as RupStatusEnum)}>
+						<Select value={newStatus} onValueChange={(val) => setNewStatus(val as StatusEnum)}>
 							<SelectTrigger className='w-full' id='status'>
 								<SelectValue placeholder='Выберите статус' />
 							</SelectTrigger>
 							<SelectContent>
-								{Object.values(RupStatusEnum).map((status) => (
+								{Object.values(StatusEnum).map((status) => (
 									<SelectItem key={status} value={status}>
-										{normalizeRupStatus(status)}
+										{normalizeStatus(status)}
 									</SelectItem>
 								))}
 							</SelectContent>

@@ -53,7 +53,6 @@ import {
 	useWatch,
 } from 'react-hook-form'
 
-// --- Types ---
 type Topic = {
 	name: string
 	type: TopicTypeEnum

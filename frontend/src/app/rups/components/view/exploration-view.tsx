@@ -62,7 +62,7 @@ export const ExplorationView: FC<IProps> = ({ data }) => {
 					))}
 				</ol>
 
-				<p className='font-bold indent-4'>Технические средства и материалы:</p>
+				<p className='font-bold indent-4 mt-4'>Технические средства и материалы:</p>
 				<ol className='list-decimal space-y-2 pl-5'>
 					{data.explorationNote.internetResources.map((res, i) => (
 						<li key={i} className='group ml-2'>
