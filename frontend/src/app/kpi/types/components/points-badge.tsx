@@ -1,4 +1,4 @@
-import { Badge } from '@ui'
+import { Badge } from '@shadcn'
 
 export const PointsBadge = ({ points }: { points: number[] }) => {
 	if (!points?.length) return null

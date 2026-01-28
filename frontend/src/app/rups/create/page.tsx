@@ -9,9 +9,24 @@ import { Loader, PageTitle } from '@components'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
 import { services } from '@services'
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	Badge,
+	Button,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from '@shadcn'
 import { useMutation } from '@tanstack/react-query'
 import { type ICreateRupRequest, RupTypeEnum, StudyFormEnum } from '@types'
-import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -51,12 +66,15 @@ const Page: NextPage = () => {
 	const router = useRouter()
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
+
 	const [currentStep, setCurrentStep] = useState(searchParams.get('step') || '1')
 	const [highestStep, setHighestStep] = useState(Number(currentStep))
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [isHydrating, setIsHydrating] = useState(true)
 
-	// queries
+	const [isValidating, setIsValidating] = useState(false)
+	const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+
 	const createMutation = useMutation(services.rup.createOptions())
 
 	const methods = useForm<RUPFormData>({
@@ -66,21 +84,13 @@ const Page: NextPage = () => {
 		defaultValues,
 	})
 
-	// This effect synchronizes the component's state with the URL's search param.
 	useEffect(() => {
 		const stepFromUrl = searchParams.get('step') || '1'
 
-		if (stepFromUrl !== currentStep) {
-			setCurrentStep(stepFromUrl)
-		}
-
-		if (Number(stepFromUrl) > highestStep) {
-			setHighestStep(Number(stepFromUrl))
-		}
+		if (stepFromUrl !== currentStep) setCurrentStep(stepFromUrl)
+		if (Number(stepFromUrl) > highestStep) setHighestStep(Number(stepFromUrl))
 	}, [searchParams, currentStep, highestStep])
 
-	// This effect hydrates the form with data from localStorage on the client-side.
-	// It runs only once after the initial render to prevent hydration errors.
 	useEffect(() => {
 		const savedData = window.localStorage.getItem(LOCAL_STORAGE_KEY)
 
@@ -88,49 +98,33 @@ const Page: NextPage = () => {
 			try {
 				const parsedData = JSON.parse(savedData)
 
-				// Use reset to update the form with the saved data.
-				// We merge with defaultValues to ensure the form shape is always correct.
 				methods.reset({ ...defaultValues, ...parsedData })
 			} catch (e) {
-				console.error('Failed to parse or load form data from localStorage', e)
+				console.error('Failed to parse or load form data', e)
 				window.localStorage.removeItem(LOCAL_STORAGE_KEY)
 			}
 		}
-
 		const savedHighestStep = window.localStorage.getItem(HIGHEST_STEP_STORAGE_KEY)
 
-		if (savedHighestStep) {
-			setHighestStep(Number(savedHighestStep))
-		}
+		if (savedHighestStep) setHighestStep(Number(savedHighestStep))
 		setIsHydrating(false)
-		// No matter what, we stop hydrating after the first check.
-	}, [methods]) // This effect runs only once on mount.
+	}, [methods])
 
-	// This effect subscribes to form changes and saves them to localStorage.
 	useEffect(() => {
-		// Prevent saving to localStorage before hydration or after submission.
 		if (isHydrating) return
-
 		const subscription = methods.watch((value) => {
 			try {
-				// To avoid saving incomplete default data on first load, we can check for a title.
-				// This is a simple way to ensure the user has interacted with the form.
-				if (value.name) {
-					window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(value))
-				}
+				if (value.name) window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(value))
 			} catch (e) {
-				console.error('Failed to save form data to localStorage', e)
+				console.error('Failed to save form data', e)
 			}
 		})
 
 		return () => subscription.unsubscribe()
 	}, [methods, isHydrating])
 
-	// This effect saves the highest step to localStorage.
 	useEffect(() => {
-		if (!isHydrating) {
-			window.localStorage.setItem(HIGHEST_STEP_STORAGE_KEY, String(highestStep))
-		}
+		if (!isHydrating) window.localStorage.setItem(HIGHEST_STEP_STORAGE_KEY, String(highestStep))
 	}, [highestStep, isHydrating])
 
 	const currentIndex = tabs.findIndex((t) => t.id === currentStep)
@@ -140,17 +134,36 @@ const Page: NextPage = () => {
 	}
 
 	const onReset = () => {
-		window.localStorage.removeItem(LOCAL_STORAGE_KEY)
-		window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
-
+		window.localStorage.removeItem('rup-create-form-data')
+		window.localStorage.removeItem('rup-create-highest-step')
 		methods.reset(defaultValues)
 	}
 
 	const goNext = async () => {
 		const fields = stepFields[currentStep as keyof typeof stepFields]
+
 		const isValid = await methods.trigger(fields as (keyof RUPFormData)[], { shouldFocus: true })
 
 		if (!isValid) {
+			const errors = methods.formState.errors
+
+			const currentStepErrors = fields.map((field) => (errors as string)[field]?.message).filter(Boolean) // Убираем пустые значения
+
+			if (currentStepErrors.length > 0) {
+				toast.error('Проверьте следующие поля:', {
+					description: (
+						<ul className='list-disc pl-4 mt-1'>
+							{currentStepErrors.slice(0, 3).map((msg, i) => (
+								<li key={i}>{msg}</li>
+							))}
+							{currentStepErrors.length > 3 && <li>и еще {currentStepErrors.length - 3}...</li>}
+						</ul>
+					),
+				})
+			} else {
+				toast.error('Пожалуйста, заполните все обязательные поля корректно')
+			}
+
 			return
 		}
 
@@ -163,19 +176,32 @@ const Page: NextPage = () => {
 		if (currentIndex > 0) handleStepChange(tabs[currentIndex - 1].id)
 	}
 
+	const handlePreSave = async () => {
+		setIsValidating(true)
+
+		setTimeout(async () => {
+			const isValid = await methods.trigger(undefined, { shouldFocus: true })
+
+			setIsValidating(false)
+
+			if (isValid) {
+				setIsConfirmOpen(true)
+			} else {
+				toast.error('Пожалуйста, исправьте ошибки в форме перед сохранением')
+			}
+		}, 0)
+	}
+
 	const onSubmit = async (newData: RUPFormData) => {
+		setIsConfirmOpen(false)
 		setIsSubmitting(true)
 
-		// mapped disciplines
 		const mappedDisciplines = newData.disciplines.map((discipline) => ({
 			...discipline,
 			name: (discipline.name ?? '').trim(),
-
 			topics: discipline.topics.map((topic) => ({
 				...topic,
 				name: (topic.name ?? '').trim(),
-
-				// undefined to 0
 				individualHours: topic.individualHours ?? 0,
 				srspHours: topic.srspHours ?? 0,
 				srsHours: topic.srsHours ?? 0,
@@ -187,22 +213,17 @@ const Page: NextPage = () => {
 			goals: (newData.goals ?? '').trim(),
 			competencies: (newData.competencies ?? '').trim(),
 			summary: '',
-
 			prerequisites: (newData.prerequisites ?? '').trim(),
 			postrequisites: (newData.postrequisites ?? '').trim(),
-
 			internetResources: newData.internetResources,
 			technicalResources: newData.technicalResources,
 		}
 
-		// mapped data
 		const mappedData: ICreateRupRequest = {
 			...newData,
-
 			name: (newData.name ?? '').trim(),
 			groups: [newData.groupId],
 			disciplines: mappedDisciplines,
-
 			explorationNote: mappedExplorationNote,
 		}
 
@@ -210,26 +231,19 @@ const Page: NextPage = () => {
 
 		toast.loading(`Создание ${mappedData.name}...`, { id: toastId })
 
-		setIsSubmitting(true)
 		createMutation.mutate(
 			{ newRup: mappedData },
 			{
 				onSuccess: (createdRup) => {
 					setIsSubmitting(false)
-					window.localStorage.removeItem(LOCAL_STORAGE_KEY)
-					window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
-
+					window.localStorage.removeItem('rup-create-form-data')
+					window.localStorage.removeItem('rup-create-highest-step')
 					toast.success(`${createdRup.name} успешно создан`, { id: toastId })
-
 					router.push(`/rups/${createdRup.id}`)
 				},
 				onError: (err) => {
 					setIsSubmitting(false)
-
-					toast.error(`Произошла ошибка при обновлений ${mappedData.name}`, {
-						id: toastId,
-						description: err.message,
-					})
+					toast.error(`Ошибка: ${err.message}`, { id: toastId })
 				},
 			},
 		)
@@ -243,10 +257,31 @@ const Page: NextPage = () => {
 
 	return (
 		<FormProvider {...methods}>
+			<AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+				{/* ОБНОВЛЕНО: Добавлены классы анимации (duration, animate-in, fade-in, zoom-in).
+            Они должны работать, если настроен tailwindcss-animate.
+        */}
+				<AlertDialogContent className='duration-200 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95'>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Вы точно хотите сохранить?</AlertDialogTitle>
+						<AlertDialogDescription>
+							После сохранения редактирование с помощью ИИ будет недоступно. Убедитесь, что все данные заполнены
+							корректно.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isSubmitting}>Отмена</AlertDialogCancel>
+						<AlertDialogAction disabled={isSubmitting} onClick={(e) => methods.handleSubmit(onSubmit)(e)}>
+							{isSubmitting ? 'Сохранение...' : 'Сохранить'}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
 			{isHydrating ? (
 				<Loader type='data' />
 			) : (
-				<form onKeyDown={handleKeyDown} onSubmit={methods.handleSubmit(onSubmit)}>
+				<form onKeyDown={handleKeyDown} onSubmit={(e) => e.preventDefault()}>
 					<Tabs className='w-full mx-auto px-4 py-6' value={currentStep} onValueChange={handleStepChange}>
 						<TabsList className='flex w-full justify-between bg-background border-0 p-0 rounded-none my-5'>
 							{tabs.map((step, index) => {
@@ -266,7 +301,6 @@ const Page: NextPage = () => {
 												setCurrentStep(step.id)
 											}}
 										>
-											{/* Circle */}
 											<div
 												className={cn(
 													'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors duration-300',
@@ -279,8 +313,6 @@ const Page: NextPage = () => {
 											>
 												{isCompleted ? <Check className='h-5 w-5' /> : step.id}
 											</div>
-
-											{/* Title */}
 											<div
 												className={cn(
 													'text-center text-sm font-medium transition-colors',
@@ -290,8 +322,6 @@ const Page: NextPage = () => {
 												{step.title}
 											</div>
 										</TabsTrigger>
-
-										{/* Connector line */}
 										{index < tabs.length - 1 && (
 											<div
 												className={cn(
@@ -307,12 +337,10 @@ const Page: NextPage = () => {
 
 						{tabs.map((tab) => (
 							<TabsContent key={tab.id} className={cn(isHydrating && 'invisible')} value={tab.id}>
-								{/* heading */}
 								<PageTitle sticky className='mb-5' description={tab.description}>
 									{tab.fullTitle} <Badge variant='outline'>Черновик</Badge>
 								</PageTitle>
 
-								{/* content */}
 								{tab.content}
 
 								<div className='flex justify-between items-center gap-4 mt-4'>
@@ -327,9 +355,15 @@ const Page: NextPage = () => {
 									)}
 
 									{currentIndex === tabs.length - 1 ? (
-										<Button disabled={isSubmitting} size='lg' type='submit' variant='secondary'>
-											{isSubmitting && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-											{isSubmitting ? 'Сохранение...' : 'Сохранить'}
+										<Button
+											disabled={isSubmitting || isValidating}
+											size='lg'
+											type='button'
+											variant='secondary'
+											onClick={handlePreSave}
+										>
+											{(isSubmitting || isValidating) && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+											{isSubmitting ? 'Сохранение...' : isValidating ? 'Проверка...' : 'Сохранить'}
 										</Button>
 									) : (
 										<Button size='lg' type='button' onClick={goNext}>
@@ -348,7 +382,6 @@ const Page: NextPage = () => {
 
 export default Page
 
-// steps
 export interface ITab {
 	id: string
 	title: string
@@ -371,7 +404,7 @@ const stepFields = {
 	],
 	'2': ['contacts', 'internetResources', 'technicalResources'],
 	'3': ['disciplines'],
-	'4': ['disciplines'], // Step 4 modifies the disciplines array, so we validate it again.
+	'4': ['disciplines'],
 }
 
 const tabs: ITab[] = [

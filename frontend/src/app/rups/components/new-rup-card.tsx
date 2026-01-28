@@ -2,7 +2,7 @@ import type { ComponentProps, FC } from 'react'
 
 import Link from 'next/link'
 
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 
 export const NewCard: FC<ComponentProps<'div'>> = ({ ...props }) => {
 	return (

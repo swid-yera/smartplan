@@ -1,3 +1,4 @@
+export * from './adapter.types.ts'
 export * from './award.types'
 export * from './global.types'
 export * from './lesson.types'

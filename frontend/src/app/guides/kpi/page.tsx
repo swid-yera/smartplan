@@ -4,9 +4,9 @@ import type { FC, PropsWithChildren } from 'react'
 
 import { Loader, PageTitle } from '@components'
 import { normalizeCriteriaMethod } from '@helpers'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useAuthStore } from '@store'
 import { CriteriaMethodEnum } from '@types'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Separator } from '@ui'
 import { CheckCircle, ClipboardList, type LucideIcon, TrendingUp, Users } from 'lucide-react'
 
 const Page = () => {

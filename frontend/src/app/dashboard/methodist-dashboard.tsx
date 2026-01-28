@@ -1,31 +1,35 @@
 import { useMemo } from 'react'
 
 import dynamic from 'next/dynamic'
-import Link from 'next/link'
 
-import { AwardsCard, PageTitle, RupsCard } from '@components'
-import { isCurrentDay } from '@helpers'
+import { CombineCard, Loader, PageTitle } from '@components'
+import { buildReviewItems, isCurrentDay } from '@helpers'
 import { services } from '@services'
-import { useQuery } from '@tanstack/react-query'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useQueries } from '@tanstack/react-query'
 import { StatusEnum } from '@types'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
 import { CheckCircle, FileText } from 'lucide-react'
+
+import { StatCard } from './stat-card'
 
 const StatusChart = dynamic(() => import('./status-chart'), {
 	ssr: false,
 	loading: () => <div className='h-96 w-full bg-muted animate-pulse rounded-lg' />,
 })
 
+const queryParams = { currentPage: 1, pageSize: 10, status: [StatusEnum.IN_REVIEW] }
+
 export const MethodistDashboard = () => {
-	const { data: rupData, isLoading: rupLoading } = useQuery({
-		...services.rup.getAllOptions({ currentPage: 1, pageSize: 999 }),
-	})
-	const { data: awardData, isLoading: awardLoading } = useQuery({
-		...services.award.getAllOptions({ currentPage: 1, pageSize: 999 }),
+	const [rupsQuery, awardsQuery] = useQueries({
+		queries: [services.rup.getAllOptions(queryParams), services.award.getAllOptions(queryParams)],
 	})
 
-	const rups = rupData?.data || []
-	const awards = awardData?.data || []
+	const isLoading = rupsQuery.isLoading || awardsQuery.isLoading
+
+	const rups = rupsQuery.data?.data ?? []
+	const awards = awardsQuery.data?.data ?? []
+	const totalCount =
+		(rupsQuery?.data?.meta.total || 0) + (awardsQuery?.data?.meta.total || 0) - (rups.length + awards.length)
 
 	const reviewRups = rups.filter((r) => r.status === StatusEnum.IN_REVIEW) || []
 	const reviewRupsCount = reviewRups?.length || 0
@@ -37,9 +41,12 @@ export const MethodistDashboard = () => {
 	const approvedAwardsCount =
 		awards.filter((a) => a.status === StatusEnum.APPROVED && isCurrentDay(a.updatedAt)).length || 0
 
+	// combine two two data
+	const items = buildReviewItems(rups, awards)
+
 	const chartData = useMemo(() => {
 		const today = new Date()
-		const data = rups || []
+		const data = items || []
 
 		return Array.from({ length: 7 }).map((_, i) => {
 			const date = new Date(today)
@@ -64,91 +71,53 @@ export const MethodistDashboard = () => {
 				in_progress: dayRups.filter((r) => r.status === StatusEnum.DRAFT).length,
 			}
 		})
-	}, [rupData])
+	}, [rupsQuery, awardsQuery])
+
+	if (isLoading) return <Loader type='data' />
 
 	return (
-		<div className='space-y-6'>
-			<PageTitle description='Управление проверками РУП и KPI преподавателей.'>
-				Панель управления администрации
-			</PageTitle>
+		<div className='px-4 space-y-6 pt-6'>
+			<PageTitle description='Контроль и проверка учебных программ и KPI.'>Административная панель</PageTitle>
 
-			<div className='grid gap-6 md:grid-cols-2'>
-				<Card>
-					<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-						<CardTitle className='text-sm font-medium'>РУП</CardTitle>
-						<FileText className='h-4 w-4 text-muted-foreground' />
+			<section className='space-y-6'>
+				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-2 '>
+					<StatCard
+						accent='warning'
+						approvedCount={approvedRupsCount}
+						description='РУП на проверке'
+						href='/rups/review'
+						icon={FileText}
+						reviewCount={reviewRupsCount}
+						title='Рабочие учебные программы'
+					/>
+
+					<StatCard
+						accent='success'
+						approvedCount={approvedAwardsCount}
+						description='Оценка деятельности'
+						href='/kpi/review'
+						icon={CheckCircle}
+						reviewCount={reviewAwardsCount}
+						title='KPI преподавателей'
+					/>
+				</div>
+
+				<CombineCard isLoading={isLoading} items={items} more={totalCount} title='Ожидают проверки' />
+			</section>
+
+			<section>
+				<Card className='lg:col-span-4 min-w-0'>
+					<CardHeader>
+						<CardTitle className='lg:text-xl text-lg'>Динамика статусов Рабочих учебных программ</CardTitle>
+						<CardDescription>
+							Изменение количества рабочих учебных программ по статусам за последние 7 дней
+						</CardDescription>
 					</CardHeader>
-					<CardContent>
-						<div className='flex items-center justify-between'>
-							<div>
-								<div className='text-2xl font-bold'>{reviewRupsCount}</div>
-								<p className='text-xs text-muted-foreground'>Ожидают проверки</p>
-							</div>
-							<div className='text-right'>
-								<div className='text-2xl font-bold'>{approvedRupsCount}</div>
-								<p className='text-xs text-muted-foreground'>За сегодня проверено</p>
-							</div>
-						</div>
-						<Button asChild className='mt-4 w-full' variant='outline'>
-							<Link href='/rups'>Посмотреть все РУП</Link>
-						</Button>
+					<CardContent className='min-w-0'>
+						<StatusChart data={chartData} />
 					</CardContent>
 				</Card>
-
-				<Card>
-					<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-						<CardTitle className='text-sm font-medium'>KPI</CardTitle>
-						<CheckCircle className='h-4 w-4 text-muted-foreground' />
-					</CardHeader>
-					<CardContent>
-						<div className='flex items-center justify-between'>
-							<div>
-								<div className='text-2xl font-bold'>{reviewAwardsCount}</div>
-								<p className='text-xs text-muted-foreground'>Ожидают проверки</p>
-							</div>
-							<div className='text-right'>
-								<div className='text-2xl font-bold'>{approvedAwardsCount}</div>
-								<p className='text-xs text-muted-foreground'>За сегодня проверено</p>
-							</div>
-						</div>
-						<Button asChild className='mt-4 w-full' variant='outline'>
-							<Link href='/kpi'>Посмотреть все KPI</Link>
-						</Button>
-					</CardContent>
-				</Card>
-			</div>
-
-			<RupsCard
-				currentPage={1}
-				description='Ожидают проверки'
-				isLoading={rupLoading}
-				rups={reviewRups}
-				title='Рабочие учебные программы'
-				totalPages={1}
-				onPageChange={() => false}
-			/>
-
-			<AwardsCard
-				awards={reviewAwards}
-				currentPage={1}
-				description='Ожидают проверки'
-				isLoading={awardLoading}
-				title='KPI'
-				totalPages={1}
-				onPageChange={() => false}
-			/>
-
-			<Card className='lg:col-span-4 min-w-0'>
-				<CardHeader>
-					<CardTitle>Динамика статусов Рабочих учебных программ</CardTitle>
-					<CardDescription>
-						Изменение количества рабочих учебных программ по статусам за последние 7 дней
-					</CardDescription>
-				</CardHeader>
-				<CardContent className='min-w-0'>
-					<StatusChart data={chartData} />
-				</CardContent>
-			</Card>
+			</section>
 		</div>
 	)
 }

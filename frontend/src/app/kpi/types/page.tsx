@@ -4,8 +4,8 @@ import Link from 'next/link'
 
 import { Loader, PageTitle } from '@components'
 import { services } from '@services'
+import { Button } from '@shadcn'
 import { useQuery } from '@tanstack/react-query'
-import { Button } from '@ui'
 import { Plus } from 'lucide-react'
 
 import { TypesList } from './types-list'

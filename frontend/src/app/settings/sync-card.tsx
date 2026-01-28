@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ui'
+import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle } from '@shadcn'
 import { RefreshCw } from 'lucide-react'
 
 interface SyncGroupsCardProps {

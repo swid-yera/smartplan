@@ -1,6 +1,7 @@
 import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 
 import { cn } from '@lib'
+import type { badgeVariants } from '@shadcn'
 import type {
 	ICreateDiscipline,
 	ICreateSemester,
@@ -10,7 +11,6 @@ import type {
 	StudyFormEnum,
 	TopicTypeEnum,
 } from '@types'
-import type { badgeVariants } from '@ui'
 import type { VariantProps } from 'class-variance-authority'
 import { Combine, FlaskConical, type LucideProps, NotebookPen } from 'lucide-react'
 

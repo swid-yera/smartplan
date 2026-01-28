@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 import { useTheme } from 'next-themes'
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, SidebarMenuButton } from '@ui'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, SidebarMenuButton } from '@shadcn'
 import { Monitor, Moon, Sun } from 'lucide-react'
 
 enum ThemeEnum {

@@ -45,8 +45,13 @@ export function Step4<T extends IProps>() {
 
 		try {
 			setIsLoading(true)
+			toast.info('Генерируется результаты темы занятий', { id: 'rup-topics-generate' })
 
 			const values = getValues()
+
+			if (!values.disciplines || values.disciplines.length == 0) {
+				return toast.error('Заполните результаты обучения', { id: 'rup-topics-generate' })
+			}
 
 			for (let i = 0; i < values.disciplines.length; i++) {
 				const currentDiscipline = values.disciplines[i]
@@ -62,14 +67,24 @@ export function Step4<T extends IProps>() {
 				}
 
 				try {
+					toast.loading(`Генерация тем занятий для ${currentDiscipline.name}`, {
+						id: `rup-topics-generate-${currentDiscipline.name}`,
+					})
+
 					const result = await generateTopicsForDiscipline(mappedData)
 
 					setValue(`disciplines.${i}.topics` as Path<T>, result)
-				} catch (error) {
-					console.error(`Ошибка при генерации тем для ${currentDiscipline.name}:`, error)
-					toast.error(`Ошибка при генерации тем для ${currentDiscipline.name}:`)
+					toast.success(`Успешно сгенерировано тем занятий для ${currentDiscipline.name}`, {
+						id: `rup-topics-generate-${currentDiscipline.name}`,
+					})
+				} catch (err) {
+					toast.error(`Ошибка при генерации тем для ${currentDiscipline.name}: ${err}`, {
+						id: `rup-topics-generate-${currentDiscipline.name}`,
+					})
 				}
 			}
+		} catch (err) {
+			toast.error(`Ошибка при генерации тем занятий ${err}`, { id: 'rup-topics-generate' })
 		} finally {
 			setIsLoading(false)
 		}

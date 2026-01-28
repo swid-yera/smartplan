@@ -24,15 +24,15 @@
 			// "@/*": ["./src/*"],
 			// export * from file
 			"@components": ["./src/components/index.ts"],
-			"@ui": ["./src/components/ui/index.ts"],
 			"@layout": ["./src/components/layout/index.ts"],
-			"@store": ["./src/store/index.ts"],
+			"@shadcn": ["./src/shared/shadcn/index.ts"],
 			"@types": ["./src/shared/types/index.ts"],
+			"@store": ["./src/store/index.ts"],
 			"@services": ["./src/services/index.ts"],
-			"@actions": ["./src/app/actions.ts"],
 			"@lib": ["./src/lib/index.ts"],
 			"@helpers": ["./src/helpers/index.ts"],
 			"@hooks": ["./src/hooks/index.ts"],
+			"@actions": ["./src/app/actions.ts"],
 			"@providers": ["./src/providers/index.ts"]
 		},
 		"plugins": [

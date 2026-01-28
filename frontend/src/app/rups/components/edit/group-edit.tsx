@@ -5,8 +5,6 @@ import { useEffect, useState } from 'react'
 import { formatCourseFromYearAndGroupName, generateStudyYears } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
-import { useQuery } from '@tanstack/react-query'
-import type { IGroup } from '@types'
 import {
 	Button,
 	Card,
@@ -33,7 +31,9 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@ui'
+} from '@shadcn'
+import { useQuery } from '@tanstack/react-query'
+import type { IGroup } from '@types'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 

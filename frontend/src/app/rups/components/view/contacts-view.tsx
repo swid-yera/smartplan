@@ -3,7 +3,6 @@
 import { type FC } from 'react'
 
 import { formatAsDash } from '@helpers'
-import type { IUser } from '@types'
 import {
 	Card,
 	CardContent,
@@ -16,7 +15,8 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from '@ui'
+} from '@shadcn'
+import type { IUser } from '@types'
 import { Mail, Phone, User, UserPlus } from 'lucide-react'
 
 type IProps = {

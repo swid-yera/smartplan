@@ -27,7 +27,7 @@ import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@ui'
+} from '@shadcn'
 import { LinkIcon, Trash } from 'lucide-react'
 import {
 	type ArrayPath,

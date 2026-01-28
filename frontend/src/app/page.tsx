@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 
-import { Button, Card, CardDescription, CardHeader, CardTitle, Heading } from '@ui'
-import { BarChart3, FileText, Loader2 } from 'lucide-react'
+import { services } from '@services'
+import { Button, Card, CardDescription, CardHeader, CardTitle, Heading } from '@shadcn'
+import { useAuthStore } from '@store'
+import { ArrowRightCircle, BarChart3, FileText, Loader2, LogIn } from 'lucide-react'
 
 const features = [
 	{
@@ -30,6 +32,8 @@ const features = [
 ]
 
 const Page = () => {
+	const { authLoading, isAuthenticated } = useAuthStore()
+
 	const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
 		const cardWrapper = e.currentTarget
 		const videoPreview = cardWrapper.querySelector<HTMLDivElement>('.video-preview')
@@ -121,12 +125,18 @@ const Page = () => {
 				))}
 			</div>
 			<div className='mt-12 flex flex-col justify-center gap-2 min-[400px]:flex-row'>
-				<Button asChild>
-					<Link href='/rups'>Перейти к РУП</Link>
-				</Button>
-				<Button asChild variant='outline'>
-					<Link href='/kpi'>Перейти к KPI</Link>
-				</Button>
+				{!authLoading &&
+					(isAuthenticated ? (
+						<Button asChild size='lg'>
+							<Link href='/dashboard'>
+								Перейти к панель управлению <ArrowRightCircle />
+							</Link>
+						</Button>
+					) : (
+						<Button size='lg' onClick={() => services.auth.redirectToLogin()}>
+							Войти в аккаунт <LogIn />
+						</Button>
+					))}
 			</div>
 		</section>
 	)

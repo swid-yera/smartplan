@@ -5,10 +5,10 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination } from '@components'
 import { services } from '@services'
+import { Button } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { StatusEnum } from '@types'
-import { Button } from '@ui'
 
 const MethodistAwardsPage = () => {
 	const searchParams = useSearchParams()

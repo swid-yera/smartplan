@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { TopicTypeBadge } from '@components'
 import { formatAsDash, formatHours } from '@helpers'
 import { cn } from '@lib'
-import type { RupTypeEnum, TopicTypeEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -24,7 +23,8 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from '@ui'
+} from '@shadcn'
+import type { RupTypeEnum, TopicTypeEnum } from '@types'
 import { ChevronDown, Info } from 'lucide-react'
 
 type Topic = {

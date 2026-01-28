@@ -5,8 +5,6 @@ import { type FC, useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import { getCollapseState, hasRole, setCollapseState } from '@helpers'
-import { useAuthStore } from '@store'
-import type { RoleEnum } from '@types'
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -20,7 +18,9 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 	useSidebar,
-} from '@ui'
+} from '@shadcn'
+import { useAuthStore } from '@store'
+import { RoleEnum } from '@types'
 import { ChevronRight } from 'lucide-react'
 
 import type { INav } from './nav-data'
@@ -39,11 +39,9 @@ export const NavMain: FC<IProps> = ({ items }) => {
 		<SidebarGroup>
 			<SidebarGroupLabel>SmartPlan</SidebarGroupLabel>
 			<SidebarMenu>
-				{items
-					.filter((item) => !item.role || hasRole(user.role, item.role, true))
-					.map((item) => (
-						<MenuItem key={item.title} item={item} setOpen={setOpen} userRole={user.role} />
-					))}
+				{items.map((item) => (
+					<MenuItem key={item.title} item={item} setOpen={setOpen} userRole={user.role} />
+				))}
 			</SidebarMenu>
 		</SidebarGroup>
 	)
@@ -56,7 +54,7 @@ interface IMenuItem {
 }
 
 const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
-	if (item.role && item.role !== userRole) return null
+	if (item.role && !hasRole(userRole, item.role, true)) return null
 
 	if (item.items) {
 		const filteredSubItems = item.items.filter((sub) => !sub.role || hasRole(userRole, sub.role, true))

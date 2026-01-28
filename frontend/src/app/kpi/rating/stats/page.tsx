@@ -6,9 +6,9 @@ import Link from 'next/link'
 
 import { Loader, PageTitle } from '@components'
 import { services } from '@services'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useQuery } from '@tanstack/react-query'
 import type { IUser } from '@types'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
 import { ArrowLeft, BarChart3 } from 'lucide-react'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 

@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
 import { services } from '@services'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import type { ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
 import {
 	Button,
 	Card,
@@ -26,7 +24,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Textarea,
-} from '@ui'
+} from '@shadcn'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import type { ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
 import { toast } from 'sonner'
 
 export default function CreateAwardPage() {

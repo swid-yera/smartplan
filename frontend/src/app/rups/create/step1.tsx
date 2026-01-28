@@ -5,6 +5,7 @@ import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
 import { RupTypeEnum, StudyFormEnum } from '@types'
 import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
+import { toast } from 'sonner'
 
 import { BasicEdit, GenerateCard, GroupEdit, NoteEdit } from '../components'
 
@@ -33,22 +34,12 @@ export function Step1<T extends IProps>() {
 		enabled: true,
 	})
 
-	const isBasicFilled = Boolean(
-		getValues('name' as Path<T>) &&
-		getValues('type' as Path<T>) &&
-		getValues('postrequisites' as Path<T>) &&
-		getValues('prerequisites' as Path<T>) &&
-		getValues('studyForm' as Path<T>),
-	)
-	const isGroupFilled = Boolean(
-		getValues('groupId' as Path<T>) && getValues('course' as Path<T>) && getValues('studyYear' as Path<T>),
-	)
-
 	const handleGenerate = async () => {
-		if (isLoading || groupLoading || !isBasicFilled || !isGroupFilled) return
+		if (isLoading || groupLoading) return
 
 		try {
 			setIsLoading(true)
+			toast.loading('Генерируется метаданные', { id: 'rup-meta-generate' })
 
 			const values = getValues()
 			const group = groupsData.find((g) => g.keycloakId === values.groupId)
@@ -72,6 +63,10 @@ export function Step1<T extends IProps>() {
 			setValue('basis' as Path<T>, meta.basis, { shouldDirty: true })
 			setValue('goals' as Path<T>, meta.goals, { shouldDirty: true })
 			setValue('competencies' as Path<T>, meta.competencies, { shouldDirty: true })
+
+			toast.success('Успешно сгенерировано метаданные', { id: 'rup-meta-generate' })
+		} catch (err) {
+			toast.error(`Ошибка при генерации метаданных ${err}`, { id: 'rup-meta-generate' })
 		} finally {
 			setIsLoading(false)
 		}
@@ -87,7 +82,7 @@ export function Step1<T extends IProps>() {
 			<GenerateCard
 				buttonText={isLoading ? 'Генерация…' : 'Сгенерировать'}
 				description='Тексты будут сформированы на основе данных модуля и учебной группы. После генерации вы сможете отредактировать их вручную.'
-				disabled={!isBasicFilled || !isGroupFilled || isLoading || groupLoading}
+				disabled={isLoading || groupLoading}
 				disabledReason='Заполните данные модуля и учебной группы'
 				title='Автоматическая генерация описаний'
 				onClick={() => handleGenerate()}
