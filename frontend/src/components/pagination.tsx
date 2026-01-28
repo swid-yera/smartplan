@@ -31,7 +31,6 @@ export const Pagination: FC<IProps> = ({
 						<SelectTrigger className='h-8 w-20'>
 							<SelectValue />
 						</SelectTrigger>
-
 						<SelectContent side='top'>
 							{pageSizeOptions.map((size) => (
 								<SelectItem key={size} value={String(size)}>

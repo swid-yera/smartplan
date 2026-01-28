@@ -3,21 +3,14 @@
 import Link from 'next/link'
 
 import { Button, Card, CardDescription, CardHeader, CardTitle, Heading } from '@ui'
-import { BarChart3, FileText, GraduationCap, Loader2, ShieldCheck } from 'lucide-react'
+import { BarChart3, FileText, Loader2 } from 'lucide-react'
 
 const features = [
 	{
 		icon: <FileText className='h-16 w-16 text-primary' />,
-		title: 'Автоматизация создания РУП',
+		title: 'Создания РУП',
 		description:
-			'EduPlan использует искусственный интеллект для автоматического создания рабочих учебных планов, значительно сокращая время и усилия, необходимые для их разработки.',
-		preview: '/videos/example.mp4',
-	},
-	{
-		icon: <ShieldCheck className='h-16 w-16 text-primary' />,
-		title: 'Валидация и проверка',
-		description:
-			'Встроенные инструменты валидации обеспечивают соответствие РУП стандартам и требованиям, а также упрощают процесс проверки и утверждения планов методистами.',
+			'SmartPlan использует искусственный интеллект для автоматического создания рабочих учебных программ, значительно сокращая время и усилия, необходимые для их разработки.',
 		preview: '/videos/example.mp4',
 	},
 	{
@@ -28,10 +21,10 @@ const features = [
 		preview: '/videos/example.mp4',
 	},
 	{
-		icon: <GraduationCap className='h-16 w-16 text-primary' />,
-		title: 'Повышение качества образования',
+		icon: <FileText className='h-16 w-16 text-primary' />,
+		title: 'Создание плана учебного занятия',
 		description:
-			'Благодаря автоматизации и объективной оценке, EduPlan способствует повышению общего качества образования, позволяя преподавателям сосредоточиться на обучении.',
+			'SmartPlan использует искусственный интеллект для автоматического создания планов учебных занятий, значительно сокращая время и усилия, необходимые для их разработки.',
 		preview: '/videos/example.mp4',
 	},
 ]
@@ -77,11 +70,11 @@ const Page = () => {
 			<div className='flex flex-col items-center space-y-4 text-center'>
 				<div className='space-y-2'>
 					<Heading align='center' size='h1'>
-						Добро пожаловать в EduPlan
+						Добро пожаловать в SmartPlan
 					</Heading>
 					<p className='mx-auto max-w-[700px] text-muted-foreground md:text-xl'>
-						Система автоматизации создания и управления рабочими учебными планами с использованием ИИ, а также
-						оценки преподавателей по KPI.
+						Система создания и управления рабочими учебными программами с использованием ИИ, а также оценки
+						преподавателей по KPI.
 					</p>
 				</div>
 			</div>

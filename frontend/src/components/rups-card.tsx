@@ -180,7 +180,7 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 								{rup.name + ' '}
 								<StatusBadge status={rup.status} />
 							</SheetTitle>
-							<SheetDescription>Краткая информация о рабочем учебном плане.</SheetDescription>
+							<SheetDescription>Краткая информация о рабочей учебной программе .</SheetDescription>
 						</SheetHeader>
 
 						<div className='grid flex-1 auto-rows-min gap-6 px-4'>

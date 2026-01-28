@@ -8,7 +8,7 @@ import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { StatusEnum, UserRoleEnum } from '@types'
+import { RoleEnum, StatusEnum } from '@types'
 
 import { NewCard, RupsFilterCard } from './components/'
 
@@ -21,7 +21,7 @@ const Page: NextPage = () => {
 	const page = Number(searchParams.get('page')) || 1
 	const q = searchParams.get('q') || ''
 	const status = (searchParams.get('status') || '').split(',') as StatusEnum[]
-	const teacherId = hasRole(user?.role || UserRoleEnum.TEACHER, UserRoleEnum.TEACHER, false) ? user?.keycloakId : ''
+	const teacherId = hasRole(user?.role || RoleEnum.TEACHER, RoleEnum.TEACHER, false) ? user?.keycloakId : ''
 
 	// queries
 	const { data: rupsData, isLoading } = useQuery({
@@ -45,19 +45,19 @@ const Page: NextPage = () => {
 	if (authLoading) return <Loader />
 	if (!user) return notFound()
 
-	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER, false)
-	const canCreate = hasRole(user.role, UserRoleEnum.TEACHER, true)
+	const isTeacher = hasRole(user.role, RoleEnum.TEACHER, false)
+	const canCreate = hasRole(user.role, RoleEnum.TEACHER, true)
 
 	return (
 		<div className='space-y-6 p-6'>
 			<PageTitle
 				description={
 					canCreate
-						? 'Здесь вы можете создавать и управлять своими рабочими учебными планами.'
-						: 'Реестр всех рабочих учебных планов для проверки и утверждения.'
+						? 'Здесь вы можете создавать и управлять своими рабочими учебными программами.'
+						: 'Реестр всех рабочих учебных программ для проверки и утверждения.'
 				}
 			>
-				{isTeacher ? 'Мои рабочие учебные планы' : 'Все рабочие учебные планы'}
+				{isTeacher ? 'Мои рабочие учебные программы' : 'Все рабочие учебные программы'}
 			</PageTitle>
 
 			<div className='grid gap-6 lg:grid-cols-5'>
@@ -76,7 +76,7 @@ const Page: NextPage = () => {
 				currentPage={rupsData?.meta.currentPage || 1}
 				isLoading={isLoading}
 				rups={rupsData?.data || []}
-				title={isTeacher ? 'Мои рабочие учебные планы' : 'Все рабочие учебные планы'}
+				title={isTeacher ? 'Мои рабочие учебные программы' : 'Все рабочие учебные программы'}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>

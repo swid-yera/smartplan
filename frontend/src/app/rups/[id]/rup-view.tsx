@@ -2,7 +2,7 @@ import { type FC, type ReactNode, useState } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
 import { formatHours, hasRole, normalizeStudyForm } from '@helpers'
-import { type IRup, StatusEnum, UserRoleEnum } from '@types'
+import { type IRup, RoleEnum, StatusEnum } from '@types'
 import {
 	Button,
 	ButtonGroup,
@@ -23,7 +23,7 @@ import { BasicView } from '../components/view/basic-view'
 
 interface IRupViewProps {
 	data: IRup
-	role: UserRoleEnum
+	role: RoleEnum
 	onStatusChange: (newStatus: StatusEnum, reason?: string) => void
 	actions?: ReactNode
 }
@@ -31,7 +31,7 @@ interface IRupViewProps {
 export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions }) => {
 	const [generalComment, setGeneralComment] = useState('')
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
-	const isMethodistReview = hasRole(role, UserRoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
+	const isMethodistReview = hasRole(role, RoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
 
 	return (
 		<div className='w-full mx-auto relative'>
@@ -67,12 +67,12 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 				}
 				backHref='/rups'
 				description={
-					hasRole(role, UserRoleEnum.METHODIST)
-						? 'Проверка рабочего учебного плана.'
-						: 'Просмотр рабочего учебного плана. Редактирование запрещено.'
+					hasRole(role, RoleEnum.METHODIST)
+						? 'Проверка рабочей учебной программы.'
+						: 'Просмотр рабочей учебной программы. Редактирование запрещено.'
 				}
 			>
-				{` ${data.name || 'Рабочий учебный план'} `}
+				{` ${data.name || 'Рабочая учебная программа '} `}
 				<StatusBadge status={data.status} />
 			</PageTitle>
 

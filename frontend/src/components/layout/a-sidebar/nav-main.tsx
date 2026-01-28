@@ -1,9 +1,12 @@
 'use client'
 
-import type { FC } from 'react'
+import { type FC, useEffect, useState } from 'react'
 
 import Link from 'next/link'
 
+import { getCollapseState, hasRole, setCollapseState } from '@helpers'
+import { useAuthStore } from '@store'
+import type { RoleEnum } from '@types'
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -18,64 +21,80 @@ import {
 	SidebarMenuSubItem,
 	useSidebar,
 } from '@ui'
-import { ChevronRight, type LucideIcon } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 
-export function NavMain({
-	items,
-}: {
-	items: {
-		title: string
-		url: string
-		icon: LucideIcon
-		items?: {
-			title: string
-			url: string
-		}[]
-	}[]
-}) {
+import type { INav } from './nav-data'
+
+interface IProps {
+	items: INav[]
+}
+
+export const NavMain: FC<IProps> = ({ items }) => {
 	const { setOpen } = useSidebar()
+	const { user, authLoading } = useAuthStore()
+
+	if (authLoading || !user) return
 
 	return (
 		<SidebarGroup>
-			<SidebarGroupLabel>EduPlan</SidebarGroupLabel>
+			<SidebarGroupLabel>SmartPlan</SidebarGroupLabel>
 			<SidebarMenu>
-				{items.map((item) => (
-					<MenuItem key={item.title} item={item} setOpen={setOpen} />
-				))}
+				{items
+					.filter((item) => !item.role || hasRole(user.role, item.role, true))
+					.map((item) => (
+						<MenuItem key={item.title} item={item} setOpen={setOpen} userRole={user.role} />
+					))}
 			</SidebarMenu>
 		</SidebarGroup>
 	)
 }
 
 interface IMenuItem {
-	item: {
-		title: string
-		url: string
-		icon: LucideIcon
-		items?: {
-			icon?: LucideIcon
-			title: string
-			url: string
-		}[]
-	}
+	item: INav
 	setOpen: (open: boolean) => void
+	userRole: RoleEnum
 }
 
-const MenuItem: FC<IMenuItem> = ({ item, setOpen }) => {
+const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
+	if (item.role && item.role !== userRole) return null
+
 	if (item.items) {
+		const filteredSubItems = item.items.filter((sub) => !sub.role || hasRole(userRole, sub.role, true))
+
+		if (!filteredSubItems.length) return null
+
+		const storageKey = `collapse:${item.title}`
+
+		const [open, setOpenState] = useState(false)
+
+		useEffect(() => {
+			const saved = getCollapseState()[storageKey]
+
+			if (typeof saved === 'boolean') setOpenState(saved)
+		}, [storageKey])
+
+		const handleOpenChange = (value: boolean) => {
+			setOpenState(value)
+			setCollapseState(storageKey, value)
+		}
+
 		return (
 			<SidebarMenuItem onClick={() => setOpen(true)}>
-				<Collapsible defaultOpen>
+				<Collapsible open={open} onOpenChange={handleOpenChange}>
 					<CollapsibleTrigger asChild>
-						<SidebarMenuButton tooltip={item.title}>
+						<SidebarMenuButton className='group' tooltip={item.title}>
 							<item.icon />
 							<span>{item.title}</span>
-							<ChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+							<ChevronRight
+								className='ml-auto transition-transform duration-200 group-data-[state=open]:rotate-90'
+								data-state={open ? 'open' : 'closed'}
+							/>
 						</SidebarMenuButton>
 					</CollapsibleTrigger>
+
 					<CollapsibleContent>
 						<SidebarMenuSub>
-							{item.items?.map((subItem) => (
+							{filteredSubItems.map((subItem) => (
 								<SidebarMenuSubItem key={subItem.title}>
 									<SidebarMenuSubButton asChild>
 										<Link href={subItem.url}>
@@ -93,7 +112,7 @@ const MenuItem: FC<IMenuItem> = ({ item, setOpen }) => {
 	}
 
 	return (
-		<SidebarMenuItem key={item.url}>
+		<SidebarMenuItem>
 			<SidebarMenuButton asChild tooltip={item.title}>
 				<Link href={item.url}>
 					<item.icon />

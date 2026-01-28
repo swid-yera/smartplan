@@ -9,8 +9,8 @@ import { BookOpen, Bot, FileText, Sparkles } from 'lucide-react'
 export default function LessonPlansPage() {
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
-			<PageTitle description='Автоматическое создание поурочных планов с учетом учебных программ и требований'>
-				Генерация поурочных планов
+			<PageTitle description='Автоматическое создание плана учебного занятия с учетом учебных программ и требований'>
+				Генерация плана учебного занятия
 			</PageTitle>
 
 			{/* Что это */}
@@ -18,15 +18,15 @@ export default function LessonPlansPage() {
 				<CardHeader>
 					<CardTitle className='flex items-center gap-2'>
 						<BookOpen className='h-5 w-5 text-primary' />
-						Что такое генерация поурочных планов
+						Что такое генерация плана учебного занятия
 					</CardTitle>
 					<CardDescription>Интеллектуальный инструмент для преподавателей</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-3 text-sm leading-relaxed'>
 					<p>
-						Генерация поурочных планов — это автоматизированный процесс создания структурированных планов занятий
-						на основе рабочей учебной программы, дисциплины, темы и количества часов.
+						Генерация планов учебного занятия — это автоматизированный процесс создания структурированных планов
+						занятий на основе рабочей учебной программы, дисциплины, темы и количества часов.
 					</p>
 
 					<p>
@@ -70,7 +70,7 @@ export default function LessonPlansPage() {
 				<CardContent className='space-y-2 text-sm text-muted-foreground'>
 					<ul className='list-disc list-inside space-y-1'>
 						<li>Экономия времени на подготовку занятий</li>
-						<li>Единый стандарт оформления поурочных планов</li>
+						<li>Единый стандарт оформления планов учебного занятия</li>
 						<li>Соответствие учебным программам и требованиям</li>
 						<li>Возможность редактирования и доработки</li>
 						<li>Хранение и быстрый доступ к ранее созданным планам</li>

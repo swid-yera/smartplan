@@ -1,13 +1,5 @@
-import type { StatusEnum } from '../global.types'
-import type {
-	IDiscipline,
-	IResources,
-	IRupExplorationNote,
-	ISemester,
-	ITopics,
-	RupTypeEnum,
-	StudyFormEnum,
-} from '../rup.types'
+import type { IResources, StatusEnum } from '../global.types'
+import type { IDiscipline, IRupExplorationNote, ISemester, ITopics, RupTypeEnum, StudyFormEnum } from '../rup.types'
 import type { IPaginationRequest } from './global.service.types'
 
 // create

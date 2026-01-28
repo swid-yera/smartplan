@@ -8,7 +8,7 @@ export enum StatusEnum {
 	REJECTED = 'REJECTED',
 }
 
-export enum UserRoleEnum {
+export enum RoleEnum {
 	TEACHER = 'TEACHER',
 	METHODIST = 'METHODIST',
 	ADMIN = 'ADMIN',
@@ -36,7 +36,7 @@ export interface IUser {
 
 	username: string
 	email?: string
-	role: UserRoleEnum
+	role: RoleEnum
 
 	firstName: string
 	lastName: string
@@ -48,5 +48,22 @@ export interface IUser {
 	violation?: ViolationEnum
 
 	createdAt: string
+	updatedAt: string
+}
+
+// resources
+export interface IResources {
+	id: string
+	name: string
+	link?: string
+}
+
+// guides
+export interface IGuide {
+	id: string
+	title: string
+	description: string
+	category: string
+	level: 'beginner' | 'intermediate' | 'advanced'
 	updatedAt: string
 }

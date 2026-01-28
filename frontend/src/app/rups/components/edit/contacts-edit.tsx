@@ -82,7 +82,7 @@ export function ContactsEdit<T extends IProps>({
 			<CardHeader className='flex flex-row items-center justify-between space-y-0'>
 				<div className='space-y-1'>
 					<CardTitle className='text-xl'>Педагогический состав</CardTitle>
-					<CardDescription>Укажите преподавателей, ответственных за данный план</CardDescription>
+					<CardDescription>Укажите преподавателей, ответственных за данной программой</CardDescription>
 				</div>
 				<TeacherSelector
 					teachersData={teachersData}

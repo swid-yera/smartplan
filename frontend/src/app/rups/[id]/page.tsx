@@ -10,7 +10,7 @@ import { hasRole, isAuthor, normalizeStatus } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateStatusRequest, StatusEnum, UserRoleEnum } from '@types'
+import { type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -129,7 +129,7 @@ const Page: FC = () => {
 	if (!user || !rupData) return notFound()
 
 	// bools
-	const isAdmin = hasRole(user.role, UserRoleEnum.ADMIN)
+	const isAdmin = hasRole(user.role, RoleEnum.ADMIN)
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	// conditions
@@ -287,7 +287,7 @@ const DeleteAlert: FC<IDeleteAlert> = ({ isDeleteDialogOpen, setIsDeleteDialogOp
 				<AlertDialogHeader>
 					<AlertDialogTitle>Вы уверены?</AlertDialogTitle>
 					<AlertDialogDescription>
-						Это действие невозможно отменить. Это приведет к необратимому удалению рабочего учебного плана.
+						Это действие невозможно отменить. Это приведет к необратимому удалению рабочей учебной программы.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

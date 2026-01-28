@@ -13,9 +13,11 @@ export function ASidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	return (
 		<Sidebar className='border-r-0' collapsible='icon' variant='floating' {...props}>
 			<ASidebarHeader />
+
 			<SidebarContent>
 				<NavMain items={navMain} />
 			</SidebarContent>
+
 			<SidebarFooter>
 				<NavFooter items={navFooter} />
 			</SidebarFooter>
