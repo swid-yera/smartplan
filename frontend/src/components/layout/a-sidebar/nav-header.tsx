@@ -15,7 +15,7 @@ import {
 	TooltipTrigger,
 	useSidebar,
 } from '@ui'
-import { LogInIcon } from 'lucide-react'
+import { GraduationCap, LogInIcon } from 'lucide-react'
 
 import { NavUser } from './nav-user'
 
@@ -25,9 +25,10 @@ export function ASidebarHeader() {
 
 	return (
 		<SidebarHeader>
-			<div className='flex items-center justify-between group-data-[collapsible=icon]:justify-center'>
-				<div className='font-bold text-primary whitespace-nowrap overflow-hidden transition-all duration-500 max-w-40 opacity-100 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0'>
-					EduPlan
+			<div className='pb-2 flex items-center justify-between group-data-[collapsible=icon]:justify-center'>
+				<div className='flex justify-center items-top font-bold text-primary whitespace-nowrap overflow-hidden transition-all duration-500 max-w-40 opacity-100 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0'>
+					<GraduationCap className='inline' size={36} />
+					<span className='pl-2 text-2xl'>SmartPlan</span>
 				</div>
 
 				{/* logotype */}

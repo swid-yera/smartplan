@@ -1,6 +1,7 @@
 export * from './awards-card'
 export * from './editable-hour-cell'
 export * from './forbidden'
+export * from './groups-card'
 export * from './loader'
 export * from './page-title'
 export * from './pagination'

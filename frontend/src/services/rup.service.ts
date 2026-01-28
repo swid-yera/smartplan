@@ -24,7 +24,7 @@ export class RupService {
 						search,
 						methodist,
 						teacher,
-						status,
+						status: status?.join(','),
 					},
 				})
 

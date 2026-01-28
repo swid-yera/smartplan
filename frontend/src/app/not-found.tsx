@@ -18,7 +18,7 @@ const Page: NextPage = () => {
 				<h1 className='text-8xl font-black tracking-tighter text-foreground select-none'>404</h1>
 				<h2 className='text-2xl font-semibold tracking-tight'>Страница не найдена</h2>
 				<p className='text-muted-foreground text-lg'>
-					Кажется, вы зашли слишком далеко. Этой страницы не существует в наших учебных планах.
+					Кажется, вы зашли слишком далеко. Этой страницы не существует в наших учебных программах.
 				</p>
 			</div>
 

@@ -44,7 +44,7 @@ export function BasicEdit<T extends IProps>() {
 		<Card>
 			<CardHeader>
 				<CardTitle>Общие сведения</CardTitle>
-				<CardDescription>Основные данные модуля рабочего учебного плана.</CardDescription>
+				<CardDescription>Основные данные модуля рабочей учебной программы.</CardDescription>
 			</CardHeader>
 
 			<CardContent className='space-y-3 text-sm'>

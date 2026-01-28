@@ -6,7 +6,7 @@ import { Loader, PageTitle, RupsCard } from '@components'
 import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
-import { UserRoleEnum } from '@types'
+import { RoleEnum } from '@types'
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@ui'
 import { ArrowLeft } from 'lucide-react'
 
@@ -49,7 +49,7 @@ export default function UserPage() {
 		)
 	}
 
-	const isTeacher = hasRole(userData.role, UserRoleEnum.TEACHER, false)
+	const isTeacher = hasRole(userData.role, RoleEnum.TEACHER, false)
 
 	return (
 		<section className='mx-auto pb-10 pt-5 px-4 space-y-8 w-full'>
@@ -82,7 +82,7 @@ export default function UserPage() {
 						currentPage={createdRups?.meta.currentPage || 1}
 						isLoading={createdRupsLoading}
 						rups={createdRups?.data || []}
-						title='Рабочие учебные планы пользователя'
+						title='Рабочие учебные программы пользователя'
 						totalPages={createdRups?.meta.pages || 1}
 						onPageChange={() => true}
 					/>

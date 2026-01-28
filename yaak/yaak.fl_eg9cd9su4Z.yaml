@@ -2,7 +2,7 @@ type: folder
 model: folder
 id: fl_eg9cd9su4Z
 createdAt: 2026-01-14T14:24:38.561665300
-updatedAt: 2026-01-27T13:29:18.653983
+updatedAt: 2026-01-28T13:53:08.758444200
 workspaceId: wk_yScn9PeBcZ
 folderId: null
 authentication: {}
@@ -11,11 +11,11 @@ description: ''
 headers:
 - enabled: true
   name: Cookie
-  value: sid=e8b0ce09-0e01-4c2c-a08e-6daf873d7a23
+  value: sid=9a406631-246d-4017-a74b-aef449f10b1b
   id: BiDn5hQpms
 - enabled: true
   name: ''
   value: ''
-  id: XyZtCDJQwE
+  id: AS9kXqIe9F
 name: back
 sortPriority: -1768400678559.0

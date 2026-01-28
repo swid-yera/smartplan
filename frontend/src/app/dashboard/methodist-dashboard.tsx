@@ -68,7 +68,9 @@ export const MethodistDashboard = () => {
 
 	return (
 		<div className='space-y-6'>
-			<PageTitle description='Управление проверками РУП и KPI преподавателей.'>Дашборд методиста</PageTitle>
+			<PageTitle description='Управление проверками РУП и KPI преподавателей.'>
+				Панель управления администрации
+			</PageTitle>
 
 			<div className='grid gap-6 md:grid-cols-2'>
 				<Card>
@@ -121,7 +123,7 @@ export const MethodistDashboard = () => {
 				description='Ожидают проверки'
 				isLoading={rupLoading}
 				rups={reviewRups}
-				title='Рабочие учебные планы'
+				title='Рабочие учебные программы'
 				totalPages={1}
 				onPageChange={() => false}
 			/>
@@ -138,9 +140,9 @@ export const MethodistDashboard = () => {
 
 			<Card className='lg:col-span-4 min-w-0'>
 				<CardHeader>
-					<CardTitle>Динамика статусов Рабочих учебных планов</CardTitle>
+					<CardTitle>Динамика статусов Рабочих учебных программ</CardTitle>
 					<CardDescription>
-						Изменение количества рабочих учебных планов по статусам за последние 7 дней
+						Изменение количества рабочих учебных программ по статусам за последние 7 дней
 					</CardDescription>
 				</CardHeader>
 				<CardContent className='min-w-0'>

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_6cmzB7GBD6
 createdAt: 2026-01-15T18:12:50.578097400
-updatedAt: 2026-01-23T06:22:56.500770700
+updatedAt: 2026-01-28T15:43:54.133171500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_XZaE2gEbts
 authentication: {}
@@ -43,9 +43,9 @@ urlParameters:
   id: DsQEKCy0b3
 - enabled: true
   name: status
-  value: APPROVED,REJECTED
+  value: DRAFT
   id: DdDi39PEN9
 - enabled: true
   name: ''
   value: ''
-  id: cxkreeFVKk
+  id: ANnI4R7xuw

@@ -1,27 +1,41 @@
-import { type IUser, UserRoleEnum } from '@types'
+import { type IUser, RoleEnum } from '@types'
 import type { badgeVariants } from '@ui'
 import type { VariantProps } from 'class-variance-authority'
 
 // has role
-export const hasRole = (current: UserRoleEnum, target: UserRoleEnum, highestRole = true): boolean => {
+export const hasRole = (current: RoleEnum, target: RoleEnum, highestRole = true): boolean => {
 	switch (current) {
-		case UserRoleEnum.ADMIN:
-			return highestRole ? true : target === UserRoleEnum.ADMIN
-		case UserRoleEnum.METHODIST:
-			return target === UserRoleEnum.METHODIST
-		case UserRoleEnum.TEACHER:
-			return target === UserRoleEnum.TEACHER
+		case RoleEnum.ADMIN:
+			return highestRole ? true : target === RoleEnum.ADMIN
+		case RoleEnum.METHODIST:
+			return target === RoleEnum.METHODIST
+		case RoleEnum.TEACHER:
+			return target === RoleEnum.TEACHER
 		default:
 			return false
 	}
 }
 
+// define highest role
+export const defineHighestRole = (current: RoleEnum): RoleEnum => {
+	switch (current) {
+		case RoleEnum.ADMIN:
+			return RoleEnum.ADMIN
+		case RoleEnum.METHODIST:
+			return RoleEnum.METHODIST
+		case RoleEnum.TEACHER:
+			return RoleEnum.TEACHER
+		default:
+			return RoleEnum.TEACHER
+	}
+}
+
 // is rup creator
 export const isAuthor = (user: IUser, target: string): boolean => {
-	if (user.role === UserRoleEnum.ADMIN) {
+	if (user.role === RoleEnum.ADMIN) {
 		return true
 	}
-	if (user.role === UserRoleEnum.TEACHER) {
+	if (user.role === RoleEnum.TEACHER) {
 		return user.keycloakId === target
 	}
 
@@ -29,20 +43,20 @@ export const isAuthor = (user: IUser, target: string): boolean => {
 }
 
 // user role button variants
-export const userRoleButtonVariants: Record<UserRoleEnum, VariantProps<typeof badgeVariants>['variant']> = {
+export const userRoleButtonVariants: Record<RoleEnum, VariantProps<typeof badgeVariants>['variant']> = {
 	ADMIN: 'outline',
 	METHODIST: 'default',
 	TEACHER: 'secondary',
 }
 
 // normalize user role
-export const userRoleLabels: Record<UserRoleEnum, string> = {
+export const userRoleLabels: Record<RoleEnum, string> = {
 	ADMIN: 'Администратор',
 	METHODIST: 'Методист',
 	TEACHER: 'Преподаватель',
 }
 
-export const normalizeUserRole = (role: UserRoleEnum): string => {
+export const normalizeUserRole = (role: RoleEnum): string => {
 	return userRoleLabels[role]
 }
 

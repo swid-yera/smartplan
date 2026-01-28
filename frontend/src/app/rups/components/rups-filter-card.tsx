@@ -83,7 +83,7 @@ export const RupsFilterCard: FC<IProps> = ({ className }) => {
 						{/* search */}
 						<div className='space-y-1 col-span-2'>
 							<Label>Поиск</Label>
-							<Input defaultValue={q} name='q' placeholder='Наименование, специальность...' />
+							<Input defaultValue={q} name='q' placeholder='Наименование...' />
 						</div>
 
 						<div className='space-y-1 col-span-2'>

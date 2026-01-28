@@ -179,7 +179,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 								{`${award.variant.name}, ${award.criteria.name} `}
 								<StatusBadge status={award.status} />
 							</SheetTitle>
-							<SheetDescription>Краткая информация о рабочем учебном плане.</SheetDescription>
+							<SheetDescription>Краткая информация о рабочей учебной программы.</SheetDescription>
 						</SheetHeader>
 
 						<div className='grid flex-1 auto-rows-min gap-6 px-4'>

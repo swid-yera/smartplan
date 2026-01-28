@@ -24,7 +24,15 @@ interface IProps {
 
 export const EditCard: FC<IProps> = ({ onSubmit, type }) => {
 	const [name, setName] = useState(type?.name || '')
-	const [variants, setVariants] = useState<IVariantRequest[]>(type?.variants || [])
+	const [variants, setVariants] = useState<IVariantRequest[]>(
+		() =>
+			type?.variants.map((v) => ({
+				name: v.name,
+				description: v.description,
+				criteria: v.criteria || [],
+				bonusCriteria: v.bonusCriteria || [],
+			})) || [],
+	)
 
 	const addVariant = () => {
 		setVariants((prev) => [

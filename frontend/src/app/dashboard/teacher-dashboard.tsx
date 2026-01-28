@@ -20,7 +20,7 @@ export const TeacherDashboard = () => {
 	return (
 		<div className='space-y-6'>
 			<PageTitle description='Обзор вашей текущей деятельности, задач и статусов документов.'>
-				Дашборд преподавателя
+				Панель управления преподавателя
 			</PageTitle>
 
 			{/* rup, kpi */}
@@ -29,7 +29,7 @@ export const TeacherDashboard = () => {
 					<CardHeader>
 						<CardTitle className='flex items-center gap-2'>
 							<FileText className='h-5 w-5 text-primary' />
-							Рабочие учебные планы
+							Рабочие учебные программы
 						</CardTitle>
 						<CardDescription>
 							Узнайте подробнее о процессе создания и проверки, а также просмотрите все РУП.
@@ -75,7 +75,7 @@ export const TeacherDashboard = () => {
 					currentPage={1}
 					isLoading={rupLoading}
 					rups={rupData?.data || []}
-					title='Ваши рабочие учебные планы'
+					title='Ваши рабочие учебные программы'
 					totalPages={1}
 					onPageChange={() => false}
 				/>

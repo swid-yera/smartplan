@@ -227,7 +227,7 @@ const EditPage: FC = () => {
 					backHref={`/rups/${rupData.id}`}
 					description='Редактирование рабочей учебной программы'
 				>
-					Редактирование: {rupData.name || 'Рабочий учебный план'}
+					Редактирование: {rupData.name || 'Рабочая учебная программа'}
 				</PageTitle>
 
 				<Step1 />

@@ -1,1 +1,1 @@
-// export * from './LessonTypeBadge'
+export * from './lesson-type-badge'

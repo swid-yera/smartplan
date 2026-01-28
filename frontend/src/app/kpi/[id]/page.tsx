@@ -10,7 +10,7 @@ import { hasRole, isAuthor, normalizeCriteriaMethod, normalizeStatus } from '@he
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { CriteriaMethodEnum, type ICriteria, type IUpdateStatusRequest, StatusEnum, UserRoleEnum } from '@types'
+import { CriteriaMethodEnum, type ICriteria, type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -139,13 +139,13 @@ const Page = () => {
 	}
 
 	// bools
-	const isAdmin = hasRole(user.role, UserRoleEnum.ADMIN)
-	const isTeacher = hasRole(user.role, UserRoleEnum.TEACHER)
+	const isAdmin = hasRole(user.role, RoleEnum.ADMIN)
+	const isTeacher = hasRole(user.role, RoleEnum.TEACHER)
 	const isStatusForEdit = award.status === StatusEnum.DRAFT || award.status === StatusEnum.REJECTED
 	const isAwardCreator = isAuthor(user, award.teacher.keycloakId)
 	// conditions
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
-	const isMethodistReview = hasRole(user.role, UserRoleEnum.METHODIST, true) && award.status === StatusEnum.IN_REVIEW
+	const isMethodistReview = hasRole(user.role, RoleEnum.METHODIST, true) && award.status === StatusEnum.IN_REVIEW
 
 	return (
 		<div className='space-y-6 p-6 w-full'>
@@ -423,7 +423,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 			<SheetContent>
 				<SheetHeader>
 					<SheetTitle>Изменить статус</SheetTitle>
-					<SheetDescription>Выберите новый статус для РУП и укажите причину изменения.</SheetDescription>
+					<SheetDescription>Выберите новый статус для KPI и укажите причину изменения.</SheetDescription>
 				</SheetHeader>
 				<div className='grid flex-1 auto-rows-min gap-6 p-4'>
 					<div className='grid gap-2'>
@@ -630,7 +630,7 @@ const DeleteAlert: FC<IDeleteAlert> = ({ isDeleteDialogOpen, setIsDeleteDialogOp
 				<AlertDialogHeader>
 					<AlertDialogTitle>Вы уверены?</AlertDialogTitle>
 					<AlertDialogDescription>
-						Это действие невозможно отменить. Это приведет к необратимому удалению рабочего учебного плана.
+						Это действие невозможно отменить. Это приведет к необратимому удалению рабочей учебной программы.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

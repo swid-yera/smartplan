@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UGzRzai8Bc
 createdAt: 2026-01-13T03:16:46.890644700
-updatedAt: 2026-01-27T13:30:01.371774300
+updatedAt: 2026-01-28T14:54:01.094257400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -20,19 +20,27 @@ name: all
 sortPriority: 0.0
 url: ${[ url ]}/awards
 urlParameters:
-- enabled: true
+- enabled: false
   name: teacher
   value: f2546909-a510-49e7-9185-bd576e76784c
   id: SI4jPNREUJ
 - enabled: true
   name: pageSize
-  value: '2'
+  value: '10'
   id: QY7swP094c
 - enabled: true
   name: currentPage
-  value: '3'
+  value: '1'
   id: atSBHDyCT7
+- enabled: true
+  name: status
+  value: DRAFT,APPROVED
+  id: 6B7si0de8A
+- enabled: false
+  name: search
+  value: asdfasdf
+  id: TWA85AyYWy
 - enabled: true
   name: ''
   value: ''
-  id: k8GesgZk2S
+  id: 4MjkQQv4jZ

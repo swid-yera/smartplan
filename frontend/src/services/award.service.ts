@@ -26,7 +26,7 @@ export class AwardService {
 						search,
 						methodist,
 						teacher,
-						status,
+						status: status?.join(','),
 					},
 				})
 
