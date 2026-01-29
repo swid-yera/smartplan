@@ -308,14 +308,6 @@ func (s *rupService) UpdateRupStatus(
 
 	// 1. если APPROVED — генерируем документ
 	if rupStatus == storage.RupsStatusAPPROVED {
-		rup, err := s.GetRupByID(ctx, id)
-		if err != nil {
-			return err
-		}
-		if rup.Teacher == nil {
-			return fmt.Errorf("rup has no teacher")
-		}
-
 		fileBytes, err := s.generateViaPython(ctx, id)
 		if err != nil {
 			return err
@@ -323,7 +315,7 @@ func (s *rupService) UpdateRupStatus(
 
 		reader := bytes.NewReader(fileBytes)
 
-		objectName := fmt.Sprintf("rups/%s/document.docx", rup.ID.String())
+		objectName := fmt.Sprintf("rups/%s/document.docx", id.String())
 
 		// 2. сохраняем в MinIO
 		if err := s.fileStorage.UploadFile(
@@ -558,17 +550,9 @@ func buildPayload(rup *RupResponse) RupDocumentPayload {
 
 func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error) {
 
-	rup, err := s.GetRupByID(ctx, id)
-	if err != nil {
-		return "", err
-	}
-	if rup.Teacher == nil {
-		return "", fmt.Errorf("rup has no teacher")
-	}
-
 	objectName := fmt.Sprintf(
-		"rup/%s/document.docx",
-		rup.Teacher.KeycloakID.String(),
+		"rups/%s/document.docx",
+		id.String(),
 	)
 
 	return s.fileStorage.GetDownloadFileURL(
