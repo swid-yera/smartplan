@@ -99,7 +99,7 @@ export const navMain: INav[] = [
 			{
 				icon: NotebookPen,
 				title: 'Создать поурочный план',
-				url: '/lessons/my',
+				url: '/lessons/create',
 				role: RoleEnum.TEACHER,
 			},
 			{

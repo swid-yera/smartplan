@@ -55,7 +55,7 @@ export function BasicEdit<T extends IProps>() {
 						<FormItem>
 							<FormLabel className='flex items-center'>Наименование модуля</FormLabel>
 							<FormControl>
-								<Input placeholder='Введите называние модуля' {...field} />
+								<Input placeholder='Введите название модуля' {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
