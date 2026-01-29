@@ -1,11 +1,14 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination } from '@components'
 import { services } from '@services'
+import { Button } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 
 const MethodistAwardsPage = () => {
 	const searchParams = useSearchParams()
@@ -45,7 +48,19 @@ const MethodistAwardsPage = () => {
 
 	return (
 		<section className='p-4 w-full space-y-4'>
-			<PageTitle description='Мои достижения'>Мои опубликованные достижения</PageTitle>
+			<PageTitle
+				actions={
+					<Button asChild>
+						<Link href='/kpi/create'>
+							<Plus className='mr-2 h-4 w-4' />
+							Создать Награду
+						</Link>
+					</Button>
+				}
+				description='Мои достижения'
+			>
+				Мои опубликованные достижения
+			</PageTitle>
 
 			<AwardsCard
 				showCreateOnEmpty

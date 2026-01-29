@@ -144,7 +144,6 @@ export const navMain: INav[] = [
 				icon: ChartBar,
 				title: 'Рейтинг преподавателей',
 				url: '/kpi/rating',
-				role: RoleEnum.METHODIST,
 			},
 			{
 				icon: ListCheck,

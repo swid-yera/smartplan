@@ -223,7 +223,27 @@ export default function CreateAwardPage() {
 					<div className='space-y-2'>
 						<Label>Загрузить файлы</Label>
 						<Dropzone
-							accept={{ 'image/*': ['.png', '.jpg', '.jpeg'] }}
+							accept={{
+								// Изображения
+								'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.svg'],
+
+								// Документы
+								'application/pdf': ['.pdf'],
+								'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+								'application/vnd.ms-excel': ['.xls'],
+								'application/vnd.ms-powerpoint': ['.ppt'],
+								'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+
+								// Текстовые файлы
+								'text/plain': ['.txt'],
+								'text/csv': ['.csv'],
+								'text/markdown': ['.md'],
+
+								// Архивы (если нужны — можно убрать)
+								'application/zip': ['.zip'],
+								'application/x-rar-compressed': ['.rar'],
+								'application/x-7z-compressed': ['.7z'],
+							}}
 							maxFiles={4}
 							src={files}
 							onDrop={handleDrop}
