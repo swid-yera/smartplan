@@ -140,33 +140,6 @@ const Page: NextPage = () => {
 	}
 
 	const goNext = async () => {
-		const fields = stepFields[currentStep as keyof typeof stepFields]
-
-		const isValid = await methods.trigger(fields as (keyof RUPFormData)[], { shouldFocus: true })
-
-		if (!isValid) {
-			const errors = methods.formState.errors
-
-			const currentStepErrors = fields.map((field) => (errors as string)[field]?.message).filter(Boolean) // Убираем пустые значения
-
-			if (currentStepErrors.length > 0) {
-				toast.error('Проверьте следующие поля:', {
-					description: (
-						<ul className='list-disc pl-4 mt-1'>
-							{currentStepErrors.slice(0, 3).map((msg, i) => (
-								<li key={i}>{msg}</li>
-							))}
-							{currentStepErrors.length > 3 && <li>и еще {currentStepErrors.length - 3}...</li>}
-						</ul>
-					),
-				})
-			} else {
-				toast.error('Пожалуйста, заполните все обязательные поля корректно')
-			}
-
-			return
-		}
-
 		if (currentIndex < tabs.length - 1) {
 			handleStepChange(tabs[currentIndex + 1].id)
 		}
@@ -387,22 +360,22 @@ export interface ITab {
 	content: JSX.Element
 }
 
-const stepFields = {
-	'1': [
-		'title',
-		'type',
-		'studyForm',
-		'explorationNote',
-		'goals',
-		'prerequisites',
-		'postrequisites',
-		'year',
-		'groupId',
-	],
-	'2': ['contacts', 'internetResources', 'technicalResources'],
-	'3': ['disciplines'],
-	'4': ['disciplines'],
-}
+// const stepFields = {
+// 	'1': [
+// 		'title',
+// 		'type',
+// 		'studyForm',
+// 		'explorationNote',
+// 		'goals',
+// 		'prerequisites',
+// 		'postrequisites',
+// 		'year',
+// 		'groupId',
+// 	],
+// 	'2': ['contacts', 'internetResources', 'technicalResources'],
+// 	'3': ['disciplines'],
+// 	'4': ['disciplines'],
+// }
 
 const tabs: ITab[] = [
 	{
