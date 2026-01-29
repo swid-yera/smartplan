@@ -866,7 +866,7 @@ func (s *rupService) createTopics(ctx context.Context, topics []*TopicRequest) (
 			topicType = storage.DisciplineTopicTypeCOMBINED
 		}
 
-		TotalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours + topic.SrspHours + topic.SrsHours
+		TotalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
 
 		params := storage.CreateDisciplineTopicParams{
 			Name:            topic.Name,
