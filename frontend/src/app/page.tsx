@@ -10,7 +10,7 @@ import { ArrowRightCircle, BarChart3, FileText, Loader2, LogIn } from 'lucide-re
 const features = [
 	{
 		icon: <FileText className='h-16 w-16 text-primary' />,
-		title: 'Создания РУП',
+		title: 'Создание РУП',
 		description:
 			'SmartPlan использует искусственный интеллект для автоматического создания рабочих учебных программ, значительно сокращая время и усилия, необходимые для их разработки.',
 		preview: '/videos/example.mp4',

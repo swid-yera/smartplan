@@ -52,7 +52,11 @@ export class RupService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) => api.post<IRup>('/rups', newRup).then((r) => r.data),
+			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) => {
+				console.log(newRup)
+
+				return api.post<IRup>('/rups', newRup).then((r) => r.data)
+			},
 
 			onSuccess: (createdRup) => {
 				queryClient.setQueryData(['rup', createdRup.id], createdRup)
