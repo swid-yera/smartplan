@@ -1,4 +1,4 @@
-import type { CriteriaMethodEnum } from '../award.types'
+import type { CriteriaMethodEnum } from '../award.type'
 
 // create award
 export interface ICreateAwardRequest {

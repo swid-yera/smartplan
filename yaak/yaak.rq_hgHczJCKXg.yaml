@@ -1,10 +1,10 @@
 type: http_request
 model: http_request
-id: rq_9coDjswPXd
-createdAt: 2026-01-15T20:09:38.855577800
-updatedAt: 2026-01-20T20:30:48.027042600
+id: rq_hgHczJCKXg
+createdAt: 2026-01-28T22:54:26.497220300
+updatedAt: 2026-01-28T22:57:58.803383800
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_XZaE2gEbts
+folderId: fl_tqqPjuByKX
 authentication: {}
 authenticationType: null
 body:
@@ -12,24 +12,32 @@ body:
 bodyType: null
 description: ''
 headers:
-- enabled: false
-  name: Cookie
-  value: ${[ sid ]}
-  id: PdYB9EAGtq
 - enabled: true
   name: ''
   value: ''
-  id: JR23fAaJHp
+  id: AaYnqA76Qn
 method: GET
-name: methodists
-sortPriority: 2000.0
-url: ${[ url ]}/rups/methodist/:methodist-id
+name: all
+sortPriority: 0.0
+url: ${[ url ]}/lessons
 urlParameters:
 - enabled: true
-  name: :methodist-id
+  name: currentPage
+  value: '1'
+  id: ZZRgfIpUMU
+- enabled: true
+  name: pageSize
+  value: '10'
+  id: hxF3We6tRW
+- enabled: false
+  name: search
+  value: ''
+  id: zPBrhaFwkj
+- enabled: false
+  name: teacher
   value: f2546909-a510-49e7-9185-bd576e76784c
-  id: IqFCi92tWB
+  id: 6F4EynMmxR
 - enabled: true
   name: ''
   value: ''
-  id: 7eiSkt4BXB
+  id: htqW62SICR

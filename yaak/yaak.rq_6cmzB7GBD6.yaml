@@ -2,9 +2,9 @@ type: http_request
 model: http_request
 id: rq_6cmzB7GBD6
 createdAt: 2026-01-15T18:12:50.578097400
-updatedAt: 2026-01-28T15:43:54.133171500
+updatedAt: 2026-01-28T22:58:11.043137500
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_XZaE2gEbts
+folderId: fl_YjpbbUVpPX
 authentication: {}
 authenticationType: null
 body:
@@ -18,7 +18,7 @@ headers:
   id: AaYnqA76Qn
 method: GET
 name: all
-sortPriority: 333.3333333333333
+sortPriority: 0.0
 url: ${[ url ]}/rups
 urlParameters:
 - enabled: true

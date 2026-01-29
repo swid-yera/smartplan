@@ -1,4 +1,4 @@
-import type { IGroup, IResources, IUser } from './global.types'
+import type { IGroup, IResources, IUser } from './global.type'
 
 export enum LessonTypeEnum {
 	PRACTICE = 'PRACTICE',
@@ -28,11 +28,11 @@ export interface ILesson {
 	updatedAt: string
 }
 
-interface ILessonProgress {
+export interface ILessonProgress {
 	id: string
 	name: string
 	content: string[]
 
-	startMinute: number[]
-	endMinute: number[]
+	startMinute: number
+	endMinute: number
 }

@@ -258,9 +258,6 @@ const Page: NextPage = () => {
 	return (
 		<FormProvider {...methods}>
 			<AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-				{/* ОБНОВЛЕНО: Добавлены классы анимации (duration, animate-in, fade-in, zoom-in).
-            Они должны работать, если настроен tailwindcss-animate.
-        */}
 				<AlertDialogContent className='duration-200 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95'>
 					<AlertDialogHeader>
 						<AlertDialogTitle>Вы точно хотите сохранить?</AlertDialogTitle>

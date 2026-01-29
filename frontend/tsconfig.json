@@ -28,6 +28,7 @@
 			"@shadcn": ["./src/shared/shadcn/index.ts"],
 			"@types": ["./src/shared/types/index.ts"],
 			"@store": ["./src/store/index.ts"],
+			"@constants": ["./src/constants/index.ts"],
 			"@services": ["./src/services/index.ts"],
 			"@lib": ["./src/lib/index.ts"],
 			"@helpers": ["./src/helpers/index.ts"],

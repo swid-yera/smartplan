@@ -1,6 +1,6 @@
-import type { IAward } from './award.types'
-import type { IUser, StatusEnum } from './global.types'
-import type { IRup } from './rup.types'
+import type { IAward } from './award.type'
+import type { IUser, StatusEnum } from './global.type'
+import type { IRup } from './rup.type'
 
 export type ReviewEntityType = 'RUP' | 'AWARD' | 'LESSON'
 

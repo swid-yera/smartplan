@@ -1,4 +1,4 @@
-import type { IGroup, IResources, IUser, StatusEnum } from './global.types'
+import type { IGroup, IResources, IUser, StatusEnum } from './global.type'
 
 export enum StudyFormEnum {
 	CORRESPONDENCE = 'CORRESPONDENCE',

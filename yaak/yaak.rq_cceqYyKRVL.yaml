@@ -1,0 +1,27 @@
+type: http_request
+model: http_request
+id: rq_cceqYyKRVL
+createdAt: 2026-01-28T22:55:55.219583700
+updatedAt: 2026-01-28T22:58:16.097856100
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_YjpbbUVpPX
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "status": "APPROVED",
+      "reason": ""
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: ''
+  value: ''
+  id: NNnbmMh6eF
+method: PUT
+name: status
+sortPriority: 868.3127572016461
+url: ${[ url ]}/rups/:id/status
+urlParameters: []

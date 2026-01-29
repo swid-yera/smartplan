@@ -1,4 +1,4 @@
-import type { IUser, StatusEnum } from './global.types'
+import type { IUser, StatusEnum } from './global.type'
 
 export enum ViolationEnum {
 	NONE = 'NONE',

@@ -1,4 +1,4 @@
-import type { IMessageResponse } from './global.service.types'
+import type { IMessageResponse } from './global.service.type'
 
 // sync
 export interface IGroupSyncResponse extends IMessageResponse {

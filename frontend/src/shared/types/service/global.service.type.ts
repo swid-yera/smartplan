@@ -1,4 +1,4 @@
-import type { StatusEnum } from '../global.types'
+import type { StatusEnum } from '../global.type'
 
 export interface IMessageResponse {
 	message: string

@@ -1,5 +1,5 @@
-import type { IAward, ViolationEnum } from './award.types'
-import type { IRup } from './rup.types'
+import type { IAward, ViolationEnum } from './award.type'
+import type { IRup } from './rup.type'
 
 export enum StatusEnum {
 	DRAFT = 'DRAFT',

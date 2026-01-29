@@ -1,6 +1,6 @@
-import type { IResources, StatusEnum } from '../global.types'
-import type { IDiscipline, IRupExplorationNote, ISemester, ITopics, RupTypeEnum, StudyFormEnum } from '../rup.types'
-import type { IPaginationRequest } from './global.service.types'
+import type { IResources, StatusEnum } from '../global.type'
+import type { IDiscipline, IRupExplorationNote, ISemester, ITopics, RupTypeEnum, StudyFormEnum } from '../rup.type'
+import type { IPaginationRequest } from './global.service.type'
 
 // create
 export type ICreateResource = Omit<IResources, 'id'>
