@@ -323,7 +323,7 @@ func (s *rupService) UpdateRupStatus(
 
 		reader := bytes.NewReader(fileBytes)
 
-		objectName := fmt.Sprintf("rups/%s/document.docx", rup.Teacher.KeycloakID.String())
+		objectName := fmt.Sprintf("rups/%s/document.docx", rup.ID.String())
 
 		// 2. сохраняем в MinIO
 		if err := s.fileStorage.UploadFile(
