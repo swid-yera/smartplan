@@ -3,8 +3,8 @@ import type { FC } from 'react'
 import Link from 'next/link'
 
 import { formatAsDash } from '@helpers'
+import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import type { IRup } from '@types'
-import { Card, CardContent, CardHeader, CardTitle, Separator } from '@ui'
 import { ExternalLink } from 'lucide-react'
 
 interface IProps {

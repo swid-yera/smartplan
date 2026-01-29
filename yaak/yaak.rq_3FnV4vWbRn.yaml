@@ -2,9 +2,9 @@ type: http_request
 model: http_request
 id: rq_3FnV4vWbRn
 createdAt: 2026-01-15T20:10:19.309558700
-updatedAt: 2026-01-20T12:45:14.147141100
+updatedAt: 2026-01-28T22:58:14.955949300
 workspaceId: wk_yScn9PeBcZ
-folderId: fl_K53iQSXBTw
+folderId: fl_YjpbbUVpPX
 authentication: {}
 authenticationType: null
 body:
@@ -18,6 +18,6 @@ headers:
   id: NNnbmMh6eF
 method: PUT
 name: update
-sortPriority: 1000.0
+sortPriority: 802.4691358024692
 url: ${[ url ]}/rups/:id
 urlParameters: []

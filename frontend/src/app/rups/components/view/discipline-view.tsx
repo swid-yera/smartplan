@@ -3,7 +3,6 @@
 import type { FC } from 'react'
 
 import { formatAsDash } from '@helpers'
-import type { IDiscipline } from '@types'
 import {
 	Card,
 	CardContent,
@@ -17,7 +16,8 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from '@ui'
+} from '@shadcn'
+import type { IDiscipline } from '@types'
 
 interface IProps {
 	disciplines: IDiscipline[]

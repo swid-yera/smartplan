@@ -11,7 +11,7 @@ import {
 	FormItem,
 	FormMessage,
 	Textarea,
-} from '@ui'
+} from '@shadcn'
 import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
 
 interface IProps<T extends FieldValues> {

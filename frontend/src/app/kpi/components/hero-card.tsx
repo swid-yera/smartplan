@@ -1,6 +1,6 @@
 import type { FC } from 'react'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { BarChart3, BookOpen, Clock, GraduationCap, MessageSquare } from 'lucide-react'
 
 interface IProps {

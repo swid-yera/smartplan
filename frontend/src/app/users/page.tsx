@@ -7,9 +7,9 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { PageTitle, Pagination } from '@components'
 import { services } from '@services'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
 
 import { UsersFilter } from './users-filter'
 import { UsersTable } from './users-table'

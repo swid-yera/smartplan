@@ -1,5 +1,5 @@
+import type { badgeVariants } from '@shadcn'
 import { type IUser, RoleEnum } from '@types'
-import type { badgeVariants } from '@ui'
 import type { VariantProps } from 'class-variance-authority'
 
 // has role

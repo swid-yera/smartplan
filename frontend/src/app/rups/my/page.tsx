@@ -1,11 +1,14 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, Pagination, RupsCard } from '@components'
 import { services } from '@services'
+import { Button } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 
 const Page = () => {
 	const searchParams = useSearchParams()
@@ -45,9 +48,22 @@ const Page = () => {
 
 	return (
 		<section className='p-4 w-full space-y-4'>
-			<PageTitle description='Мои созданные рабочие учебные программы'>Мои РУП</PageTitle>
+			<PageTitle
+				actions={
+					<Button asChild>
+						<Link href='/rups/create'>
+							<Plus className='mr-2 h-4 w-4' />
+							Создать РУП
+						</Link>
+					</Button>
+				}
+				description='Мои созданные рабочие учебные программы'
+			>
+				Мои РУП
+			</PageTitle>
 
 			<RupsCard
+				showCreateOnEmpty
 				currentPage={rupsData?.meta.currentPage || 1}
 				isLoading={isRupsLoading}
 				rups={rupsData?.data || []}

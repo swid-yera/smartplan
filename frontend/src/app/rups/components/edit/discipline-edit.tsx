@@ -30,7 +30,7 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from '@ui'
+} from '@shadcn'
 import { Trash } from 'lucide-react'
 import {
 	type ArrayPath,

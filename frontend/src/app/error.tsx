@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 
 import Link from 'next/link'
 
-import { Button } from '@ui'
+import { Button } from '@shadcn'
 import { MoveLeft, RotateCcw, ServerCrash } from 'lucide-react'
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {

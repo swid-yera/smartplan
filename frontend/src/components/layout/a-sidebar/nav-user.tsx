@@ -4,7 +4,6 @@ import type { DetailedHTMLProps, FC, HTMLAttributes } from 'react'
 
 import { normalizeUserRole } from '@helpers'
 import { services } from '@services'
-import type { IUser } from '@types'
 import {
 	Avatar,
 	AvatarFallback,
@@ -20,7 +19,8 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	useSidebar,
-} from '@ui'
+} from '@shadcn'
+import type { IUser } from '@types'
 import { ChevronsUpDown, LogOut, Mail, Phone, ShieldUser, User } from 'lucide-react'
 
 interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElement>, HTMLUListElement> {

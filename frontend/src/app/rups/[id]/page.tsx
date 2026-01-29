@@ -8,9 +8,6 @@ import { notFound, useParams, useRouter } from 'next/navigation'
 import { Loader } from '@components'
 import { hasRole, isAuthor, normalizeStatus } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -35,7 +32,10 @@ import {
 	SheetHeader,
 	SheetTitle,
 	Textarea,
-} from '@ui'
+} from '@shadcn'
+import { useAuthStore } from '@store'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
 import { Edit, FileDown, SendIcon, ShieldAlert, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 

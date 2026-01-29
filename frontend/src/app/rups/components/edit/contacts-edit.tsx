@@ -3,7 +3,6 @@
 import { type FC, useEffect, useMemo, useState } from 'react'
 
 import { formatAsDash } from '@helpers'
-import type { IUser } from '@types'
 import {
 	Button,
 	Card,
@@ -26,7 +25,8 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from '@ui'
+} from '@shadcn'
+import type { IUser } from '@types'
 import { ChevronsUpDown, Mail, Phone, Trash2, User, UserPlus } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext, useWatch } from 'react-hook-form'
 

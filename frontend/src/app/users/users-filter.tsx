@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { Button, Input } from '@ui'
+import { Button, Input } from '@shadcn'
 import { Filter, Search } from 'lucide-react'
 
 interface UsersFilterProps {

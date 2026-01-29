@@ -8,9 +8,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { Loader, PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
 import { hasRole, isAuthor, normalizeCriteriaMethod, normalizeStatus } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { CriteriaMethodEnum, type ICriteria, type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -40,7 +37,10 @@ import {
 	SheetHeader,
 	SheetTitle,
 	Textarea,
-} from '@ui'
+} from '@shadcn'
+import { useAuthStore } from '@store'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { CriteriaMethodEnum, type ICriteria, type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
 import {
 	CheckCircle,
 	Download,

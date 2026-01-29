@@ -2,7 +2,7 @@ import type { FC, PropsWithChildren } from 'react'
 
 import { cookies } from 'next/headers'
 
-import { SidebarProvider } from '@ui'
+import { SidebarProvider } from '@shadcn'
 
 export const ASidebarProvider: FC<PropsWithChildren> = async ({ children }) => {
 	const cookieStore = await cookies()

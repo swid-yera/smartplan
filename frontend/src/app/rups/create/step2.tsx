@@ -6,6 +6,7 @@ import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
+import { toast } from 'sonner'
 
 import { ContactsEdit, GenerateCard, ResourceEdit } from '../components'
 
@@ -44,6 +45,7 @@ export function Step2<T extends IProps>() {
 
 		try {
 			setIsLoading(true)
+			toast.loading('Генерируется ресурсы', { id: 'rup-resource-generate' })
 
 			const values = getValues()
 
@@ -62,6 +64,9 @@ export function Step2<T extends IProps>() {
 			// write
 			setValue('internetResources' as Path<T>, resources.internetResources, { shouldDirty: true })
 			setValue('technicalResources' as Path<T>, resources.technicalResources, { shouldDirty: true })
+			toast.success('Успешно сгенерировано ресурсы', { id: 'rup-resource-generate' })
+		} catch (err) {
+			toast.error(`Ошибка при генерации ресурсов ${err}`, { id: 'rup-resource-generate' })
 		} finally {
 			setIsLoading(false)
 		}

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { ASidebar, Footer } from '@layout'
 import { ASidebarProvider, AuthProvider, QueryProvider, ThemeProvider } from '@providers'
-import { SidebarInset, Toaster } from '@ui'
+import { SidebarInset, Toaster } from '@shadcn'
 import 'react-medium-image-zoom/dist/styles.css'
 
 import './globals.css'

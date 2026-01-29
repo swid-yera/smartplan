@@ -1,0 +1,23 @@
+type: http_request
+model: http_request
+id: rq_XDFVgwE2W4
+createdAt: 2026-01-28T22:54:26.495662
+updatedAt: 2026-01-28T22:58:02.591620
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_tqqPjuByKX
+authentication: {}
+authenticationType: null
+body:
+  text: ''
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: ''
+  value: ''
+  id: NNnbmMh6eF
+method: PUT
+name: update
+sortPriority: 802.4691358024692
+url: ${[ url ]}/lessons/:id
+urlParameters: []

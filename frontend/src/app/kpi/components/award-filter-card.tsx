@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { StatusBadge } from '@components'
 import { statusLabels } from '@helpers'
-import { StatusEnum } from '@types'
 import {
 	Button,
 	Card,
@@ -19,7 +18,8 @@ import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@ui'
+} from '@shadcn'
+import { StatusEnum } from '@types'
 import { Filter } from 'lucide-react'
 
 interface IProps {

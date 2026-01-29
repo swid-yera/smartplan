@@ -72,7 +72,7 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from '@ui'
+} from '@shadcn'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'

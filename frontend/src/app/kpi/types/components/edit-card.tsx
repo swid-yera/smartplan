@@ -1,6 +1,5 @@
 import { type FC, useState } from 'react'
 
-import type { ICreateTypesRequest, ITypeResponse, IVariantRequest } from '@types'
 import {
 	Button,
 	Card,
@@ -12,7 +11,8 @@ import {
 	Input,
 	Label,
 	Separator,
-} from '@ui'
+} from '@shadcn'
+import type { ICreateTypesRequest, ITypeResponse, IVariantRequest } from '@types'
 import { Plus } from 'lucide-react'
 
 import { VariantEdit } from './variant-edit'

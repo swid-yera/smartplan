@@ -1,7 +1,6 @@
 'use client'
 
 import { normalizeRupType, normalizeStudyForm } from '@helpers'
-import { RupTypeEnum, StudyFormEnum } from '@types'
 import {
 	Card,
 	CardContent,
@@ -22,7 +21,8 @@ import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from '@ui'
+} from '@shadcn'
+import { RupTypeEnum, StudyFormEnum } from '@types'
 import { Info } from 'lucide-react'
 import type { FieldValues, Path } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'

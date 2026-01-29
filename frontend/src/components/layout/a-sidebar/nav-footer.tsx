@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@ui'
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@shadcn'
 import { type LucideIcon } from 'lucide-react'
 
 import { ThemeToggle } from './theme-toggle'

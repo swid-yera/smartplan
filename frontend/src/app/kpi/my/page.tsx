@@ -37,7 +37,7 @@ const MethodistAwardsPage = () => {
 		const params = new URLSearchParams(searchParams.toString())
 
 		params.set('pageSize', String(newSize))
-		params.set('page', '1') // при смене размера страницы возвращаем на первую страницу
+		params.set('page', '1')
 		router.push(`${pathname}?${params.toString()}`)
 	}
 
@@ -48,6 +48,7 @@ const MethodistAwardsPage = () => {
 			<PageTitle description='Мои достижения'>Мои опубликованные достижения</PageTitle>
 
 			<AwardsCard
+				showCreateOnEmpty
 				awards={awardsData?.data || []}
 				currentPage={awardsData?.meta.currentPage || 1}
 				isLoading={isAwardsLoading}

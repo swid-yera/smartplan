@@ -1,7 +1,7 @@
 import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 
+import type { badgeVariants } from '@shadcn'
 import type { IPagination, StatusEnum } from '@types'
-import type { badgeVariants } from '@ui'
 import type { VariantProps } from 'class-variance-authority'
 import { BanIcon, CheckCheckIcon, type LucideProps, PencilIcon, TextSearchIcon } from 'lucide-react'
 

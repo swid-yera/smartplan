@@ -2,7 +2,6 @@ import { type FC, type ReactNode, useState } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
 import { formatHours, hasRole, normalizeStudyForm } from '@helpers'
-import { type IRup, RoleEnum, StatusEnum } from '@types'
 import {
 	Button,
 	ButtonGroup,
@@ -14,7 +13,8 @@ import {
 	SheetHeader,
 	SheetTitle,
 	Textarea,
-} from '@ui'
+} from '@shadcn'
+import { type IRup, RoleEnum, StatusEnum } from '@types'
 import { CheckCircle, Search, SendToBack, ShieldAlert, Timer } from 'lucide-react'
 import { toast } from 'sonner'
 

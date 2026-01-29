@@ -2,8 +2,8 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
+import { Button, Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import type { ITypeResponse } from '@types'
-import { Button, Card, CardContent, CardHeader, CardTitle, Separator } from '@ui'
 import { Pencil } from 'lucide-react'
 
 interface IProps {
