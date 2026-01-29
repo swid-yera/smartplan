@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Sidebar, SidebarContent, SidebarFooter } from '@ui'
+import { Sidebar, SidebarContent, SidebarFooter } from '@shadcn'
 
 import { navFooter, navMain } from './nav-data'
 import { NavFooter } from './nav-footer'

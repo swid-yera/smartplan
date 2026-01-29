@@ -1,0 +1,34 @@
+type: http_request
+model: http_request
+id: rq_wcsDTEPNGN
+createdAt: 2026-01-28T22:55:00.046619400
+updatedAt: 2026-01-28T22:58:00.413754900
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_tqqPjuByKX
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: ''
+  value: ''
+  id: 9p60YuAUg3
+- enabled: true
+  name: ''
+  value: ''
+  id: 9p60YuAUg3
+method: GET
+name: download
+sortPriority: 555.5555555555555
+url: ${[ url ]}/lessons/:id/download
+urlParameters:
+- enabled: true
+  name: :id
+  value: 6d3a9ea6-7a6b-431c-add1-a353b8d6b29e
+  id: MkwAk9iv7U
+- enabled: true
+  name: ''
+  value: ''
+  id: KhU6aFnwZW

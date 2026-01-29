@@ -4,8 +4,8 @@ import Link from 'next/link'
 
 import { Loader } from '@components'
 import { normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
+import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shadcn'
 import type { IUser } from '@types'
-import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ui'
 import { User } from 'lucide-react'
 
 interface UsersTableProps {

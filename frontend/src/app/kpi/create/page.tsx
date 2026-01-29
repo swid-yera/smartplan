@@ -3,7 +3,7 @@
 import type { NextPage } from 'next'
 import Link from 'next/link'
 
-import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@ui'
+import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@shadcn'
 import { Check, PenTool, Sparkles } from 'lucide-react'
 
 const Page: NextPage = () => {

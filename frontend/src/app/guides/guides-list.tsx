@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
-import { Input } from '@ui'
+import { Input } from '@shadcn'
 
 import { guides } from './data.mock'
 import { GuideCard } from './guide-card'

@@ -6,7 +6,6 @@ import Link from 'next/link'
 
 import { Loader, PageTitle, Pagination } from '@components'
 import { services } from '@services'
-import { useQuery } from '@tanstack/react-query'
 import {
 	Button,
 	Card,
@@ -21,7 +20,8 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from '@ui'
+} from '@shadcn'
+import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, BarChart3, Search, UserIcon } from 'lucide-react'
 
 export default function RatingAllPage() {

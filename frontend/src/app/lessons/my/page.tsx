@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 
-import { Loader, PageTitle } from '@components'
+import { EmptyCard, Loader, PageTitle } from '@components'
 import { services } from '@services'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
-import { BookOpen, Calendar, FileText, Plus, Users } from 'lucide-react'
+import { Calendar, FileText, Plus, Users } from 'lucide-react'
 
 export default function MyLessonPlansPage() {
 	const { authLoading, user } = useAuthStore()
@@ -24,7 +24,6 @@ export default function MyLessonPlansPage() {
 	return (
 		<section className='mx-auto w-full max-w-7xl p-6 space-y-6'>
 			<PageTitle
-				description='Ваши поурочные планы, созданные вручную или с помощью генерации'
 				actions={
 					<Button asChild>
 						<Link href='/lesson-plans/generate'>
@@ -33,31 +32,13 @@ export default function MyLessonPlansPage() {
 						</Link>
 					</Button>
 				}
+				description='Ваши поурочные планы, созданные вручную или с помощью генерации'
 			>
 				Мои поурочные планы
 			</PageTitle>
 
-			{/* Пустое состояние */}
-			{(!data?.data || !data?.data.length) && (
-				<Card>
-					<CardContent className='py-12 text-center space-y-3'>
-						<BookOpen className='mx-auto h-10 w-10 text-muted-foreground' />
-						<p className='font-medium'>Поурочные планы не найдены</p>
-						<p className='text-sm text-muted-foreground max-w-md mx-auto'>
-							Здесь будут отображаться поурочные планы, созданные вами или сгенерированные системой.
-						</p>
+			{(!data?.data || !data?.data.length) && <EmptyCard type='LESSON' />}
 
-						<Button asChild className='mt-4'>
-							<Link href='/lesson-plans/generate'>
-								<Plus className='mr-2 h-4 w-4' />
-								Создать первый план
-							</Link>
-						</Button>
-					</CardContent>
-				</Card>
-			)}
-
-			{/* Список поурочных планов */}
 			{data?.data && data.data.length > 0 && (
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{data.data.map((lesson) => (
@@ -92,14 +73,14 @@ export default function MyLessonPlansPage() {
 								</div>
 
 								<div className='flex gap-2'>
-									<Button asChild size='sm' className='w-full'>
+									<Button asChild className='w-full' size='sm'>
 										<Link href={`/lesson-plans/${lesson.id}`}>
 											<FileText className='mr-2 h-4 w-4' />
 											Открыть
 										</Link>
 									</Button>
 
-									<Button asChild size='sm' variant='outline' className='w-full'>
+									<Button asChild className='w-full' size='sm' variant='outline'>
 										<Link href={`/lesson-plans/${lesson.id}/edit`}>Редактировать</Link>
 									</Button>
 								</div>

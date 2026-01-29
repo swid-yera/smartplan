@@ -1,7 +1,6 @@
 'use client'
 
 import { services } from '@services'
-import { useAuthStore } from '@store'
 import {
 	Button,
 	SidebarHeader,
@@ -14,7 +13,8 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 	useSidebar,
-} from '@ui'
+} from '@shadcn'
+import { useAuthStore } from '@store'
 import { GraduationCap, LogInIcon } from 'lucide-react'
 
 import { NavUser } from './nav-user'

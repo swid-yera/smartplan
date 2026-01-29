@@ -6,8 +6,6 @@ import { useParams, useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
 import { services } from '@services'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import type { ICriteriaResponse, ITypeResponse, IUpdateAwardRequest, IVariantResponse } from '@types'
 import {
 	Button,
 	Card,
@@ -26,7 +24,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Textarea,
-} from '@ui'
+} from '@shadcn'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import type { ICriteriaResponse, ITypeResponse, IUpdateAwardRequest, IVariantResponse } from '@types'
 import { XIcon } from 'lucide-react'
 import Zoom from 'react-medium-image-zoom'
 import { toast } from 'sonner'

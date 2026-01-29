@@ -1,24 +1,37 @@
+import type { FC } from 'react'
+
 import Link from 'next/link'
 
-import { AwardsCard, PageTitle, RupsCard } from '@components'
+import { CombineCard, PageTitle } from '@components'
+import { buildReviewItems } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useQueries } from '@tanstack/react-query'
 import { CheckCircle, Clock, FileText, Plus } from 'lucide-react'
 
-export const TeacherDashboard = () => {
-	const { user } = useAuthStore()
+interface IProps {
+	keycloakId: string
+}
+
+export const TeacherDashboard: FC<IProps> = ({ keycloakId }) => {
+	const queryParams = { currentPage: 1, pageSize: 10, teacher: keycloakId }
+
 	// queries
-	const { data: rupData, isLoading: rupLoading } = useQuery({
-		...services.rup.getAllOptions({ currentPage: 1, pageSize: 999, teacher: user?.keycloakId }),
-	})
-	const { data: awardData, isLoading: awardLoading } = useQuery({
-		...services.award.getAllOptions({ currentPage: 1, pageSize: 999, teacher: user?.keycloakId }),
+	const [rupsQuery, awardsQuery] = useQueries({
+		queries: [services.rup.getAllOptions(queryParams), services.award.getAllOptions(queryParams)],
 	})
 
+	const isLoading = rupsQuery.isLoading || awardsQuery.isLoading
+
+	const rups = rupsQuery.data?.data ?? []
+	const awards = awardsQuery.data?.data ?? []
+	const totalCount =
+		(rupsQuery?.data?.meta.total || 0) + (awardsQuery?.data?.meta.total || 0) - (rups.length + awards.length)
+
+	const items = buildReviewItems(rups, awards)
+
 	return (
-		<div className='space-y-6'>
+		<section className='space-y-6 px-4 pt-6'>
 			<PageTitle description='Обзор вашей текущей деятельности, задач и статусов документов.'>
 				Панель управления преподавателя
 			</PageTitle>
@@ -70,14 +83,12 @@ export const TeacherDashboard = () => {
 			</div>
 
 			<div className='grid gap-6 md:grid-cols-4 grid-cols-1'>
-				<RupsCard
-					className='col-span-3'
-					currentPage={1}
-					isLoading={rupLoading}
-					rups={rupData?.data || []}
-					title='Ваши рабочие учебные программы'
-					totalPages={1}
-					onPageChange={() => false}
+				<CombineCard
+					className='md:col-span-3'
+					isLoading={isLoading}
+					items={items}
+					more={totalCount}
+					title='Ожидают проверки'
 				/>
 
 				{/* Deadlines & Notifications */}
@@ -92,15 +103,6 @@ export const TeacherDashboard = () => {
 					</CardContent>
 				</Card>
 			</div>
-
-			<AwardsCard
-				awards={awardData?.data || []}
-				currentPage={1}
-				isLoading={awardLoading}
-				title='Ваши документы KPI'
-				totalPages={1}
-				onPageChange={() => false}
-			/>
-		</div>
+		</section>
 	)
 }

@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
 import { services } from '@services'
-import { useMutation } from '@tanstack/react-query'
-import type { ITypeResponse } from '@types'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -23,7 +21,9 @@ import {
 	CardHeader,
 	CardTitle,
 	Separator,
-} from '@ui'
+} from '@shadcn'
+import { useMutation } from '@tanstack/react-query'
+import type { ITypeResponse } from '@types'
 import { Pen, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 

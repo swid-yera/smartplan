@@ -1,7 +1,7 @@
 'use client'
 
+import { Badge, Card, CardContent, CardHeader, CardTitle } from '@shadcn'
 import type { IGuide } from '@types'
-import { Badge, Card, CardContent, CardHeader, CardTitle } from '@ui'
 import { BookOpen } from 'lucide-react'
 
 interface IProps {

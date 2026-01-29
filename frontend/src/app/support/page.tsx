@@ -1,4 +1,4 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, Badge, Heading, Separator } from '@ui'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, Badge, Heading, Separator } from '@shadcn'
 import { CircleQuestionMark, MailIcon, PhoneIcon } from 'lucide-react'
 
 const faqs = [

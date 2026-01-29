@@ -1,8 +1,8 @@
 import type { FC } from 'react'
 
 import { normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import type { IUser } from '@types'
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui'
 import { Mail, Phone, UserIcon } from 'lucide-react'
 
 interface IUserMainProps {

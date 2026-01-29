@@ -16,7 +16,7 @@ import {
 	DropzoneEmptyState,
 	Input,
 	Label,
-} from '@ui'
+} from '@shadcn'
 
 const Page: NextPage = () => {
 	const [step, setStep] = useState<'upload' | 'analyzing' | 'result'>('upload')

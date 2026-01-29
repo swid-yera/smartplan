@@ -1,7 +1,8 @@
 import { useState } from 'react'
 
 import { type IGenerateDisciplines, generateDisciplines } from '@actions'
-import { Input, Label } from '@ui'
+import { NumericInput } from '@components'
+import { Label } from '@shadcn'
 import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -17,18 +18,19 @@ type IProps = FieldValues & {
 export function Step3<T extends IProps>() {
 	const { getValues, setValue } = useFormContext<T>()
 	// states
-	const [isLoading, setIsLoading] = useState(false)
-	const [wantsHours, setWantsHours] = useState(0)
-	const [disciplineCount, setDisciplineCount] = useState(0)
+	const [isLoading, setIsLoading] = useState<boolean>(false)
+	const [wantsHours, setWantsHours] = useState<number | undefined>(undefined)
+	const [disciplineCount, setDisciplineCount] = useState<number | undefined>(undefined)
 
 	const handleGenerate = async () => {
 		if (isLoading) return
-		if (disciplineCount === 0 || wantsHours === 0) {
+		if (!disciplineCount || !wantsHours) {
 			return toast.error('заполните общее количество часов модуля и количество дисциплин')
 		}
 
 		try {
 			setIsLoading(true)
+			toast.loading('Генерируется результаты обучения', { id: 'rup-disciplines-generate' })
 
 			const values = getValues()
 
@@ -46,6 +48,9 @@ export function Step3<T extends IProps>() {
 
 			// write
 			setValue('disciplines' as Path<T>, generatedDisciplines, { shouldDirty: true })
+			toast.success('Успешно сгенерировано результаты обучения', { id: 'rup-disciplines-generate' })
+		} catch (err) {
+			toast.error(`Ошибка при генерации результатов Обучений ${err}`, { id: 'rup-disciplines-generate' })
 		} finally {
 			setIsLoading(false)
 		}
@@ -63,22 +68,20 @@ export function Step3<T extends IProps>() {
 			>
 				<>
 					<Label>Общее количество часов модуля</Label>
-					<Input
+					<NumericInput
 						min={0}
 						placeholder='шаг по 24'
 						step={24}
-						type='number'
-						value={wantsHours}
-						onChange={(e) => setWantsHours(Number(e.target.value))}
+						value={wantsHours ?? ''}
+						onChange={(e) => setWantsHours(Number(e))}
 					/>
 
 					<Label>Количество дисциплин</Label>
-					<Input
+					<NumericInput
 						min={0}
 						placeholder='Количество дисциплин'
-						type='number'
-						value={disciplineCount}
-						onChange={(e) => setDisciplineCount(Number(e.target.value))}
+						value={disciplineCount ?? ''}
+						onChange={(e) => setDisciplineCount(Number(e))}
 					/>
 				</>
 			</GenerateCard>

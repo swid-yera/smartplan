@@ -19,7 +19,7 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from '@ui'
+} from '@shadcn'
 import { Sparkles } from 'lucide-react'
 
 interface GenerateCardProps {

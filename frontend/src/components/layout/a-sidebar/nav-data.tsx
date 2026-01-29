@@ -93,19 +93,19 @@ export const navMain: INav[] = [
 			{
 				icon: Notebook,
 				title: 'Мои поурочные планы',
-				url: '/lesson/my',
+				url: '/lessons/my',
 				role: RoleEnum.TEACHER,
 			},
 			{
 				icon: NotebookPen,
 				title: 'Создать поурочный план',
-				url: '/lesson/my',
+				url: '/lessons/my',
 				role: RoleEnum.TEACHER,
 			},
 			{
 				icon: MessageCircleQuestionMark,
 				title: 'Как работает генерация?',
-				url: '/lesson/tutorial',
+				url: '/guides/lessons',
 			},
 		],
 	},

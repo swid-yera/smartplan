@@ -18,7 +18,5 @@ export default function DashboardPage() {
 
 	const isMethodist = hasRole(user.role, RoleEnum.METHODIST)
 
-	return (
-		<div className='p-4 sm:p-6 lg:p-8 relative'>{isMethodist ? <MethodistDashboard /> : <TeacherDashboard />}</div>
-	)
+	return isMethodist ? <MethodistDashboard /> : <TeacherDashboard keycloakId={user.keycloakId} />
 }

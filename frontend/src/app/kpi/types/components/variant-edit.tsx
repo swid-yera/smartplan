@@ -1,4 +1,3 @@
-import { CriteriaMethodEnum, type ICriteriaRequest, type IVariantRequest } from '@types'
 import {
 	Button,
 	Card,
@@ -11,7 +10,8 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@ui'
+} from '@shadcn'
+import { CriteriaMethodEnum, type ICriteriaRequest, type IVariantRequest } from '@types'
 import { Plus, Trash } from 'lucide-react'
 
 interface IProps {

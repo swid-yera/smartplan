@@ -1,7 +1,7 @@
 import type { NextPage } from 'next'
 import Link from 'next/link'
 
-import { Button } from '@ui'
+import { Button } from '@shadcn'
 import { FileQuestion, MoveLeft } from 'lucide-react'
 
 const Page: NextPage = () => {
