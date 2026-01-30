@@ -2,10 +2,10 @@ import type { ComponentProps, FC } from 'react'
 
 import { cn } from '@lib'
 import { Spinner } from '@shadcn'
-import { EthernetPort, FileText, Image as ImageIcon } from 'lucide-react'
+import { EthernetPort, FileText, Image as ImageIcon, Sparkles } from 'lucide-react'
 
 interface IProps extends ComponentProps<'div'> {
-	type?: 'file' | 'image' | 'data' | 'default'
+	type?: 'file' | 'image' | 'data' | 'default' | 'ai'
 	fullScreen?: boolean
 }
 
@@ -22,6 +22,10 @@ export const Loader: FC<IProps> = ({ type = 'default', className, fullScreen = t
 			content = <ImageIcon className='size-10 text-muted-foreground animate-bounce' />
 			message = 'Загрузка изображения...'
 			break
+		case 'ai':
+			content = <Sparkles className='size-10 text-purple-500 animate-pulse' />
+			message = 'ИИ генерирует ответ...'
+			break
 		case 'data':
 			content = <EthernetPort className='size-10 text-primary animate-bounce' />
 			message = 'Загрузка данных...'
@@ -33,22 +37,16 @@ export const Loader: FC<IProps> = ({ type = 'default', className, fullScreen = t
 			break
 	}
 
-	if (!fullScreen) {
-		return (
-			<div className={className} {...props}>
-				{content}
-				<p className='text-muted-foreground text-lg'>{message}</p>
-			</div>
-		)
-	}
+	const containerClasses = cn(
+		'flex flex-col items-center justify-center gap-3',
+		fullScreen && 'h-full w-full min-h-[200px]',
+		className,
+	)
 
 	return (
-		<div
-			className={cn('flex h-full w-full min-h-[200px] flex-col items-center justify-center', className)}
-			{...props}
-		>
+		<div className={containerClasses} {...props}>
 			{content}
-			<p className='text-muted-foreground text-lg'>{message}</p>
+			<p className='text-muted-foreground text-lg font-medium'>{message}</p>
 		</div>
 	)
 }

@@ -166,6 +166,8 @@ const Page: NextPage = () => {
 	}
 
 	const onSubmit = async (newData: RUPFormData) => {
+		// TODO: validate data
+
 		setIsConfirmOpen(false)
 		setIsSubmitting(true)
 

@@ -68,13 +68,12 @@ export const getHoursStyle = (value: number | undefined, customClass?: string, c
 	return cn('text-center', (Number(value) || 0) === 0 ? ghostClassName : className)
 }
 
-// generate study years
-export const generateStudyYears = (diapason: number = 6): string[] => {
-	const currentYear = new Date().getFullYear()
+// generate study years by group name
+export const generateStudyYears = (groupYear: number): string[] => {
 	const years: string[] = []
 
-	for (let i = diapason; i >= -diapason; i--) {
-		const startYear = currentYear + i
+	for (let i = 0; i <= 3; i++) {
+		const startYear = groupYear + i
 		const endYear = startYear + 1
 
 		years.push(`${startYear}-${endYear}`)
@@ -88,6 +87,7 @@ interface ICreateDisciplineWithTotalHours extends ICreateDiscipline {
 	totalHours: IDiscipline['totalHours']
 }
 
+// generate discipline template with semesters
 export const generateTemplateDisciplines = (
 	count: number = 1,
 	semesters: number = 8,
@@ -113,9 +113,17 @@ export const generateTemplateDisciplines = (
 	return result
 }
 
+// get group year
+export const getGroupYear = (groupName: string): number | null => {
+	// "WEB25-A" => 2025
+	const match = groupName.match(/\d+/)
+
+	return match ? 2000 + parseInt(match[0], 10) : null
+}
+
 // format course from year and group name
 export const formatCourseFromYearAndGroupName = (groupName: string, year: string): number | string => {
-	// Extract the two-digit year from the group name, e.g., "25" from "WEB25-A"
+	// extract the two-digit year from the group name, e.g., "25" from "WEB25-A"
 	const groupYearMatch = groupName.match(/\d+/)
 
 	if (!groupYearMatch) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { formatCourseFromYearAndGroupName, generateStudyYears } from '@helpers'
+import { formatCourseFromYearAndGroupName, generateStudyYears, getGroupYear } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -36,6 +36,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { IGroup } from '@types'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
+import { toast } from 'sonner'
 
 type IProps = FieldValues & {
 	groupId: string
@@ -43,13 +44,12 @@ type IProps = FieldValues & {
 	course: number
 }
 
-const generatedStudyYears = generateStudyYears(6)
-
 export function GroupEdit<T extends IProps>() {
 	const form = useFormContext<T>()
 
 	const [selectedGroup, setSelectedGroup] = useState<IGroup | undefined>(undefined)
-	const [formattedCourse, setFormattedCourse] = useState<number | string | undefined>('')
+	const [groupYear, setGroupYear] = useState<number | undefined>()
+	const [formattedCourse, setFormattedCourse] = useState<number | undefined>()
 	const [open, setOpen] = useState(false)
 
 	const watchedGroupId = form.watch('groupId' as Path<T>)
@@ -71,11 +71,22 @@ export function GroupEdit<T extends IProps>() {
 		if (foundGroup) {
 			setSelectedGroup(foundGroup)
 
+			const foundGroupYear = getGroupYear(foundGroup.name)
+
+			if (typeof foundGroupYear === 'number') {
+				setGroupYear(foundGroupYear)
+			}
+
 			if (watchedYear) {
 				const foundCourse = formatCourseFromYearAndGroupName(foundGroup.name, watchedYear)
 
-				setFormattedCourse(foundCourse)
+				if (typeof foundCourse !== 'number') {
+					toast.error('Курс не найден, попробуйте с другой группой или обратитесь к администратору')
 
+					return
+				}
+
+				setFormattedCourse(foundCourse)
 				const numericCourse = typeof foundCourse === 'number' ? foundCourse : 0
 
 				if (form.getValues('course' as Path<T>) !== numericCourse) {
@@ -167,17 +178,23 @@ export function GroupEdit<T extends IProps>() {
 							<FormItem>
 								<FormLabel>Год обучения</FormLabel>
 
-								<Select key={field.value} value={field.value} onValueChange={field.onChange}>
+								<Select
+									key={field.value}
+									disabled={!selectedGroup}
+									value={field.value}
+									onValueChange={field.onChange}
+								>
 									<SelectTrigger className='w-full'>
 										<SelectValue placeholder='Выберите год обучения' />
 									</SelectTrigger>
 
 									<SelectContent>
-										{generatedStudyYears.map((year) => (
-											<SelectItem key={year} value={year}>
-												{year}
-											</SelectItem>
-										))}
+										{groupYear &&
+											generateStudyYears(groupYear).map((year) => (
+												<SelectItem key={year} value={year}>
+													{year}
+												</SelectItem>
+											))}
 									</SelectContent>
 								</Select>
 
