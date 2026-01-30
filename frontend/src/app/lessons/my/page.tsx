@@ -26,7 +26,7 @@ export default function MyLessonPlansPage() {
 			<PageTitle
 				actions={
 					<Button asChild>
-						<Link href='/lesson-plans/generate'>
+						<Link href='/lessons/create'>
 							<Plus className='mr-2 h-4 w-4' />
 							Сгенерировать план
 						</Link>
@@ -74,14 +74,14 @@ export default function MyLessonPlansPage() {
 
 								<div className='flex gap-2'>
 									<Button asChild className='w-full' size='sm'>
-										<Link href={`/lesson-plans/${lesson.id}`}>
+										<Link href={`/lessons/${lesson.id}`}>
 											<FileText className='mr-2 h-4 w-4' />
 											Открыть
 										</Link>
 									</Button>
 
 									<Button asChild className='w-full' size='sm' variant='outline'>
-										<Link href={`/lesson-plans/${lesson.id}/edit`}>Редактировать</Link>
+										<Link href={`/lessons/${lesson.id}/edit`}>Редактировать</Link>
 									</Button>
 								</div>
 							</CardContent>

@@ -1,5 +1,6 @@
 'use client'
 
+import { normalizeLessonType } from '@helpers'
 import { cn } from '@lib'
 import {
 	Button,
@@ -17,7 +18,13 @@ import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from '@shadcn'
+import { LessonTypeEnum } from '@types'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
 import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
@@ -26,8 +33,7 @@ type IProps = FieldValues & {
 	rupName: string
 	eventDate: string
 	groups: string[]
-	type: string
-	// type: LessonTypeEnum
+	type: LessonTypeEnum
 }
 
 export function LessonBasicInfo<T extends IProps>() {
@@ -99,9 +105,20 @@ export function LessonBasicInfo<T extends IProps>() {
 					name={'type' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Тип занятия</FormLabel>
+							<FormLabel className='flex items-center'>Тип занятия</FormLabel>
 							<FormControl>
-								<Input placeholder='Лекция, Лабораторная...' {...field} />
+								<Select key={field.value} value={field.value} onValueChange={field.onChange}>
+									<SelectTrigger className='w-full'>
+										<SelectValue placeholder='Выберите тип заянтия' />
+									</SelectTrigger>
+									<SelectContent position='popper'>
+										{Object.values(LessonTypeEnum).map((val) => (
+											<SelectItem key={val} value={val}>
+												{normalizeLessonType(val)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</FormControl>
 							<FormMessage />
 						</FormItem>

@@ -67,7 +67,7 @@ const Page = () => {
 	}
 
 	return (
-		<div className='container max-w-5xl py-10 space-y-8'>
+		<div className='container max-w-5xl py-10 px-4 space-y-8'>
 			<div className='flex flex-col gap-2'>
 				<h1 className='text-3xl font-bold tracking-tight'>Создание занятия</h1>
 				<p className='text-muted-foreground'>Заполните данные для формирования плана урока.</p>

@@ -66,7 +66,7 @@ export const navMain: INav[] = [
 			{
 				icon: Film,
 				title: 'Обучение',
-				url: '/rups/tutorial',
+				url: '/guides/rups',
 				role: RoleEnum.TEACHER,
 			},
 			// methodist
