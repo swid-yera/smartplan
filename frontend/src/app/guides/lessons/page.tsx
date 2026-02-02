@@ -53,7 +53,7 @@ export default function LessonPlansPage() {
 							Искусственный интеллект формирует структуру урока: цели, этапы, методы обучения и ожидаемые
 							результаты.
 						</li>
-						<li>Готовый поурочный план доступен для редактирования и сохранения.</li>
+						<li>Готовый план учебных занятий доступен для редактирования и сохранения.</li>
 					</ol>
 				</CardContent>
 			</Card>
@@ -82,7 +82,7 @@ export default function LessonPlansPage() {
 			<Card>
 				<CardContent className='flex flex-col sm:flex-row gap-4 justify-between items-center'>
 					<div className='space-y-1'>
-						<p className='font-medium'>Начать работу с поурочными планами</p>
+						<p className='font-medium'>Начать работу с планами учебных занятий</p>
 						<p className='text-sm text-muted-foreground'>Создавайте новые планы или управляйте уже созданными</p>
 					</div>
 
@@ -97,7 +97,7 @@ export default function LessonPlansPage() {
 						<Button asChild variant='outline'>
 							<Link href='/lessons/my'>
 								<BookOpen className='mr-2 h-4 w-4' />
-								Мои поурочные планы
+								Мои планы учебных занятий
 							</Link>
 						</Button>
 					</div>

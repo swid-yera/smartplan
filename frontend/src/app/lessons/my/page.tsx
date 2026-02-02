@@ -32,9 +32,9 @@ export default function MyLessonPlansPage() {
 						</Link>
 					</Button>
 				}
-				description='Ваши поурочные планы, созданные вручную или с помощью генерации'
+				description='Ваши планы учебных занятий, созданные вручную или с помощью генерации'
 			>
-				Мои поурочные планы
+				Мои планы учебных занятий
 			</PageTitle>
 
 			{(!data?.data || !data?.data.length) && <EmptyCard type='LESSON' />}
