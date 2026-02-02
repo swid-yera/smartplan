@@ -85,20 +85,20 @@ export const navMain: INav[] = [
 		],
 	},
 	{
-		title: 'Поурочный план',
+		title: 'План учебного занятия',
 		url: '/lessons',
 		icon: BookOpen,
 		role: RoleEnum.TEACHER,
 		items: [
 			{
 				icon: Notebook,
-				title: 'Мои поурочные планы',
+				title: 'Мои планы учебных занятий',
 				url: '/lessons/my',
 				role: RoleEnum.TEACHER,
 			},
 			{
 				icon: NotebookPen,
-				title: 'Создать поурочный план',
+				title: 'Создать план учебного занятия',
 				url: '/lessons/create',
 				role: RoleEnum.TEACHER,
 			},
