@@ -1,9 +1,11 @@
-from fastapi import Depends, FastAPI, Body
+import os
+from fastapi import FastAPI, Body, File, UploadFile
 from fastapi.responses import FileResponse
 
 from app.logger import logger
 from app.config import OUT_DIR
 from app.helpers.cleanup import cleanup_by_count, clear_out_folder
+from app.services.hik import generate_hik_report
 from app.services.rup import generate_rup_docx
 from app.helpers.security import verify_api_key
 
@@ -60,4 +62,27 @@ async def delete_out_files():
         }
     except Exception as e:
         logger.exception("/cleanup, error during cleanup")
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/hik-to-report", response_class=FileResponse)
+async def hik_to_report(file: UploadFile = File(...)):
+    try:
+        logger.info(f"/hik-to-report, request received for file: {file.filename}")
+
+        # Удаляем старые файлы (используем твою логику)
+        cleanup_by_count(OUT_DIR, max_files=2)
+
+        content = await file.read()
+        file_path = generate_hik_report(content, file.filename)
+
+        logger.info(f"/hik-to-report, report generated: {file_path}")
+
+        return FileResponse(
+            path=file_path,
+            filename=os.path.basename(file_path),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except Exception as e:
+        logger.exception("/hik-to-report, error")
         return {"status": "error", "message": str(e)}

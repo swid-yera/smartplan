@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ep6Qmnhfd3
 createdAt: 2025-12-20T13:06:37.558153800
-updatedAt: 2026-01-21T06:44:10.714471100
+updatedAt: 2026-02-04T04:57:11.908996600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_cC5D8rXnWh
 authentication: {}
@@ -27,5 +27,5 @@ headers:
 method: POST
 name: generate-rup
 sortPriority: -1763638414427.0
-url: http://localhost:8000/generate-rup
+url: ${[ renderUrl ]}/generate-rup
 urlParameters: []

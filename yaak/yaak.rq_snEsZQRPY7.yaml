@@ -1,0 +1,31 @@
+type: http_request
+model: http_request
+id: rq_snEsZQRPY7
+createdAt: 2026-02-04T04:56:34.254327
+updatedAt: 2026-02-04T05:18:35.916375900
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_cC5D8rXnWh
+authentication: {}
+authenticationType: null
+body:
+  form:
+  - enabled: true
+    file: C:\Users\justs\OneDrive\Desktop\payload.xlsx
+    id: ERFsBaW8ty
+    name: file
+  - enabled: true
+    id: ZHuQGgiZyW
+    name: ''
+    value: ''
+bodyType: multipart/form-data
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: multipart/form-data
+  id: MewuxJZ6n8
+method: POST
+name: ''
+sortPriority: -1763638414427.0
+url: ${[ renderUrl ]}/hik-to-report
+urlParameters: []
