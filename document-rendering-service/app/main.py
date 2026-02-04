@@ -1,14 +1,33 @@
-from fastapi import Depends, FastAPI, Body
+import os
+from fastapi import FastAPI, Body, File, UploadFile
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.logger import logger
 from app.config import OUT_DIR
 from app.helpers.cleanup import cleanup_by_count, clear_out_folder
+from app.services.hik import generate_hik_report
 from app.services.rup import generate_rup_docx
 from app.helpers.security import verify_api_key
 
 
 app = FastAPI(title="Document Generator")
+
+# Настройка CORS
+origins = [
+    "http://localhost:3000",  # Адрес твоего фронтенда (Next.js/React)
+    "http://127.0.0.1:3000",
+    # Добавь сюда другие домены, если нужно
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Разрешенные домены
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешить все методы (POST, GET, и т.д.)
+    allow_headers=["*"],  # Разрешить все заголовки
+    expose_headers=["Content-Disposition"],
+)
 
 
 @app.post("/generate-rup", response_class=FileResponse)
@@ -60,4 +79,27 @@ async def delete_out_files():
         }
     except Exception as e:
         logger.exception("/cleanup, error during cleanup")
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/hik-to-report", response_class=FileResponse)
+async def hik_to_report(file: UploadFile = File(...)):
+    try:
+        logger.info(f"/hik-to-report, request received for file: {file.filename}")
+
+        # Удаляем старые файлы (используем твою логику)
+        cleanup_by_count(OUT_DIR, max_files=2)
+
+        content = await file.read()
+        file_path = generate_hik_report(content, file.filename)
+
+        logger.info(f"/hik-to-report, report generated: {file_path}")
+
+        return FileResponse(
+            path=file_path,
+            filename=os.path.basename(file_path),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except Exception as e:
+        logger.exception("/hik-to-report, error")
         return {"status": "error", "message": str(e)}

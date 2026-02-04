@@ -7,3 +7,8 @@ export const api = axios.create({
 		'Content-Type': 'application/json',
 	},
 })
+
+export const renderApi = axios.create({
+	baseURL: process.env.NEXT_PUBLIC_RENDER_API_URL,
+	withCredentials: true,
+})

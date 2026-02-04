@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_rVept5gfSn
 createdAt: 2025-12-20T14:23:14.553165400
-updatedAt: 2026-01-14T11:05:42.060574300
+updatedAt: 2026-02-04T04:57:17.420617100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_cC5D8rXnWh
 authentication: {}
@@ -27,5 +27,5 @@ headers:
 method: DELETE
 name: cleanup
 sortPriority: -1763638414426.999
-url: http://192.168.49.16:8000/cleanup
+url: ${[ renderUrl ]}/cleanup
 urlParameters: []
