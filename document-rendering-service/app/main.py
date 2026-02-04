@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, Body, File, UploadFile
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.logger import logger
 from app.config import OUT_DIR
@@ -11,6 +12,22 @@ from app.helpers.security import verify_api_key
 
 
 app = FastAPI(title="Document Generator")
+
+# Настройка CORS
+origins = [
+    "http://localhost:3000",  # Адрес твоего фронтенда (Next.js/React)
+    "http://127.0.0.1:3000",
+    # Добавь сюда другие домены, если нужно
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Разрешенные домены
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешить все методы (POST, GET, и т.д.)
+    allow_headers=["*"],  # Разрешить все заголовки
+    expose_headers=["Content-Disposition"],
+)
 
 
 @app.post("/generate-rup", response_class=FileResponse)

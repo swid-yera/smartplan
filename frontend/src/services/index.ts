@@ -1,6 +1,7 @@
 import { AuthService } from './auth.service'
 import { AwardService } from './award.service'
 import { GroupService } from './group.service'
+import { HikService } from './hik.service'
 import { LessonService } from './lesson.service'
 import { RupService } from './rup.service'
 import { UserService } from './user.service'
@@ -13,4 +14,5 @@ export const services = {
 	group: new GroupService(),
 	award: new AwardService(),
 	lesson: new LessonService(),
+	hik: new HikService(),
 }
