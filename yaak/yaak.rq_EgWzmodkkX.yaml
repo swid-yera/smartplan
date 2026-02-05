@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_EgWzmodkkX
 createdAt: 2025-11-26T11:56:54.133819500
-updatedAt: 2026-01-18T11:39:53.819864600
+updatedAt: 2026-02-05T12:31:15.682280100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_wRXcNsMiL3
 authentication: {}
@@ -25,7 +25,7 @@ headers:
 - enabled: true
   name: ''
   value: ''
-  id: AASkkK9Bn7
+  id: 2FMsHeAApt
 method: GET
 name: userinfo
 sortPriority: 1000.0
