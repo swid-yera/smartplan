@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_cBT3GqoEuN
 createdAt: 2025-11-26T12:24:50.682397700
-updatedAt: 2026-01-18T11:39:53.831982700
+updatedAt: 2026-02-05T12:32:03.567821400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_wRXcNsMiL3
 authentication: {}
@@ -20,7 +20,7 @@ body:
     value: refresh_token
   - enabled: true
     name: refresh_token
-    value: eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmOWZhYTA3Ni1mZTJhLTQ5MDMtODM2Mi00MTMwMTE1YmY1YTQifQ.eyJleHAiOjE3Njg0ODQ4NzgsImlhdCI6MTc2ODQ4MzA3OCwianRpIjoiYjUxMmMxNzEtMTdiMi0xOGY2LTVhZWItMmI4ZmI2MmY3MjA1IiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmFzcGMua3ovcmVhbG1zL3Rlc3QiLCJhdWQiOiJodHRwczovL2F1dGguYXNwYy5rei9yZWFsbXMvdGVzdCIsInN1YiI6ImI4Mzg4MmJkLTc3NjEtNDZiZC1iNjU3LWNiMTU2OTUwMzA5ZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJjb3Vyc2VzLW9pZGMtdGVzdGluZyIsInNpZCI6ImYwM2ExOTRlLTQwZWUtNzAzMS02NmZhLTE3ZDViNjcxNTViMiIsInNjb3BlIjoib3BlbmlkIG1pY3JvcHJvZmlsZS1qd3Qgc2VydmljZV9hY2NvdW50In0.kaJVrIll9rMG9wpVXB3TJmMAzWgiGhnL8MH_5JVXA31ZHQPrFlDjNW7XB1_-p5Dsb-e62UNPYN_RVh2UBYMQbQ
+    value: 3Q1OvLkTS0bcc32XuRQUMA-niGuWniZMvnIPuurD44Y
   - enabled: true
     name: ''
     value: ''
@@ -34,5 +34,5 @@ headers:
 method: POST
 name: refresh token
 sortPriority: 2000.0
-url: https://auth.aspc.kz/realms/test/protocol/openid-connect/token
+url: https://auth.aspc.kz/realms/master/protocol/openid-connect/token
 urlParameters: []

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_snEsZQRPY7
 createdAt: 2026-02-04T04:56:34.254327
-updatedAt: 2026-02-04T05:18:35.916375900
+updatedAt: 2026-02-05T15:47:29.913920800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_cC5D8rXnWh
 authentication: {}
@@ -10,11 +10,11 @@ authenticationType: null
 body:
   form:
   - enabled: true
-    file: C:\Users\justs\OneDrive\Desktop\payload.xlsx
+    file: C:\Users\justs\OneDrive\Desktop\Карта времени_2026-02-04_2026-02-04.xlsx
     id: ERFsBaW8ty
     name: file
   - enabled: true
-    id: ZHuQGgiZyW
+    id: xKBSiYQrIf
     name: ''
     value: ''
 bodyType: multipart/form-data

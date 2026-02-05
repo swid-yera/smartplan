@@ -22,7 +22,12 @@ def generate_hik_report(file_content: bytes, original_filename: str) -> str:
         report_df = pd.DataFrame()
         report_df["Фамилия"] = df["Фамилия"]
         report_df["Имя"] = df["Имя"]
-        report_df["Группа"] = df["Группа учета времени"]
+        report_df["Группа"] = df.apply(
+            lambda row: extract_student_group(
+                row["Группа учета времени"], row.get("Департамент")
+            ),
+            axis=1,
+        )
 
         # Берем дату как она есть в payload
         report_df["Дата"] = df["Дата"]
@@ -73,3 +78,10 @@ def generate_hik_report(file_content: bytes, original_filename: str) -> str:
     except Exception as e:
         logger.error(f"Error in generate_hik_report: {e}")
         raise e
+
+
+def extract_student_group(time_group, department):
+    if time_group == "Students" and isinstance(department, str):
+        # Берем последнюю часть после ">"
+        return department.split(">")[-1].strip()
+    return time_group
