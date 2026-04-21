@@ -28,6 +28,7 @@ func main() {
 	redisCfg := config.LoadRedisConfig()
 	minioCfg := config.LoadMinioConfig()
 	docCfg := config.LoadDocumentRenderConfig()
+	geminiCfg := config.LoadGeminiConfig()
 
 	// ---------- DB ----------
 	// Note: Ensure repository.NewPostgresDB exists and accepts *config.DBConfig
@@ -81,6 +82,7 @@ func main() {
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
 	lessonService := service.NewLessonService(lessonRepo, log)
+	aiService := service.NewAIService(httpClient, geminiCfg, log)
 
 	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
@@ -107,6 +109,7 @@ func main() {
 	awardHandler := handler.NewAwardHandler(awardService)
 	groupsHandler := handler.NewGroupsHandler(groupsSyncService, syncGuard)
 	lessonHandler := handler.NewLessonHandler(lessonService, log)
+	aiHandler := handler.NewAIHandler(aiService, log)
 
 	// ---------- ROUTER ----------
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
@@ -119,6 +122,7 @@ func main() {
 		awardHandler,
 		groupsHandler,
 		lessonHandler,
+		aiHandler,
 		nil,
 		sessionAuthMiddleware,
 		serverCfg.CORSAllowedOrigins,

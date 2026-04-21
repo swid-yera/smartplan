@@ -1,0 +1,45 @@
+type: http_request
+model: http_request
+id: rq_dqqUZk77cd
+createdAt: 2026-04-21T13:06:03.200505
+updatedAt: 2026-04-21T13:12:08.112204400
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_cC5D8rXnWh
+authentication: {}
+authenticationType: null
+body:
+  text: |
+    {
+      "name": "ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet",
+      "type": "PRACTICE",
+      "studyForm": "FULL_TIME",
+      "studyYear": "2025-2026",
+      "course": 3,
+      "group": {
+        "name": "ИСП-31",
+        "specialty": "06120100 Вычислительная техника и информационные сети",
+        "qualification": "4S06120102 Техник сетевого и системного администрирования"
+      },
+      "prerequisites": "Основы компьютерных сетей, операционные системы",
+      "postrequisites": "Администрирование корпоративных сетей, защита ИС"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: i2FWnubfcf
+- enabled: true
+  name: Cookie
+  value: sid=
+  id: ZjZcWbeWu3
+- enabled: true
+  name: ''
+  value: ''
+  id: NyGymivbAA
+method: POST
+name: ''
+sortPriority: -1763638414427.0
+url: ${[ url ]}/ai/rups/meta
+urlParameters: []
