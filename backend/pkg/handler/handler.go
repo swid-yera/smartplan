@@ -18,6 +18,7 @@ type Router struct {
 	lesson                *LessonHandler
 	webhooks              *WebhooksHandler
 	sessionAuthMiddleware gin.HandlerFunc
+	corsAllowedOrigins    []string
 }
 
 func NewRouter(
@@ -29,6 +30,7 @@ func NewRouter(
 	lesson *LessonHandler,
 	webhooks *WebhooksHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
+	corsAllowedOrigins []string,
 ) *Router {
 	return &Router{
 		auth:                  auth,
@@ -39,6 +41,7 @@ func NewRouter(
 		groups:                groups,
 		lesson:                lesson,
 		sessionAuthMiddleware: sessionAuthMiddleware,
+		corsAllowedOrigins:    corsAllowedOrigins,
 	}
 }
 
@@ -54,8 +57,13 @@ func (r *Router) Init() *gin.Engine {
 		c.Status(http.StatusOK)
 	})
 
+	corsOrigins := r.corsAllowedOrigins
+	if len(corsOrigins) == 0 {
+		corsOrigins = []string{"http://localhost:3000"}
+	}
+
 	engine.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     corsOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowCredentials: true,
@@ -69,9 +77,11 @@ func (r *Router) Init() *gin.Engine {
 	engine.GET("/callback", middleware.ValidateQueryParams("code"), r.auth.Callback)
 	engine.GET("/logout", r.auth.Logout)
 
-	webhooks := engine.Group("/webhooks")
-	{
-		webhooks.POST("/keycloak", r.webhooks.KeycloakWebhook)
+	if r.webhooks != nil {
+		webhooks := engine.Group("/webhooks")
+		{
+			webhooks.POST("/keycloak", r.webhooks.KeycloakWebhook)
+		}
 	}
 
 	// --- API ---

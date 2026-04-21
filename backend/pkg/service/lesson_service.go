@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"eduplan/backend/pkg/helpers"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 	"math"
@@ -71,21 +72,21 @@ func NewLessonService(repo repository.Lessons, logger *logrus.Logger) *LessonSer
 }
 
 func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) error {
-	eventDate, eventDateValid, err := parseTimeOptional(params.EventDate)
+	eventDate, eventDateValid, err := helpers.ParseTimeOptional(params.EventDate)
 	if err != nil {
 		return err
 	}
 	createParams := storage.CreateLessonsParams{
 		RupName:            params.RupName,
-		DisciplineName:     pgtype.Text{String: ptrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
-		TopicName:          pgtype.Text{String: ptrToString(params.TopicName), Valid: params.TopicName != nil},
+		DisciplineName:     pgtype.Text{String: helpers.PtrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
+		TopicName:          pgtype.Text{String: helpers.PtrToString(params.TopicName), Valid: params.TopicName != nil},
 		Teacher:            params.TeacherID,
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
 		Type:               storage.EnumLessonType(params.Type),
-		Goals:              pgtype.Text{String: ptrToString(params.Goals), Valid: params.Goals != nil},
-		Tasks:              pgtype.Text{String: ptrToString(params.Tasks), Valid: params.Tasks != nil},
-		Expected:           pgtype.Text{String: ptrToString(params.Expected), Valid: params.Expected != nil},
+		Goals:              pgtype.Text{String: helpers.PtrToString(params.Goals), Valid: params.Goals != nil},
+		Tasks:              pgtype.Text{String: helpers.PtrToString(params.Tasks), Valid: params.Tasks != nil},
+		Expected:           pgtype.Text{String: helpers.PtrToString(params.Expected), Valid: params.Expected != nil},
 		InternetResources:  params.InternetResources,
 		TechnicalResources: params.TechnicalResources,
 	}
@@ -93,21 +94,21 @@ func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) e
 }
 
 func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params LessonParams, progress []LessonProgressParams) error {
-	eventDate, eventDateValid, err := parseTimeOptional(params.EventDate)
+	eventDate, eventDateValid, err := helpers.ParseTimeOptional(params.EventDate)
 	if err != nil {
 		return err
 	}
 	updateParams := storage.UpdateLessonParams{
 		ID:                 id,
 		RupName:            params.RupName,
-		DisciplineName:     pgtype.Text{String: ptrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
-		TopicName:          pgtype.Text{String: ptrToString(params.TopicName), Valid: params.TopicName != nil},
+		DisciplineName:     pgtype.Text{String: helpers.PtrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
+		TopicName:          pgtype.Text{String: helpers.PtrToString(params.TopicName), Valid: params.TopicName != nil},
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
 		Type:               storage.EnumLessonType(params.Type),
-		Goals:              pgtype.Text{String: ptrToString(params.Goals), Valid: params.Goals != nil},
-		Tasks:              pgtype.Text{String: ptrToString(params.Tasks), Valid: params.Tasks != nil},
-		Expected:           pgtype.Text{String: ptrToString(params.Expected), Valid: params.Expected != nil},
+		Goals:              pgtype.Text{String: helpers.PtrToString(params.Goals), Valid: params.Goals != nil},
+		Tasks:              pgtype.Text{String: helpers.PtrToString(params.Tasks), Valid: params.Tasks != nil},
+		Expected:           pgtype.Text{String: helpers.PtrToString(params.Expected), Valid: params.Expected != nil},
 		InternetResources:  params.InternetResources,
 		TechnicalResources: params.TechnicalResources,
 	}
@@ -178,19 +179,19 @@ func (s *LessonService) GetAllLessons(
 		lesson := LessonResponse{
 			ID:                 dbLesson.ID,
 			RupName:            dbLesson.RupName,
-			DisciplineName:     pgTextToPtr(dbLesson.DisciplineName),
-			TopicName:          pgTextToPtr(dbLesson.TopicName),
+			DisciplineName:     helpers.PgTextToPtr(dbLesson.DisciplineName),
+			TopicName:          helpers.PgTextToPtr(dbLesson.TopicName),
 			TeacherID:          dbLesson.Teacher,
 			EventDate:          dbLesson.EventDate.Time.Format(time.RFC3339),
 			GroupID:            dbLesson.GroupID,
 			Type:               string(dbLesson.Type),
-			Goals:              pgTextToPtr(dbLesson.Goals),
-			Tasks:              pgTextToPtr(dbLesson.Tasks),
-			Expected:           pgTextToPtr(dbLesson.Expected),
+			Goals:              helpers.PgTextToPtr(dbLesson.Goals),
+			Tasks:              helpers.PgTextToPtr(dbLesson.Tasks),
+			Expected:           helpers.PgTextToPtr(dbLesson.Expected),
 			InternetResources:  dbLesson.InternetResources,
 			TechnicalResources: dbLesson.TechnicalResources,
-			CreatedAt:          pgTimeToString(dbLesson.CreatedAt),
-			UpdatedAt:          pgTimeToString(dbLesson.UpdatedAt),
+			CreatedAt:          helpers.PgTimeToString(dbLesson.CreatedAt),
+			UpdatedAt:          helpers.PgTimeToString(dbLesson.UpdatedAt),
 		}
 		result = append(result, lesson)
 	}

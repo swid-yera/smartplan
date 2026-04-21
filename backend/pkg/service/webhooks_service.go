@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"eduplan/backend/pkg/helpers"
 	"eduplan/backend/pkg/repository"
 	"eduplan/backend/pkg/service/keycloak"
 
@@ -50,7 +51,7 @@ func (s *webhooksService) ProcessEvent(
 		return s.users.UpdatePasswordChangedAt(ctx, keycloakID, time.Now())
 
 	case keycloak.EventRoleUpdated:
-		return s.users.UpdateRoles(ctx, keycloakID, extractRoles(event))
+		return s.users.UpdateRoles(ctx, keycloakID, helpers.ExtractRoles(event))
 
 	}
 	return nil

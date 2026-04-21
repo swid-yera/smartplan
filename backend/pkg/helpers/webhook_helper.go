@@ -1,4 +1,4 @@
-package service
+package helpers
 
 import (
 	"eduplan/backend/pkg/service/keycloak"
@@ -17,7 +17,7 @@ type UserResponse struct {
 	Roles      string    `json:"roles"`
 }
 
-func extractRoles(event *keycloak.KeycloakEvent) storage.UserRole {
+func ExtractRoles(event *keycloak.KeycloakEvent) storage.UserRole {
 	raw, ok := event.Details["roles"].([]interface{})
 	if !ok {
 		return storage.UserRoleTEACHER
@@ -42,7 +42,7 @@ func extractRoles(event *keycloak.KeycloakEvent) storage.UserRole {
 	return storage.UserRoleTEACHER
 }
 
-func convertToUserResponse(user storage.User) *UserResponse {
+func ConvertToUserResponse(user storage.User) *UserResponse {
 	return &UserResponse{
 		KeycloakID: user.KeycloakID,
 		Email:      user.Email,

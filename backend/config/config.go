@@ -1,18 +1,24 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/joho/godotenv"
 )
 
-func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error: .env not found")
-	}
+var envLoadOnce sync.Once
+
+func ensureEnvLoaded() {
+	envLoadOnce.Do(func() {
+		if err := godotenv.Load(); err != nil {
+			log.Println("Warning: .env not found, using OS environment only")
+		}
+	})
 }
 
 func getEnv(key string, def string) string {
@@ -52,6 +58,34 @@ func splitEnv(key string) []string {
 	return parts
 }
 
+func normalizeHostPort(addr string, defaultPort string) string {
+	trimmed := strings.TrimSpace(addr)
+	if trimmed == "" {
+		return fmt.Sprintf("localhost:%s", defaultPort)
+	}
+	if strings.Contains(trimmed, ":") {
+		return trimmed
+	}
+	return fmt.Sprintf("%s:%s", trimmed, defaultPort)
+}
+
+func buildRedisAddr() string {
+	if addr := strings.TrimSpace(getEnv("REDIS_ADDR", "")); addr != "" {
+		return normalizeHostPort(addr, "6379")
+	}
+
+	host := strings.TrimSpace(getEnv("REDIS_HOST", "localhost"))
+	port := strings.TrimSpace(getEnv("REDIS_PORT", "6379"))
+	if port == "" {
+		port = "6379"
+	}
+
+	if strings.Contains(host, ":") {
+		return normalizeHostPort(host, "6379")
+	}
+	return fmt.Sprintf("%s:%s", host, port)
+}
+
 type KeycloakConfig struct {
 	KeycloakURL      string
 	KeycloakRealm    string
@@ -81,8 +115,12 @@ type RedisConfig struct {
 	RedisDB       int
 }
 
+type ServerConfig struct {
+	Port               string
+	CORSAllowedOrigins []string
+}
+
 type MinioConfig struct {
-	Port              string
 	MinioEndpoint     string
 	BucketName        string
 	MinioRootUser     string
@@ -95,7 +133,23 @@ type DocumentRenderConfig struct {
 	ApiKey string
 }
 
+func LoadServerConfig() *ServerConfig {
+	ensureEnvLoaded()
+
+	origins := splitEnv("CORS_ALLOWED_ORIGINS")
+	if len(origins) == 0 {
+		origins = []string{getEnv("FRONTEND_URL", "http://localhost:3000")}
+	}
+
+	return &ServerConfig{
+		Port:               getEnv("SERVER_PORT", "8080"),
+		CORSAllowedOrigins: origins,
+	}
+}
+
 func LoadDocumentRenderConfig() *DocumentRenderConfig {
+	ensureEnvLoaded()
+
 	return &DocumentRenderConfig{
 		Url:    getEnv("DOCUMENT_RENDER_URL", "http://localhost:8000"),
 		ApiKey: getEnv("DOCUMENT_RENDER_API_KEY", ""),
@@ -103,6 +157,8 @@ func LoadDocumentRenderConfig() *DocumentRenderConfig {
 }
 
 func LoadMinioConfig() *MinioConfig {
+	ensureEnvLoaded()
+
 	return &MinioConfig{
 		MinioEndpoint:     getEnv("MINIO_ENDPOINT", "localhost:9000"),
 		BucketName:        getEnv("MINIO_BUCKET_NAME", "awards"),
@@ -113,19 +169,16 @@ func LoadMinioConfig() *MinioConfig {
 }
 
 func LoadKeycloakConfig() *KeycloakConfig {
-	// Load .env file
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error: .env not found")
-	}
+	ensureEnvLoaded()
 
 	return &KeycloakConfig{
 		KeycloakURL:      getEnv("KEYCLOAK_URL", "https://example.com"),
 		KeycloakRealm:    getEnv("KEYCLOAK_REALM", "realm"),
 		KeycloakClientID: getEnv("KEYCLOAK_CLIENT_ID", "client_id"),
 		KeycloakSecret:   getEnv("KEYCLOAK_CLIENT_SECRET", "secret"),
-		FrontendURL:      getEnv("FRONTEND_URL", "http://example:3000"),
+		FrontendURL:      getEnv("FRONTEND_URL", "http://localhost:3000"),
 		CookieDomain:     getEnv("COOKIE_DOMAIN", "localhost"),
-		BaseURL:          getEnv("BASE_URL", "http://exaple:8080"),
+		BaseURL:          getEnv("BASE_URL", "http://localhost:8080"),
 		GroupID:          getEnv("GROUP_ID", ""),
 		TeacherRoles:     splitEnv("TEACHER_ROLES"),
 		AdminRoles:       splitEnv("ADMIN_ROLES"),
@@ -134,10 +187,7 @@ func LoadKeycloakConfig() *KeycloakConfig {
 }
 
 func LoadDBConfig() *DBConfig {
-	// Load .env file
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error: .env not found")
-	}
+	ensureEnvLoaded()
 
 	return &DBConfig{
 		Host:     getEnv("DB_HOST", "localhost"),
@@ -150,14 +200,11 @@ func LoadDBConfig() *DBConfig {
 }
 
 func LoadRedisConfig() *RedisConfig {
-	// Load .env file
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error: .env not found")
-	}
+	ensureEnvLoaded()
 
 	return &RedisConfig{
-		RedisAddr:     getEnv("REDIS_HOST", "localhost"),
-		RedisPassword: getEnv("REDIS_PASSWORD", "password"),
-		RedisDB:       getEnvAsInt("REDIS_PORT", 0),
+		RedisAddr:     buildRedisAddr(),
+		RedisPassword: getEnv("REDIS_PASSWORD", ""),
+		RedisDB:       getEnvAsInt("REDIS_DB", 0),
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"eduplan/backend/config"
+	"eduplan/backend/pkg/helpers"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -109,10 +110,10 @@ type RupResponse struct {
 	StudyYear       string                  `json:"studyYear"`
 	Type            string                  `json:"type"`
 	TotalHours      int32                   `json:"totalHours"`
-	Contacts        []*UserResponse         `json:"contacts"`
+	Contacts        []*helpers.UserResponse `json:"contacts"`
 	Groups          []*GroupResponse        `json:"groups"`
-	Methodist       *UserResponse           `json:"methodist"`
-	Teacher         *UserResponse           `json:"teacher"`
+	Methodist       *helpers.UserResponse   `json:"methodist"`
+	Teacher         *helpers.UserResponse   `json:"teacher"`
 	ExplorationNote ExplorationNoteResponse `json:"explorationNote"`
 	Disciplines     []*DisciplineResponse   `json:"disciplines"`
 	CreatedAt       time.Time               `json:"createdAt"`
@@ -127,27 +128,27 @@ type RupDocumentPayload struct {
 	StudyYear       string                  `json:"studyYear"`
 	Type            string                  `json:"type"`
 	TotalHours      int32                   `json:"totalHours"`
-	Contacts        []*UserResponse         `json:"contacts"`
+	Contacts        []*helpers.UserResponse `json:"contacts"`
 	Group           *GroupResponse          `json:"group"`
 	ExplorationNote ExplorationNoteResponse `json:"explorationNote"`
 	Disciplines     []*DisciplineResponse   `json:"disciplines"`
 }
 
 type ListAllRupsResponse struct {
-	ID         uuid.UUID        `json:"id"`
-	Name       string           `json:"name"`
-	Status     string           `json:"status"`
-	Reason     string           `json:"reason"`
-	Course     int32            `json:"course"`
-	StudyForm  string           `json:"studyForm"`
-	StudyYear  string           `json:"studyYear"`
-	Type       string           `json:"type"`
-	TotalHours int32            `json:"totalHours"`
-	Groups     []*GroupResponse `json:"groups"`
-	Methodist  *UserResponse    `json:"methodist"`
-	Teacher    *UserResponse    `json:"teacher"`
-	CreatedAt  time.Time        `json:"createdAt"`
-	UpdatedAt  time.Time        `json:"updatedAt"`
+	ID         uuid.UUID             `json:"id"`
+	Name       string                `json:"name"`
+	Status     string                `json:"status"`
+	Reason     string                `json:"reason"`
+	Course     int32                 `json:"course"`
+	StudyForm  string                `json:"studyForm"`
+	StudyYear  string                `json:"studyYear"`
+	Type       string                `json:"type"`
+	TotalHours int32                 `json:"totalHours"`
+	Groups     []*GroupResponse      `json:"groups"`
+	Methodist  *helpers.UserResponse `json:"methodist"`
+	Teacher    *helpers.UserResponse `json:"teacher"`
+	CreatedAt  time.Time             `json:"createdAt"`
+	UpdatedAt  time.Time             `json:"updatedAt"`
 }
 
 type GroupResponse struct {
@@ -457,9 +458,9 @@ func buildPayload(rup *RupResponse) RupDocumentPayload {
 	}
 
 	// ---------- CONTACTS ----------
-	contacts := []*UserResponse{}
+	contacts := []*helpers.UserResponse{}
 	for _, c := range rup.Contacts {
-		contacts = append(contacts, &UserResponse{
+		contacts = append(contacts, &helpers.UserResponse{
 			KeycloakID: c.KeycloakID,
 			Email:      c.Email,
 			Username:   c.Username,
@@ -914,20 +915,20 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 	}
 
 	// Get methodist
-	var methodist *UserResponse
+	var methodist *helpers.UserResponse
 	if rup.Methodist.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
 		if err == nil {
-			methodist = convertToUserResponse(*user)
+			methodist = helpers.ConvertToUserResponse(*user)
 		}
 	}
 
 	// Get teacher
-	var teacher *UserResponse
+	var teacher *helpers.UserResponse
 	if rup.Teacher.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
 		if err == nil {
-			teacher = convertToUserResponse(*user)
+			teacher = helpers.ConvertToUserResponse(*user)
 		}
 	}
 
@@ -951,13 +952,13 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 
 func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*RupResponse, error) {
 	// Get contacts
-	contacts := []*UserResponse{}
+	contacts := []*helpers.UserResponse{}
 	for _, contactID := range rup.Contacts {
 		user, err := s.repo.GetUserByID(ctx, contactID)
 		if err != nil {
 			continue // Skip if not found
 		}
-		contacts = append(contacts, convertToUserResponse(*user))
+		contacts = append(contacts, helpers.ConvertToUserResponse(*user))
 	}
 
 	// Get groups
@@ -975,20 +976,20 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	}
 
 	// Get methodist
-	var methodist *UserResponse
+	var methodist *helpers.UserResponse
 	if rup.Methodist.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
 		if err == nil {
-			methodist = convertToUserResponse(*user)
+			methodist = helpers.ConvertToUserResponse(*user)
 		}
 	}
 
 	// Get teacher
-	var teacher *UserResponse
+	var teacher *helpers.UserResponse
 	if rup.Teacher.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
 		if err == nil {
-			teacher = convertToUserResponse(*user)
+			teacher = helpers.ConvertToUserResponse(*user)
 		}
 	}
 

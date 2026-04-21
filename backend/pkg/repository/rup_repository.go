@@ -16,7 +16,6 @@ type RupRepository interface {
 	UpdateRup(ctx context.Context, params storage.UpdateRupParams) (*storage.Rup, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 
-	// Additional methods for related entities
 	CreateExplorationNote(ctx context.Context, params storage.CreateRupExplorationNoteParams) (*storage.RupExplorationNote, error)
 	CreateResource(ctx context.Context, params storage.CreateRupResourceParams) (*storage.RupResource, error)
 	CreateDiscipline(ctx context.Context, params storage.CreateRupDisciplineParams) (*storage.RupDiscipline, error)

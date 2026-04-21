@@ -2,8 +2,6 @@ package main
 
 import (
 	"net/http"
-	"os" // Added for getEnv
-	"strings"
 	"time"
 
 	"eduplan/backend/config"
@@ -19,30 +17,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Helper function to get environment variables with a default value
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-func normalizeRedisAddr(addr string) string {
-	addr = strings.TrimSpace(addr)
-	if addr == "" {
-		return "localhost:6379"
-	}
-	if !strings.Contains(addr, ":") {
-		return addr + ":6379"
-	}
-	return addr
-}
-
 func main() {
 	// ---------- LOGGER ----------
 	log := helpers.NewLogger()
 
 	// ---------- CONFIG ----------
+	serverCfg := config.LoadServerConfig()
 	kcCfg := config.LoadKeycloakConfig()
 	dbCfg := config.LoadDBConfig()
 	redisCfg := config.LoadRedisConfig()
@@ -51,7 +31,7 @@ func main() {
 
 	// ---------- DB ----------
 	// Note: Ensure repository.NewPostgresDB exists and accepts *config.DBConfig
-	db, err := repository.NewPostgresDB(dbCfg)
+	db, err := helpers.NewPostgresDB(dbCfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize DB: %v", err)
 	}
@@ -79,7 +59,7 @@ func main() {
 
 	// ---------- REDIS ----------
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     normalizeRedisAddr(redisCfg.RedisAddr),
+		Addr:     redisCfg.RedisAddr,
 		Password: redisCfg.RedisPassword,
 		DB:       redisCfg.RedisDB,
 	})
@@ -132,12 +112,21 @@ func main() {
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
 
 	// Ensure your NewRouter signature matches: (auth, user, rup, award, middleware)
-	router := handler.NewRouter(authHandler, userHandler, rupHandler, awardHandler, groupsHandler, lessonHandler, nil, sessionAuthMiddleware)
+	router := handler.NewRouter(
+		authHandler,
+		userHandler,
+		rupHandler,
+		awardHandler,
+		groupsHandler,
+		lessonHandler,
+		nil,
+		sessionAuthMiddleware,
+		serverCfg.CORSAllowedOrigins,
+	)
 	engine := router.Init()
 
-	port := getEnv("SERVER_PORT", "8080")
-	log.Infof("Server starting on port %s", port)
-	if err := engine.Run(":" + port); err != nil {
+	log.Infof("Server starting on port %s", serverCfg.Port)
+	if err := engine.Run(":" + serverCfg.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
