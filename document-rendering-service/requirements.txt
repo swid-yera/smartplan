@@ -3,3 +3,6 @@ docxtpl>=0.16.0,<1.0.0
 fastapi>=0.114.0,<0.116.0
 uvicorn>=0.30.0,<0.34.0
 python-multipart>=0.0.18,<0.1.0
+pandas>=2.2.0,<3.0.0
+openpyxl>=3.1.0,<4.0.0
+XlsxWriter>=3.2.0,<4.0.0
