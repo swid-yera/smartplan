@@ -2,31 +2,38 @@ type: http_request
 model: http_request
 id: rq_3PEVpn4nTJ
 createdAt: 2026-01-19T12:20:28.897108600
-updatedAt: 2026-01-22T20:57:40.576597500
+updatedAt: 2026-04-21T11:19:44.545894200
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
 authenticationType: null
 body:
-  text: |-
-    {
-      "text": "Обновленное описание",
-      "type": "b66de603-0684-48f8-be91-f06164cf2657",
-      "variant": "6367fa1e-6b43-4d55-bff8-ab1bfcd2954a",
-      "criteria": "b8069b09-b8a6-4e58-a592-aaabdd558218",
-      "bonusCriteria": "f5e8e3c9-fa74-436c-bd7d-a1758867ea75"
-    }
-bodyType: application/json
+  form:
+  - enabled: true
+    id: I3IhBWVArz
+    name: data
+    value: |-
+      {
+        "text": "Обновленное описание",
+        "type": "aefc4a3c-eb64-473b-9238-f99e824a0813",
+        "variant": "008b5555-157e-4c4f-981d-3c887406c000",
+        "criteria": "d2a7b4f0-4401-49aa-8091-2fe3179a352b"
+      }
+  - enabled: true
+    id: E4WPtZfhQY
+    name: ''
+    value: ''
+bodyType: multipart/form-data
 description: ''
 headers:
-- enabled: true
-  name: Content-Type
-  value: application/json
-  id: G7Bv0HQNNt
 - enabled: true
   name: ''
   value: ''
   id: JxThxdbDqJ
+- enabled: true
+  name: Content-Type
+  value: multipart/form-data
+  id: TMQuZxwpgN
 method: PUT
 name: update
 sortPriority: 1333.3333333333333
@@ -34,9 +41,9 @@ url: ${[ url ]}/awards/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: bc7d9487-37d5-4333-84b4-c2e120e62ebd
+  value: a2cc036d-bb7f-4080-9355-a4263cd35ca0
   id: RV9YRIbIwS
 - enabled: true
   name: ''
   value: ''
-  id: iTXmbPznz7
+  id: IA6uEmDHVV

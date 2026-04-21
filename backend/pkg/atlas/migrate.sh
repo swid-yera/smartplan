@@ -1,1 +1,1 @@
-atlas migrate diff --to file://schema.sql --dir 'file://./migrations' --dev-url "postgres://admin:admin@localhost:5432/eduplandev?sslmode=disable"
+atlas migrate diff --to file://schema.sql --dir 'file://./migrations' --dev-url "postgres://admin:admin@localhost:5432/eduplan?sslmode=disable"

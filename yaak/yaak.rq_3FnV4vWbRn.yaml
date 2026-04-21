@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_3FnV4vWbRn
 createdAt: 2026-01-15T20:10:19.309558700
-updatedAt: 2026-01-28T22:58:14.955949300
+updatedAt: 2026-04-21T11:22:46.139821400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -20,4 +20,12 @@ method: PUT
 name: update
 sortPriority: 802.4691358024692
 url: ${[ url ]}/rups/:id
-urlParameters: []
+urlParameters:
+- enabled: true
+  name: :id
+  value: d387b80a-bcf2-4814-8ef0-c32271073087
+  id: WxCX3uxDAD
+- enabled: true
+  name: ''
+  value: ''
+  id: smZzy3vMdZ
