@@ -16,6 +16,7 @@ type Router struct {
 	award                 *AwardHandler
 	groups                *GroupsHandler
 	lesson                *LessonHandler
+	ai                    *AIHandler
 	webhooks              *WebhooksHandler
 	sessionAuthMiddleware gin.HandlerFunc
 	corsAllowedOrigins    []string
@@ -28,6 +29,7 @@ func NewRouter(
 	award *AwardHandler,
 	groups *GroupsHandler,
 	lesson *LessonHandler,
+	ai *AIHandler,
 	webhooks *WebhooksHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
 	corsAllowedOrigins []string,
@@ -40,6 +42,7 @@ func NewRouter(
 		webhooks:              webhooks,
 		groups:                groups,
 		lesson:                lesson,
+		ai:                    ai,
 		sessionAuthMiddleware: sessionAuthMiddleware,
 		corsAllowedOrigins:    corsAllowedOrigins,
 	}
@@ -146,6 +149,17 @@ func (r *Router) Init() *gin.Engine {
 
 			lessons.GET("/:id/progress", r.lesson.GetLessonProgress)
 			lessons.POST("/:id/progress", r.lesson.RecordLessonProgress)
+		}
+
+		// --- AI ---
+		if r.ai != nil {
+			ai := protected.Group("/ai")
+			{
+				ai.POST("/rups/meta", r.ai.GenerateRupMeta)
+				ai.POST("/rups/resources", r.ai.GenerateResources)
+				ai.POST("/rups/disciplines", r.ai.GenerateDisciplines)
+				ai.POST("/rups/topics", r.ai.GenerateTopicsForDiscipline)
+			}
 		}
 	}
 

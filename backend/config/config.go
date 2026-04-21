@@ -133,6 +133,13 @@ type DocumentRenderConfig struct {
 	ApiKey string
 }
 
+type GeminiConfig struct {
+	APIKey        string
+	BaseURL       string
+	PrimaryModel  string
+	FallbackModel string
+}
+
 func LoadServerConfig() *ServerConfig {
 	ensureEnvLoaded()
 
@@ -153,6 +160,17 @@ func LoadDocumentRenderConfig() *DocumentRenderConfig {
 	return &DocumentRenderConfig{
 		Url:    getEnv("DOCUMENT_RENDER_URL", "http://localhost:8000"),
 		ApiKey: getEnv("DOCUMENT_RENDER_API_KEY", ""),
+	}
+}
+
+func LoadGeminiConfig() *GeminiConfig {
+	ensureEnvLoaded()
+
+	return &GeminiConfig{
+		APIKey:        getEnv("GEMINI_API_KEY", ""),
+		BaseURL:       getEnv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
+		PrimaryModel:  getEnv("GEMINI_PRIMARY_MODEL", "gemini-2.5-flash-lite"),
+		FallbackModel: getEnv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash"),
 	}
 }
 
