@@ -188,3 +188,45 @@ func (h *LessonHandler) GetLessonProgress(c *gin.Context) {
 
 	c.JSON(http.StatusOK, progress)
 }
+
+func (h *LessonHandler) GenerateLesson(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "user not authenticated",
+		})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "invalid user context",
+		})
+		return
+	}
+
+	var req service.GenerateLessonInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "invalid request body",
+		})
+		return
+	}
+
+	if _, err := h.lessonService.GenerateLesson(c.Request.Context(), currentUser.KeycloakID, req); err != nil {
+		h.log.WithError(err).Error("generate lesson failed")
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
+}

@@ -1,0 +1,38 @@
+type: http_request
+model: http_request
+id: rq_SqorFtpxB7
+createdAt: 2026-04-22T11:17:49.513364300
+updatedAt: 2026-04-22T11:27:13.052938800
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_tqqPjuByKX
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "rupId": "f1afe4e3-4a4c-4ce5-9f1e-a704270d597e",
+      "disciplineId": "0a86ac50-2b02-4d17-94e9-20e1855a0fab",
+      "topicId": "9debc046-e5c7-4801-a704-f0d0e162059b",
+      "updatedTopic": {
+        "name": "Настраивает базовую маршрутизацию",
+        "type": "PRACTICAL",
+        "total_hours": 2,
+        "theory_hours": 0,
+        "practice_hours": 2,
+        "individual_hours": 0,
+        "srsp_hours": 0,
+        "srs_hours": 0
+      }
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: Z9VZJGSmPn
+method: POST
+name: ''
+sortPriority: 703.7037037037037
+url: ${[ url ]}/lessons/generate-lesson
+urlParameters: []

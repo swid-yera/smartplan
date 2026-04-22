@@ -199,6 +199,7 @@ type TopicResponse struct {
 	ID              uuid.UUID                   `json:"id"`
 	Name            string                      `json:"name"`
 	Type            storage.DisciplineTopicType `json:"type"`
+	LessonID        *uuid.UUID                  `json:"lessonId"`
 	TotalHours      int32                       `json:"totalHours"`
 	TheoryHours     int32                       `json:"theoryHours"`
 	PracticeHours   int32                       `json:"practiceHours"`
@@ -1211,6 +1212,7 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 			ID:              topic.ID,
 			Name:            topic.Name,
 			Type:            topic.Type,
+			LessonID:        helpers.PgUUIDToPtr(topic.LessonID),
 			TotalHours:      topic.TotalHours,
 			TheoryHours:     topic.TheoryHours,
 			PracticeHours:   topic.PracticeHours,

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -57,4 +58,15 @@ func PgTimeToString(t pgtype.Timestamptz) string {
 		return t.Time.Format(time.RFC3339)
 	}
 	return ""
+}
+
+func PgUUIDToPtr(value pgtype.UUID) *uuid.UUID {
+	if !value.Valid {
+		return nil
+	}
+	parsed, err := uuid.FromBytes(value.Bytes[:])
+	if err != nil {
+		return nil
+	}
+	return &parsed
 }

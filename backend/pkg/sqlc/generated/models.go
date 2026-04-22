@@ -447,6 +447,7 @@ type DisciplineTopic struct {
 	ID              uuid.UUID           `json:"id"`
 	Name            string              `json:"name"`
 	Type            DisciplineTopicType `json:"type"`
+	LessonID        pgtype.UUID         `json:"lesson_id"`
 	TotalHours      int32               `json:"total_hours"`
 	TheoryHours     int32               `json:"theory_hours"`
 	PracticeHours   int32               `json:"practice_hours"`
@@ -476,6 +477,7 @@ type Lesson struct {
 	Expected           pgtype.Text        `json:"expected"`
 	InternetResources  []uuid.UUID        `json:"internet_resources"`
 	TechnicalResources []uuid.UUID        `json:"technical_resources"`
+	FileUrl            pgtype.Text        `json:"file_url"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 }
