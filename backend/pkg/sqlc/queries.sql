@@ -215,6 +215,27 @@ SELECT * FROM discipline_topics WHERE id = $1;
 -- name: GetAllDisciplineTopics :many
 SELECT * FROM discipline_topics;
 
+-- name: UpdateDisciplineTopic :exec
+UPDATE discipline_topics
+SET
+    name = $2,
+    type = $3,
+    total_hours = $4,
+    theory_hours = $5,
+    practice_hours = $6,
+    individual_hours = $7,
+    srsp_hours = $8,
+    srs_hours = $9
+WHERE
+    id = $1;
+
+-- name: LinkLessonToDisciplineTopic :exec
+UPDATE discipline_topics
+SET
+    lesson_id = $2
+WHERE
+    id = $1;
+
 -- name: CreateRupDiscipline :one
 INSERT INTO
     rup_disciplines (
@@ -601,6 +622,14 @@ SET
 WHERE
     id = $1;
 
+-- name: UpdateLessonFileURL :exec
+UPDATE lessons
+SET
+    file_url = $2,
+    updated_at = NOW()
+WHERE
+    id = $1;
+
 -- name: DeleteLesson :exec
 DELETE FROM lessons WHERE id = $1;
 
@@ -654,6 +683,15 @@ WHERE
     )
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
+
+-- name: GetRecentLessonsByDiscipline :many
+SELECT *
+FROM lessons
+WHERE
+    rup_name = $1
+    AND discipline_name = $2
+ORDER BY created_at DESC
+LIMIT $3;
 
 -- name: CountLessonsFiltered :one
 SELECT COUNT(*)

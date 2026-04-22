@@ -18,13 +18,19 @@ func NewLessonRepository(queries *storage.Queries) *LessonRepository {
 	}
 }
 
-func (r *LessonRepository) CreateLesson(ctx context.Context, params storage.CreateLessonsParams) error {
-	_, err := r.queries.CreateLessons(ctx, params)
-	return err
+func (r *LessonRepository) CreateLesson(ctx context.Context, params storage.CreateLessonsParams) (uuid.UUID, error) {
+	return r.queries.CreateLessons(ctx, params)
 }
 
 func (r *LessonRepository) UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error {
 	return r.queries.UpdateLesson(ctx, params)
+}
+
+func (r *LessonRepository) UpdateLessonFileURL(ctx context.Context, id uuid.UUID, fileURL string) error {
+	return r.queries.UpdateLessonFileURL(ctx, storage.UpdateLessonFileURLParams{
+		ID:      id,
+		FileUrl: pgtype.Text{String: fileURL, Valid: fileURL != ""},
+	})
 }
 
 func (r *LessonRepository) DeleteLesson(ctx context.Context, id uuid.UUID) error {
@@ -50,6 +56,18 @@ func (r *LessonRepository) CountLessonsFiltered(ctx context.Context, teacher pgt
 	return r.queries.CountLessonsFiltered(ctx, storage.CountLessonsFilteredParams{
 		Teacher: teacher,
 		ID:      id,
+	})
+}
+
+func (r *LessonRepository) GetLessonByID(ctx context.Context, id uuid.UUID) (storage.Lesson, error) {
+	return r.queries.GetLessonsByID(ctx, id)
+}
+
+func (r *LessonRepository) GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName pgtype.Text, limit int32) ([]storage.Lesson, error) {
+	return r.queries.GetRecentLessonsByDiscipline(ctx, storage.GetRecentLessonsByDisciplineParams{
+		RupName:        rupName,
+		DisciplineName: disciplineName,
+		Limit:          limit,
 	})
 }
 

@@ -50,6 +50,8 @@ type Rup interface {
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*storage.RupResource, error)
 	GetSemesterByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineSemester, error)
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
+	UpdateTopic(ctx context.Context, params storage.UpdateDisciplineTopicParams) error
+	LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error
 
 	CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
 	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
@@ -57,10 +59,13 @@ type Rup interface {
 }
 
 type Lessons interface {
-	CreateLesson(ctx context.Context, params storage.CreateLessonsParams) error
+	CreateLesson(ctx context.Context, params storage.CreateLessonsParams) (uuid.UUID, error)
 	UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error
+	UpdateLessonFileURL(ctx context.Context, id uuid.UUID, fileURL string) error
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
 	GetLessons(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID, limit int32, offset int32) ([]storage.Lesson, error)
+	GetLessonByID(ctx context.Context, id uuid.UUID) (storage.Lesson, error)
+	GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName pgtype.Text, limit int32) ([]storage.Lesson, error)
 	CountLessonsFiltered(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID) (int64, error)
 
 	CreateLessonProgress(ctx context.Context, params storage.CreateLessonProgressParams) error

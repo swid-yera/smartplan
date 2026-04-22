@@ -29,6 +29,8 @@ type RupRepository interface {
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*storage.RupResource, error)
 	GetSemesterByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineSemester, error)
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
+	UpdateTopic(ctx context.Context, params storage.UpdateDisciplineTopicParams) error
+	LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error
 
 	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
 	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
@@ -190,6 +192,22 @@ func (r *RupPostgres) GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.
 		return nil, err
 	}
 	return &topic, nil
+}
+
+func (r *RupPostgres) UpdateTopic(ctx context.Context, params storage.UpdateDisciplineTopicParams) error {
+	return r.queries.UpdateDisciplineTopic(ctx, params)
+}
+
+func (r *RupPostgres) LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error {
+	var lessonUUID pgtype.UUID
+	if lessonID != nil {
+		lessonUUID = pgtype.UUID{Bytes: *lessonID, Valid: true}
+	}
+
+	return r.queries.LinkLessonToDisciplineTopic(ctx, storage.LinkLessonToDisciplineTopicParams{
+		ID:       topicID,
+		LessonID: lessonUUID,
+	})
 }
 
 func (r *RupPostgres) CountRups(ctx context.Context) (int64, error) {

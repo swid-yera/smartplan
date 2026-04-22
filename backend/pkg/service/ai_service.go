@@ -21,6 +21,7 @@ type AIService interface {
 	GenerateResources(ctx context.Context, req GenerateResourcesRequest) (*GenerateResourcesResponse, error)
 	GenerateDisciplines(ctx context.Context, req GenerateDisciplinesRequest) ([]GeneratedDiscipline, error)
 	GenerateTopicsForDiscipline(ctx context.Context, req GenerateTopicsForDisciplineRequest) ([]GeneratedTopic, error)
+	GenerateLesson(ctx context.Context, req GenerateLessonRequest) (*GenerateLessonResponse, error)
 }
 
 type aiService struct {
@@ -116,6 +117,44 @@ type GeneratedTopic struct {
 	IndividualHours int    `json:"individualHours"`
 	SrspHours       int    `json:"srspHours"`
 	SrsHours        int    `json:"srsHours"`
+}
+
+type GenerateLessonRequest struct {
+	RupName            string   `json:"rupName"`
+	DisciplineName     string   `json:"disciplineName"`
+	TopicName          string   `json:"topicName"`
+	TopicType          string   `json:"topicType"`
+	TotalHours         int32    `json:"totalHours"`
+	TheoryHours        int32    `json:"theoryHours"`
+	PracticeHours      int32    `json:"practiceHours"`
+	IndividualHours    int32    `json:"individualHours"`
+	SrspHours          int32    `json:"srspHours"`
+	SrsHours           int32    `json:"srsHours"`
+	GroupName          string   `json:"groupName"`
+	GroupSpecialty     string   `json:"groupSpecialty"`
+	GroupQualification string   `json:"groupQualification"`
+	ExplorationGoals   string   `json:"explorationGoals"`
+	ExplorationSummary string   `json:"explorationSummary"`
+	Prerequisites      string   `json:"prerequisites"`
+	Postrequisites     string   `json:"postrequisites"`
+	InternetResources  []string `json:"internetResources"`
+	TechnicalResources []string `json:"technicalResources"`
+	PreviousLessons    []string `json:"previousLessons"`
+}
+
+type GenerateLessonResponse struct {
+	Type           string                        `json:"type"`
+	Goals          string                        `json:"goals"`
+	Tasks          string                        `json:"tasks"`
+	Expected       string                        `json:"expected"`
+	LessonProgress []GeneratedLessonProgressStep `json:"lessonProgress"`
+}
+
+type GeneratedLessonProgressStep struct {
+	Name        string   `json:"name"`
+	StartMinute int32    `json:"startMinute"`
+	EndMinute   int32    `json:"endMinute"`
+	Content     []string `json:"content"`
 }
 
 type geminiGenerateContentRequest struct {
@@ -634,6 +673,121 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 	}
 
 	return result, nil
+}
+
+func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonRequest) (*GenerateLessonResponse, error) {
+	internetResourcesJSON, err := json.Marshal(req.InternetResources)
+	if err != nil {
+		return nil, fmt.Errorf("marshal internet resources: %w", err)
+	}
+	technicalResourcesJSON, err := json.Marshal(req.TechnicalResources)
+	if err != nil {
+		return nil, fmt.Errorf("marshal technical resources: %w", err)
+	}
+	previousLessonsJSON, err := json.Marshal(req.PreviousLessons)
+	if err != nil {
+		return nil, fmt.Errorf("marshal previous lessons: %w", err)
+	}
+
+	lessonMinutes := req.TotalHours * 45
+	if lessonMinutes <= 0 {
+		lessonMinutes = 90
+	}
+
+	prompt := fmt.Sprintf(`
+Ты — методист колледжа Республики Казахстан. Подготовь поурочный план по теме дисциплины.
+
+КОНТЕКСТ:
+- Название РУП: "%s"
+- Дисциплина: "%s"
+- Тема: "%s"
+- Тип темы: "%s" (SNZ / PRACTICAL / COMBINED)
+- Часы темы: total=%d, theory=%d, practice=%d, individual=%d, srsp=%d, srs=%d
+- Группа: "%s"
+- Специальность: "%s"
+- Квалификация: "%s"
+- Цели РУП: "%s"
+- Краткое содержание (summary): "%s"
+- Пререквизиты: "%s"
+- Постреквизиты: "%s"
+- Интернет-ресурсы: %s
+- Тех.ресурсы: %s
+- 3 предыдущих темы уроков: %s
+
+ТРЕБОВАНИЯ:
+1) Верни СТРОГО один JSON-объект без markdown и комментариев.
+2) Поле "type" только "PRACTICE" или "THEORY".
+3) "goals", "tasks", "expected" — связный методический текст на русском языке.
+4) "lessonProgress" — массив этапов занятия.
+5) Каждый этап должен содержать:
+   - name: название этапа
+   - startMinute: длительность этапа (минут)
+   - endMinute: дополнительная длительность/практическая часть (минут), если не нужна — 0
+   - content: массив конкретных действий преподавателя и обучающихся
+6) Сумма минут в startMinute по этапам должна быть близка к %d минутам.
+7) Формулировки должны соответствовать теме, не повторять дословно предыдущие уроки.
+
+ФОРМАТ ОТВЕТА:
+{
+  "type": "PRACTICE" | "THEORY",
+  "goals": string,
+  "tasks": string,
+  "expected": string,
+  "lessonProgress": [
+    {
+      "name": string,
+      "startMinute": number,
+      "endMinute": number,
+      "content": [string]
+    }
+  ]
+}
+`,
+		escapePromptValue(req.RupName),
+		escapePromptValue(req.DisciplineName),
+		escapePromptValue(req.TopicName),
+		escapePromptValue(req.TopicType),
+		req.TotalHours,
+		req.TheoryHours,
+		req.PracticeHours,
+		req.IndividualHours,
+		req.SrspHours,
+		req.SrsHours,
+		escapePromptValue(req.GroupName),
+		escapePromptValue(req.GroupSpecialty),
+		escapePromptValue(req.GroupQualification),
+		escapePromptValue(req.ExplorationGoals),
+		escapePromptValue(req.ExplorationSummary),
+		escapePromptValue(req.Prerequisites),
+		escapePromptValue(req.Postrequisites),
+		string(internetResourcesJSON),
+		string(technicalResourcesJSON),
+		string(previousLessonsJSON),
+		lessonMinutes,
+	)
+
+	responseText, err := s.generateContentWithFallback(ctx, prompt)
+	if err != nil {
+		return nil, fmt.Errorf("generate lesson: %w", err)
+	}
+
+	var out GenerateLessonResponse
+	if err := decodeJSONObject(responseText, &out); err != nil {
+		return nil, fmt.Errorf("decode lesson response: %w", err)
+	}
+
+	out.Type = strings.ToUpper(strings.TrimSpace(out.Type))
+	out.Goals = strings.TrimSpace(out.Goals)
+	out.Tasks = strings.TrimSpace(out.Tasks)
+	out.Expected = strings.TrimSpace(out.Expected)
+	for i := range out.LessonProgress {
+		out.LessonProgress[i].Name = strings.TrimSpace(out.LessonProgress[i].Name)
+		for j := range out.LessonProgress[i].Content {
+			out.LessonProgress[i].Content[j] = strings.TrimSpace(out.LessonProgress[i].Content[j])
+		}
+	}
+
+	return &out, nil
 }
 
 func (s *aiService) generateContentWithFallback(ctx context.Context, prompt string) (string, error) {

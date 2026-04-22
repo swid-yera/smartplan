@@ -144,6 +144,7 @@ func (r *Router) Init() *gin.Engine {
 		{
 			lessons.GET("", r.lesson.GetLessons)
 			lessons.POST("", r.lesson.CreateLesson)
+			lessons.POST("/generate-lesson", r.lesson.GenerateLesson)
 			lessons.PUT("/:id", r.lesson.UpdateLesson)
 			lessons.DELETE("/:id", r.lesson.DeleteLesson)
 

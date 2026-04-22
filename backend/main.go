@@ -81,8 +81,8 @@ func main() {
 	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
-	lessonService := service.NewLessonService(lessonRepo, log)
 	aiService := service.NewAIService(httpClient, geminiCfg, log)
+	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, docCfg, httpClient, minioRepo, log)
 
 	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
