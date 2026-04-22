@@ -8,6 +8,8 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"eduplan/backend/config"
@@ -410,21 +412,9 @@ func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byt
 		return nil, err
 	}
 
-	// 4. HTTP → Python
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		s.cfg.Url+"/generate-rup",
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Request-ID", uuid.NewString())
-
-	resp, err := s.httpClient.Do(req)
+	// 4. HTTP -> Python (with redirect-safe POST retry)
+	endpoint := strings.TrimRight(s.cfg.Url, "/") + "/generate-rup"
+	resp, err := s.postDocumentRenderJSON(ctx, endpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -432,7 +422,16 @@ func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byt
 
 	if resp.StatusCode != http.StatusOK {
 		errBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("python error: %s", string(errBody))
+		location := strings.TrimSpace(resp.Header.Get("Location"))
+		if location != "" {
+			return nil, fmt.Errorf(
+				"python error: status=%d location=%s body=%s",
+				resp.StatusCode,
+				location,
+				strings.TrimSpace(string(errBody)),
+			)
+		}
+		return nil, fmt.Errorf("python error: status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(errBody)))
 	}
 
 	// 5. читаем файл
@@ -442,6 +441,95 @@ func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byt
 	}
 
 	return fileBytes, nil
+}
+
+func (s *rupService) postDocumentRenderJSON(ctx context.Context, endpoint string, body []byte) (*http.Response, error) {
+	const maxRedirects = 5
+	currentURL := endpoint
+
+	for i := 0; i <= maxRedirects; i++ {
+		req, err := http.NewRequestWithContext(
+			ctx,
+			http.MethodPost,
+			currentURL,
+			bytes.NewReader(body),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", uuid.NewString())
+		if s.cfg.ApiKey != "" {
+			req.Header.Set("X-API-Key", s.cfg.ApiKey)
+		}
+
+		resp, err := s.doWithoutAutoRedirect(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isRedirectStatus(resp.StatusCode) {
+			return resp, nil
+		}
+
+		nextLocation := strings.TrimSpace(resp.Header.Get("Location"))
+		if nextLocation == "" {
+			return resp, nil
+		}
+
+		nextURL, err := resolveRedirectURL(currentURL, nextLocation)
+		resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		currentURL = nextURL
+	}
+
+	return nil, fmt.Errorf("document rendering redirect limit exceeded for %s", endpoint)
+}
+
+func (s *rupService) doWithoutAutoRedirect(req *http.Request) (*http.Response, error) {
+	if s.httpClient == nil {
+		return nil, fmt.Errorf("http client is not configured")
+	}
+
+	clientCopy := *s.httpClient
+	clientCopy.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	return clientCopy.Do(req)
+}
+
+func isRedirectStatus(statusCode int) bool {
+	switch statusCode {
+	case http.StatusMovedPermanently,
+		http.StatusFound,
+		http.StatusSeeOther,
+		http.StatusTemporaryRedirect,
+		http.StatusPermanentRedirect:
+		return true
+	default:
+		return false
+	}
+}
+
+func resolveRedirectURL(currentURL string, location string) (string, error) {
+	locURL, err := url.Parse(location)
+	if err != nil {
+		return "", fmt.Errorf("invalid redirect location %q: %w", location, err)
+	}
+	if locURL.IsAbs() {
+		return locURL.String(), nil
+	}
+
+	baseURL, err := url.Parse(currentURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid base url %q: %w", currentURL, err)
+	}
+
+	return baseURL.ResolveReference(locURL).String(), nil
 }
 
 func buildPayload(rup *RupResponse) RupDocumentPayload {
