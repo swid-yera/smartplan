@@ -1,10 +1,12 @@
 import { type FC, type ReactNode, useState } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
-import { formatHours, hasRole, normalizeStudyForm } from '@helpers'
+import { extractKeyIdFromKriptoPayload, formatHours, hasRole, normalizeStudyForm, parseKriptoFileText } from '@helpers'
 import {
 	Button,
 	ButtonGroup,
+	Checkbox,
+	Input,
 	Label,
 	Sheet,
 	SheetContent,
@@ -24,14 +26,34 @@ import { BasicView } from '../components/view/basic-view'
 interface IRupViewProps {
 	data: IRup
 	role: RoleEnum
-	onStatusChange: (newStatus: StatusEnum, reason?: string) => void
+	onStatusChange: (newStatus: StatusEnum, options?: { reason?: string; keyId?: string }) => void
 	actions?: ReactNode
 }
 
 export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions }) => {
 	const [generalComment, setGeneralComment] = useState('')
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
+	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
+	const [keyId, setKeyId] = useState('')
+	const [fileName, setFileName] = useState('')
+	const [checked, setChecked] = useState(false)
 	const isMethodistReview = hasRole(role, RoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
+
+	const onApproveFileUpload = async (file?: File) => {
+		if (!file) return
+		if (!file.name.toLowerCase().endsWith('.kripto') && !file.name.toLowerCase().endsWith('.txt')) {
+			toast.error('Поддерживаются только .kripto или .txt')
+			return
+		}
+
+		const content = await file.text()
+		const parsed = parseKriptoFileText(content)
+		const extractedKeyId = extractKeyIdFromKriptoPayload(parsed)
+
+		setKeyId(extractedKeyId)
+		setFileName(file.name)
+		toast.success('Файл ЭЦП успешно разобран')
+	}
 
 	return (
 		<div className='w-full mx-auto relative'>
@@ -56,7 +78,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 									className='hover:text-primary'
 									size='sm'
 									variant='outline'
-									onClick={() => onStatusChange(StatusEnum.APPROVED)}
+									onClick={() => setIsApproveSheetOpen(true)}
 								>
 									<CheckCircle className='mr-2 h-4 w-4' />
 									Утвердить
@@ -211,14 +233,81 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 							onClick={() => {
 								if (!generalComment.trim()) {
 									toast.error('Пожалуйста, укажите причину отклонения')
-
 									return
 								}
-								onStatusChange(StatusEnum.REJECTED, generalComment)
+								onStatusChange(StatusEnum.REJECTED, { reason: generalComment })
 								setIsRejectSheetOpen(false)
 							}}
 						>
 							Отклонить
+						</Button>
+					</SheetFooter>
+				</SheetContent>
+			</Sheet>
+
+			<Sheet open={isApproveSheetOpen} onOpenChange={setIsApproveSheetOpen}>
+				<SheetContent>
+					<SheetHeader>
+						<SheetTitle>Подтверждение РУП</SheetTitle>
+						<SheetDescription>
+							Загрузите файл ЭЦП (.kripto), система извлечет key_id и отправит его на проверку принадлежности ключа.
+						</SheetDescription>
+					</SheetHeader>
+					<div className='px-4 grid gap-4 py-4'>
+						<div className='grid gap-2'>
+							<Label htmlFor='approve-kripto-file'>Файл ЭЦП (.kripto)</Label>
+							<Input
+								accept='.kripto,.txt,application/json,text/plain'
+								id='approve-kripto-file'
+								type='file'
+								onChange={(e) => {
+									const file = e.target.files?.[0]
+									onApproveFileUpload(file).catch((err) => {
+										toast.error(err.message || 'Ошибка при чтении файла ЭЦП')
+									})
+								}}
+							/>
+							{fileName && <p className='text-xs text-muted-foreground'>Файл: {fileName}</p>}
+						</div>
+
+						<div className='grid gap-2'>
+							<Label htmlFor='approve-key-id'>Определенный key_id</Label>
+							<Input
+								id='approve-key-id'
+								placeholder='UUID ключа'
+								value={keyId}
+								onChange={(e) => setKeyId(e.target.value)}
+							/>
+						</div>
+
+						<label className='flex items-center gap-2 text-sm'>
+							<Checkbox checked={checked} onCheckedChange={(v) => setChecked(Boolean(v))} />
+							<span>Подтверждаю, что ключ должен быть проверен в kripto перед утверждением</span>
+						</label>
+					</div>
+					<SheetFooter>
+						<Button variant='outline' onClick={() => setIsApproveSheetOpen(false)}>
+							Отмена
+						</Button>
+						<Button
+							onClick={() => {
+								if (!keyId.trim()) {
+									toast.error('Загрузите .kripto файл с key_id')
+									return
+								}
+								if (!checked) {
+									toast.error('Подтвердите галочкой проверку ключа')
+									return
+								}
+
+								onStatusChange(StatusEnum.APPROVED, { keyId: keyId.trim() })
+								setIsApproveSheetOpen(false)
+								setKeyId('')
+								setFileName('')
+								setChecked(false)
+							}}
+						>
+							Утвердить
 						</Button>
 					</SheetFooter>
 				</SheetContent>

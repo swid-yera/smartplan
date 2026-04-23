@@ -48,6 +48,7 @@ func main() {
 	redisCfg := config.LoadRedisConfig()
 	minioCfg := config.LoadMinioConfig()
 	docCfg := config.LoadDocumentRenderConfig()
+	cryptoCfg := config.LoadCryptoConfig()
 
 	// ---------- DB ----------
 	// Note: Ensure repository.NewPostgresDB exists and accepts *config.DBConfig
@@ -84,6 +85,8 @@ func main() {
 		DB:       redisCfg.RedisDB,
 	})
 
+	cryptoClient := service.NewCryptoClient(httpClient, cryptoCfg)
+
 	// ---------- REPOSITORIES ----------
 	authRepo := repository.NewAuthPostgres(queries)
 	usersRepo := repository.NewUsersPostgres(queries)
@@ -99,7 +102,7 @@ func main() {
 	// ---------- SERVICES ----------
 	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
-	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
+	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo, cryptoClient, log)
 	lessonService := service.NewLessonService(lessonRepo, log)
 
 	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)

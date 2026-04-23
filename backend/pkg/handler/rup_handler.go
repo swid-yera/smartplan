@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -107,6 +108,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	var req struct {
 		Status string `json:"status" binding:"required"`
 		Reason string `json:"reason"`
+		KeyID  string `json:"key_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -134,9 +136,31 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		return
 	}
 
-	err = h.rupService.UpdateRupStatus(c.Request.Context(), id, req.Status, req.Reason, currentUser.KeycloakID)
+	correlationID := strings.TrimSpace(c.GetHeader("X-Correlation-ID"))
+	if correlationID == "" {
+		correlationID = uuid.NewString()
+	}
+	c.Header("X-Correlation-ID", correlationID)
+
+	err = h.rupService.UpdateRupStatus(c.Request.Context(), service.UpdateRupStatusRequest{
+		ID:            id,
+		Status:        req.Status,
+		Reason:        req.Reason,
+		MethodistID:   currentUser.KeycloakID,
+		CorrelationID: correlationID,
+		KeyID:         req.KeyID,
+		UserID:        currentUser.KeycloakID.String(),
+	})
 	if err != nil {
 		h.log.WithError(err).Error("failed to update RUP status")
+		var httpErr *service.HTTPStatusError
+		if errors.As(err, &httpErr) {
+			c.JSON(httpErr.StatusCode, gin.H{
+				"error":   "failed to update RUP status",
+				"details": httpErr.Message,
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to update RUP status",
 			"details": err.Error(),

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
-import { hasRole, isAuthor, normalizeStatus } from '@helpers'
+import { extractKeyIdFromKriptoPayload, hasRole, isAuthor, normalizeStatus, parseKriptoFileText } from '@helpers'
 import { services } from '@services'
 import {
 	AlertDialog,
@@ -19,6 +19,8 @@ import {
 	AlertDialogTitle,
 	Button,
 	ButtonGroup,
+	Checkbox,
+	Input,
 	Label,
 	Select,
 	SelectContent,
@@ -61,14 +63,19 @@ const Page: FC = () => {
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
 
 	// change rup status
-	const handleStatusChange = (newStatus: StatusEnum, reason?: string) => {
+	const handleStatusChange = (newStatus: StatusEnum, options?: { reason?: string; keyId?: string }) => {
 		if (!rupData) return
 		setIsSheetOpen(false)
 
 		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
 
 		toast.loading('Изменение статуса...', { id: toastId })
-		const updateStatusPayload: IUpdateStatusRequest = { id: rupData.id, status: newStatus, reason }
+		const updateStatusPayload: IUpdateStatusRequest = {
+			id: rupData.id,
+			status: newStatus,
+			reason: options?.reason,
+			key_id: options?.keyId,
+		}
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
@@ -213,19 +220,54 @@ export default Page
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean
 	setIsSheetOpen: (state: boolean) => void
-	handleStatusChange: (newStatus: StatusEnum, reason: string) => void
+	handleStatusChange: (newStatus: StatusEnum, options?: { reason?: string; keyId?: string }) => void
 }
 
 const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsSheetOpen, handleStatusChange }) => {
 	const [newStatus, setNewStatus] = useState<StatusEnum | undefined>(undefined)
 	const [reason, setReason] = useState('')
+	const [keyId, setKeyId] = useState('')
+	const [fileName, setFileName] = useState('')
+	const [checked, setChecked] = useState(false)
+
+	const isApprove = newStatus === StatusEnum.APPROVED
+
+	const onFileUpload = async (file?: File) => {
+		if (!file) return
+		if (!file.name.toLowerCase().endsWith('.kripto') && !file.name.toLowerCase().endsWith('.txt')) {
+			toast.error('Поддерживаются только .kripto или .txt')
+			return
+		}
+
+		const content = await file.text()
+		const parsed = parseKriptoFileText(content)
+		const extractedKeyId = extractKeyIdFromKriptoPayload(parsed)
+
+		setKeyId(extractedKeyId)
+		setFileName(file.name)
+		toast.success('Файл ЭЦП успешно разобран')
+	}
 
 	const onSheetSubmit = () => {
 		if (newStatus) {
-			handleStatusChange(newStatus, reason)
+			if (isApprove) {
+				if (!keyId) {
+					toast.error('Загрузите .kripto файл с key_id')
+					return
+				}
+				if (!checked) {
+					toast.error('Подтвердите галочкой проверку ключа')
+					return
+				}
+			}
+
+			handleStatusChange(newStatus, { reason, keyId: isApprove ? keyId : undefined })
 
 			setNewStatus(undefined)
 			setReason('')
+			setKeyId('')
+			setFileName('')
+			setChecked(false)
 		}
 	}
 
@@ -262,6 +304,41 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 							onChange={(e) => setReason(e.target.value)}
 						/>
 					</div>
+
+					{isApprove && (
+						<div className='grid gap-4 rounded-md border p-3'>
+							<div className='grid gap-2'>
+								<Label htmlFor='kripto-file'>Файл ЭЦП (.kripto)</Label>
+								<Input
+									accept='.kripto,.txt,application/json,text/plain'
+									id='kripto-file'
+									type='file'
+									onChange={(e) => {
+										const file = e.target.files?.[0]
+										onFileUpload(file).catch((err) => {
+											toast.error(err.message || 'Ошибка при чтении файла ЭЦП')
+										})
+									}}
+								/>
+								{fileName && <p className='text-xs text-muted-foreground'>Файл: {fileName}</p>}
+							</div>
+
+							<div className='grid gap-2'>
+								<Label htmlFor='key-id'>Определенный key_id</Label>
+								<Input
+									id='key-id'
+									placeholder='UUID ключа'
+									value={keyId}
+									onChange={(e) => setKeyId(e.target.value)}
+								/>
+							</div>
+
+							<label className='flex items-center gap-2 text-sm'>
+								<Checkbox checked={checked} onCheckedChange={(v) => setChecked(Boolean(v))} />
+								<span>Подтверждаю, что проверка ключа должна быть выполнена перед утверждением</span>
+							</label>
+						</div>
+					)}
 				</div>
 				<SheetFooter>
 					<Button disabled={!newStatus} onClick={onSheetSubmit}>

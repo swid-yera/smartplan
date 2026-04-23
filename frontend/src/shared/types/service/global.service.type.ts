@@ -15,5 +15,6 @@ export interface IUpdateStatusRequest {
 	id: string
 	status: StatusEnum
 	reason?: string
+	key_id?: string
 	totalPoints?: number
 }

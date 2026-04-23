@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"eduplan/backend/config"
@@ -16,12 +18,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/sirupsen/logrus"
 )
 
 type RupService interface {
 	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
-	UpdateRupStatus(ctx context.Context, id uuid.UUID, status string, reason string, methodistID uuid.UUID) error
+	UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
@@ -209,6 +212,18 @@ type rupService struct {
 	cfg         *config.DocumentRenderConfig
 	httpClient  *http.Client
 	fileStorage FileStorage
+	crypto      CryptoClient
+	log         *logrus.Logger
+}
+
+type UpdateRupStatusRequest struct {
+	ID            uuid.UUID `json:"id"`
+	Status        string    `json:"status"`
+	Reason        string    `json:"reason"`
+	MethodistID   uuid.UUID `json:"methodistId"`
+	CorrelationID string    `json:"correlationId"`
+	KeyID         string    `json:"keyId"`
+	UserID        string    `json:"userId"`
 }
 
 type GetRupsInput struct {
@@ -220,12 +235,25 @@ type GetRupsInput struct {
 	Role   string // teacher | methodist | admin
 }
 
-func NewRupService(repo repository.RupRepository, cfg *config.DocumentRenderConfig, httpClient *http.Client, fileStorage FileStorage) RupService {
+func NewRupService(
+	repo repository.RupRepository,
+	cfg *config.DocumentRenderConfig,
+	httpClient *http.Client,
+	fileStorage FileStorage,
+	cryptoClient CryptoClient,
+	log *logrus.Logger,
+) RupService {
+	if log == nil {
+		log = logrus.New()
+	}
+
 	return &rupService{
 		repo:        repo,
 		cfg:         cfg,
 		httpClient:  httpClient,
 		fileStorage: fileStorage,
+		crypto:      cryptoClient,
+		log:         log,
 	}
 }
 
@@ -284,16 +312,10 @@ func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse
 	return s.buildRupResponse(ctx, *rup)
 }
 
-func (s *rupService) UpdateRupStatus(
-	ctx context.Context,
-	id uuid.UUID,
-	status string,
-	reason string,
-	methodistID uuid.UUID,
-) error {
+func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) error {
 
 	var rupStatus storage.RupsStatus
-	switch status {
+	switch req.Status {
 	case "DRAFT":
 		rupStatus = storage.RupsStatusDRAFT
 	case "IN_REVIEW":
@@ -303,48 +325,130 @@ func (s *rupService) UpdateRupStatus(
 	case "REJECTED":
 		rupStatus = storage.RupsStatusREJECTED
 	default:
-		return fmt.Errorf("invalid status: %s", status)
+		return fmt.Errorf("invalid status: %s", req.Status)
 	}
 
 	// 1. если APPROVED — генерируем документ
 	if rupStatus == storage.RupsStatusAPPROVED {
-		fileBytes, err := s.generateViaPython(ctx, id)
-		if err != nil {
-			return err
+		if s.crypto == nil {
+			return &HTTPStatusError{
+				StatusCode: http.StatusBadGateway,
+				Message:    "kripto client is not configured",
+			}
+		}
+		if strings.TrimSpace(req.KeyID) == "" {
+			return &HTTPStatusError{
+				StatusCode: http.StatusBadRequest,
+				Message:    "key_id is required for approved status",
+			}
+		}
+		if strings.TrimSpace(req.UserID) == "" {
+			return &HTTPStatusError{
+				StatusCode: http.StatusBadRequest,
+				Message:    "user_id is required for approved status",
+			}
 		}
 
-		reader := bytes.NewReader(fileBytes)
+		startedAt := time.Now()
+		validationResp, err := s.crypto.ValidateKeyOwnership(ctx, ValidateKeyOwnershipRequest{
+			KeyID:  req.KeyID,
+			UserID: req.UserID,
+		}, req.CorrelationID)
+		latency := time.Since(startedAt)
+		if err != nil {
+			var httpErr *CryptoHTTPError
+			if errors.As(err, &httpErr) {
+				s.log.WithFields(logrus.Fields{
+					"correlation_id": req.CorrelationID,
+					"key_id":         req.KeyID,
+					"user_id":        req.UserID,
+					"http_status":    httpErr.StatusCode,
+					"latency_ms":     latency.Milliseconds(),
+				}).WithError(err).Error("kripto validate key failed")
 
-		objectName := fmt.Sprintf("rups/%s/document.docx", id.String())
+				if httpErr.StatusCode == http.StatusNotFound {
+					rupStatus = storage.RupsStatusREJECTED
+					req.Reason = "Ключ не найден в kripto"
+				} else if httpErr.StatusCode == http.StatusUnauthorized || httpErr.StatusCode == http.StatusForbidden {
+					return &HTTPStatusError{StatusCode: httpErr.StatusCode, Message: "kripto authorization failed"}
+				} else if httpErr.StatusCode >= 500 {
+					return &HTTPStatusError{StatusCode: http.StatusBadGateway, Message: "kripto temporary error"}
+				} else {
+					return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: httpErr.Error()}
+				}
+			} else {
+				s.log.WithFields(logrus.Fields{
+					"correlation_id": req.CorrelationID,
+					"key_id":         req.KeyID,
+					"user_id":        req.UserID,
+					"latency_ms":     latency.Milliseconds(),
+				}).WithError(err).Error("kripto validate key network error")
+				return &HTTPStatusError{StatusCode: http.StatusBadGateway, Message: "kripto request failed"}
+			}
+		}
 
-		// 2. сохраняем в MinIO
-		if err := s.fileStorage.UploadFile(
-			ctx,
-			objectName,
-			reader,
-			int64(len(fileBytes)),
-		); err != nil {
-			return err
+		if validationResp != nil {
+			s.log.WithFields(logrus.Fields{
+				"correlation_id":    req.CorrelationID,
+				"key_id":            req.KeyID,
+				"user_id":           req.UserID,
+				"http_status":       http.StatusOK,
+				"validation_status": validationResp.ValidationStatus,
+				"latency_ms":        latency.Milliseconds(),
+			}).Info("kripto validate key response")
+		}
+
+		if validationResp != nil && (!validationResp.IsValid || strings.ToUpper(validationResp.ValidationStatus) != "VALID") {
+			rupStatus = storage.RupsStatusREJECTED
+			switch strings.ToUpper(validationResp.ValidationStatus) {
+			case "USER_MISMATCH":
+				req.Reason = "Ключ не принадлежит текущему пользователю"
+			case "KEY_REVOKED":
+				req.Reason = "Ключ отозван"
+			default:
+				req.Reason = "Ключ не прошел проверку"
+			}
+		}
+
+		// Генерация документа выполняется только если валидация ключа успешна.
+		if rupStatus == storage.RupsStatusAPPROVED {
+			fileBytes, err := s.generateViaPython(ctx, req.ID)
+			if err != nil {
+				return err
+			}
+
+			reader := bytes.NewReader(fileBytes)
+			objectName := fmt.Sprintf("rups/%s/document.docx", req.ID.String())
+
+			// 2. сохраняем в MinIO
+			if err := s.fileStorage.UploadFile(
+				ctx,
+				objectName,
+				reader,
+				int64(len(fileBytes)),
+			); err != nil {
+				return err
+			}
 		}
 	}
 
 	// 3. reason
 	var reasonText pgtype.Text
-	if reason != "" {
-		reasonText = pgtype.Text{String: reason, Valid: true}
+	if req.Reason != "" {
+		reasonText = pgtype.Text{String: req.Reason, Valid: true}
 	}
 
 	methodistUUID := pgtype.UUID{
-		Bytes: methodistID,
-		Valid: methodistID != uuid.Nil,
+		Bytes: req.MethodistID,
+		Valid: req.MethodistID != uuid.Nil,
 	}
-	_, err := s.repo.GetUserByID(ctx, methodistID)
+	_, err := s.repo.GetUserByID(ctx, req.MethodistID)
 	if err != nil {
 		return err
 	}
 
 	// 4. обновляем статус в БД
-	return s.repo.UpdateRupStatus(ctx, id, rupStatus, reasonText, methodistUUID)
+	return s.repo.UpdateRupStatus(ctx, req.ID, rupStatus, reasonText, methodistUUID)
 }
 
 func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error) {

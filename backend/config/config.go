@@ -95,10 +95,26 @@ type DocumentRenderConfig struct {
 	ApiKey string
 }
 
+type CryptoConfig struct {
+	BaseURL        string
+	AuthToken      string
+	TimeoutSeconds int
+	MaxRetries     int
+}
+
 func LoadDocumentRenderConfig() *DocumentRenderConfig {
 	return &DocumentRenderConfig{
 		Url:    getEnv("DOCUMENT_RENDER_URL", "http://localhost:8000"),
 		ApiKey: getEnv("DOCUMENT_RENDER_API_KEY", ""),
+	}
+}
+
+func LoadCryptoConfig() *CryptoConfig {
+	return &CryptoConfig{
+		BaseURL:        getEnv("KRIPTO_BASE_URL", ""),
+		AuthToken:      getEnv("KRIPTO_AUTH_TOKEN", ""),
+		TimeoutSeconds: getEnvAsInt("KRIPTO_TIMEOUT_SECONDS", 10),
+		MaxRetries:     getEnvAsInt("KRIPTO_MAX_RETRIES", 2),
 	}
 }
 
