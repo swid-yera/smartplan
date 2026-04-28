@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { TopicTypeBadge } from '@components'
 import { formatAsDash, formatHours, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
+import { services } from '@services'
 import {
 	Button,
 	Card,
@@ -39,8 +40,10 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@shadcn'
+import { useMutation } from '@tanstack/react-query'
 import { type RupTypeEnum, StatusEnum, TopicTypeEnum } from '@types'
 import { BookOpenText, ChevronDown, Info } from 'lucide-react'
+import { toast } from 'sonner'
 
 type Topic = {
 	id: string
@@ -56,18 +59,20 @@ type Topic = {
 }
 
 type Discipline = {
+	id?: string
 	name: string
 	totalHours: number
 	topics: Topic[]
 }
 
 interface IProps {
+	rupId: string
 	type: RupTypeEnum
 	disciplines: Discipline[]
 	rupStatus: StatusEnum
 }
 
-export function TopicsView({ type: rupModuleType, disciplines, rupStatus }: IProps) {
+export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus }: IProps) {
 	const total = {
 		totalHours: 0,
 		theoryHours: 0,
@@ -100,6 +105,7 @@ export function TopicsView({ type: rupModuleType, disciplines, rupStatus }: IPro
 						<DisciplineBlockView
 							key={discipline.name}
 							discipline={discipline}
+							rupId={rupId}
 							rupModuleType={rupModuleType}
 							rupStatus={rupStatus}
 						/>
@@ -136,10 +142,12 @@ export function TopicsView({ type: rupModuleType, disciplines, rupStatus }: IPro
 
 function DisciplineBlockView({
 	discipline,
+	rupId,
 	rupModuleType,
 	rupStatus,
 }: {
 	discipline: Discipline
+	rupId: string
 	rupModuleType: string
 	rupStatus: StatusEnum
 }) {
@@ -241,6 +249,8 @@ function DisciplineBlockView({
 								discipline.topics.map((topic, topicIndex) => (
 									<TopicRowView
 										key={topicIndex}
+										disciplineId={discipline.id}
+										rupId={rupId}
 										rupModuleType={rupModuleType}
 										rupStatus={rupStatus}
 										topic={topic}
@@ -284,16 +294,21 @@ function DisciplineBlockView({
 const TopicRowView = ({
 	topic,
 	topicIndex,
+	disciplineId,
+	rupId,
 	rupStatus,
 }: {
 	topic: Topic
 	topicIndex: number
+	disciplineId?: string
+	rupId: string
 	rupModuleType: string
 	rupStatus: StatusEnum
 }) => {
 	const isApproved = rupStatus === StatusEnum.APPROVED
 	const isLessonGenerated = Boolean(topic.lessonId)
 	const lessonUrl = `/lessons/${topic.lessonId || topic.id}`
+	const generateLessonMutation = useMutation(services.lesson.generateLessonOptions())
 	const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
 	const [formData, setFormData] = useState({
 		name: topic.name,
@@ -318,14 +333,50 @@ const TopicRowView = ({
 		setIsGenerateDialogOpen(true)
 	}
 
-	const onSubmit = () => {
-		const updatedData = {
-			...formData,
-			id: topic.id,
+	const onSubmit = async () => {
+		if (!disciplineId) {
+			toast.error('Не найден disciplineId для генерации урока')
+
+			return
 		}
 
-		console.log('updatedData', updatedData)
-		setIsGenerateDialogOpen(false)
+		const payload = {
+			rupId,
+			disciplineId,
+			topicId: topic.id,
+			updatedTopic: {
+				name: formData.name,
+				type: formData.type,
+				total_hours: formData.theoryHours + formData.practiceHours + formData.individualHours,
+				theory_hours: formData.theoryHours,
+				practice_hours: formData.practiceHours,
+				individual_hours: formData.individualHours,
+				srsp_hours: formData.srspHours,
+				srs_hours: formData.srsHours,
+			},
+		}
+
+		const toastId = `generate-lesson-${topic.id}`
+
+		toast.loading('Генерация урока...', { id: toastId })
+
+		try {
+			const response = await generateLessonMutation.mutateAsync(payload)
+
+			if (response.status && response.lessonId) {
+				console.log('lessonId', response.lessonId)
+				toast.success('Урок успешно сгенерирован', { id: toastId })
+			} else {
+				toast.error('Не удалось сгенерировать урок', { id: toastId })
+			}
+		} catch (err) {
+			toast.error('Ошибка при генерации урока', {
+				description: err instanceof Error ? err.message : 'Unknown error',
+				id: toastId,
+			})
+		} finally {
+			setIsGenerateDialogOpen(false)
+		}
 	}
 
 	const getNonNegativeNumber = (value: string) => Math.max(0, Number(value) || 0)
@@ -493,7 +544,7 @@ const TopicRowView = ({
 						<Button variant='outline' onClick={() => setIsGenerateDialogOpen(false)}>
 							Отмена
 						</Button>
-						<Button onClick={onSubmit}>Сохранить</Button>
+						<Button onClick={onSubmit}>Сгенерировать</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

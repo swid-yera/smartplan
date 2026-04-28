@@ -1,3 +1,5 @@
+name: eduplan
+
 services:
   redis:
     image: redis:7-alpine

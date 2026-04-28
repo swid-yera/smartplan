@@ -3,6 +3,8 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
 	IDownloadResponse,
+	IGenerateLessonRequest,
+	IGenerateLessonResponse,
 	IGetAllRequest,
 	ILesson,
 	IMessageResponse,
@@ -13,6 +15,21 @@ import type {
 } from '@types'
 
 export class LessonService {
+	// generate lesson
+	generateLessonOptions = () => {
+		return mutationOptions({
+			mutationFn: async (payload: IGenerateLessonRequest) => {
+				const { data } = await api.post<IGenerateLessonResponse>('/lessons/generate-lesson', payload)
+
+				if (!data.status) {
+					throw new Error('Не удалось сгенерировать урок')
+				}
+
+				return data
+			},
+		})
+	}
+
 	// get all
 	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, teacher, status }: IGetAllRequest) => {
 		return queryOptions<IPagination<ILesson>>({
