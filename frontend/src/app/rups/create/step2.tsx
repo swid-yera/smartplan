@@ -31,11 +31,7 @@ type IProps = FieldValues & {
 export function Step2<T extends IProps>() {
 	// store, form
 	const { authLoading, user } = useAuthStore()
-	const {
-		getValues,
-		setValue,
-		formState: { errors },
-	} = useFormContext<T>()
+	const { getValues, setValue } = useFormContext<T>()
 	// states
 	const [isLoading, setIsLoading] = useState(false)
 

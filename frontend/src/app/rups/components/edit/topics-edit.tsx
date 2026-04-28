@@ -238,7 +238,7 @@ function DisciplineBlock<T extends IProps>({
 	rupType: RupTypeEnum | ''
 }) {
 	const form = useFormContext<T>()
-	const [isCollapsed, setIsCollapsed] = useState(false)
+	const [isCollapsed, setIsCollapsed] = useState(true)
 	const [isSticky, setIsSticky] = useState(false)
 	const headerRef = useRef<HTMLDivElement | null>(null)
 	const {
@@ -285,26 +285,42 @@ function DisciplineBlock<T extends IProps>({
 		if (!headerNode) return
 
 		const tabPanel = headerNode.closest('[role="tabpanel"]')
-		const stickyTitle = tabPanel?.querySelector('[data-rup-sticky-title="true"]') as HTMLElement | null
 		const fallbackOffset = 100
+		let stickyTitle: HTMLElement | null = null
+
+		const resolveStickyTitle = () =>
+			(tabPanel?.querySelector('[data-rup-sticky-title="true"]') as HTMLElement | null) ??
+			(document.querySelector('[data-rup-sticky-title="true"]') as HTMLElement | null)
 
 		const updateStickyOffset = () => {
+			stickyTitle = resolveStickyTitle()
 			const nextOffset = stickyTitle ? Math.ceil(stickyTitle.getBoundingClientRect().height) : fallbackOffset
 
 			setStickyTopPx((prev) => (prev === nextOffset ? prev : nextOffset))
 		}
 
 		updateStickyOffset()
+		window.requestAnimationFrame(updateStickyOffset)
 
-		const observer = stickyTitle ? new ResizeObserver(updateStickyOffset) : null
+		const observer = new ResizeObserver(updateStickyOffset)
+		const tabPanelObserver = tabPanel ? new MutationObserver(updateStickyOffset) : null
 
 		if (stickyTitle) {
-			observer?.observe(stickyTitle)
+			observer.observe(stickyTitle)
+		}
+		if (tabPanel) {
+			tabPanelObserver?.observe(tabPanel, {
+				subtree: true,
+				childList: true,
+				attributes: true,
+				attributeFilter: ['class', 'style', 'data-state'],
+			})
 		}
 		window.addEventListener('resize', updateStickyOffset)
 
 		return () => {
-			observer?.disconnect()
+			observer.disconnect()
+			tabPanelObserver?.disconnect()
 			window.removeEventListener('resize', updateStickyOffset)
 		}
 	}, [])
@@ -363,13 +379,7 @@ function DisciplineBlock<T extends IProps>({
 				</div>
 			</div>
 
-			<div
-				aria-hidden={isCollapsed}
-				className={cn(
-					'grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none',
-					isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100',
-				)}
-			>
+			{!isCollapsed && (
 				<div className='min-h-0 overflow-hidden'>
 					<DndContext
 						collisionDetection={closestCenter}
@@ -452,7 +462,7 @@ function DisciplineBlock<T extends IProps>({
 						</Table>
 					</DndContext>
 				</div>
-			</div>
+			)}
 
 			<AlertDialog open={topicToDelete !== null} onOpenChange={() => setTopicToDelete(null)}>
 				<AlertDialogContent>

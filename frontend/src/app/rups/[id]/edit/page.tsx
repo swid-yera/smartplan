@@ -1,6 +1,6 @@
 'use client'
 
-import { type FC, type KeyboardEvent, useEffect } from 'react'
+import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 
 import { notFound, useParams, useRouter } from 'next/navigation'
 
@@ -8,7 +8,7 @@ import { Forbidden, Loader, PageTitle } from '@components'
 import { isAuthor } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { services } from '@services'
-import { Button, ButtonGroup } from '@shadcn'
+import { Badge, Button, ButtonGroup, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type IUpdateRupRequest, RupTypeEnum, StudyFormEnum } from '@types'
@@ -47,6 +47,7 @@ const defaultValues: RUPFormData = {
 const EditPage: FC = () => {
 	const { replace } = useRouter()
 	const { id } = useParams<{ id: string }>()
+	const [currentStep, setCurrentStep] = useState('1')
 	// auth
 	const { user, authLoading } = useAuthStore()
 	// queries
@@ -57,34 +58,16 @@ const EditPage: FC = () => {
 	// form
 	const methods = useForm<RUPFormData>({
 		resolver: zodResolver(rupFormSchema),
-		mode: 'onChange',
+		mode: 'onBlur',
+		reValidateMode: 'onChange',
 		shouldUnregister: false,
-		values: rupData
-			? {
-					...rupData,
-					...rupData.explorationNote,
-					internetResources:
-						rupData.explorationNote?.internetResources?.map((r) => ({
-							name: r.name ?? '',
-							link: r.link ?? '', // Превращаем undefined в ""
-						})) ?? [],
-					technicalResources:
-						rupData.explorationNote?.technicalResources?.map((r) => ({
-							name: r.name ?? '',
-							link: r.link ?? '',
-						})) ?? [],
-					disciplines: rupData.disciplines ?? [],
-					groupId: rupData.groups[0]?.keycloakId,
-					contacts: rupData.contacts.map((c) => c.keycloakId),
-				}
-			: defaultValues,
+		defaultValues,
 	})
 
-	// form update default values
-	useEffect(() => {
-		if (!rupData) return
+	const mappedRupValues = useMemo<RUPFormData | null>(() => {
+		if (!rupData) return null
 
-		const mappedValues: RUPFormData = {
+		return {
 			...rupData,
 			...rupData.explorationNote,
 			internetResources:
@@ -97,13 +80,18 @@ const EditPage: FC = () => {
 					name: r.name ?? '',
 					link: r.link ?? '',
 				})) ?? [],
-			disciplines: rupData?.disciplines ?? [],
+			disciplines: rupData.disciplines ?? [],
 			groupId: rupData.groups[0]?.keycloakId,
-			contacts: rupData.contacts.map((c) => c?.keycloakId),
+			contacts: rupData.contacts.map((c) => c.keycloakId),
 		}
+	}, [rupData])
 
-		methods.reset(mappedValues, { keepDirty: false, keepTouched: false })
-	}, [rupData, methods])
+	// form update default values
+	useEffect(() => {
+		if (!mappedRupValues) return
+
+		methods.reset(mappedRupValues, { keepDirty: false, keepTouched: false })
+	}, [mappedRupValues, methods])
 
 	// Warn user about unsaved changes before leaving the page.
 	// NOTE: This works for page reloads, closing the tab, or navigating away.
@@ -227,13 +215,50 @@ const EditPage: FC = () => {
 					backHref={`/rups/${rupData.id}`}
 					description='Редактирование рабочей учебной программы'
 				>
-					Редактирование: {rupData.name || 'Рабочая учебная программа'}
+					Редактирование: {rupData.name || 'Рабочая учебная программа'} <Badge variant='outline'>Черновик</Badge>
 				</PageTitle>
 
-				<Step1 />
-				<Step2 />
-				<Step3 />
-				<Step4 />
+				<Tabs value={currentStep} onValueChange={setCurrentStep}>
+					<TabsList className='grid grid-cols-4 w-full'>
+						<TabsTrigger
+							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+							value='1'
+						>
+							Основные данные
+						</TabsTrigger>
+						<TabsTrigger
+							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+							value='2'
+						>
+							Метаданные
+						</TabsTrigger>
+						<TabsTrigger
+							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+							value='3'
+						>
+							Часы
+						</TabsTrigger>
+						<TabsTrigger
+							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+							value='4'
+						>
+							Содержание
+						</TabsTrigger>
+					</TabsList>
+
+					<TabsContent value='1'>
+						<Step1 />
+					</TabsContent>
+					<TabsContent value='2'>
+						<Step2 />
+					</TabsContent>
+					<TabsContent value='3'>
+						<Step3 />
+					</TabsContent>
+					<TabsContent value='4'>
+						<Step4 />
+					</TabsContent>
+				</Tabs>
 			</form>
 		</FormProvider>
 	)
