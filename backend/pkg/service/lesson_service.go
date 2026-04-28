@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -20,6 +21,7 @@ import (
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
 )
@@ -280,7 +282,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 	}
 
 	eventDate := time.Now().UTC()
-	lessonID, err := s.repo.CreateLesson(ctx, storage.CreateLessonsParams{
+	lessonParams := storage.CreateLessonsParams{
 		RupName:            rup.Name,
 		DisciplineName:     pgtype.Text{String: discipline.Name, Valid: discipline.Name != ""},
 		TopicName:          pgtype.Text{String: updatedTopic.Name, Valid: updatedTopic.Name != ""},
@@ -293,32 +295,11 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		Expected:           pgtype.Text{String: generatedPlan.Expected, Valid: generatedPlan.Expected != ""},
 		InternetResources:  internetResourceIDs,
 		TechnicalResources: technicalResourceIDs,
-	})
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("create lesson: %w", err)
 	}
 
-	for _, progress := range generatedPlan.Progress {
-		content := make([]string, 0, len(progress.Content))
-		for _, item := range progress.Content {
-			item = strings.TrimSpace(item)
-			if item != "" {
-				content = append(content, item)
-			}
-		}
-		if len(content) == 0 {
-			content = []string{"Этап выполняется согласно теме урока."}
-		}
-
-		if err := s.repo.CreateLessonProgress(ctx, storage.CreateLessonProgressParams{
-			LessonID:    lessonID,
-			Name:        progress.Name,
-			StartMinute: []int32{progress.StartMinute},
-			EndMinute:   []int32{progress.EndMinute},
-			Content:     content,
-		}); err != nil {
-			return uuid.Nil, fmt.Errorf("create lesson progress: %w", err)
-		}
+	lessonID, err := s.upsertGeneratedLesson(ctx, updatedTopic.LessonID, lessonParams, generatedPlan.Progress)
+	if err != nil {
+		return uuid.Nil, err
 	}
 
 	teacherName := ""
@@ -362,6 +343,96 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 	}
 
 	return lessonID, nil
+}
+
+func (s *LessonService) upsertGeneratedLesson(
+	ctx context.Context,
+	linkedLessonID pgtype.UUID,
+	lessonParams storage.CreateLessonsParams,
+	progress []GeneratedLessonProgressStep,
+) (uuid.UUID, error) {
+	if linkedLessonID.Valid {
+		lessonID := linkedLessonID.Bytes
+		if _, err := s.repo.GetLessonByID(ctx, lessonID); err == nil {
+			if err := s.repo.UpdateLesson(ctx, storage.UpdateLessonParams{
+				ID:                 lessonID,
+				RupName:            lessonParams.RupName,
+				DisciplineName:     lessonParams.DisciplineName,
+				TopicName:          lessonParams.TopicName,
+				EventDate:          lessonParams.EventDate,
+				GroupID:            lessonParams.GroupID,
+				Type:               lessonParams.Type,
+				Goals:              lessonParams.Goals,
+				Tasks:              lessonParams.Tasks,
+				Expected:           lessonParams.Expected,
+				InternetResources:  lessonParams.InternetResources,
+				TechnicalResources: lessonParams.TechnicalResources,
+			}); err != nil {
+				return uuid.Nil, fmt.Errorf("update lesson: %w", err)
+			}
+
+			if err := s.replaceLessonProgress(ctx, lessonID, progress); err != nil {
+				return uuid.Nil, err
+			}
+
+			return lessonID, nil
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, fmt.Errorf("get linked lesson: %w", err)
+		}
+	}
+
+	lessonID, err := s.repo.CreateLesson(ctx, lessonParams)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("create lesson: %w", err)
+	}
+
+	if err := s.replaceLessonProgress(ctx, lessonID, progress); err != nil {
+		return uuid.Nil, err
+	}
+
+	return lessonID, nil
+}
+
+func (s *LessonService) replaceLessonProgress(
+	ctx context.Context,
+	lessonID uuid.UUID,
+	progress []GeneratedLessonProgressStep,
+) error {
+	existingProgress, err := s.repo.GetLessonProgressByLessonID(ctx, lessonID)
+	if err != nil {
+		return fmt.Errorf("get lesson progress: %w", err)
+	}
+
+	for _, item := range existingProgress {
+		if err := s.repo.DeleteLessonProgress(ctx, item.ID); err != nil {
+			return fmt.Errorf("delete lesson progress: %w", err)
+		}
+	}
+
+	for _, step := range progress {
+		content := make([]string, 0, len(step.Content))
+		for _, item := range step.Content {
+			item = strings.TrimSpace(item)
+			if item != "" {
+				content = append(content, item)
+			}
+		}
+		if len(content) == 0 {
+			content = []string{"Этап выполняется согласно теме урока."}
+		}
+
+		if err := s.repo.CreateLessonProgress(ctx, storage.CreateLessonProgressParams{
+			LessonID:    lessonID,
+			Name:        step.Name,
+			StartMinute: []int32{step.StartMinute},
+			EndMinute:   []int32{step.EndMinute},
+			Content:     content,
+		}); err != nil {
+			return fmt.Errorf("create lesson progress: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params LessonParams, progress []LessonProgressParams) error {

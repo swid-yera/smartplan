@@ -312,23 +312,40 @@ func (s *rupService) UpdateRupStatus(
 
 	// 1. если APPROVED — генерируем документ
 	if rupStatus == storage.RupsStatusAPPROVED {
-		fileBytes, err := s.generateViaPython(ctx, id)
+		rup, err := s.GetRupByID(ctx, id)
 		if err != nil {
 			return err
 		}
+		if len(rup.Groups) == 0 {
+			return fmt.Errorf("rup has no groups")
+		}
 
-		reader := bytes.NewReader(fileBytes)
+		for _, group := range rup.Groups {
+			if group == nil {
+				continue
+			}
 
-		objectName := fmt.Sprintf("rups/%s/document.docx", id.String())
+			fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group)
+			if err != nil {
+				return err
+			}
 
-		// 2. сохраняем в MinIO
-		if err := s.fileStorage.UploadFile(
-			ctx,
-			objectName,
-			reader,
-			int64(len(fileBytes)),
-		); err != nil {
-			return err
+			reader := bytes.NewReader(fileBytes)
+			objectName := fmt.Sprintf(
+				"rups/%s/%s-document.docx",
+				id.String(),
+				group.KeycloakID.String(),
+			)
+
+			// 2. сохраняем в MinIO
+			if err := s.fileStorage.UploadFile(
+				ctx,
+				objectName,
+				reader,
+				int64(len(fileBytes)),
+			); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -396,24 +413,24 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 	return s.buildRupResponse(ctx, *updatedRup)
 }
 
-func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byte, error) {
-
-	// 1. забираем ВСЮ модель из БД
-	rup, err := s.GetRupByID(ctx, id)
-	if err != nil {
-		return nil, err
+func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResponse, group *GroupResponse) ([]byte, error) {
+	if rup == nil {
+		return nil, fmt.Errorf("rup is nil")
+	}
+	if group == nil {
+		return nil, fmt.Errorf("group is nil")
 	}
 
-	// 2. строим payload
-	payload := buildPayload(rup)
+	// 1. строим payload для конкретной группы
+	payload := buildPayload(rup, group)
 
-	// 3. JSON
+	// 2. JSON
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	// 4. HTTP -> Python (with redirect-safe POST retry)
+	// 3. HTTP -> Python (with redirect-safe POST retry)
 	endpoint := strings.TrimRight(s.cfg.Url, "/") + "/generate-rup"
 	resp, err := s.postDocumentRenderJSON(ctx, endpoint, body)
 	if err != nil {
@@ -435,7 +452,7 @@ func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byt
 		return nil, fmt.Errorf("python error: status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(errBody)))
 	}
 
-	// 5. читаем файл
+	// 4. читаем файл
 	fileBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -533,16 +550,16 @@ func resolveRedirectURL(currentURL string, location string) (string, error) {
 	return baseURL.ResolveReference(locURL).String(), nil
 }
 
-func buildPayload(rup *RupResponse) RupDocumentPayload {
+func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 
-	// ---------- GROUP (один!) ----------
-	group := GroupResponse{}
-	if len(rup.Groups) > 0 {
-		group = GroupResponse{
-			Name:          rup.Groups[0].Name,
-			Specialty:     rup.Groups[0].Specialty,
-			Qualification: rup.Groups[0].Qualification,
-			KeycloakID:    rup.Groups[0].KeycloakID,
+	// ---------- GROUP ----------
+	selectedGroup := GroupResponse{}
+	if group != nil {
+		selectedGroup = GroupResponse{
+			Name:          group.Name,
+			Specialty:     group.Specialty,
+			Qualification: group.Qualification,
+			KeycloakID:    group.KeycloakID,
 		}
 	}
 
@@ -629,7 +646,7 @@ func buildPayload(rup *RupResponse) RupDocumentPayload {
 		Type:            rup.Type,
 		StudyForm:       rup.StudyForm,
 		StudyYear:       rup.StudyYear,
-		Group:           &group,
+		Group:           &selectedGroup,
 		Course:          rup.Course,
 		TotalHours:      rup.TotalHours,
 		Contacts:        contacts,

@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_SqorFtpxB7
 createdAt: 2026-04-22T11:17:49.513364300
-updatedAt: 2026-04-22T11:27:13.052938800
+updatedAt: 2026-04-28T13:41:56.065443
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_tqqPjuByKX
 authentication: {}
@@ -10,11 +10,11 @@ authenticationType: null
 body:
   text: |-
     {
-      "rupId": "f1afe4e3-4a4c-4ce5-9f1e-a704270d597e",
-      "disciplineId": "0a86ac50-2b02-4d17-94e9-20e1855a0fab",
-      "topicId": "9debc046-e5c7-4801-a704-f0d0e162059b",
+      "rupId": "48140f16-2e63-40b1-a982-bf964d94743a",
+      "disciplineId": "3dbde613-0d10-44ae-a0ae-1e399526d4a2",
+      "topicId": "5bfb3d46-6097-469a-a339-5ebbc899ba2f",
       "updatedTopic": {
-        "name": "Настраивает базовую маршрутизацию",
+        "name": "Анализирует реальные кейсы кибер инцидентов 08, 09",
         "type": "PRACTICAL",
         "total_hours": 2,
         "theory_hours": 0,
@@ -32,7 +32,7 @@ headers:
   value: application/json
   id: Z9VZJGSmPn
 method: POST
-name: ''
+name: generate lessons for topic
 sortPriority: 703.7037037037037
 url: ${[ url ]}/lessons/generate-lesson
 urlParameters: []
