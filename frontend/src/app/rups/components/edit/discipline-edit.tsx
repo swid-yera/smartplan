@@ -31,7 +31,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
-import { Trash } from 'lucide-react'
+import { Plus, Trash } from 'lucide-react'
 import {
 	type ArrayPath,
 	type FieldValues,
@@ -106,7 +106,7 @@ export function DisciplineEdit<T extends IProps>() {
 				</div>
 
 				<Button type='button' variant='outline' onClick={() => append(newDiscipline as PathValue<T, ArrayPath<T>>)}>
-					Добавить дисциплину
+					<Plus /> Добавить дисциплину
 				</Button>
 			</CardHeader>
 			<CardContent>
@@ -140,9 +140,9 @@ export function DisciplineEdit<T extends IProps>() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
+							<ModuleRow />
 							{disciplineFields.length > 0 ? (
 								<>
-									<ModuleRow />
 									{disciplineFields.map((field, index) => (
 										<DisciplineRow
 											key={field.id}
@@ -153,7 +153,7 @@ export function DisciplineEdit<T extends IProps>() {
 								</>
 							) : (
 								<TableRow>
-									<TableCell className='h-24 text-center text-muted-foreground' colSpan={10}>
+									<TableCell className='h-28 text-center text-muted-foreground' colSpan={10}>
 										Дисциплины не добавлены.
 									</TableCell>
 								</TableRow>
