@@ -3,11 +3,13 @@ package handler
 import (
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
 )
@@ -110,6 +112,27 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+
+func (h *LessonHandler) GetLessonByID(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		return
+	}
+
+	lesson, err := h.lessonService.GetLessonByID(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "lesson not found"})
+			return
+		}
+		h.log.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, lesson)
 }
 
 func (h *LessonHandler) UpdateLesson(c *gin.Context) {

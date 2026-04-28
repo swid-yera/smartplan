@@ -143,6 +143,7 @@ func (r *Router) Init() *gin.Engine {
 		lessons := protected.Group("/lessons")
 		{
 			lessons.GET("", r.lesson.GetLessons)
+			lessons.GET("/:id", r.lesson.GetLessonByID)
 			lessons.POST("", r.lesson.CreateLesson)
 			lessons.POST("/generate-lesson", r.lesson.GenerateLesson)
 			lessons.PUT("/:id", r.lesson.UpdateLesson)
