@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_SqorFtpxB7
 createdAt: 2026-04-22T11:17:49.513364300
-updatedAt: 2026-04-28T11:51:52.217002300
+updatedAt: 2026-04-28T13:41:56.065443
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_tqqPjuByKX
 authentication: {}
@@ -10,11 +10,11 @@ authenticationType: null
 body:
   text: |-
     {
-      "rupId": "38590229-5f8b-4e53-9242-fdf0c404cc4d",
-      "disciplineId": "4c4be706-a974-43b5-9725-2184d0b8eb9c",
-      "topicId": "96c0614f-cdcc-41e0-9135-915010b8aaf1",
+      "rupId": "48140f16-2e63-40b1-a982-bf964d94743a",
+      "disciplineId": "3dbde613-0d10-44ae-a0ae-1e399526d4a2",
+      "topicId": "5bfb3d46-6097-469a-a339-5ebbc899ba2f",
       "updatedTopic": {
-        "name": "Настраивает базовую маршрутизацию",
+        "name": "Анализирует реальные кейсы кибер инцидентов 08, 09",
         "type": "PRACTICAL",
         "total_hours": 2,
         "theory_hours": 0,
