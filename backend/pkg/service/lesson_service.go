@@ -515,25 +515,7 @@ func (s *LessonService) GetAllLessons(
 
 	var result []LessonResponse
 	for _, dbLesson := range dbLessons {
-		lesson := LessonResponse{
-			ID:                 dbLesson.ID,
-			RupName:            dbLesson.RupName,
-			DisciplineName:     helpers.PgTextToPtr(dbLesson.DisciplineName),
-			TopicName:          helpers.PgTextToPtr(dbLesson.TopicName),
-			TeacherID:          dbLesson.Teacher,
-			EventDate:          helpers.PgTimeToString(dbLesson.EventDate),
-			GroupID:            dbLesson.GroupID,
-			Type:               string(dbLesson.Type),
-			Goals:              helpers.PgTextToPtr(dbLesson.Goals),
-			Tasks:              helpers.PgTextToPtr(dbLesson.Tasks),
-			Expected:           helpers.PgTextToPtr(dbLesson.Expected),
-			InternetResources:  dbLesson.InternetResources,
-			TechnicalResources: dbLesson.TechnicalResources,
-			FileURL:            helpers.PgTextToPtr(dbLesson.FileUrl),
-			CreatedAt:          helpers.PgTimeToString(dbLesson.CreatedAt),
-			UpdatedAt:          helpers.PgTimeToString(dbLesson.UpdatedAt),
-		}
-		result = append(result, lesson)
+		result = append(result, mapLessonResponse(dbLesson))
 	}
 
 	return &PaginatedLessonsResponse{
@@ -545,6 +527,16 @@ func (s *LessonService) GetAllLessons(
 			PageSize:    pageSize,
 		},
 	}, nil
+}
+
+func (s *LessonService) GetLessonByID(ctx context.Context, id uuid.UUID) (*LessonResponse, error) {
+	lesson, err := s.repo.GetLessonByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	result := mapLessonResponse(lesson)
+	return &result, nil
 }
 
 func (s *LessonService) CreateLessonProgress(ctx context.Context, params LessonProgressParams, lessonID uuid.UUID) error {
@@ -1010,4 +1002,25 @@ func sanitizeLessonFileName(value string) string {
 	}
 
 	return name
+}
+
+func mapLessonResponse(dbLesson storage.Lesson) LessonResponse {
+	return LessonResponse{
+		ID:                 dbLesson.ID,
+		RupName:            dbLesson.RupName,
+		DisciplineName:     helpers.PgTextToPtr(dbLesson.DisciplineName),
+		TopicName:          helpers.PgTextToPtr(dbLesson.TopicName),
+		TeacherID:          dbLesson.Teacher,
+		EventDate:          helpers.PgTimeToString(dbLesson.EventDate),
+		GroupID:            dbLesson.GroupID,
+		Type:               string(dbLesson.Type),
+		Goals:              helpers.PgTextToPtr(dbLesson.Goals),
+		Tasks:              helpers.PgTextToPtr(dbLesson.Tasks),
+		Expected:           helpers.PgTextToPtr(dbLesson.Expected),
+		InternetResources:  dbLesson.InternetResources,
+		TechnicalResources: dbLesson.TechnicalResources,
+		FileURL:            helpers.PgTextToPtr(dbLesson.FileUrl),
+		CreatedAt:          helpers.PgTimeToString(dbLesson.CreatedAt),
+		UpdatedAt:          helpers.PgTimeToString(dbLesson.UpdatedAt),
+	}
 }
