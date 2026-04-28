@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 import { TopicTypeBadge } from '@components'
 import { formatAsDash, formatHours, normalizeTopicType } from '@helpers'
@@ -305,6 +306,8 @@ const TopicRowView = ({
 	rupModuleType: string
 	rupStatus: StatusEnum
 }) => {
+	const router = useRouter()
+
 	const isApproved = rupStatus === StatusEnum.APPROVED
 	const isLessonGenerated = Boolean(topic.lessonId)
 	const lessonUrl = `/lessons/${topic.lessonId || topic.id}`
@@ -366,6 +369,7 @@ const TopicRowView = ({
 			if (response.status && response.lessonId) {
 				console.log('lessonId', response.lessonId)
 				toast.success('Урок успешно сгенерирован', { id: toastId })
+				router.push(`/lessons/${response.lessonId}`)
 			} else {
 				toast.error('Не удалось сгенерировать урок', { id: toastId })
 			}
