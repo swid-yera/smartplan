@@ -217,7 +217,8 @@ func (h *LessonHandler) GenerateLesson(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.lessonService.GenerateLesson(c.Request.Context(), currentUser.KeycloakID, req); err != nil {
+	lesson_id, err := h.lessonService.GenerateLesson(c.Request.Context(), currentUser.KeycloakID, req)
+	if err != nil {
 		h.log.WithError(err).Error("generate lesson failed")
 		c.JSON(http.StatusOK, gin.H{
 			"status": false,
@@ -227,6 +228,7 @@ func (h *LessonHandler) GenerateLesson(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": true,
+		"status":   true,
+		"lessonId": lesson_id.String(),
 	})
 }
