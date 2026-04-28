@@ -62,8 +62,6 @@ const Page = () => {
 			groups: values.groups.split(',').map((g) => g.trim()),
 			event_date: values.eventDate.toISOString(),
 		}
-
-		console.log('Submit Payload:', payload)
 	}
 
 	return (

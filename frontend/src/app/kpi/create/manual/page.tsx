@@ -81,7 +81,6 @@ export default function CreateAwardPage() {
 	}
 
 	const handleDrop = (files: File[]) => {
-		console.log(files)
 		setFiles(files)
 	}
 

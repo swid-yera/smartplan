@@ -27,7 +27,6 @@ const Page: NextPage = () => {
 	const [logs, setLogs] = useState<string[]>([])
 
 	const handleDrop = (files: File[]) => {
-		console.log(files)
 		setFiles(files)
 
 		if (files.length > 0) {
