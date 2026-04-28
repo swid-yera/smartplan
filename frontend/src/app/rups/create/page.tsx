@@ -69,6 +69,7 @@ const Page: NextPage = () => {
 
 	const [currentStep, setCurrentStep] = useState(searchParams.get('step') || '1')
 	const [highestStep, setHighestStep] = useState(Number(currentStep))
+	const [stepTransitionDirection, setStepTransitionDirection] = useState<'forward' | 'backward'>('forward')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [isHydrating, setIsHydrating] = useState(true)
 
@@ -129,7 +130,11 @@ const Page: NextPage = () => {
 
 	const currentIndex = tabs.findIndex((t) => t.id === currentStep)
 
+	const getStepTransitionDirection = (fromStep: string, toStep: string) =>
+		Number(toStep) >= Number(fromStep) ? 'forward' : 'backward'
+
 	const handleStepChange = (newStep: string) => {
+		setStepTransitionDirection(getStepTransitionDirection(currentStep, newStep))
 		router.push(`${pathname}?step=${newStep}`, { scroll: false })
 	}
 
@@ -270,6 +275,7 @@ const Page: NextPage = () => {
 											value={step.id}
 											onClick={(e) => {
 												e.preventDefault()
+												setStepTransitionDirection(getStepTransitionDirection(currentStep, step.id))
 												setCurrentStep(step.id)
 											}}
 										>
@@ -308,7 +314,17 @@ const Page: NextPage = () => {
 						</TabsList>
 
 						{tabs.map((tab) => (
-							<TabsContent key={tab.id} className={cn(isHydrating && 'invisible')} value={tab.id}>
+							<TabsContent
+								key={tab.id}
+								className={cn(
+									isHydrating && 'invisible',
+									'data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-300 motion-reduce:data-[state=active]:animate-none',
+									stepTransitionDirection === 'forward'
+										? 'data-[state=active]:slide-in-from-right-2'
+										: 'data-[state=active]:slide-in-from-left-2',
+								)}
+								value={tab.id}
+							>
 								<PageTitle sticky className='mb-5' description={tab.description}>
 									{tab.fullTitle} <Badge variant='outline'>Черновик</Badge>
 								</PageTitle>
@@ -361,23 +377,6 @@ export interface ITab {
 	description: string
 	content: JSX.Element
 }
-
-// const stepFields = {
-// 	'1': [
-// 		'title',
-// 		'type',
-// 		'studyForm',
-// 		'explorationNote',
-// 		'goals',
-// 		'prerequisites',
-// 		'postrequisites',
-// 		'year',
-// 		'groupId',
-// 	],
-// 	'2': ['contacts', 'internetResources', 'technicalResources'],
-// 	'3': ['disciplines'],
-// 	'4': ['disciplines'],
-// }
 
 const tabs: ITab[] = [
 	{

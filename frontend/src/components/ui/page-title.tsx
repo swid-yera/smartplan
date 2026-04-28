@@ -32,6 +32,7 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 				[stickyClassNames]: sticky,
 				'px-4 py-4': sticky,
 			})}
+			data-rup-sticky-title={sticky ? 'true' : undefined}
 			{...props}
 		>
 			<div className='flex items-center justify-between w-full space-x-4'>

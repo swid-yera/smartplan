@@ -168,13 +168,19 @@ function DisciplineBlockView({
 		<div className='border rounded-xl overflow-hidden'>
 			<div className='flex items-center justify-between p-4 bg-muted z-10 sticky top-0'>
 				<div className='font-semibold pr-4'>{discipline.name}</div>
-				<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed(!isCollapsed)}>
+				<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed((prev) => !prev)}>
 					<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />
 				</Button>
 			</div>
 
-			{!isCollapsed && (
-				<div>
+			<div
+				aria-hidden={isCollapsed}
+				className={cn(
+					'grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none',
+					isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100',
+				)}
+			>
+				<div className='min-h-0 overflow-hidden'>
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -270,7 +276,7 @@ function DisciplineBlockView({
 						</TableFooter>
 					</Table>
 				</div>
-			)}
+			</div>
 		</div>
 	)
 }
