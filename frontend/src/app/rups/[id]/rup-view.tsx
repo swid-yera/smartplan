@@ -178,7 +178,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 
 				<DisciplineView disciplines={data.disciplines} rupName={data.name} />
 
-				<TopicsView disciplines={data.disciplines} type={data.type} />
+				<TopicsView disciplines={data.disciplines} rupStatus={data.status} type={data.type} />
 			</div>
 
 			<Sheet open={isRejectSheetOpen} onOpenChange={setIsRejectSheetOpen}>
