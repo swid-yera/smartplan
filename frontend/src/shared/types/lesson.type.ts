@@ -1,5 +1,3 @@
-import type { IGroup, IResources, IUser } from './global.type'
-
 export enum LessonTypeEnum {
 	PRACTICE = 'PRACTICE',
 	THEORY = 'THEORY',
@@ -7,25 +5,23 @@ export enum LessonTypeEnum {
 
 export interface ILesson {
 	id: string
-	rupName: string
-	disciplineName: string
-	topicName: string
+	rup_name: string
+	discipline_name: string
+	topic_name: string
+	teacher_id: string
+	group_id: string
+	event_date: string
 	type: LessonTypeEnum
 
-	progress: ILessonProgress[]
 	goals: string
 	tasks: string
 	expected: string
 
-	eventDate: string
-	teacher: IUser
-	group: IGroup
-
-	internetResources: IResources[]
-	technicalResources: IResources[]
-
-	createdAt: string
-	updatedAt: string
+	internet_resources: string[]
+	technical_resources: string[]
+	file_url: string
+	created_at: string
+	updated_at: string
 }
 
 export interface ILessonProgress {

@@ -238,7 +238,7 @@ function DisciplineBlock<T extends IProps>({
 	rupType: RupTypeEnum | ''
 }) {
 	const form = useFormContext<T>()
-	const [isCollapsed, setIsCollapsed] = useState(true)
+	const [isCollapsed, setIsCollapsed] = useState(false)
 	const [isSticky, setIsSticky] = useState(false)
 	const headerRef = useRef<HTMLDivElement | null>(null)
 	const {
