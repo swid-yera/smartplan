@@ -45,13 +45,13 @@ export default function MyLessonPlansPage() {
 						<Card key={lesson.id} className='flex flex-col'>
 							<CardHeader className='space-y-2'>
 								<div className='flex items-start justify-between gap-2'>
-									<CardTitle className='text-base leading-snug line-clamp-2'>{lesson.topicName}</CardTitle>
+									<CardTitle className='text-base leading-snug line-clamp-2'>{lesson.topic_name}</CardTitle>
 									{/* lessonTypeBadge(lesson.type) */}
 								</div>
 
 								<CardDescription className='space-y-1'>
-									<p>{lesson.disciplineName}</p>
-									<p className='text-xs text-muted-foreground'>РУП: {lesson.rupName}</p>
+									<p>{lesson.discipline_name}</p>
+									<p className='text-xs text-muted-foreground'>РУП: {lesson.rup_name}</p>
 								</CardDescription>
 							</CardHeader>
 
@@ -59,17 +59,13 @@ export default function MyLessonPlansPage() {
 								<div className='space-y-2 text-muted-foreground'>
 									<div className='flex items-center gap-2'>
 										<Users className='h-4 w-4' />
-										<span>{lesson.group.name}</span>
+										<span>{lesson.group_id}</span>
 									</div>
 
 									<div className='flex items-center gap-2'>
 										<Calendar className='h-4 w-4' />
-										<span>{new Date(lesson.eventDate).toLocaleDateString()}</span>
+										<span>{new Date(lesson.event_date).toLocaleDateString()}</span>
 									</div>
-
-									<p>
-										Этапов занятия: <b>{lesson.progress.length}</b>
-									</p>
 								</div>
 
 								<div className='flex gap-2'>

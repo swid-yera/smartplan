@@ -2,9 +2,13 @@
 
 import { useState } from 'react'
 
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
 import { TopicTypeBadge } from '@components'
-import { formatAsDash, formatHours } from '@helpers'
+import { formatAsDash, formatHours, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
+import { services } from '@services'
 import {
 	Button,
 	Card,
@@ -12,6 +16,19 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	Input,
+	Label,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 	Table,
 	TableBody,
 	TableCell,
@@ -24,10 +41,13 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@shadcn'
-import type { RupTypeEnum, TopicTypeEnum } from '@types'
-import { ChevronDown, Info } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
+import { type RupTypeEnum, StatusEnum, TopicTypeEnum } from '@types'
+import { BookOpenText, ChevronDown, Info } from 'lucide-react'
+import { toast } from 'sonner'
 
 type Topic = {
+	id: string
 	name: string
 	type: TopicTypeEnum
 	totalHours: number
@@ -36,20 +56,24 @@ type Topic = {
 	individualHours: number
 	srspHours?: number
 	srsHours?: number
+	lessonId?: string
 }
 
 type Discipline = {
+	id?: string
 	name: string
 	totalHours: number
 	topics: Topic[]
 }
 
 interface IProps {
+	rupId: string
 	type: RupTypeEnum
 	disciplines: Discipline[]
+	rupStatus: StatusEnum
 }
 
-export function TopicsView({ type: rupModuleType, disciplines }: IProps) {
+export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus }: IProps) {
 	const total = {
 		totalHours: 0,
 		theoryHours: 0,
@@ -79,7 +103,13 @@ export function TopicsView({ type: rupModuleType, disciplines }: IProps) {
 			<CardContent className='space-y-4'>
 				{disciplines.length > 0 ? (
 					disciplines.map((discipline) => (
-						<DisciplineBlockView key={discipline.name} discipline={discipline} rupModuleType={rupModuleType} />
+						<DisciplineBlockView
+							key={discipline.name}
+							discipline={discipline}
+							rupId={rupId}
+							rupModuleType={rupModuleType}
+							rupStatus={rupStatus}
+						/>
 					))
 				) : (
 					<div className='text-center text-xl text-muted-foreground py-4'>Пусто</div>
@@ -111,7 +141,17 @@ export function TopicsView({ type: rupModuleType, disciplines }: IProps) {
 	)
 }
 
-function DisciplineBlockView({ discipline, rupModuleType }: { discipline: Discipline; rupModuleType: string }) {
+function DisciplineBlockView({
+	discipline,
+	rupId,
+	rupModuleType,
+	rupStatus,
+}: {
+	discipline: Discipline
+	rupId: string
+	rupModuleType: string
+	rupStatus: StatusEnum
+}) {
 	const [isCollapsed, setIsCollapsed] = useState(false)
 	const sectionTotal = {
 		totalHours: 0,
@@ -210,7 +250,10 @@ function DisciplineBlockView({ discipline, rupModuleType }: { discipline: Discip
 								discipline.topics.map((topic, topicIndex) => (
 									<TopicRowView
 										key={topicIndex}
+										disciplineId={discipline.id}
+										rupId={rupId}
 										rupModuleType={rupModuleType}
+										rupStatus={rupStatus}
 										topic={topic}
 										topicIndex={topicIndex}
 									/>
@@ -249,34 +292,266 @@ function DisciplineBlockView({ discipline, rupModuleType }: { discipline: Discip
 	)
 }
 
-const TopicRowView = ({ topic, topicIndex }: { topic: Topic; topicIndex: number; rupModuleType: string }) => {
+const TopicRowView = ({
+	topic,
+	topicIndex,
+	disciplineId,
+	rupId,
+	rupStatus,
+}: {
+	topic: Topic
+	topicIndex: number
+	disciplineId?: string
+	rupId: string
+	rupModuleType: string
+	rupStatus: StatusEnum
+}) => {
+	const router = useRouter()
+
+	const isApproved = rupStatus === StatusEnum.APPROVED
+	const isLessonGenerated = Boolean(topic.lessonId)
+	const lessonUrl = `/lessons/${topic.lessonId || topic.id}`
+	const generateLessonMutation = useMutation(services.lesson.generateLessonOptions())
+	const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
+	const [formData, setFormData] = useState({
+		name: topic.name,
+		theoryHours: topic.theoryHours,
+		practiceHours: topic.practiceHours,
+		individualHours: topic.individualHours,
+		srsHours: topic.srsHours ?? 0,
+		srspHours: topic.srspHours ?? 0,
+		type: topic.type,
+	})
+
+	const handleGenerateClick = () => {
+		setFormData({
+			name: topic.name,
+			theoryHours: topic.theoryHours,
+			practiceHours: topic.practiceHours,
+			individualHours: topic.individualHours,
+			srsHours: topic.srsHours ?? 0,
+			srspHours: topic.srspHours ?? 0,
+			type: topic.type,
+		})
+		setIsGenerateDialogOpen(true)
+	}
+
+	const onSubmit = async () => {
+		if (!disciplineId) {
+			toast.error('Не найден disciplineId для генерации урока')
+
+			return
+		}
+
+		const payload = {
+			rupId,
+			disciplineId,
+			topicId: topic.id,
+			updatedTopic: {
+				name: formData.name,
+				type: formData.type,
+				total_hours: formData.theoryHours + formData.practiceHours + formData.individualHours,
+				theory_hours: formData.theoryHours,
+				practice_hours: formData.practiceHours,
+				individual_hours: formData.individualHours,
+				srsp_hours: formData.srspHours,
+				srs_hours: formData.srsHours,
+			},
+		}
+
+		const toastId = `generate-lesson-${topic.id}`
+
+		toast.loading('Генерация урока...', { id: toastId })
+
+		try {
+			const response = await generateLessonMutation.mutateAsync(payload)
+
+			if (response.status && response.lessonId) {
+				console.log('lessonId', response.lessonId)
+				toast.success('Урок успешно сгенерирован', { id: toastId })
+				router.push(`/lessons/${response.lessonId}`)
+			} else {
+				toast.error('Не удалось сгенерировать урок', { id: toastId })
+			}
+		} catch (err) {
+			toast.error('Ошибка при генерации урока', {
+				description: err instanceof Error ? err.message : 'Unknown error',
+				id: toastId,
+			})
+		} finally {
+			setIsGenerateDialogOpen(false)
+		}
+	}
+
+	const getNonNegativeNumber = (value: string) => Math.max(0, Number(value) || 0)
+
 	return (
-		<TableRow>
-			<TableCell className='align-middle font-semibold text-center p-4 pr-2'>
-				<span>{topicIndex + 1}</span>
-			</TableCell>
-			<TableCell className='align-middle py-4 px-2 border-r whitespace-break-spaces min-w-[200px]'>
-				{topic.name}
-			</TableCell>
-			<TableCell className='align-middle text-center border-r'>{topic.totalHours}</TableCell>
-			<TableCell className='align-middle text-center font-medium border-r p-4'>
-				{formatAsDash(topic.theoryHours)}
-			</TableCell>
-			<TableCell className='align-middle text-center font-medium border-r p-4'>
-				{formatAsDash(topic.practiceHours)}
-			</TableCell>
-			<TableCell className='align-middle text-center font-medium border-r p-4'>
-				<p>{formatAsDash(topic.individualHours)}</p>
-			</TableCell>
-			<TableCell className='align-middle text-center font-medium border-r p-4'>
-				{formatAsDash(topic.srspHours)}
-			</TableCell>
-			<TableCell className='align-middle text-center font-medium border-r p-4'>
-				{formatAsDash(topic.srsHours)}
-			</TableCell>
-			<TableCell className='align-middle text-end p-4'>
-				<TopicTypeBadge type={topic.type} />
-			</TableCell>
-		</TableRow>
+		<>
+			<TableRow>
+				<TableCell className='align-middle font-semibold text-center p-4 pr-2'>
+					<span>{topicIndex + 1}</span>
+				</TableCell>
+				<TableCell className='align-middle py-4 px-2 border-r whitespace-break-spaces min-w-[200px]'>
+					<div className='flex justify-between items-center gap-2'>
+						<span>{topic.name}</span>
+						{isApproved && (
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										{isLessonGenerated ? (
+											<Button asChild size='icon-sm' variant='secondary'>
+												<Link href={lessonUrl}>
+													<BookOpenText />
+												</Link>
+											</Button>
+										) : (
+											<Button size='icon-sm' variant='default' onClick={handleGenerateClick}>
+												<BookOpenText />
+											</Button>
+										)}
+									</TooltipTrigger>
+									<TooltipContent>
+										<p>{isLessonGenerated ? 'Открыть урок' : 'Сгенерировать урок'}</p>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						)}
+					</div>
+				</TableCell>
+				<TableCell className='align-middle text-center border-r'>{topic.totalHours}</TableCell>
+				<TableCell className='align-middle text-center font-medium border-r p-4'>
+					{formatAsDash(topic.theoryHours)}
+				</TableCell>
+				<TableCell className='align-middle text-center font-medium border-r p-4'>
+					{formatAsDash(topic.practiceHours)}
+				</TableCell>
+				<TableCell className='align-middle text-center font-medium border-r p-4'>
+					<p>{formatAsDash(topic.individualHours)}</p>
+				</TableCell>
+				<TableCell className='align-middle text-center font-medium border-r p-4'>
+					{formatAsDash(topic.srspHours)}
+				</TableCell>
+				<TableCell className='align-middle text-center font-medium border-r p-4'>
+					{formatAsDash(topic.srsHours)}
+				</TableCell>
+				<TableCell className='align-middle text-end p-4'>
+					<TopicTypeBadge type={topic.type} />
+				</TableCell>
+			</TableRow>
+
+			<Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Данные темы</DialogTitle>
+						<DialogDescription>Отредактируйте данные перед генерацией урока.</DialogDescription>
+					</DialogHeader>
+
+					<div className='grid gap-4'>
+						<div className='grid gap-2'>
+							<Label htmlFor={`topic-name-${topic.id}`}>Название</Label>
+							<Input
+								id={`topic-name-${topic.id}`}
+								value={formData.name}
+								onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+							/>
+						</div>
+
+						<div className='grid grid-cols-2 gap-4'>
+							<div className='grid gap-2'>
+								<Label htmlFor={`topic-theory-${topic.id}`}>Теория</Label>
+								<Input
+									id={`topic-theory-${topic.id}`}
+									min={0}
+									type='number'
+									value={formData.theoryHours}
+									onChange={(e) =>
+										setFormData((prev) => ({ ...prev, theoryHours: getNonNegativeNumber(e.target.value) }))
+									}
+								/>
+							</div>
+							<div className='grid gap-2'>
+								<Label htmlFor={`topic-practice-${topic.id}`}>Практика</Label>
+								<Input
+									id={`topic-practice-${topic.id}`}
+									min={0}
+									type='number'
+									value={formData.practiceHours}
+									onChange={(e) =>
+										setFormData((prev) => ({
+											...prev,
+											practiceHours: getNonNegativeNumber(e.target.value),
+										}))
+									}
+								/>
+							</div>
+							<div className='grid gap-2'>
+								<Label htmlFor={`topic-individual-${topic.id}`}>Индивидуальная</Label>
+								<Input
+									id={`topic-individual-${topic.id}`}
+									min={0}
+									type='number'
+									value={formData.individualHours}
+									onChange={(e) =>
+										setFormData((prev) => ({
+											...prev,
+											individualHours: getNonNegativeNumber(e.target.value),
+										}))
+									}
+								/>
+							</div>
+							<div className='grid gap-2'>
+								<Label htmlFor={`topic-srsp-${topic.id}`}>СРСП</Label>
+								<Input
+									id={`topic-srsp-${topic.id}`}
+									min={0}
+									type='number'
+									value={formData.srspHours}
+									onChange={(e) =>
+										setFormData((prev) => ({ ...prev, srspHours: getNonNegativeNumber(e.target.value) }))
+									}
+								/>
+							</div>
+							<div className='grid gap-2'>
+								<Label htmlFor={`topic-srs-${topic.id}`}>СРС</Label>
+								<Input
+									id={`topic-srs-${topic.id}`}
+									min={0}
+									type='number'
+									value={formData.srsHours}
+									onChange={(e) =>
+										setFormData((prev) => ({ ...prev, srsHours: getNonNegativeNumber(e.target.value) }))
+									}
+								/>
+							</div>
+							<div className='grid gap-2'>
+								<Label>Тип</Label>
+								<Select
+									value={formData.type}
+									onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value as TopicTypeEnum }))}
+								>
+									<SelectTrigger className='w-full'>
+										<SelectValue placeholder='Выберите тип' />
+									</SelectTrigger>
+									<SelectContent>
+										{Object.values(TopicTypeEnum).map((type) => (
+											<SelectItem key={type} value={type}>
+												{normalizeTopicType(type)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					</div>
+
+					<DialogFooter>
+						<Button variant='outline' onClick={() => setIsGenerateDialogOpen(false)}>
+							Отмена
+						</Button>
+						<Button onClick={onSubmit}>Сгенерировать</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</>
 	)
 }
