@@ -619,6 +619,7 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 6. Формат ответа:
 - Верни ТОЛЬКО валидный JSON
 - Без комментариев, markdown, пояснений или дополнительного текста
+- В конце снова перепроверяй длительность всех тем чтобы они в точности совпали с totalHours
 `,
 		escapePromptValue(req.DisciplineName),
 		escapePromptValue(req.RupName),
