@@ -42,22 +42,22 @@ type LessonParams struct {
 }
 
 type LessonResponse struct {
-	ID                 uuid.UUID   `json:"id"`
-	RupName            string      `json:"rup_name"`
-	DisciplineName     *string     `json:"discipline_name"`
-	TopicName          *string     `json:"topic_name"`
-	TeacherID          uuid.UUID   `json:"teacher_id"`
-	EventDate          string      `json:"event_date"`
-	GroupID            uuid.UUID   `json:"group_id"`
-	Type               string      `json:"type"`
-	Goals              *string     `json:"goals"`
-	Tasks              *string     `json:"tasks"`
-	Expected           *string     `json:"expected"`
-	InternetResources  []uuid.UUID `json:"internet_resources"`
-	TechnicalResources []uuid.UUID `json:"technical_resources"`
-	FileURL            *string     `json:"file_url"`
-	CreatedAt          string      `json:"created_at"`
-	UpdatedAt          string      `json:"updated_at"`
+	ID                 uuid.UUID             `json:"id"`
+	RupName            string                `json:"rup_name"`
+	DisciplineName     *string               `json:"discipline_name"`
+	TopicName          *string               `json:"topic_name"`
+	Teacher            *helpers.UserResponse `json:"teacher"`
+	EventDate          string                `json:"event_date"`
+	Group              *GroupResponse        `json:"group"`
+	Type               string                `json:"type"`
+	Goals              *string               `json:"goals"`
+	Tasks              *string               `json:"tasks"`
+	Expected           *string               `json:"expected"`
+	InternetResources  []*ResourceResponse   `json:"internet_resources"`
+	TechnicalResources []*ResourceResponse   `json:"technical_resources"`
+	FileURL            *string               `json:"file_url"`
+	CreatedAt          string                `json:"created_at"`
+	UpdatedAt          string                `json:"updated_at"`
 }
 
 type PaginatedLessonsResponse struct {
@@ -515,7 +515,11 @@ func (s *LessonService) GetAllLessons(
 
 	var result []LessonResponse
 	for _, dbLesson := range dbLessons {
-		result = append(result, mapLessonResponse(dbLesson))
+		lessonResp, buildErr := s.buildLessonResponse(ctx, dbLesson)
+		if buildErr != nil {
+			continue
+		}
+		result = append(result, *lessonResp)
 	}
 
 	return &PaginatedLessonsResponse{
@@ -535,8 +539,7 @@ func (s *LessonService) GetLessonByID(ctx context.Context, id uuid.UUID) (*Lesso
 		return nil, err
 	}
 
-	result := mapLessonResponse(lesson)
-	return &result, nil
+	return s.buildLessonResponse(ctx, lesson)
 }
 
 func (s *LessonService) CreateLessonProgress(ctx context.Context, params LessonProgressParams, lessonID uuid.UUID) error {
@@ -1004,23 +1007,77 @@ func sanitizeLessonFileName(value string) string {
 	return name
 }
 
-func mapLessonResponse(dbLesson storage.Lesson) LessonResponse {
-	return LessonResponse{
-		ID:                 dbLesson.ID,
-		RupName:            dbLesson.RupName,
-		DisciplineName:     helpers.PgTextToPtr(dbLesson.DisciplineName),
-		TopicName:          helpers.PgTextToPtr(dbLesson.TopicName),
-		TeacherID:          dbLesson.Teacher,
-		EventDate:          helpers.PgTimeToString(dbLesson.EventDate),
-		GroupID:            dbLesson.GroupID,
-		Type:               string(dbLesson.Type),
-		Goals:              helpers.PgTextToPtr(dbLesson.Goals),
-		Tasks:              helpers.PgTextToPtr(dbLesson.Tasks),
-		Expected:           helpers.PgTextToPtr(dbLesson.Expected),
-		InternetResources:  dbLesson.InternetResources,
-		TechnicalResources: dbLesson.TechnicalResources,
-		FileURL:            helpers.PgTextToPtr(dbLesson.FileUrl),
-		CreatedAt:          helpers.PgTimeToString(dbLesson.CreatedAt),
-		UpdatedAt:          helpers.PgTimeToString(dbLesson.UpdatedAt),
+func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.Lesson) (*LessonResponse, error) {
+	// Get teacher
+	var teacher *helpers.UserResponse
+	if user, err := s.rupRepo.GetUserByID(ctx, lesson.Teacher); err == nil {
+		teacher = helpers.ConvertToUserResponse(*user)
 	}
+
+	// Get group
+	var group *GroupResponse
+	if lessonGroup, err := s.rupRepo.GetGroupByKeycloakID(ctx, lesson.GroupID); err == nil {
+		group = &GroupResponse{
+			KeycloakID:    lessonGroup.KeycloakID,
+			Name:          lessonGroup.Name,
+			Qualification: lessonGroup.Qualification.String,
+			Specialty:     lessonGroup.Specialty.String,
+		}
+	}
+
+	// Get internet resources
+	internetResources := make([]*ResourceResponse, 0, len(lesson.InternetResources))
+	for _, resourceID := range lesson.InternetResources {
+		resource, err := s.rupRepo.GetResourceByID(ctx, resourceID)
+		if err != nil {
+			continue
+		}
+		internetResources = append(internetResources, &ResourceResponse{
+			ID:   resource.ID,
+			Name: resource.Name,
+			Link: resource.Link.String,
+			Type: "INTERNET",
+		})
+	}
+
+	// Get technical resources
+	technicalResources := make([]*ResourceResponse, 0, len(lesson.TechnicalResources))
+	for _, resourceID := range lesson.TechnicalResources {
+		resource, err := s.rupRepo.GetResourceByID(ctx, resourceID)
+		if err != nil {
+			continue
+		}
+		technicalResources = append(technicalResources, &ResourceResponse{
+			ID:   resource.ID,
+			Name: resource.Name,
+			Link: resource.Link.String,
+			Type: "TECHNICAL",
+		})
+	}
+
+	fileURL := helpers.PgTextToPtr(lesson.FileUrl)
+	if fileURL != nil && strings.TrimSpace(*fileURL) != "" {
+		if fullURL, err := s.fileStorage.GetDownloadFileURL(ctx, *fileURL, 10*time.Minute); err == nil {
+			fileURL = &fullURL
+		}
+	}
+
+	return &LessonResponse{
+		ID:                 lesson.ID,
+		RupName:            lesson.RupName,
+		DisciplineName:     helpers.PgTextToPtr(lesson.DisciplineName),
+		TopicName:          helpers.PgTextToPtr(lesson.TopicName),
+		Teacher:            teacher,
+		EventDate:          helpers.PgTimeToString(lesson.EventDate),
+		Group:              group,
+		Type:               string(lesson.Type),
+		Goals:              helpers.PgTextToPtr(lesson.Goals),
+		Tasks:              helpers.PgTextToPtr(lesson.Tasks),
+		Expected:           helpers.PgTextToPtr(lesson.Expected),
+		InternetResources:  internetResources,
+		TechnicalResources: technicalResources,
+		FileURL:            fileURL,
+		CreatedAt:          helpers.PgTimeToString(lesson.CreatedAt),
+		UpdatedAt:          helpers.PgTimeToString(lesson.UpdatedAt),
+	}, nil
 }
