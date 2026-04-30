@@ -212,6 +212,9 @@ VALUES (
 -- name: GetDisciplineTopicByID :one
 SELECT * FROM discipline_topics WHERE id = $1;
 
+-- name: GetDisciplineTopicByLessonID :one
+SELECT * FROM discipline_topics WHERE lesson_id = $1;
+
 -- name: GetAllDisciplineTopics :many
 SELECT * FROM discipline_topics;
 
@@ -248,6 +251,9 @@ VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: GetRupDisciplineByID :one
 SELECT * FROM rup_disciplines WHERE id = $1;
+
+-- name: GetRupDisciplineByTopicID :one
+SELECT * FROM rup_disciplines WHERE $1::uuid = ANY(topics);
 
 -- name: GetAllRupDisciplines :many
 SELECT * FROM rup_disciplines;
@@ -336,6 +342,9 @@ SELECT COUNT(*) FROM rups;
 
 -- name: GetRupsByID :one
 SELECT * FROM rups WHERE id = $1;
+
+-- name: GetRupByDisciplineID :one
+SELECT * FROM rups WHERE $1::uuid = ANY(disciplines);
 
 -- name: UpdateRup :exec
 UPDATE rups
