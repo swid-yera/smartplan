@@ -47,6 +47,7 @@ type GenerateRupMetaRequest struct {
 	Group          GenerateRupGroup `json:"group"`
 	Prerequisites  string           `json:"prerequisites"`
 	Postrequisites string           `json:"postrequisites"`
+	Message        string           `json:"message"`
 }
 
 type GenerateRupGroup struct {
@@ -68,6 +69,7 @@ type GenerateResourcesRequest struct {
 	Basic          string `json:"basic"`
 	Goals          string `json:"goals"`
 	Competencies   string `json:"competencies"`
+	Message        string `json:"message"`
 }
 
 type GenerateResourcesResponse struct {
@@ -87,6 +89,7 @@ type GenerateDisciplinesRequest struct {
 	Competencies    string `json:"competencies"`
 	WantsHours      int    `json:"wantsHours"`
 	DisciplineCount int    `json:"disciplineCount"`
+	Message         string `json:"message"`
 }
 
 type GenerateTopicsForDisciplineRequest struct {
@@ -96,6 +99,7 @@ type GenerateTopicsForDisciplineRequest struct {
 	Competencies    string `json:"competencies"`
 	DisciplineName  string `json:"disciplineName"`
 	DisciplineHours int    `json:"disciplineHours"`
+	Message         string `json:"message"`
 }
 
 type GeneratedDiscipline struct {
@@ -140,6 +144,7 @@ type GenerateLessonRequest struct {
 	InternetResources  []string `json:"internetResources"`
 	TechnicalResources []string `json:"technicalResources"`
 	PreviousLessons    []string `json:"previousLessons"`
+	Message            string   `json:"message"`
 }
 
 type GenerateLessonResponse struct {
@@ -237,9 +242,10 @@ func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequ
 - Специальность группы: %s
 - Квалификация группы: %s
 - Курс: %d
+- Дополнительный комментарий преподавателя: "%s"
 
 ТВОЯ ЗАДАЧА:
-Сгенерировать СТРОГО JSON-ОБЪЕКТ без markdown, без комментариев, без пояснений.
+Сгенерировать СТРОГО JSON-ОБЪЕКТ без markdown, без комментариев, без пояснений, и по комментарию от преподователя.
 
 ЗАПРЕЩЕНО:
 - использовать массивы для "basis", "goals", "competencies"
@@ -251,6 +257,7 @@ func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequ
 - стиль официально-деловой, методический
 - язык ответа: РУССКИЙ
 - текст должен быть пригоден для прямой вставки в РУП
+- ответ должен соответствовать тому, что преподаватель хочет по его комментарию
 
 СТРОГИЙ ФОРМАТ ОТВЕТА:
 
@@ -328,6 +335,7 @@ func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequ
 		escapePromptValue(req.Group.Specialty),
 		escapePromptValue(req.Group.Qualification),
 		req.Course,
+		escapePromptValue(req.Message),
 	)
 
 	responseText, err := s.generateContentWithFallback(ctx, prompt)
@@ -355,6 +363,7 @@ func (s *aiService) GenerateResources(ctx context.Context, req GenerateResources
 - Пояснительная записка: "%s"
 - Цели освоения профессионального модуля: "%s"
 - Формируемые компетенции: "%s"
+- Дополнительный комментарий преподавателя: "%s"
 
 1. Формат результата:
 Ты возвращаешь строго JSON, который соответствует интерфейсу:
@@ -381,6 +390,7 @@ func (s *aiService) GenerateResources(ctx context.Context, req GenerateResources
 - technicalResources: оборудование, программное обеспечение, операционные системы, инструменты, лабораторные стенды, цифровые ресурсы, комплексы тестов — всё, что нужно для практической части курса.
 
 - Каждое поле name должно быть связным текстом, максимально информативным, без списков или маркеров внутри.
+- Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по основным требованиям выше.
 
 Пример желаемого формата:
 
@@ -403,6 +413,7 @@ func (s *aiService) GenerateResources(ctx context.Context, req GenerateResources
 		escapePromptValue(req.Basic),
 		escapePromptValue(req.Goals),
 		escapePromptValue(req.Competencies),
+		escapePromptValue(req.Message),
 		escapePromptValue(req.Name),
 	)
 
@@ -430,6 +441,7 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 - Название: "%s"
 - Цели освоения профессионального модуля: "%s"
 - Формируемые компетенции: "%s"
+- Дополнительный комментарий преподавателя: "%s"
 
 Особые правила:
 
@@ -463,6 +475,7 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 - code: уникальный код РО7.1, РО7.2 и т.д.
 
 4. Не использовать markdown, комментарии или текст вне JSON
+5. Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по правилам выше.
 
 Пример для 3-го курса (семестры 5 и 6), 2 дисциплины, 72 часа каждая, последовательность:
 
@@ -490,6 +503,7 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 		escapePromptValue(req.Name),
 		escapePromptValue(req.Goals),
 		escapePromptValue(req.Competencies),
+		escapePromptValue(req.Message),
 		req.DisciplineCount,
 		req.DisciplineCount,
 		req.Course,
@@ -553,6 +567,7 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 - Цели освоения профессионального модуля: "%s"
 - Формируемые компетенции: "%s"
 - Название дисциплины: "%s"
+- Дополнительный комментарий преподавателя: "%s"
 
 ПРАВИЛА ГЕНЕРАЦИИ ТЕМ:
 
@@ -620,6 +635,7 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 - Верни ТОЛЬКО валидный JSON
 - Без комментариев, markdown, пояснений или дополнительного текста
 - В конце снова перепроверяй длительность всех тем чтобы они в точности совпали с totalHours
+7. Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по правилам выше.
 `,
 		escapePromptValue(req.DisciplineName),
 		escapePromptValue(req.RupName),
@@ -629,6 +645,7 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 		escapePromptValue(req.Goals),
 		escapePromptValue(req.Competencies),
 		escapePromptValue(req.DisciplineName),
+		escapePromptValue(req.Message),
 		req.DisciplineHours,
 		topicCount,
 	)
@@ -714,6 +731,7 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 - Интернет-ресурсы: %s
 - Тех.ресурсы: %s
 - 3 предыдущих темы уроков: %s
+- Дополнительный комментарий преподавателя: "%s"
 
 ТРЕБОВАНИЯ:
 1) Верни СТРОГО один JSON-объект без markdown и комментариев.
@@ -727,6 +745,7 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
    - content: массив конкретных действий преподавателя и обучающихся
 6) Сумма минут в startMinute по этапам должна быть близка к %d минутам.
 7) Формулировки должны соответствовать теме, не повторять дословно предыдущие уроки.
+8) Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по требованиям выше.
 
 ФОРМАТ ОТВЕТА:
 {
@@ -764,6 +783,7 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 		string(internetResourcesJSON),
 		string(technicalResourcesJSON),
 		string(previousLessonsJSON),
+		escapePromptValue(req.Message),
 		lessonMinutes,
 	)
 
