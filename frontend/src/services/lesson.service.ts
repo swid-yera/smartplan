@@ -1,7 +1,14 @@
 import { api } from '@lib'
-import { mutationOptions, queryOptions } from '@tanstack/react-query'
+import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import { LessonResourceTypeEnum } from '@types'
-import type { IGenerateLessonRequest, IGenerateLessonResponse, ILesson, ILessonResource, IPagination } from '@types'
+import type {
+	IGenerateLessonRequest,
+	IGenerateLessonResponse,
+	ILesson,
+	ILessonResource,
+	IMessageResponse,
+	IPagination,
+} from '@types'
 
 export class LessonService {
 	private normalizeResource = (
@@ -92,6 +99,25 @@ export class LessonService {
 				const { data } = await api.get<ILesson>(`/lessons/${id}`)
 
 				return this.normalizeLesson(data)
+			},
+		})
+	}
+
+	// delete by id
+	deleteMutationOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: async (id: string) => {
+				const { data, statusText } = await api.delete<IMessageResponse>(`/lessons/${id}`)
+
+				if (statusText !== 'OK') throw new Error(data.message)
+
+				return id
+			},
+			onSuccess: (deletedId) => {
+				queryClient.invalidateQueries({ queryKey: ['lessons'] })
+				queryClient.removeQueries({ queryKey: ['lesson', deletedId] })
 			},
 		})
 	}
