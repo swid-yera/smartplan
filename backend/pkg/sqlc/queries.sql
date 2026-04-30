@@ -212,6 +212,9 @@ VALUES (
 -- name: GetDisciplineTopicByID :one
 SELECT * FROM discipline_topics WHERE id = $1;
 
+-- name: GetDisciplineTopicByLessonID :one
+SELECT * FROM discipline_topics WHERE lesson_id = $1;
+
 -- name: GetAllDisciplineTopics :many
 SELECT * FROM discipline_topics;
 
@@ -248,6 +251,9 @@ VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: GetRupDisciplineByID :one
 SELECT * FROM rup_disciplines WHERE id = $1;
+
+-- name: GetRupDisciplineByTopicID :one
+SELECT * FROM rup_disciplines WHERE $1::uuid = ANY(topics);
 
 -- name: GetAllRupDisciplines :many
 SELECT * FROM rup_disciplines;
@@ -295,7 +301,7 @@ FROM rups WHERE
     )
     AND (
         sqlc.narg('teacher')::uuid IS NULL
-        OR teacher = sqlc.narg('teacher')::uuid
+        OR sqlc.narg('teacher')::uuid = ANY(contacts)
     ) AND (
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
@@ -320,7 +326,7 @@ WHERE
     )
     AND (
         sqlc.narg('teacher')::uuid IS NULL
-        OR teacher = sqlc.narg('teacher')::uuid
+        OR sqlc.narg('teacher')::uuid = ANY(contacts)
     )
     AND (
         sqlc.narg('methodist')::uuid IS NULL
@@ -336,6 +342,9 @@ SELECT COUNT(*) FROM rups;
 
 -- name: GetRupsByID :one
 SELECT * FROM rups WHERE id = $1;
+
+-- name: GetRupByDisciplineID :one
+SELECT * FROM rups WHERE $1::uuid = ANY(disciplines);
 
 -- name: UpdateRup :exec
 UPDATE rups
@@ -368,7 +377,7 @@ WHERE
 SELECT * FROM rups WHERE methodist = $1 ORDER BY created_at DESC;
 
 -- name: GetRupsByTeacher :many
-SELECT * FROM rups WHERE teacher = $1 ORDER BY created_at DESC;
+SELECT * FROM rups WHERE $1::uuid = ANY(contacts) ORDER BY created_at DESC;
 
 -- name: DeleteRup :exec
 DELETE FROM rups WHERE id = $1;

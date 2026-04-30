@@ -105,7 +105,7 @@ WHERE
     )
     AND (
         $2::uuid IS NULL
-        OR teacher = $2::uuid
+        OR $2::uuid = ANY(contacts)
     )
     AND (
         $3::uuid IS NULL
@@ -1377,6 +1377,28 @@ func (q *Queries) GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (Dis
 	return i, err
 }
 
+const getDisciplineTopicByLessonID = `-- name: GetDisciplineTopicByLessonID :one
+SELECT id, name, type, lesson_id, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours FROM discipline_topics WHERE lesson_id = $1
+`
+
+func (q *Queries) GetDisciplineTopicByLessonID(ctx context.Context, lessonID pgtype.UUID) (DisciplineTopic, error) {
+	row := q.db.QueryRow(ctx, getDisciplineTopicByLessonID, lessonID)
+	var i DisciplineTopic
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Type,
+		&i.LessonID,
+		&i.TotalHours,
+		&i.TheoryHours,
+		&i.PracticeHours,
+		&i.IndividualHours,
+		&i.SrspHours,
+		&i.SrsHours,
+	)
+	return i, err
+}
+
 const getGroupByKeycloakID = `-- name: GetGroupByKeycloakID :one
 SELECT
     keycloak_id,
@@ -1598,12 +1620,58 @@ func (q *Queries) GetRecentLessonsByDiscipline(ctx context.Context, arg GetRecen
 	return items, nil
 }
 
+const getRupByDisciplineID = `-- name: GetRupByDisciplineID :one
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE $1::uuid = ANY(disciplines)
+`
+
+func (q *Queries) GetRupByDisciplineID(ctx context.Context, dollar_1 uuid.UUID) (Rup, error) {
+	row := q.db.QueryRow(ctx, getRupByDisciplineID, dollar_1)
+	var i Rup
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Status,
+		&i.Reason,
+		&i.Course,
+		&i.StudyForm,
+		&i.StudyYear,
+		&i.Type,
+		&i.TotalHours,
+		&i.Contacts,
+		&i.GroupIds,
+		&i.Methodist,
+		&i.Teacher,
+		&i.ExplorationNoteID,
+		&i.Disciplines,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getRupDisciplineByID = `-- name: GetRupDisciplineByID :one
 SELECT id, name, total_hours, semesters, topics FROM rup_disciplines WHERE id = $1
 `
 
 func (q *Queries) GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDiscipline, error) {
 	row := q.db.QueryRow(ctx, getRupDisciplineByID, id)
+	var i RupDiscipline
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.TotalHours,
+		&i.Semesters,
+		&i.Topics,
+	)
+	return i, err
+}
+
+const getRupDisciplineByTopicID = `-- name: GetRupDisciplineByTopicID :one
+SELECT id, name, total_hours, semesters, topics FROM rup_disciplines WHERE $1::uuid = ANY(topics)
+`
+
+func (q *Queries) GetRupDisciplineByTopicID(ctx context.Context, dollar_1 uuid.UUID) (RupDiscipline, error) {
+	row := q.db.QueryRow(ctx, getRupDisciplineByTopicID, dollar_1)
 	var i RupDiscipline
 	err := row.Scan(
 		&i.ID,
@@ -1731,11 +1799,11 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 }
 
 const getRupsByTeacher = `-- name: GetRupsByTeacher :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE teacher = $1 ORDER BY created_at DESC
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE $1::uuid = ANY(contacts) ORDER BY created_at DESC
 `
 
-func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error) {
-	rows, err := q.db.Query(ctx, getRupsByTeacher, teacher)
+func (q *Queries) GetRupsByTeacher(ctx context.Context, dollar_1 uuid.UUID) ([]Rup, error) {
+	rows, err := q.db.Query(ctx, getRupsByTeacher, dollar_1)
 	if err != nil {
 		return nil, err
 	}
@@ -1781,7 +1849,7 @@ FROM rups WHERE
     )
     AND (
         $4::uuid IS NULL
-        OR teacher = $4::uuid
+        OR $4::uuid = ANY(contacts)
     ) AND (
         $5::uuid IS NULL
         OR methodist = $5::uuid

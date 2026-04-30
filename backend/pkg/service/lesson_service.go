@@ -43,9 +43,13 @@ type LessonParams struct {
 
 type LessonResponse struct {
 	ID                 uuid.UUID             `json:"id"`
+	RupID              *uuid.UUID            `json:"rupId,omitempty"`
+	DisciplineID       *uuid.UUID            `json:"disciplineId,omitempty"`
+	TopicID            *uuid.UUID            `json:"topicId,omitempty"`
 	RupName            string                `json:"rup_name"`
 	DisciplineName     *string               `json:"discipline_name"`
 	TopicName          *string               `json:"topic_name"`
+	Topic              *TopicResponse        `json:"topic,omitempty"`
 	Teacher            *helpers.UserResponse `json:"teacher"`
 	EventDate          string                `json:"event_date"`
 	Group              *GroupResponse        `json:"group"`
@@ -78,6 +82,7 @@ type GenerateLessonInput struct {
 	DisciplineID uuid.UUID                `json:"disciplineId"`
 	TopicID      uuid.UUID                `json:"topicId"`
 	UpdatedTopic GenerateLessonTopicInput `json:"updatedTopic"`
+	Message      string                   `json:"message"`
 }
 
 type GenerateLessonTopicInput struct {
@@ -270,6 +275,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		InternetResources:  internetResourceNames,
 		TechnicalResources: technicalResourceNames,
 		PreviousLessons:    previousLessonNames,
+		Message:            input.Message,
 	})
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("generate lesson via ai: %w", err)
@@ -1008,6 +1014,8 @@ func sanitizeLessonFileName(value string) string {
 }
 
 func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.Lesson) (*LessonResponse, error) {
+	rupID, disciplineID, topicID, topic := s.resolveLessonLinks(ctx, lesson.ID)
+
 	// Get teacher
 	var teacher *helpers.UserResponse
 	if user, err := s.rupRepo.GetUserByID(ctx, lesson.Teacher); err == nil {
@@ -1064,9 +1072,13 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 
 	return &LessonResponse{
 		ID:                 lesson.ID,
+		RupID:              rupID,
+		DisciplineID:       disciplineID,
+		TopicID:            topicID,
 		RupName:            lesson.RupName,
 		DisciplineName:     helpers.PgTextToPtr(lesson.DisciplineName),
 		TopicName:          helpers.PgTextToPtr(lesson.TopicName),
+		Topic:              topic,
 		Teacher:            teacher,
 		EventDate:          helpers.PgTimeToString(lesson.EventDate),
 		Group:              group,
@@ -1080,4 +1092,48 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		CreatedAt:          helpers.PgTimeToString(lesson.CreatedAt),
 		UpdatedAt:          helpers.PgTimeToString(lesson.UpdatedAt),
 	}, nil
+}
+
+func (s *LessonService) resolveLessonLinks(
+	ctx context.Context,
+	lessonID uuid.UUID,
+) (*uuid.UUID, *uuid.UUID, *uuid.UUID, *TopicResponse) {
+	topicEntity, err := s.rupRepo.GetTopicByLessonID(ctx, lessonID)
+	if err != nil {
+		return nil, nil, nil, nil
+	}
+
+	topicID := topicEntity.ID
+	var topicLessonID *uuid.UUID
+	if topicEntity.LessonID.Valid {
+		linkedLessonID := uuid.UUID(topicEntity.LessonID.Bytes)
+		topicLessonID = &linkedLessonID
+	}
+
+	topic := &TopicResponse{
+		ID:              topicEntity.ID,
+		Name:            topicEntity.Name,
+		Type:            topicEntity.Type,
+		LessonID:        topicLessonID,
+		TotalHours:      topicEntity.TotalHours,
+		TheoryHours:     topicEntity.TheoryHours,
+		PracticeHours:   topicEntity.PracticeHours,
+		IndividualHours: topicEntity.IndividualHours,
+		SrspHours:       topicEntity.SrspHours,
+		SrsHours:        topicEntity.SrsHours,
+	}
+
+	discipline, err := s.rupRepo.GetDisciplineByTopicID(ctx, topicEntity.ID)
+	if err != nil {
+		return nil, nil, &topicID, topic
+	}
+	disciplineID := discipline.ID
+
+	rup, err := s.rupRepo.GetRupByDisciplineID(ctx, discipline.ID)
+	if err != nil {
+		return nil, &disciplineID, &topicID, topic
+	}
+	rupID := rup.ID
+
+	return &rupID, &disciplineID, &topicID, topic
 }

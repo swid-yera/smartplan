@@ -175,8 +175,10 @@ const EditPage: FC = () => {
 	if (isLoading || authLoading) return <Loader />
 	if (!user) return notFound()
 	if (!rupData) notFound()
+	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
+	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
 	// Redirect if not allowed to edit
-	if (!isAuthor(user, rupData.teacher.keycloakId)) return <Forbidden />
+	if (!isRupDeveloper) return <Forbidden />
 
 	return (
 		<FormProvider {...methods}>
