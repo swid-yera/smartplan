@@ -1,8 +1,42 @@
 import { api } from '@lib'
 import { mutationOptions, queryOptions } from '@tanstack/react-query'
-import type { IGenerateLessonRequest, IGenerateLessonResponse, ILesson, IPagination } from '@types'
+import { LessonResourceTypeEnum } from '@types'
+import type { IGenerateLessonRequest, IGenerateLessonResponse, ILesson, ILessonResource, IPagination } from '@types'
 
 export class LessonService {
+	private normalizeResource = (
+		resource: ILessonResource | string,
+		type: LessonResourceTypeEnum,
+		index: number,
+	): ILessonResource => {
+		if (typeof resource === 'string') {
+			return {
+				id: `${type.toLowerCase()}-${index}`,
+				name: resource,
+				link: '',
+				type,
+			}
+		}
+
+		return {
+			...resource,
+			type: resource.type || type,
+			link: resource.link || '',
+		}
+	}
+
+	private normalizeLesson = (lesson: ILesson): ILesson => {
+		return {
+			...lesson,
+			internet_resources: (lesson.internet_resources || []).map((resource, index) =>
+				this.normalizeResource(resource, LessonResourceTypeEnum.INTERNET, index),
+			),
+			technical_resources: (lesson.technical_resources || []).map((resource, index) =>
+				this.normalizeResource(resource, LessonResourceTypeEnum.TECHNICAL, index),
+			),
+		}
+	}
+
 	// generate lesson
 	generateLessonOptions = () => {
 		return mutationOptions({
@@ -42,7 +76,10 @@ export class LessonService {
 					},
 				})
 
-				return data
+				return {
+					...data,
+					data: data.data.map((lesson) => this.normalizeLesson(lesson)),
+				}
 			},
 		})
 	}
@@ -54,7 +91,7 @@ export class LessonService {
 			queryFn: async () => {
 				const { data } = await api.get<ILesson>(`/lessons/${id}`)
 
-				return data
+				return this.normalizeLesson(data)
 			},
 		})
 	}
