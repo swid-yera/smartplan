@@ -69,7 +69,7 @@ type Querier interface {
 	GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupResource, error)
 	GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error)
-	GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error)
+	GetRupsByTeacher(ctx context.Context, dollar_1 uuid.UUID) ([]Rup, error)
 	GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error)
 	GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error)
