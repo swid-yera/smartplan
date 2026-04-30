@@ -26,9 +26,12 @@ type RupRepository interface {
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.Group, error)
 	GetExplorationNoteByID(ctx context.Context, id uuid.UUID) (*storage.RupExplorationNote, error)
 	GetDisciplineByID(ctx context.Context, id uuid.UUID) (*storage.RupDiscipline, error)
+	GetDisciplineByTopicID(ctx context.Context, topicID uuid.UUID) (*storage.RupDiscipline, error)
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*storage.RupResource, error)
 	GetSemesterByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineSemester, error)
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
+	GetTopicByLessonID(ctx context.Context, lessonID uuid.UUID) (*storage.DisciplineTopic, error)
+	GetRupByDisciplineID(ctx context.Context, disciplineID uuid.UUID) (*storage.Rup, error)
 	UpdateTopic(ctx context.Context, params storage.UpdateDisciplineTopicParams) error
 	LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error
 
@@ -173,6 +176,14 @@ func (r *RupPostgres) GetDisciplineByID(ctx context.Context, id uuid.UUID) (*sto
 	return &discipline, nil
 }
 
+func (r *RupPostgres) GetDisciplineByTopicID(ctx context.Context, topicID uuid.UUID) (*storage.RupDiscipline, error) {
+	discipline, err := r.queries.GetRupDisciplineByTopicID(ctx, topicID)
+	if err != nil {
+		return nil, err
+	}
+	return &discipline, nil
+}
+
 func (r *RupPostgres) GetResourceByID(ctx context.Context, id uuid.UUID) (*storage.RupResource, error) {
 	resource, err := r.queries.GetRupResourceByID(ctx, id)
 	if err != nil {
@@ -195,6 +206,25 @@ func (r *RupPostgres) GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.
 		return nil, err
 	}
 	return &topic, nil
+}
+
+func (r *RupPostgres) GetTopicByLessonID(ctx context.Context, lessonID uuid.UUID) (*storage.DisciplineTopic, error) {
+	topic, err := r.queries.GetDisciplineTopicByLessonID(ctx, pgtype.UUID{
+		Bytes: lessonID,
+		Valid: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &topic, nil
+}
+
+func (r *RupPostgres) GetRupByDisciplineID(ctx context.Context, disciplineID uuid.UUID) (*storage.Rup, error) {
+	rup, err := r.queries.GetRupByDisciplineID(ctx, disciplineID)
+	if err != nil {
+		return nil, err
+	}
+	return &rup, nil
 }
 
 func (r *RupPostgres) UpdateTopic(ctx context.Context, params storage.UpdateDisciplineTopicParams) error {
