@@ -105,7 +105,7 @@ WHERE
     )
     AND (
         $2::uuid IS NULL
-        OR teacher = $2::uuid
+        OR $2::uuid = ANY(contacts)
     )
     AND (
         $3::uuid IS NULL
@@ -1731,11 +1731,11 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 }
 
 const getRupsByTeacher = `-- name: GetRupsByTeacher :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE teacher = $1 ORDER BY created_at DESC
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE $1::uuid = ANY(contacts) ORDER BY created_at DESC
 `
 
-func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error) {
-	rows, err := q.db.Query(ctx, getRupsByTeacher, teacher)
+func (q *Queries) GetRupsByTeacher(ctx context.Context, dollar_1 uuid.UUID) ([]Rup, error) {
+	rows, err := q.db.Query(ctx, getRupsByTeacher, dollar_1)
 	if err != nil {
 		return nil, err
 	}
@@ -1781,7 +1781,7 @@ FROM rups WHERE
     )
     AND (
         $4::uuid IS NULL
-        OR teacher = $4::uuid
+        OR $4::uuid = ANY(contacts)
     ) AND (
         $5::uuid IS NULL
         OR methodist = $5::uuid

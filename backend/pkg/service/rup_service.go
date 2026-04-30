@@ -402,7 +402,7 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 
 	// 4. Prepare update params
 	// We preserve the existing status
-	params := s.convertToUpdateParams(id, req, existingRup.Status, explorationNoteID, disciplineIDs, totalHours)
+	params := s.convertToUpdateParams(id, req, existingRup.Status, existingRup.Teacher, explorationNoteID, disciplineIDs, totalHours)
 
 	// 5. Update RUP
 	updatedRup, err := s.repo.UpdateRup(ctx, params)
@@ -762,12 +762,7 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 		explorationNoteUUID = pgtype.UUID{Bytes: *explorationNoteID, Valid: true}
 	}
 
-	var contacts []uuid.UUID
-	for _, contactStr := range req.Contacts {
-		if id, err := uuid.Parse(contactStr); err == nil {
-			contacts = append(contacts, id)
-		}
-	}
+	contacts := normalizeRupContacts(req.Contacts, teacherUUID)
 
 	var rupType storage.RupsTypeEnum
 	switch req.Type {
@@ -802,19 +797,22 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 
 }
 
-func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, status storage.RupsStatus, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID, totalHours int32) storage.UpdateRupParams {
+func (s *rupService) convertToUpdateParams(
+	id uuid.UUID,
+	req CreateRupRequest,
+	status storage.RupsStatus,
+	creator pgtype.UUID,
+	explorationNoteID *uuid.UUID,
+	disciplineIDs []uuid.UUID,
+	totalHours int32,
+) storage.UpdateRupParams {
 	var explorationNoteUUID pgtype.UUID
 
 	if explorationNoteID != nil {
 		explorationNoteUUID = pgtype.UUID{Bytes: *explorationNoteID, Valid: true}
 	}
 
-	var contacts []uuid.UUID
-	for _, contactStr := range req.Contacts {
-		if uid, err := uuid.Parse(contactStr); err == nil {
-			contacts = append(contacts, uid)
-		}
-	}
+	contacts := normalizeRupContacts(req.Contacts, creator)
 
 	var rupType storage.RupsTypeEnum
 	switch req.Type {
@@ -845,6 +843,32 @@ func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, s
 		Disciplines:       disciplineIDs,
 		TotalHours:        totalHours,
 	}
+}
+
+func normalizeRupContacts(rawContacts []string, creator pgtype.UUID) []uuid.UUID {
+	contacts := make([]uuid.UUID, 0, len(rawContacts)+1)
+	seen := make(map[uuid.UUID]struct{}, len(rawContacts)+1)
+
+	for _, contactStr := range rawContacts {
+		id, err := uuid.Parse(contactStr)
+		if err != nil {
+			continue
+		}
+
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		contacts = append(contacts, id)
+	}
+
+	if creator.Valid {
+		if _, ok := seen[creator.Bytes]; !ok {
+			contacts = append(contacts, creator.Bytes)
+		}
+	}
+
+	return contacts
 }
 
 func (s *rupService) createExplorationNote(ctx context.Context, note *ExplorationNoteRequest) (*uuid.UUID, error) {

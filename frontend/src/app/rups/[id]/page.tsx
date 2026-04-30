@@ -132,6 +132,7 @@ const Page: FC = () => {
 	const isAdmin = hasRole(user.role, RoleEnum.ADMIN)
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
+	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
 	// conditions
 	const canDownload = rupData.status === StatusEnum.APPROVED
 
@@ -162,7 +163,7 @@ const Page: FC = () => {
 								Удалить
 							</Button>
 						)}
-						{isRupCreator && isStatusForEdit && (
+						{isRupDeveloper && isStatusForEdit && (
 							<Button asChild size='sm' variant='outline'>
 								<Link href={`/rups/${params.id}/edit`}>
 									<Edit /> Редактировать
@@ -175,7 +176,7 @@ const Page: FC = () => {
 								Скачать файл
 							</Button>
 						)}
-						{isRupCreator && isStatusForEdit && (
+						{isRupDeveloper && isStatusForEdit && (
 							<Button
 								className='hover:text-primary'
 								size='sm'

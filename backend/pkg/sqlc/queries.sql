@@ -295,7 +295,7 @@ FROM rups WHERE
     )
     AND (
         sqlc.narg('teacher')::uuid IS NULL
-        OR teacher = sqlc.narg('teacher')::uuid
+        OR sqlc.narg('teacher')::uuid = ANY(contacts)
     ) AND (
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
@@ -320,7 +320,7 @@ WHERE
     )
     AND (
         sqlc.narg('teacher')::uuid IS NULL
-        OR teacher = sqlc.narg('teacher')::uuid
+        OR sqlc.narg('teacher')::uuid = ANY(contacts)
     )
     AND (
         sqlc.narg('methodist')::uuid IS NULL
@@ -368,7 +368,7 @@ WHERE
 SELECT * FROM rups WHERE methodist = $1 ORDER BY created_at DESC;
 
 -- name: GetRupsByTeacher :many
-SELECT * FROM rups WHERE teacher = $1 ORDER BY created_at DESC;
+SELECT * FROM rups WHERE $1::uuid = ANY(contacts) ORDER BY created_at DESC;
 
 -- name: DeleteRup :exec
 DELETE FROM rups WHERE id = $1;

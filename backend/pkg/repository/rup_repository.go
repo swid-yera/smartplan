@@ -91,7 +91,10 @@ func (r *RupPostgres) GetRupsByMethodist(ctx context.Context, methodist pgtype.U
 }
 
 func (r *RupPostgres) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]storage.Rup, error) {
-	return r.queries.GetRupsByTeacher(ctx, teacher)
+	if !teacher.Valid {
+		return []storage.Rup{}, nil
+	}
+	return r.queries.GetRupsByTeacher(ctx, teacher.Bytes)
 }
 
 func (r *RupPostgres) DeleteRup(ctx context.Context, id uuid.UUID) error {

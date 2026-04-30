@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_6cmzB7GBD6
 createdAt: 2026-01-15T18:12:50.578097400
-updatedAt: 2026-01-28T22:58:11.043137500
+updatedAt: 2026-04-30T09:20:47.012385500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -33,9 +33,9 @@ urlParameters:
   name: search
   value: ''
   id: zPBrhaFwkj
-- enabled: false
+- enabled: true
   name: teacher
-  value: f2546909-a510-49e7-9185-bd576e76784c
+  value: 46313143-eadb-4798-b7f5-2fa97869e716
   id: 6F4EynMmxR
 - enabled: false
   name: methodist
@@ -48,4 +48,4 @@ urlParameters:
 - enabled: true
   name: ''
   value: ''
-  id: ANnI4R7xuw
+  id: fQ2wz5YfxS
