@@ -78,6 +78,7 @@ type GenerateLessonInput struct {
 	DisciplineID uuid.UUID                `json:"disciplineId"`
 	TopicID      uuid.UUID                `json:"topicId"`
 	UpdatedTopic GenerateLessonTopicInput `json:"updatedTopic"`
+	Message      string                   `json:"message"`
 }
 
 type GenerateLessonTopicInput struct {
@@ -270,6 +271,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		InternetResources:  internetResourceNames,
 		TechnicalResources: technicalResourceNames,
 		PreviousLessons:    previousLessonNames,
+		Message:            input.Message,
 	})
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("generate lesson via ai: %w", err)
