@@ -1,3 +1,4 @@
+import type { LessonResourceTypeEnum, LessonTypeEnum } from '../lesson.type'
 import type { TopicTypeEnum } from '../rup.type'
 
 export interface IGenerateLessonUpdatedTopic {
@@ -21,4 +22,23 @@ export interface IGenerateLessonRequest {
 export interface IGenerateLessonResponse {
 	status: boolean
 	lessonId?: string
+}
+
+export interface IUpdateLessonResourceRequest {
+	id?: string
+	name: string
+	link: string
+	type: LessonResourceTypeEnum
+}
+
+export interface IUpdateLessonRequest {
+	topic_name: string
+	event_date: string
+	type: LessonTypeEnum
+	goals: string
+	tasks: string
+	expected: string
+	file_url?: string | null
+	internet_resources: IUpdateLessonResourceRequest[]
+	technical_resources: IUpdateLessonResourceRequest[]
 }

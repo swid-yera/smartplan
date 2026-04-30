@@ -8,6 +8,7 @@ import type {
 	ILessonResource,
 	IMessageResponse,
 	IPagination,
+	IUpdateLessonRequest,
 } from '@types'
 
 export class LessonService {
@@ -99,6 +100,20 @@ export class LessonService {
 				const { data } = await api.get<ILesson>(`/lessons/${id}`)
 
 				return this.normalizeLesson(data)
+			},
+		})
+	}
+
+	// update by id
+	updateMutationOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: ({ id, changedLesson }: { id: string; changedLesson: IUpdateLessonRequest }) =>
+				api.put<ILesson>(`/lessons/${id}`, changedLesson).then((r) => this.normalizeLesson(r.data)),
+			onSuccess: (updatedLesson, { id }) => {
+				queryClient.setQueryData(['lesson', id], updatedLesson)
+				queryClient.invalidateQueries({ queryKey: ['lessons'] })
 			},
 		})
 	}
