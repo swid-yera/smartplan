@@ -6,7 +6,6 @@ import type {
 	IGenerateLessonResponse,
 	ILesson,
 	ILessonResource,
-	IMessageResponse,
 	IPagination,
 	IUpdateLessonRequest,
 } from '@types'
@@ -124,9 +123,9 @@ export class LessonService {
 
 		return mutationOptions({
 			mutationFn: async (id: string) => {
-				const { data, statusText } = await api.delete<IMessageResponse>(`/lessons/${id}`)
+				const { data } = await api.delete<{ status: boolean; message?: string }>(`/lessons/${id}`)
 
-				if (statusText !== 'OK') throw new Error(data.message)
+				if (!data.status) throw new Error(data.message || 'Не удалось удалить урок')
 
 				return id
 			},
