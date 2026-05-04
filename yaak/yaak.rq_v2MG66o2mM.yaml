@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_v2MG66o2mM
 createdAt: 2026-04-28T14:43:22.218303900
-updatedAt: 2026-05-04T09:33:52.307276400
+updatedAt: 2026-05-04T10:10:36.829591500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_tqqPjuByKX
 authentication: {}
@@ -18,7 +18,7 @@ url: ${[ url ]}/lessons/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: 305c07b9-ff3c-4438-8bba-ddb3d92e1e34
+  value: ''
   id: JUPKx3KWcb
 - enabled: true
   name: ''
