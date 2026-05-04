@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -59,9 +60,18 @@ type LessonResponse struct {
 	Expected           *string               `json:"expected"`
 	InternetResources  []*ResourceResponse   `json:"internet_resources"`
 	TechnicalResources []*ResourceResponse   `json:"technical_resources"`
+	LessonProgress     []LessonProgressData  `json:"lesson_progress"`
 	FileURL            *string               `json:"file_url"`
 	CreatedAt          string                `json:"created_at"`
 	UpdatedAt          string                `json:"updated_at"`
+}
+
+type LessonProgressData struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	StartMinute []int32   `json:"start_minute"`
+	EndMinute   []int32   `json:"end_minute"`
+	Content     []string  `json:"content"`
 }
 
 type PaginatedLessonsResponse struct {
@@ -1063,6 +1073,31 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		})
 	}
 
+	// Get lesson progress sorted by start minute and then by end minute
+	lessonProgressRows, _ := s.repo.GetLessonProgressByLessonID(ctx, lesson.ID)
+	sort.Slice(lessonProgressRows, func(i, j int) bool {
+		leftStart := extractMinuteForSort(lessonProgressRows[i].StartMinute)
+		rightStart := extractMinuteForSort(lessonProgressRows[j].StartMinute)
+		if leftStart != rightStart {
+			return leftStart < rightStart
+		}
+
+		leftEnd := extractMinuteForSort(lessonProgressRows[i].EndMinute)
+		rightEnd := extractMinuteForSort(lessonProgressRows[j].EndMinute)
+		return leftEnd < rightEnd
+	})
+
+	lessonProgress := make([]LessonProgressData, 0, len(lessonProgressRows))
+	for _, item := range lessonProgressRows {
+		lessonProgress = append(lessonProgress, LessonProgressData{
+			ID:          item.ID,
+			Name:        item.Name,
+			StartMinute: item.StartMinute,
+			EndMinute:   item.EndMinute,
+			Content:     item.Content,
+		})
+	}
+
 	fileURL := helpers.PgTextToPtr(lesson.FileUrl)
 	if fileURL != nil && strings.TrimSpace(*fileURL) != "" {
 		if fullURL, err := s.fileStorage.GetDownloadFileURL(ctx, *fileURL, 10*time.Minute); err == nil {
@@ -1088,10 +1123,18 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		Expected:           helpers.PgTextToPtr(lesson.Expected),
 		InternetResources:  internetResources,
 		TechnicalResources: technicalResources,
+		LessonProgress:     lessonProgress,
 		FileURL:            fileURL,
 		CreatedAt:          helpers.PgTimeToString(lesson.CreatedAt),
 		UpdatedAt:          helpers.PgTimeToString(lesson.UpdatedAt),
 	}, nil
+}
+
+func extractMinuteForSort(minutes []int32) int32 {
+	if len(minutes) == 0 {
+		return math.MaxInt32
+	}
+	return minutes[0]
 }
 
 func (s *LessonService) resolveLessonLinks(
