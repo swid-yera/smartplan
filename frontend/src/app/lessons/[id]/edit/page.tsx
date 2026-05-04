@@ -237,7 +237,7 @@ function LessonEditForm({ lesson }: { lesson: ILesson }) {
 		<section className='mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8'>
 			<PageTitle
 				actions={
-					<ButtonGroup>
+					<ButtonGroup className='col-start-2'>
 						<Button form='lesson-edit-form' type='submit'>
 							<Save className='mr-2 h-4 w-4' />
 							Сохранить
