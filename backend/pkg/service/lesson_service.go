@@ -250,8 +250,8 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		return uuid.Nil, err
 	}
 
-	internetResourceIDs, internetResourceNames := s.resolveResources(ctx, exploration.InternetResources)
-	technicalResourceIDs, technicalResourceNames := s.resolveResources(ctx, exploration.TechnicalResources)
+	internetResourceIDs, internetResources := s.resolveResources(ctx, exploration.InternetResources)
+	technicalResourceIDs, technicalResources := s.resolveResources(ctx, exploration.TechnicalResources)
 
 	recentLessons, err := s.repo.GetRecentLessonsByDiscipline(
 		ctx,
@@ -282,13 +282,22 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		ExplorationSummary: exploration.Summary.String,
 		Prerequisites:      exploration.Prerequisites.String,
 		Postrequisites:     exploration.Postrequisites.String,
-		InternetResources:  internetResourceNames,
-		TechnicalResources: technicalResourceNames,
+		InternetResources:  resourceStringsForPrompt(internetResources),
+		TechnicalResources: resourceStringsForPrompt(technicalResources),
 		PreviousLessons:    previousLessonNames,
 		Message:            input.Message,
 	})
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("generate lesson via ai: %w", err)
+	}
+
+	if generatedIDs, generated := s.persistGeneratedResources(ctx, aiResult.InternetResources); len(generatedIDs) > 0 {
+		internetResourceIDs = generatedIDs
+		internetResources = generated
+	}
+	if generatedIDs, generated := s.persistGeneratedResources(ctx, aiResult.TechnicalResources); len(generatedIDs) > 0 {
+		technicalResourceIDs = generatedIDs
+		technicalResources = generated
 	}
 
 	fallbackType := lessonTypeByTopic(*updatedTopic)
@@ -336,8 +345,8 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		rup.Course,
 		group.Name,
 		generatedPlan,
-		internetResourceNames,
-		technicalResourceNames,
+		resourceStringsForDocument(internetResources),
+		resourceStringsForDocument(technicalResources),
 	)
 
 	document, err := s.generateLessonViaPython(ctx, documentPayload)
@@ -345,7 +354,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		return uuid.Nil, err
 	}
 
-	objectName := buildLessonObjectName(lessonID, discipline.Name)
+	objectName := buildLessonObjectName(lessonID, updatedTopic.Name)
 	if err := s.fileStorage.UploadFile(ctx, objectName, bytes.NewReader(document.Content), int64(len(document.Content))); err != nil {
 		return uuid.Nil, fmt.Errorf("upload lesson to minio: %w", err)
 	}
@@ -606,9 +615,9 @@ func (s *LessonService) resolveExplorationNote(ctx context.Context, rup *storage
 	return exploration, nil
 }
 
-func (s *LessonService) resolveResources(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, []string) {
+func (s *LessonService) resolveResources(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, []GeneratedResource) {
 	resourceIDs := make([]uuid.UUID, 0, len(ids))
-	resourceNames := make([]string, 0, len(ids))
+	resources := make([]GeneratedResource, 0, len(ids))
 
 	for _, id := range ids {
 		resource, err := s.rupRepo.GetResourceByID(ctx, id)
@@ -619,11 +628,61 @@ func (s *LessonService) resolveResources(ctx context.Context, ids []uuid.UUID) (
 		resourceIDs = append(resourceIDs, id)
 		name := strings.TrimSpace(resource.Name)
 		if name != "" {
-			resourceNames = append(resourceNames, name)
+			resources = append(resources, GeneratedResource{
+				Name: name,
+				Link: strings.TrimSpace(resource.Link.String),
+			})
 		}
 	}
 
-	return resourceIDs, resourceNames
+	return resourceIDs, resources
+}
+
+func (s *LessonService) persistGeneratedResources(ctx context.Context, generated []GeneratedResource) ([]uuid.UUID, []GeneratedResource) {
+	if len(generated) == 0 {
+		return nil, nil
+	}
+
+	createdIDs := make([]uuid.UUID, 0, len(generated))
+	createdResources := make([]GeneratedResource, 0, len(generated))
+	seen := make(map[string]struct{}, len(generated))
+
+	for _, item := range generated {
+		name := strings.TrimSpace(item.Name)
+		if isPlaceholderValue(name) {
+			continue
+		}
+
+		link := strings.TrimSpace(item.Link)
+		if isPlaceholderValue(link) {
+			link = ""
+		}
+
+		key := strings.ToLower(name + "|" + link)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+
+		resource, err := s.rupRepo.CreateResource(ctx, storage.CreateRupResourceParams{
+			Name: name,
+			Link: pgtype.Text{String: link, Valid: link != ""},
+		})
+		if err != nil {
+			if s.log != nil {
+				s.log.WithError(err).WithField("resource_name", name).Warn("failed to persist generated lesson resource")
+			}
+			continue
+		}
+
+		createdIDs = append(createdIDs, resource.ID)
+		createdResources = append(createdResources, GeneratedResource{
+			Name: strings.TrimSpace(resource.Name),
+			Link: strings.TrimSpace(resource.Link.String),
+		})
+	}
+
+	return createdIDs, createdResources
 }
 
 func (s *LessonService) generateLessonViaPython(ctx context.Context, payload lessonDocumentPayload) (*generatedLessonDocument, error) {
@@ -871,11 +930,11 @@ func buildLessonDocumentPayload(
 		Course:             course,
 		GroupName:          groupName,
 		Type:               lessonTypeLabel,
-		Goals:              "",
-		Tasks:              "",
-		Expected:           "",
-		InternetResources:  "",
-		TechnicalResources: "",
+		Goals:              plan.Goals,
+		Tasks:              plan.Tasks,
+		Expected:           plan.Expected,
+		InternetResources:  joinResourceList(internetResources),
+		TechnicalResources: joinResourceList(technicalResources),
 		LessonProgress:     rows,
 	}
 }
@@ -906,6 +965,40 @@ func joinResourceList(resources []string) string {
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func resourceStringsForPrompt(resources []GeneratedResource) []string {
+	result := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		name := strings.TrimSpace(resource.Name)
+		if name == "" {
+			continue
+		}
+		link := strings.TrimSpace(resource.Link)
+		if link != "" {
+			result = append(result, fmt.Sprintf("%s (%s)", name, link))
+			continue
+		}
+		result = append(result, name)
+	}
+	return result
+}
+
+func resourceStringsForDocument(resources []GeneratedResource) []string {
+	result := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		name := strings.TrimSpace(resource.Name)
+		if name == "" {
+			continue
+		}
+		link := strings.TrimSpace(resource.Link)
+		if link != "" {
+			result = append(result, fmt.Sprintf("%s — %s", name, link))
+			continue
+		}
+		result = append(result, name)
+	}
+	return result
 }
 
 func extractPreviousLessonNames(lessons []storage.Lesson) []string {
@@ -958,8 +1051,8 @@ func containsUUID(values []uuid.UUID, target uuid.UUID) bool {
 	return false
 }
 
-func buildLessonObjectName(lessonID uuid.UUID, disciplineName string) string {
-	baseName := sanitizeLessonFileName(disciplineName)
+func buildLessonObjectName(lessonID uuid.UUID, lessonName string) string {
+	baseName := sanitizeLessonFileName(lessonName)
 	if baseName == "" {
 		baseName = "lesson_plan"
 	}
