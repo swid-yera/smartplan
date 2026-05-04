@@ -1,6 +1,30 @@
+import type { IGroup, RoleEnum } from './global.type'
+
 export enum LessonTypeEnum {
 	PRACTICE = 'PRACTICE',
 	THEORY = 'THEORY',
+}
+
+export enum LessonResourceTypeEnum {
+	INTERNET = 'INTERNET',
+	TECHNICAL = 'TECHNICAL',
+}
+
+export interface ILessonTeacher {
+	keycloakId: string
+	email: string
+	username: string
+	firstName: string
+	lastName: string
+	phone: string
+	roles: RoleEnum | string
+}
+
+export interface ILessonResource {
+	id: string
+	name: string
+	link: string
+	type: LessonResourceTypeEnum
 }
 
 export interface ILesson {
@@ -8,8 +32,10 @@ export interface ILesson {
 	rup_name: string
 	discipline_name: string
 	topic_name: string
-	teacher_id: string
-	group_id: string
+	teacher: ILessonTeacher
+	group: IGroup
+	teacher_id?: string
+	group_id?: string
 	event_date: string
 	type: LessonTypeEnum
 
@@ -17,9 +43,9 @@ export interface ILesson {
 	tasks: string
 	expected: string
 
-	internet_resources: string[]
-	technical_resources: string[]
-	file_url: string
+	internet_resources: ILessonResource[]
+	technical_resources: ILessonResource[]
+	file_url: string | null
 	created_at: string
 	updated_at: string
 }
