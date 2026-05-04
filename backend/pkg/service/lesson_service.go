@@ -498,6 +498,19 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params L
 }
 
 func (s *LessonService) DeleteLesson(ctx context.Context, id uuid.UUID) error {
+	if _, err := s.repo.GetLessonByID(ctx, id); err != nil {
+		return err
+	}
+
+	topic, err := s.rupRepo.GetTopicByLessonID(ctx, id)
+	if err == nil {
+		if err := s.rupRepo.LinkLessonToTopic(ctx, topic.ID, nil); err != nil {
+			return fmt.Errorf("unlink lesson from topic: %w", err)
+		}
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("get topic by lesson id: %w", err)
+	}
+
 	progress, err := s.repo.GetLessonProgressByLessonID(ctx, id)
 	if err != nil {
 		return err
