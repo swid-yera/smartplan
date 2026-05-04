@@ -148,11 +148,13 @@ type GenerateLessonRequest struct {
 }
 
 type GenerateLessonResponse struct {
-	Type           string                        `json:"type"`
-	Goals          string                        `json:"goals"`
-	Tasks          string                        `json:"tasks"`
-	Expected       string                        `json:"expected"`
-	LessonProgress []GeneratedLessonProgressStep `json:"lessonProgress"`
+	Type               string                        `json:"type"`
+	Goals              string                        `json:"goals"`
+	Tasks              string                        `json:"tasks"`
+	Expected           string                        `json:"expected"`
+	InternetResources  []GeneratedResource           `json:"internetResources"`
+	TechnicalResources []GeneratedResource           `json:"technicalResources"`
+	LessonProgress     []GeneratedLessonProgressStep `json:"lessonProgress"`
 }
 
 type GeneratedLessonProgressStep struct {
@@ -740,12 +742,22 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 4) "lessonProgress" — массив этапов занятия.
 5) Каждый этап должен содержать:
    - name: название этапа
-   - startMinute: длительность этапа (минут)
-   - endMinute: дополнительная длительность/практическая часть (минут), если не нужна — 0
+   - startMinute: начало этапа в минутах от начала занятия
+   - endMinute: конец этапа в минутах от начала занятия
    - content: массив конкретных действий преподавателя и обучающихся
-6) Сумма минут в startMinute по этапам должна быть близка к %d минутам.
-7) Формулировки должны соответствовать теме, не повторять дословно предыдущие уроки.
-8) Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по требованиям выше.
+6) Для "PRACTICE" endMinute обязателен и должен быть > startMinute (0 использовать нельзя).
+7) Для "PRACTICE" этапы должны идти непрерывно по времени:
+   - у первого этапа startMinute = 0
+   - у каждого следующего этапа startMinute равен endMinute предыдущего этапа
+   - endMinute последнего этапа должен быть близок к %d минутам
+8) Для "THEORY" допускается endMinute = 0, если этап без отдельного конечного интервала.
+9) Формулировки должны соответствовать теме, не повторять дословно предыдущие уроки.
+10) Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по требованиям выше.
+11) Добавь "internetResources" (4-7 шт.) и "technicalResources" (3-6 шт.):
+   - каждый элемент: { "name": string, "link": string }
+   - link должен быть корректным URL (https://...), если ссылка известна
+   - запрещены заглушки и мусорные значения (например: "asdf", "test", "qwerty")
+   - если точной ссылки нет, укажи "link": ""
 
 ФОРМАТ ОТВЕТА:
 {
@@ -753,6 +765,12 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
   "goals": string,
   "tasks": string,
   "expected": string,
+  "internetResources": [
+    { "name": string, "link": string }
+  ],
+  "technicalResources": [
+    { "name": string, "link": string }
+  ],
   "lessonProgress": [
     {
       "name": string,
@@ -801,6 +819,8 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 	out.Goals = strings.TrimSpace(out.Goals)
 	out.Tasks = strings.TrimSpace(out.Tasks)
 	out.Expected = strings.TrimSpace(out.Expected)
+	out.InternetResources = normalizeGeneratedResources(out.InternetResources)
+	out.TechnicalResources = normalizeGeneratedResources(out.TechnicalResources)
 	for i := range out.LessonProgress {
 		out.LessonProgress[i].Name = strings.TrimSpace(out.LessonProgress[i].Name)
 		for j := range out.LessonProgress[i].Content {
@@ -945,6 +965,56 @@ func normalizeSemesterHours(hours []int) []int {
 		result[i] = hours[i]
 	}
 	return result
+}
+
+func normalizeGeneratedResources(resources []GeneratedResource) []GeneratedResource {
+	if len(resources) == 0 {
+		return nil
+	}
+
+	unique := make(map[string]struct{}, len(resources))
+	result := make([]GeneratedResource, 0, len(resources))
+	for _, resource := range resources {
+		name := strings.TrimSpace(resource.Name)
+		if isPlaceholderValue(name) {
+			continue
+		}
+
+		link := strings.TrimSpace(resource.Link)
+		if isPlaceholderValue(link) {
+			link = ""
+		}
+		if link != "" && !strings.HasPrefix(strings.ToLower(link), "http://") && !strings.HasPrefix(strings.ToLower(link), "https://") {
+			link = ""
+		}
+
+		key := strings.ToLower(name + "|" + link)
+		if _, exists := unique[key]; exists {
+			continue
+		}
+		unique[key] = struct{}{}
+
+		result = append(result, GeneratedResource{
+			Name: name,
+			Link: link,
+		})
+	}
+
+	return result
+}
+
+func isPlaceholderValue(value string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	if normalized == "" {
+		return true
+	}
+
+	switch normalized {
+	case "asdf", "qwerty", "test", "null", "none", "-", "_":
+		return true
+	default:
+		return false
+	}
 }
 
 func escapePromptValue(value string) string {

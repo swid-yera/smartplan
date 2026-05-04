@@ -163,16 +163,30 @@ func (h *LessonHandler) UpdateLesson(c *gin.Context) {
 func (h *LessonHandler) DeleteLesson(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error":  "invalid lesson ID",
+		})
 		return
 	}
 
 	if err := h.lessonService.DeleteLesson(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "error",
+				"error":  "lesson not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  err.Error(),
+		})
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, gin.H{"status": "true"})
 }
 
 func (h *LessonHandler) RecordLessonProgress(c *gin.Context) {
