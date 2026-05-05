@@ -5,12 +5,50 @@ import type {
 	IGenerateLessonRequest,
 	IGenerateLessonResponse,
 	ILesson,
+	ILessonProgress,
 	ILessonResource,
 	IPagination,
 	IUpdateLessonRequest,
 } from '@types'
 
 export class LessonService {
+	private normalizeProgressMinute = (value: unknown): number => {
+		if (Array.isArray(value)) {
+			return this.normalizeProgressMinute(value[0])
+		}
+
+		const parsed = Number(value)
+
+		if (!Number.isFinite(parsed) || parsed < 0) return 0
+
+		return parsed
+	}
+
+	private normalizeLessonProgress = (items: unknown): ILessonProgress[] => {
+		if (!Array.isArray(items)) return []
+
+		return items.map((item, index) => {
+			const source = typeof item === 'object' && item !== null ? (item as Record<string, unknown>) : {}
+			const rawContent = source.content
+			const contentItems = Array.isArray(rawContent)
+				? rawContent
+				: typeof rawContent === 'string'
+					? rawContent.split('\n')
+					: []
+			const content = contentItems
+				.map((contentItem) => (typeof contentItem === 'string' ? contentItem.trim() : ''))
+				.filter(Boolean)
+
+			return {
+				id: typeof source.id === 'string' && source.id.trim() ? source.id : `lesson-progress-${index}`,
+				name: typeof source.name === 'string' ? source.name : '',
+				content,
+				startMinute: this.normalizeProgressMinute(source.startMinute ?? source.start_minute),
+				endMinute: this.normalizeProgressMinute(source.endMinute ?? source.end_minute),
+			}
+		})
+	}
+
 	private normalizeResource = (
 		resource: ILessonResource | string,
 		type: LessonResourceTypeEnum,
@@ -35,6 +73,9 @@ export class LessonService {
 	private normalizeLesson = (lesson: ILesson): ILesson => {
 		return {
 			...lesson,
+			lesson_progress: this.normalizeLessonProgress(
+				(lesson as ILesson & { lesson_progress?: unknown }).lesson_progress,
+			),
 			internet_resources: (lesson.internet_resources || []).map((resource, index) =>
 				this.normalizeResource(resource, LessonResourceTypeEnum.INTERNET, index),
 			),
@@ -65,14 +106,20 @@ export class LessonService {
 		pageSize = 10,
 		search,
 		teacher,
+		type,
+		discipline,
+		group,
 	}: {
 		currentPage?: number
 		pageSize?: number
 		search?: string
 		teacher?: string
+		type?: string
+		discipline?: string
+		group?: string
 	}) => {
 		return queryOptions<IPagination<ILesson>>({
-			queryKey: ['lessons', { currentPage, pageSize, search, teacher }],
+			queryKey: ['lessons', { currentPage, pageSize, search, teacher, type, discipline, group }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<ILesson>>('/lessons', {
 					params: {
@@ -80,6 +127,9 @@ export class LessonService {
 						pageSize,
 						search,
 						teacher,
+						type,
+						discipline,
+						group,
 					},
 				})
 

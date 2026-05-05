@@ -73,13 +73,19 @@ export default function MyLessonPlansPage() {
 	const rawType = searchParams.get('type') || ALL_FILTER
 	const rawDiscipline = searchParams.get('discipline') || ALL_FILTER
 	const rawGroup = searchParams.get('group') || ALL_FILTER
+	const selectedType = Object.keys(lessonTypeLabels).includes(rawType) ? (rawType as LessonTypeEnum) : ALL_FILTER
+	const selectedDiscipline = rawDiscipline
+	const selectedGroup = rawGroup
 
 	const { data, isLoading } = useQuery({
 		...services.lesson.getAllOptions({
 			currentPage: page,
 			pageSize,
-			search,
+			search: search || undefined,
 			teacher: user?.keycloakId,
+			type: selectedType === ALL_FILTER ? undefined : selectedType,
+			discipline: selectedDiscipline === ALL_FILTER ? undefined : selectedDiscipline,
+			group: selectedGroup === ALL_FILTER ? undefined : selectedGroup,
 		}),
 		enabled: !authLoading && !!user,
 	})
@@ -108,30 +114,6 @@ export default function MyLessonPlansPage() {
 		return values
 	}, [lessons, rawGroup])
 
-	const selectedType = Object.keys(lessonTypeLabels).includes(rawType) ? (rawType as LessonTypeEnum) : ALL_FILTER
-	const selectedDiscipline = rawDiscipline
-	const selectedGroup = rawGroup
-
-	const filteredLessons = useMemo(
-		() =>
-			lessons.filter((lesson) => {
-				if (selectedType !== ALL_FILTER && lesson.type !== selectedType) {
-					return false
-				}
-
-				if (selectedDiscipline !== ALL_FILTER && lesson.discipline_name !== selectedDiscipline) {
-					return false
-				}
-
-				if (selectedGroup !== ALL_FILTER && lesson.group?.name !== selectedGroup) {
-					return false
-				}
-
-				return true
-			}),
-		[lessons, selectedDiscipline, selectedGroup, selectedType],
-	)
-
 	const updateSearchParams = (params: Record<string, string | number | null>) => {
 		const nextParams = new URLSearchParams(searchParams.toString())
 
@@ -145,6 +127,14 @@ export default function MyLessonPlansPage() {
 		}
 
 		router.push(`${pathname}?${nextParams.toString()}`)
+	}
+
+	const setCurrentPage = (newPage: number) => {
+		updateSearchParams({ page: newPage })
+	}
+
+	const setPageSize = (newSize: number) => {
+		updateSearchParams({ pageSize: newSize, page: 1 })
 	}
 
 	const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -208,7 +198,7 @@ export default function MyLessonPlansPage() {
 								updateSearchParams({ type: value === ALL_FILTER ? null : value, page: 1 })
 							}
 						>
-							<SelectTrigger>
+							<SelectTrigger className='w-full'>
 								<SelectValue placeholder='Тип занятия' />
 							</SelectTrigger>
 							<SelectContent>
@@ -227,7 +217,7 @@ export default function MyLessonPlansPage() {
 								updateSearchParams({ discipline: value === ALL_FILTER ? null : value, page: 1 })
 							}
 						>
-							<SelectTrigger>
+							<SelectTrigger className='w-full'>
 								<SelectValue placeholder='Дисциплина' />
 							</SelectTrigger>
 							<SelectContent>
@@ -246,7 +236,7 @@ export default function MyLessonPlansPage() {
 								updateSearchParams({ group: value === ALL_FILTER ? null : value, page: 1 })
 							}
 						>
-							<SelectTrigger>
+							<SelectTrigger className='w-full'>
 								<SelectValue placeholder='Группа' />
 							</SelectTrigger>
 							<SelectContent>
@@ -272,9 +262,9 @@ export default function MyLessonPlansPage() {
 				</CardContent>
 			</Card>
 
-			{filteredLessons.length > 0 ? (
+			{lessons.length > 0 ? (
 				<div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
-					{filteredLessons.map((lesson) => {
+					{lessons.map((lesson) => {
 						const TypeIcon = lessonTypeIcons[lesson.type]
 
 						return (
@@ -333,16 +323,14 @@ export default function MyLessonPlansPage() {
 				</Card>
 			)}
 
-			{(data?.meta.pages || 0) > 0 && (
-				<Pagination
-					page={data?.meta.currentPage || page}
-					pageSize={data?.meta.pageSize || pageSize}
-					pageSizeOptions={PAGE_SIZE_OPTIONS}
-					totalPages={data?.meta.pages || 1}
-					onPageChange={(nextPage) => updateSearchParams({ page: nextPage })}
-					onPageSizeChange={(nextPageSize) => updateSearchParams({ pageSize: nextPageSize, page: 1 })}
-				/>
-			)}
+			<Pagination
+				page={data?.meta.currentPage || page}
+				pageSize={data?.meta.pageSize || pageSize}
+				pageSizeOptions={PAGE_SIZE_OPTIONS}
+				totalPages={data?.meta.pages || 1}
+				onPageChange={setCurrentPage}
+				onPageSizeChange={setPageSize}
+			/>
 		</section>
 	)
 }

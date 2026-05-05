@@ -27,6 +27,14 @@ export interface ILessonResource {
 	type: LessonResourceTypeEnum
 }
 
+export interface ILessonProgress {
+	id: string
+	name: string
+	content: string[]
+	startMinute: number
+	endMinute: number
+}
+
 export interface ILesson {
 	id: string
 	rup_name: string
@@ -43,18 +51,10 @@ export interface ILesson {
 	tasks: string
 	expected: string
 
+	lesson_progress: ILessonProgress[]
 	internet_resources: ILessonResource[]
 	technical_resources: ILessonResource[]
 	file_url: string | null
 	created_at: string
 	updated_at: string
-}
-
-export interface ILessonProgress {
-	id: string
-	name: string
-	content: string[]
-
-	startMinute: number
-	endMinute: number
 }

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { type IGenerateResources, generateResources } from '@actions'
 import { Loader } from '@components'
 import { services } from '@services'
+import { Checkbox, Label, Textarea } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
@@ -34,6 +35,8 @@ export function Step2<T extends IProps>() {
 	const { getValues, setValue } = useFormContext<T>()
 	// states
 	const [isLoading, setIsLoading] = useState(false)
+	const [additionalMessage, setAdditionalMessage] = useState('')
+	const [includeCurrentContent, setIncludeCurrentContent] = useState(true)
 
 	const { data: teachersData, isLoading: teacherLoading } = useQuery({
 		...services.user.getAllOptions({ currentPage: 1, pageSize: 100, search: '' }),
@@ -80,6 +83,29 @@ export function Step2<T extends IProps>() {
 
 			<GenerateCard
 				buttonText={isLoading ? 'Генерация…' : 'Сгенерировать'}
+				confirmContent={
+					<div className='grid gap-4'>
+						<div className='flex flex-col gap-2'>
+							<Label htmlFor='rup-meta-additional-message'>Дополнительное сообщение</Label>
+							<Textarea
+								id='rup-meta-additional-message'
+								placeholder='Уточните, что нужно учесть при генерации'
+								rows={4}
+								value={additionalMessage}
+								onChange={(event) => setAdditionalMessage(event.target.value)}
+							/>
+						</div>
+
+						<div className='flex items-center gap-2'>
+							<Checkbox
+								checked={includeCurrentContent}
+								id='rup-meta-include-current-content'
+								onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
+							/>
+							<Label htmlFor='rup-meta-include-current-content'>Включить текущий написанный контент</Label>
+						</div>
+					</div>
+				}
 				description='Тексты будут сформированы на основе базовых данных модуля и описания модуля. После генерации вы сможете отредактировать их вручную.'
 				disabled={isLoading || teacherLoading}
 				disabledReason='Заполните данные модуля и описание'
