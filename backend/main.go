@@ -92,7 +92,7 @@ func main() {
 	usersRepo := repository.NewUsersPostgres(queries)
 	// Passing our wrapped minioRepo to the AwardRepository
 	awardRepo := repository.NewAwardRepository(queries, minioRepo)
-	rupRepo := repository.NewRupPostgres(queries)
+	rupRepo := repository.NewRupPostgres(queries, db)
 	lessonRepo := repository.NewLessonRepository(queries)
 
 	kcSyncClient := kcservice.NewClient(
