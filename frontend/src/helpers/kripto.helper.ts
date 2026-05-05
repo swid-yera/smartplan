@@ -2,6 +2,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const HEX_32_BYTES_REGEX = /^[0-9a-f]{64}$/i
 
 type UnknownRecord = Record<string, unknown>
+type BinaryData = Uint8Array<ArrayBuffer>
 
 export interface KriptoApprovalProof {
 	keyId: string
@@ -27,18 +28,20 @@ interface KriptoV3Payload {
 	iterations: number
 }
 
-const ED25519_PKCS8_PREFIX = new Uint8Array([
+const ED25519_PKCS8_PREFIX: BinaryData = new Uint8Array([
 	0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20,
 ])
-const ED25519_SPKI_PREFIX = new Uint8Array([
+const ED25519_SPKI_PREFIX: BinaryData = new Uint8Array([
 	0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00,
 ])
 
 export const parseKriptoFileText = (rawText: string): UnknownRecord => {
 	const text = rawText.replace(/^\uFEFF/, '').trim()
+
 	if (!text) throw new Error('Файл пустой')
 
 	const parsed = JSON.parse(text)
+
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error('Неверный JSON формат .kripto v3')
 	}
@@ -48,6 +51,7 @@ export const parseKriptoFileText = (rawText: string): UnknownRecord => {
 
 export const extractKeyIdFromKriptoPayload = (payload: UnknownRecord): string => {
 	const keyId = pickString(payload, ['key_id', 'keyId', 'key-id', 'id'])
+
 	if (!keyId || !UUID_REGEX.test(keyId)) throw new Error('В файле не найден валидный key_id (UUID)')
 
 	return keyId
@@ -80,6 +84,7 @@ export const createKriptoApprovalProof = async (
 	const probe = new TextEncoder().encode('eduplan-kripto-v3-public-private-check')
 	const probeSignature = await crypto.subtle.sign('Ed25519', privateKey, probe)
 	const matched = await crypto.subtle.verify('Ed25519', publicKey, probeSignature, probe)
+
 	if (!matched) throw new Error('Приватный ключ не соответствует публичному ключу')
 
 	const challengeHash = await getChallengePayloadHash(challenge)
@@ -100,6 +105,7 @@ const toKriptoV3Payload = (payload: UnknownRecord): KriptoV3Payload => {
 	}
 
 	const version = payload.version
+
 	if (version !== 3 && version !== '3') {
 		throw new Error('Поддерживается только .kripto v3')
 	}
@@ -133,7 +139,8 @@ const toKriptoV3Payload = (payload: UnknownRecord): KriptoV3Payload => {
 		throw new Error('.kripto v3 encryptedPrivateKey.value должен быть валидным base64')
 	}
 	if (!salt || !isValidBase64(salt)) throw new Error('.kripto v3 encryptedPrivateKey.salt должен быть валидным base64')
-	if (!nonce || !isValidBase64(nonce)) throw new Error('.kripto v3 encryptedPrivateKey.nonce должен быть валидным base64')
+	if (!nonce || !isValidBase64(nonce))
+		throw new Error('.kripto v3 encryptedPrivateKey.nonce должен быть валидным base64')
 	if (!iterationsRaw || iterationsRaw < 1000) {
 		throw new Error('.kripto v3 содержит некорректный PBKDF2 iterations')
 	}
@@ -141,7 +148,7 @@ const toKriptoV3Payload = (payload: UnknownRecord): KriptoV3Payload => {
 	return { keyId, userId, publicKey, encryptedPrivateKey, salt, nonce, iterations: iterationsRaw }
 }
 
-const decryptPrivateKey = async (payload: KriptoV3Payload, password: string): Promise<Uint8Array> => {
+const decryptPrivateKey = async (payload: KriptoV3Payload, password: string): Promise<BinaryData> => {
 	const passwordKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, [
 		'deriveKey',
 	])
@@ -158,18 +165,22 @@ const decryptPrivateKey = async (payload: KriptoV3Payload, password: string): Pr
 		['decrypt'],
 	)
 
-	const ciphertext = decodeBase64(payload.encryptedPrivateKey)
+	const cipherText = decodeBase64(payload.encryptedPrivateKey)
 
 	try {
 		return new Uint8Array(
-			await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decodeBase64(payload.nonce), tagLength: 128 }, aesKey, ciphertext),
+			await crypto.subtle.decrypt(
+				{ name: 'AES-GCM', iv: decodeBase64(payload.nonce), tagLength: 128 },
+				aesKey,
+				cipherText,
+			),
 		)
 	} catch {
 		throw new Error('Не удалось расшифровать приватный ключ: неверный пароль или поврежденный файл')
 	}
 }
 
-const importEd25519PrivateKey = async (keyBytes: Uint8Array): Promise<CryptoKey> => {
+const importEd25519PrivateKey = async (keyBytes: BinaryData): Promise<CryptoKey> => {
 	const pkcs8 = keyBytes.length === 32 ? concatBytes(ED25519_PKCS8_PREFIX, keyBytes) : keyBytes
 
 	try {
@@ -179,20 +190,24 @@ const importEd25519PrivateKey = async (keyBytes: Uint8Array): Promise<CryptoKey>
 	}
 }
 
-const importEd25519PublicKey = async (keyBytes: Uint8Array): Promise<CryptoKey> => {
+const importEd25519PublicKey = async (keyBytes: BinaryData): Promise<CryptoKey> => {
 	try {
-		return await crypto.subtle.importKey('spki', concatBytes(ED25519_SPKI_PREFIX, keyBytes), 'Ed25519', false, ['verify'])
+		return await crypto.subtle.importKey('spki', concatBytes(ED25519_SPKI_PREFIX, keyBytes), 'Ed25519', false, [
+			'verify',
+		])
 	} catch {
 		throw new Error('publicKey не является ED25519 ключом')
 	}
 }
 
-const decodeHexPublicKey = (value: string): Uint8Array => {
+const decodeHexPublicKey = (value: string): BinaryData => {
 	if (!HEX_32_BYTES_REGEX.test(value)) throw new Error('publicKey должен быть hex 64 символа')
 	const out = new Uint8Array(32)
+
 	for (let i = 0; i < out.length; i += 1) {
 		out[i] = Number.parseInt(value.slice(i * 2, i * 2 + 2), 16)
 	}
+
 	return out
 }
 
@@ -203,32 +218,38 @@ const asRecord = (value: unknown): UnknownRecord => {
 const pickString = (payload: UnknownRecord, keys: string[]): string => {
 	for (const key of keys) {
 		const value = payload[key]
+
 		if (typeof value === 'string' && value.trim()) return value.trim()
 	}
+
 	return ''
 }
 
 const pickNumber = (payload: UnknownRecord, keys: string[]): number => {
 	for (const key of keys) {
 		const value = payload[key]
+
 		if (typeof value === 'number') return value
 		if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) return Number(value)
 	}
+
 	return 0
 }
 
-const decodeBase64 = (value: string): Uint8Array => {
+const decodeBase64 = (value: string): BinaryData => {
 	const normalized = value.trim().replace(/-/g, '+').replace(/_/g, '/')
 	const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
 	const binary = atob(padded)
 	const out = new Uint8Array(binary.length)
 
 	for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i)
+
 	return out
 }
 
-const getChallengePayloadHash = async (challenge: string): Promise<Uint8Array> => {
+const getChallengePayloadHash = async (challenge: string): Promise<BinaryData> => {
 	const [payloadPart, macPart] = challenge.split('.')
+
 	if (!payloadPart || !macPart) throw new Error('Backend challenge имеет неверный формат')
 
 	return new Uint8Array(await crypto.subtle.digest('SHA-256', decodeBase64(payloadPart)))
@@ -237,17 +258,18 @@ const getChallengePayloadHash = async (challenge: string): Promise<Uint8Array> =
 const isValidBase64 = (value: string): boolean => {
 	try {
 		decodeBase64(value)
+
 		return true
 	} catch {
 		return false
 	}
 }
 
-const encodeHex = (bytes: Uint8Array): string => {
+const encodeHex = (bytes: BinaryData): string => {
 	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-const concatBytes = (...chunks: Uint8Array[]): Uint8Array => {
+const concatBytes = (...chunks: BinaryData[]): BinaryData => {
 	const length = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
 	const out = new Uint8Array(length)
 	let offset = 0
