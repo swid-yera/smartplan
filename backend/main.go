@@ -28,6 +28,9 @@ func main() {
 	redisCfg := config.LoadRedisConfig()
 	minioCfg := config.LoadMinioConfig()
 	docCfg := config.LoadDocumentRenderConfig()
+
+	cryptoCfg := config.LoadCryptoConfig()
+
 	geminiCfg := config.LoadGeminiConfig()
 
 	// ---------- DB ----------
@@ -65,12 +68,14 @@ func main() {
 		DB:       redisCfg.RedisDB,
 	})
 
+	cryptoClient := service.NewCryptoClient(httpClient, cryptoCfg)
+
 	// ---------- REPOSITORIES ----------
 	authRepo := repository.NewAuthPostgres(queries)
 	usersRepo := repository.NewUsersPostgres(queries)
 	// Passing our wrapped minioRepo to the AwardRepository
 	awardRepo := repository.NewAwardRepository(queries, minioRepo)
-	rupRepo := repository.NewRupPostgres(queries)
+	rupRepo := repository.NewRupPostgres(queries, db)
 	lessonRepo := repository.NewLessonRepository(queries)
 
 	kcSyncClient := kcservice.NewClient(
@@ -80,7 +85,8 @@ func main() {
 	// ---------- SERVICES ----------
 	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
-	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo)
+
+	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo, cryptoClient, log)
 	aiService := service.NewAIService(httpClient, geminiCfg, log)
 	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, docCfg, httpClient, minioRepo, log)
 

@@ -103,6 +103,7 @@ func (r *Router) Init() *gin.Engine {
 			rups.GET("", r.rup.GetRupsPaginated)
 			rups.GET("/:id", r.rup.GetRupByID)
 			rups.POST("", r.rup.CreateRup)
+			rups.POST("/:id/approve-challenge", r.rup.CreateApproveChallenge)
 			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
 			rups.PUT("/:id", r.rup.UpdateRup)
 			rups.DELETE("/:id", r.rup.DeleteRup)

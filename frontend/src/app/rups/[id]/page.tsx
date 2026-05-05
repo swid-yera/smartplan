@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
-import { hasRole, isAuthor, normalizeStatus } from '@helpers'
+import { createKriptoApprovalProof, extractKriptoApprovalMetadata, hasRole, isAuthor, normalizeStatus, parseKriptoFileText } from '@helpers'
 import { services } from '@services'
 import {
 	AlertDialog,
@@ -19,6 +19,8 @@ import {
 	AlertDialogTitle,
 	Button,
 	ButtonGroup,
+	Checkbox,
+	Input,
 	Label,
 	Select,
 	SelectContent,
@@ -61,14 +63,26 @@ const Page: FC = () => {
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
 
 	// change rup status
-	const handleStatusChange = (newStatus: StatusEnum, reason?: string) => {
+	const handleStatusChange = (
+		newStatus: StatusEnum,
+		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
+	) => {
 		if (!rupData) return
 		setIsSheetOpen(false)
 
 		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
 
 		toast.loading('Изменение статуса...', { id: toastId })
-		const updateStatusPayload: IUpdateStatusRequest = { id: rupData.id, status: newStatus, reason }
+		const updateStatusPayload: IUpdateStatusRequest = {
+			id: rupData.id,
+			status: newStatus,
+			reason: options?.reason,
+			key_id: options?.keyId,
+			user_id: options?.userId,
+			public_key: options?.publicKey,
+			challenge: options?.challenge,
+			signature: options?.signature,
+		}
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
@@ -197,6 +211,7 @@ const Page: FC = () => {
 			<StatusChangeSheet
 				handleStatusChange={handleStatusChange}
 				isSheetOpen={isSheetOpen}
+				rupId={params.id}
 				setIsSheetOpen={setIsSheetOpen}
 			/>
 
@@ -214,19 +229,91 @@ export default Page
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean
 	setIsSheetOpen: (state: boolean) => void
-	handleStatusChange: (newStatus: StatusEnum, reason: string) => void
+	rupId: string
+	handleStatusChange: (
+		newStatus: StatusEnum,
+		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
+	) => void
 }
 
-const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsSheetOpen, handleStatusChange }) => {
+const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsSheetOpen, rupId, handleStatusChange }) => {
 	const [newStatus, setNewStatus] = useState<StatusEnum | undefined>(undefined)
 	const [reason, setReason] = useState('')
+	const [keyId, setKeyId] = useState('')
+	const [userId, setUserId] = useState('')
+	const [kriptoFileText, setKriptoFileText] = useState('')
+	const [kriptoPassword, setKriptoPassword] = useState('')
+	const [fileName, setFileName] = useState('')
+	const [checked, setChecked] = useState(false)
 
-	const onSheetSubmit = () => {
+	const isApprove = newStatus === StatusEnum.APPROVED
+
+	const onFileUpload = async (file?: File) => {
+		if (!file) return
+		if (!file.name.toLowerCase().endsWith('.kripto')) {
+			toast.error('Поддерживаются только .kripto v3')
+			return
+		}
+
+		const content = await file.text()
+		const parsed = parseKriptoFileText(content)
+		const metadata = extractKriptoApprovalMetadata(parsed)
+
+		setKeyId(metadata.keyId)
+		setUserId(metadata.userId)
+		setKriptoFileText(content)
+		setFileName(file.name)
+		toast.success('Файл ЭЦП успешно разобран')
+	}
+
+	const onSheetSubmit = async () => {
 		if (newStatus) {
-			handleStatusChange(newStatus, reason)
+			if (isApprove) {
+				if (!keyId || !userId || !kriptoFileText) {
+					toast.error('Загрузите .kripto v3 файл')
+					return
+				}
+				if (!kriptoPassword) {
+					toast.error('Введите пароль от .kripto')
+					return
+				}
+				if (!checked) {
+					toast.error('Подтвердите галочкой проверку ключа')
+					return
+				}
+			}
+
+			try {
+				if (isApprove) {
+					const { challenge } = await services.rup.createApproveChallenge(rupId, {
+						key_id: keyId,
+						user_id: userId,
+					})
+					const proof = await createKriptoApprovalProof(kriptoFileText, kriptoPassword, challenge)
+					handleStatusChange(newStatus, {
+						reason,
+						keyId: proof.keyId,
+						userId: proof.userId,
+						publicKey: proof.publicKey,
+						challenge: proof.challenge,
+						signature: proof.signature,
+					})
+				} else {
+					handleStatusChange(newStatus, { reason })
+				}
+			} catch (err) {
+				toast.error(err instanceof Error ? err.message : 'Ошибка проверки .kripto')
+				return
+			}
 
 			setNewStatus(undefined)
 			setReason('')
+			setKeyId('')
+			setUserId('')
+			setKriptoFileText('')
+			setKriptoPassword('')
+			setFileName('')
+			setChecked(false)
 		}
 	}
 
@@ -263,6 +350,51 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 							onChange={(e) => setReason(e.target.value)}
 						/>
 					</div>
+
+					{isApprove && (
+						<div className='grid gap-4 rounded-md border p-3'>
+							<div className='grid gap-2'>
+								<Label htmlFor='kripto-file'>Файл ЭЦП (.kripto)</Label>
+								<Input
+									accept='.kripto,application/json'
+									id='kripto-file'
+									type='file'
+									onChange={(e) => {
+										const file = e.target.files?.[0]
+										onFileUpload(file).catch((err) => {
+											toast.error(err.message || 'Ошибка при чтении файла ЭЦП')
+										})
+									}}
+								/>
+								{fileName && <p className='text-xs text-muted-foreground'>Файл: {fileName}</p>}
+							</div>
+
+							<div className='grid gap-2'>
+								<Label htmlFor='key-id'>Определенный key_id</Label>
+								<Input
+									id='key-id'
+									placeholder='UUID ключа'
+									readOnly
+									value={keyId}
+								/>
+							</div>
+
+							<div className='grid gap-2'>
+								<Label htmlFor='kripto-password'>Пароль .kripto</Label>
+								<Input
+									id='kripto-password'
+									type='password'
+									value={kriptoPassword}
+									onChange={(e) => setKriptoPassword(e.target.value)}
+								/>
+							</div>
+
+							<label className='flex items-center gap-2 text-sm'>
+								<Checkbox checked={checked} onCheckedChange={(v) => setChecked(Boolean(v))} />
+								<span>Подтверждаю, что проверка ключа должна быть выполнена перед утверждением</span>
+							</label>
+						</div>
+					)}
 				</div>
 				<SheetFooter>
 					<Button disabled={!newStatus} onClick={onSheetSubmit}>
