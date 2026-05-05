@@ -9,7 +9,7 @@ FROM debian:latest
 RUN apt-get update && apt-get install -y postgresql-client
 WORKDIR /root/
 COPY --from=build /app/api ./
-COPY pkg/atlas/migrations ./pkg/atlas/migrations
+COPY shared/atlas/migrations ./shared/atlas/migrations
 RUN chmod +x ./entrypoint.sh
 EXPOSE 8080
 ENTRYPOINT ["./entrypoint.sh"]
