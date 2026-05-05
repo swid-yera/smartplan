@@ -95,6 +95,66 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 	c.JSON(http.StatusOK, rup)
 }
 
+func (h *RupHandler) CreateApproveChallenge(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		h.log.WithError(err).Error("invalid RUP ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		return
+	}
+
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		h.log.Error("User not authenticated")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		h.log.Error("Invalid user context", currentUser)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	var req struct {
+		KeyID  string `json:"key_id" binding:"required"`
+		UserID string `json:"user_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.log.WithError(err).Error("invalid approve challenge JSON format")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid JSON format",
+			"details": err.Error(),
+		})
+		return
+	}
+	if req.UserID != currentUser.KeycloakID.String() {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "failed to create approve challenge",
+			"details": "user_id does not match current user",
+		})
+		return
+	}
+
+	resp, err := h.rupService.CreateApproveChallenge(c.Request.Context(), service.CreateApproveChallengeRequest{
+		RupID:  id,
+		UserID: currentUser.KeycloakID,
+		KeyID:  req.KeyID,
+	})
+	if err != nil {
+		h.log.WithError(err).Error("failed to create approve challenge")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to create approve challenge",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 // UpdateRupStatus обновляет статус RUP
 func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	idStr := c.Param("id")
@@ -106,9 +166,13 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status string `json:"status" binding:"required"`
-		Reason string `json:"reason"`
-		KeyID  string `json:"key_id"`
+		Status    string `json:"status" binding:"required"`
+		Reason    string `json:"reason"`
+		KeyID     string `json:"key_id"`
+		UserID    string `json:"user_id"`
+		PublicKey string `json:"public_key"`
+		Challenge string `json:"challenge"`
+		Signature string `json:"signature"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -135,6 +199,13 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
 		return
 	}
+	if strings.TrimSpace(req.UserID) != "" && req.UserID != currentUser.KeycloakID.String() {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "failed to update RUP status",
+			"details": "user_id does not match current user",
+		})
+		return
+	}
 
 	correlationID := strings.TrimSpace(c.GetHeader("X-Correlation-ID"))
 	if correlationID == "" {
@@ -149,6 +220,9 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		MethodistID:   currentUser.KeycloakID,
 		CorrelationID: correlationID,
 		KeyID:         req.KeyID,
+		PublicKey:     req.PublicKey,
+		Challenge:     req.Challenge,
+		Signature:     req.Signature,
 		UserID:        currentUser.KeycloakID.String(),
 	})
 	if err != nil {
