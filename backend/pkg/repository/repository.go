@@ -37,7 +37,6 @@ type Rup interface {
 	UpdateRup(ctx context.Context, params storage.UpdateRupParams) (*storage.Rup, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 
-	// Additional methods for related entities
 	CreateExplorationNote(ctx context.Context, params storage.CreateRupExplorationNoteParams) (*storage.RupExplorationNote, error)
 	CreateResource(ctx context.Context, params storage.CreateRupResourceParams) (*storage.RupResource, error)
 	CreateDiscipline(ctx context.Context, params storage.CreateRupDisciplineParams) (*storage.RupDiscipline, error)
@@ -48,9 +47,14 @@ type Rup interface {
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.Group, error)
 	GetExplorationNoteByID(ctx context.Context, id uuid.UUID) (*storage.RupExplorationNote, error)
 	GetDisciplineByID(ctx context.Context, id uuid.UUID) (*storage.RupDiscipline, error)
+	GetDisciplineByTopicID(ctx context.Context, topicID uuid.UUID) (*storage.RupDiscipline, error)
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*storage.RupResource, error)
 	GetSemesterByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineSemester, error)
 	GetTopicByID(ctx context.Context, id uuid.UUID) (*storage.DisciplineTopic, error)
+	GetTopicByLessonID(ctx context.Context, lessonID uuid.UUID) (*storage.DisciplineTopic, error)
+	GetRupByDisciplineID(ctx context.Context, disciplineID uuid.UUID) (*storage.Rup, error)
+	UpdateTopic(ctx context.Context, params storage.UpdateDisciplineTopicParams) error
+	LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error
 
 	CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
 	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
@@ -61,10 +65,13 @@ type Rup interface {
 }
 
 type Lessons interface {
-	CreateLesson(ctx context.Context, params storage.CreateLessonsParams) error
+	CreateLesson(ctx context.Context, params storage.CreateLessonsParams) (uuid.UUID, error)
 	UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error
+	UpdateLessonFileURL(ctx context.Context, id uuid.UUID, fileURL string) error
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
 	GetLessons(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID, limit int32, offset int32) ([]storage.Lesson, error)
+	GetLessonByID(ctx context.Context, id uuid.UUID) (storage.Lesson, error)
+	GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName pgtype.Text, limit int32) ([]storage.Lesson, error)
 	CountLessonsFiltered(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID) (int64, error)
 
 	CreateLessonProgress(ctx context.Context, params storage.CreateLessonProgressParams) error

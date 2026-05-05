@@ -58,26 +58,33 @@ type Querier interface {
 	GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginatedParams) ([]Award, error)
 	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
 	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
+	GetDisciplineTopicByLessonID(ctx context.Context, lessonID pgtype.UUID) (DisciplineTopic, error)
 	GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (Group, error)
 	GetLessonProgressByID(ctx context.Context, id uuid.UUID) (LessonProgress, error)
 	GetLessonProgressByLessonID(ctx context.Context, lessonID uuid.UUID) ([]LessonProgress, error)
 	GetLessons(ctx context.Context, arg GetLessonsParams) ([]Lesson, error)
 	GetLessonsByID(ctx context.Context, id uuid.UUID) (Lesson, error)
+	GetRecentLessonsByDiscipline(ctx context.Context, arg GetRecentLessonsByDisciplineParams) ([]Lesson, error)
+	GetRupByDisciplineID(ctx context.Context, dollar_1 uuid.UUID) (Rup, error)
 	GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDiscipline, error)
+	GetRupDisciplineByTopicID(ctx context.Context, dollar_1 uuid.UUID) (RupDiscipline, error)
 	GetRupExplorationNoteByID(ctx context.Context, id uuid.UUID) (RupExplorationNote, error)
 	GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupResource, error)
 	GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error)
-	GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error)
+	GetRupsByTeacher(ctx context.Context, dollar_1 uuid.UUID) ([]Rup, error)
 	GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error)
 	GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error)
 	GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatingPaginatedParams) ([]User, error)
+	LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
 	UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error
 	UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTypeVariantsParams) (AwardType, error)
+	UpdateDisciplineTopic(ctx context.Context, arg UpdateDisciplineTopicParams) error
 	UpdateLesson(ctx context.Context, arg UpdateLessonParams) error
+	UpdateLessonFileURL(ctx context.Context, arg UpdateLessonFileURLParams) error
 	UpdateLessonProgress(ctx context.Context, arg UpdateLessonProgressParams) error
 	UpdateRup(ctx context.Context, arg UpdateRupParams) error
 	UpdateRupResource(ctx context.Context, arg UpdateRupResourceParams) error

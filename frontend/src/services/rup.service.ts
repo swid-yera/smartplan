@@ -54,8 +54,6 @@ export class RupService {
 
 		return mutationOptions({
 			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) => {
-				console.log(newRup)
-
 				return api.post<IRup>('/rups', newRup).then((r) => r.data)
 			},
 

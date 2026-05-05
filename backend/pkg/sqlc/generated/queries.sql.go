@@ -105,7 +105,7 @@ WHERE
     )
     AND (
         $2::uuid IS NULL
-        OR teacher = $2::uuid
+        OR $2::uuid = ANY(contacts)
     )
     AND (
         $3::uuid IS NULL
@@ -362,7 +362,7 @@ VALUES (
         $6,
         $7,
         $8
-    ) RETURNING id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours
+    ) RETURNING id, name, type, lesson_id, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours
 `
 
 type CreateDisciplineTopicParams struct {
@@ -392,6 +392,7 @@ func (q *Queries) CreateDisciplineTopic(ctx context.Context, arg CreateDisciplin
 		&i.ID,
 		&i.Name,
 		&i.Type,
+		&i.LessonID,
 		&i.TotalHours,
 		&i.TheoryHours,
 		&i.PracticeHours,
@@ -994,7 +995,7 @@ func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
 }
 
 const getAllDisciplineTopics = `-- name: GetAllDisciplineTopics :many
-SELECT id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours FROM discipline_topics
+SELECT id, name, type, lesson_id, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours FROM discipline_topics
 `
 
 func (q *Queries) GetAllDisciplineTopics(ctx context.Context) ([]DisciplineTopic, error) {
@@ -1010,6 +1011,7 @@ func (q *Queries) GetAllDisciplineTopics(ctx context.Context) ([]DisciplineTopic
 			&i.ID,
 			&i.Name,
 			&i.Type,
+			&i.LessonID,
 			&i.TotalHours,
 			&i.TheoryHours,
 			&i.PracticeHours,
@@ -1354,7 +1356,7 @@ func (q *Queries) GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (
 }
 
 const getDisciplineTopicByID = `-- name: GetDisciplineTopicByID :one
-SELECT id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours FROM discipline_topics WHERE id = $1
+SELECT id, name, type, lesson_id, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours FROM discipline_topics WHERE id = $1
 `
 
 func (q *Queries) GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error) {
@@ -1364,6 +1366,29 @@ func (q *Queries) GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (Dis
 		&i.ID,
 		&i.Name,
 		&i.Type,
+		&i.LessonID,
+		&i.TotalHours,
+		&i.TheoryHours,
+		&i.PracticeHours,
+		&i.IndividualHours,
+		&i.SrspHours,
+		&i.SrsHours,
+	)
+	return i, err
+}
+
+const getDisciplineTopicByLessonID = `-- name: GetDisciplineTopicByLessonID :one
+SELECT id, name, type, lesson_id, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours FROM discipline_topics WHERE lesson_id = $1
+`
+
+func (q *Queries) GetDisciplineTopicByLessonID(ctx context.Context, lessonID pgtype.UUID) (DisciplineTopic, error) {
+	row := q.db.QueryRow(ctx, getDisciplineTopicByLessonID, lessonID)
+	var i DisciplineTopic
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Type,
+		&i.LessonID,
 		&i.TotalHours,
 		&i.TheoryHours,
 		&i.PracticeHours,
@@ -1451,7 +1476,7 @@ func (q *Queries) GetLessonProgressByLessonID(ctx context.Context, lessonID uuid
 }
 
 const getLessons = `-- name: GetLessons :many
-SELECT id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, created_at, updated_at FROM lessons
+SELECT id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at FROM lessons
 WHERE
     (
         $3::uuid IS NULL
@@ -1500,6 +1525,7 @@ func (q *Queries) GetLessons(ctx context.Context, arg GetLessonsParams) ([]Lesso
 			&i.Expected,
 			&i.InternetResources,
 			&i.TechnicalResources,
+			&i.FileUrl,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -1514,7 +1540,7 @@ func (q *Queries) GetLessons(ctx context.Context, arg GetLessonsParams) ([]Lesso
 }
 
 const getLessonsByID = `-- name: GetLessonsByID :one
-SELECT id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, created_at, updated_at FROM lessons WHERE id = $1
+SELECT id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at FROM lessons WHERE id = $1
 `
 
 func (q *Queries) GetLessonsByID(ctx context.Context, id uuid.UUID) (Lesson, error) {
@@ -1534,6 +1560,89 @@ func (q *Queries) GetLessonsByID(ctx context.Context, id uuid.UUID) (Lesson, err
 		&i.Expected,
 		&i.InternetResources,
 		&i.TechnicalResources,
+		&i.FileUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getRecentLessonsByDiscipline = `-- name: GetRecentLessonsByDiscipline :many
+SELECT id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at
+FROM lessons
+WHERE
+    rup_name = $1
+    AND discipline_name = $2
+ORDER BY created_at DESC
+LIMIT $3
+`
+
+type GetRecentLessonsByDisciplineParams struct {
+	RupName        string      `json:"rup_name"`
+	DisciplineName pgtype.Text `json:"discipline_name"`
+	Limit          int32       `json:"limit"`
+}
+
+func (q *Queries) GetRecentLessonsByDiscipline(ctx context.Context, arg GetRecentLessonsByDisciplineParams) ([]Lesson, error) {
+	rows, err := q.db.Query(ctx, getRecentLessonsByDiscipline, arg.RupName, arg.DisciplineName, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Lesson
+	for rows.Next() {
+		var i Lesson
+		if err := rows.Scan(
+			&i.ID,
+			&i.RupName,
+			&i.DisciplineName,
+			&i.TopicName,
+			&i.Teacher,
+			&i.EventDate,
+			&i.GroupID,
+			&i.Type,
+			&i.Goals,
+			&i.Tasks,
+			&i.Expected,
+			&i.InternetResources,
+			&i.TechnicalResources,
+			&i.FileUrl,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRupByDisciplineID = `-- name: GetRupByDisciplineID :one
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE $1::uuid = ANY(disciplines)
+`
+
+func (q *Queries) GetRupByDisciplineID(ctx context.Context, dollar_1 uuid.UUID) (Rup, error) {
+	row := q.db.QueryRow(ctx, getRupByDisciplineID, dollar_1)
+	var i Rup
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Status,
+		&i.Reason,
+		&i.Course,
+		&i.StudyForm,
+		&i.StudyYear,
+		&i.Type,
+		&i.TotalHours,
+		&i.Contacts,
+		&i.GroupIds,
+		&i.Methodist,
+		&i.Teacher,
+		&i.ExplorationNoteID,
+		&i.Disciplines,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1546,6 +1655,23 @@ SELECT id, name, total_hours, semesters, topics FROM rup_disciplines WHERE id = 
 
 func (q *Queries) GetRupDisciplineByID(ctx context.Context, id uuid.UUID) (RupDiscipline, error) {
 	row := q.db.QueryRow(ctx, getRupDisciplineByID, id)
+	var i RupDiscipline
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.TotalHours,
+		&i.Semesters,
+		&i.Topics,
+	)
+	return i, err
+}
+
+const getRupDisciplineByTopicID = `-- name: GetRupDisciplineByTopicID :one
+SELECT id, name, total_hours, semesters, topics FROM rup_disciplines WHERE $1::uuid = ANY(topics)
+`
+
+func (q *Queries) GetRupDisciplineByTopicID(ctx context.Context, dollar_1 uuid.UUID) (RupDiscipline, error) {
+	row := q.db.QueryRow(ctx, getRupDisciplineByTopicID, dollar_1)
 	var i RupDiscipline
 	err := row.Scan(
 		&i.ID,
@@ -1673,11 +1799,11 @@ func (q *Queries) GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID)
 }
 
 const getRupsByTeacher = `-- name: GetRupsByTeacher :many
-SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE teacher = $1 ORDER BY created_at DESC
+SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE $1::uuid = ANY(contacts) ORDER BY created_at DESC
 `
 
-func (q *Queries) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID) ([]Rup, error) {
-	rows, err := q.db.Query(ctx, getRupsByTeacher, teacher)
+func (q *Queries) GetRupsByTeacher(ctx context.Context, dollar_1 uuid.UUID) ([]Rup, error) {
+	rows, err := q.db.Query(ctx, getRupsByTeacher, dollar_1)
 	if err != nil {
 		return nil, err
 	}
@@ -1723,7 +1849,7 @@ FROM rups WHERE
     )
     AND (
         $4::uuid IS NULL
-        OR teacher = $4::uuid
+        OR $4::uuid = ANY(contacts)
     ) AND (
         $5::uuid IS NULL
         OR methodist = $5::uuid
@@ -1938,6 +2064,24 @@ func (q *Queries) GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatin
 	return items, nil
 }
 
+const linkLessonToDisciplineTopic = `-- name: LinkLessonToDisciplineTopic :exec
+UPDATE discipline_topics
+SET
+    lesson_id = $2
+WHERE
+    id = $1
+`
+
+type LinkLessonToDisciplineTopicParams struct {
+	ID       uuid.UUID   `json:"id"`
+	LessonID pgtype.UUID `json:"lesson_id"`
+}
+
+func (q *Queries) LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error {
+	_, err := q.db.Exec(ctx, linkLessonToDisciplineTopic, arg.ID, arg.LessonID)
+	return err
+}
+
 const updateAward = `-- name: UpdateAward :one
 UPDATE awards
 SET
@@ -2069,6 +2213,48 @@ func (q *Queries) UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTy
 	return i, err
 }
 
+const updateDisciplineTopic = `-- name: UpdateDisciplineTopic :exec
+UPDATE discipline_topics
+SET
+    name = $2,
+    type = $3,
+    total_hours = $4,
+    theory_hours = $5,
+    practice_hours = $6,
+    individual_hours = $7,
+    srsp_hours = $8,
+    srs_hours = $9
+WHERE
+    id = $1
+`
+
+type UpdateDisciplineTopicParams struct {
+	ID              uuid.UUID           `json:"id"`
+	Name            string              `json:"name"`
+	Type            DisciplineTopicType `json:"type"`
+	TotalHours      int32               `json:"total_hours"`
+	TheoryHours     int32               `json:"theory_hours"`
+	PracticeHours   int32               `json:"practice_hours"`
+	IndividualHours int32               `json:"individual_hours"`
+	SrspHours       int32               `json:"srsp_hours"`
+	SrsHours        int32               `json:"srs_hours"`
+}
+
+func (q *Queries) UpdateDisciplineTopic(ctx context.Context, arg UpdateDisciplineTopicParams) error {
+	_, err := q.db.Exec(ctx, updateDisciplineTopic,
+		arg.ID,
+		arg.Name,
+		arg.Type,
+		arg.TotalHours,
+		arg.TheoryHours,
+		arg.PracticeHours,
+		arg.IndividualHours,
+		arg.SrspHours,
+		arg.SrsHours,
+	)
+	return err
+}
+
 const updateLesson = `-- name: UpdateLesson :exec
 UPDATE lessons
 SET
@@ -2118,6 +2304,25 @@ func (q *Queries) UpdateLesson(ctx context.Context, arg UpdateLessonParams) erro
 		arg.InternetResources,
 		arg.TechnicalResources,
 	)
+	return err
+}
+
+const updateLessonFileURL = `-- name: UpdateLessonFileURL :exec
+UPDATE lessons
+SET
+    file_url = $2,
+    updated_at = NOW()
+WHERE
+    id = $1
+`
+
+type UpdateLessonFileURLParams struct {
+	ID      uuid.UUID   `json:"id"`
+	FileUrl pgtype.Text `json:"file_url"`
+}
+
+func (q *Queries) UpdateLessonFileURL(ctx context.Context, arg UpdateLessonFileURLParams) error {
+	_, err := q.db.Exec(ctx, updateLessonFileURL, arg.ID, arg.FileUrl)
 	return err
 }
 

@@ -212,8 +212,32 @@ VALUES (
 -- name: GetDisciplineTopicByID :one
 SELECT * FROM discipline_topics WHERE id = $1;
 
+-- name: GetDisciplineTopicByLessonID :one
+SELECT * FROM discipline_topics WHERE lesson_id = $1;
+
 -- name: GetAllDisciplineTopics :many
 SELECT * FROM discipline_topics;
+
+-- name: UpdateDisciplineTopic :exec
+UPDATE discipline_topics
+SET
+    name = $2,
+    type = $3,
+    total_hours = $4,
+    theory_hours = $5,
+    practice_hours = $6,
+    individual_hours = $7,
+    srsp_hours = $8,
+    srs_hours = $9
+WHERE
+    id = $1;
+
+-- name: LinkLessonToDisciplineTopic :exec
+UPDATE discipline_topics
+SET
+    lesson_id = $2
+WHERE
+    id = $1;
 
 -- name: CreateRupDiscipline :one
 INSERT INTO
@@ -227,6 +251,9 @@ VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: GetRupDisciplineByID :one
 SELECT * FROM rup_disciplines WHERE id = $1;
+
+-- name: GetRupDisciplineByTopicID :one
+SELECT * FROM rup_disciplines WHERE $1::uuid = ANY(topics);
 
 -- name: GetAllRupDisciplines :many
 SELECT * FROM rup_disciplines;
@@ -274,7 +301,7 @@ FROM rups WHERE
     )
     AND (
         sqlc.narg('teacher')::uuid IS NULL
-        OR teacher = sqlc.narg('teacher')::uuid
+        OR sqlc.narg('teacher')::uuid = ANY(contacts)
     ) AND (
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
@@ -299,7 +326,7 @@ WHERE
     )
     AND (
         sqlc.narg('teacher')::uuid IS NULL
-        OR teacher = sqlc.narg('teacher')::uuid
+        OR sqlc.narg('teacher')::uuid = ANY(contacts)
     )
     AND (
         sqlc.narg('methodist')::uuid IS NULL
@@ -315,6 +342,9 @@ SELECT COUNT(*) FROM rups;
 
 -- name: GetRupsByID :one
 SELECT * FROM rups WHERE id = $1;
+
+-- name: GetRupByDisciplineID :one
+SELECT * FROM rups WHERE $1::uuid = ANY(disciplines);
 
 -- name: UpdateRup :exec
 UPDATE rups
@@ -347,7 +377,7 @@ WHERE
 SELECT * FROM rups WHERE methodist = $1 ORDER BY created_at DESC;
 
 -- name: GetRupsByTeacher :many
-SELECT * FROM rups WHERE teacher = $1 ORDER BY created_at DESC;
+SELECT * FROM rups WHERE $1::uuid = ANY(contacts) ORDER BY created_at DESC;
 
 -- name: DeleteRup :exec
 DELETE FROM rups WHERE id = $1;
@@ -601,6 +631,14 @@ SET
 WHERE
     id = $1;
 
+-- name: UpdateLessonFileURL :exec
+UPDATE lessons
+SET
+    file_url = $2,
+    updated_at = NOW()
+WHERE
+    id = $1;
+
 -- name: DeleteLesson :exec
 DELETE FROM lessons WHERE id = $1;
 
@@ -654,6 +692,15 @@ WHERE
     )
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
+
+-- name: GetRecentLessonsByDiscipline :many
+SELECT *
+FROM lessons
+WHERE
+    rup_name = $1
+    AND discipline_name = $2
+ORDER BY created_at DESC
+LIMIT $3;
 
 -- name: CountLessonsFiltered :one
 SELECT COUNT(*)

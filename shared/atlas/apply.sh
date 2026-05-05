@@ -1,0 +1,1 @@
+atlas migrate apply --url "postgres://admin:admin@localhost:5432/eduplan?sslmode=disable" --dir "file://./migrations"

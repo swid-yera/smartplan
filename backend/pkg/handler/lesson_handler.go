@@ -3,11 +3,13 @@ package handler
 import (
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
 )
@@ -112,44 +114,92 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func (h *LessonHandler) UpdateLesson(c *gin.Context) {
+func (h *LessonHandler) GetLessonByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
 		return
 	}
 
-	var req struct {
-		service.LessonParams
-		Progress []service.LessonProgressParams `json:"progress"`
+	lesson, err := h.lessonService.GetLessonByID(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "lesson not found"})
+			return
+		}
+		h.log.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
+
+	c.JSON(http.StatusOK, lesson)
+}
+
+func (h *LessonHandler) UpdateLesson(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		return
+	}
+
+	var req service.RegenerateLessonByIDInput
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	if err := h.lessonService.UpdateLesson(c.Request.Context(), id, req.LessonParams, req.Progress); err != nil {
+	lessonID, err := h.lessonService.RegenerateLessonByID(c.Request.Context(), id, currentUser.KeycloakID, req)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, gin.H{
+		"status":   true,
+		"lessonId": lessonID.String(),
+	})
 }
 
 func (h *LessonHandler) DeleteLesson(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error":  "invalid lesson ID",
+		})
 		return
 	}
 
 	if err := h.lessonService.DeleteLesson(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "error",
+				"error":  "lesson not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error":  err.Error(),
+		})
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, gin.H{"status": "true"})
 }
 
 func (h *LessonHandler) RecordLessonProgress(c *gin.Context) {
@@ -187,4 +237,48 @@ func (h *LessonHandler) GetLessonProgress(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, progress)
+}
+
+func (h *LessonHandler) GenerateLesson(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "user not authenticated",
+		})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "invalid user context",
+		})
+		return
+	}
+
+	var req service.GenerateLessonInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "invalid request body",
+		})
+		return
+	}
+
+	lesson_id, err := h.lessonService.GenerateLesson(c.Request.Context(), currentUser.KeycloakID, req)
+	if err != nil {
+		h.log.WithError(err).Error("generate lesson failed")
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":   true,
+		"lessonId": lesson_id.String(),
+	})
 }

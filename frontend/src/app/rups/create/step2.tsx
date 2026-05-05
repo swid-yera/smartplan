@@ -31,11 +31,7 @@ type IProps = FieldValues & {
 export function Step2<T extends IProps>() {
 	// store, form
 	const { authLoading, user } = useAuthStore()
-	const {
-		getValues,
-		setValue,
-		formState: { errors },
-	} = useFormContext<T>()
+	const { getValues, setValue } = useFormContext<T>()
 	// states
 	const [isLoading, setIsLoading] = useState(false)
 
@@ -66,7 +62,6 @@ export function Step2<T extends IProps>() {
 			const resources = await generateResources(mappedData)
 
 			// write
-			console.log('generated', resources)
 			setValue('internetResources' as Path<T>, resources.internetResources, { shouldDirty: true })
 			setValue('technicalResources' as Path<T>, resources.technicalResources, { shouldDirty: true })
 			toast.success('Успешно сгенерировано ресурсы', { id: 'rup-resource-generate' })
@@ -76,8 +71,6 @@ export function Step2<T extends IProps>() {
 			setIsLoading(false)
 		}
 	}
-
-	console.log('errors', errors)
 
 	if (authLoading || !user) return <Loader type='data' />
 
@@ -94,37 +87,35 @@ export function Step2<T extends IProps>() {
 				onClick={() => handleGenerate()}
 			/>
 
-			<div className='grid xl:grid-cols-2 gap-4'>
-				{isLoading ? (
-					<Loader type='ai' />
-				) : (
-					<>
-						{/* internet  */}
-						<ResourceEdit
-							buttonText='Добавить ресурс'
-							description={
-								<>
-									Введите список ресурсов откуда был взят материал, <u>ресурс должен быть не старше 5 лет</u>
-								</>
-							}
-							label='Учебно-методический ресурсы'
-							name='internetResources'
-							placeholder='Откуда был взят материал для учебной программы'
-							title='Учебно-методическое оснащение, справочная литература/интернет-ресурсы'
-						/>
+			{isLoading ? (
+				<Loader type='ai' />
+			) : (
+				<div className='grid xl:grid-cols-2 gap-4'>
+					{/* internet  */}
+					<ResourceEdit
+						buttonText='Добавить ресурс'
+						description={
+							<>
+								Введите список ресурсов откуда был взят материал, <u>ресурс должен быть не старше 5 лет</u>
+							</>
+						}
+						label='Учебно-методический ресурсы'
+						name='internetResources'
+						placeholder='Откуда был взят материал для учебной программы'
+						title='Учебно-методическое оснащение, справочная литература/интернет-ресурсы'
+					/>
 
-						{/* technical */}
-						<ResourceEdit
-							buttonText='Добавить материал'
-							description='Введите список технических средств которые обязательны для учебного программы'
-							label='Технические средства и материалы'
-							name='technicalResources'
-							placeholder='Что нужно при прохождении учебного программы'
-							title='Технические средства и материалы'
-						/>
-					</>
-				)}
-			</div>
+					{/* technical */}
+					<ResourceEdit
+						buttonText='Добавить материал'
+						description='Введите список технических средств которые обязательны для учебного программы'
+						label='Технические средства и материалы'
+						name='technicalResources'
+						placeholder='Что нужно при прохождении учебного программы'
+						title='Технические средства и материалы'
+					/>
+				</div>
+			)}
 		</div>
 	)
 }

@@ -1,31 +1,53 @@
-import type { IGroup, IResources, IUser } from './global.type'
+import type { IGroup, RoleEnum } from './global.type'
 
 export enum LessonTypeEnum {
 	PRACTICE = 'PRACTICE',
 	THEORY = 'THEORY',
 }
 
+export enum LessonResourceTypeEnum {
+	INTERNET = 'INTERNET',
+	TECHNICAL = 'TECHNICAL',
+}
+
+export interface ILessonTeacher {
+	keycloakId: string
+	email: string
+	username: string
+	firstName: string
+	lastName: string
+	phone: string
+	roles: RoleEnum | string
+}
+
+export interface ILessonResource {
+	id: string
+	name: string
+	link: string
+	type: LessonResourceTypeEnum
+}
+
 export interface ILesson {
 	id: string
-	rupName: string
-	disciplineName: string
-	topicName: string
+	rup_name: string
+	discipline_name: string
+	topic_name: string
+	teacher: ILessonTeacher
+	group: IGroup
+	teacher_id?: string
+	group_id?: string
+	event_date: string
 	type: LessonTypeEnum
 
-	progress: ILessonProgress[]
 	goals: string
 	tasks: string
 	expected: string
 
-	eventDate: string
-	teacher: IUser
-	group: IGroup
-
-	internetResources: IResources[]
-	technicalResources: IResources[]
-
-	createdAt: string
-	updatedAt: string
+	internet_resources: ILessonResource[]
+	technical_resources: ILessonResource[]
+	file_url: string | null
+	created_at: string
+	updated_at: string
 }
 
 export interface ILessonProgress {

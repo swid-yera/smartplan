@@ -31,7 +31,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
-import { Trash } from 'lucide-react'
+import { Plus, Trash } from 'lucide-react'
 import {
 	type ArrayPath,
 	type FieldValues,
@@ -39,6 +39,7 @@ import {
 	type PathValue,
 	useFieldArray,
 	useFormContext,
+	useWatch,
 } from 'react-hook-form'
 
 type Semester = { semester: number; totalHours: number }
@@ -54,7 +55,8 @@ type IProps = FieldValues & {
 }
 
 export function DisciplineEdit<T extends IProps>() {
-	const { control, watch } = useFormContext<T>()
+	const form = useFormContext<T>()
+	const { control } = form
 
 	const {
 		fields: disciplineFields,
@@ -67,7 +69,12 @@ export function DisciplineEdit<T extends IProps>() {
 
 	const [disciplineToDelete, setDisciplineToDelete] = useState<number | null>(null)
 
-	const disciplines = watch('disciplines' as Path<T>) as Discipline[]
+	const disciplineNamePaths = disciplineFields.map((_, index) => `disciplines.${index}.name` as Path<T>)
+	const disciplineSemesterPaths = disciplineFields.map((_, index) => `disciplines.${index}.semesters` as Path<T>)
+
+	const disciplineNames = (useWatch({ control, name: disciplineNamePaths }) as string[] | undefined) ?? []
+	const disciplineSemesters =
+		(useWatch({ control, name: disciplineSemesterPaths }) as Discipline['semesters'][] | undefined) ?? []
 
 	const newDiscipline = {
 		name: '',
@@ -81,16 +88,16 @@ export function DisciplineEdit<T extends IProps>() {
 
 	// result
 	const totalModuleHours =
-		disciplines?.reduce((acc, d) => {
-			const disciplineSum = d.semesters?.reduce((sum, s) => sum + (Number(s.totalHours) || 0), 0) || 0
+		disciplineSemesters?.reduce((acc, semesters) => {
+			const disciplineSum = semesters?.reduce((sum, s) => sum + (Number(s.totalHours) || 0), 0) || 0
 
 			return acc + disciplineSum
 		}, 0) || 0
 
 	const semesterTotals = Array(8).fill(0)
 
-	disciplines?.forEach((discipline) => {
-		discipline.semesters?.forEach((semester, i) => {
+	disciplineSemesters?.forEach((semesters) => {
+		semesters?.forEach((semester, i) => {
 			if (i < 8) {
 				semesterTotals[i] += Number(semester.totalHours) || 0
 			}
@@ -106,7 +113,7 @@ export function DisciplineEdit<T extends IProps>() {
 				</div>
 
 				<Button type='button' variant='outline' onClick={() => append(newDiscipline as PathValue<T, ArrayPath<T>>)}>
-					Добавить дисциплину
+					<Plus /> Добавить дисциплину
 				</Button>
 			</CardHeader>
 			<CardContent>
@@ -140,9 +147,9 @@ export function DisciplineEdit<T extends IProps>() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
+							<ModuleRow />
 							{disciplineFields.length > 0 ? (
 								<>
-									<ModuleRow />
 									{disciplineFields.map((field, index) => (
 										<DisciplineRow
 											key={field.id}
@@ -153,7 +160,7 @@ export function DisciplineEdit<T extends IProps>() {
 								</>
 							) : (
 								<TableRow>
-									<TableCell className='h-24 text-center text-muted-foreground' colSpan={10}>
+									<TableCell className='h-28 text-center text-muted-foreground' colSpan={10}>
 										Дисциплины не добавлены.
 									</TableCell>
 								</TableRow>
@@ -181,7 +188,7 @@ export function DisciplineEdit<T extends IProps>() {
 						<AlertDialogHeader>
 							<AlertDialogTitle>Подтверждение</AlertDialogTitle>
 							<AlertDialogDescription>
-								Удалить дисциплину {disciplineToDelete !== null && disciplines?.[disciplineToDelete]?.name}?
+								Удалить дисциплину {disciplineToDelete !== null && disciplineNames?.[disciplineToDelete]}?
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>

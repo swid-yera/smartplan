@@ -15,10 +15,12 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"eduplan/backend/config"
+	"eduplan/backend/pkg/helpers"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -119,10 +121,10 @@ type RupResponse struct {
 	StudyYear       string                  `json:"studyYear"`
 	Type            string                  `json:"type"`
 	TotalHours      int32                   `json:"totalHours"`
-	Contacts        []*UserResponse         `json:"contacts"`
+	Contacts        []*helpers.UserResponse `json:"contacts"`
 	Groups          []*GroupResponse        `json:"groups"`
-	Methodist       *UserResponse           `json:"methodist"`
-	Teacher         *UserResponse           `json:"teacher"`
+	Methodist       *helpers.UserResponse   `json:"methodist"`
+	Teacher         *helpers.UserResponse   `json:"teacher"`
 	ExplorationNote ExplorationNoteResponse `json:"explorationNote"`
 	Disciplines     []*DisciplineResponse   `json:"disciplines"`
 	CreatedAt       time.Time               `json:"createdAt"`
@@ -137,27 +139,27 @@ type RupDocumentPayload struct {
 	StudyYear       string                  `json:"studyYear"`
 	Type            string                  `json:"type"`
 	TotalHours      int32                   `json:"totalHours"`
-	Contacts        []*UserResponse         `json:"contacts"`
+	Contacts        []*helpers.UserResponse `json:"contacts"`
 	Group           *GroupResponse          `json:"group"`
 	ExplorationNote ExplorationNoteResponse `json:"explorationNote"`
 	Disciplines     []*DisciplineResponse   `json:"disciplines"`
 }
 
 type ListAllRupsResponse struct {
-	ID         uuid.UUID        `json:"id"`
-	Name       string           `json:"name"`
-	Status     string           `json:"status"`
-	Reason     string           `json:"reason"`
-	Course     int32            `json:"course"`
-	StudyForm  string           `json:"studyForm"`
-	StudyYear  string           `json:"studyYear"`
-	Type       string           `json:"type"`
-	TotalHours int32            `json:"totalHours"`
-	Groups     []*GroupResponse `json:"groups"`
-	Methodist  *UserResponse    `json:"methodist"`
-	Teacher    *UserResponse    `json:"teacher"`
-	CreatedAt  time.Time        `json:"createdAt"`
-	UpdatedAt  time.Time        `json:"updatedAt"`
+	ID         uuid.UUID             `json:"id"`
+	Name       string                `json:"name"`
+	Status     string                `json:"status"`
+	Reason     string                `json:"reason"`
+	Course     int32                 `json:"course"`
+	StudyForm  string                `json:"studyForm"`
+	StudyYear  string                `json:"studyYear"`
+	Type       string                `json:"type"`
+	TotalHours int32                 `json:"totalHours"`
+	Groups     []*GroupResponse      `json:"groups"`
+	Methodist  *helpers.UserResponse `json:"methodist"`
+	Teacher    *helpers.UserResponse `json:"teacher"`
+	CreatedAt  time.Time             `json:"createdAt"`
+	UpdatedAt  time.Time             `json:"updatedAt"`
 }
 
 type GroupResponse struct {
@@ -206,6 +208,7 @@ type TopicResponse struct {
 	ID              uuid.UUID                   `json:"id"`
 	Name            string                      `json:"name"`
 	Type            storage.DisciplineTopicType `json:"type"`
+	LessonID        *uuid.UUID                  `json:"lessonId"`
 	TotalHours      int32                       `json:"totalHours"`
 	TheoryHours     int32                       `json:"theoryHours"`
 	PracticeHours   int32                       `json:"practiceHours"`
@@ -712,24 +715,42 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 			}
 		}
 
-		// Генерация документа выполняется только если валидация ключа успешна.
+		// Генерация документов выполняется только если валидация ключа успешна.
 		if rupStatus == storage.RupsStatusAPPROVED {
-			fileBytes, err := s.generateViaPython(ctx, req.ID)
+			rup, err := s.GetRupByID(ctx, req.ID)
 			if err != nil {
 				return err
 			}
+			if len(rup.Groups) == 0 {
+				return fmt.Errorf("rup has no groups")
+			}
 
-			reader := bytes.NewReader(fileBytes)
-			objectName := fmt.Sprintf("rups/%s/document.docx", req.ID.String())
+			for _, group := range rup.Groups {
+				if group == nil {
+					continue
+				}
 
-			// 2. сохраняем в MinIO
-			if err := s.fileStorage.UploadFile(
-				ctx,
-				objectName,
-				reader,
-				int64(len(fileBytes)),
-			); err != nil {
-				return err
+				fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group)
+				if err != nil {
+					return err
+				}
+
+				reader := bytes.NewReader(fileBytes)
+				objectName := fmt.Sprintf(
+					"rups/%s/%s-document.docx",
+					req.ID.String(),
+					group.KeycloakID.String(),
+				)
+
+				// 2. сохраняем в MinIO
+				if err := s.fileStorage.UploadFile(
+					ctx,
+					objectName,
+					reader,
+					int64(len(fileBytes)),
+				); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -787,7 +808,7 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 
 	// 4. Prepare update params
 	// We preserve the existing status
-	params := s.convertToUpdateParams(id, req, existingRup.Status, explorationNoteID, disciplineIDs, totalHours)
+	params := s.convertToUpdateParams(id, req, existingRup.Status, existingRup.Teacher, explorationNoteID, disciplineIDs, totalHours)
 
 	// 5. Update RUP
 	updatedRup, err := s.repo.UpdateRup(ctx, params)
@@ -798,38 +819,26 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 	return s.buildRupResponse(ctx, *updatedRup)
 }
 
-func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byte, error) {
-
-	// 1. забираем ВСЮ модель из БД
-	rup, err := s.GetRupByID(ctx, id)
-	if err != nil {
-		return nil, err
+func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResponse, group *GroupResponse) ([]byte, error) {
+	if rup == nil {
+		return nil, fmt.Errorf("rup is nil")
+	}
+	if group == nil {
+		return nil, fmt.Errorf("group is nil")
 	}
 
-	// 2. строим payload
-	payload := buildPayload(rup)
+	// 1. строим payload для конкретной группы
+	payload := buildPayload(rup, group)
 
-	// 3. JSON
+	// 2. JSON
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	// 4. HTTP → Python
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		s.cfg.Url+"/generate-rup",
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Request-ID", uuid.NewString())
-
-	resp, err := s.httpClient.Do(req)
+	// 3. HTTP -> Python (with redirect-safe POST retry)
+	endpoint := strings.TrimRight(s.cfg.Url, "/") + "/generate-rup"
+	resp, err := s.postDocumentRenderJSON(ctx, endpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -837,10 +846,19 @@ func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byt
 
 	if resp.StatusCode != http.StatusOK {
 		errBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("python error: %s", string(errBody))
+		location := strings.TrimSpace(resp.Header.Get("Location"))
+		if location != "" {
+			return nil, fmt.Errorf(
+				"python error: status=%d location=%s body=%s",
+				resp.StatusCode,
+				location,
+				strings.TrimSpace(string(errBody)),
+			)
+		}
+		return nil, fmt.Errorf("python error: status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(errBody)))
 	}
 
-	// 5. читаем файл
+	// 4. читаем файл
 	fileBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -849,23 +867,112 @@ func (s *rupService) generateViaPython(ctx context.Context, id uuid.UUID) ([]byt
 	return fileBytes, nil
 }
 
-func buildPayload(rup *RupResponse) RupDocumentPayload {
+func (s *rupService) postDocumentRenderJSON(ctx context.Context, endpoint string, body []byte) (*http.Response, error) {
+	const maxRedirects = 5
+	currentURL := endpoint
 
-	// ---------- GROUP (один!) ----------
-	group := GroupResponse{}
-	if len(rup.Groups) > 0 {
-		group = GroupResponse{
-			Name:          rup.Groups[0].Name,
-			Specialty:     rup.Groups[0].Specialty,
-			Qualification: rup.Groups[0].Qualification,
-			KeycloakID:    rup.Groups[0].KeycloakID,
+	for i := 0; i <= maxRedirects; i++ {
+		req, err := http.NewRequestWithContext(
+			ctx,
+			http.MethodPost,
+			currentURL,
+			bytes.NewReader(body),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", uuid.NewString())
+		if s.cfg.ApiKey != "" {
+			req.Header.Set("X-API-Key", s.cfg.ApiKey)
+		}
+
+		resp, err := s.doWithoutAutoRedirect(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isRedirectStatus(resp.StatusCode) {
+			return resp, nil
+		}
+
+		nextLocation := strings.TrimSpace(resp.Header.Get("Location"))
+		if nextLocation == "" {
+			return resp, nil
+		}
+
+		nextURL, err := resolveRedirectURL(currentURL, nextLocation)
+		resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		currentURL = nextURL
+	}
+
+	return nil, fmt.Errorf("document rendering redirect limit exceeded for %s", endpoint)
+}
+
+func (s *rupService) doWithoutAutoRedirect(req *http.Request) (*http.Response, error) {
+	if s.httpClient == nil {
+		return nil, fmt.Errorf("http client is not configured")
+	}
+
+	clientCopy := *s.httpClient
+	clientCopy.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	return clientCopy.Do(req)
+}
+
+func isRedirectStatus(statusCode int) bool {
+	switch statusCode {
+	case http.StatusMovedPermanently,
+		http.StatusFound,
+		http.StatusSeeOther,
+		http.StatusTemporaryRedirect,
+		http.StatusPermanentRedirect:
+		return true
+	default:
+		return false
+	}
+}
+
+func resolveRedirectURL(currentURL string, location string) (string, error) {
+	locURL, err := url.Parse(location)
+	if err != nil {
+		return "", fmt.Errorf("invalid redirect location %q: %w", location, err)
+	}
+	if locURL.IsAbs() {
+		return locURL.String(), nil
+	}
+
+	baseURL, err := url.Parse(currentURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid base url %q: %w", currentURL, err)
+	}
+
+	return baseURL.ResolveReference(locURL).String(), nil
+}
+
+func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
+
+	// ---------- GROUP ----------
+	selectedGroup := GroupResponse{}
+	if group != nil {
+		selectedGroup = GroupResponse{
+			Name:          group.Name,
+			Specialty:     group.Specialty,
+			Qualification: group.Qualification,
+			KeycloakID:    group.KeycloakID,
 		}
 	}
 
 	// ---------- CONTACTS ----------
-	contacts := []*UserResponse{}
+	contacts := []*helpers.UserResponse{}
 	for _, c := range rup.Contacts {
-		contacts = append(contacts, &UserResponse{
+		contacts = append(contacts, &helpers.UserResponse{
 			KeycloakID: c.KeycloakID,
 			Email:      c.Email,
 			Username:   c.Username,
@@ -945,7 +1052,7 @@ func buildPayload(rup *RupResponse) RupDocumentPayload {
 		Type:            rup.Type,
 		StudyForm:       rup.StudyForm,
 		StudyYear:       rup.StudyYear,
-		Group:           &group,
+		Group:           &selectedGroup,
 		Course:          rup.Course,
 		TotalHours:      rup.TotalHours,
 		Contacts:        contacts,
@@ -1061,12 +1168,7 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 		explorationNoteUUID = pgtype.UUID{Bytes: *explorationNoteID, Valid: true}
 	}
 
-	var contacts []uuid.UUID
-	for _, contactStr := range req.Contacts {
-		if id, err := uuid.Parse(contactStr); err == nil {
-			contacts = append(contacts, id)
-		}
-	}
+	contacts := normalizeRupContacts(req.Contacts, teacherUUID)
 
 	var rupType storage.RupsTypeEnum
 	switch req.Type {
@@ -1101,19 +1203,22 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 
 }
 
-func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, status storage.RupsStatus, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID, totalHours int32) storage.UpdateRupParams {
+func (s *rupService) convertToUpdateParams(
+	id uuid.UUID,
+	req CreateRupRequest,
+	status storage.RupsStatus,
+	creator pgtype.UUID,
+	explorationNoteID *uuid.UUID,
+	disciplineIDs []uuid.UUID,
+	totalHours int32,
+) storage.UpdateRupParams {
 	var explorationNoteUUID pgtype.UUID
 
 	if explorationNoteID != nil {
 		explorationNoteUUID = pgtype.UUID{Bytes: *explorationNoteID, Valid: true}
 	}
 
-	var contacts []uuid.UUID
-	for _, contactStr := range req.Contacts {
-		if uid, err := uuid.Parse(contactStr); err == nil {
-			contacts = append(contacts, uid)
-		}
-	}
+	contacts := normalizeRupContacts(req.Contacts, creator)
 
 	var rupType storage.RupsTypeEnum
 	switch req.Type {
@@ -1144,6 +1249,32 @@ func (s *rupService) convertToUpdateParams(id uuid.UUID, req CreateRupRequest, s
 		Disciplines:       disciplineIDs,
 		TotalHours:        totalHours,
 	}
+}
+
+func normalizeRupContacts(rawContacts []string, creator pgtype.UUID) []uuid.UUID {
+	contacts := make([]uuid.UUID, 0, len(rawContacts)+1)
+	seen := make(map[uuid.UUID]struct{}, len(rawContacts)+1)
+
+	for _, contactStr := range rawContacts {
+		id, err := uuid.Parse(contactStr)
+		if err != nil {
+			continue
+		}
+
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		contacts = append(contacts, id)
+	}
+
+	if creator.Valid {
+		if _, ok := seen[creator.Bytes]; !ok {
+			contacts = append(contacts, creator.Bytes)
+		}
+	}
+
+	return contacts
 }
 
 func (s *rupService) createExplorationNote(ctx context.Context, note *ExplorationNoteRequest) (*uuid.UUID, error) {
@@ -1320,20 +1451,20 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 	}
 
 	// Get methodist
-	var methodist *UserResponse
+	var methodist *helpers.UserResponse
 	if rup.Methodist.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
 		if err == nil {
-			methodist = convertToUserResponse(*user)
+			methodist = helpers.ConvertToUserResponse(*user)
 		}
 	}
 
 	// Get teacher
-	var teacher *UserResponse
+	var teacher *helpers.UserResponse
 	if rup.Teacher.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
 		if err == nil {
-			teacher = convertToUserResponse(*user)
+			teacher = helpers.ConvertToUserResponse(*user)
 		}
 	}
 
@@ -1357,13 +1488,13 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 
 func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*RupResponse, error) {
 	// Get contacts
-	contacts := []*UserResponse{}
+	contacts := []*helpers.UserResponse{}
 	for _, contactID := range rup.Contacts {
 		user, err := s.repo.GetUserByID(ctx, contactID)
 		if err != nil {
 			continue // Skip if not found
 		}
-		contacts = append(contacts, convertToUserResponse(*user))
+		contacts = append(contacts, helpers.ConvertToUserResponse(*user))
 	}
 
 	// Get groups
@@ -1381,20 +1512,20 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	}
 
 	// Get methodist
-	var methodist *UserResponse
+	var methodist *helpers.UserResponse
 	if rup.Methodist.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
 		if err == nil {
-			methodist = convertToUserResponse(*user)
+			methodist = helpers.ConvertToUserResponse(*user)
 		}
 	}
 
 	// Get teacher
-	var teacher *UserResponse
+	var teacher *helpers.UserResponse
 	if rup.Teacher.Valid {
 		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
 		if err == nil {
-			teacher = convertToUserResponse(*user)
+			teacher = helpers.ConvertToUserResponse(*user)
 		}
 	}
 
@@ -1528,6 +1659,7 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 			ID:              topic.ID,
 			Name:            topic.Name,
 			Type:            topic.Type,
+			LessonID:        helpers.PgUUIDToPtr(topic.LessonID),
 			TotalHours:      topic.TotalHours,
 			TheoryHours:     topic.TheoryHours,
 			PracticeHours:   topic.PracticeHours,

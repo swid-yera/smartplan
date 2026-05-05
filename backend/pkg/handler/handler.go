@@ -16,8 +16,10 @@ type Router struct {
 	award                 *AwardHandler
 	groups                *GroupsHandler
 	lesson                *LessonHandler
+	ai                    *AIHandler
 	webhooks              *WebhooksHandler
 	sessionAuthMiddleware gin.HandlerFunc
+	corsAllowedOrigins    []string
 }
 
 func NewRouter(
@@ -27,8 +29,10 @@ func NewRouter(
 	award *AwardHandler,
 	groups *GroupsHandler,
 	lesson *LessonHandler,
+	ai *AIHandler,
 	webhooks *WebhooksHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
+	corsAllowedOrigins []string,
 ) *Router {
 	return &Router{
 		auth:                  auth,
@@ -38,7 +42,9 @@ func NewRouter(
 		webhooks:              webhooks,
 		groups:                groups,
 		lesson:                lesson,
+		ai:                    ai,
 		sessionAuthMiddleware: sessionAuthMiddleware,
+		corsAllowedOrigins:    corsAllowedOrigins,
 	}
 }
 
@@ -54,8 +60,13 @@ func (r *Router) Init() *gin.Engine {
 		c.Status(http.StatusOK)
 	})
 
+	corsOrigins := r.corsAllowedOrigins
+	if len(corsOrigins) == 0 {
+		corsOrigins = []string{"http://localhost:3000"}
+	}
+
 	engine.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     corsOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowCredentials: true,
@@ -69,9 +80,11 @@ func (r *Router) Init() *gin.Engine {
 	engine.GET("/callback", middleware.ValidateQueryParams("code"), r.auth.Callback)
 	engine.GET("/logout", r.auth.Logout)
 
-	webhooks := engine.Group("/webhooks")
-	{
-		webhooks.POST("/keycloak", r.webhooks.KeycloakWebhook)
+	if r.webhooks != nil {
+		webhooks := engine.Group("/webhooks")
+		{
+			webhooks.POST("/keycloak", r.webhooks.KeycloakWebhook)
+		}
 	}
 
 	// --- API ---
@@ -131,12 +144,25 @@ func (r *Router) Init() *gin.Engine {
 		lessons := protected.Group("/lessons")
 		{
 			lessons.GET("", r.lesson.GetLessons)
+			lessons.GET("/:id", r.lesson.GetLessonByID)
 			lessons.POST("", r.lesson.CreateLesson)
+			lessons.POST("/generate-lesson", r.lesson.GenerateLesson)
 			lessons.PUT("/:id", r.lesson.UpdateLesson)
 			lessons.DELETE("/:id", r.lesson.DeleteLesson)
 
 			lessons.GET("/:id/progress", r.lesson.GetLessonProgress)
 			lessons.POST("/:id/progress", r.lesson.RecordLessonProgress)
+		}
+
+		// --- AI ---
+		if r.ai != nil {
+			ai := protected.Group("/ai")
+			{
+				ai.POST("/rups/meta", r.ai.GenerateRupMeta)
+				ai.POST("/rups/resources", r.ai.GenerateResources)
+				ai.POST("/rups/disciplines", r.ai.GenerateDisciplines)
+				ai.POST("/rups/topics", r.ai.GenerateTopicsForDiscipline)
+			}
 		}
 	}
 

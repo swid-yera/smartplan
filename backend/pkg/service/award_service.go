@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"eduplan/backend/pkg/helpers"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 	"fmt"
@@ -39,8 +40,8 @@ type AwardResponse struct {
 	Criteria      SelectedCriteriaResponse  `json:"criteria"`
 	BonusCriteria *SelectedCriteriaResponse `json:"bonus_criteria"`
 	Reason        pgtype.Text               `json:"reason"`
-	Methodist     *UserResponse             `json:"methodist"`
-	Teacher       *UserResponse             `json:"teacher"`
+	Methodist     *helpers.UserResponse     `json:"methodist"`
+	Teacher       *helpers.UserResponse     `json:"teacher"`
 	TotalPoints   int32                     `json:"totalPoints"`
 	Text          pgtype.Text               `json:"text"`
 	Files         []string                  `json:"files"`
@@ -522,7 +523,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 	}
 
 	// Get methodist
-	var methodist *UserResponse
+	var methodist *helpers.UserResponse
 	if award.Methodist.Valid {
 		user, err := s.repo.GetUserByID(ctx, award.Methodist.Bytes)
 		if err != nil {
@@ -530,11 +531,11 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 			return AwardResponse{}, err
 		}
 
-		methodist = convertToUserResponse(user)
+		methodist = helpers.ConvertToUserResponse(user)
 	}
 
 	// Get teacher
-	var teacher *UserResponse
+	var teacher *helpers.UserResponse
 	if award.Teacher.Valid {
 		user, err := s.repo.GetUserByID(ctx, award.Teacher.Bytes)
 		if err != nil {
@@ -542,7 +543,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 			return AwardResponse{}, err
 		}
 
-		teacher = convertToUserResponse(user)
+		teacher = helpers.ConvertToUserResponse(user)
 	}
 
 	return AwardResponse{

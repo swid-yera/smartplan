@@ -1,93 +1,128 @@
-import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
+import { LessonResourceTypeEnum } from '@types'
 import type {
-	IDownloadResponse,
-	IGetAllRequest,
+	IGenerateLessonRequest,
+	IGenerateLessonResponse,
 	ILesson,
-	IMessageResponse,
+	ILessonResource,
 	IPagination,
-	IRup,
-	IUpdateRupRequest,
-	IUpdateStatusRequest,
+	IUpdateLessonRequest,
 } from '@types'
 
 export class LessonService {
+	private normalizeResource = (
+		resource: ILessonResource | string,
+		type: LessonResourceTypeEnum,
+		index: number,
+	): ILessonResource => {
+		if (typeof resource === 'string') {
+			return {
+				id: `${type.toLowerCase()}-${index}`,
+				name: resource,
+				link: '',
+				type,
+			}
+		}
+
+		return {
+			...resource,
+			type: resource.type || type,
+			link: resource.link || '',
+		}
+	}
+
+	private normalizeLesson = (lesson: ILesson): ILesson => {
+		return {
+			...lesson,
+			internet_resources: (lesson.internet_resources || []).map((resource, index) =>
+				this.normalizeResource(resource, LessonResourceTypeEnum.INTERNET, index),
+			),
+			technical_resources: (lesson.technical_resources || []).map((resource, index) =>
+				this.normalizeResource(resource, LessonResourceTypeEnum.TECHNICAL, index),
+			),
+		}
+	}
+
+	// generate lesson
+	generateLessonOptions = () => {
+		return mutationOptions({
+			mutationFn: async (payload: IGenerateLessonRequest) => {
+				const { data } = await api.post<IGenerateLessonResponse>('/lessons/generate-lesson', payload)
+
+				if (!data.status) {
+					throw new Error('Не удалось сгенерировать урок')
+				}
+
+				return data
+			},
+		})
+	}
+
 	// get all
-	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, teacher, status }: IGetAllRequest) => {
+	getAllOptions = ({
+		currentPage = 1,
+		pageSize = 10,
+		search,
+		teacher,
+	}: {
+		currentPage?: number
+		pageSize?: number
+		search?: string
+		teacher?: string
+	}) => {
 		return queryOptions<IPagination<ILesson>>({
-			queryKey: ['lessons', { currentPage, pageSize, search, methodist, teacher, status }],
+			queryKey: ['lessons', { currentPage, pageSize, search, teacher }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<ILesson>>('/lessons', {
 					params: {
 						currentPage,
 						pageSize,
 						search,
-						methodist,
 						teacher,
-						status,
 					},
 				})
 
-				if (!data) return { data: [], meta: generateEmptyMetaPagination() }
-
-				return data
+				return {
+					...data,
+					data: data.data.map((lesson) => this.normalizeLesson(lesson)),
+				}
 			},
 		})
 	}
 
 	// get by id
 	getByIdOptions = (id: string) => {
-		return queryOptions<IRup>({
-			queryKey: ['rup', id],
+		return queryOptions<ILesson>({
+			queryKey: ['lesson', id],
 			queryFn: async () => {
-				const { data } = await api.get<IRup>(`/rups/${id}`)
+				const { data } = await api.get<ILesson>(`/lessons/${id}`)
 
-				return data
+				return this.normalizeLesson(data)
 			},
 		})
 	}
 
-	// create
-	createOptions = () => {
+	// update by id
+	updateMutationOptions = () => {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) => api.post<IRup>('/rups', newRup).then((r) => r.data),
+			mutationFn: ({ id, changedLesson }: { id: string; changedLesson: IUpdateLessonRequest }) =>
+				api.put<IGenerateLessonResponse>(`/lessons/${id}`, changedLesson).then((r) => {
+					if (!r.data?.status) {
+						throw new Error('Не удалось перегенерировать урок')
+					}
 
-			onSuccess: (createdRup) => {
-				queryClient.setQueryData(['rup', createdRup.id], createdRup)
-				queryClient.invalidateQueries({ queryKey: ['rups'] })
-			},
-		})
-	}
-
-	// update rup by id
-	updateOptions = () => {
-		const queryClient = useQueryClient()
-
-		return mutationOptions({
-			mutationFn: ({ id, changedRup }: { id: string; changedRup: IUpdateRupRequest }) =>
-				api.put<IRup>(`/rups/${id}`, changedRup).then((r) => r.data),
-
-			onSuccess: (updatedRup, { id }) => {
-				queryClient.setQueryData(['rup', id], updatedRup)
-				queryClient.invalidateQueries({ queryKey: ['rups'] })
-			},
-		})
-	}
-
-	// update rup status by id
-	updateStatusOptions = () => {
-		const queryClient = useQueryClient()
-
-		return mutationOptions({
-			mutationFn: ({ id, ...payload }: IUpdateStatusRequest) =>
-				api.put<IMessageResponse>(`/rups/${id}/status`, payload).then((r) => r.data),
-
-			onSuccess: (messageResponse, { id }) => {
-				queryClient.invalidateQueries({ queryKey: ['rup', id] })
-				queryClient.invalidateQueries({ queryKey: ['rups'] })
+					return {
+						lessonId: r.data.lessonId || id,
+						status: r.data.status,
+					}
+				}),
+			onSuccess: ({ lessonId }, { id }) => {
+				queryClient.invalidateQueries({ queryKey: ['lesson', id] })
+				queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] })
+				queryClient.invalidateQueries({ queryKey: ['lessons'] })
 			},
 		})
 	}
@@ -98,37 +133,15 @@ export class LessonService {
 
 		return mutationOptions({
 			mutationFn: async (id: string) => {
-				const { data, statusText } = await api.delete<IMessageResponse>(`/rups/${id}`)
+				const { data } = await api.delete<{ status: boolean; message?: string }>(`/lessons/${id}`)
 
-				if (statusText !== 'OK') throw new Error(data.message)
+				if (!data.status) throw new Error(data.message || 'Не удалось удалить урок')
 
 				return id
 			},
-
-			onSuccess: (deletedId: string) => {
-				// delete from cache getAllRups if exists
-				queryClient.setQueryData<IRup[] | null>(['rups'], (old) =>
-					old ? old.filter((rup) => rup.id !== deletedId) : null,
-				)
-
-				// delete from getRupById cache if exists
-				queryClient.removeQueries({
-					queryKey: ['rup', deletedId],
-				})
-			},
-		})
-	}
-
-	// get by id
-	getDownloadUrlOptions = (id: string) => {
-		return queryOptions<IDownloadResponse>({
-			queryKey: [],
-			queryFn: async () => {
-				const { data, status, statusText } = await api.get<IDownloadResponse>(`/rups/${id}/download`)
-
-				if (status !== 200) throw new Error(statusText)
-
-				return data
+			onSuccess: (deletedId) => {
+				queryClient.invalidateQueries({ queryKey: ['lessons'] })
+				queryClient.removeQueries({ queryKey: ['lesson', deletedId] })
 			},
 		})
 	}
