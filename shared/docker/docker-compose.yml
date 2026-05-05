@@ -1,9 +1,45 @@
 name: eduplan
 
 services:
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../backend/.env
+    environment:
+      SERVER_PORT: "8080"
+      DB_HOST: postgres
+      REDIS_ADDR: redis:6379
+      DOCUMENT_RENDER_URL: http://document-rendering-service:8000
+      DB_SSLMODE: disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      document-rendering-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  document-rendering-service:
+    build:
+      context: ../../document-rendering-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../document-rendering-service/.env.local
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+
   redis:
     image: redis:7-alpine
-    container_name: redis-eduplan
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -19,7 +55,6 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: postgres-eduplan
     restart: unless-stopped
     environment:
       POSTGRES_USER: admin
