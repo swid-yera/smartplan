@@ -109,9 +109,19 @@ export class LessonService {
 
 		return mutationOptions({
 			mutationFn: ({ id, changedLesson }: { id: string; changedLesson: IUpdateLessonRequest }) =>
-				api.put<ILesson>(`/lessons/${id}`, changedLesson).then((r) => this.normalizeLesson(r.data)),
-			onSuccess: (updatedLesson, { id }) => {
-				queryClient.setQueryData(['lesson', id], updatedLesson)
+				api.put<IGenerateLessonResponse>(`/lessons/${id}`, changedLesson).then((r) => {
+					if (!r.data?.status) {
+						throw new Error('Не удалось перегенерировать урок')
+					}
+
+					return {
+						lessonId: r.data.lessonId || id,
+						status: r.data.status,
+					}
+				}),
+			onSuccess: ({ lessonId }, { id }) => {
+				queryClient.invalidateQueries({ queryKey: ['lesson', id] })
+				queryClient.invalidateQueries({ queryKey: ['lesson', lessonId] })
 				queryClient.invalidateQueries({ queryKey: ['lessons'] })
 			},
 		})

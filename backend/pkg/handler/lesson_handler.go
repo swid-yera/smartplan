@@ -136,28 +136,41 @@ func (h *LessonHandler) GetLessonByID(c *gin.Context) {
 }
 
 func (h *LessonHandler) UpdateLesson(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
 		return
 	}
 
-	var req struct {
-		service.LessonParams
-		Progress []service.LessonProgressParams `json:"progress"`
-	}
+	var req service.RegenerateLessonByIDInput
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	if err := h.lessonService.UpdateLesson(c.Request.Context(), id, req.LessonParams, req.Progress); err != nil {
+	lessonID, err := h.lessonService.RegenerateLessonByID(c.Request.Context(), id, currentUser.KeycloakID, req)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, gin.H{
+		"status":   true,
+		"lessonId": lessonID.String(),
+	})
 }
 
 func (h *LessonHandler) DeleteLesson(c *gin.Context) {
