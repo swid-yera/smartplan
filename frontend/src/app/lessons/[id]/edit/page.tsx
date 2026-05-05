@@ -211,9 +211,9 @@ function LessonEditForm({ lesson }: { lesson: ILesson }) {
 		updateLessonMutation.mutate(
 			{ changedLesson: payload, id: lesson.id },
 			{
-				onSuccess: () => {
+				onSuccess: (result) => {
 					toast.success('Урок успешно обновлен', { id: toastId })
-					replace(`/lessons/${lesson.id}`)
+					replace(`/lessons/${result.lessonId || lesson.id}`)
 				},
 				onError: (err) => {
 					const saveErrorDescription = extractSaveErrorMessage(err)
