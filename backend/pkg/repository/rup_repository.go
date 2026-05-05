@@ -2,10 +2,13 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -38,14 +41,23 @@ type RupRepository interface {
 	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
 	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
 	CountRups(ctx context.Context) (int64, error)
+
+	StoreApproveChallenge(ctx context.Context, challenge string, rupID uuid.UUID, keyID string, userID uuid.UUID, expiresAt time.Time) error
+	ConsumeApproveChallenge(ctx context.Context, challenge string, rupID uuid.UUID, keyID string, userID uuid.UUID) (bool, error)
 }
 
 type RupPostgres struct {
 	queries *storage.Queries
+	db      storage.DBTX
 }
 
-func NewRupPostgres(queries *storage.Queries) *RupPostgres {
-	return &RupPostgres{queries: queries}
+func NewRupPostgres(queries *storage.Queries, db ...storage.DBTX) *RupPostgres {
+	repo := &RupPostgres{queries: queries}
+	if len(db) > 0 {
+		repo.db = db[0]
+		_ = repo.ensureApproveChallengesTable(context.Background())
+	}
+	return repo
 }
 
 func (r *RupPostgres) CreateRup(ctx context.Context, params storage.CreateRupsParams) (*storage.Rup, error) {
@@ -265,4 +277,73 @@ func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string, teac
 		Teacher:   teacher,
 		Methodist: methodist,
 	})
+}
+
+func (r *RupPostgres) ensureApproveChallengesTable(ctx context.Context) error {
+	if r.db == nil {
+		return nil
+	}
+	if _, err := r.db.Exec(ctx, `
+CREATE TABLE IF NOT EXISTS rup_approve_challenges (
+	challenge text PRIMARY KEY,
+	rup_id uuid NOT NULL,
+	key_id text NOT NULL,
+	user_id uuid NOT NULL,
+	expires_at timestamptz NOT NULL,
+	used_at timestamptz,
+	created_at timestamptz NOT NULL DEFAULT now()
+);
+`); err != nil {
+		return err
+	}
+	_, err := r.db.Exec(ctx, `CREATE INDEX IF NOT EXISTS idx_rup_approve_challenges_expires_at ON rup_approve_challenges (expires_at)`)
+	return err
+}
+
+func (r *RupPostgres) StoreApproveChallenge(ctx context.Context, challenge string, rupID uuid.UUID, keyID string, userID uuid.UUID, expiresAt time.Time) error {
+	if r.db == nil {
+		return errors.New("approve challenge db is not configured")
+	}
+	if err := r.ensureApproveChallengesTable(ctx); err != nil {
+		return err
+	}
+	_, err := r.db.Exec(
+		ctx,
+		`INSERT INTO rup_approve_challenges (challenge, rup_id, key_id, user_id, expires_at)
+		 VALUES ($1, $2, $3, $4, $5)
+		 ON CONFLICT (challenge) DO NOTHING`,
+		challenge,
+		rupID,
+		keyID,
+		userID,
+		expiresAt,
+	)
+	return err
+}
+
+func (r *RupPostgres) ConsumeApproveChallenge(ctx context.Context, challenge string, rupID uuid.UUID, keyID string, userID uuid.UUID) (bool, error) {
+	if r.db == nil {
+		return false, errors.New("approve challenge db is not configured")
+	}
+	var consumed bool
+	err := r.db.QueryRow(
+		ctx,
+		`UPDATE rup_approve_challenges
+		 SET used_at = now()
+		 WHERE challenge = $1
+		   AND rup_id = $2
+		   AND key_id = $3
+		   AND user_id = $4
+		   AND used_at IS NULL
+		   AND expires_at > now()
+		 RETURNING true`,
+		challenge,
+		rupID,
+		keyID,
+		userID,
+	).Scan(&consumed)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	return consumed, err
 }

@@ -1,0 +1,81 @@
+name: eduplan
+
+services:
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../backend/.env
+    environment:
+      SERVER_PORT: "8080"
+      DB_HOST: postgres
+      REDIS_ADDR: redis:6379
+      DOCUMENT_RENDER_URL: http://document-rendering-service:8000
+      DB_SSLMODE: disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      document-rendering-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+  document-rendering-service:
+    build:
+      context: ../../document-rendering-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../document-rendering-service/.env.local
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_eduplan_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: eduplan
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_eduplan_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d eduplan" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_eduplan_data:
+  redis_eduplan_data:

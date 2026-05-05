@@ -106,6 +106,16 @@ type GenerateLessonTopicInput struct {
 	SrsHours        int32  `json:"srs_hours"`
 }
 
+type RegenerateLessonByIDInput struct {
+	TopicName string `json:"topic_name"`
+	Type      string `json:"type"`
+	EventDate string `json:"event_date"`
+	Goals     string `json:"goals"`
+	Tasks     string `json:"tasks"`
+	Expected  string `json:"expected"`
+	Message   string `json:"message"`
+}
+
 type generatedLessonPlan struct {
 	LessonType storage.EnumLessonType
 	Goals      string
@@ -497,6 +507,66 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params L
 	return nil
 }
 
+func (s *LessonService) RegenerateLessonByID(
+	ctx context.Context,
+	lessonID uuid.UUID,
+	teacherID uuid.UUID,
+	input RegenerateLessonByIDInput,
+) (uuid.UUID, error) {
+	lesson, err := s.repo.GetLessonByID(ctx, lessonID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("get lesson: %w", err)
+	}
+
+	if teacherID == uuid.Nil {
+		teacherID = lesson.Teacher
+	}
+
+	topic, err := s.rupRepo.GetTopicByLessonID(ctx, lessonID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, fmt.Errorf("lesson %s is not linked to topic, regeneration is unavailable", lessonID)
+		}
+		return uuid.Nil, fmt.Errorf("get topic by lesson id: %w", err)
+	}
+
+	discipline, err := s.rupRepo.GetDisciplineByTopicID(ctx, topic.ID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("get discipline by topic id: %w", err)
+	}
+
+	rup, err := s.rupRepo.GetRupByDisciplineID(ctx, discipline.ID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("get rup by discipline id: %w", err)
+	}
+
+	topicName := strings.TrimSpace(input.TopicName)
+	if topicName == "" {
+		topicName = topic.Name
+	}
+
+	topicType := mapLessonTypeToTopicType(input.Type, topic.Type)
+
+	generateInput := GenerateLessonInput{
+		RupID:        rup.ID,
+		DisciplineID: discipline.ID,
+		TopicID:      topic.ID,
+		UpdatedTopic: GenerateLessonTopicInput{
+			Name:            topicName,
+			Type:            string(topicType),
+			TotalHours:      topic.TotalHours,
+			TheoryHours:     topic.TheoryHours,
+			PracticeHours:   topic.PracticeHours,
+			IndividualHours: topic.IndividualHours,
+			SrspHours:       topic.SrspHours,
+			SrsHours:        topic.SrsHours,
+		},
+		Message: buildRegenerationMessage(input),
+	}
+
+	return s.GenerateLesson(ctx, teacherID, generateInput)
+}
+
 func (s *LessonService) DeleteLesson(ctx context.Context, id uuid.UUID) error {
 	if _, err := s.repo.GetLessonByID(ctx, id); err != nil {
 		return err
@@ -805,6 +875,39 @@ func parseDisciplineTopicType(value string) (storage.DisciplineTopicType, error)
 	default:
 		return "", fmt.Errorf("unsupported topic type: %s", value)
 	}
+}
+
+func mapLessonTypeToTopicType(lessonType string, fallback storage.DisciplineTopicType) storage.DisciplineTopicType {
+	switch strings.ToUpper(strings.TrimSpace(lessonType)) {
+	case string(storage.EnumLessonTypePRACTICE):
+		return storage.DisciplineTopicTypePRACTICAL
+	case string(storage.EnumLessonTypeTHEORY):
+		return storage.DisciplineTopicTypeCOMBINED
+	default:
+		return fallback
+	}
+}
+
+func buildRegenerationMessage(input RegenerateLessonByIDInput) string {
+	if message := strings.TrimSpace(input.Message); message != "" {
+		return message
+	}
+
+	parts := make([]string, 0, 4)
+	if goals := strings.TrimSpace(input.Goals); goals != "" {
+		parts = append(parts, "Сфокусируйся на целях: "+goals)
+	}
+	if tasks := strings.TrimSpace(input.Tasks); tasks != "" {
+		parts = append(parts, "Учти задачи: "+tasks)
+	}
+	if expected := strings.TrimSpace(input.Expected); expected != "" {
+		parts = append(parts, "Ожидаемые результаты: "+expected)
+	}
+	if eventDate := strings.TrimSpace(input.EventDate); eventDate != "" {
+		parts = append(parts, "Планируемая дата проведения: "+eventDate)
+	}
+
+	return strings.Join(parts, "\n")
 }
 
 func lessonTypeByTopic(topic storage.DisciplineTopic) storage.EnumLessonType {

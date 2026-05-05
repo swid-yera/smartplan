@@ -1,7 +1,7 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    schema: "pkg/atlas/schema.sql"
+    schema: "../shared/atlas/schema.sql"
     queries: "pkg/sqlc/queries.sql"
     gen:
       go:
