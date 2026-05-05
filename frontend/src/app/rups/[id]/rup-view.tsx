@@ -1,7 +1,8 @@
 import { type FC, type ReactNode, useState } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
-import { extractKeyIdFromKriptoPayload, formatHours, hasRole, normalizeStudyForm, parseKriptoFileText } from '@helpers'
+import { createKriptoApprovalProof, extractKriptoApprovalMetadata, formatHours, hasRole, normalizeStudyForm, parseKriptoFileText } from '@helpers'
+import { services } from '@services'
 import {
 	Button,
 	ButtonGroup,
@@ -26,7 +27,10 @@ import { BasicView } from '../components/view/basic-view'
 interface IRupViewProps {
 	data: IRup
 	role: RoleEnum
-	onStatusChange: (newStatus: StatusEnum, options?: { reason?: string; keyId?: string }) => void
+	onStatusChange: (
+		newStatus: StatusEnum,
+		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
+	) => void
 	actions?: ReactNode
 }
 
@@ -35,22 +39,27 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
 	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
 	const [keyId, setKeyId] = useState('')
+	const [userId, setUserId] = useState('')
+	const [kriptoFileText, setKriptoFileText] = useState('')
+	const [kriptoPassword, setKriptoPassword] = useState('')
 	const [fileName, setFileName] = useState('')
 	const [checked, setChecked] = useState(false)
 	const isMethodistReview = hasRole(role, RoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
 
 	const onApproveFileUpload = async (file?: File) => {
 		if (!file) return
-		if (!file.name.toLowerCase().endsWith('.kripto') && !file.name.toLowerCase().endsWith('.txt')) {
-			toast.error('Поддерживаются только .kripto или .txt')
+		if (!file.name.toLowerCase().endsWith('.kripto')) {
+			toast.error('Поддерживаются только .kripto v3')
 			return
 		}
 
 		const content = await file.text()
 		const parsed = parseKriptoFileText(content)
-		const extractedKeyId = extractKeyIdFromKriptoPayload(parsed)
+		const metadata = extractKriptoApprovalMetadata(parsed)
 
-		setKeyId(extractedKeyId)
+		setKeyId(metadata.keyId)
+		setUserId(metadata.userId)
+		setKriptoFileText(content)
 		setFileName(file.name)
 		toast.success('Файл ЭЦП успешно разобран')
 	}
@@ -250,14 +259,14 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 					<SheetHeader>
 						<SheetTitle>Подтверждение РУП</SheetTitle>
 						<SheetDescription>
-							Загрузите файл ЭЦП (.kripto), система извлечет key_id и отправит его на проверку принадлежности ключа.
+							Загрузите .kripto v3, введите пароль и подпишите challenge для проверки владения ключом.
 						</SheetDescription>
 					</SheetHeader>
 					<div className='px-4 grid gap-4 py-4'>
 						<div className='grid gap-2'>
 							<Label htmlFor='approve-kripto-file'>Файл ЭЦП (.kripto)</Label>
 							<Input
-								accept='.kripto,.txt,application/json,text/plain'
+								accept='.kripto,application/json'
 								id='approve-kripto-file'
 								type='file'
 								onChange={(e) => {
@@ -275,8 +284,18 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 							<Input
 								id='approve-key-id'
 								placeholder='UUID ключа'
+								readOnly
 								value={keyId}
-								onChange={(e) => setKeyId(e.target.value)}
+							/>
+						</div>
+
+						<div className='grid gap-2'>
+							<Label htmlFor='approve-kripto-password'>Пароль .kripto</Label>
+							<Input
+								id='approve-kripto-password'
+								type='password'
+								value={kriptoPassword}
+								onChange={(e) => setKriptoPassword(e.target.value)}
 							/>
 						</div>
 
@@ -290,9 +309,13 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 							Отмена
 						</Button>
 						<Button
-							onClick={() => {
-								if (!keyId.trim()) {
-									toast.error('Загрузите .kripto файл с key_id')
+							onClick={async () => {
+								if (!kriptoFileText || !keyId.trim() || !userId.trim()) {
+									toast.error('Загрузите .kripto v3 файл')
+									return
+								}
+								if (!kriptoPassword) {
+									toast.error('Введите пароль от .kripto')
 									return
 								}
 								if (!checked) {
@@ -300,11 +323,29 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 									return
 								}
 
-								onStatusChange(StatusEnum.APPROVED, { keyId: keyId.trim() })
-								setIsApproveSheetOpen(false)
-								setKeyId('')
-								setFileName('')
-								setChecked(false)
+								try {
+									const { challenge } = await services.rup.createApproveChallenge(data.id, {
+										key_id: keyId,
+										user_id: userId,
+									})
+									const proof = await createKriptoApprovalProof(kriptoFileText, kriptoPassword, challenge)
+									onStatusChange(StatusEnum.APPROVED, {
+										keyId: proof.keyId,
+										userId: proof.userId,
+										publicKey: proof.publicKey,
+										challenge: proof.challenge,
+										signature: proof.signature,
+									})
+									setIsApproveSheetOpen(false)
+									setKeyId('')
+									setUserId('')
+									setKriptoFileText('')
+									setKriptoPassword('')
+									setFileName('')
+									setChecked(false)
+								} catch (err) {
+									toast.error(err instanceof Error ? err.message : 'Ошибка проверки .kripto')
+								}
 							}}
 						>
 							Утвердить

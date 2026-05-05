@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
-import { extractKeyIdFromKriptoPayload, hasRole, isAuthor, normalizeStatus, parseKriptoFileText } from '@helpers'
+import { createKriptoApprovalProof, extractKriptoApprovalMetadata, hasRole, isAuthor, normalizeStatus, parseKriptoFileText } from '@helpers'
 import { services } from '@services'
 import {
 	AlertDialog,
@@ -63,7 +63,10 @@ const Page: FC = () => {
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
 
 	// change rup status
-	const handleStatusChange = (newStatus: StatusEnum, options?: { reason?: string; keyId?: string }) => {
+	const handleStatusChange = (
+		newStatus: StatusEnum,
+		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
+	) => {
 		if (!rupData) return
 		setIsSheetOpen(false)
 
@@ -75,6 +78,10 @@ const Page: FC = () => {
 			status: newStatus,
 			reason: options?.reason,
 			key_id: options?.keyId,
+			user_id: options?.userId,
+			public_key: options?.publicKey,
+			challenge: options?.challenge,
+			signature: options?.signature,
 		}
 
 		updateStatusMutation.mutate(updateStatusPayload, {
@@ -203,6 +210,7 @@ const Page: FC = () => {
 			<StatusChangeSheet
 				handleStatusChange={handleStatusChange}
 				isSheetOpen={isSheetOpen}
+				rupId={params.id}
 				setIsSheetOpen={setIsSheetOpen}
 			/>
 
@@ -220,13 +228,20 @@ export default Page
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean
 	setIsSheetOpen: (state: boolean) => void
-	handleStatusChange: (newStatus: StatusEnum, options?: { reason?: string; keyId?: string }) => void
+	rupId: string
+	handleStatusChange: (
+		newStatus: StatusEnum,
+		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
+	) => void
 }
 
-const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsSheetOpen, handleStatusChange }) => {
+const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsSheetOpen, rupId, handleStatusChange }) => {
 	const [newStatus, setNewStatus] = useState<StatusEnum | undefined>(undefined)
 	const [reason, setReason] = useState('')
 	const [keyId, setKeyId] = useState('')
+	const [userId, setUserId] = useState('')
+	const [kriptoFileText, setKriptoFileText] = useState('')
+	const [kriptoPassword, setKriptoPassword] = useState('')
 	const [fileName, setFileName] = useState('')
 	const [checked, setChecked] = useState(false)
 
@@ -234,25 +249,31 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 
 	const onFileUpload = async (file?: File) => {
 		if (!file) return
-		if (!file.name.toLowerCase().endsWith('.kripto') && !file.name.toLowerCase().endsWith('.txt')) {
-			toast.error('Поддерживаются только .kripto или .txt')
+		if (!file.name.toLowerCase().endsWith('.kripto')) {
+			toast.error('Поддерживаются только .kripto v3')
 			return
 		}
 
 		const content = await file.text()
 		const parsed = parseKriptoFileText(content)
-		const extractedKeyId = extractKeyIdFromKriptoPayload(parsed)
+		const metadata = extractKriptoApprovalMetadata(parsed)
 
-		setKeyId(extractedKeyId)
+		setKeyId(metadata.keyId)
+		setUserId(metadata.userId)
+		setKriptoFileText(content)
 		setFileName(file.name)
 		toast.success('Файл ЭЦП успешно разобран')
 	}
 
-	const onSheetSubmit = () => {
+	const onSheetSubmit = async () => {
 		if (newStatus) {
 			if (isApprove) {
-				if (!keyId) {
-					toast.error('Загрузите .kripto файл с key_id')
+				if (!keyId || !userId || !kriptoFileText) {
+					toast.error('Загрузите .kripto v3 файл')
+					return
+				}
+				if (!kriptoPassword) {
+					toast.error('Введите пароль от .kripto')
 					return
 				}
 				if (!checked) {
@@ -261,11 +282,35 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 				}
 			}
 
-			handleStatusChange(newStatus, { reason, keyId: isApprove ? keyId : undefined })
+			try {
+				if (isApprove) {
+					const { challenge } = await services.rup.createApproveChallenge(rupId, {
+						key_id: keyId,
+						user_id: userId,
+					})
+					const proof = await createKriptoApprovalProof(kriptoFileText, kriptoPassword, challenge)
+					handleStatusChange(newStatus, {
+						reason,
+						keyId: proof.keyId,
+						userId: proof.userId,
+						publicKey: proof.publicKey,
+						challenge: proof.challenge,
+						signature: proof.signature,
+					})
+				} else {
+					handleStatusChange(newStatus, { reason })
+				}
+			} catch (err) {
+				toast.error(err instanceof Error ? err.message : 'Ошибка проверки .kripto')
+				return
+			}
 
 			setNewStatus(undefined)
 			setReason('')
 			setKeyId('')
+			setUserId('')
+			setKriptoFileText('')
+			setKriptoPassword('')
 			setFileName('')
 			setChecked(false)
 		}
@@ -310,7 +355,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 							<div className='grid gap-2'>
 								<Label htmlFor='kripto-file'>Файл ЭЦП (.kripto)</Label>
 								<Input
-									accept='.kripto,.txt,application/json,text/plain'
+									accept='.kripto,application/json'
 									id='kripto-file'
 									type='file'
 									onChange={(e) => {
@@ -328,8 +373,18 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 								<Input
 									id='key-id'
 									placeholder='UUID ключа'
+									readOnly
 									value={keyId}
-									onChange={(e) => setKeyId(e.target.value)}
+								/>
+							</div>
+
+							<div className='grid gap-2'>
+								<Label htmlFor='kripto-password'>Пароль .kripto</Label>
+								<Input
+									id='kripto-password'
+									type='password'
+									value={kriptoPassword}
+									onChange={(e) => setKriptoPassword(e.target.value)}
 								/>
 							</div>
 

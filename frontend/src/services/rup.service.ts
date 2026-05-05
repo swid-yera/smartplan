@@ -3,6 +3,7 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
 	IDownloadResponse,
+	IApproveChallengeResponse,
 	IGetAllRequest,
 	IMessageResponse,
 	IPagination,
@@ -93,6 +94,10 @@ export class RupService {
 				queryClient.invalidateQueries({ queryKey: ['rups'] })
 			},
 		})
+	}
+
+	createApproveChallenge = (id: string, payload: { key_id: string; user_id: string }) => {
+		return api.post<IApproveChallengeResponse>(`/rups/${id}/approve-challenge`, payload).then((r) => r.data)
 	}
 
 	// delete by id

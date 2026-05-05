@@ -44,6 +44,11 @@ export interface IDownloadResponse {
 	url: string
 }
 
+export interface IApproveChallengeResponse {
+	challenge: string
+	expiresAt: string
+}
+
 // get all
 export interface IGetAllRequest extends IPaginationRequest {
 	methodist?: string
