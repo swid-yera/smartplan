@@ -31,6 +31,14 @@ export interface IUpdateLessonResourceRequest {
 	type: LessonResourceTypeEnum
 }
 
+export interface IUpdateLessonProgressRequest {
+	id?: string
+	name: string
+	content: string[]
+	start_minute: number
+	end_minute: number
+}
+
 export interface IUpdateLessonRequest {
 	topic_name: string
 	event_date: string
@@ -39,6 +47,7 @@ export interface IUpdateLessonRequest {
 	tasks: string
 	expected: string
 	file_url?: string | null
+	lesson_progress: IUpdateLessonProgressRequest[]
 	internet_resources: IUpdateLessonResourceRequest[]
 	technical_resources: IUpdateLessonResourceRequest[]
 }

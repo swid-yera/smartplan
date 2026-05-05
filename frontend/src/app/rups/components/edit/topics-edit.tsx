@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 
-import { EditableHourCell } from '@components'
+import { EditableHourCell, NumericInput } from '@components'
 import {
 	DndContext,
 	KeyboardSensor,
@@ -26,8 +26,10 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
+	Checkbox,
 	FormField,
 	Input,
+	Label,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -40,6 +42,7 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
+	Textarea,
 } from '@shadcn'
 import { RupTypeEnum, TopicTypeEnum } from '@types'
 import { ChevronDown, GripVertical, Plus, Trash } from 'lucide-react'
@@ -52,6 +55,8 @@ import {
 	useFormContext,
 	useWatch,
 } from 'react-hook-form'
+
+import { GenerateConfirmButton } from '../generate-card'
 
 type Topic = {
 	name: string
@@ -74,6 +79,14 @@ type Discipline = {
 type IProps = FieldValues & {
 	type: string
 	disciplines: Discipline[]
+}
+
+export type TopicsDisciplineGenerateOptions = {
+	additionalMessage?: string
+	includeCurrentContent: boolean
+	preferredPracticalCount?: number
+	preferredSnzCount?: number
+	preferredCombinedCount?: number
 }
 
 type TopicTotals = {
@@ -104,7 +117,15 @@ const newTopic: Topic = {
 	srsHours: 0,
 }
 
-export function TopicsEdit<T extends IProps>() {
+export function TopicsEdit<T extends IProps>({
+	onGenerateDiscipline,
+	isGeneratingAll = false,
+	generatingDisciplineIndex = null,
+}: {
+	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
+	isGeneratingAll?: boolean
+	generatingDisciplineIndex?: number | null
+}) {
 	const form = useFormContext<T>()
 	const rupType = useWatch({ control: form.control, name: 'type' as Path<T> }) ?? ''
 	const { fields: disciplineFields } = useFieldArray({
@@ -116,7 +137,14 @@ export function TopicsEdit<T extends IProps>() {
 	return (
 		<div className='space-y-4'>
 			{disciplineFields.map((field, index) => (
-				<DisciplineBlock key={field.key} disciplineIndex={index} rupType={rupType as RupTypeEnum | ''} />
+				<DisciplineBlock
+					key={field.key}
+					disciplineIndex={index}
+					generatingDisciplineIndex={generatingDisciplineIndex}
+					isGeneratingAll={isGeneratingAll}
+					rupType={rupType as RupTypeEnum | ''}
+					onGenerateDiscipline={onGenerateDiscipline}
+				/>
 			))}
 			<TopicsSummary />
 		</div>
@@ -232,14 +260,25 @@ function mergeTotals(base: TopicTotals, next: TopicTotals): TopicTotals {
 
 function DisciplineBlock<T extends IProps>({
 	disciplineIndex,
+	onGenerateDiscipline,
+	isGeneratingAll,
+	generatingDisciplineIndex,
 	rupType,
 }: {
 	disciplineIndex: number
+	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
+	isGeneratingAll: boolean
+	generatingDisciplineIndex: number | null
 	rupType: RupTypeEnum | ''
 }) {
 	const form = useFormContext<T>()
 	const [isCollapsed, setIsCollapsed] = useState(false)
 	const [isSticky, setIsSticky] = useState(false)
+	const [additionalMessage, setAdditionalMessage] = useState('')
+	const [includeCurrentContent, setIncludeCurrentContent] = useState(true)
+	const [preferredPracticalCount, setPreferredPracticalCount] = useState<number | ''>('')
+	const [preferredSnzCount, setPreferredSnzCount] = useState<number | ''>('')
+	const [preferredCombinedCount, setPreferredCombinedCount] = useState<number | ''>('')
 	const headerRef = useRef<HTMLDivElement | null>(null)
 	const {
 		fields: topicFields,
@@ -278,6 +317,26 @@ function DisciplineBlock<T extends IProps>({
 	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(KeyboardSensor))
 	const sortableItems = useMemo(() => topicFields.map((f) => f.key), [topicFields])
 	const [stickyTopPx, setStickyTopPx] = useState(100)
+	const isGeneratingCurrentDiscipline = generatingDisciplineIndex === disciplineIndex
+	const isGenerateButtonDisabled = isGeneratingAll || generatingDisciplineIndex !== null
+
+	const toPositiveNumber = (value: number | '') => {
+		if (value === '' || value <= 0) return undefined
+
+		return value
+	}
+
+	const handleGenerateDiscipline = () => {
+		if (!onGenerateDiscipline) return
+
+		onGenerateDiscipline(disciplineIndex, {
+			additionalMessage,
+			includeCurrentContent,
+			preferredCombinedCount: toPositiveNumber(preferredCombinedCount),
+			preferredPracticalCount: toPositiveNumber(preferredPracticalCount),
+			preferredSnzCount: toPositiveNumber(preferredSnzCount),
+		})
+	}
 
 	useEffect(() => {
 		const headerNode = headerRef.current
@@ -453,9 +512,87 @@ function DisciplineBlock<T extends IProps>({
 									<TableCell className='text-center'>{formatAsDash(sectionTotal.srsHours)}</TableCell>
 									<TableCell
 										className={cn('text-right font-medium', hasError && 'text-destructive font-bold')}
-										colSpan={2}
 									>
 										Заявлено: {formatHours(declaredForThisDiscipline)}
+									</TableCell>
+									<TableCell className='text-right'>
+										<GenerateConfirmButton
+											buttonText={isGeneratingCurrentDiscipline ? 'Генерация…' : 'Сгенерировать'}
+											confirmButtonText='Сгенерировать'
+											confirmContent={
+												<div className='grid gap-4'>
+													<div className='flex flex-col gap-2'>
+														<Label htmlFor={`discipline-${disciplineIndex}-additional-message`}>
+															Дополнительное сообщение
+														</Label>
+														<Textarea
+															id={`discipline-${disciplineIndex}-additional-message`}
+															placeholder='Уточните, что нужно учесть при генерации'
+															rows={4}
+															value={additionalMessage}
+															onChange={(event) => setAdditionalMessage(event.target.value)}
+														/>
+													</div>
+
+													<div className='flex items-center gap-2'>
+														<Checkbox
+															checked={includeCurrentContent}
+															id={`discipline-${disciplineIndex}-include-current-content`}
+															onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
+														/>
+														<Label htmlFor={`discipline-${disciplineIndex}-include-current-content`}>
+															Включить текущий написанный контент
+														</Label>
+													</div>
+
+													<div className='grid gap-3 md:grid-cols-3'>
+														<div className='flex flex-col gap-2'>
+															<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>
+																Кол-во практических
+															</Label>
+															<NumericInput
+																id={`discipline-${disciplineIndex}-practical-count`}
+																min={1}
+																placeholder='например 8'
+																value={preferredPracticalCount}
+																onChange={(value) => setPreferredPracticalCount(value)}
+															/>
+														</div>
+														<div className='flex flex-col gap-2'>
+															<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>
+																Кол-во СНЗ
+															</Label>
+															<NumericInput
+																id={`discipline-${disciplineIndex}-snz-count`}
+																min={1}
+																placeholder='например 2'
+																value={preferredSnzCount}
+																onChange={(value) => setPreferredSnzCount(value)}
+															/>
+														</div>
+														<div className='flex flex-col gap-2'>
+															<Label htmlFor={`discipline-${disciplineIndex}-combined-count`}>
+																Кол-во комбинированных
+															</Label>
+															<NumericInput
+																id={`discipline-${disciplineIndex}-combined-count`}
+																min={1}
+																placeholder='например 4'
+																value={preferredCombinedCount}
+																onChange={(value) => setPreferredCombinedCount(value)}
+															/>
+														</div>
+													</div>
+												</div>
+											}
+											confirmDescription='Будут сгенерированы темы только для текущей дисциплины. Текущие темы дисциплины будут перезаписаны.'
+											confirmTitle='Сгенерировать темы для дисциплины?'
+											disabled={isGenerateButtonDisabled}
+											disabledReason='Дождитесь завершения текущей генерации'
+											triggerClassName='h-8'
+											triggerSize='sm'
+											onClick={handleGenerateDiscipline}
+										/>
 									</TableCell>
 								</TableRow>
 							</TableFooter>

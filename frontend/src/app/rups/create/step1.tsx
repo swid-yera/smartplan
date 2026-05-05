@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { type IGenerateRupMeta, generateRupMeta } from '@actions'
 import { services } from '@services'
+import { Checkbox, Label, Textarea } from '@shadcn'
 import { useQuery } from '@tanstack/react-query'
 import { RupTypeEnum, StudyFormEnum } from '@types'
 import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
@@ -28,6 +29,8 @@ export function Step1<T extends IProps>() {
 	const { getValues, setValue } = useFormContext<T>()
 	// states
 	const [isLoading, setIsLoading] = useState(false)
+	const [additionalMessage, setAdditionalMessage] = useState('')
+	const [includeCurrentContent, setIncludeCurrentContent] = useState(true)
 	// query
 	const { data: groupsData = [], isLoading: groupLoading } = useQuery({
 		...services.group.getAllOptions(),
@@ -81,6 +84,29 @@ export function Step1<T extends IProps>() {
 
 			<GenerateCard
 				buttonText={isLoading ? 'Генерация…' : 'Сгенерировать'}
+				confirmContent={
+					<div className='grid gap-4'>
+						<div className='flex flex-col gap-2'>
+							<Label htmlFor='rup-meta-additional-message'>Дополнительное сообщение</Label>
+							<Textarea
+								id='rup-meta-additional-message'
+								placeholder='Уточните, что нужно учесть при генерации'
+								rows={4}
+								value={additionalMessage}
+								onChange={(event) => setAdditionalMessage(event.target.value)}
+							/>
+						</div>
+
+						<div className='flex items-center gap-2'>
+							<Checkbox
+								checked={includeCurrentContent}
+								id='rup-meta-include-current-content'
+								onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
+							/>
+							<Label htmlFor='rup-meta-include-current-content'>Включить текущий написанный контент</Label>
+						</div>
+					</div>
+				}
 				description='Тексты будут сформированы на основе данных модуля и учебной группы. После генерации вы сможете отредактировать их вручную.'
 				disabled={isLoading || groupLoading}
 				disabledReason='Заполните данные модуля и учебной группы'

@@ -363,13 +363,51 @@ export interface IGenerateTopicsForDiscipline {
 
 	disciplineName: string
 	disciplineHours: number
+
+	additionalMessage?: string
+	includeCurrentContent?: boolean
+	currentTopics?: {
+		name: string
+		type: TopicTypeEnum
+		theoryHours: number
+		practiceHours: number
+		individualHours?: number
+		srspHours?: number
+		srsHours?: number
+	}[]
+	preferredPracticalCount?: number
+	preferredSnzCount?: number
+	preferredCombinedCount?: number
 }
 
 export async function generateTopicsForDiscipline(baseData: IGenerateTopicsForDiscipline) {
 	const topicHours = baseData.rupType === RupTypeEnum.PRACTICE ? 6 : 2
+	const hasPreferredTopicCounts =
+		(baseData.preferredPracticalCount ?? 0) > 0 ||
+		(baseData.preferredSnzCount ?? 0) > 0 ||
+		(baseData.preferredCombinedCount ?? 0) > 0
+	const preferredTopicCount =
+		(baseData.preferredPracticalCount ?? 0) +
+		(baseData.preferredSnzCount ?? 0) +
+		(baseData.preferredCombinedCount ?? 0)
+	const shouldUsePreferredTopicCount =
+		baseData.rupType !== RupTypeEnum.PRACTICE && hasPreferredTopicCounts && preferredTopicCount > 0
 
 	// the logic for calculating the number of topics (if rup type == PRACTICE, every 6 hours - a new topic, if THEORY every 2 hours - a new topic)
-	const topicCount = Math.floor(baseData.disciplineHours / topicHours)
+	const topicCount = shouldUsePreferredTopicCount
+		? preferredTopicCount
+		: Math.floor(baseData.disciplineHours / topicHours)
+
+	const additionalMessageContext = baseData.additionalMessage?.trim()
+		? `\nДОПОЛНИТЕЛЬНЫЕ ПОЖЕЛАНИЯ ПОЛЬЗОВАТЕЛЯ:\n${baseData.additionalMessage.trim()}\n`
+		: ''
+	const currentTopicsContext =
+		baseData.includeCurrentContent && baseData.currentTopics && baseData.currentTopics.length > 0
+			? `\nТЕКУЩИЙ КОНТЕНТ ДИСЦИПЛИНЫ (учти его при генерации):\n${JSON.stringify(baseData.currentTopics)}\n`
+			: ''
+	const preferredCountsContext = hasPreferredTopicCounts
+		? `\nПРЕДПОЧТЕНИЯ ПО КОЛИЧЕСТВУ ТЕМ:\n- PRACTICAL: ${baseData.preferredPracticalCount ?? 0}\n- SNZ: ${baseData.preferredSnzCount ?? 0}\n- COMBINED: ${baseData.preferredCombinedCount ?? 0}\n`
+		: ''
 
 	const prompt = `
 Ты — методист по разработке учебных программ для колледжей и техникумов Республики Казахстан.
@@ -383,6 +421,7 @@ export async function generateTopicsForDiscipline(baseData: IGenerateTopicsForDi
 - Цели освоения профессионального модуля: "${baseData.goals}"
 - Формируемые компетенции: "${baseData.competencies}"
 - Название дисциплины: "${baseData.disciplineName}"
+${additionalMessageContext}${currentTopicsContext}${preferredCountsContext}
 
 ПРАВИЛА ГЕНЕРАЦИИ ТЕМ:
 
@@ -394,7 +433,7 @@ export async function generateTopicsForDiscipline(baseData: IGenerateTopicsForDi
   - practiceHours = 6
 - Если тип РУП = THEORY:
   - каждая тема = 2 часа
-  - темы могут быть "COMBINED" или "PRACTICAL"
+  - темы могут быть "COMBINED", "PRACTICAL" или "SNZ"
   - суммарно theoryHours + practiceHours = 2
 
 2. Названия тем (КРИТИЧЕСКИ ВАЖНО):
@@ -430,7 +469,7 @@ export async function generateTopicsForDiscipline(baseData: IGenerateTopicsForDi
 3. Структура каждой темы — строго объект:
 {
   "name": string,
-  "type": "COMBINED" | "PRACTICAL",
+  "type": "COMBINED" | "PRACTICAL" | "SNZ",
   "theoryHours": number,
   "practiceHours": number
 }
@@ -444,7 +483,8 @@ export async function generateTopicsForDiscipline(baseData: IGenerateTopicsForDi
 - Все часы суммируются строго в totalHours = ${baseData.disciplineHours}
 - Количество тем = ${topicCount}
 - Для PRACTICE все темы = "PRACTICAL"
-- Для THEORY допускается mix, но каждая тема = 2 часа, темы подходящие по смыслу к практическим могут иметь тип "PRACTICAL", а остальные "COMBINED"
+- Для THEORY допускается mix, но каждая тема = 2 часа, темы подходящие по смыслу к практическим могут иметь тип "PRACTICAL", а остальные "COMBINED" или "SNZ"
+- Если переданы предпочтения по количеству типов тем, старайся их соблюдать без нарушения ограничений по сумме часов.
 
 6. Формат ответа:
 - Верни ТОЛЬКО валидный JSON
