@@ -17,6 +17,7 @@ import (
 
 type CryptoClient interface {
 	ValidateKeyOwnership(ctx context.Context, payload ValidateKeyOwnershipRequest, correlationID string) (*ValidateKeyOwnershipResponse, error)
+	VerifySignature(ctx context.Context, payload VerifySignatureRequest, correlationID string) (*VerifySignatureResponse, error)
 }
 
 type cryptoClient struct {
@@ -38,6 +39,17 @@ type ValidateKeyOwnershipResponse struct {
 	BelongsToUser    bool   `json:"belongs_to_user"`
 	KeyStatus        string `json:"key_status"`
 	ValidationStatus string `json:"validation_status"`
+}
+
+type VerifySignatureRequest struct {
+	PublicKeyID  string `json:"public_key_id"`
+	DocumentHash string `json:"document_hash"`
+	Signature    string `json:"signature"`
+}
+
+type VerifySignatureResponse struct {
+	IsValid bool   `json:"is_valid"`
+	Status  string `json:"status"`
 }
 
 type CryptoHTTPError struct {
@@ -93,6 +105,37 @@ func (c *cryptoClient) ValidateKeyOwnership(
 		ctx,
 		http.MethodPost,
 		"/integration/keys/validate",
+		payload,
+		true,
+		correlationID,
+		&out,
+	); err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+func (c *cryptoClient) VerifySignature(
+	ctx context.Context,
+	payload VerifySignatureRequest,
+	correlationID string,
+) (*VerifySignatureResponse, error) {
+	if strings.TrimSpace(payload.PublicKeyID) == "" {
+		return nil, fmt.Errorf("public_key_id is required")
+	}
+	if strings.TrimSpace(payload.DocumentHash) == "" {
+		return nil, fmt.Errorf("document_hash is required")
+	}
+	if strings.TrimSpace(payload.Signature) == "" {
+		return nil, fmt.Errorf("signature is required")
+	}
+
+	var out VerifySignatureResponse
+	if err := c.doJSON(
+		ctx,
+		http.MethodPost,
+		"/verify",
 		payload,
 		true,
 		correlationID,
