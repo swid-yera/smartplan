@@ -35,9 +35,7 @@ def cleanup_by_count(
     result = {"deleted": deleted_count, "error": error_count}
 
     if (deleted_count + error_count) > 0:
-        logger.info(
-            f"deleted success: {result["deleted"]}, with error {result["error"]}"
-        )
+        logger.info(f"deleted success: {result['deleted']}, with error {result['error']}")
 
     return result
 
@@ -65,8 +63,6 @@ def clear_out_folder(folder: Path = OUT_DIR) -> dict:
     result = {"deleted": deleted_count, "error": error_count}
 
     if (deleted_count + error_count) > 0:
-        logger.info(
-            f"deleted success: {result["deleted"]}, with error {result["error"]}"
-        )
+        logger.info(f"deleted success: {result['deleted']}, with error {result['error']}")
 
     return result
