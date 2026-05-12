@@ -44,6 +44,13 @@ export function Step3<T extends IProps>() {
 
 				wantsHours: wantsHours,
 				disciplineCount: disciplineCount,
+				message: additionalMessage.trim() || undefined,
+				includeCurrentContent,
+				currentValues: includeCurrentContent
+					? {
+							disciplines: values.disciplines,
+						}
+					: undefined,
 			}
 
 			const generatedDisciplines = await generateDisciplines(mappedData)
