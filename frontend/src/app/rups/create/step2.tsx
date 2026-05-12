@@ -60,6 +60,14 @@ export function Step2<T extends IProps>() {
 				basic: values.basis,
 				goals: values.goals,
 				competencies: values.competencies,
+				message: additionalMessage.trim() || undefined,
+				includeCurrentContent,
+				currentValues: includeCurrentContent
+					? {
+							internetResources: values.internetResources,
+							technicalResources: values.technicalResources,
+						}
+					: undefined,
 			}
 
 			const resources = await generateResources(mappedData)

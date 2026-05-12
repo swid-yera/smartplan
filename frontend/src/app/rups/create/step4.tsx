@@ -60,6 +60,7 @@ export function Step4<T extends IProps>() {
 
 			additionalMessage: additionalMessage ? additionalMessage : undefined,
 			includeCurrentContent,
+			currentValues: includeCurrentContent ? { topics: discipline.topics } : undefined,
 			currentTopics: includeCurrentContent ? discipline.topics : undefined,
 
 			preferredCombinedCount: options?.preferredCombinedCount,

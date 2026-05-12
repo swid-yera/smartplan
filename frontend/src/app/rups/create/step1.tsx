@@ -58,6 +58,17 @@ export function Step1<T extends IProps>() {
 				type: values.type,
 				studyForm: values.studyForm,
 				studyYear: values.studyYear,
+				message: additionalMessage.trim() || undefined,
+				includeCurrentContent,
+				currentValues: includeCurrentContent
+					? {
+							description: values.basis,
+							goals: values.goals,
+							competence: values.competencies,
+							basis: values.basis,
+							competencies: values.competencies,
+						}
+					: undefined,
 			}
 
 			const meta = await generateRupMeta(mappedData)

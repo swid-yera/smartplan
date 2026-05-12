@@ -61,18 +61,25 @@ type geminiErrorResponse = helpers.GeminiErrorResponse
 type geminiRequestError = helpers.GeminiRequestError
 
 func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequest) (*GenerateRupMetaResponse, error) {
+	currentValuesContext := helpers.BuildCurrentValuesContext(
+		req.IncludeCurrentContent,
+		req.CurrentValues,
+		"СТАРЫЕ ДАННЫЕ (currentValues) ДЛЯ ПЕРЕГЕНЕРАЦИИ",
+	)
+
 	prompt := helpers.BuildGenerateRupMetaPrompt(helpers.GenerateRupMetaPromptInput{
-		Name:               req.Name,
-		Type:               req.Type,
-		StudyForm:          req.StudyForm,
-		Prerequisites:      req.Prerequisites,
-		Postrequisites:     req.Postrequisites,
-		StudyYear:          req.StudyYear,
-		GroupName:          req.Group.Name,
-		GroupSpecialty:     req.Group.Specialty,
-		GroupQualification: req.Group.Qualification,
-		Course:             req.Course,
-		Message:            req.Message,
+		Name:                 req.Name,
+		Type:                 req.Type,
+		StudyForm:            req.StudyForm,
+		Prerequisites:        req.Prerequisites,
+		Postrequisites:       req.Postrequisites,
+		StudyYear:            req.StudyYear,
+		GroupName:            req.Group.Name,
+		GroupSpecialty:       req.Group.Specialty,
+		GroupQualification:   req.Group.Qualification,
+		Course:               req.Course,
+		Message:              req.Message,
+		CurrentValuesContext: currentValuesContext,
 	})
 
 	responseText, err := s.generateContentWithFallback(ctx, prompt)
@@ -89,14 +96,21 @@ func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequ
 }
 
 func (s *aiService) GenerateResources(ctx context.Context, req GenerateResourcesRequest) (*GenerateResourcesResponse, error) {
+	currentValuesContext := helpers.BuildCurrentValuesContext(
+		req.IncludeCurrentContent,
+		req.CurrentValues,
+		"СТАРЫЕ ДАННЫЕ (currentValues) ДЛЯ ПЕРЕГЕНЕРАЦИИ",
+	)
+
 	prompt := helpers.BuildGenerateResourcesPrompt(helpers.GenerateResourcesPromptInput{
-		Name:           req.Name,
-		Prerequisites:  req.Prerequisites,
-		Postrequisites: req.Postrequisites,
-		Basic:          req.Basic,
-		Goals:          req.Goals,
-		Competencies:   req.Competencies,
-		Message:        req.Message,
+		Name:                 req.Name,
+		Prerequisites:        req.Prerequisites,
+		Postrequisites:       req.Postrequisites,
+		Basic:                req.Basic,
+		Goals:                req.Goals,
+		Competencies:         req.Competencies,
+		Message:              req.Message,
+		CurrentValuesContext: currentValuesContext,
 	})
 
 	responseText, err := s.generateContentWithFallback(ctx, prompt)
@@ -113,14 +127,21 @@ func (s *aiService) GenerateResources(ctx context.Context, req GenerateResources
 }
 
 func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDisciplinesRequest) ([]GeneratedDiscipline, error) {
+	currentValuesContext := helpers.BuildCurrentValuesContext(
+		req.IncludeCurrentContent,
+		req.CurrentValues,
+		"СТАРЫЕ ДАННЫЕ (currentValues) ДЛЯ ПЕРЕГЕНЕРАЦИИ",
+	)
+
 	prompt := helpers.BuildGenerateDisciplinesPrompt(helpers.GenerateDisciplinesPromptInput{
-		WantsHours:      req.WantsHours,
-		DisciplineCount: req.DisciplineCount,
-		Course:          req.Course,
-		Name:            req.Name,
-		Goals:           req.Goals,
-		Competencies:    req.Competencies,
-		Message:         req.Message,
+		WantsHours:           req.WantsHours,
+		DisciplineCount:      req.DisciplineCount,
+		Course:               req.Course,
+		Name:                 req.Name,
+		Goals:                req.Goals,
+		Competencies:         req.Competencies,
+		Message:              req.Message,
+		CurrentValuesContext: currentValuesContext,
 	})
 
 	responseText, err := s.generateContentWithFallback(ctx, prompt)
@@ -167,17 +188,33 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 	if strings.EqualFold(req.RupType, "PRACTICE") {
 		topicHours = 6
 	}
+	hasPreferredTopicCounts := req.PreferredPracticalCount > 0 || req.PreferredSnzCount > 0 || req.PreferredCombinedCount > 0
+	preferredTopicCount := req.PreferredPracticalCount + req.PreferredSnzCount + req.PreferredCombinedCount
+	shouldUsePreferredTopicCount := !strings.EqualFold(req.RupType, "PRACTICE") && hasPreferredTopicCounts && preferredTopicCount > 0
 	topicCount := req.DisciplineHours / topicHours
+	if shouldUsePreferredTopicCount {
+		topicCount = preferredTopicCount
+	}
+
+	currentValuesContext := helpers.BuildCurrentValuesContext(
+		req.IncludeCurrentContent,
+		req.CurrentValues,
+		"СТАРЫЕ ДАННЫЕ (currentValues) ПО ДИСЦИПЛИНЕ ДЛЯ ПЕРЕГЕНЕРАЦИИ",
+	)
 
 	prompt := helpers.BuildGenerateTopicsForDisciplinePrompt(helpers.GenerateTopicsForDisciplinePromptInput{
-		DisciplineName:  req.DisciplineName,
-		RupName:         req.RupName,
-		DisciplineHours: req.DisciplineHours,
-		RupType:         req.RupType,
-		Goals:           req.Goals,
-		Competencies:    req.Competencies,
-		Message:         req.Message,
-		TopicCount:      topicCount,
+		DisciplineName:          req.DisciplineName,
+		RupName:                 req.RupName,
+		DisciplineHours:         req.DisciplineHours,
+		RupType:                 req.RupType,
+		Goals:                   req.Goals,
+		Competencies:            req.Competencies,
+		Message:                 req.Message,
+		TopicCount:              topicCount,
+		PreferredPracticalCount: req.PreferredPracticalCount,
+		PreferredSnzCount:       req.PreferredSnzCount,
+		PreferredCombinedCount:  req.PreferredCombinedCount,
+		CurrentValuesContext:    currentValuesContext,
 	})
 
 	responseText, err := s.generateContentWithFallback(ctx, prompt)
