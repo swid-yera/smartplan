@@ -1,7 +1,8 @@
 import axios from 'axios'
+import { apiBaseUrl, renderApiBaseUrl } from './public-env'
 
 export const api = axios.create({
-	baseURL: process.env.NEXT_PUBLIC_API_URL,
+	baseURL: apiBaseUrl,
 	withCredentials: true,
 	headers: {
 		'Content-Type': 'application/json',
@@ -9,6 +10,6 @@ export const api = axios.create({
 })
 
 export const renderApi = axios.create({
-	baseURL: process.env.NEXT_PUBLIC_RENDER_API_URL,
+	baseURL: renderApiBaseUrl,
 	withCredentials: true,
 })

@@ -1,9 +1,9 @@
-import { api } from '@lib'
+import { api, apiBaseUrl } from '@lib'
 import { queryOptions } from '@tanstack/react-query'
 import type { IUser } from '@types'
 
-const loginUrl = `${process.env.NEXT_PUBLIC_API_URL}/login`
-const logoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/logout`
+const loginUrl = `${apiBaseUrl}/login`
+const logoutUrl = `${apiBaseUrl}/logout`
 
 export class AuthService {
 	// redirect to login
