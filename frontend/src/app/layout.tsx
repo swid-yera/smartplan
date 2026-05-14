@@ -9,10 +9,10 @@ import './globals.css'
 
 // metadata
 export const metadata: Metadata = {
-	title: 'Testing?',
-	description: 'testing',
+	title: 'Smartplan',
+	description: 'Smartplan',
 	icons: {
-		icon: '/favicon.svg',
+		icon: '/Smartplan_icon.png',
 	},
 }
 
