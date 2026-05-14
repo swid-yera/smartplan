@@ -1,21 +1,24 @@
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 )
 
 type GenerateRupMetaRequest struct {
-	Name           string           `json:"name"`
-	Type           string           `json:"type"`
-	StudyForm      string           `json:"studyForm"`
-	StudyYear      string           `json:"studyYear"`
-	Course         int              `json:"course"`
-	Group          GenerateRupGroup `json:"group"`
-	Prerequisites  string           `json:"prerequisites"`
-	Postrequisites string           `json:"postrequisites"`
-	Message        string           `json:"message"`
+	Name                  string           `json:"name"`
+	Type                  string           `json:"type"`
+	StudyForm             string           `json:"studyForm"`
+	StudyYear             string           `json:"studyYear"`
+	Course                int              `json:"course"`
+	Group                 GenerateRupGroup `json:"group"`
+	Prerequisites         string           `json:"prerequisites"`
+	Postrequisites        string           `json:"postrequisites"`
+	Message               string           `json:"message"`
+	IncludeCurrentContent bool             `json:"includeCurrentContent"`
+	CurrentValues         json.RawMessage  `json:"currentValues"`
 }
 
 type GenerateRupGroup struct {
@@ -31,13 +34,15 @@ type GenerateRupMetaResponse struct {
 }
 
 type GenerateResourcesRequest struct {
-	Name           string `json:"name"`
-	Prerequisites  string `json:"prerequisites"`
-	Postrequisites string `json:"postrequisites"`
-	Basic          string `json:"basic"`
-	Goals          string `json:"goals"`
-	Competencies   string `json:"competencies"`
-	Message        string `json:"message"`
+	Name                  string          `json:"name"`
+	Prerequisites         string          `json:"prerequisites"`
+	Postrequisites        string          `json:"postrequisites"`
+	Basic                 string          `json:"basic"`
+	Goals                 string          `json:"goals"`
+	Competencies          string          `json:"competencies"`
+	Message               string          `json:"message"`
+	IncludeCurrentContent bool            `json:"includeCurrentContent"`
+	CurrentValues         json.RawMessage `json:"currentValues"`
 }
 
 type GenerateResourcesResponse struct {
@@ -51,23 +56,30 @@ type GeneratedResource struct {
 }
 
 type GenerateDisciplinesRequest struct {
-	Name            string `json:"name"`
-	Course          int    `json:"course"`
-	Goals           string `json:"goals"`
-	Competencies    string `json:"competencies"`
-	WantsHours      int    `json:"wantsHours"`
-	DisciplineCount int    `json:"disciplineCount"`
-	Message         string `json:"message"`
+	Name                  string          `json:"name"`
+	Course                int             `json:"course"`
+	Goals                 string          `json:"goals"`
+	Competencies          string          `json:"competencies"`
+	WantsHours            int             `json:"wantsHours"`
+	DisciplineCount       int             `json:"disciplineCount"`
+	Message               string          `json:"message"`
+	IncludeCurrentContent bool            `json:"includeCurrentContent"`
+	CurrentValues         json.RawMessage `json:"currentValues"`
 }
 
 type GenerateTopicsForDisciplineRequest struct {
-	RupName         string `json:"rupName"`
-	RupType         string `json:"rupType"`
-	Goals           string `json:"goals"`
-	Competencies    string `json:"competencies"`
-	DisciplineName  string `json:"disciplineName"`
-	DisciplineHours int    `json:"disciplineHours"`
-	Message         string `json:"message"`
+	RupName                 string          `json:"rupName"`
+	RupType                 string          `json:"rupType"`
+	Goals                   string          `json:"goals"`
+	Competencies            string          `json:"competencies"`
+	DisciplineName          string          `json:"disciplineName"`
+	DisciplineHours         int             `json:"disciplineHours"`
+	Message                 string          `json:"message"`
+	IncludeCurrentContent   bool            `json:"includeCurrentContent"`
+	CurrentValues           json.RawMessage `json:"currentValues"`
+	PreferredPracticalCount int             `json:"preferredPracticalCount"`
+	PreferredSnzCount       int             `json:"preferredSnzCount"`
+	PreferredCombinedCount  int             `json:"preferredCombinedCount"`
 }
 
 type GeneratedDiscipline struct {
@@ -189,48 +201,55 @@ func (e *GeminiRequestError) IsRateLimit() bool {
 }
 
 type GenerateRupMetaPromptInput struct {
-	Name               string
-	Type               string
-	StudyForm          string
-	Prerequisites      string
-	Postrequisites     string
-	StudyYear          string
-	GroupName          string
-	GroupSpecialty     string
-	GroupQualification string
-	Course             int
-	Message            string
+	Name                 string
+	Type                 string
+	StudyForm            string
+	Prerequisites        string
+	Postrequisites       string
+	StudyYear            string
+	GroupName            string
+	GroupSpecialty       string
+	GroupQualification   string
+	Course               int
+	Message              string
+	CurrentValuesContext string
 }
 
 type GenerateResourcesPromptInput struct {
-	Name           string
-	Prerequisites  string
-	Postrequisites string
-	Basic          string
-	Goals          string
-	Competencies   string
-	Message        string
+	Name                 string
+	Prerequisites        string
+	Postrequisites       string
+	Basic                string
+	Goals                string
+	Competencies         string
+	Message              string
+	CurrentValuesContext string
 }
 
 type GenerateDisciplinesPromptInput struct {
-	WantsHours      int
-	DisciplineCount int
-	Course          int
-	Name            string
-	Goals           string
-	Competencies    string
-	Message         string
+	WantsHours           int
+	DisciplineCount      int
+	Course               int
+	Name                 string
+	Goals                string
+	Competencies         string
+	Message              string
+	CurrentValuesContext string
 }
 
 type GenerateTopicsForDisciplinePromptInput struct {
-	DisciplineName  string
-	RupName         string
-	DisciplineHours int
-	RupType         string
-	Goals           string
-	Competencies    string
-	Message         string
-	TopicCount      int
+	DisciplineName          string
+	RupName                 string
+	DisciplineHours         int
+	RupType                 string
+	Goals                   string
+	Competencies            string
+	Message                 string
+	TopicCount              int
+	PreferredPracticalCount int
+	PreferredSnzCount       int
+	PreferredCombinedCount  int
+	CurrentValuesContext    string
 }
 
 type GenerateLessonPromptInput struct {
@@ -283,9 +302,11 @@ func BuildGenerateRupMetaPrompt(in GenerateRupMetaPromptInput) string {
 - Квалификация группы: %s
 - Курс: %d
 - Дополнительный комментарий преподавателя: "%s"
+- Данные вписанные в поля прямо сейчас: %s
 
 ТВОЯ ЗАДАЧА:
 Сгенерировать СТРОГО JSON-ОБЪЕКТ без markdown, без комментариев, без пояснений, и по комментарию от преподователя.
+Если переданы currentValues(Данные вписанные в поля прямо сейчас), считай это старой версией текста и перегенерируй обновлённую версию с учетом актуальных данных формы и комментария.
 
 ЗАПРЕЩЕНО:
 - использовать массивы для "basis", "goals", "competencies"
@@ -376,6 +397,7 @@ func BuildGenerateRupMetaPrompt(in GenerateRupMetaPromptInput) string {
 		escapePromptValue(in.GroupQualification),
 		in.Course,
 		escapePromptValue(in.Message),
+		in.CurrentValuesContext,
 	)
 }
 
@@ -392,6 +414,7 @@ func BuildGenerateResourcesPrompt(in GenerateResourcesPromptInput) string {
 - Цели освоения профессионального модуля: "%s"
 - Формируемые компетенции: "%s"
 - Дополнительный комментарий преподавателя: "%s"
+- Данные вписанные в поля прямо сейчас: %s
 
 1. Формат результата:
 Ты возвращаешь строго JSON, который соответствует интерфейсу:
@@ -419,6 +442,7 @@ func BuildGenerateResourcesPrompt(in GenerateResourcesPromptInput) string {
 
 - Каждое поле name должно быть связным текстом, максимально информативным, без списков или маркеров внутри.
 - Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по основным требованиям выше.
+- Если переданы currentValues(Данные вписанные в поля прямо сейчас), воспринимай их как старую версию ресурсов и сгенерируй обновленный вариант на основе актуальных данных.
 
 Пример желаемого формата:
 
@@ -442,6 +466,7 @@ func BuildGenerateResourcesPrompt(in GenerateResourcesPromptInput) string {
 		escapePromptValue(in.Goals),
 		escapePromptValue(in.Competencies),
 		escapePromptValue(in.Message),
+		in.CurrentValuesContext,
 		escapePromptValue(in.Name),
 	)
 }
@@ -458,6 +483,7 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
 - Цели освоения профессионального модуля: "%s"
 - Формируемые компетенции: "%s"
 - Дополнительный комментарий преподавателя: "%s"
+- Данные вписанные в поля прямо сейчас: %s
 
 Особые правила:
 
@@ -492,6 +518,7 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
 
 4. Не использовать markdown, комментарии или текст вне JSON
 5. Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по правилам выше.
+6. Если переданы currentValues(Данные вписанные в поля прямо сейчас), считай их старой версией дисциплин и выполни перегенерацию под новые входные данные.
 
 Пример для 3-го курса (семестры 5 и 6), 2 дисциплины, 72 часа каждая, последовательность:
 
@@ -520,6 +547,7 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
 		escapePromptValue(in.Goals),
 		escapePromptValue(in.Competencies),
 		escapePromptValue(in.Message),
+		in.CurrentValuesContext,
 		in.DisciplineCount,
 		in.DisciplineCount,
 		in.Course,
@@ -540,6 +568,12 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 - Формируемые компетенции: "%s"
 - Название дисциплины: "%s"
 - Дополнительный комментарий преподавателя: "%s"
+- Данные вписанные в поля прямо сейчас: %s
+- Предпочтения по количеству тем:
+  - PRACTICAL: %d
+  - SNZ: %d
+  - COMBINED: %d
+- Если переданы currentValues, считай их старой версией тем и перегенерируй темы как новую версию, учитывая актуальный контекст.
 
 ПРАВИЛА ГЕНЕРАЦИИ ТЕМ:
 
@@ -551,7 +585,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
   - practiceHours = 6
 - Если тип РУП = THEORY:
   - каждая тема = 2 часа
-  - темы могут быть "COMBINED" или "PRACTICAL"
+  - темы могут быть "COMBINED", "PRACTICAL" или "SNZ"
   - суммарно theoryHours + practiceHours = 2
 
 2. Названия тем (КРИТИЧЕСКИ ВАЖНО):
@@ -587,7 +621,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 3. Структура каждой темы — строго объект:
 {
   "name": string,
-  "type": "COMBINED" | "PRACTICAL",
+  "type": "COMBINED" | "PRACTICAL" | "SNZ",
   "theoryHours": number,
   "practiceHours": number
 }
@@ -601,7 +635,8 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 - Все часы суммируются строго в totalHours = %d
 - Количество тем = %d
 - Для PRACTICE все темы = "PRACTICAL"
-- Для THEORY допускается mix, но каждая тема = 2 часа, темы подходящие по смыслу к практическим могут иметь тип "PRACTICAL", а остальные "COMBINED"
+- Для THEORY допускается mix, но каждая тема = 2 часа, темы подходящие по смыслу к практическим могут иметь тип "PRACTICAL", а остальные "COMBINED" или "SNZ"
+- Если переданы предпочтения по количеству типов тем, старайся их соблюдать без нарушения ограничений по сумме часов.
 
 6. Формат ответа:
 - Верни ТОЛЬКО валидный JSON
@@ -618,6 +653,10 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 		escapePromptValue(in.Competencies),
 		escapePromptValue(in.DisciplineName),
 		escapePromptValue(in.Message),
+		in.CurrentValuesContext,
+		in.PreferredPracticalCount,
+		in.PreferredSnzCount,
+		in.PreferredCombinedCount,
 		in.DisciplineHours,
 		in.TopicCount,
 	)
@@ -714,6 +753,56 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 		escapePromptValue(in.Message),
 		in.LessonMinutes,
 	)
+}
+
+func BuildCurrentValuesContext(includeCurrentContent bool, currentValues json.RawMessage, label string) string {
+	if !includeCurrentContent {
+		return ""
+	}
+
+	trimmed := strings.TrimSpace(string(currentValues))
+	if trimmed == "" || trimmed == "null" {
+		return fmt.Sprintf("\n%s:\nне переданы.\n", label)
+	}
+
+	var payload any
+	if err := json.Unmarshal(currentValues, &payload); err == nil {
+		if !hasMeaningfulContent(payload) {
+			return fmt.Sprintf("\n%s:\nне переданы.\n", label)
+		}
+
+		formatted, formatErr := json.MarshalIndent(payload, "", "  ")
+		if formatErr == nil {
+			return fmt.Sprintf("\n%s:\n%s\n", label, string(formatted))
+		}
+	}
+
+	return fmt.Sprintf("\n%s:\n%s\n", label, trimmed)
+}
+
+func hasMeaningfulContent(value any) bool {
+	switch v := value.(type) {
+	case nil:
+		return false
+	case string:
+		return strings.TrimSpace(v) != ""
+	case bool:
+		return true
+	case float64:
+		return true
+	case []any:
+		return len(v) > 0
+	case map[string]any:
+		for _, nested := range v {
+			if hasMeaningfulContent(nested) {
+				return true
+			}
+		}
+
+		return false
+	default:
+		return true
+	}
 }
 
 func escapePromptValue(value string) string {
