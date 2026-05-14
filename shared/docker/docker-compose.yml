@@ -1,6 +1,23 @@
 name: eduplan
 
 services:
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../frontend/.env.local
+    depends_on:
+      backend:
+        condition: service_started
+      document-rendering-service:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
   backend:
     build:
       context: ../../backend
