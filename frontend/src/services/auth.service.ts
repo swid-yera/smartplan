@@ -1,16 +1,15 @@
-import { api, apiBaseUrl } from '@lib'
+import { api, getApiBaseUrl } from '@lib'
 import { queryOptions } from '@tanstack/react-query'
 import type { IUser } from '@types'
 
-const loginUrl = `${apiBaseUrl}/login`
-const logoutUrl = `${apiBaseUrl}/logout`
+const buildAuthUrl = (path: '/login' | '/logout') => `${getApiBaseUrl().replace(/\/+$/, '')}${path}`
 
 export class AuthService {
 	// redirect to login
 	redirectToLogin() {
 		if (typeof window !== 'undefined') {
 			// redirecting to backend
-			window.location.href = loginUrl
+			window.location.href = buildAuthUrl('/login')
 		}
 	}
 
@@ -18,7 +17,7 @@ export class AuthService {
 	redirectToLogout() {
 		if (typeof window !== 'undefined') {
 			// redirecting to backend
-			window.location.href = logoutUrl
+			window.location.href = buildAuthUrl('/logout')
 		}
 	}
 
