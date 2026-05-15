@@ -119,7 +119,6 @@ const newTopic: Topic = {
 
 export function TopicsEdit<T extends IProps>({
 	onGenerateDiscipline,
-	isGeneratingAll = false,
 	generatingDisciplineIndex = null,
 }: {
 	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
@@ -141,7 +140,6 @@ export function TopicsEdit<T extends IProps>({
 					key={field.key}
 					disciplineIndex={index}
 					generatingDisciplineIndex={generatingDisciplineIndex}
-					isGeneratingAll={isGeneratingAll}
 					rupType={rupType as RupTypeEnum | ''}
 					onGenerateDiscipline={onGenerateDiscipline}
 				/>
@@ -261,13 +259,11 @@ function mergeTotals(base: TopicTotals, next: TopicTotals): TopicTotals {
 function DisciplineBlock<T extends IProps>({
 	disciplineIndex,
 	onGenerateDiscipline,
-	isGeneratingAll,
 	generatingDisciplineIndex,
 	rupType,
 }: {
 	disciplineIndex: number
 	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
-	isGeneratingAll: boolean
 	generatingDisciplineIndex: number | null
 	rupType: RupTypeEnum | ''
 }) {
@@ -319,7 +315,9 @@ function DisciplineBlock<T extends IProps>({
 	const sortableItems = useMemo(() => topicFields.map((f) => f.key), [topicFields])
 	const [stickyTopPx, setStickyTopPx] = useState(100)
 	const isGeneratingCurrentDiscipline = generatingDisciplineIndex === disciplineIndex
-	const isGenerateButtonDisabled = isGeneratingAll || generatingDisciplineIndex !== null
+	const isGenerateButtonDisabled = generatingDisciplineIndex !== null
+	const isPracticeModule = rupType === RupTypeEnum.PRACTICE
+	const hoursPerTopic = isPracticeModule ? 6 : 2
 	const hasSelectedTopics = selectedTopicKeys.length > 0
 	const isAllSelected = topicFields.length > 0 && selectedTopicKeys.length === topicFields.length
 	const isIndeterminate = selectedTopicKeys.length > 0 && selectedTopicKeys.length < topicFields.length
@@ -335,6 +333,42 @@ function DisciplineBlock<T extends IProps>({
 		[selectedTopicKeys, topicFields],
 	)
 
+	const practicalCount = preferredPracticalCount === '' ? 0 : preferredPracticalCount
+	const snzCount = preferredSnzCount === '' ? 0 : preferredSnzCount
+	const combinedCount = preferredCombinedCount === '' ? 0 : preferredCombinedCount
+
+	const practicalMax = Math.max(
+		0,
+		Math.floor(
+			(declaredForThisDiscipline -
+				combinedCount * hoursPerTopic -
+				(isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
+				hoursPerTopic,
+		),
+	)
+	const snzMax = Math.max(
+		0,
+		Math.floor(
+			(declaredForThisDiscipline - practicalCount * hoursPerTopic - combinedCount * hoursPerTopic) / hoursPerTopic,
+		),
+	)
+	const combinedMax = Math.max(
+		0,
+		Math.floor(
+			(declaredForThisDiscipline -
+				practicalCount * hoursPerTopic -
+				(isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
+				hoursPerTopic,
+		),
+	)
+
+	const practicalHoursTotal = practicalCount * hoursPerTopic
+	const snzHoursTotal = snzCount * hoursPerTopic
+	const combinedHoursTotal = combinedCount * hoursPerTopic
+
+	const preferredHoursTotal = practicalHoursTotal + combinedHoursTotal + (isPracticeModule ? 0 : snzHoursTotal)
+	const isPreferredHoursValid = preferredHoursTotal === declaredForThisDiscipline
+
 	const toPositiveNumber = (value: number | '') => {
 		if (value === '' || value <= 0) return undefined
 
@@ -349,7 +383,7 @@ function DisciplineBlock<T extends IProps>({
 			includeCurrentContent,
 			preferredCombinedCount: toPositiveNumber(preferredCombinedCount),
 			preferredPracticalCount: toPositiveNumber(preferredPracticalCount),
-			preferredSnzCount: toPositiveNumber(preferredSnzCount),
+			preferredSnzCount: isPracticeModule ? undefined : toPositiveNumber(preferredSnzCount),
 		})
 	}
 
@@ -357,6 +391,7 @@ function DisciplineBlock<T extends IProps>({
 		setSelectedTopicKeys((prev) => {
 			if (checked) {
 				if (prev.includes(key)) return prev
+
 				return [...prev, key]
 			}
 
@@ -367,6 +402,7 @@ function DisciplineBlock<T extends IProps>({
 	const toggleSelectAllTopics = (checked: boolean) => {
 		if (checked) {
 			setSelectedTopicKeys(topicFields.map((field) => field.key))
+
 			return
 		}
 
@@ -454,6 +490,28 @@ function DisciplineBlock<T extends IProps>({
 		setSelectedTopicKeys((prev) => prev.filter((key) => topicFields.some((field) => field.key === key)))
 	}, [topicFields])
 
+	useEffect(() => {
+		if (preferredPracticalCount !== '' && preferredPracticalCount > practicalMax) {
+			setPreferredPracticalCount(practicalMax)
+		}
+
+		if (!isPracticeModule && preferredSnzCount !== '' && preferredSnzCount > snzMax) {
+			setPreferredSnzCount(snzMax)
+		}
+
+		if (preferredCombinedCount !== '' && preferredCombinedCount > combinedMax) {
+			setPreferredCombinedCount(combinedMax)
+		}
+	}, [
+		combinedMax,
+		isPracticeModule,
+		practicalMax,
+		preferredCombinedCount,
+		preferredPracticalCount,
+		preferredSnzCount,
+		snzMax,
+	])
+
 	return (
 		<div className='border rounded-lg'>
 			{/* header */}
@@ -525,7 +583,7 @@ function DisciplineBlock<T extends IProps>({
 									<TableHead className='w-20 bg-muted/20 text-center'>Инд</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center text-xs'>СРСП</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center text-xs'>СРС</TableHead>
-									<TableHead className='w-40 bg-muted/20'>Тип</TableHead>
+									<TableHead className='min-w-48 bg-muted/20'>Тип</TableHead>
 								</TableRow>
 							</TableHeader>
 							<SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
@@ -591,6 +649,59 @@ function DisciplineBlock<T extends IProps>({
 														/>
 													</div>
 
+													<div
+														className={cn('grid gap-2', isPracticeModule ? 'grid-cols-2' : 'grid-cols-3')}
+													>
+														<div className='flex flex-col gap-2'>
+															<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>
+																практических
+															</Label>
+															<NumericInput
+																id={`discipline-${disciplineIndex}-practical-count`}
+																max={practicalMax}
+																min={0}
+																placeholder='например 8'
+																value={preferredPracticalCount}
+																onChange={(value) => setPreferredPracticalCount(value)}
+															/>
+															<p className='text-xs text-muted-foreground'>
+																Тем: {practicalCount} × {hoursPerTopic}ч = {practicalHoursTotal}ч
+															</p>
+														</div>
+														{!isPracticeModule && (
+															<div className='flex flex-col gap-2'>
+																<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>СНЗ</Label>
+																<NumericInput
+																	id={`discipline-${disciplineIndex}-snz-count`}
+																	max={snzMax}
+																	min={0}
+																	placeholder='например 2'
+																	value={preferredSnzCount}
+																	onChange={(value) => setPreferredSnzCount(value)}
+																/>
+																<p className='text-xs text-muted-foreground'>
+																	Тем: {snzCount} × {hoursPerTopic}ч = {snzHoursTotal}ч
+																</p>
+															</div>
+														)}
+														<div className='flex flex-col gap-2'>
+															<Label htmlFor={`discipline-${disciplineIndex}-combined-count`}>
+																комбинированных
+															</Label>
+															<NumericInput
+																id={`discipline-${disciplineIndex}-combined-count`}
+																max={combinedMax}
+																min={0}
+																placeholder='например 4'
+																value={preferredCombinedCount}
+																onChange={(value) => setPreferredCombinedCount(value)}
+															/>
+															<p className='text-xs text-muted-foreground'>
+																Тем: {combinedCount} × {hoursPerTopic}ч = {combinedHoursTotal}ч
+															</p>
+														</div>
+													</div>
+
 													<div className='flex items-center gap-2'>
 														<Checkbox
 															checked={includeCurrentContent}
@@ -601,46 +712,28 @@ function DisciplineBlock<T extends IProps>({
 															Включить текущий написанный контент
 														</Label>
 													</div>
-
-													<div className='grid grid-cols-3 gap-2'>
-														<div className='flex flex-col gap-2'>
-															<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>
-																практических
-															</Label>
-															<NumericInput
-																id={`discipline-${disciplineIndex}-practical-count`}
-																min={0}
-																placeholder='например 8'
-																value={preferredPracticalCount}
-																onChange={(value) => setPreferredPracticalCount(value)}
-															/>
-														</div>
-														<div className='flex flex-col gap-2'>
-															<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>СНЗ</Label>
-															<NumericInput
-																id={`discipline-${disciplineIndex}-snz-count`}
-																min={0}
-																placeholder='например 2'
-																value={preferredSnzCount}
-																onChange={(value) => setPreferredSnzCount(value)}
-															/>
-														</div>
-														<div className='flex flex-col gap-2'>
-															<Label htmlFor={`discipline-${disciplineIndex}-combined-count`}>
-																комбинированных
-															</Label>
-															<NumericInput
-																id={`discipline-${disciplineIndex}-combined-count`}
-																min={0}
-																placeholder='например 4'
-																value={preferredCombinedCount}
-																onChange={(value) => setPreferredCombinedCount(value)}
-															/>
-														</div>
+													<div className='space-y-1 text-sm'>
+														<p className='text-muted-foreground'>
+															Заявлено часов:{' '}
+															<span className='font-medium text-foreground'>
+																{declaredForThisDiscipline}
+															</span>
+														</p>
+														<p className='text-muted-foreground'>
+															По выбранным темам:{' '}
+															<span className='font-medium text-foreground'>{preferredHoursTotal}</span>
+														</p>
+														{!isPreferredHoursValid && (
+															<p className='text-destructive'>
+																Ошибка: сумма часов по выбранным темам должна быть равна заявленным
+																часам.
+															</p>
+														)}
 													</div>
 												</div>
 											}
 											confirmDescription='Будут сгенерированы темы только для текущей дисциплины. Текущие темы дисциплины будут перезаписаны.'
+											confirmDisabled={!isPreferredHoursValid}
 											confirmTitle='Сгенерировать темы для дисциплины?'
 											disabled={isGenerateButtonDisabled}
 											disabledReason='Дождитесь завершения текущей генерации'
@@ -663,9 +756,7 @@ function DisciplineBlock<T extends IProps>({
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel>Отмена</AlertDialogCancel>
-						<AlertDialogAction onClick={handleDeleteSelectedTopics}>
-							Удалить
-						</AlertDialogAction>
+						<AlertDialogAction onClick={handleDeleteSelectedTopics}>Удалить</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>

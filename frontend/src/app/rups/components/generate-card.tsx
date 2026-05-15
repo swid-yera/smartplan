@@ -41,6 +41,7 @@ interface GenerateConfirmButtonProps {
 	buttonText?: string
 	disabled?: boolean
 	disabledReason?: string
+	confirmDisabled?: boolean
 	confirmTitle?: string
 	confirmDescription?: string | ReactNode
 	confirmContent?: ReactNode
@@ -55,6 +56,7 @@ export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 	buttonText = 'Сгенерировать',
 	disabled = false,
 	disabledReason = 'Заполните обязательные поля',
+	confirmDisabled = false,
 	confirmTitle = 'Сгенерировать описание?',
 	confirmDescription = 'Текущие значения будут перезаписаны. Вы сможете отредактировать текст после генерации.',
 	confirmContent,
@@ -66,7 +68,7 @@ export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 	const [open, setOpen] = useState(false)
 
 	const handleConfirm = () => {
-		if (disabled) return
+		if (disabled || confirmDisabled) return
 		onClick()
 		setOpen(false)
 	}
@@ -110,7 +112,7 @@ export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 					<Button type='button' variant='outline' onClick={() => setOpen(false)}>
 						Отмена
 					</Button>
-					<Button disabled={disabled} type='button' onClick={handleConfirm}>
+					<Button disabled={disabled || confirmDisabled} type='button' onClick={handleConfirm}>
 						{confirmButtonText}
 					</Button>
 				</DialogFooter>

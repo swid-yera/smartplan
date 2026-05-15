@@ -38,7 +38,6 @@ type IProps = FieldValues & {
 export function Step4<T extends IProps>() {
 	const { getValues, setValue } = useFormContext<T>()
 	// states
-	const [isLoading, setIsLoading] = useState(false)
 	const [generatingDisciplineIndex, setGeneratingDisciplineIndex] = useState<number | null>(null)
 
 	const buildMappedData = (
@@ -86,7 +85,7 @@ export function Step4<T extends IProps>() {
 	}
 
 	const handleGenerateDiscipline = async (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => {
-		if (isLoading || generatingDisciplineIndex !== null) return
+		if (generatingDisciplineIndex !== null) return
 
 		const discipline = getValues().disciplines?.[disciplineIndex]
 
@@ -118,7 +117,6 @@ export function Step4<T extends IProps>() {
 		<div className='w-full space-y-5'>
 			<TopicsEdit
 				generatingDisciplineIndex={generatingDisciplineIndex}
-				isGeneratingAll={isLoading}
 				onGenerateDiscipline={handleGenerateDiscipline}
 			/>
 		</div>
