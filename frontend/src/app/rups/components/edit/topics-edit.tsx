@@ -786,6 +786,8 @@ const TopicRowComponent = ({
 	const topicPath = `disciplines.${disciplineIndex}.topics.${topicIndex}`
 	const topic = useWatch({ control: form.control, name: topicPath }) as Topic
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+	const [isEditingName, setIsEditingName] = useState(false)
+	const nameInputRef = useRef<HTMLInputElement | null>(null)
 
 	// filter topic type depend from rup type
 	const availableTopicTypes = useMemo(() => {
@@ -837,6 +839,12 @@ const TopicRowComponent = ({
 		}
 	}, [disciplineIndex, form, rupType, topic?.type, topicIndex])
 
+	useEffect(() => {
+		if (!isEditingName) return
+		nameInputRef.current?.focus()
+		nameInputRef.current?.select()
+	}, [isEditingName])
+
 	const currentTotal =
 		(Number(topic?.theoryHours) || 0) + (Number(topic?.practiceHours) || 0) + (Number(topic?.individualHours) || 0)
 
@@ -860,7 +868,37 @@ const TopicRowComponent = ({
 				<FormField
 					control={form.control}
 					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name`}
-					render={({ field }) => <Input className='h-8' placeholder='Тема...' {...field} />}
+					render={({ field }) =>
+						isEditingName ? (
+							<Input
+								{...field}
+								ref={(node) => {
+									nameInputRef.current = node
+									field.ref(node)
+								}}
+								className='h-8'
+								placeholder='Тема...'
+								onBlur={(event) => {
+									field.onBlur()
+									setIsEditingName(false)
+								}}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter' || event.key === 'Escape') {
+										event.preventDefault()
+										setIsEditingName(false)
+									}
+								}}
+							/>
+						) : (
+							<button
+								className='h-8 w-full rounded-md px-3 text-left text-sm hover:bg-muted/40'
+								type='button'
+								onClick={() => setIsEditingName(true)}
+							>
+								{field.value ? field.value : <span className='text-muted-foreground'>Тема...</span>}
+							</button>
+						)
+					}
 				/>
 			</TableCell>
 			<TableCell className={cn(getHoursStyle(currentTotal), 'font-semibold')}>
