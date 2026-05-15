@@ -45,7 +45,7 @@ import {
 	Textarea,
 } from '@shadcn'
 import { RupTypeEnum, TopicTypeEnum } from '@types'
-import { ChevronDown, GripVertical, Plus, Trash } from 'lucide-react'
+import { ChevronDown, GripVertical, Plus } from 'lucide-react'
 import {
 	type ArrayPath,
 	type FieldArray,
@@ -135,7 +135,7 @@ export function TopicsEdit<T extends IProps>({
 	})
 
 	return (
-		<div className='space-y-4'>
+		<div className='space-y-16'>
 			{disciplineFields.map((field, index) => (
 				<DisciplineBlock
 					key={field.key}
@@ -276,9 +276,9 @@ function DisciplineBlock<T extends IProps>({
 	const [isSticky, setIsSticky] = useState(false)
 	const [additionalMessage, setAdditionalMessage] = useState('')
 	const [includeCurrentContent, setIncludeCurrentContent] = useState(true)
-	const [preferredPracticalCount, setPreferredPracticalCount] = useState<number | ''>('')
-	const [preferredSnzCount, setPreferredSnzCount] = useState<number | ''>('')
-	const [preferredCombinedCount, setPreferredCombinedCount] = useState<number | ''>('')
+	const [preferredPracticalCount, setPreferredPracticalCount] = useState<number | ''>(0)
+	const [preferredSnzCount, setPreferredSnzCount] = useState<number | ''>(0)
+	const [preferredCombinedCount, setPreferredCombinedCount] = useState<number | ''>(0)
 	const headerRef = useRef<HTMLDivElement | null>(null)
 	const {
 		fields: topicFields,
@@ -290,7 +290,8 @@ function DisciplineBlock<T extends IProps>({
 		name: `disciplines.${disciplineIndex}.topics` as ArrayPath<T>,
 		keyName: 'key',
 	})
-	const [topicToDelete, setTopicToDelete] = useState<number | null>(null)
+	const [selectedTopicKeys, setSelectedTopicKeys] = useState<string[]>([])
+	const [isDeleteSelectedOpen, setIsDeleteSelectedOpen] = useState(false)
 
 	const disciplineName =
 		(useWatch({
@@ -319,6 +320,20 @@ function DisciplineBlock<T extends IProps>({
 	const [stickyTopPx, setStickyTopPx] = useState(100)
 	const isGeneratingCurrentDiscipline = generatingDisciplineIndex === disciplineIndex
 	const isGenerateButtonDisabled = isGeneratingAll || generatingDisciplineIndex !== null
+	const hasSelectedTopics = selectedTopicKeys.length > 0
+	const isAllSelected = topicFields.length > 0 && selectedTopicKeys.length === topicFields.length
+	const isIndeterminate = selectedTopicKeys.length > 0 && selectedTopicKeys.length < topicFields.length
+	const selectedTopicCount = selectedTopicKeys.length
+
+	const selectedTopicIndexes = useMemo(
+		() =>
+			topicFields
+				.map((field, index) => ({ key: field.key, index }))
+				.filter((item) => selectedTopicKeys.includes(item.key))
+				.map((item) => item.index)
+				.sort((a, b) => b - a),
+		[selectedTopicKeys, topicFields],
+	)
 
 	const toPositiveNumber = (value: number | '') => {
 		if (value === '' || value <= 0) return undefined
@@ -336,6 +351,33 @@ function DisciplineBlock<T extends IProps>({
 			preferredPracticalCount: toPositiveNumber(preferredPracticalCount),
 			preferredSnzCount: toPositiveNumber(preferredSnzCount),
 		})
+	}
+
+	const toggleSelectTopic = (key: string, checked: boolean) => {
+		setSelectedTopicKeys((prev) => {
+			if (checked) {
+				if (prev.includes(key)) return prev
+				return [...prev, key]
+			}
+
+			return prev.filter((item) => item !== key)
+		})
+	}
+
+	const toggleSelectAllTopics = (checked: boolean) => {
+		if (checked) {
+			setSelectedTopicKeys(topicFields.map((field) => field.key))
+			return
+		}
+
+		setSelectedTopicKeys([])
+	}
+
+	const handleDeleteSelectedTopics = () => {
+		if (selectedTopicIndexes.length === 0) return
+		remove(selectedTopicIndexes)
+		setSelectedTopicKeys([])
+		setIsDeleteSelectedOpen(false)
 	}
 
 	useEffect(() => {
@@ -408,8 +450,12 @@ function DisciplineBlock<T extends IProps>({
 		}
 	}, [stickyTopPx])
 
+	useEffect(() => {
+		setSelectedTopicKeys((prev) => prev.filter((key) => topicFields.some((field) => field.key === key)))
+	}, [topicFields])
+
 	return (
-		<div className='border rounded-lg mb-6'>
+		<div className='border rounded-lg'>
 			{/* header */}
 			<div
 				ref={headerRef}
@@ -421,6 +467,11 @@ function DisciplineBlock<T extends IProps>({
 			>
 				<div className='ml-2 flex-1 font-medium'>{disciplineName}</div>
 				<div className='flex gap-2'>
+					{hasSelectedTopics && (
+						<Button size='sm' type='button' variant='destructive' onClick={() => setIsDeleteSelectedOpen(true)}>
+							Удалить выбранные ({selectedTopicCount})
+						</Button>
+					)}
 					<Button
 						size='sm'
 						type='button'
@@ -460,6 +511,12 @@ function DisciplineBlock<T extends IProps>({
 						<Table>
 							<TableHeader>
 								<TableRow className='bg-muted/20'>
+									<TableHead className='w-12 bg-muted/20 text-center'>
+										<Checkbox
+											checked={isAllSelected ? true : isIndeterminate ? 'indeterminate' : false}
+											onCheckedChange={(checked) => toggleSelectAllTopics(checked === true)}
+										/>
+									</TableHead>
 									<TableHead className='w-12 bg-muted/20 text-center'>№</TableHead>
 									<TableHead className='min-w-[450px] w-full bg-muted/20'>Темы занятий</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center'>Всего</TableHead>
@@ -469,7 +526,6 @@ function DisciplineBlock<T extends IProps>({
 									<TableHead className='w-20 bg-muted/20 text-center text-xs'>СРСП</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center text-xs'>СРС</TableHead>
 									<TableHead className='w-40 bg-muted/20'>Тип</TableHead>
-									<TableHead className='w-10 bg-muted/20' />
 								</TableRow>
 							</TableHeader>
 							<SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
@@ -480,14 +536,15 @@ function DisciplineBlock<T extends IProps>({
 												key={field.key}
 												disciplineIndex={disciplineIndex}
 												id={field.key}
+												isSelected={selectedTopicKeys.includes(field.key)}
 												rupType={rupType}
-												setTopicToDelete={setTopicToDelete}
+												toggleSelectTopic={toggleSelectTopic}
 												topicIndex={index}
 											/>
 										))
 									) : (
 										<TableRow>
-											<TableCell className='h-24 text-center text-muted-foreground' colSpan={10}>
+											<TableCell className='h-56 text-center text-muted-foreground' colSpan={10}>
 												Критерии оценки и/или темы занятий не добавлены.
 											</TableCell>
 										</TableRow>
@@ -545,26 +602,24 @@ function DisciplineBlock<T extends IProps>({
 														</Label>
 													</div>
 
-													<div className='grid gap-3 md:grid-cols-3'>
+													<div className='grid grid-cols-3 gap-2'>
 														<div className='flex flex-col gap-2'>
 															<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>
-																Кол-во практических
+																практических
 															</Label>
 															<NumericInput
 																id={`discipline-${disciplineIndex}-practical-count`}
-																min={1}
+																min={0}
 																placeholder='например 8'
 																value={preferredPracticalCount}
 																onChange={(value) => setPreferredPracticalCount(value)}
 															/>
 														</div>
 														<div className='flex flex-col gap-2'>
-															<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>
-																Кол-во СНЗ
-															</Label>
+															<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>СНЗ</Label>
 															<NumericInput
 																id={`discipline-${disciplineIndex}-snz-count`}
-																min={1}
+																min={0}
 																placeholder='например 2'
 																value={preferredSnzCount}
 																onChange={(value) => setPreferredSnzCount(value)}
@@ -572,11 +627,11 @@ function DisciplineBlock<T extends IProps>({
 														</div>
 														<div className='flex flex-col gap-2'>
 															<Label htmlFor={`discipline-${disciplineIndex}-combined-count`}>
-																Кол-во комбинированных
+																комбинированных
 															</Label>
 															<NumericInput
 																id={`discipline-${disciplineIndex}-combined-count`}
-																min={1}
+																min={0}
 																placeholder='например 4'
 																value={preferredCombinedCount}
 																onChange={(value) => setPreferredCombinedCount(value)}
@@ -601,21 +656,14 @@ function DisciplineBlock<T extends IProps>({
 				</div>
 			)}
 
-			<AlertDialog open={topicToDelete !== null} onOpenChange={() => setTopicToDelete(null)}>
+			<AlertDialog open={isDeleteSelectedOpen} onOpenChange={setIsDeleteSelectedOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Удалить тему?</AlertDialogTitle>
+						<AlertDialogTitle>Удалить выбранные темы?</AlertDialogTitle>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel>Отмена</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={() => {
-								if (topicToDelete !== null) {
-									remove(topicToDelete)
-									setTopicToDelete(null)
-								}
-							}}
-						>
+						<AlertDialogAction onClick={handleDeleteSelectedTopics}>
 							Удалить
 						</AlertDialogAction>
 					</AlertDialogFooter>
@@ -631,10 +679,18 @@ interface ITopicRowProps {
 	disciplineIndex: number
 	topicIndex: number
 	rupType: RupTypeEnum | ''
-	setTopicToDelete: (index: number | null) => void
+	isSelected: boolean
+	toggleSelectTopic: (key: string, checked: boolean) => void
 }
 
-const TopicRowComponent = ({ id, disciplineIndex, topicIndex, rupType, setTopicToDelete }: ITopicRowProps) => {
+const TopicRowComponent = ({
+	id,
+	disciplineIndex,
+	topicIndex,
+	rupType,
+	isSelected,
+	toggleSelectTopic,
+}: ITopicRowProps) => {
 	const form = useFormContext()
 	const topicPath = `disciplines.${disciplineIndex}.topics.${topicIndex}`
 	const topic = useWatch({ control: form.control, name: topicPath }) as Topic
@@ -699,6 +755,9 @@ const TopicRowComponent = ({ id, disciplineIndex, topicIndex, rupType, setTopicT
 			style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
 		>
 			<TableCell className='text-center'>
+				<Checkbox checked={isSelected} onCheckedChange={(checked) => toggleSelectTopic(id, checked === true)} />
+			</TableCell>
+			<TableCell className='text-center'>
 				<div className='flex items-center gap-2'>
 					<button {...listeners} {...attributes} type='button'>
 						<GripVertical className='h-4 w-4 text-muted-foreground' />
@@ -741,17 +800,6 @@ const TopicRowComponent = ({ id, disciplineIndex, topicIndex, rupType, setTopicT
 					)}
 				/>
 			</TableCell>
-			<TableCell>
-				<Button
-					className='h-8 w-8 text-destructive'
-					size='icon'
-					type='button'
-					variant='ghost'
-					onClick={() => setTopicToDelete(topicIndex)}
-				>
-					<Trash className='h-4 w-4' />
-				</Button>
-			</TableCell>
 		</TableRow>
 	)
 }
@@ -763,5 +811,6 @@ const TopicRow = memo(
 		prev.disciplineIndex === next.disciplineIndex &&
 		prev.topicIndex === next.topicIndex &&
 		prev.rupType === next.rupType &&
-		prev.setTopicToDelete === next.setTopicToDelete,
+		prev.isSelected === next.isSelected &&
+		prev.toggleSelectTopic === next.toggleSelectTopic,
 )

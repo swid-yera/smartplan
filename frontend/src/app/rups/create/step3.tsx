@@ -1,9 +1,10 @@
 import { useState } from 'react'
 
-import { type IGenerateDisciplines, generateDisciplines } from '@actions'
 import { NumericInput } from '@components'
+import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
-import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
+import type { IGenerateDisciplines } from '@types'
+import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { DisciplineEdit, GenerateCard } from '../components'
@@ -53,10 +54,10 @@ export function Step3<T extends IProps>() {
 					: undefined,
 			}
 
-			const generatedDisciplines = await generateDisciplines(mappedData)
+			const generatedDisciplines = await services.ai.generateDisciplines(mappedData)
 
 			// write
-			setValue('disciplines' as Path<T>, generatedDisciplines, { shouldDirty: true })
+			setValue('disciplines' as Path<T>, generatedDisciplines as PathValue<T, Path<T>>, { shouldDirty: true })
 			toast.success('Успешно сгенерировано результаты обучения', { id: 'rup-disciplines-generate' })
 		} catch (err) {
 			toast.error(`Ошибка при генерации результатов Обучений ${err}`, { id: 'rup-disciplines-generate' })

@@ -1,11 +1,10 @@
 import { useState } from 'react'
 
-import { type IGenerateRupMeta, generateRupMeta } from '@actions'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
 import { useQuery } from '@tanstack/react-query'
-import { RupTypeEnum, StudyFormEnum } from '@types'
-import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
+import { type IGenerateRupMeta, RupTypeEnum, StudyFormEnum } from '@types'
+import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { BasicEdit, GenerateCard, GroupEdit, NoteEdit } from '../components'
@@ -71,12 +70,12 @@ export function Step1<T extends IProps>() {
 					: undefined,
 			}
 
-			const meta = await generateRupMeta(mappedData)
+			const meta = await services.ai.generateRupMeta(mappedData)
 
 			// write
-			setValue('basis' as Path<T>, meta.basis, { shouldDirty: true })
-			setValue('goals' as Path<T>, meta.goals, { shouldDirty: true })
-			setValue('competencies' as Path<T>, meta.competencies, { shouldDirty: true })
+			setValue('basis' as Path<T>, meta.basis as PathValue<T, Path<T>>, { shouldDirty: true })
+			setValue('goals' as Path<T>, meta.goals as PathValue<T, Path<T>>, { shouldDirty: true })
+			setValue('competencies' as Path<T>, meta.competencies as PathValue<T, Path<T>>, { shouldDirty: true })
 
 			toast.success('Успешно сгенерировано метаданные', { id: 'rup-meta-generate' })
 		} catch (err) {

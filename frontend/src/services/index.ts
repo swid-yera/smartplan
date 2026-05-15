@@ -1,3 +1,4 @@
+import { AiService } from './ai.service'
 import { AuthService } from './auth.service'
 import { AwardService } from './award.service'
 import { GroupService } from './group.service'
@@ -8,6 +9,7 @@ import { UserService } from './user.service'
 
 // exporting services
 export const services = {
+	ai: new AiService(),
 	auth: new AuthService(),
 	user: new UserService(),
 	rup: new RupService(),

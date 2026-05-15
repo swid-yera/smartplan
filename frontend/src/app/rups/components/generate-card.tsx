@@ -66,6 +66,7 @@ export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 	const [open, setOpen] = useState(false)
 
 	const handleConfirm = () => {
+		if (disabled) return
 		onClick()
 		setOpen(false)
 	}
@@ -109,7 +110,7 @@ export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 					<Button type='button' variant='outline' onClick={() => setOpen(false)}>
 						Отмена
 					</Button>
-					<Button type='button' onClick={handleConfirm}>
+					<Button disabled={disabled} type='button' onClick={handleConfirm}>
 						{confirmButtonText}
 					</Button>
 				</DialogFooter>

@@ -33,7 +33,6 @@
 			"@lib": ["./src/lib/index.ts"],
 			"@helpers": ["./src/helpers/index.ts"],
 			"@hooks": ["./src/hooks/index.ts"],
-			"@actions": ["./src/app/actions.ts"],
 			"@providers": ["./src/providers/index.ts"]
 		},
 		"plugins": [

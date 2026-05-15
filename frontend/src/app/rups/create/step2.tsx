@@ -1,12 +1,12 @@
 import { useState } from 'react'
 
-import { type IGenerateResources, generateResources } from '@actions'
 import { Loader } from '@components'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
+import type { IGenerateResources } from '@types'
+import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { ContactsEdit, GenerateCard, ResourceEdit } from '../components'
@@ -70,11 +70,15 @@ export function Step2<T extends IProps>() {
 					: undefined,
 			}
 
-			const resources = await generateResources(mappedData)
+			const resources = await services.ai.generateResources(mappedData)
 
 			// write
-			setValue('internetResources' as Path<T>, resources.internetResources, { shouldDirty: true })
-			setValue('technicalResources' as Path<T>, resources.technicalResources, { shouldDirty: true })
+			setValue('internetResources' as Path<T>, resources.internetResources as PathValue<T, Path<T>>, {
+				shouldDirty: true,
+			})
+			setValue('technicalResources' as Path<T>, resources.technicalResources as PathValue<T, Path<T>>, {
+				shouldDirty: true,
+			})
 			toast.success('Успешно сгенерировано ресурсы', { id: 'rup-resource-generate' })
 		} catch (err) {
 			toast.error(`Ошибка при генерации ресурсов ${err}`, { id: 'rup-resource-generate' })
