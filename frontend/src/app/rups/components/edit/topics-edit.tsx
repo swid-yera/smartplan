@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { EditableHourCell, NumericInput } from '@components'
 import {
@@ -387,7 +387,7 @@ function DisciplineBlock<T extends IProps>({
 		})
 	}
 
-	const toggleSelectTopic = (key: string, checked: boolean) => {
+	const toggleSelectTopic = useCallback((key: string, checked: boolean) => {
 		setSelectedTopicKeys((prev) => {
 			if (checked) {
 				if (prev.includes(key)) return prev
@@ -397,7 +397,7 @@ function DisciplineBlock<T extends IProps>({
 
 			return prev.filter((item) => item !== key)
 		})
-	}
+	}, [])
 
 	const toggleSelectAllTopics = (checked: boolean) => {
 		if (checked) {
