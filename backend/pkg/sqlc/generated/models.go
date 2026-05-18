@@ -424,13 +424,13 @@ type AwardCategory struct {
 	Name        string             `json:"name"`
 	Icon        pgtype.Text        `json:"icon"`
 	Description pgtype.Text        `json:"description"`
-	Fields      []uuid.UUID        `json:"fields"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type AwardCategoryField struct {
 	ID          uuid.UUID          `json:"id"`
+	CategoryID  uuid.UUID          `json:"category_id"`
 	Key         string             `json:"key"`
 	Label       string             `json:"label"`
 	Type        string             `json:"type"`

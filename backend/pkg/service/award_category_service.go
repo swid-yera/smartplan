@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
+	storage "eduplan/backend/pkg/sqlc/generated"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-
-	storage "eduplan/backend/pkg/sqlc/generated"
 )
 
 var allowedDynamicFieldTypes = map[string]struct{}{
@@ -57,11 +57,11 @@ type AwardCategoryFieldResponse struct {
 }
 
 type AwardCategoryRequest struct {
-	Name        string   `json:"name"`
-	Icon        string   `json:"icon"`
-	Description string   `json:"description"`
-	AwardTypes  []string `json:"awardTypes"`
-	Fields      []string `json:"fields"`
+	Name        string                      `json:"name"`
+	Icon        string                      `json:"icon"`
+	Description string                      `json:"description"`
+	AwardTypes  []string                    `json:"awardTypes"`
+	Fields      []AwardCategoryFieldRequest `json:"fields"`
 }
 
 type AwardCategoryResponse struct {
@@ -70,146 +70,33 @@ type AwardCategoryResponse struct {
 	Icon               string                       `json:"icon,omitempty"`
 	Description        string                       `json:"description,omitempty"`
 	AwardTypes         []string                     `json:"awardTypes"`
-	Fields             []string                     `json:"fields"`
 	AwardTypesExpanded []TypeResponse               `json:"awardTypesExpanded,omitempty"`
-	FieldsExpanded     []AwardCategoryFieldResponse `json:"fieldsExpanded,omitempty"`
+	FieldsExpanded     []AwardCategoryFieldResponse `json:"fieldsExpanded"`
 	CreatedAt          time.Time                    `json:"createdAt"`
 	UpdatedAt          time.Time                    `json:"updatedAt"`
 }
 
-func (s *AwardService) CreateCategoryField(ctx context.Context, req AwardCategoryFieldRequest) (AwardCategoryFieldResponse, error) {
-	fieldType := strings.ToLower(strings.TrimSpace(req.Type))
-	if strings.TrimSpace(req.Key) == "" {
-		return AwardCategoryFieldResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "key is required"}
-	}
-	if strings.TrimSpace(req.Label) == "" {
-		return AwardCategoryFieldResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "label is required"}
-	}
-	if _, ok := allowedDynamicFieldTypes[fieldType]; !ok {
-		return AwardCategoryFieldResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "unsupported field type"}
-	}
-
-	optionsJSON, err := json.Marshal(req.Options)
-	if err != nil || len(optionsJSON) == 0 || string(optionsJSON) == "null" {
-		optionsJSON = []byte("[]")
-	}
-	validationJSON, err := json.Marshal(req.Validation)
-	if err != nil || len(validationJSON) == 0 || string(validationJSON) == "null" {
-		validationJSON = []byte("{}")
-	}
-
-	dbField, err := s.repo.CreateAwardCategoryField(ctx, &storage.CreateAwardCategoryFieldParams{
-		Key:         strings.TrimSpace(req.Key),
-		Label:       strings.TrimSpace(req.Label),
-		Type:        fieldType,
-		Required:    req.Required,
-		Placeholder: toPgText(req.Placeholder),
-		HelpText:    toPgText(req.HelpText),
-		Options:     optionsJSON,
-		Validation:  validationJSON,
-		SortOrder:   req.SortOrder,
-	})
-	if err != nil {
-		return AwardCategoryFieldResponse{}, err
-	}
-
-	return s.mapCategoryFieldResponse(dbField)
-}
-
-func (s *AwardService) GetAllCategoryFields(ctx context.Context) ([]AwardCategoryFieldResponse, error) {
-	fields, err := s.repo.GetAllAwardCategoryFields(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]AwardCategoryFieldResponse, 0, len(fields))
-	for _, f := range fields {
-		item, mapErr := s.mapCategoryFieldResponse(f)
-		if mapErr != nil {
-			return nil, mapErr
-		}
-		result = append(result, item)
-	}
-	return result, nil
-}
-
-func (s *AwardService) GetCategoryFieldByID(ctx context.Context, id uuid.UUID) (AwardCategoryFieldResponse, error) {
-	field, err := s.repo.GetAwardCategoryFieldByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return AwardCategoryFieldResponse{}, &HTTPStatusError{StatusCode: http.StatusNotFound, Message: "category field not found"}
-		}
-		return AwardCategoryFieldResponse{}, err
-	}
-	return s.mapCategoryFieldResponse(field)
-}
-
-func (s *AwardService) UpdateCategoryField(ctx context.Context, id uuid.UUID, req AwardCategoryFieldRequest) (AwardCategoryFieldResponse, error) {
-	_, err := s.repo.GetAwardCategoryFieldByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return AwardCategoryFieldResponse{}, &HTTPStatusError{StatusCode: http.StatusNotFound, Message: "category field not found"}
-		}
-		return AwardCategoryFieldResponse{}, err
-	}
-
-	fieldType := strings.ToLower(strings.TrimSpace(req.Type))
-	if strings.TrimSpace(req.Key) == "" || strings.TrimSpace(req.Label) == "" {
-		return AwardCategoryFieldResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "key and label are required"}
-	}
-	if _, ok := allowedDynamicFieldTypes[fieldType]; !ok {
-		return AwardCategoryFieldResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "unsupported field type"}
-	}
-
-	optionsJSON, err := json.Marshal(req.Options)
-	if err != nil || len(optionsJSON) == 0 || string(optionsJSON) == "null" {
-		optionsJSON = []byte("[]")
-	}
-	validationJSON, err := json.Marshal(req.Validation)
-	if err != nil || len(validationJSON) == 0 || string(validationJSON) == "null" {
-		validationJSON = []byte("{}")
-	}
-
-	field, err := s.repo.UpdateAwardCategoryField(ctx, storage.UpdateAwardCategoryFieldParams{
-		ID:          id,
-		Key:         strings.TrimSpace(req.Key),
-		Label:       strings.TrimSpace(req.Label),
-		Type:        fieldType,
-		Required:    req.Required,
-		Placeholder: toPgText(req.Placeholder),
-		HelpText:    toPgText(req.HelpText),
-		Options:     optionsJSON,
-		Validation:  validationJSON,
-		SortOrder:   req.SortOrder,
-	})
-	if err != nil {
-		return AwardCategoryFieldResponse{}, err
-	}
-
-	return s.mapCategoryFieldResponse(field)
-}
-
-func (s *AwardService) DeleteCategoryField(ctx context.Context, id uuid.UUID) error {
-	_, err := s.repo.GetAwardCategoryFieldByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return &HTTPStatusError{StatusCode: http.StatusNotFound, Message: "category field not found"}
-		}
-		return err
-	}
-	return s.repo.DeleteAwardCategoryField(ctx, id)
-}
-
 func (s *AwardService) CreateCategory(ctx context.Context, req AwardCategoryRequest) (AwardCategoryResponse, error) {
-	categoryParams, err := s.buildCategoryParams(ctx, req)
+	awardTypeIDs, err := s.validateCategoryRequest(ctx, req)
 	if err != nil {
 		return AwardCategoryResponse{}, err
 	}
-	dbCategory, err := s.repo.CreateAwardCategory(ctx, &categoryParams)
+
+	category, err := s.repo.CreateAwardCategory(ctx, &storage.CreateAwardCategoryParams{
+		Name:        strings.TrimSpace(req.Name),
+		Icon:        toPgText(req.Icon),
+		Description: toPgText(req.Description),
+		AwardTypes:  awardTypeIDs,
+	})
 	if err != nil {
 		return AwardCategoryResponse{}, err
 	}
-	return s.mapCategoryResponse(ctx, dbCategory, false)
+
+	if err = s.createCategoryFields(ctx, category.ID, req.Fields); err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	return s.GetCategoryByID(ctx, category.ID)
 }
 
 func (s *AwardService) GetAllCategories(ctx context.Context) ([]AwardCategoryResponse, error) {
@@ -219,13 +106,14 @@ func (s *AwardService) GetAllCategories(ctx context.Context) ([]AwardCategoryRes
 	}
 
 	result := make([]AwardCategoryResponse, 0, len(categories))
-	for _, c := range categories {
-		item, mapErr := s.mapCategoryResponse(ctx, c, false)
+	for _, category := range categories {
+		mapped, mapErr := s.mapCategoryResponse(ctx, category, false)
 		if mapErr != nil {
 			return nil, mapErr
 		}
-		result = append(result, item)
+		result = append(result, mapped)
 	}
+
 	return result, nil
 }
 
@@ -237,6 +125,7 @@ func (s *AwardService) GetCategoryByID(ctx context.Context, id uuid.UUID) (Award
 		}
 		return AwardCategoryResponse{}, err
 	}
+
 	return s.mapCategoryResponse(ctx, category, true)
 }
 
@@ -249,23 +138,31 @@ func (s *AwardService) UpdateCategory(ctx context.Context, id uuid.UUID, req Awa
 		return AwardCategoryResponse{}, err
 	}
 
-	params, err := s.buildCategoryParams(ctx, req)
+	awardTypeIDs, err := s.validateCategoryRequest(ctx, req)
 	if err != nil {
 		return AwardCategoryResponse{}, err
 	}
 
-	updated, err := s.repo.UpdateAwardCategory(ctx, storage.UpdateAwardCategoryParams{
+	_, err = s.repo.UpdateAwardCategory(ctx, storage.UpdateAwardCategoryParams{
 		ID:          id,
-		Name:        params.Name,
-		AwardTypes:  params.AwardTypes,
-		Fields:      params.Fields,
-		Icon:        params.Icon,
-		Description: params.Description,
+		Name:        strings.TrimSpace(req.Name),
+		Icon:        toPgText(req.Icon),
+		Description: toPgText(req.Description),
+		AwardTypes:  awardTypeIDs,
 	})
 	if err != nil {
 		return AwardCategoryResponse{}, err
 	}
-	return s.mapCategoryResponse(ctx, updated, false)
+
+	if err = s.repo.DeleteAwardCategoryFieldsByCategoryID(ctx, id); err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	if err = s.createCategoryFields(ctx, id, req.Fields); err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	return s.GetCategoryByID(ctx, id)
 }
 
 func (s *AwardService) DeleteCategory(ctx context.Context, id uuid.UUID) error {
@@ -285,47 +182,135 @@ func (s *AwardService) DeleteCategory(ctx context.Context, id uuid.UUID) error {
 		}
 		return err
 	}
+
 	return nil
 }
 
-func (s *AwardService) buildCategoryParams(ctx context.Context, req AwardCategoryRequest) (storage.CreateAwardCategoryParams, error) {
+func (s *AwardService) createCategoryFields(ctx context.Context, categoryID uuid.UUID, fields []AwardCategoryFieldRequest) error {
+	for _, field := range fields {
+		optionsJSON, err := json.Marshal(field.Options)
+		if err != nil || len(optionsJSON) == 0 || string(optionsJSON) == "null" {
+			optionsJSON = []byte("[]")
+		}
+
+		validationJSON, err := json.Marshal(field.Validation)
+		if err != nil || len(validationJSON) == 0 || string(validationJSON) == "null" {
+			validationJSON = []byte("{}")
+		}
+
+		_, err = s.repo.CreateAwardCategoryField(ctx, &storage.CreateAwardCategoryFieldParams{
+			CategoryID:  categoryID,
+			Key:         strings.TrimSpace(field.Key),
+			Label:       strings.TrimSpace(field.Label),
+			Type:        strings.ToLower(strings.TrimSpace(field.Type)),
+			Required:    field.Required,
+			Placeholder: toPgText(field.Placeholder),
+			HelpText:    toPgText(field.HelpText),
+			Options:     optionsJSON,
+			Validation:  validationJSON,
+			SortOrder:   field.SortOrder,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *AwardService) validateCategoryRequest(ctx context.Context, req AwardCategoryRequest) ([]uuid.UUID, error) {
 	if strings.TrimSpace(req.Name) == "" {
-		return storage.CreateAwardCategoryParams{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "name is required"}
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "name is required"}
 	}
 
 	awardTypeIDs, err := parseUUIDStrings(req.AwardTypes)
 	if err != nil {
-		return storage.CreateAwardCategoryParams{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid awardTypes uuid"}
-	}
-	fieldIDs, err := parseUUIDStrings(req.Fields)
-	if err != nil {
-		return storage.CreateAwardCategoryParams{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid fields uuid"}
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid awardTypes uuid"}
 	}
 
 	for _, id := range awardTypeIDs {
-		if _, err = s.repo.GetAwardTypeByID(ctx, id); err != nil {
+		_, err = s.repo.GetAwardTypeByID(ctx, id)
+		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				return storage.CreateAwardCategoryParams{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "award type not found"}
+				return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "award type not found"}
 			}
-			return storage.CreateAwardCategoryParams{}, err
-		}
-	}
-	for _, id := range fieldIDs {
-		if _, err = s.repo.GetAwardCategoryFieldByID(ctx, id); err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return storage.CreateAwardCategoryParams{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "category field not found"}
-			}
-			return storage.CreateAwardCategoryParams{}, err
+			return nil, err
 		}
 	}
 
-	return storage.CreateAwardCategoryParams{
-		Name:        strings.TrimSpace(req.Name),
-		Icon:        toPgText(req.Icon),
-		Description: toPgText(req.Description),
-		AwardTypes:  awardTypeIDs,
-		Fields:      fieldIDs,
-	}, nil
+	seen := make(map[string]struct{}, len(req.Fields))
+	for _, field := range req.Fields {
+		key := strings.TrimSpace(field.Key)
+		label := strings.TrimSpace(field.Label)
+		fieldType := strings.ToLower(strings.TrimSpace(field.Type))
+
+		if key == "" {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "field key is required"}
+		}
+		if label == "" {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "field label is required"}
+		}
+		if _, ok := allowedDynamicFieldTypes[fieldType]; !ok {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("unsupported field type: %s", field.Type)}
+		}
+		if _, ok := seen[strings.ToLower(key)]; ok {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("duplicate field key: %s", key)}
+		}
+		seen[strings.ToLower(key)] = struct{}{}
+	}
+
+	return awardTypeIDs, nil
+}
+
+func (s *AwardService) mapCategoryResponse(ctx context.Context, category storage.AwardCategory, withAwardTypesExpanded bool) (AwardCategoryResponse, error) {
+	fields, err := s.repo.GetAwardCategoryFieldsByCategoryID(ctx, category.ID)
+	if err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	fieldsExpanded := make([]AwardCategoryFieldResponse, 0, len(fields))
+	for _, field := range fields {
+		mappedField, mapErr := s.mapCategoryFieldResponse(field)
+		if mapErr != nil {
+			return AwardCategoryResponse{}, mapErr
+		}
+		fieldsExpanded = append(fieldsExpanded, mappedField)
+	}
+
+	response := AwardCategoryResponse{
+		ID:             category.ID,
+		Name:           category.Name,
+		Icon:           category.Icon.String,
+		Description:    category.Description.String,
+		AwardTypes:     formatUUIDs(category.AwardTypes),
+		FieldsExpanded: fieldsExpanded,
+		CreatedAt:      category.CreatedAt.Time,
+		UpdatedAt:      category.UpdatedAt.Time,
+	}
+
+	if !withAwardTypesExpanded {
+		return response, nil
+	}
+
+	typesExpanded := make([]TypeResponse, 0, len(category.AwardTypes))
+	for _, typeID := range category.AwardTypes {
+		dbType, typeErr := s.repo.GetAwardTypeByID(ctx, typeID)
+		if typeErr != nil {
+			if errors.Is(typeErr, pgx.ErrNoRows) {
+				return AwardCategoryResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "award type not found"}
+			}
+			return AwardCategoryResponse{}, typeErr
+		}
+
+		mappedType, buildErr := s.BuildType(ctx, dbType)
+		if buildErr != nil {
+			return AwardCategoryResponse{}, buildErr
+		}
+		typesExpanded = append(typesExpanded, mappedType)
+	}
+
+	response.AwardTypesExpanded = typesExpanded
+	return response, nil
 }
 
 func (s *AwardService) mapCategoryFieldResponse(field storage.AwardCategoryField) (AwardCategoryFieldResponse, error) {
@@ -357,68 +342,6 @@ func (s *AwardService) mapCategoryFieldResponse(field storage.AwardCategoryField
 		CreatedAt:   field.CreatedAt.Time,
 		UpdatedAt:   field.UpdatedAt.Time,
 	}, nil
-}
-
-func (s *AwardService) mapCategoryResponse(ctx context.Context, category storage.AwardCategory, withExpanded bool) (AwardCategoryResponse, error) {
-	resp := AwardCategoryResponse{
-		ID:          category.ID,
-		Name:        category.Name,
-		Icon:        category.Icon.String,
-		Description: category.Description.String,
-		AwardTypes:  formatUUIDs(category.AwardTypes),
-		Fields:      formatUUIDs(category.Fields),
-		CreatedAt:   category.CreatedAt.Time,
-		UpdatedAt:   category.UpdatedAt.Time,
-	}
-
-	if !withExpanded {
-		return resp, nil
-	}
-
-	typesExpanded := make([]TypeResponse, 0, len(category.AwardTypes))
-	for _, id := range category.AwardTypes {
-		dbType, err := s.repo.GetAwardTypeByID(ctx, id)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return AwardCategoryResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "award type not found"}
-			}
-			return AwardCategoryResponse{}, err
-		}
-		mappedType, err := s.BuildType(ctx, dbType)
-		if err != nil {
-			return AwardCategoryResponse{}, err
-		}
-		typesExpanded = append(typesExpanded, mappedType)
-	}
-	resp.AwardTypesExpanded = typesExpanded
-
-	if len(category.Fields) == 0 {
-		resp.FieldsExpanded = []AwardCategoryFieldResponse{}
-		return resp, nil
-	}
-
-	dbFields, err := s.repo.GetAwardCategoryFieldsByIDs(ctx, category.Fields)
-	if err != nil {
-		return AwardCategoryResponse{}, err
-	}
-	fieldMap := make(map[uuid.UUID]storage.AwardCategoryField, len(dbFields))
-	for _, f := range dbFields {
-		fieldMap[f.ID] = f
-	}
-	resp.FieldsExpanded = make([]AwardCategoryFieldResponse, 0, len(category.Fields))
-	for _, id := range category.Fields {
-		field, ok := fieldMap[id]
-		if !ok {
-			return AwardCategoryResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "category field not found"}
-		}
-		mapped, mapErr := s.mapCategoryFieldResponse(field)
-		if mapErr != nil {
-			return AwardCategoryResponse{}, mapErr
-		}
-		resp.FieldsExpanded = append(resp.FieldsExpanded, mapped)
-	}
-
-	return resp, nil
 }
 
 func (s *AwardService) normalizeFieldValuesInput(input any) (map[string]any, error) {
@@ -474,7 +397,7 @@ func (s *AwardService) validateAndMarshalFieldValues(ctx context.Context, catego
 		return []byte("{}"), nil
 	}
 
-	category, err := s.repo.GetAwardCategoryByID(ctx, categoryID.Bytes)
+	_, err := s.repo.GetAwardCategoryByID(ctx, categoryID.Bytes)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "category not found"}
@@ -482,14 +405,14 @@ func (s *AwardService) validateAndMarshalFieldValues(ctx context.Context, catego
 		return nil, err
 	}
 
-	fields, err := s.repo.GetAwardCategoryFieldsByIDs(ctx, category.Fields)
+	fields, err := s.repo.GetAwardCategoryFieldsByCategoryID(ctx, categoryID.Bytes)
 	if err != nil {
 		return nil, err
 	}
 
 	fieldByKey := make(map[string]storage.AwardCategoryField, len(fields))
-	for _, f := range fields {
-		fieldByKey[f.Key] = f
+	for _, field := range fields {
+		fieldByKey[field.Key] = field
 	}
 
 	for key := range values {
@@ -498,69 +421,73 @@ func (s *AwardService) validateAndMarshalFieldValues(ctx context.Context, catego
 		}
 	}
 
-	for _, f := range fields {
-		value, exists := values[f.Key]
+	for _, field := range fields {
+		value, exists := values[field.Key]
 		if !exists {
-			if f.Required {
-				return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("required field is missing: %s", f.Key)}
+			if field.Required {
+				return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("required field is missing: %s", field.Key)}
 			}
 			continue
 		}
 
-		if f.Required && !hasProvidedValue(value) {
-			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("required field is empty: %s", f.Key)}
+		if field.Required && !hasProvidedValue(value) {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("required field is empty: %s", field.Key)}
 		}
 
-		if err := validateFieldValueType(f, value); err != nil {
+		if err = validateFieldValueType(field, value); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := json.Marshal(values)
+	payload, err := json.Marshal(values)
 	if err != nil {
 		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid fieldValues payload"}
 	}
-	return out, nil
+
+	return payload, nil
 }
 
 func validateFieldValueType(field storage.AwardCategoryField, value any) error {
 	fieldType := strings.ToLower(strings.TrimSpace(field.Type))
+	key := field.Key
+
 	switch fieldType {
 	case "text", "textarea", "date":
 		if _, ok := value.(string); !ok {
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", field.Key)}
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
 		}
 	case "url":
 		str, ok := value.(string)
 		if !ok {
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string URL", field.Key)}
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string URL", key)}
 		}
 		if strings.TrimSpace(str) != "" {
 			if _, err := url.ParseRequestURI(str); err != nil {
-				return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a valid URL", field.Key)}
+				return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a valid URL", key)}
 			}
 		}
 	case "number":
 		switch value.(type) {
 		case float64, float32, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, json.Number:
 		default:
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a number", field.Key)}
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a number", key)}
 		}
 	case "checkbox":
 		if _, ok := value.(bool); !ok {
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a boolean", field.Key)}
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a boolean", key)}
 		}
 	case "select":
-		if err := validateStringOrStringArray(value, field.Key, "select option"); err != nil {
+		if err := validateStringOrStringArray(value, key, "select option"); err != nil {
 			return err
 		}
 	case "file":
-		if err := validateStringOrStringArray(value, field.Key, "file URL"); err != nil {
+		if err := validateStringOrStringArray(value, key, "file URL"); err != nil {
 			return err
 		}
 	default:
-		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("unsupported field type for %s", field.Key)}
+		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("unsupported field type for %s", key)}
 	}
+
 	return nil
 }
 
@@ -584,6 +511,7 @@ func hasProvidedValue(value any) bool {
 	if value == nil {
 		return false
 	}
+
 	switch v := value.(type) {
 	case string:
 		return strings.TrimSpace(v) != ""
@@ -598,6 +526,7 @@ func parseUUIDStrings(values []string) ([]uuid.UUID, error) {
 	if len(values) == 0 {
 		return []uuid.UUID{}, nil
 	}
+
 	out := make([]uuid.UUID, 0, len(values))
 	for _, value := range values {
 		id, err := uuid.Parse(strings.TrimSpace(value))
@@ -606,6 +535,7 @@ func parseUUIDStrings(values []string) ([]uuid.UUID, error) {
 		}
 		out = append(out, id)
 	}
+
 	return out, nil
 }
 
@@ -613,6 +543,7 @@ func formatUUIDs(values []uuid.UUID) []string {
 	if len(values) == 0 {
 		return []string{}
 	}
+
 	out := make([]string, 0, len(values))
 	for _, id := range values {
 		out = append(out, id.String())

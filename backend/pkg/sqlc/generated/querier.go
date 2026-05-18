@@ -37,7 +37,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
 	DeleteAwardCategory(ctx context.Context, id uuid.UUID) error
-	DeleteAwardCategoryField(ctx context.Context, id uuid.UUID) error
+	DeleteAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) error
 	DeleteAwardType(ctx context.Context, id uuid.UUID) error
 	DeleteGroupsNotInKeycloak(ctx context.Context, dollar_1 []uuid.UUID) error
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
@@ -46,7 +46,6 @@ type Querier interface {
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
 	GetAllAwardCategories(ctx context.Context) ([]AwardCategory, error)
-	GetAllAwardCategoryFields(ctx context.Context) ([]AwardCategoryField, error)
 	GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCriterium, error)
 	GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error)
 	GetAllAwardTypes(ctx context.Context) ([]AwardType, error)
@@ -59,8 +58,7 @@ type Querier interface {
 	GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]User, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 	GetAwardCategoryByID(ctx context.Context, id uuid.UUID) (AwardCategory, error)
-	GetAwardCategoryFieldByID(ctx context.Context, id uuid.UUID) (AwardCategoryField, error)
-	GetAwardCategoryFieldsByIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]AwardCategoryField, error)
+	GetAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) ([]AwardCategoryField, error)
 	GetAwardTypeByID(ctx context.Context, id uuid.UUID) (AwardType, error)
 	GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (AwardTypeCriterium, error)
 	GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error)
@@ -89,7 +87,6 @@ type Querier interface {
 	LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
 	UpdateAwardCategory(ctx context.Context, arg UpdateAwardCategoryParams) (AwardCategory, error)
-	UpdateAwardCategoryField(ctx context.Context, arg UpdateAwardCategoryFieldParams) (AwardCategoryField, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
 	UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error
 	UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTypeVariantsParams) (AwardType, error)

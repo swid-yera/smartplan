@@ -185,11 +185,25 @@ CREATE TABLE award_types (
 );
 
 -- =====================
+-- AWARD CATEGORIES
+-- =====================
+CREATE TABLE award_categories (
+    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    award_types UUID[] NOT NULL DEFAULT '{}',
+    name TEXT NOT NULL,
+    icon TEXT,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =====================
 -- AWARD CATEGORY FIELDS
 -- =====================
 CREATE TABLE award_category_fields (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    key TEXT NOT NULL UNIQUE,
+    category_id UUID NOT NULL REFERENCES award_categories(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
     label TEXT NOT NULL,
     type TEXT NOT NULL,
     required BOOLEAN NOT NULL DEFAULT false,
@@ -199,21 +213,8 @@ CREATE TABLE award_category_fields (
     validation JSONB NOT NULL DEFAULT '{}'::jsonb,
     sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- =====================
--- AWARD CATEGORIES
--- =====================
-CREATE TABLE award_categories (
-    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    award_types UUID[] NOT NULL DEFAULT '{}',
-    name TEXT NOT NULL,
-    icon TEXT,
-    description TEXT,
-    fields UUID[] NOT NULL DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (category_id, key)
 );
 
 -- =====================

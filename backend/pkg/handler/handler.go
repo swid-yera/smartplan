@@ -137,19 +137,10 @@ func (r *Router) Init() *gin.Engine {
 		}
 
 		// --- KPI CATEGORIES ---
-		categories := protected.Group("/kpi/categories")
+		categories := protected.Group("/categories")
 		{
 			categories.GET("", r.category.GetCategories)
 			categories.POST("", r.category.CreateCategory)
-
-			fields := categories.Group("/fields")
-			{
-				fields.GET("", r.category.GetCategoryFields)
-				fields.POST("", r.category.CreateCategoryField)
-				fields.GET("/:id", r.category.GetCategoryFieldByID)
-				fields.PUT("/:id", r.category.UpdateCategoryField)
-				fields.DELETE("/:id", r.category.DeleteCategoryField)
-			}
 
 			categories.GET("/:id", r.category.GetCategoryByID)
 			categories.PUT("/:id", r.category.UpdateCategory)

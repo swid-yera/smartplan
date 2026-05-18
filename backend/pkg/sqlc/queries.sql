@@ -544,6 +544,7 @@ UPDATE award_types SET variants = $2 WHERE id = $1 RETURNING *;
 -- name: CreateAwardCategoryField :one
 INSERT INTO
     award_category_fields (
+        category_id,
         key,
         label,
         type,
@@ -554,42 +555,21 @@ INSERT INTO
         validation,
         sort_order
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;
 
--- name: GetAwardCategoryFieldByID :one
-SELECT * FROM award_category_fields WHERE id = $1;
-
--- name: GetAllAwardCategoryFields :many
-SELECT * FROM award_category_fields ORDER BY sort_order ASC, created_at DESC;
-
--- name: GetAwardCategoryFieldsByIDs :many
+-- name: GetAwardCategoryFieldsByCategoryID :many
 SELECT *
 FROM award_category_fields
-WHERE id = ANY($1::uuid[]);
+WHERE category_id = $1
+ORDER BY sort_order ASC, created_at ASC;
 
--- name: UpdateAwardCategoryField :one
-UPDATE award_category_fields
-SET
-    key = $2,
-    label = $3,
-    type = $4,
-    required = $5,
-    placeholder = $6,
-    help_text = $7,
-    options = $8,
-    validation = $9,
-    sort_order = $10,
-    updated_at = NOW()
-WHERE
-    id = $1 RETURNING *;
-
--- name: DeleteAwardCategoryField :exec
-DELETE FROM award_category_fields WHERE id = $1;
+-- name: DeleteAwardCategoryFieldsByCategoryID :exec
+DELETE FROM award_category_fields WHERE category_id = $1;
 
 -- name: CreateAwardCategory :one
 INSERT INTO
-    award_categories (award_types, name, icon, description, fields)
-VALUES ($1, $2, $3, $4, $5) RETURNING *;
+    award_categories (award_types, name, icon, description)
+VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: GetAwardCategoryByID :one
 SELECT * FROM award_categories WHERE id = $1;
@@ -604,7 +584,6 @@ SET
     name = $3,
     icon = $4,
     description = $5,
-    fields = $6,
     updated_at = NOW()
 WHERE
     id = $1 RETURNING *;

@@ -257,8 +257,8 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 
 const createAwardCategory = `-- name: CreateAwardCategory :one
 INSERT INTO
-    award_categories (award_types, name, icon, description, fields)
-VALUES ($1, $2, $3, $4, $5) RETURNING id, award_types, name, icon, description, fields, created_at, updated_at
+    award_categories (award_types, name, icon, description)
+VALUES ($1, $2, $3, $4) RETURNING id, award_types, name, icon, description, created_at, updated_at
 `
 
 type CreateAwardCategoryParams struct {
@@ -266,7 +266,6 @@ type CreateAwardCategoryParams struct {
 	Name        string      `json:"name"`
 	Icon        pgtype.Text `json:"icon"`
 	Description pgtype.Text `json:"description"`
-	Fields      []uuid.UUID `json:"fields"`
 }
 
 func (q *Queries) CreateAwardCategory(ctx context.Context, arg CreateAwardCategoryParams) (AwardCategory, error) {
@@ -275,7 +274,6 @@ func (q *Queries) CreateAwardCategory(ctx context.Context, arg CreateAwardCatego
 		arg.Name,
 		arg.Icon,
 		arg.Description,
-		arg.Fields,
 	)
 	var i AwardCategory
 	err := row.Scan(
@@ -284,7 +282,6 @@ func (q *Queries) CreateAwardCategory(ctx context.Context, arg CreateAwardCatego
 		&i.Name,
 		&i.Icon,
 		&i.Description,
-		&i.Fields,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -294,6 +291,7 @@ func (q *Queries) CreateAwardCategory(ctx context.Context, arg CreateAwardCatego
 const createAwardCategoryField = `-- name: CreateAwardCategoryField :one
 INSERT INTO
     award_category_fields (
+        category_id,
         key,
         label,
         type,
@@ -304,10 +302,11 @@ INSERT INTO
         validation,
         sort_order
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, category_id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at
 `
 
 type CreateAwardCategoryFieldParams struct {
+	CategoryID  uuid.UUID   `json:"category_id"`
 	Key         string      `json:"key"`
 	Label       string      `json:"label"`
 	Type        string      `json:"type"`
@@ -321,6 +320,7 @@ type CreateAwardCategoryFieldParams struct {
 
 func (q *Queries) CreateAwardCategoryField(ctx context.Context, arg CreateAwardCategoryFieldParams) (AwardCategoryField, error) {
 	row := q.db.QueryRow(ctx, createAwardCategoryField,
+		arg.CategoryID,
 		arg.Key,
 		arg.Label,
 		arg.Type,
@@ -334,6 +334,7 @@ func (q *Queries) CreateAwardCategoryField(ctx context.Context, arg CreateAwardC
 	var i AwardCategoryField
 	err := row.Scan(
 		&i.ID,
+		&i.CategoryID,
 		&i.Key,
 		&i.Label,
 		&i.Type,
@@ -918,12 +919,12 @@ func (q *Queries) DeleteAwardCategory(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const deleteAwardCategoryField = `-- name: DeleteAwardCategoryField :exec
-DELETE FROM award_category_fields WHERE id = $1
+const deleteAwardCategoryFieldsByCategoryID = `-- name: DeleteAwardCategoryFieldsByCategoryID :exec
+DELETE FROM award_category_fields WHERE category_id = $1
 `
 
-func (q *Queries) DeleteAwardCategoryField(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteAwardCategoryField, id)
+func (q *Queries) DeleteAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAwardCategoryFieldsByCategoryID, categoryID)
 	return err
 }
 
@@ -994,7 +995,7 @@ func (q *Queries) DeleteUser(ctx context.Context, keycloakID uuid.UUID) error {
 }
 
 const getAllAwardCategories = `-- name: GetAllAwardCategories :many
-SELECT id, award_types, name, icon, description, fields, created_at, updated_at FROM award_categories ORDER BY created_at DESC
+SELECT id, award_types, name, icon, description, created_at, updated_at FROM award_categories ORDER BY created_at DESC
 `
 
 func (q *Queries) GetAllAwardCategories(ctx context.Context) ([]AwardCategory, error) {
@@ -1012,44 +1013,6 @@ func (q *Queries) GetAllAwardCategories(ctx context.Context) ([]AwardCategory, e
 			&i.Name,
 			&i.Icon,
 			&i.Description,
-			&i.Fields,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAllAwardCategoryFields = `-- name: GetAllAwardCategoryFields :many
-SELECT id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at FROM award_category_fields ORDER BY sort_order ASC, created_at DESC
-`
-
-func (q *Queries) GetAllAwardCategoryFields(ctx context.Context) ([]AwardCategoryField, error) {
-	rows, err := q.db.Query(ctx, getAllAwardCategoryFields)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []AwardCategoryField
-	for rows.Next() {
-		var i AwardCategoryField
-		if err := rows.Scan(
-			&i.ID,
-			&i.Key,
-			&i.Label,
-			&i.Type,
-			&i.Required,
-			&i.Placeholder,
-			&i.HelpText,
-			&i.Options,
-			&i.Validation,
-			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -1428,7 +1391,7 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 }
 
 const getAwardCategoryByID = `-- name: GetAwardCategoryByID :one
-SELECT id, award_types, name, icon, description, fields, created_at, updated_at FROM award_categories WHERE id = $1
+SELECT id, award_types, name, icon, description, created_at, updated_at FROM award_categories WHERE id = $1
 `
 
 func (q *Queries) GetAwardCategoryByID(ctx context.Context, id uuid.UUID) (AwardCategory, error) {
@@ -1440,45 +1403,21 @@ func (q *Queries) GetAwardCategoryByID(ctx context.Context, id uuid.UUID) (Award
 		&i.Name,
 		&i.Icon,
 		&i.Description,
-		&i.Fields,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getAwardCategoryFieldByID = `-- name: GetAwardCategoryFieldByID :one
-SELECT id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at FROM award_category_fields WHERE id = $1
-`
-
-func (q *Queries) GetAwardCategoryFieldByID(ctx context.Context, id uuid.UUID) (AwardCategoryField, error) {
-	row := q.db.QueryRow(ctx, getAwardCategoryFieldByID, id)
-	var i AwardCategoryField
-	err := row.Scan(
-		&i.ID,
-		&i.Key,
-		&i.Label,
-		&i.Type,
-		&i.Required,
-		&i.Placeholder,
-		&i.HelpText,
-		&i.Options,
-		&i.Validation,
-		&i.SortOrder,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getAwardCategoryFieldsByIDs = `-- name: GetAwardCategoryFieldsByIDs :many
-SELECT id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at
+const getAwardCategoryFieldsByCategoryID = `-- name: GetAwardCategoryFieldsByCategoryID :many
+SELECT id, category_id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at
 FROM award_category_fields
-WHERE id = ANY($1::uuid[])
+WHERE category_id = $1
+ORDER BY sort_order ASC, created_at ASC
 `
 
-func (q *Queries) GetAwardCategoryFieldsByIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]AwardCategoryField, error) {
-	rows, err := q.db.Query(ctx, getAwardCategoryFieldsByIDs, dollar_1)
+func (q *Queries) GetAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) ([]AwardCategoryField, error) {
+	rows, err := q.db.Query(ctx, getAwardCategoryFieldsByCategoryID, categoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -1488,6 +1427,7 @@ func (q *Queries) GetAwardCategoryFieldsByIDs(ctx context.Context, dollar_1 []uu
 		var i AwardCategoryField
 		if err := rows.Scan(
 			&i.ID,
+			&i.CategoryID,
 			&i.Key,
 			&i.Label,
 			&i.Type,
@@ -2442,10 +2382,9 @@ SET
     name = $3,
     icon = $4,
     description = $5,
-    fields = $6,
     updated_at = NOW()
 WHERE
-    id = $1 RETURNING id, award_types, name, icon, description, fields, created_at, updated_at
+    id = $1 RETURNING id, award_types, name, icon, description, created_at, updated_at
 `
 
 type UpdateAwardCategoryParams struct {
@@ -2454,7 +2393,6 @@ type UpdateAwardCategoryParams struct {
 	Name        string      `json:"name"`
 	Icon        pgtype.Text `json:"icon"`
 	Description pgtype.Text `json:"description"`
-	Fields      []uuid.UUID `json:"fields"`
 }
 
 func (q *Queries) UpdateAwardCategory(ctx context.Context, arg UpdateAwardCategoryParams) (AwardCategory, error) {
@@ -2464,7 +2402,6 @@ func (q *Queries) UpdateAwardCategory(ctx context.Context, arg UpdateAwardCatego
 		arg.Name,
 		arg.Icon,
 		arg.Description,
-		arg.Fields,
 	)
 	var i AwardCategory
 	err := row.Scan(
@@ -2473,68 +2410,6 @@ func (q *Queries) UpdateAwardCategory(ctx context.Context, arg UpdateAwardCatego
 		&i.Name,
 		&i.Icon,
 		&i.Description,
-		&i.Fields,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const updateAwardCategoryField = `-- name: UpdateAwardCategoryField :one
-UPDATE award_category_fields
-SET
-    key = $2,
-    label = $3,
-    type = $4,
-    required = $5,
-    placeholder = $6,
-    help_text = $7,
-    options = $8,
-    validation = $9,
-    sort_order = $10,
-    updated_at = NOW()
-WHERE
-    id = $1 RETURNING id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at
-`
-
-type UpdateAwardCategoryFieldParams struct {
-	ID          uuid.UUID   `json:"id"`
-	Key         string      `json:"key"`
-	Label       string      `json:"label"`
-	Type        string      `json:"type"`
-	Required    bool        `json:"required"`
-	Placeholder pgtype.Text `json:"placeholder"`
-	HelpText    pgtype.Text `json:"help_text"`
-	Options     []byte      `json:"options"`
-	Validation  []byte      `json:"validation"`
-	SortOrder   int32       `json:"sort_order"`
-}
-
-func (q *Queries) UpdateAwardCategoryField(ctx context.Context, arg UpdateAwardCategoryFieldParams) (AwardCategoryField, error) {
-	row := q.db.QueryRow(ctx, updateAwardCategoryField,
-		arg.ID,
-		arg.Key,
-		arg.Label,
-		arg.Type,
-		arg.Required,
-		arg.Placeholder,
-		arg.HelpText,
-		arg.Options,
-		arg.Validation,
-		arg.SortOrder,
-	)
-	var i AwardCategoryField
-	err := row.Scan(
-		&i.ID,
-		&i.Key,
-		&i.Label,
-		&i.Type,
-		&i.Required,
-		&i.Placeholder,
-		&i.HelpText,
-		&i.Options,
-		&i.Validation,
-		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
