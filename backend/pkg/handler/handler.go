@@ -141,7 +141,6 @@ func (r *Router) Init() *gin.Engine {
 		{
 			categories.GET("", r.category.GetCategories)
 			categories.POST("", r.category.CreateCategory)
-
 			categories.GET("/:id", r.category.GetCategoryByID)
 			categories.PUT("/:id", r.category.UpdateCategory)
 			categories.DELETE("/:id", r.category.DeleteCategory)

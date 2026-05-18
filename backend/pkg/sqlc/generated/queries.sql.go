@@ -995,26 +995,36 @@ func (q *Queries) DeleteUser(ctx context.Context, keycloakID uuid.UUID) error {
 }
 
 const getAllAwardCategories = `-- name: GetAllAwardCategories :many
-SELECT id, award_types, name, icon, description, created_at, updated_at FROM award_categories ORDER BY created_at DESC
+SELECT 
+    id,
+    name,
+    icon,
+    description
+FROM award_categories
+ORDER BY created_at DESC
 `
 
-func (q *Queries) GetAllAwardCategories(ctx context.Context) ([]AwardCategory, error) {
+type GetAllAwardCategoriesRow struct {
+	ID          uuid.UUID   `json:"id"`
+	Name        string      `json:"name"`
+	Icon        pgtype.Text `json:"icon"`
+	Description pgtype.Text `json:"description"`
+}
+
+func (q *Queries) GetAllAwardCategories(ctx context.Context) ([]GetAllAwardCategoriesRow, error) {
 	rows, err := q.db.Query(ctx, getAllAwardCategories)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AwardCategory
+	var items []GetAllAwardCategoriesRow
 	for rows.Next() {
-		var i AwardCategory
+		var i GetAllAwardCategoriesRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.AwardTypes,
 			&i.Name,
 			&i.Icon,
 			&i.Description,
-			&i.CreatedAt,
-			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

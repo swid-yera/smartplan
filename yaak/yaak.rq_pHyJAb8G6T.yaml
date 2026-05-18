@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_pHyJAb8G6T
 createdAt: 2026-05-18T10:50:01.632387900
-updatedAt: 2026-05-18T10:54:26.411621700
+updatedAt: 2026-05-18T12:34:40.771464400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_iW5CQsevG9
 authentication: {}
@@ -12,12 +12,40 @@ body:
     {
       "name": "Публикации",
       "icon": "book-open",
-      "description": "Категория для научных публикаций",
+      "description": "Награды и победы студентов",
       "awardTypes": [
-        "fdaca5b2-50d5-42c2-9007-24c0074d7e4b"
+        "536a92fa-b040-4def-a053-be3073f4ab2c"
       ],
       "fields": [
-        "5bedd88c-a7c7-462c-9ed4-3985231f7445"
+        {
+          "key": "student_name",
+          "label": "Имя ученика",
+          "type": "text",
+          "required": true,
+          "placeholder": "Иван Иванов",
+          "helpText": "ФИО полностью",
+          "options": [],
+          "validation": {
+            "minLength": 3
+          },
+          "sortOrder": 1
+        },
+        {
+          "key": "competition_level",
+          "label": "Уровень конкурса",
+          "type": "select",
+          "required": true,
+          "placeholder": "",
+          "helpText": "",
+          "options": [
+            "городской",
+            "областной",
+            "республиканский",
+            "международный"
+          ],
+          "validation": {},
+          "sortOrder": 3
+        }
       ]
     }
 bodyType: application/json
@@ -29,6 +57,6 @@ headers:
   id: MXf7YdFuwW
 method: POST
 name: create
-sortPriority: 703.7037037037037
-url: ${[ url ]}/kpi/categories
+sortPriority: 2000.0
+url: ${[ url ]}/categories
 urlParameters: []

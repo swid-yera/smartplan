@@ -57,7 +57,7 @@ func (r *AwardRepository) GetAwardCategoryByID(ctx context.Context, id uuid.UUID
 	return r.queries.GetAwardCategoryByID(ctx, id)
 }
 
-func (r *AwardRepository) GetAllAwardCategories(ctx context.Context) ([]storage.AwardCategory, error) {
+func (r *AwardRepository) GetAllAwardCategories(ctx context.Context) ([]storage.GetAllAwardCategoriesRow, error) {
 	return r.queries.GetAllAwardCategories(ctx)
 }
 

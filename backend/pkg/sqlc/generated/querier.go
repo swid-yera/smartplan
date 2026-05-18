@@ -45,7 +45,7 @@ type Querier interface {
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
-	GetAllAwardCategories(ctx context.Context) ([]AwardCategory, error)
+	GetAllAwardCategories(ctx context.Context) ([]GetAllAwardCategoriesRow, error)
 	GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCriterium, error)
 	GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error)
 	GetAllAwardTypes(ctx context.Context) ([]AwardType, error)

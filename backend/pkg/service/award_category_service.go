@@ -76,6 +76,13 @@ type AwardCategoryResponse struct {
 	UpdatedAt          time.Time                    `json:"updatedAt"`
 }
 
+type AwardCategoryListItemResponse struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Icon        string    `json:"icon,omitempty"`
+	Description string    `json:"description,omitempty"`
+}
+
 func (s *AwardService) CreateCategory(ctx context.Context, req AwardCategoryRequest) (AwardCategoryResponse, error) {
 	awardTypeIDs, err := s.validateCategoryRequest(ctx, req)
 	if err != nil {
@@ -99,19 +106,20 @@ func (s *AwardService) CreateCategory(ctx context.Context, req AwardCategoryRequ
 	return s.GetCategoryByID(ctx, category.ID)
 }
 
-func (s *AwardService) GetAllCategories(ctx context.Context) ([]AwardCategoryResponse, error) {
+func (s *AwardService) GetAllCategories(ctx context.Context) ([]AwardCategoryListItemResponse, error) {
 	categories, err := s.repo.GetAllAwardCategories(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]AwardCategoryResponse, 0, len(categories))
+	result := make([]AwardCategoryListItemResponse, 0, len(categories))
 	for _, category := range categories {
-		mapped, mapErr := s.mapCategoryResponse(ctx, category, false)
-		if mapErr != nil {
-			return nil, mapErr
-		}
-		result = append(result, mapped)
+		result = append(result, AwardCategoryListItemResponse{
+			ID:          category.ID,
+			Name:        category.Name,
+			Icon:        fromPgText(category.Icon),
+			Description: fromPgText(category.Description),
+		})
 	}
 
 	return result, nil
@@ -556,4 +564,11 @@ func toPgText(value string) pgtype.Text {
 		return pgtype.Text{}
 	}
 	return pgtype.Text{String: value, Valid: true}
+}
+
+func fromPgText(value pgtype.Text) string {
+	if !value.Valid {
+		return ""
+	}
+	return value.String
 }

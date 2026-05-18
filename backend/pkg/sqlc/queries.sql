@@ -575,7 +575,13 @@ VALUES ($1, $2, $3, $4) RETURNING *;
 SELECT * FROM award_categories WHERE id = $1;
 
 -- name: GetAllAwardCategories :many
-SELECT * FROM award_categories ORDER BY created_at DESC;
+SELECT 
+    id,
+    name,
+    icon,
+    description
+FROM award_categories
+ORDER BY created_at DESC;
 
 -- name: UpdateAwardCategory :one
 UPDATE award_categories
