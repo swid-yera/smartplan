@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -31,16 +30,12 @@ func NewAwardHandler(service *service.AwardService) *AwardHandler {
 	}
 }
 
-// resolveFileURLs generates presigned URLs for files stored in MinIO
-func (h *AwardHandler) resolveFileURLs(ctx context.Context, fileKeys []string) []string {
-	fileURLs := make([]string, 0, len(fileKeys))
-	for _, key := range fileKeys {
-		url, err := h.service.GetFileDownloadURL(ctx, key)
-		if err == nil {
-			fileURLs = append(fileURLs, url)
-		}
+func (h *AwardHandler) resolveAwardFieldValues(ctx context.Context, award service.AwardResponse) service.AwardResponse {
+	resolvedValues, err := h.service.ResolveFieldValueFileURLs(ctx, award.CategoryID, award.FieldValues)
+	if err == nil {
+		award.FieldValues = resolvedValues
 	}
-	return fileURLs
+	return award
 }
 
 // parseUUIDPgtype is a helper to convert form strings to pgtype.UUID
@@ -71,9 +66,8 @@ func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs for each award
 	for i := range awards {
-		awards[i].Files = h.resolveFileURLs(c.Request.Context(), awards[i].Files)
+		awards[i] = h.resolveAwardFieldValues(c.Request.Context(), awards[i])
 	}
 
 	c.JSON(http.StatusOK, awards)
@@ -94,8 +88,7 @@ func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs
-	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
+	award = h.resolveAwardFieldValues(c.Request.Context(), award)
 
 	c.JSON(http.StatusOK, award)
 }
@@ -227,36 +220,15 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		bonusCriteriaPg = pgtype.UUID{Bytes: parsed, Valid: true}
 	}
 
-	// files
-	var fileKeys []string
-
-	// parse files from multipart form
-	files := form.File["files"]
-	if len(files) > 0 {
-		for _, fileHeader := range files {
-			f, err := fileHeader.Open()
-			if err != nil {
-				continue // TODO: handle error properly
-			}
-
-			// Generate object key with awards/ prefix and UUID
-			objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
-
-			// saving
-			fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
-			f.Close()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				continue // TODO: handle error properly
-			}
-
-			fileKeys = append(fileKeys, fileKey)
-		}
-	}
-
-	// Check if at least one of files or links is provided
-	if len(files) == 0 && len(params.Links) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "either files or links must be provided"})
+	mergedFieldValues, err := h.service.MergeUploadedFilesIntoFieldValues(
+		c.Request.Context(),
+		currentUser.KeycloakID,
+		params.CategoryID,
+		params.FieldValues,
+		form.File,
+	)
+	if err != nil {
+		writeServiceError(c, err)
 		return
 	}
 
@@ -268,10 +240,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		Criteria:      parseUUIDPgtype(criteriaID.String()),
 		BonusCriteria: bonusCriteriaPg,
 		CategoryID:    params.CategoryID,
-		FieldValues:   mustMarshalFieldValues(params.FieldValues),
-		Text:          params.Text,
-		Files:         fileKeys,
-		Links:         params.Links,
+		FieldValues:   mustMarshalFieldValues(mergedFieldValues),
 		TotalPoints:   0,
 	})
 	if err != nil {
@@ -284,8 +253,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs
-	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
+	award = h.resolveAwardFieldValues(c.Request.Context(), award)
 
 	c.JSON(http.StatusOK, award)
 }
@@ -344,30 +312,30 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 			return
 		}
 
-		// parse files from multipart form
-		files := form.File["files"]
-		if len(files) > 0 {
-			for _, fileHeader := range files {
-				f, err := fileHeader.Open()
-				if err != nil {
-					continue
-				}
-
-				// Generate object key with awards/ prefix and UUID
-				objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
-
-				// saving
-				fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
-				f.Close()
-
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-					return
-				}
-
-				req.Files = append(req.Files, fileKey)
+		uploadCategoryID := req.CategoryID
+		if !uploadCategoryID.Valid {
+			existingAward, getErr := h.service.GetAwardByID(c.Request.Context(), id)
+			if getErr != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve current award category", "details": getErr.Error()})
+				return
+			}
+			if existingAward.CategoryID != nil {
+				uploadCategoryID = parseUUIDPgtype(existingAward.CategoryID.String())
 			}
 		}
+
+		mergedFieldValues, mergeErr := h.service.MergeUploadedFilesIntoFieldValues(
+			c.Request.Context(),
+			currentUser.KeycloakID,
+			uploadCategoryID,
+			req.FieldValues,
+			form.File,
+		)
+		if mergeErr != nil {
+			writeServiceError(c, mergeErr)
+			return
+		}
+		req.FieldValues = mergedFieldValues
 	}
 
 	award, err := h.service.UpdateAward(c.Request.Context(), id, req)
@@ -387,8 +355,7 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs
-	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
+	award = h.resolveAwardFieldValues(c.Request.Context(), award)
 
 	c.JSON(http.StatusOK, award)
 }
@@ -547,9 +514,8 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs for each award
 	for i := range result.Data {
-		result.Data[i].Files = h.resolveFileURLs(c.Request.Context(), result.Data[i].Files)
+		result.Data[i] = h.resolveAwardFieldValues(c.Request.Context(), result.Data[i])
 	}
 
 	c.JSON(200, result)

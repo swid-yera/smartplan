@@ -181,10 +181,7 @@ INSERT INTO
         bonus_criteria,
         category_id,
         field_values,
-        total_points,
-        text,
-        files,
-        links
+        total_points
     )
 VALUES (
         $1,
@@ -195,11 +192,8 @@ VALUES (
         $6,
         $7,
         $8,
-        $9,
-        $10,
-        $11,
-        $12
-    ) RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, text, files, links, created_at, updated_at
+        $9
+    ) RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, created_at, updated_at
 `
 
 type CreateAwardParams struct {
@@ -212,9 +206,6 @@ type CreateAwardParams struct {
 	CategoryID    pgtype.UUID  `json:"category_id"`
 	FieldValues   []byte       `json:"field_values"`
 	TotalPoints   int32        `json:"total_points"`
-	Text          pgtype.Text  `json:"text"`
-	Files         []string     `json:"files"`
-	Links         []string     `json:"links"`
 }
 
 func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error) {
@@ -228,9 +219,6 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		arg.CategoryID,
 		arg.FieldValues,
 		arg.TotalPoints,
-		arg.Text,
-		arg.Files,
-		arg.Links,
 	)
 	var i Award
 	err := row.Scan(
@@ -246,9 +234,6 @@ func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award
 		&i.BonusCriteria,
 		&i.CategoryID,
 		&i.FieldValues,
-		&i.Text,
-		&i.Files,
-		&i.Links,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1120,7 +1105,7 @@ func (q *Queries) GetAllAwardTypes(ctx context.Context) ([]AwardType, error) {
 }
 
 const getAllAwards = `-- name: GetAllAwards :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, text, files, links, created_at, updated_at FROM awards
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, created_at, updated_at FROM awards
 `
 
 func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
@@ -1145,9 +1130,6 @@ func (q *Queries) GetAllAwards(ctx context.Context) ([]Award, error) {
 			&i.BonusCriteria,
 			&i.CategoryID,
 			&i.FieldValues,
-			&i.Text,
-			&i.Files,
-			&i.Links,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -1372,7 +1354,7 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 }
 
 const getAwardByID = `-- name: GetAwardByID :one
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, text, files, links, created_at, updated_at FROM awards WHERE id = $1
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, created_at, updated_at FROM awards WHERE id = $1
 `
 
 func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error) {
@@ -1391,9 +1373,6 @@ func (q *Queries) GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 		&i.BonusCriteria,
 		&i.CategoryID,
 		&i.FieldValues,
-		&i.Text,
-		&i.Files,
-		&i.Links,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1505,7 +1484,7 @@ func (q *Queries) GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (Aw
 }
 
 const getAwardsPaginated = `-- name: GetAwardsPaginated :many
-SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, text, files, links, created_at, updated_at FROM awards
+SELECT id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, created_at, updated_at FROM awards
 WHERE
     (
         $3::uuid IS NULL
@@ -1559,9 +1538,6 @@ func (q *Queries) GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginated
 			&i.BonusCriteria,
 			&i.CategoryID,
 			&i.FieldValues,
-			&i.Text,
-			&i.Files,
-			&i.Links,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -2324,12 +2300,9 @@ SET
     category_id = $7,
     field_values = $8,
     total_points = $9,
-    text = $10,
-    files = $11,
-    links = $12,
     updated_at = NOW()
 WHERE
-    id = $1 RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, text, files, links, created_at, updated_at
+    id = $1 RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, created_at, updated_at
 `
 
 type UpdateAwardParams struct {
@@ -2342,9 +2315,6 @@ type UpdateAwardParams struct {
 	CategoryID    pgtype.UUID `json:"category_id"`
 	FieldValues   []byte      `json:"field_values"`
 	TotalPoints   int32       `json:"total_points"`
-	Text          pgtype.Text `json:"text"`
-	Files         []string    `json:"files"`
-	Links         []string    `json:"links"`
 }
 
 func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error) {
@@ -2358,9 +2328,6 @@ func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award
 		arg.CategoryID,
 		arg.FieldValues,
 		arg.TotalPoints,
-		arg.Text,
-		arg.Files,
-		arg.Links,
 	)
 	var i Award
 	err := row.Scan(
@@ -2376,9 +2343,6 @@ func (q *Queries) UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award
 		&i.BonusCriteria,
 		&i.CategoryID,
 		&i.FieldValues,
-		&i.Text,
-		&i.Files,
-		&i.Links,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

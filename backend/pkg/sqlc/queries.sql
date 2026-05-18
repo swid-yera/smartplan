@@ -393,10 +393,7 @@ INSERT INTO
         bonus_criteria,
         category_id,
         field_values,
-        total_points,
-        text,
-        files,
-        links
+        total_points
     )
 VALUES (
         $1,
@@ -407,10 +404,7 @@ VALUES (
         $6,
         $7,
         $8,
-        $9,
-        $10,
-        $11,
-        $12
+        $9
     ) RETURNING *;
 
 -- name: GetAllAwards :many
@@ -479,9 +473,6 @@ SET
     category_id = $7,
     field_values = $8,
     total_points = $9,
-    text = $10,
-    files = $11,
-    links = $12,
     updated_at = NOW()
 WHERE
     id = $1 RETURNING *;

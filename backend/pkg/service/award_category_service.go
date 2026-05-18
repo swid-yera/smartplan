@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
@@ -465,14 +466,8 @@ func validateFieldValueType(field storage.AwardCategoryField, value any) error {
 			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
 		}
 	case "url":
-		str, ok := value.(string)
-		if !ok {
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string URL", key)}
-		}
-		if strings.TrimSpace(str) != "" {
-			if _, err := url.ParseRequestURI(str); err != nil {
-				return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a valid URL", key)}
-			}
+		if err := validateURLOrURLArray(value, key); err != nil {
+			return err
 		}
 	case "number":
 		switch value.(type) {
@@ -503,6 +498,8 @@ func validateStringOrStringArray(value any, key string, label string) error {
 	switch v := value.(type) {
 	case string:
 		return nil
+	case []string:
+		return nil
 	case []any:
 		for _, item := range v {
 			if _, ok := item.(string); !ok {
@@ -523,10 +520,245 @@ func hasProvidedValue(value any) bool {
 	switch v := value.(type) {
 	case string:
 		return strings.TrimSpace(v) != ""
+	case []string:
+		return len(v) > 0
 	case []any:
 		return len(v) > 0
 	default:
 		return true
+	}
+}
+
+func validateURLOrURLArray(value any, key string) error {
+	validate := func(raw string) error {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			return nil
+		}
+		if _, err := url.ParseRequestURI(trimmed); err != nil {
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a valid URL", key)}
+		}
+		return nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		return validate(v)
+	case []string:
+		for _, item := range v {
+			if err := validate(item); err != nil {
+				return err
+			}
+		}
+		return nil
+	case []any:
+		for _, item := range v {
+			str, ok := item.(string)
+			if !ok {
+				return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must contain URL strings", key)}
+			}
+			if err := validate(str); err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string or array of strings", key)}
+	}
+}
+
+func (s *AwardService) MergeUploadedFilesIntoFieldValues(
+	ctx context.Context,
+	userID uuid.UUID,
+	categoryID pgtype.UUID,
+	rawFieldValues any,
+	formFiles map[string][]*multipart.FileHeader,
+) (map[string]any, error) {
+	values, err := s.normalizeFieldValuesInput(rawFieldValues)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(formFiles) == 0 {
+		return values, nil
+	}
+
+	if !categoryID.Valid {
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "categoryId is required when uploading files"}
+	}
+
+	fields, err := s.repo.GetAwardCategoryFieldsByCategoryID(ctx, categoryID.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	fileFieldKeys := make([]string, 0)
+	fileFieldSet := make(map[string]struct{})
+	for _, field := range fields {
+		if strings.EqualFold(strings.TrimSpace(field.Type), "file") {
+			fileFieldKeys = append(fileFieldKeys, field.Key)
+			fileFieldSet[field.Key] = struct{}{}
+		}
+	}
+
+	for formKey, headers := range formFiles {
+		if len(headers) == 0 {
+			continue
+		}
+
+		targetKey := formKey
+		if formKey == "files" {
+			if len(fileFieldKeys) != 1 {
+				return nil, &HTTPStatusError{
+					StatusCode: http.StatusBadRequest,
+					Message:    "ambiguous file field: upload using multipart key fieldValues.<fieldKey>",
+				}
+			}
+			targetKey = fileFieldKeys[0]
+		} else if strings.HasPrefix(formKey, "fieldValues.") {
+			targetKey = strings.TrimPrefix(formKey, "fieldValues.")
+		}
+
+		if _, ok := fileFieldSet[targetKey]; !ok {
+			return nil, &HTTPStatusError{
+				StatusCode: http.StatusBadRequest,
+				Message:    fmt.Sprintf("unknown file field key: %s", targetKey),
+			}
+		}
+
+		uploaded := make([]string, 0, len(headers))
+		for _, fileHeader := range headers {
+			file, openErr := fileHeader.Open()
+			if openErr != nil {
+				return nil, openErr
+			}
+
+			objectName := fmt.Sprintf(
+				"awards/%s/%s/%s_%s",
+				userID.String(),
+				targetKey,
+				uuid.NewString(),
+				fileHeader.Filename,
+			)
+
+			fileKey, uploadErr := s.UploadFile(ctx, objectName, file, fileHeader.Size)
+			closeErr := file.Close()
+			if uploadErr != nil {
+				return nil, uploadErr
+			}
+			if closeErr != nil {
+				return nil, closeErr
+			}
+
+			uploaded = append(uploaded, fileKey)
+		}
+
+		values[targetKey] = mergeUploadedFileKeys(values[targetKey], uploaded)
+	}
+
+	return values, nil
+}
+
+func (s *AwardService) ResolveFieldValueFileURLs(
+	ctx context.Context,
+	categoryID *uuid.UUID,
+	values map[string]any,
+) (map[string]any, error) {
+	if values == nil {
+		return map[string]any{}, nil
+	}
+	if categoryID == nil {
+		return values, nil
+	}
+
+	fields, err := s.repo.GetAwardCategoryFieldsByCategoryID(ctx, *categoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	resolved := make(map[string]any, len(values))
+	for key, value := range values {
+		resolved[key] = value
+	}
+
+	for _, field := range fields {
+		if !strings.EqualFold(strings.TrimSpace(field.Type), "file") {
+			continue
+		}
+		value, ok := resolved[field.Key]
+		if !ok {
+			continue
+		}
+
+		resolved[field.Key] = s.resolveFileFieldValueURLs(ctx, value)
+	}
+
+	return resolved, nil
+}
+
+func mergeUploadedFileKeys(existing any, uploaded []string) any {
+	if len(uploaded) == 0 {
+		return existing
+	}
+
+	merged := make([]string, 0)
+
+	switch v := existing.(type) {
+	case string:
+		if strings.TrimSpace(v) != "" {
+			merged = append(merged, v)
+		}
+	case []string:
+		merged = append(merged, v...)
+	case []any:
+		for _, item := range v {
+			str, ok := item.(string)
+			if ok && strings.TrimSpace(str) != "" {
+				merged = append(merged, str)
+			}
+		}
+	}
+
+	merged = append(merged, uploaded...)
+	if len(merged) == 1 {
+		return merged[0]
+	}
+	return merged
+}
+
+func (s *AwardService) resolveFileFieldValueURLs(ctx context.Context, value any) any {
+	resolve := func(key string) string {
+		if strings.TrimSpace(key) == "" {
+			return key
+		}
+		urlValue, err := s.GetFileDownloadURL(ctx, key)
+		if err != nil {
+			return key
+		}
+		return urlValue
+	}
+
+	switch v := value.(type) {
+	case string:
+		return resolve(v)
+	case []string:
+		out := make([]string, 0, len(v))
+		for _, key := range v {
+			out = append(out, resolve(key))
+		}
+		return out
+	case []any:
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			key, ok := item.(string)
+			if !ok {
+				continue
+			}
+			out = append(out, resolve(key))
+		}
+		return out
+	default:
+		return value
 	}
 }
 

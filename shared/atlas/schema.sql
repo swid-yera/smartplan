@@ -224,10 +224,10 @@ CREATE TABLE award_category_fields (
 
 CREATE TABLE awards (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    status awards_status NOT NULL,
-    reason TEXT,
-    methodist UUID,
-    teacher UUID,
+	status awards_status NOT NULL,
+	reason TEXT,
+	methodist UUID,
+	teacher UUID,
 
 
     total_points INT NOT NULL DEFAULT 0,
@@ -237,10 +237,6 @@ CREATE TABLE awards (
     bonus_criteria UUID,
     category_id UUID,
     field_values JSONB NOT NULL DEFAULT '{}'::jsonb,
-
-    text TEXT,
-    files TEXT[] DEFAULT '{}',
-    links TEXT[] DEFAULT '{}',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

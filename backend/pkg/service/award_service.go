@@ -22,16 +22,12 @@ type CreateAwardParams struct {
 	AwardBonusCriteria pgtype.UUID `json:"bonusCriteria"`
 	CategoryID         pgtype.UUID `json:"categoryId"`
 	FieldValues        any         `json:"fieldValues"`
-	Text               pgtype.Text `json:"text"`
-	Links              []string    `json:"links"`
 }
 
 type CreateTypeParams struct {
 	Name      string           `json:"name"`
 	Variants  []VariantRequest `json:"variants"`
 	AwardType uuid.UUID        `json:"type"`
-	Text      pgtype.Text      `json:"text"`
-	Links     []string         `json:"links"`
 }
 
 type AwardResponse struct {
@@ -47,9 +43,6 @@ type AwardResponse struct {
 	Methodist     *helpers.UserResponse     `json:"methodist"`
 	Teacher       *helpers.UserResponse     `json:"teacher"`
 	TotalPoints   int32                     `json:"totalPoints"`
-	Text          pgtype.Text               `json:"text"`
-	Files         []string                  `json:"files"`
-	Links         []string                  `json:"links"`
 	UpdatedAt     time.Time                 `json:"updatedAt"`
 	CreatedAt     time.Time                 `json:"createdAt"`
 }
@@ -125,9 +118,6 @@ type UpdateAwardRequest struct {
 	CategoryID    pgtype.UUID `json:"categoryId"`
 	FieldValues   any         `json:"fieldValues"`
 	TotalPoints   int32       `json:"totalPoints"`
-	Text          pgtype.Text `json:"text"`
-	Files         []string    `json:"files"`
-	Links         []string    `json:"links"`
 }
 
 type AwardService struct {
@@ -299,15 +289,6 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 		return AwardResponse{}, err
 	}
 
-	files := req.Files
-	if files == nil {
-		files = existingAward.Files
-	}
-	links := req.Links
-	if links == nil {
-		links = existingAward.Links
-	}
-
 	// 2. Обновление основных полей Award
 	params := storage.UpdateAwardParams{
 		ID:            id,
@@ -318,9 +299,6 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 		CategoryID:    categoryID,
 		FieldValues:   fieldValuesJSON,
 		TotalPoints:   req.TotalPoints,
-		Text:          req.Text,
-		Files:         files,
-		Links:         links,
 	}
 
 	updatedAward, err := s.repo.UpdateAward(ctx, params)
@@ -623,9 +601,6 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 		Methodist:     methodist,
 		Teacher:       teacher,
 		TotalPoints:   award.TotalPoints,
-		Text:          award.Text,
-		Files:         award.Files,
-		Links:         award.Links,
 		UpdatedAt:     award.UpdatedAt.Time,
 		CreatedAt:     award.CreatedAt.Time,
 	}, err

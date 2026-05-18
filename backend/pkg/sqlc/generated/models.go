@@ -411,9 +411,6 @@ type Award struct {
 	BonusCriteria pgtype.UUID        `json:"bonus_criteria"`
 	CategoryID    pgtype.UUID        `json:"category_id"`
 	FieldValues   []byte             `json:"field_values"`
-	Text          pgtype.Text        `json:"text"`
-	Files         []string           `json:"files"`
-	Links         []string           `json:"links"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }

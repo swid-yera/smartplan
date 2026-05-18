@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_pHyJAb8G6T
 createdAt: 2026-05-18T10:50:01.632387900
-updatedAt: 2026-05-18T12:34:40.771464400
+updatedAt: 2026-05-18T14:53:10.355424600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_iW5CQsevG9
 authentication: {}
@@ -10,41 +10,24 @@ authenticationType: null
 body:
   text: |-
     {
-      "name": "Публикации",
-      "icon": "book-open",
-      "description": "Награды и победы студентов",
-      "awardTypes": [
-        "536a92fa-b040-4def-a053-be3073f4ab2c"
-      ],
+      "name": "KPI with materials",
+      "icon": "paperclip",
+      "description": "Категория с файлами и ссылками",
+      "awardTypes": ["2d7984c8-90cf-4f68-8d4a-1829ac64e664"],
       "fields": [
         {
-          "key": "student_name",
-          "label": "Имя ученика",
-          "type": "text",
+          "key": "proofFiles",
+          "label": "Файлы подтверждения",
+          "type": "file",
           "required": true,
-          "placeholder": "Иван Иванов",
-          "helpText": "ФИО полностью",
-          "options": [],
-          "validation": {
-            "minLength": 3
-          },
           "sortOrder": 1
         },
         {
-          "key": "competition_level",
-          "label": "Уровень конкурса",
-          "type": "select",
-          "required": true,
-          "placeholder": "",
-          "helpText": "",
-          "options": [
-            "городской",
-            "областной",
-            "республиканский",
-            "международный"
-          ],
-          "validation": {},
-          "sortOrder": 3
+          "key": "proofLinks",
+          "label": "Ссылки подтверждения",
+          "type": "url",
+          "required": false,
+          "sortOrder": 2
         }
       ]
     }
