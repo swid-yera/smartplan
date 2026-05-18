@@ -1,0 +1,18 @@
+type: http_request
+model: http_request
+id: rq_cS6t9HjP6h
+createdAt: 2026-05-18T10:57:20.040732300
+updatedAt: 2026-05-18T10:57:23.936398800
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_iW5CQsevG9
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: DELETE
+name: ''
+sortPriority: 703.7037037037037
+url: ${[ url ]}/kpi/categories/:id
+urlParameters: []

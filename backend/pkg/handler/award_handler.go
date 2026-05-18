@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -237,13 +238,13 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 			if err != nil {
 				continue // TODO: handle error properly
 			}
-			f.Close()
 
 			// Generate object key with awards/ prefix and UUID
 			objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
 
 			// saving
 			fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
+			f.Close()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				continue // TODO: handle error properly
@@ -266,12 +267,19 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		Variant:       parseUUIDPgtype(variantID.String()),
 		Criteria:      parseUUIDPgtype(criteriaID.String()),
 		BonusCriteria: bonusCriteriaPg,
+		CategoryID:    params.CategoryID,
+		FieldValues:   mustMarshalFieldValues(params.FieldValues),
 		Text:          params.Text,
 		Files:         fileKeys,
 		Links:         params.Links,
 		TotalPoints:   0,
 	})
 	if err != nil {
+		var httpErr *service.HTTPStatusError
+		if errors.As(err, &httpErr) {
+			c.JSON(httpErr.StatusCode, gin.H{"error": "failed to create award", "details": httpErr.Message})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create award", "details": err.Error()})
 		return
 	}
@@ -303,56 +311,75 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		return
 	}
 
-	// parse multipart form
-	form, err := c.MultipartForm()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
-		return
-	}
-
-	// parse json data from form field
-	jsonData := c.PostForm("data")
-	if jsonData == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
-		return
-	}
-
 	var req service.UpdateAwardRequest
-	if err := json.Unmarshal([]byte(jsonData), &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format inside data field",
-			"details": err.Error(),
-		})
-		return
-	}
+	contentType := strings.ToLower(c.GetHeader("Content-Type"))
+	if strings.HasPrefix(contentType, "application/json") {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid JSON format",
+				"details": err.Error(),
+			})
+			return
+		}
+	} else {
+		// parse multipart form
+		form, err := c.MultipartForm()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
+			return
+		}
 
-	// parse files from multipart form
-	files := form.File["files"]
-	if len(files) > 0 {
-		for _, fileHeader := range files {
-			f, err := fileHeader.Open()
-			if err != nil {
-				continue
+		// parse json data from form field
+		jsonData := c.PostForm("data")
+		if jsonData == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
+			return
+		}
+
+		if err := json.Unmarshal([]byte(jsonData), &req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid JSON format inside data field",
+				"details": err.Error(),
+			})
+			return
+		}
+
+		// parse files from multipart form
+		files := form.File["files"]
+		if len(files) > 0 {
+			for _, fileHeader := range files {
+				f, err := fileHeader.Open()
+				if err != nil {
+					continue
+				}
+
+				// Generate object key with awards/ prefix and UUID
+				objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
+
+				// saving
+				fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
+				f.Close()
+
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				}
+
+				req.Files = append(req.Files, fileKey)
 			}
-
-			// Generate object key with awards/ prefix and UUID
-			objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
-
-			// saving
-			fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
-			f.Close()
-
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-
-			req.Files = append(req.Files, fileKey)
 		}
 	}
 
 	award, err := h.service.UpdateAward(c.Request.Context(), id, req)
 	if err != nil {
+		var httpErr *service.HTTPStatusError
+		if errors.As(err, &httpErr) {
+			c.JSON(httpErr.StatusCode, gin.H{
+				"error":   "failed to update award",
+				"details": httpErr.Message,
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to update award",
 			"details": err.Error(),
@@ -364,6 +391,20 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
 
 	c.JSON(http.StatusOK, award)
+}
+
+func mustMarshalFieldValues(v any) []byte {
+	if v == nil {
+		return []byte("{}")
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return []byte("{}")
+	}
+	if len(b) == 0 || string(b) == "null" {
+		return []byte("{}")
+	}
+	return b
 }
 
 // --- award type

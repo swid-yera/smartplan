@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_Pvzu6MSSaT
+createdAt: 2026-05-18T10:49:32.775800
+updatedAt: 2026-05-18T10:54:39.889639300
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_iW5CQsevG9
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: GET
+name: get by id
+sortPriority: 703.7037037037037
+url: ${[ url ]}/kpi/categories/:id
+urlParameters:
+- enabled: true
+  name: :id
+  value: a9da61f1-0782-42e4-840a-614b9ab75a64
+  id: ezYRdSSrYx
+- enabled: true
+  name: ''
+  value: ''
+  id: mgHgpW3jCD

@@ -185,6 +185,38 @@ CREATE TABLE award_types (
 );
 
 -- =====================
+-- AWARD CATEGORY FIELDS
+-- =====================
+CREATE TABLE award_category_fields (
+    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    key TEXT NOT NULL UNIQUE,
+    label TEXT NOT NULL,
+    type TEXT NOT NULL,
+    required BOOLEAN NOT NULL DEFAULT false,
+    placeholder TEXT,
+    help_text TEXT,
+    options JSONB NOT NULL DEFAULT '[]'::jsonb,
+    validation JSONB NOT NULL DEFAULT '{}'::jsonb,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =====================
+-- AWARD CATEGORIES
+-- =====================
+CREATE TABLE award_categories (
+    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    award_types UUID[] NOT NULL DEFAULT '{}',
+    name TEXT NOT NULL,
+    icon TEXT,
+    description TEXT,
+    fields UUID[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =====================
 -- AWARDS
 -- =====================
 
@@ -202,6 +234,8 @@ CREATE TABLE awards (
     variant UUID,
     criteria UUID,
     bonus_criteria UUID,
+    category_id UUID,
+    field_values JSONB NOT NULL DEFAULT '{}'::jsonb,
 
     text TEXT,
     files TEXT[] DEFAULT '{}',
@@ -210,7 +244,8 @@ CREATE TABLE awards (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT fk_award_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id)
+    CONSTRAINT fk_award_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id),
+    CONSTRAINT fk_award_category FOREIGN KEY (category_id) REFERENCES award_categories(id) ON DELETE RESTRICT
 );
 
 -- =====================

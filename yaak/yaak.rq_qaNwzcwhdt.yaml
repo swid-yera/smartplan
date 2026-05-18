@@ -1,0 +1,18 @@
+type: http_request
+model: http_request
+id: rq_qaNwzcwhdt
+createdAt: 2026-05-18T10:51:50.182436200
+updatedAt: 2026-05-18T10:52:14.643129
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_49QUXHQJNb
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: GET
+name: get all
+sortPriority: 703.7037037037037
+url: ${[ url ]}/kpi/categories/fields
+urlParameters: []
