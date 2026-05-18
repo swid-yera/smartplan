@@ -1,0 +1,806 @@
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"mime/multipart"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	storage "eduplan/backend/pkg/sqlc/generated"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+var allowedDynamicFieldTypes = map[string]struct{}{
+	"text":     {},
+	"textarea": {},
+	"number":   {},
+	"select":   {},
+	"date":     {},
+	"file":     {},
+	"url":      {},
+	"checkbox": {},
+}
+
+type AwardCategoryFieldRequest struct {
+	Key         string         `json:"key"`
+	Label       string         `json:"label"`
+	Type        string         `json:"type"`
+	Required    bool           `json:"required"`
+	Placeholder string         `json:"placeholder"`
+	HelpText    string         `json:"helpText"`
+	Options     any            `json:"options"`
+	Validation  map[string]any `json:"validation"`
+	SortOrder   int32          `json:"sortOrder"`
+}
+
+type AwardCategoryFieldResponse struct {
+	ID          uuid.UUID      `json:"id"`
+	Key         string         `json:"key"`
+	Label       string         `json:"label"`
+	Type        string         `json:"type"`
+	Required    bool           `json:"required"`
+	Placeholder string         `json:"placeholder,omitempty"`
+	HelpText    string         `json:"helpText,omitempty"`
+	Options     any            `json:"options"`
+	Validation  map[string]any `json:"validation"`
+	SortOrder   int32          `json:"sortOrder"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+}
+
+type AwardCategoryRequest struct {
+	Name        string                      `json:"name"`
+	Icon        string                      `json:"icon"`
+	Description string                      `json:"description"`
+	AwardTypes  []string                    `json:"awardTypes"`
+	Fields      []AwardCategoryFieldRequest `json:"fields"`
+}
+
+type AwardCategoryResponse struct {
+	ID                 uuid.UUID                    `json:"id"`
+	Name               string                       `json:"name"`
+	Icon               string                       `json:"icon,omitempty"`
+	Description        string                       `json:"description,omitempty"`
+	AwardTypes         []string                     `json:"awardTypes"`
+	AwardTypesExpanded []TypeResponse               `json:"awardTypesExpanded,omitempty"`
+	FieldsExpanded     []AwardCategoryFieldResponse `json:"fieldsExpanded"`
+	CreatedAt          time.Time                    `json:"createdAt"`
+	UpdatedAt          time.Time                    `json:"updatedAt"`
+}
+
+type AwardCategoryListItemResponse struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Icon        string    `json:"icon,omitempty"`
+	Description string    `json:"description,omitempty"`
+}
+
+func (s *AwardService) CreateCategory(ctx context.Context, req AwardCategoryRequest) (AwardCategoryResponse, error) {
+	awardTypeIDs, err := s.validateCategoryRequest(ctx, req)
+	if err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	category, err := s.repo.CreateAwardCategory(ctx, &storage.CreateAwardCategoryParams{
+		Name:        strings.TrimSpace(req.Name),
+		Icon:        toPgText(req.Icon),
+		Description: toPgText(req.Description),
+		AwardTypes:  awardTypeIDs,
+	})
+	if err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	if err = s.createCategoryFields(ctx, category.ID, req.Fields); err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	return s.GetCategoryByID(ctx, category.ID)
+}
+
+func (s *AwardService) GetAllCategories(ctx context.Context) ([]AwardCategoryListItemResponse, error) {
+	categories, err := s.repo.GetAllAwardCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]AwardCategoryListItemResponse, 0, len(categories))
+	for _, category := range categories {
+		result = append(result, AwardCategoryListItemResponse{
+			ID:          category.ID,
+			Name:        category.Name,
+			Icon:        fromPgText(category.Icon),
+			Description: fromPgText(category.Description),
+		})
+	}
+
+	return result, nil
+}
+
+func (s *AwardService) GetCategoryByID(ctx context.Context, id uuid.UUID) (AwardCategoryResponse, error) {
+	category, err := s.repo.GetAwardCategoryByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return AwardCategoryResponse{}, &HTTPStatusError{StatusCode: http.StatusNotFound, Message: "category not found"}
+		}
+		return AwardCategoryResponse{}, err
+	}
+
+	return s.mapCategoryResponse(ctx, category, true)
+}
+
+func (s *AwardService) UpdateCategory(ctx context.Context, id uuid.UUID, req AwardCategoryRequest) (AwardCategoryResponse, error) {
+	_, err := s.repo.GetAwardCategoryByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return AwardCategoryResponse{}, &HTTPStatusError{StatusCode: http.StatusNotFound, Message: "category not found"}
+		}
+		return AwardCategoryResponse{}, err
+	}
+
+	awardTypeIDs, err := s.validateCategoryRequest(ctx, req)
+	if err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	_, err = s.repo.UpdateAwardCategory(ctx, storage.UpdateAwardCategoryParams{
+		ID:          id,
+		Name:        strings.TrimSpace(req.Name),
+		Icon:        toPgText(req.Icon),
+		Description: toPgText(req.Description),
+		AwardTypes:  awardTypeIDs,
+	})
+	if err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	if err = s.repo.DeleteAwardCategoryFieldsByCategoryID(ctx, id); err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	if err = s.createCategoryFields(ctx, id, req.Fields); err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	return s.GetCategoryByID(ctx, id)
+}
+
+func (s *AwardService) DeleteCategory(ctx context.Context, id uuid.UUID) error {
+	_, err := s.repo.GetAwardCategoryByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &HTTPStatusError{StatusCode: http.StatusNotFound, Message: "category not found"}
+		}
+		return err
+	}
+
+	err = s.repo.DeleteAwardCategory(ctx, id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return &HTTPStatusError{StatusCode: http.StatusConflict, Message: "category is used by awards"}
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *AwardService) createCategoryFields(ctx context.Context, categoryID uuid.UUID, fields []AwardCategoryFieldRequest) error {
+	for _, field := range fields {
+		optionsJSON, err := json.Marshal(field.Options)
+		if err != nil || len(optionsJSON) == 0 || string(optionsJSON) == "null" {
+			optionsJSON = []byte("[]")
+		}
+
+		validationJSON, err := json.Marshal(field.Validation)
+		if err != nil || len(validationJSON) == 0 || string(validationJSON) == "null" {
+			validationJSON = []byte("{}")
+		}
+
+		_, err = s.repo.CreateAwardCategoryField(ctx, &storage.CreateAwardCategoryFieldParams{
+			CategoryID:  categoryID,
+			Key:         strings.TrimSpace(field.Key),
+			Label:       strings.TrimSpace(field.Label),
+			Type:        strings.ToLower(strings.TrimSpace(field.Type)),
+			Required:    field.Required,
+			Placeholder: toPgText(field.Placeholder),
+			HelpText:    toPgText(field.HelpText),
+			Options:     optionsJSON,
+			Validation:  validationJSON,
+			SortOrder:   field.SortOrder,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *AwardService) validateCategoryRequest(ctx context.Context, req AwardCategoryRequest) ([]uuid.UUID, error) {
+	if strings.TrimSpace(req.Name) == "" {
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "name is required"}
+	}
+
+	awardTypeIDs, err := parseUUIDStrings(req.AwardTypes)
+	if err != nil {
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid awardTypes uuid"}
+	}
+
+	for _, id := range awardTypeIDs {
+		_, err = s.repo.GetAwardTypeByID(ctx, id)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "award type not found"}
+			}
+			return nil, err
+		}
+	}
+
+	seen := make(map[string]struct{}, len(req.Fields))
+	for _, field := range req.Fields {
+		key := strings.TrimSpace(field.Key)
+		label := strings.TrimSpace(field.Label)
+		fieldType := strings.ToLower(strings.TrimSpace(field.Type))
+
+		if key == "" {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "field key is required"}
+		}
+		if label == "" {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "field label is required"}
+		}
+		if _, ok := allowedDynamicFieldTypes[fieldType]; !ok {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("unsupported field type: %s", field.Type)}
+		}
+		if _, ok := seen[strings.ToLower(key)]; ok {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("duplicate field key: %s", key)}
+		}
+		seen[strings.ToLower(key)] = struct{}{}
+	}
+
+	return awardTypeIDs, nil
+}
+
+func (s *AwardService) mapCategoryResponse(ctx context.Context, category storage.AwardCategory, withAwardTypesExpanded bool) (AwardCategoryResponse, error) {
+	fields, err := s.repo.GetAwardCategoryFieldsByCategoryID(ctx, category.ID)
+	if err != nil {
+		return AwardCategoryResponse{}, err
+	}
+
+	fieldsExpanded := make([]AwardCategoryFieldResponse, 0, len(fields))
+	for _, field := range fields {
+		mappedField, mapErr := s.mapCategoryFieldResponse(field)
+		if mapErr != nil {
+			return AwardCategoryResponse{}, mapErr
+		}
+		fieldsExpanded = append(fieldsExpanded, mappedField)
+	}
+
+	response := AwardCategoryResponse{
+		ID:             category.ID,
+		Name:           category.Name,
+		Icon:           category.Icon.String,
+		Description:    category.Description.String,
+		AwardTypes:     formatUUIDs(category.AwardTypes),
+		FieldsExpanded: fieldsExpanded,
+		CreatedAt:      category.CreatedAt.Time,
+		UpdatedAt:      category.UpdatedAt.Time,
+	}
+
+	if !withAwardTypesExpanded {
+		return response, nil
+	}
+
+	typesExpanded := make([]TypeResponse, 0, len(category.AwardTypes))
+	for _, typeID := range category.AwardTypes {
+		dbType, typeErr := s.repo.GetAwardTypeByID(ctx, typeID)
+		if typeErr != nil {
+			if errors.Is(typeErr, pgx.ErrNoRows) {
+				return AwardCategoryResponse{}, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "award type not found"}
+			}
+			return AwardCategoryResponse{}, typeErr
+		}
+
+		mappedType, buildErr := s.BuildType(ctx, dbType)
+		if buildErr != nil {
+			return AwardCategoryResponse{}, buildErr
+		}
+		typesExpanded = append(typesExpanded, mappedType)
+	}
+
+	response.AwardTypesExpanded = typesExpanded
+	return response, nil
+}
+
+func (s *AwardService) mapCategoryFieldResponse(field storage.AwardCategoryField) (AwardCategoryFieldResponse, error) {
+	var options any = []any{}
+	if len(field.Options) > 0 {
+		if err := json.Unmarshal(field.Options, &options); err != nil {
+			return AwardCategoryFieldResponse{}, err
+		}
+	}
+
+	validation := map[string]any{}
+	if len(field.Validation) > 0 {
+		if err := json.Unmarshal(field.Validation, &validation); err != nil {
+			return AwardCategoryFieldResponse{}, err
+		}
+	}
+
+	return AwardCategoryFieldResponse{
+		ID:          field.ID,
+		Key:         field.Key,
+		Label:       field.Label,
+		Type:        field.Type,
+		Required:    field.Required,
+		Placeholder: field.Placeholder.String,
+		HelpText:    field.HelpText.String,
+		Options:     options,
+		Validation:  validation,
+		SortOrder:   field.SortOrder,
+		CreatedAt:   field.CreatedAt.Time,
+		UpdatedAt:   field.UpdatedAt.Time,
+	}, nil
+}
+
+func (s *AwardService) normalizeFieldValuesInput(input any) (map[string]any, error) {
+	switch v := input.(type) {
+	case nil:
+		return map[string]any{}, nil
+	case []byte:
+		if len(v) == 0 {
+			return map[string]any{}, nil
+		}
+		var out map[string]any
+		if err := json.Unmarshal(v, &out); err != nil {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid fieldValues JSON"}
+		}
+		if out == nil {
+			out = map[string]any{}
+		}
+		return out, nil
+	case map[string]any:
+		if v == nil {
+			return map[string]any{}, nil
+		}
+		return v, nil
+	default:
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid fieldValues payload"}
+		}
+		var out map[string]any
+		if err = json.Unmarshal(b, &out); err != nil {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid fieldValues payload"}
+		}
+		if out == nil {
+			out = map[string]any{}
+		}
+		return out, nil
+	}
+}
+
+func (s *AwardService) decodeFieldValues(raw []byte) (map[string]any, error) {
+	return s.normalizeFieldValuesInput(raw)
+}
+
+func (s *AwardService) validateAndMarshalFieldValues(ctx context.Context, categoryID pgtype.UUID, values map[string]any) ([]byte, error) {
+	if values == nil {
+		values = map[string]any{}
+	}
+
+	if !categoryID.Valid {
+		if len(values) > 0 {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "categoryId is required when fieldValues is provided"}
+		}
+		return []byte("{}"), nil
+	}
+
+	_, err := s.repo.GetAwardCategoryByID(ctx, categoryID.Bytes)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "category not found"}
+		}
+		return nil, err
+	}
+
+	fields, err := s.repo.GetAwardCategoryFieldsByCategoryID(ctx, categoryID.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	fieldByKey := make(map[string]storage.AwardCategoryField, len(fields))
+	for _, field := range fields {
+		fieldByKey[field.Key] = field
+	}
+
+	for key := range values {
+		if _, ok := fieldByKey[key]; !ok {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("unknown fieldValues key: %s", key)}
+		}
+	}
+
+	for _, field := range fields {
+		value, exists := values[field.Key]
+		if !exists {
+			if field.Required {
+				return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("required field is missing: %s", field.Key)}
+			}
+			continue
+		}
+
+		if field.Required && !hasProvidedValue(value) {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("required field is empty: %s", field.Key)}
+		}
+
+		if err = validateFieldValueType(field, value); err != nil {
+			return nil, err
+		}
+	}
+
+	payload, err := json.Marshal(values)
+	if err != nil {
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid fieldValues payload"}
+	}
+
+	return payload, nil
+}
+
+func validateFieldValueType(field storage.AwardCategoryField, value any) error {
+	fieldType := strings.ToLower(strings.TrimSpace(field.Type))
+	key := field.Key
+
+	switch fieldType {
+	case "text", "textarea", "date":
+		if _, ok := value.(string); !ok {
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
+		}
+	case "url":
+		if err := validateURLOrURLArray(value, key); err != nil {
+			return err
+		}
+	case "number":
+		switch value.(type) {
+		case float64, float32, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, json.Number:
+		default:
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a number", key)}
+		}
+	case "checkbox":
+		if _, ok := value.(bool); !ok {
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a boolean", key)}
+		}
+	case "select":
+		if err := validateStringOrStringArray(value, key, "select option"); err != nil {
+			return err
+		}
+	case "file":
+		if err := validateStringOrStringArray(value, key, "file URL"); err != nil {
+			return err
+		}
+	default:
+		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("unsupported field type for %s", key)}
+	}
+
+	return nil
+}
+
+func validateStringOrStringArray(value any, key string, label string) error {
+	switch v := value.(type) {
+	case string:
+		return nil
+	case []string:
+		return nil
+	case []any:
+		for _, item := range v {
+			if _, ok := item.(string); !ok {
+				return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must contain %s strings", key, label)}
+			}
+		}
+		return nil
+	default:
+		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string or array of strings", key)}
+	}
+}
+
+func hasProvidedValue(value any) bool {
+	if value == nil {
+		return false
+	}
+
+	switch v := value.(type) {
+	case string:
+		return strings.TrimSpace(v) != ""
+	case []string:
+		return len(v) > 0
+	case []any:
+		return len(v) > 0
+	default:
+		return true
+	}
+}
+
+func validateURLOrURLArray(value any, key string) error {
+	validate := func(raw string) error {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			return nil
+		}
+		if _, err := url.ParseRequestURI(trimmed); err != nil {
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a valid URL", key)}
+		}
+		return nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		return validate(v)
+	case []string:
+		for _, item := range v {
+			if err := validate(item); err != nil {
+				return err
+			}
+		}
+		return nil
+	case []any:
+		for _, item := range v {
+			str, ok := item.(string)
+			if !ok {
+				return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must contain URL strings", key)}
+			}
+			if err := validate(str); err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string or array of strings", key)}
+	}
+}
+
+func (s *AwardService) MergeUploadedFilesIntoFieldValues(
+	ctx context.Context,
+	userID uuid.UUID,
+	categoryID pgtype.UUID,
+	rawFieldValues any,
+	formFiles map[string][]*multipart.FileHeader,
+) (map[string]any, error) {
+	values, err := s.normalizeFieldValuesInput(rawFieldValues)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(formFiles) == 0 {
+		return values, nil
+	}
+
+	if !categoryID.Valid {
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "categoryId is required when uploading files"}
+	}
+
+	fields, err := s.repo.GetAwardCategoryFieldsByCategoryID(ctx, categoryID.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	fileFieldKeys := make([]string, 0)
+	fileFieldSet := make(map[string]struct{})
+	for _, field := range fields {
+		if strings.EqualFold(strings.TrimSpace(field.Type), "file") {
+			fileFieldKeys = append(fileFieldKeys, field.Key)
+			fileFieldSet[field.Key] = struct{}{}
+		}
+	}
+
+	for formKey, headers := range formFiles {
+		if len(headers) == 0 {
+			continue
+		}
+
+		targetKey := formKey
+		if formKey == "files" {
+			if len(fileFieldKeys) != 1 {
+				return nil, &HTTPStatusError{
+					StatusCode: http.StatusBadRequest,
+					Message:    "ambiguous file field: upload using multipart key fieldValues.<fieldKey>",
+				}
+			}
+			targetKey = fileFieldKeys[0]
+		} else if strings.HasPrefix(formKey, "fieldValues.") {
+			targetKey = strings.TrimPrefix(formKey, "fieldValues.")
+		}
+
+		if _, ok := fileFieldSet[targetKey]; !ok {
+			return nil, &HTTPStatusError{
+				StatusCode: http.StatusBadRequest,
+				Message:    fmt.Sprintf("unknown file field key: %s", targetKey),
+			}
+		}
+
+		uploaded := make([]string, 0, len(headers))
+		for _, fileHeader := range headers {
+			file, openErr := fileHeader.Open()
+			if openErr != nil {
+				return nil, openErr
+			}
+
+			objectName := fmt.Sprintf(
+				"awards/%s/%s/%s_%s",
+				userID.String(),
+				targetKey,
+				uuid.NewString(),
+				fileHeader.Filename,
+			)
+
+			fileKey, uploadErr := s.UploadFile(ctx, objectName, file, fileHeader.Size)
+			closeErr := file.Close()
+			if uploadErr != nil {
+				return nil, uploadErr
+			}
+			if closeErr != nil {
+				return nil, closeErr
+			}
+
+			uploaded = append(uploaded, fileKey)
+		}
+
+		values[targetKey] = mergeUploadedFileKeys(values[targetKey], uploaded)
+	}
+
+	return values, nil
+}
+
+func (s *AwardService) ResolveFieldValueFileURLs(
+	ctx context.Context,
+	categoryID *uuid.UUID,
+	values map[string]any,
+) (map[string]any, error) {
+	if values == nil {
+		return map[string]any{}, nil
+	}
+	if categoryID == nil {
+		return values, nil
+	}
+
+	fields, err := s.repo.GetAwardCategoryFieldsByCategoryID(ctx, *categoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	resolved := make(map[string]any, len(values))
+	for key, value := range values {
+		resolved[key] = value
+	}
+
+	for _, field := range fields {
+		if !strings.EqualFold(strings.TrimSpace(field.Type), "file") {
+			continue
+		}
+		value, ok := resolved[field.Key]
+		if !ok {
+			continue
+		}
+
+		resolved[field.Key] = s.resolveFileFieldValueURLs(ctx, value)
+	}
+
+	return resolved, nil
+}
+
+func mergeUploadedFileKeys(existing any, uploaded []string) any {
+	if len(uploaded) == 0 {
+		return existing
+	}
+
+	merged := make([]string, 0)
+
+	switch v := existing.(type) {
+	case string:
+		if strings.TrimSpace(v) != "" {
+			merged = append(merged, v)
+		}
+	case []string:
+		merged = append(merged, v...)
+	case []any:
+		for _, item := range v {
+			str, ok := item.(string)
+			if ok && strings.TrimSpace(str) != "" {
+				merged = append(merged, str)
+			}
+		}
+	}
+
+	merged = append(merged, uploaded...)
+	if len(merged) == 1 {
+		return merged[0]
+	}
+	return merged
+}
+
+func (s *AwardService) resolveFileFieldValueURLs(ctx context.Context, value any) any {
+	resolve := func(key string) string {
+		if strings.TrimSpace(key) == "" {
+			return key
+		}
+		urlValue, err := s.GetFileDownloadURL(ctx, key)
+		if err != nil {
+			return key
+		}
+		return urlValue
+	}
+
+	switch v := value.(type) {
+	case string:
+		return resolve(v)
+	case []string:
+		out := make([]string, 0, len(v))
+		for _, key := range v {
+			out = append(out, resolve(key))
+		}
+		return out
+	case []any:
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			key, ok := item.(string)
+			if !ok {
+				continue
+			}
+			out = append(out, resolve(key))
+		}
+		return out
+	default:
+		return value
+	}
+}
+
+func parseUUIDStrings(values []string) ([]uuid.UUID, error) {
+	if len(values) == 0 {
+		return []uuid.UUID{}, nil
+	}
+
+	out := make([]uuid.UUID, 0, len(values))
+	for _, value := range values {
+		id, err := uuid.Parse(strings.TrimSpace(value))
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+
+	return out, nil
+}
+
+func formatUUIDs(values []uuid.UUID) []string {
+	if len(values) == 0 {
+		return []string{}
+	}
+
+	out := make([]string, 0, len(values))
+	for _, id := range values {
+		out = append(out, id.String())
+	}
+	return out
+}
+
+func toPgText(value string) pgtype.Text {
+	if strings.TrimSpace(value) == "" {
+		return pgtype.Text{}
+	}
+	return pgtype.Text{String: value, Valid: true}
+}
+
+func fromPgText(value pgtype.Text) string {
+	if !value.Valid {
+		return ""
+	}
+	return value.String
+}

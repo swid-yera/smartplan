@@ -20,6 +20,8 @@ type Querier interface {
 	CountUsers(ctx context.Context) (int64, error)
 	CountUsersFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
 	CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error)
+	CreateAwardCategory(ctx context.Context, arg CreateAwardCategoryParams) (AwardCategory, error)
+	CreateAwardCategoryField(ctx context.Context, arg CreateAwardCategoryFieldParams) (AwardCategoryField, error)
 	CreateAwardType(ctx context.Context, arg CreateAwardTypeParams) (AwardType, error)
 	CreateAwardTypeCriteria(ctx context.Context, arg CreateAwardTypeCriteriaParams) (AwardTypeCriterium, error)
 	CreateAwardTypesVariant(ctx context.Context, arg CreateAwardTypesVariantParams) (AwardTypeVariant, error)
@@ -34,6 +36,8 @@ type Querier interface {
 	CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
+	DeleteAwardCategory(ctx context.Context, id uuid.UUID) error
+	DeleteAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) error
 	DeleteAwardType(ctx context.Context, id uuid.UUID) error
 	DeleteGroupsNotInKeycloak(ctx context.Context, dollar_1 []uuid.UUID) error
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
@@ -41,6 +45,7 @@ type Querier interface {
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
+	GetAllAwardCategories(ctx context.Context) ([]GetAllAwardCategoriesRow, error)
 	GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCriterium, error)
 	GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error)
 	GetAllAwardTypes(ctx context.Context) ([]AwardType, error)
@@ -52,6 +57,8 @@ type Querier interface {
 	GetAllRups(ctx context.Context, arg GetAllRupsParams) ([]Rup, error)
 	GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]User, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
+	GetAwardCategoryByID(ctx context.Context, id uuid.UUID) (AwardCategory, error)
+	GetAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) ([]AwardCategoryField, error)
 	GetAwardTypeByID(ctx context.Context, id uuid.UUID) (AwardType, error)
 	GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (AwardTypeCriterium, error)
 	GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error)
@@ -79,6 +86,7 @@ type Querier interface {
 	GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatingPaginatedParams) ([]User, error)
 	LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
+	UpdateAwardCategory(ctx context.Context, arg UpdateAwardCategoryParams) (AwardCategory, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
 	UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error
 	UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTypeVariantsParams) (AwardType, error)

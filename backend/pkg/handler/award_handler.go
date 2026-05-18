@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,16 +30,12 @@ func NewAwardHandler(service *service.AwardService) *AwardHandler {
 	}
 }
 
-// resolveFileURLs generates presigned URLs for files stored in MinIO
-func (h *AwardHandler) resolveFileURLs(ctx context.Context, fileKeys []string) []string {
-	fileURLs := make([]string, 0, len(fileKeys))
-	for _, key := range fileKeys {
-		url, err := h.service.GetFileDownloadURL(ctx, key)
-		if err == nil {
-			fileURLs = append(fileURLs, url)
-		}
+func (h *AwardHandler) resolveAwardFieldValues(ctx context.Context, award service.AwardResponse) service.AwardResponse {
+	resolvedValues, err := h.service.ResolveFieldValueFileURLs(ctx, award.CategoryID, award.FieldValues)
+	if err == nil {
+		award.FieldValues = resolvedValues
 	}
-	return fileURLs
+	return award
 }
 
 // parseUUIDPgtype is a helper to convert form strings to pgtype.UUID
@@ -70,9 +66,8 @@ func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs for each award
 	for i := range awards {
-		awards[i].Files = h.resolveFileURLs(c.Request.Context(), awards[i].Files)
+		awards[i] = h.resolveAwardFieldValues(c.Request.Context(), awards[i])
 	}
 
 	c.JSON(http.StatusOK, awards)
@@ -93,8 +88,7 @@ func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs
-	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
+	award = h.resolveAwardFieldValues(c.Request.Context(), award)
 
 	c.JSON(http.StatusOK, award)
 }
@@ -226,36 +220,15 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		bonusCriteriaPg = pgtype.UUID{Bytes: parsed, Valid: true}
 	}
 
-	// files
-	var fileKeys []string
-
-	// parse files from multipart form
-	files := form.File["files"]
-	if len(files) > 0 {
-		for _, fileHeader := range files {
-			f, err := fileHeader.Open()
-			if err != nil {
-				continue // TODO: handle error properly
-			}
-			f.Close()
-
-			// Generate object key with awards/ prefix and UUID
-			objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
-
-			// saving
-			fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				continue // TODO: handle error properly
-			}
-
-			fileKeys = append(fileKeys, fileKey)
-		}
-	}
-
-	// Check if at least one of files or links is provided
-	if len(files) == 0 && len(params.Links) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "either files or links must be provided"})
+	mergedFieldValues, err := h.service.MergeUploadedFilesIntoFieldValues(
+		c.Request.Context(),
+		currentUser.KeycloakID,
+		params.CategoryID,
+		params.FieldValues,
+		form.File,
+	)
+	if err != nil {
+		writeServiceError(c, err)
 		return
 	}
 
@@ -266,18 +239,21 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		Variant:       parseUUIDPgtype(variantID.String()),
 		Criteria:      parseUUIDPgtype(criteriaID.String()),
 		BonusCriteria: bonusCriteriaPg,
-		Text:          params.Text,
-		Files:         fileKeys,
-		Links:         params.Links,
+		CategoryID:    params.CategoryID,
+		FieldValues:   mustMarshalFieldValues(mergedFieldValues),
 		TotalPoints:   0,
 	})
 	if err != nil {
+		var httpErr *service.HTTPStatusError
+		if errors.As(err, &httpErr) {
+			c.JSON(httpErr.StatusCode, gin.H{"error": "failed to create award", "details": httpErr.Message})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create award", "details": err.Error()})
 		return
 	}
 
-	// Convert file keys to URLs
-	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
+	award = h.resolveAwardFieldValues(c.Request.Context(), award)
 
 	c.JSON(http.StatusOK, award)
 }
@@ -303,56 +279,75 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		return
 	}
 
-	// parse multipart form
-	form, err := c.MultipartForm()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
-		return
-	}
-
-	// parse json data from form field
-	jsonData := c.PostForm("data")
-	if jsonData == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
-		return
-	}
-
 	var req service.UpdateAwardRequest
-	if err := json.Unmarshal([]byte(jsonData), &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format inside data field",
-			"details": err.Error(),
-		})
-		return
-	}
+	contentType := strings.ToLower(c.GetHeader("Content-Type"))
+	if strings.HasPrefix(contentType, "application/json") {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid JSON format",
+				"details": err.Error(),
+			})
+			return
+		}
+	} else {
+		// parse multipart form
+		form, err := c.MultipartForm()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
+			return
+		}
 
-	// parse files from multipart form
-	files := form.File["files"]
-	if len(files) > 0 {
-		for _, fileHeader := range files {
-			f, err := fileHeader.Open()
-			if err != nil {
-				continue
-			}
+		// parse json data from form field
+		jsonData := c.PostForm("data")
+		if jsonData == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
+			return
+		}
 
-			// Generate object key with awards/ prefix and UUID
-			objectName := fmt.Sprintf("awards/%s/%s", currentUser.KeycloakID, fileHeader.Filename)
+		if err := json.Unmarshal([]byte(jsonData), &req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid JSON format inside data field",
+				"details": err.Error(),
+			})
+			return
+		}
 
-			// saving
-			fileKey, err := h.service.UploadFile(c.Request.Context(), objectName, f, fileHeader.Size)
-			f.Close()
-
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		uploadCategoryID := req.CategoryID
+		if !uploadCategoryID.Valid {
+			existingAward, getErr := h.service.GetAwardByID(c.Request.Context(), id)
+			if getErr != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve current award category", "details": getErr.Error()})
 				return
 			}
-
-			req.Files = append(req.Files, fileKey)
+			if existingAward.CategoryID != nil {
+				uploadCategoryID = parseUUIDPgtype(existingAward.CategoryID.String())
+			}
 		}
+
+		mergedFieldValues, mergeErr := h.service.MergeUploadedFilesIntoFieldValues(
+			c.Request.Context(),
+			currentUser.KeycloakID,
+			uploadCategoryID,
+			req.FieldValues,
+			form.File,
+		)
+		if mergeErr != nil {
+			writeServiceError(c, mergeErr)
+			return
+		}
+		req.FieldValues = mergedFieldValues
 	}
 
 	award, err := h.service.UpdateAward(c.Request.Context(), id, req)
 	if err != nil {
+		var httpErr *service.HTTPStatusError
+		if errors.As(err, &httpErr) {
+			c.JSON(httpErr.StatusCode, gin.H{
+				"error":   "failed to update award",
+				"details": httpErr.Message,
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to update award",
 			"details": err.Error(),
@@ -360,10 +355,23 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs
-	award.Files = h.resolveFileURLs(c.Request.Context(), award.Files)
+	award = h.resolveAwardFieldValues(c.Request.Context(), award)
 
 	c.JSON(http.StatusOK, award)
+}
+
+func mustMarshalFieldValues(v any) []byte {
+	if v == nil {
+		return []byte("{}")
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return []byte("{}")
+	}
+	if len(b) == 0 || string(b) == "null" {
+		return []byte("{}")
+	}
+	return b
 }
 
 // --- award type
@@ -506,9 +514,8 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 		return
 	}
 
-	// Convert file keys to URLs for each award
 	for i := range result.Data {
-		result.Data[i].Files = h.resolveFileURLs(c.Request.Context(), result.Data[i].Files)
+		result.Data[i] = h.resolveAwardFieldValues(c.Request.Context(), result.Data[i])
 	}
 
 	c.JSON(200, result)

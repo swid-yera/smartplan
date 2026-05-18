@@ -1,0 +1,45 @@
+type: http_request
+model: http_request
+id: rq_pHyJAb8G6T
+createdAt: 2026-05-18T10:50:01.632387900
+updatedAt: 2026-05-18T14:53:10.355424600
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_iW5CQsevG9
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "name": "KPI with materials",
+      "icon": "paperclip",
+      "description": "Категория с файлами и ссылками",
+      "awardTypes": ["2d7984c8-90cf-4f68-8d4a-1829ac64e664"],
+      "fields": [
+        {
+          "key": "proofFiles",
+          "label": "Файлы подтверждения",
+          "type": "file",
+          "required": true,
+          "sortOrder": 1
+        },
+        {
+          "key": "proofLinks",
+          "label": "Ссылки подтверждения",
+          "type": "url",
+          "required": false,
+          "sortOrder": 2
+        }
+      ]
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: MXf7YdFuwW
+method: POST
+name: create
+sortPriority: 2000.0
+url: ${[ url ]}/categories
+urlParameters: []

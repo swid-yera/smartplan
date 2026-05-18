@@ -20,16 +20,14 @@ type CreateAwardParams struct {
 	AwardVariant       pgtype.UUID `json:"variant"`
 	AwardCriteria      pgtype.UUID `json:"criteria"`
 	AwardBonusCriteria pgtype.UUID `json:"bonusCriteria"`
-	Text               pgtype.Text `json:"text"`
-	Links              []string    `json:"links"`
+	CategoryID         pgtype.UUID `json:"categoryId"`
+	FieldValues        any         `json:"fieldValues"`
 }
 
 type CreateTypeParams struct {
 	Name      string           `json:"name"`
 	Variants  []VariantRequest `json:"variants"`
 	AwardType uuid.UUID        `json:"type"`
-	Text      pgtype.Text      `json:"text"`
-	Links     []string         `json:"links"`
 }
 
 type AwardResponse struct {
@@ -39,13 +37,12 @@ type AwardResponse struct {
 	Variant       SelectedVariantResponse   `json:"variant"`
 	Criteria      SelectedCriteriaResponse  `json:"criteria"`
 	BonusCriteria *SelectedCriteriaResponse `json:"bonus_criteria"`
+	CategoryID    *uuid.UUID                `json:"categoryId,omitempty"`
+	FieldValues   map[string]any            `json:"fieldValues"`
 	Reason        pgtype.Text               `json:"reason"`
 	Methodist     *helpers.UserResponse     `json:"methodist"`
 	Teacher       *helpers.UserResponse     `json:"teacher"`
 	TotalPoints   int32                     `json:"totalPoints"`
-	Text          pgtype.Text               `json:"text"`
-	Files         []string                  `json:"files"`
-	Links         []string                  `json:"links"`
 	UpdatedAt     time.Time                 `json:"updatedAt"`
 	CreatedAt     time.Time                 `json:"createdAt"`
 }
@@ -118,10 +115,9 @@ type UpdateAwardRequest struct {
 	Variant       pgtype.UUID `json:"variant"`
 	Criteria      pgtype.UUID `json:"criteria"`
 	BonusCriteria pgtype.UUID `json:"bonusCriteria"`
+	CategoryID    pgtype.UUID `json:"categoryId"`
+	FieldValues   any         `json:"fieldValues"`
 	TotalPoints   int32       `json:"totalPoints"`
-	Text          pgtype.Text `json:"text"`
-	Files         []string    `json:"files"`
-	Links         []string    `json:"links"`
 }
 
 type AwardService struct {
@@ -165,6 +161,16 @@ func (s *AwardService) CreateAward(ctx context.Context, params *storage.CreateAw
 			s.log.Error("create award error: get award bonus criteria by id error: ", err)
 			return AwardResponse{}, err
 		}
+	}
+
+	fieldValuesMap, err := s.normalizeFieldValuesInput(params.FieldValues)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	params.FieldValues, err = s.validateAndMarshalFieldValues(ctx, params.CategoryID, fieldValuesMap)
+	if err != nil {
+		return AwardResponse{}, err
 	}
 
 	dbAward, err := s.repo.CreateAward(ctx, params)
@@ -257,6 +263,32 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 		}
 	}
 
+	existingAward, err := s.repo.GetAwardByID(ctx, id)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	categoryID := existingAward.CategoryID
+	if req.CategoryID.Valid {
+		categoryID = req.CategoryID
+	}
+
+	fieldValuesMap, err := s.normalizeFieldValuesInput(existingAward.FieldValues)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+	if req.FieldValues != nil {
+		fieldValuesMap, err = s.normalizeFieldValuesInput(req.FieldValues)
+		if err != nil {
+			return AwardResponse{}, err
+		}
+	}
+
+	fieldValuesJSON, err := s.validateAndMarshalFieldValues(ctx, categoryID, fieldValuesMap)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
 	// 2. Обновление основных полей Award
 	params := storage.UpdateAwardParams{
 		ID:            id,
@@ -264,10 +296,9 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 		Variant:       req.Variant,
 		Criteria:      req.Criteria,
 		BonusCriteria: req.BonusCriteria,
+		CategoryID:    categoryID,
+		FieldValues:   fieldValuesJSON,
 		TotalPoints:   req.TotalPoints,
-		Text:          req.Text,
-		Files:         req.Files,
-		Links:         req.Links,
 	}
 
 	updatedAward, err := s.repo.UpdateAward(ctx, params)
@@ -546,6 +577,17 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 		teacher = helpers.ConvertToUserResponse(user)
 	}
 
+	var categoryID *uuid.UUID
+	if award.CategoryID.Valid {
+		id := uuid.UUID(award.CategoryID.Bytes)
+		categoryID = &id
+	}
+
+	fieldValues, err := s.decodeFieldValues(award.FieldValues)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
 	return AwardResponse{
 		ID:            award.ID,
 		Status:        award.Status,
@@ -553,13 +595,12 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 		Variant:       mappedVariant,
 		Criteria:      mappedCriteria,
 		BonusCriteria: mappedBonusCriteria,
+		CategoryID:    categoryID,
+		FieldValues:   fieldValues,
 		Reason:        award.Reason,
 		Methodist:     methodist,
 		Teacher:       teacher,
 		TotalPoints:   award.TotalPoints,
-		Text:          award.Text,
-		Files:         award.Files,
-		Links:         award.Links,
 		UpdatedAt:     award.UpdatedAt.Time,
 		CreatedAt:     award.CreatedAt.Time,
 	}, err

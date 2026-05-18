@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-04-21T10:58:03.252011100
+updatedAt: 2026-05-18T14:56:11.774873
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -16,16 +16,21 @@ body:
     value: |-
       {
         "text": "Описание ",
-        "type": "aefc4a3c-eb64-473b-9238-f99e824a0813",
-        "variant": "008b5555-157e-4c4f-981d-3c887406c000",
-        "criteria": "d2a7b4f0-4401-49aa-8091-2fe3179a352b"
+        "type": "2d7984c8-90cf-4f68-8d4a-1829ac64e664",
+        "variant": "aa7a4744-2612-4609-b54d-98e3fa43acf2",
+        "criteria": "d31f602e-b594-451c-aed8-0ca09d4bf116",
+        "categoryId": "cf3bc16a-10a5-4a20-a9f4-5375f6544d51",
+        "fieldValues": {
+          "proofFiles": [""],
+          "proofLinks": "https://example.com/proof-1"
+        }
       }
   - enabled: true
     file: C:\Users\justs\OneDrive\Pictures\delovoi_kot.jpg
     id: H2zgvD0mut
     name: files
   - enabled: true
-    id: HEC3jRu9Wi
+    id: 2H37RbuZyp
     name: ''
     value: ''
 bodyType: multipart/form-data

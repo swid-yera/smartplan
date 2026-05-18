@@ -14,6 +14,7 @@ type Router struct {
 	user                  *UserHandler
 	rup                   *RupHandler
 	award                 *AwardHandler
+	category              *CategoryHandler
 	groups                *GroupsHandler
 	lesson                *LessonHandler
 	ai                    *AIHandler
@@ -27,6 +28,7 @@ func NewRouter(
 	user *UserHandler,
 	rup *RupHandler,
 	award *AwardHandler,
+	category *CategoryHandler,
 	groups *GroupsHandler,
 	lesson *LessonHandler,
 	ai *AIHandler,
@@ -39,6 +41,7 @@ func NewRouter(
 		user:                  user,
 		rup:                   rup,
 		award:                 award,
+		category:              category,
 		webhooks:              webhooks,
 		groups:                groups,
 		lesson:                lesson,
@@ -131,6 +134,16 @@ func (r *Router) Init() *gin.Engine {
 				awardTypes.PUT("/:id", r.award.UpdateAwardType)
 				awardTypes.DELETE("/:id", r.award.DeleteType)
 			}
+		}
+
+		// --- KPI CATEGORIES ---
+		categories := protected.Group("/categories")
+		{
+			categories.GET("", r.category.GetCategories)
+			categories.POST("", r.category.CreateCategory)
+			categories.GET("/:id", r.category.GetCategoryByID)
+			categories.PUT("/:id", r.category.UpdateCategory)
+			categories.DELETE("/:id", r.category.DeleteCategory)
 		}
 
 		// --- GROUPS ---

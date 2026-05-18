@@ -49,6 +49,38 @@ func (r *AwardRepository) CreateAward(ctx context.Context, params *storage.Creat
 	return r.queries.CreateAward(ctx, *params)
 }
 
+func (r *AwardRepository) CreateAwardCategory(ctx context.Context, params *storage.CreateAwardCategoryParams) (storage.AwardCategory, error) {
+	return r.queries.CreateAwardCategory(ctx, *params)
+}
+
+func (r *AwardRepository) GetAwardCategoryByID(ctx context.Context, id uuid.UUID) (storage.AwardCategory, error) {
+	return r.queries.GetAwardCategoryByID(ctx, id)
+}
+
+func (r *AwardRepository) GetAllAwardCategories(ctx context.Context) ([]storage.GetAllAwardCategoriesRow, error) {
+	return r.queries.GetAllAwardCategories(ctx)
+}
+
+func (r *AwardRepository) UpdateAwardCategory(ctx context.Context, params storage.UpdateAwardCategoryParams) (storage.AwardCategory, error) {
+	return r.queries.UpdateAwardCategory(ctx, params)
+}
+
+func (r *AwardRepository) DeleteAwardCategory(ctx context.Context, id uuid.UUID) error {
+	return r.queries.DeleteAwardCategory(ctx, id)
+}
+
+func (r *AwardRepository) CreateAwardCategoryField(ctx context.Context, params *storage.CreateAwardCategoryFieldParams) (storage.AwardCategoryField, error) {
+	return r.queries.CreateAwardCategoryField(ctx, *params)
+}
+
+func (r *AwardRepository) GetAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) ([]storage.AwardCategoryField, error) {
+	return r.queries.GetAwardCategoryFieldsByCategoryID(ctx, categoryID)
+}
+
+func (r *AwardRepository) DeleteAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) error {
+	return r.queries.DeleteAwardCategoryFieldsByCategoryID(ctx, categoryID)
+}
+
 func (r *AwardRepository) GetAwardByID(ctx context.Context, id uuid.UUID) (storage.Award, error) {
 	return r.queries.GetAwardByID(ctx, id)
 }

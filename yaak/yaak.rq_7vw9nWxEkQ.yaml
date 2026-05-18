@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_7vw9nWxEkQ
 createdAt: 2026-01-15T08:10:01.378255200
-updatedAt: 2026-01-26T18:53:25.833454
+updatedAt: 2026-05-18T12:29:56.692256100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -10,81 +10,31 @@ authentication:
   token: ''
 authenticationType: bearer
 body:
-  text: |
+  text: |-
     {
-      "name": "Подготовка и опубликование методических материалов, учебных программ, учебных пособий.",
+      "name": "Достижения",
       "variants": [
         {
-          "name": "Разработка учебно-методических материалов",
-          "description": "",
+          "name": "Победа студента",
+          "description": "Победа в конкурсе",
           "criteria": [
             {
-              "name": "УКМД",
+              "name": "Республиканский",
               "points": [
-                1,
-                3
+                10
               ],
-              "method": "MEASURING"
+              "method": "NORMAL"
             }
           ],
           "bonus_criteria": [
-          ]
-        },
-        {
-          "name": "Авторские работы",
-          "description": "",
-          "criteria": [
             {
-              "name": "Разработка или экспертиза тестовых заданий НЦТ",
+              "name": "Международный",
               "points": [
-                10
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "Разработка методических пособий: - внутриколледжный",
-              "points": [
-                10
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "Разработка методических пособий: - городской",
-              "points": [
-                15
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "Разработка образовательных программ: - внутриколледжный",
-              "points": [
-                10
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "Разработка образовательных программ: - городской",
-              "points": [
-                15
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "Учебное пособие и учебники: - внутриколледжный",
-              "points": [
-                10
-              ],
-              "method": "NORMAL"
-            },
-            {
-              "name": "Учебное пособие и учебники: - городской",
-              "points": [
-                15
+                5
               ],
               "method": "NORMAL"
             }
-          ],
-          "bonus_criteria": []
+          ]
         }
       ]
     }

@@ -391,10 +391,9 @@ INSERT INTO
         variant,
         criteria,
         bonus_criteria,
-        total_points,
-        text,
-        files,
-        links
+        category_id,
+        field_values,
+        total_points
     )
 VALUES (
         $1,
@@ -405,8 +404,7 @@ VALUES (
         $6,
         $7,
         $8,
-        $9,
-        $10
+        $9
     ) RETURNING *;
 
 -- name: GetAllAwards :many
@@ -472,10 +470,9 @@ SET
     variant = $4,
     criteria = $5,
     bonus_criteria = $6,
-    total_points = $7,
-    text = $8,
-    files = $9,
-    links = $10,
+    category_id = $7,
+    field_values = $8,
+    total_points = $9,
     updated_at = NOW()
 WHERE
     id = $1 RETURNING *;
@@ -534,6 +531,62 @@ SELECT * FROM award_type_criteria;
 
 -- name: UpdateAwardTypeVariants :one
 UPDATE award_types SET variants = $2 WHERE id = $1 RETURNING *;
+
+-- name: CreateAwardCategoryField :one
+INSERT INTO
+    award_category_fields (
+        category_id,
+        key,
+        label,
+        type,
+        required,
+        placeholder,
+        help_text,
+        options,
+        validation,
+        sort_order
+    )
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;
+
+-- name: GetAwardCategoryFieldsByCategoryID :many
+SELECT *
+FROM award_category_fields
+WHERE category_id = $1
+ORDER BY sort_order ASC, created_at ASC;
+
+-- name: DeleteAwardCategoryFieldsByCategoryID :exec
+DELETE FROM award_category_fields WHERE category_id = $1;
+
+-- name: CreateAwardCategory :one
+INSERT INTO
+    award_categories (award_types, name, icon, description)
+VALUES ($1, $2, $3, $4) RETURNING *;
+
+-- name: GetAwardCategoryByID :one
+SELECT * FROM award_categories WHERE id = $1;
+
+-- name: GetAllAwardCategories :many
+SELECT 
+    id,
+    name,
+    icon,
+    description
+FROM award_categories
+ORDER BY created_at DESC;
+
+-- name: UpdateAwardCategory :one
+UPDATE award_categories
+SET
+    award_types = $2,
+    name = $3,
+    icon = $4,
+    description = $5,
+    updated_at = NOW()
+WHERE
+    id = $1 RETURNING *;
+
+-- name: DeleteAwardCategory :exec
+DELETE FROM award_categories WHERE id = $1;
 
 -- name: GetGroupByKeycloakID :one
 SELECT

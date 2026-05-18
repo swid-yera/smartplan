@@ -409,11 +409,36 @@ type Award struct {
 	Variant       pgtype.UUID        `json:"variant"`
 	Criteria      pgtype.UUID        `json:"criteria"`
 	BonusCriteria pgtype.UUID        `json:"bonus_criteria"`
-	Text          pgtype.Text        `json:"text"`
-	Files         []string           `json:"files"`
-	Links         []string           `json:"links"`
+	CategoryID    pgtype.UUID        `json:"category_id"`
+	FieldValues   []byte             `json:"field_values"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type AwardCategory struct {
+	ID          uuid.UUID          `json:"id"`
+	AwardTypes  []uuid.UUID        `json:"award_types"`
+	Name        string             `json:"name"`
+	Icon        pgtype.Text        `json:"icon"`
+	Description pgtype.Text        `json:"description"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type AwardCategoryField struct {
+	ID          uuid.UUID          `json:"id"`
+	CategoryID  uuid.UUID          `json:"category_id"`
+	Key         string             `json:"key"`
+	Label       string             `json:"label"`
+	Type        string             `json:"type"`
+	Required    bool               `json:"required"`
+	Placeholder pgtype.Text        `json:"placeholder"`
+	HelpText    pgtype.Text        `json:"help_text"`
+	Options     []byte             `json:"options"`
+	Validation  []byte             `json:"validation"`
+	SortOrder   int32              `json:"sort_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type AwardType struct {

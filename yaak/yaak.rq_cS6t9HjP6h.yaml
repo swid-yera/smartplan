@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_cS6t9HjP6h
+createdAt: 2026-05-18T10:57:20.040732300
+updatedAt: 2026-05-18T12:59:14.042432600
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_iW5CQsevG9
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: DELETE
+name: delete
+sortPriority: 3000.0
+url: ${[ url ]}/categories/:id
+urlParameters:
+- enabled: true
+  name: :id
+  value: 95e6a35d-4026-4b6e-bd19-f314e96df4a0
+  id: jFByERWjK3
+- enabled: true
+  name: ''
+  value: ''
+  id: Zdfaf8jcHG

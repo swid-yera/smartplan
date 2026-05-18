@@ -1,0 +1,70 @@
+type: http_request
+model: http_request
+id: rq_BxheHTZcze
+createdAt: 2026-05-18T10:56:50.600544500
+updatedAt: 2026-05-18T12:58:54.035595700
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_iW5CQsevG9
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "name": "(Измененная)Публикации",
+      "icon": "book-open",
+      "description": "Награды и победы студентов",
+      "awardTypes": [
+        "536a92fa-b040-4def-a053-be3073f4ab2c"
+      ],
+      "fields": [
+        {
+          "key": "student_name",
+          "label": "Имя ученика",
+          "type": "text",
+          "required": true,
+          "placeholder": "Иван Иванов",
+          "helpText": "ФИО полностью",
+          "options": [],
+          "validation": {
+            "minLength": 3
+          },
+          "sortOrder": 1
+        },
+        {
+          "key": "competition_level",
+          "label": "Уровень конкурса",
+          "type": "select",
+          "required": true,
+          "placeholder": "",
+          "helpText": "",
+          "options": [
+            "городской",
+            "областной",
+            "республиканский",
+            "международный"
+          ],
+          "validation": {},
+          "sortOrder": 3
+        }
+      ]
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: aCZzMMxS6h
+method: PUT
+name: update
+sortPriority: 1000.0
+url: ${[ url ]}/categories/:id
+urlParameters:
+- enabled: true
+  name: :id
+  value: 610bd539-e520-4c6c-87dd-c83783849ece
+  id: GtkAeQhWwC
+- enabled: true
+  name: ''
+  value: ''
+  id: JWjjG45F9s
