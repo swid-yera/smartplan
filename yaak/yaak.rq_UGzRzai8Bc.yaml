@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UGzRzai8Bc
 createdAt: 2026-01-13T03:16:46.890644700
-updatedAt: 2026-01-29T11:07:57.134628900
+updatedAt: 2026-05-19T11:50:56.445778900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -36,11 +36,11 @@ urlParameters:
   name: status
   value: DRAFT,APPROVED
   id: 6B7si0de8A
-- enabled: false
-  name: search
-  value: asdfasdf
-  id: TWA85AyYWy
+- enabled: true
+  name: categoryId
+  value: cf3bc16a-10a5-4a20-a9f4-5375f6544d51
+  id: 4hdDpT9UVw
 - enabled: true
   name: ''
   value: ''
-  id: zkctH5H9J7
+  id: iFnqXPWNv6

@@ -422,6 +422,10 @@ WHERE
         OR methodist = sqlc.narg('methodist')::uuid
     )
     AND (
+        sqlc.narg('category_id')::uuid IS NULL
+        OR category_id = sqlc.narg('category_id')::uuid
+    )
+    AND (
         sqlc.narg('status')::text[] IS NULL
         OR status = ANY(sqlc.arg(status)::text[]::awards_status[])
     )
@@ -439,6 +443,10 @@ WHERE
     AND (
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
+    )
+    AND (
+        sqlc.narg('category_id')::uuid IS NULL
+        OR category_id = sqlc.narg('category_id')::uuid
     )
     AND (
         sqlc.narg('status')::text[] IS NULL
