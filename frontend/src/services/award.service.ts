@@ -58,7 +58,9 @@ export class AwardService {
 				const formData = new FormData()
 
 				formData.append('data', JSON.stringify(newAward))
-				formData.append('files', files[0])
+				if (files[0]) {
+					formData.append('files', files[0])
+				}
 
 				const { data } = await api.post<IAward>('/awards', formData, {
 					headers: { 'Content-Type': 'multipart/form-data' },

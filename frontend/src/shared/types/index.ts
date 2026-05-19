@@ -7,6 +7,7 @@ export * from './rup.type'
 // service
 export * from './service/ai.service.type'
 export * from './service/award.service.type'
+export * from './service/categories.service.type'
 export * from './service/global.service.type'
 export * from './service/group.service.type'
 export * from './service/lesson.service.type'

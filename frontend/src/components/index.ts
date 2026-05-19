@@ -10,6 +10,7 @@ export * from './sheets/rup-sheet'
 
 // cards
 export * from './cards/awards-card'
+export * from './cards/category-card'
 export * from './cards/combine-card'
 export * from './cards/empty-card'
 export * from './cards/groups-card'
@@ -22,3 +23,6 @@ export * from './badges/topic-type-badge'
 
 // form
 export * from './form/numeric-input'
+
+// fields
+export * from './fields'

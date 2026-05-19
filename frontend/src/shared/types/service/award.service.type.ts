@@ -2,7 +2,6 @@ import type { CriteriaMethodEnum } from '../award.type'
 
 // create award
 export interface ICreateAwardRequest {
-	text: string
 	links?: string
 
 	type: string

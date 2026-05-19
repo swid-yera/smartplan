@@ -182,6 +182,13 @@ const Page = () => {
 									</Link>
 								</Button>
 							)}
+							{isAdmin && (
+								<Button asChild size='sm' variant='outline'>
+									<Link href={`/kpi/categories/${id}/edit`}>
+										<Edit /> Редактировать категорию
+									</Link>
+								</Button>
+							)}
 							{isStatusForEdit && (
 								<Button
 									className='hover:text-primary'
