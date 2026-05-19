@@ -1062,17 +1062,39 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 }
 
 func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error) {
+	rup, err := s.repo.GetRupByID(ctx, id)
+	if err != nil {
+		return "", fmt.Errorf("rup not found: %w", err)
+	}
 
-	objectName := fmt.Sprintf(
-		"rups/%s/document.docx",
-		id.String(),
-	)
+	objectNames := make([]string, 0, 2)
+	if len(rup.GroupIds) > 0 {
+		groupID := strings.TrimSpace(rup.GroupIds[0])
+		if groupID != "" {
+			objectNames = append(objectNames, fmt.Sprintf("rups/%s/%s-document.docx", id.String(), groupID))
+		}
+	}
 
-	return s.fileStorage.GetDownloadFileURL(
-		ctx,
-		objectName,
-		10*time.Minute,
-	)
+	// Legacy object key format (kept for backward compatibility).
+	objectNames = append(objectNames, fmt.Sprintf("rups/%s/document.docx", id.String()))
+
+	for _, objectName := range objectNames {
+		exists, err := s.fileStorage.FileExists(ctx, objectName)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			continue
+		}
+
+		return s.fileStorage.GetDownloadFileURL(
+			ctx,
+			objectName,
+			10*time.Minute,
+		)
+	}
+
+	return "", fmt.Errorf("rup document not found for id %s", id.String())
 }
 
 func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
@@ -40,6 +41,21 @@ func (r *MinioRepository) DownloadFile(ctx context.Context, fileName string) (io
 		return nil, err
 	}
 	return object, nil
+}
+
+func (r *MinioRepository) FileExists(ctx context.Context, fileName string) (bool, error) {
+	_, err := r.Client.StatObject(ctx, r.Bucket, fileName, minio.StatObjectOptions{})
+	if err != nil {
+		var responseErr minio.ErrorResponse
+		if errors.As(err, &responseErr) {
+			if responseErr.StatusCode == 404 || responseErr.Code == "NoSuchKey" || responseErr.Code == "NoSuchObject" {
+				return false, nil
+			}
+		}
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (r *MinioRepository) GetDownloadFileURL(ctx context.Context, fileName string, expiry time.Duration) (string, error) {
