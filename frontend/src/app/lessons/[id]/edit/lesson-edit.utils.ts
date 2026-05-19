@@ -62,10 +62,11 @@ export function normalizeLessonProgressForRequest(items: ILessonProgressRow[]) {
 				.split('\n')
 				.map((line) => line.trim())
 				.filter(Boolean),
-			end_minute: Math.max(0, Number(item.endMinute) || 0),
+			third_time: item.thirdTime ?? [],
 			id: item.id,
 			name: item.name.trim(),
-			start_minute: Math.max(0, Number(item.startMinute) || 0),
+			second_time: item.secondTime ?? [],
+			first_time: item.firstTime ?? [],
 		}))
 		.filter((item) => item.name || item.content.length)
 }

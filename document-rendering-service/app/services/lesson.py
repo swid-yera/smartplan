@@ -30,12 +30,35 @@ def to_multiline_text(value) -> str:
 
 
 def map_progress_rows(rows: list[dict]) -> list[dict]:
+    fixed_names = [
+        "Организационно-\nмотивационный момент",
+        "Актуализация знаний",
+        "Формирование новых\nзнаний и навыков",
+        "Закрепление новой темы",
+        "Рефлексия",
+        "Оценивание",
+        "Домашнее задание",
+    ]
+    fixed_times = [
+        [5, 10, 15],
+        [15, 10, 0],
+        [40, 40, 15],
+        [15, 20, 0],
+        [7, 5, 5],
+        [5, 7, 7],
+        [3, 3, 3],
+    ]
     mapped: list[dict] = []
-    for index, row in enumerate(rows):
-        num = str(row.get("num", "")).strip() or str(index + 1)
-        name = str(row.get("name", "")).strip()
-        content = to_multiline_text(row.get("content", ""))
-        mapped.append({"num": num, "name": name, "content": content})
+    for i, name in enumerate(fixed_names):
+        times = fixed_times[i]
+        time_str = f"{times[0]}/{times[1]}/{times[2]}мин."
+        row = rows[i] if i < len(rows) else {}
+        content = to_multiline_text(row.get("content", []))
+        mapped.append({
+            "num": str(i + 1),
+            "name": f"{name}\n{time_str}",
+            "content": content,
+        })
     return mapped
 
 
@@ -49,9 +72,11 @@ def generate_lesson_docx(data: dict) -> Path:
         discipline_name = f" / {discipline_name}"
 
     context = {
-        "rup_name": str(data.get("rup_name", "")).strip(),
-        "discipline_name": discipline_name,
+        "college": "КГКП «ALMATY POLYTECHNIC COLLEGE»",
+        "plan_num": str(data.get("plan_num", "47")),
         "topic_name": str(data.get("topic_name", "")).strip(),
+        "module_name": str(data.get("module_name", "БМЗ (******)")),
+        "ro_code": str(data.get("ro_code", "РО 3.1(******)")),
         "teacher_name": str(data.get("teacher_name", "")).strip(),
         "event_date": str(data.get("event_date", "")).strip(),
         "course": data.get("course", ""),

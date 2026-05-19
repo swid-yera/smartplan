@@ -67,11 +67,12 @@ type LessonResponse struct {
 }
 
 type LessonProgressData struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	StartMinute []int32   `json:"start_minute"`
-	EndMinute   []int32   `json:"end_minute"`
-	Content     []string  `json:"content"`
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	FirstTime  []int32   `json:"first_time"`
+	SecondTime []int32   `json:"second_time"`
+	ThirdTime  []int32   `json:"third_time"`
+	Content    []string  `json:"content"`
 }
 
 type PaginatedLessonsResponse struct {
@@ -80,11 +81,12 @@ type PaginatedLessonsResponse struct {
 }
 
 type LessonProgressParams struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	StartMinute []int32   `json:"start_minute"`
-	EndMinute   []int32   `json:"end_minute"`
-	Content     []string  `json:"content"`
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	FirstTime  []int32   `json:"first_time"`
+	SecondTime []int32   `json:"second_time"`
+	ThirdTime  []int32   `json:"third_time"`
+	Content    []string  `json:"content"`
 }
 
 type GenerateLessonInput struct {

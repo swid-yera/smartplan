@@ -27,8 +27,9 @@ export function normalizeLessonProgress(items?: ILessonProgressContext[]): INorm
 			id: item.id || `lesson-progress-${index}`,
 			name: (item.name || '').trim(),
 			content,
-			startMinute: toMinute(item.startMinute ?? item.start_minute),
-			endMinute: toMinute(item.endMinute ?? item.end_minute),
+			firstTime: item.firstTime ?? item.first_time ?? [],
+			secondTime: item.secondTime ?? item.second_time ?? [],
+			thirdTime: item.thirdTime ?? item.third_time ?? [],
 		}
 	})
 }

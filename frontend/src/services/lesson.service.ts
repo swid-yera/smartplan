@@ -43,8 +43,9 @@ export class LessonService {
 				id: typeof source.id === 'string' && source.id.trim() ? source.id : `lesson-progress-${index}`,
 				name: typeof source.name === 'string' ? source.name : '',
 				content,
-				startMinute: this.normalizeProgressMinute(source.startMinute ?? source.start_minute),
-				endMinute: this.normalizeProgressMinute(source.endMinute ?? source.end_minute),
+				firstTime: source.firstTime ?? source.first_time ?? [],
+				secondTime: source.secondTime ?? source.second_time ?? [],
+				thirdTime: source.thirdTime ?? source.third_time ?? [],
 			}
 		})
 	}

@@ -26,8 +26,9 @@ export type ILessonProgressContext = {
 	id?: string
 	name?: string
 	content?: string[] | string
-	start_minute?: number | string | Array<number | string>
-	end_minute?: number | string | Array<number | string>
+	first_time?: number[] | string[]
+	second_time?: number[] | string[]
+	third_time?: number[] | string[]
 	startMinute?: number | string | Array<number | string>
 	endMinute?: number | string | Array<number | string>
 }
