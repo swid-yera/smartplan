@@ -36,19 +36,29 @@ WHERE
         OR methodist = $2::uuid
     )
     AND (
-        $3::text[] IS NULL
-        OR status = ANY($3::text[]::awards_status[])
+        $3::uuid IS NULL
+        OR category_id = $3::uuid
+    )
+    AND (
+        $4::text[] IS NULL
+        OR status = ANY($4::text[]::awards_status[])
     )
 `
 
 type CountAwardsFilteredParams struct {
-	Teacher   pgtype.UUID `json:"teacher"`
-	Methodist pgtype.UUID `json:"methodist"`
-	Status    []string    `json:"status"`
+	Teacher    pgtype.UUID `json:"teacher"`
+	Methodist  pgtype.UUID `json:"methodist"`
+	CategoryID pgtype.UUID `json:"category_id"`
+	Status     []string    `json:"status"`
 }
 
 func (q *Queries) CountAwardsFiltered(ctx context.Context, arg CountAwardsFilteredParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countAwardsFiltered, arg.Teacher, arg.Methodist, arg.Status)
+	row := q.db.QueryRow(ctx, countAwardsFiltered,
+		arg.Teacher,
+		arg.Methodist,
+		arg.CategoryID,
+		arg.Status,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -1495,19 +1505,24 @@ WHERE
         OR methodist = $4::uuid
     )
     AND (
-        $5::text[] IS NULL
-        OR status = ANY($5::text[]::awards_status[])
+        $5::uuid IS NULL
+        OR category_id = $5::uuid
+    )
+    AND (
+        $6::text[] IS NULL
+        OR status = ANY($6::text[]::awards_status[])
     )
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
 
 type GetAwardsPaginatedParams struct {
-	Limit     int32       `json:"limit"`
-	Offset    int32       `json:"offset"`
-	Teacher   pgtype.UUID `json:"teacher"`
-	Methodist pgtype.UUID `json:"methodist"`
-	Status    []string    `json:"status"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
+	Teacher    pgtype.UUID `json:"teacher"`
+	Methodist  pgtype.UUID `json:"methodist"`
+	CategoryID pgtype.UUID `json:"category_id"`
+	Status     []string    `json:"status"`
 }
 
 func (q *Queries) GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginatedParams) ([]Award, error) {
@@ -1516,6 +1531,7 @@ func (q *Queries) GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginated
 		arg.Offset,
 		arg.Teacher,
 		arg.Methodist,
+		arg.CategoryID,
 		arg.Status,
 	)
 	if err != nil {
