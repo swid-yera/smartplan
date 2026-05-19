@@ -112,6 +112,10 @@ func (r *UsersPostgres) CountUsersFiltered(ctx context.Context, search string) (
 	return r.queries.CountUsersFiltered(ctx, search)
 }
 
+func (r *UsersPostgres) CountUsersRatingFiltered(ctx context.Context, search string) (int64, error) {
+	return r.queries.CountUsersRatingFiltered(ctx, search)
+}
+
 func (r *UsersPostgres) UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error {
 	r.queries.UpdateUserTotalPoints(ctx, storage.UpdateUserTotalPointsParams{
 		KeycloakID:  teacher,

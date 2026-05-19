@@ -19,6 +19,7 @@ type Querier interface {
 	CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CountUsersFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
+	CountUsersRatingFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
 	CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error)
 	CreateAwardCategory(ctx context.Context, arg CreateAwardCategoryParams) (AwardCategory, error)
 	CreateAwardCategoryField(ctx context.Context, arg CreateAwardCategoryFieldParams) (AwardCategoryField, error)

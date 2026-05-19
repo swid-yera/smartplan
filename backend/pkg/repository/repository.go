@@ -22,6 +22,7 @@ type UsersRepository interface {
 	GetUsersRatingPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error)
 
 	CountUsersFiltered(ctx context.Context, search string) (int64, error)
+	CountUsersRatingFiltered(ctx context.Context, search string) (int64, error)
 
 	UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error
 }

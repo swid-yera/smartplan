@@ -78,6 +78,8 @@ LIMIT $2 OFFSET $3;
 SELECT *
 FROM users
 WHERE
+    total_points > 0
+    AND
     (
         $1 = '' OR
         (
@@ -91,6 +93,24 @@ WHERE
     )
 ORDER BY total_points DESC, created_at DESC
 LIMIT $2 OFFSET $3;
+
+-- name: CountUsersRatingFiltered :one
+SELECT COUNT(*)
+FROM users
+WHERE
+    total_points > 0
+    AND
+    (
+        $1 = '' OR
+        (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = $1::uuid
+        ) OR
+        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        email ILIKE '%' || $1 || '%'
+    );
 
 -- name: CountUsersFiltered :one
 SELECT COUNT(*)

@@ -155,7 +155,7 @@ func (s *userService) GetUsersRatingPaginated(
 
 	offset := (currentPage - 1) * pageSize
 
-	total, err := s.repo.CountUsersFiltered(ctx, search)
+	total, err := s.repo.CountUsersRatingFiltered(ctx, search)
 	if err != nil {
 		return nil, err
 	}
