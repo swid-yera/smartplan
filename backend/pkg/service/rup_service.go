@@ -736,10 +736,12 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 				}
 
 				reader := bytes.NewReader(fileBytes)
+				creationTime := time.Now().UTC().Format("20060102_150405")
 				objectName := fmt.Sprintf(
-					"rups/%s/%s-document.docx",
+					"rups/%s/%s_%s.docx",
 					req.ID.String(),
-					group.KeycloakID.String(),
+					rup.Name,
+					creationTime,
 				)
 
 				// 2. сохраняем в MinIO
@@ -1062,39 +1064,29 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 }
 
 func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error) {
-	rup, err := s.repo.GetRupByID(ctx, id)
+	prefix := fmt.Sprintf("rups/%s/", id.String())
+	objects, err := s.fileStorage.ListFiles(ctx, prefix)
 	if err != nil {
-		return "", fmt.Errorf("rup not found: %w", err)
+		return "", err
 	}
 
-	objectNames := make([]string, 0, 2)
-	if len(rup.GroupIds) > 0 {
-		groupID := strings.TrimSpace(rup.GroupIds[0])
-		if groupID != "" {
-			objectNames = append(objectNames, fmt.Sprintf("rups/%s/%s-document.docx", id.String(), groupID))
-		}
-	}
-
-	// Legacy object key format (kept for backward compatibility).
-	objectNames = append(objectNames, fmt.Sprintf("rups/%s/document.docx", id.String()))
-
-	for _, objectName := range objectNames {
-		exists, err := s.fileStorage.FileExists(ctx, objectName)
-		if err != nil {
-			return "", err
-		}
-		if !exists {
+	var latest string
+	var latestTime time.Time
+	for _, obj := range objects {
+		if !strings.HasSuffix(obj.Key, ".docx") {
 			continue
 		}
-
-		return s.fileStorage.GetDownloadFileURL(
-			ctx,
-			objectName,
-			10*time.Minute,
-		)
+		if obj.LastModified.After(latestTime) {
+			latestTime = obj.LastModified
+			latest = obj.Key
+		}
 	}
 
-	return "", fmt.Errorf("rup document not found for id %s", id.String())
+	if latest == "" {
+		return "", fmt.Errorf("rup document not found for id %s", id.String())
+	}
+
+	return s.fileStorage.GetDownloadFileURL(ctx, latest, 10*time.Minute)
 }
 
 func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {

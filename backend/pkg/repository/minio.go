@@ -10,6 +10,11 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
+type FileInfo struct {
+	Key          string
+	LastModified time.Time
+}
+
 type MinioRepository struct {
 	Client *minio.Client
 	Bucket string
@@ -64,4 +69,18 @@ func (r *MinioRepository) GetDownloadFileURL(ctx context.Context, fileName strin
 		return "", err
 	}
 	return presignedURL.String(), nil
+}
+
+
+
+func (r *MinioRepository) ListFiles(ctx context.Context, prefix string) ([]FileInfo, error) {
+	var result []FileInfo
+	opts := minio.ListObjectsOptions{Prefix: prefix, Recursive: true}
+	for obj := range r.Client.ListObjects(ctx, r.Bucket, opts) {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+		result = append(result, FileInfo{Key: obj.Key, LastModified: obj.LastModified})
+	}
+	return result, nil
 }
