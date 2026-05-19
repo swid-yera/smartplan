@@ -3,7 +3,6 @@
 import {
 	Button,
 	Calendar,
-	Checkbox,
 	Input,
 	Label,
 	Popover,
@@ -71,18 +70,6 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 					value={typeof value === 'string' ? value : ''}
 					onChange={(event) => onChange(field.key, event.target.value)}
 				/>
-			</div>
-		)
-	}
-
-	if (field.type === 'checkbox') {
-		return (
-			<div className='flex items-center justify-between rounded-md border p-3'>
-				<div>
-					<p className='text-sm font-medium'>{commonLabel}</p>
-					{field.helpText && <p className='text-xs text-muted-foreground'>{field.helpText}</p>}
-				</div>
-				<Checkbox checked={value === true} onCheckedChange={(checked) => onChange(field.key, checked === true)} />
 			</div>
 		)
 	}
@@ -189,7 +176,6 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 		date: 'date',
 		file: 'text',
 		url: 'url',
-		checkbox: 'text',
 	}
 
 	return (

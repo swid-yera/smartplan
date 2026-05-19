@@ -90,7 +90,6 @@ const Page = () => {
 			variant: selectedVariant.id,
 			criteria: selectedCriteria.id,
 			bonusCriteria: selectedBonusCriteria?.id,
-			text,
 		}
 
 		const toastId = `award-${id}-update`
