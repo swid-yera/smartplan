@@ -278,8 +278,9 @@ CREATE TABLE lesson_progress(
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     lesson_id UUID NOT NULL,
     name TEXT NOT NULL,
-    start_minute INT[] NOT NULL,
-    end_minute INT[] NOT NULL,
+    first_time INT[] NOT NULL,
+    second_time INT[] NOT NULL,
+    third_time INT[] NOT NULL,
     content TEXT[],
     CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id)
 );

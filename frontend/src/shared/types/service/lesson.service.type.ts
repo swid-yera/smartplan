@@ -35,8 +35,9 @@ export interface IUpdateLessonProgressRequest {
 	id?: string
 	name: string
 	content: string[]
-	start_minute: number
-	end_minute: number
+	first_time: number[]
+	second_time: number[]
+	third_time: number[]
 }
 
 export interface IUpdateLessonRequest {

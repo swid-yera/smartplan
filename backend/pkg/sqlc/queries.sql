@@ -728,19 +728,21 @@ INSERT INTO
     lesson_progress (
         lesson_id,
         name,
-        start_minute,
-        end_minute,
+        first_time,
+        second_time,
+        third_time,
         content
     )
-VALUES ($1, $2, $3, $4, $5) RETURNING id;
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 
 -- name: UpdateLessonProgress :exec
 UPDATE lesson_progress
 SET
     name = $2,
-    start_minute = $3,
-    end_minute = $4,
-    content = $5
+    first_time = $3,
+    second_time = $4,
+    third_time = $5,
+    content = $6
 WHERE
     id = $1;
 
