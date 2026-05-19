@@ -27,7 +27,6 @@ var allowedDynamicFieldTypes = map[string]struct{}{
 	"date":     {},
 	"file":     {},
 	"url":      {},
-	"checkbox": {},
 }
 
 type AwardCategoryFieldRequest struct {
@@ -474,10 +473,6 @@ func validateFieldValueType(field storage.AwardCategoryField, value any) error {
 		case float64, float32, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, json.Number:
 		default:
 			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a number", key)}
-		}
-	case "checkbox":
-		if _, ok := value.(bool); !ok {
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a boolean", key)}
 		}
 	case "select":
 		if err := validateStringOrStringArray(value, key, "select option"); err != nil {

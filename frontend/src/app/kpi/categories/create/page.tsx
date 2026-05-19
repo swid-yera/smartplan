@@ -43,16 +43,7 @@ import { isAxiosError } from 'axios'
 import { Check, ChevronsUpDown, Minus, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
-const FIELD_TYPE_OPTIONS: CategoryFieldType[] = [
-	'text',
-	'textarea',
-	'number',
-	'select',
-	'date',
-	'file',
-	'url',
-	'checkbox',
-]
+const FIELD_TYPE_OPTIONS: CategoryFieldType[] = ['text', 'textarea', 'number', 'select', 'date', 'file', 'url']
 
 const createEmptyField = (sortOrder: number): ICategoryFieldRequest => ({
 	key: '',

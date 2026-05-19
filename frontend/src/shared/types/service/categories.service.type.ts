@@ -1,4 +1,4 @@
-export type CategoryFieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'file' | 'url' | 'checkbox'
+export type CategoryFieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'file' | 'url'
 
 export interface ICategoryFieldRequest {
 	key: string

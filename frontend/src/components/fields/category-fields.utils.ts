@@ -1,7 +1,7 @@
 import type { ICategoryFieldResponse } from '@types'
 import { isAfter, isValid as isValidDate, parseISO, startOfDay } from 'date-fns'
 
-export type ICategoryFieldValue = string | boolean | File[]
+export type ICategoryFieldValue = string | File[]
 export type ICategoryFieldValues = Record<string, ICategoryFieldValue>
 
 const URL_WITHOUT_PROTOCOL_REGEX =
@@ -9,12 +9,6 @@ const URL_WITHOUT_PROTOCOL_REGEX =
 
 export const buildInitialCategoryFieldValues = (fields: ICategoryFieldResponse[]): ICategoryFieldValues => {
 	return fields.reduce<ICategoryFieldValues>((acc, field) => {
-		if (field.type === 'checkbox') {
-			acc[field.key] = false
-
-			return acc
-		}
-
 		if (field.type === 'file') {
 			acc[field.key] = []
 
@@ -57,7 +51,6 @@ export const findMissingRequiredCategoryField = (fields: ICategoryFieldResponse[
 
 		const value = values[field.key]
 
-		if (typeof value === 'boolean') return value !== true
 		if (Array.isArray(value)) return value.length === 0
 
 		return !String(value || '').trim()
