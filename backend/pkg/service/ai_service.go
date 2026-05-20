@@ -275,10 +275,7 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 		return nil, fmt.Errorf("marshal previous lessons: %w", err)
 	}
 
-	lessonMinutes := req.TotalHours * 45
-	if lessonMinutes <= 0 {
-		lessonMinutes = 90
-	}
+	lessonMinutes := int32(90)
 
 	prompt := helpers.BuildGenerateLessonPrompt(helpers.GenerateLessonPromptInput{
 		RupName:                req.RupName,

@@ -26,19 +26,18 @@ export type ILessonProgressContext = {
 	id?: string
 	name?: string
 	content?: string[] | string
-	first_time?: number[] | string[]
-	second_time?: number[] | string[]
-	third_time?: number[] | string[]
-	startMinute?: number | string | Array<number | string>
-	endMinute?: number | string | Array<number | string>
+	firstTime?: number[] | string[]
+	secondTime?: number[] | string[]
+	thirdTime?: number[] | string[]
 }
 
 export type INormalizedLessonProgress = {
 	id: string
 	name: string
 	content: string[]
-	startMinute: number
-	endMinute: number
+	firstTime: number
+	secondTime: number
+	thirdTime: number
 }
 
 export type IRegenerateFormData = {

@@ -43,7 +43,7 @@ export function LessonProgressCard({ cardClassName, lessonProgress }: IProps) {
 											<div>
 												<p className='font-semibold leading-snug'>{item.name || 'Без названия'}</p>
 												<p className='mt-1 text-xs text-muted-foreground'>
-													{formatMinuteRange(item.startMinute, item.endMinute)}
+													{formatMinuteRange(item.firstTime, item.secondTime, item.thirdTime)}
 												</p>
 											</div>
 										</div>
@@ -65,7 +65,7 @@ export function LessonProgressCard({ cardClassName, lessonProgress }: IProps) {
 										<div>
 											<p className='font-semibold leading-snug'>{item.name || 'Без названия'}</p>
 											<p className='mt-1 text-xs text-muted-foreground'>
-												{formatMinuteRange(item.startMinute, item.endMinute)}
+												{formatMinuteRange(item.firstTime, item.secondTime, item.thirdTime)}
 											</p>
 										</div>
 										<div className='space-y-1 text-sm leading-6'>

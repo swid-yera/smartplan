@@ -24,6 +24,26 @@ export class LessonService {
 		return parsed
 	}
 
+	private normalizeMinuteArray = (primary: unknown, fallback?: unknown): number[] => {
+		if (Array.isArray(primary) && primary.length) {
+			return [this.normalizeProgressMinute(primary[0])]
+		}
+
+		if (Array.isArray(fallback) && fallback.length) {
+			return [this.normalizeProgressMinute(fallback[0])]
+		}
+
+		if (typeof primary === 'number' || typeof primary === 'string') {
+			return [this.normalizeProgressMinute(primary)]
+		}
+
+		if (typeof fallback === 'number' || typeof fallback === 'string') {
+			return [this.normalizeProgressMinute(fallback)]
+		}
+
+		return [0]
+	}
+
 	private normalizeLessonProgress = (items: unknown): ILessonProgress[] => {
 		if (!Array.isArray(items)) return []
 
@@ -43,9 +63,9 @@ export class LessonService {
 				id: typeof source.id === 'string' && source.id.trim() ? source.id : `lesson-progress-${index}`,
 				name: typeof source.name === 'string' ? source.name : '',
 				content,
-				firstTime: source.firstTime ?? source.first_time ?? [],
-				secondTime: source.secondTime ?? source.second_time ?? [],
-				thirdTime: source.thirdTime ?? source.third_time ?? [],
+				firstTime: this.normalizeMinuteArray(source.firstTime),
+				secondTime: this.normalizeMinuteArray(source.secondTime),
+				thirdTime: this.normalizeMinuteArray(source.thirdTime),
 			}
 		})
 	}

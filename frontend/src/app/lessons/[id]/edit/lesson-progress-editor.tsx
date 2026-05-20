@@ -27,7 +27,7 @@ import type { ILessonProgressRow } from './lesson-edit.types'
 type IProps = {
 	items: ILessonProgressRow[]
 	onAdd: () => void
-	onChange: (index: number, field: 'name' | 'startMinute' | 'endMinute' | 'contentText', value: string) => void
+	onChange: (index: number, field: 'name' | 'firstTime' | 'secondTime' | 'thirdTime' | 'contentText', value: string) => void
 	onRemove: (index: number) => void
 }
 
@@ -39,13 +39,13 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 					<Waypoints className='h-4 w-4 text-primary' />
 					Ход занятия
 				</CardTitle>
-				<CardDescription>Этапы занятия с времени и продолжительностью</CardDescription>
+				<CardDescription>Этапы занятия с 3 вариантами длительности (каждый вариант в сумме 90 минут)</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>
 				<div className='space-y-3'>
 					{items.map((item, index) => (
 						<div key={item.id || `lesson-progress-row-${index}`} className='rounded-lg border p-3'>
-							<div className='grid gap-3 md:grid-cols-[1fr_120px_120px_auto] md:items-end'>
+							<div className='grid gap-3 md:grid-cols-[1fr_110px_110px_110px_auto] md:items-end'>
 								<div className='grid gap-2'>
 									<Label htmlFor={`lesson-progress-name-${index}`}>Этап {index + 1}</Label>
 									<Input
@@ -56,23 +56,33 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 									/>
 								</div>
 								<div className='grid gap-2'>
-									<Label htmlFor={`lesson-progress-start-${index}`}>Начало, мин.</Label>
+									<Label htmlFor={`lesson-progress-start-${index}`}>Вариант 1, мин.</Label>
 									<Input
 										id={`lesson-progress-start-${index}`}
 										min={0}
 										type='number'
-										value={item.startMinute}
-										onChange={(e) => onChange(index, 'startMinute', e.target.value)}
+										value={item.firstTime}
+										onChange={(e) => onChange(index, 'firstTime', e.target.value)}
 									/>
 								</div>
 								<div className='grid gap-2'>
-									<Label htmlFor={`lesson-progress-end-${index}`}>Конец, мин.</Label>
+									<Label htmlFor={`lesson-progress-end-${index}`}>Вариант 2, мин.</Label>
 									<Input
 										id={`lesson-progress-end-${index}`}
 										min={0}
 										type='number'
-										value={item.endMinute}
-										onChange={(e) => onChange(index, 'endMinute', e.target.value)}
+										value={item.secondTime}
+										onChange={(e) => onChange(index, 'secondTime', e.target.value)}
+									/>
+								</div>
+								<div className='grid gap-2'>
+									<Label htmlFor={`lesson-progress-third-${index}`}>Вариант 3, мин.</Label>
+									<Input
+										id={`lesson-progress-third-${index}`}
+										min={0}
+										type='number'
+										value={item.thirdTime}
+										onChange={(e) => onChange(index, 'thirdTime', e.target.value)}
 									/>
 								</div>
 								<div className='flex justify-end md:pb-1'>

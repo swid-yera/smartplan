@@ -9,8 +9,9 @@ export type IResourceRow = {
 export type ILessonProgressRow = {
 	id?: string
 	name: string
-	startMinute: number
-	endMinute: number
+	firstTime: number
+	secondTime: number
+	thirdTime: number
 	contentText: string
 }
 

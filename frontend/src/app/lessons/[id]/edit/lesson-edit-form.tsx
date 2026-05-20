@@ -103,7 +103,7 @@ export function LessonEditForm({ lesson }: IProps) {
 
 	const handleLessonProgressChange = (
 		index: number,
-		field: 'name' | 'startMinute' | 'endMinute' | 'contentText',
+		field: 'name' | 'firstTime' | 'secondTime' | 'thirdTime' | 'contentText',
 		value: string,
 	) => {
 		setFormData((prev) => {
@@ -112,7 +112,7 @@ export function LessonEditForm({ lesson }: IProps) {
 
 			if (!current) return prev
 
-			if (field === 'startMinute' || field === 'endMinute') {
+			if (field === 'firstTime' || field === 'secondTime' || field === 'thirdTime') {
 				nextLessonProgress[index] = {
 					...current,
 					[field]: Math.max(0, Number.parseInt(value, 10) || 0),
@@ -194,6 +194,22 @@ export function LessonEditForm({ lesson }: IProps) {
 			lesson_progress: normalizeLessonProgressForRequest(formData.lessonProgress),
 			internet_resources: normalizeResources(formData.internetResources, LessonResourceTypeEnum.INTERNET),
 			technical_resources: normalizeResources(formData.technicalResources, LessonResourceTypeEnum.TECHNICAL),
+		}
+
+		const progressTotals = payload.lesson_progress.reduce(
+			(acc, item) => {
+				acc.first += Number(item.first_time?.[0] || 0)
+				acc.second += Number(item.second_time?.[0] || 0)
+				acc.third += Number(item.third_time?.[0] || 0)
+				return acc
+			},
+			{ first: 0, second: 0, third: 0 },
+		)
+		if (progressTotals.first !== 90 || progressTotals.second !== 90 || progressTotals.third !== 90) {
+			toast.error('Сумма минут по каждому варианту должна быть 90', {
+				description: `Сейчас: ${progressTotals.first}/${progressTotals.second}/${progressTotals.third}`,
+			})
+			return
 		}
 
 		const toastId = `lesson-${lesson.id}-update`
