@@ -138,10 +138,11 @@ type GenerateLessonResponse struct {
 }
 
 type GeneratedLessonProgressStep struct {
-	Name        string   `json:"name"`
-	StartMinute int32    `json:"startMinute"`
-	EndMinute   int32    `json:"endMinute"`
-	Content     []string `json:"content"`
+	Name       string   `json:"name"`
+	FirstTime  int32    `json:"firstTime"`
+	SecondTime int32    `json:"secondTime"`
+	ThirdTime  int32    `json:"thirdTime"`
+	Content    []string `json:"content"`
 }
 
 type GeminiGenerateContentRequest struct {
@@ -691,15 +692,16 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 4) "lessonProgress" — массив этапов занятия.
 5) Каждый этап должен содержать:
    - name: название этапа
-   - startMinute: начало этапа в минутах от начала занятия
-   - endMinute: конец этапа в минутах от начала занятия
+   - firstTime: длительность этапа для варианта 1 (мин.)
+   - secondTime: длительность этапа для варианта 2 (мин.)
+   - thirdTime: длительность этапа для варианта 3 (мин.)
    - content: массив конкретных действий преподавателя и обучающихся
-6) Для "PRACTICE" endMinute обязателен и должен быть > startMinute (0 использовать нельзя).
-7) Для "PRACTICE" этапы должны идти непрерывно по времени:
-   - у первого этапа startMinute = 0
-   - у каждого следующего этапа startMinute равен endMinute предыдущего этапа
-   - endMinute последнего этапа должен быть близок к %d минутам
-8) Для "THEORY" допускается endMinute = 0, если этап без отдельного конечного интервала.
+6) Это НЕ части одного этапа. Это 3 альтернативных варианта длительности этапа.
+7) Для каждого варианта суммарная длительность всех этапов должна быть ровно %d минут:
+   - сумма всех firstTime по этапам = %d
+   - сумма всех secondTime по этапам = %d
+   - сумма всех thirdTime по этапам = %d
+8) Значения должны быть неотрицательными целыми числами.
 9) Формулировки должны соответствовать теме, не повторять дословно предыдущие уроки.
 10) Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по требованиям выше.
 11) Добавь "internetResources" (4-7 шт.) и "technicalResources" (3-6 шт.):
@@ -723,8 +725,9 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
   "lessonProgress": [
     {
       "name": string,
-      "startMinute": number,
-      "endMinute": number,
+      "firstTime": number,
+      "secondTime": number,
+      "thirdTime": number,
       "content": [string]
     }
   ]
@@ -751,6 +754,9 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 		in.TechnicalResourcesJSON,
 		in.PreviousLessonsJSON,
 		escapePromptValue(in.Message),
+		in.LessonMinutes,
+		in.LessonMinutes,
+		in.LessonMinutes,
 		in.LessonMinutes,
 	)
 }

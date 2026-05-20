@@ -15,9 +15,10 @@ export function createEmptyResource(): IResourceRow {
 export function createEmptyLessonProgress(): ILessonProgressRow {
 	return {
 		contentText: '',
-		endMinute: 0,
 		name: '',
-		startMinute: 0,
+		firstTime: 0,
+		secondTime: 0,
+		thirdTime: 0,
 	}
 }
 
@@ -38,9 +39,10 @@ export function mapLessonProgressForForm(lesson: ILesson): ILessonProgressRow[] 
 	return source.map((item, index) => ({
 		id: 'id' in item && typeof item.id === 'string' && item.id.trim() ? item.id : `template-${lesson.type}-${index}`,
 		contentText: (item.content || []).join('\n'),
-		endMinute: Math.max(0, Number(item.endMinute) || 0),
+		firstTime: Math.max(0, Number(item.firstTime?.[0]) || 0),
 		name: item.name || '',
-		startMinute: Math.max(0, Number(item.startMinute) || 0),
+		secondTime: Math.max(0, Number(item.secondTime?.[0]) || 0),
+		thirdTime: Math.max(0, Number(item.thirdTime?.[0]) || 0),
 	}))
 }
 
@@ -62,11 +64,11 @@ export function normalizeLessonProgressForRequest(items: ILessonProgressRow[]) {
 				.split('\n')
 				.map((line) => line.trim())
 				.filter(Boolean),
-			third_time: item.thirdTime ?? [],
+			third_time: [Math.max(0, Number(item.thirdTime) || 0)],
 			id: item.id,
 			name: item.name.trim(),
-			second_time: item.secondTime ?? [],
-			first_time: item.firstTime ?? [],
+			second_time: [Math.max(0, Number(item.secondTime) || 0)],
+			first_time: [Math.max(0, Number(item.firstTime) || 0)],
 		}))
 		.filter((item) => item.name || item.content.length)
 }

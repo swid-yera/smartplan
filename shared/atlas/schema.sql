@@ -249,11 +249,20 @@ CREATE TABLE awards (
 -- LESSON
 -- =====================
 
+CREATE SEQUENCE lessons_plan_number_seq
+    AS INTEGER
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO MAXVALUE
+    CACHE 1;
+
 CREATE TABLE lessons (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     rup_name TEXT NOT NULL,
     discipline_name TEXT,
     topic_name TEXT,
+    plan_number INT NOT NULL DEFAULT nextval('lessons_plan_number_seq'::regclass),
     teacher UUID NOT NULL,
     event_date TIMESTAMPTZ,
     group_id UUID NOT NULL,

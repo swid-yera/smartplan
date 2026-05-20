@@ -27,15 +27,15 @@ export function normalizeLessonProgress(items?: ILessonProgressContext[]): INorm
 			id: item.id || `lesson-progress-${index}`,
 			name: (item.name || '').trim(),
 			content,
-			firstTime: item.firstTime ?? item.first_time ?? [],
-			secondTime: item.secondTime ?? item.second_time ?? [],
-			thirdTime: item.thirdTime ?? item.third_time ?? [],
+			firstTime: toMinute(item.firstTime),
+			secondTime: toMinute(item.secondTime),
+			thirdTime: toMinute(item.thirdTime),
 		}
 	})
 }
 
-export function formatMinuteRange(startMinute: number, endMinute: number): string {
-	return `${startMinute} мин./${endMinute} мин.`
+export function formatMinuteRange(firstTime: number, secondTime: number, thirdTime: number): string {
+	return `${firstTime}/${secondTime}/${thirdTime}мин.`
 }
 
 export function formatDate(value?: string | null) {

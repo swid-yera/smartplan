@@ -31,8 +31,9 @@ export interface ILessonProgress {
 	id: string
 	name: string
 	content: string[]
-	startMinute: number
-	endMinute: number
+	firstTime: number[]
+	secondTime: number[]
+	thirdTime: number[]
 }
 
 export interface ILesson {
@@ -40,6 +41,7 @@ export interface ILesson {
 	rup_name: string
 	discipline_name: string
 	topic_name: string
+	plan_number: number
 	teacher: ILessonTeacher
 	group: IGroup
 	teacher_id?: string

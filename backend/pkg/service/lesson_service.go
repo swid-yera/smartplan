@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -31,6 +30,7 @@ type LessonParams struct {
 	RupName            string      `json:"rup_name"`
 	DisciplineName     *string     `json:"discipline_name"`
 	TopicName          *string     `json:"topic_name"`
+	PlanNumber         *int32      `json:"plan_number"`
 	TeacherID          uuid.UUID   `json:"teacher_id"`
 	EventDate          string      `json:"event_date"`
 	GroupID            uuid.UUID   `json:"group_id"`
@@ -50,6 +50,7 @@ type LessonResponse struct {
 	RupName            string                `json:"rup_name"`
 	DisciplineName     *string               `json:"discipline_name"`
 	TopicName          *string               `json:"topic_name"`
+	PlanNumber         int32                 `json:"plan_number"`
 	Topic              *TopicResponse        `json:"topic,omitempty"`
 	Teacher            *helpers.UserResponse `json:"teacher"`
 	EventDate          string                `json:"event_date"`
@@ -136,6 +137,7 @@ type lessonDocumentPayload struct {
 	RupName            string                      `json:"rup_name"`
 	DisciplineName     string                      `json:"discipline_name"`
 	TopicName          string                      `json:"topic_name"`
+	PlanNum            int32                       `json:"plan_num"`
 	TeacherName        string                      `json:"teacher_name"`
 	EventDate          string                      `json:"event_date"`
 	Course             int32                       `json:"course"`
@@ -164,6 +166,11 @@ type LessonService struct {
 	log         *logrus.Logger
 }
 
+const (
+	defaultLessonPlanNumber = int32(47)
+	lessonVariantTotalMins  = int32(90)
+)
+
 func NewLessonService(
 	repo repository.Lessons,
 	rupRepo repository.RupRepository,
@@ -189,10 +196,12 @@ func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) e
 	if err != nil {
 		return err
 	}
+	planNumber := normalizeLessonPlanNumber(params.PlanNumber)
 	createParams := storage.CreateLessonsParams{
 		RupName:            params.RupName,
 		DisciplineName:     pgtype.Text{String: helpers.PtrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
 		TopicName:          pgtype.Text{String: helpers.PtrToString(params.TopicName), Valid: params.TopicName != nil},
+		PlanNumber:         planNumber,
 		Teacher:            params.TeacherID,
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
@@ -319,10 +328,20 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 	}
 
 	eventDate := time.Now().UTC()
+	planNumber := defaultLessonPlanNumber
+	if updatedTopic.LessonID.Valid {
+		if existingLesson, getErr := s.repo.GetLessonByID(ctx, updatedTopic.LessonID.Bytes); getErr == nil {
+			if existingLesson.PlanNumber > 0 {
+				planNumber = existingLesson.PlanNumber
+			}
+		}
+	}
+
 	lessonParams := storage.CreateLessonsParams{
 		RupName:            rup.Name,
 		DisciplineName:     pgtype.Text{String: discipline.Name, Valid: discipline.Name != ""},
 		TopicName:          pgtype.Text{String: updatedTopic.Name, Valid: updatedTopic.Name != ""},
+		PlanNumber:         planNumber,
 		Teacher:            teacherID,
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: true},
 		GroupID:            group.KeycloakID,
@@ -352,6 +371,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		rup.Name,
 		discipline.Name,
 		updatedTopic.Name,
+		lessonParams.PlanNumber,
 		teacherName,
 		eventDate,
 		rup.Course,
@@ -396,6 +416,7 @@ func (s *LessonService) upsertGeneratedLesson(
 				RupName:            lessonParams.RupName,
 				DisciplineName:     lessonParams.DisciplineName,
 				TopicName:          lessonParams.TopicName,
+				PlanNumber:         lessonParams.PlanNumber,
 				EventDate:          lessonParams.EventDate,
 				GroupID:            lessonParams.GroupID,
 				Type:               lessonParams.Type,
@@ -459,11 +480,12 @@ func (s *LessonService) replaceLessonProgress(
 		}
 
 		if err := s.repo.CreateLessonProgress(ctx, storage.CreateLessonProgressParams{
-			LessonID:    lessonID,
-			Name:        step.Name,
-			StartMinute: []int32{step.StartMinute},
-			EndMinute:   []int32{step.EndMinute},
-			Content:     content,
+			LessonID:   lessonID,
+			Name:       step.Name,
+			FirstTime:  []int32{step.FirstTime},
+			SecondTime: []int32{step.SecondTime},
+			ThirdTime:  []int32{step.ThirdTime},
+			Content:    content,
 		}); err != nil {
 			return fmt.Errorf("create lesson progress: %w", err)
 		}
@@ -477,11 +499,21 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params L
 	if err != nil {
 		return err
 	}
+	if params.PlanNumber == nil {
+		if existingLesson, getErr := s.repo.GetLessonByID(ctx, id); getErr == nil {
+			if params.PlanNumber == nil {
+				resolved := existingLesson.PlanNumber
+				params.PlanNumber = &resolved
+			}
+		}
+	}
+	planNumber := normalizeLessonPlanNumber(params.PlanNumber)
 	updateParams := storage.UpdateLessonParams{
 		ID:                 id,
 		RupName:            params.RupName,
 		DisciplineName:     pgtype.Text{String: helpers.PtrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
 		TopicName:          pgtype.Text{String: helpers.PtrToString(params.TopicName), Valid: params.TopicName != nil},
+		PlanNumber:         planNumber,
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
 		Type:               storage.EnumLessonType(params.Type),
@@ -491,16 +523,21 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params L
 		InternetResources:  params.InternetResources,
 		TechnicalResources: params.TechnicalResources,
 	}
+	if len(progress) > 0 && !isValidLessonProgressOptions(progress, lessonVariantTotalMins) {
+		return fmt.Errorf("invalid lesson progress durations: each variant must sum to %d minutes", lessonVariantTotalMins)
+	}
 	if err := s.repo.UpdateLesson(ctx, updateParams); err != nil {
 		return err
 	}
 	for _, item := range progress {
+		firstTime, secondTime, thirdTime := normalizeProgressTriples(item)
 		updateProgress := storage.UpdateLessonProgressParams{
-			ID:          item.ID,
-			Name:        item.Name,
-			StartMinute: item.StartMinute,
-			EndMinute:   item.EndMinute,
-			Content:     item.Content,
+			ID:         item.ID,
+			Name:       item.Name,
+			FirstTime:  firstTime,
+			SecondTime: secondTime,
+			ThirdTime:  thirdTime,
+			Content:    item.Content,
 		}
 		if err := s.repo.UpdateLessonProgress(ctx, updateProgress); err != nil {
 			return err
@@ -653,12 +690,14 @@ func (s *LessonService) GetLessonByID(ctx context.Context, id uuid.UUID) (*Lesso
 }
 
 func (s *LessonService) CreateLessonProgress(ctx context.Context, params LessonProgressParams, lessonID uuid.UUID) error {
+	firstTime, secondTime, thirdTime := normalizeProgressTriples(params)
 	createParams := storage.CreateLessonProgressParams{
-		LessonID:    lessonID,
-		Name:        params.Name,
-		StartMinute: params.StartMinute,
-		EndMinute:   params.EndMinute,
-		Content:     params.Content,
+		LessonID:   lessonID,
+		Name:       params.Name,
+		FirstTime:  firstTime,
+		SecondTime: secondTime,
+		ThirdTime:  thirdTime,
+		Content:    params.Content,
 	}
 	return s.repo.CreateLessonProgress(ctx, createParams)
 }
@@ -963,24 +1002,32 @@ func normalizeGeneratedLessonPlan(aiResult *GenerateLessonResponse, fallbackType
 			continue
 		}
 
-		startMinute := step.StartMinute
-		if startMinute < 0 {
-			startMinute = 0
+		firstTime := step.FirstTime
+		if firstTime < 0 {
+			firstTime = 0
 		}
-		endMinute := step.EndMinute
-		if endMinute < 0 {
-			endMinute = 0
+		secondTime := step.SecondTime
+		if secondTime < 0 {
+			secondTime = 0
+		}
+		thirdTime := step.ThirdTime
+		if thirdTime < 0 {
+			thirdTime = 0
 		}
 
 		progress = append(progress, GeneratedLessonProgressStep{
-			Name:        name,
-			StartMinute: startMinute,
-			EndMinute:   endMinute,
-			Content:     content,
+			Name:       name,
+			FirstTime:  firstTime,
+			SecondTime: secondTime,
+			ThirdTime:  thirdTime,
+			Content:    content,
 		})
 	}
 
 	if len(progress) == 0 {
+		progress = defaultLessonProgress(lessonType)
+	}
+	if !isValidVariantDurations(progress, lessonVariantTotalMins) {
 		progress = defaultLessonProgress(lessonType)
 	}
 
@@ -994,22 +1041,15 @@ func normalizeGeneratedLessonPlan(aiResult *GenerateLessonResponse, fallbackType
 }
 
 func defaultLessonProgress(lessonType storage.EnumLessonType) []GeneratedLessonProgressStep {
-	if lessonType == storage.EnumLessonTypePRACTICE {
-		return []GeneratedLessonProgressStep{
-			{Name: "Организационный этап", StartMinute: 5, EndMinute: 10, Content: []string{"Проверка готовности аудитории и постановка целей занятия."}},
-			{Name: "Вводный инструктаж", StartMinute: 25, EndMinute: 30, Content: []string{"Объяснение техники безопасности и ключевых шагов выполнения практики."}},
-			{Name: "Текущий инструктаж", StartMinute: 25, EndMinute: 115, Content: []string{"Выполнение практических заданий по теме с консультацией преподавателя."}},
-			{Name: "Заключительный инструктаж", StartMinute: 30, EndMinute: 110, Content: []string{"Анализ типичных ошибок и корректировка подходов."}},
-			{Name: "Подведение итогов", StartMinute: 5, EndMinute: 0, Content: []string{"Рефлексия и фиксация результатов занятия."}},
-		}
-	}
-
+	_ = lessonType
 	return []GeneratedLessonProgressStep{
-		{Name: "Организационно-мотивационный этап", StartMinute: 5, EndMinute: 0, Content: []string{"Актуализация темы и критериев результата."}},
-		{Name: "Актуализация знаний", StartMinute: 15, EndMinute: 0, Content: []string{"Повторение базовых понятий и проверка стартового уровня группы."}},
-		{Name: "Изучение нового материала", StartMinute: 40, EndMinute: 0, Content: []string{"Объяснение теоретических положений и разбор примеров."}},
-		{Name: "Закрепление", StartMinute: 15, EndMinute: 0, Content: []string{"Выполнение заданий на закрепление нового материала."}},
-		{Name: "Оценивание и рефлексия", StartMinute: 15, EndMinute: 0, Content: []string{"Обратная связь, оценивание и формулирование домашнего задания."}},
+		{Name: "Организационно-мотивационный момент", FirstTime: 5, SecondTime: 10, ThirdTime: 15, Content: []string{"Приветствие студентов, проверка посещаемости, мотивация и предоставление деятельности."}},
+		{Name: "Актуализация знаний", FirstTime: 15, SecondTime: 10, ThirdTime: 10, Content: []string{"Повторение базовых знаний, умений и навыков; ввод в новую тему; инструктаж по технике безопасности при необходимости."}},
+		{Name: "Формирование новых знаний и навыков", FirstTime: 40, SecondTime: 35, ThirdTime: 30, Content: []string{"Выдача практических заданий; демонстрация выполнения; выполнение заданий; контроль, корректировка и помощь студентам при работе."}},
+		{Name: "Закрепление новой темы", FirstTime: 15, SecondTime: 15, ThirdTime: 15, Content: []string{"Оформление отчета студентами по выполненной работе; сдача отчетов; обсуждение результатов."}},
+		{Name: "Рефлексия", FirstTime: 7, SecondTime: 8, ThirdTime: 8, Content: []string{"Обсуждение: какие навыки приобрели, чему научились, что было полезно и что вызвало затруднения."}},
+		{Name: "Оценивание", FirstTime: 5, SecondTime: 7, ThirdTime: 7, Content: []string{"Проверка и оценка выполненных работ; комментарии преподавателя."}},
+		{Name: "Домашнее задание", FirstTime: 3, SecondTime: 5, ThirdTime: 5, Content: []string{"Задания для самостоятельного закрепления материала."}},
 	}
 }
 
@@ -1017,6 +1057,7 @@ func buildLessonDocumentPayload(
 	rupName string,
 	disciplineName string,
 	topicName string,
+	planNumber int32,
 	teacherName string,
 	eventDate time.Time,
 	course int32,
@@ -1043,8 +1084,9 @@ func buildLessonDocumentPayload(
 		RupName:            rupName,
 		DisciplineName:     disciplineName,
 		TopicName:          topicName,
+		PlanNum:            planNumber,
 		TeacherName:        teacherName,
-		EventDate:          eventDate.Format("02.01.2006"),
+		EventDate:          formatLessonEventDate(eventDate),
 		Course:             course,
 		GroupName:          groupName,
 		Type:               lessonTypeLabel,
@@ -1057,11 +1099,28 @@ func buildLessonDocumentPayload(
 	}
 }
 
-func formatLessonProgressName(step GeneratedLessonProgressStep) string {
-	if step.EndMinute > 0 {
-		return fmt.Sprintf("%s (%d мин./%d мин.)", step.Name, step.StartMinute, step.EndMinute)
+func formatLessonEventDate(value time.Time) string {
+	months := []string{
+		"января",
+		"февраля",
+		"марта",
+		"апреля",
+		"мая",
+		"июня",
+		"июля",
+		"августа",
+		"сентября",
+		"октября",
+		"ноября",
+		"декабря",
 	}
-	return fmt.Sprintf("%s (%d мин.)", step.Name, step.StartMinute)
+
+	month := months[int(value.Month())-1]
+	return fmt.Sprintf("«%02d» %s %d г.", value.Day(), month, value.Year())
+}
+
+func formatLessonProgressName(step GeneratedLessonProgressStep) string {
+	return fmt.Sprintf("%s\n%d/%d/%dмин.", step.Name, step.FirstTime, step.SecondTime, step.ThirdTime)
 }
 
 func joinResourceList(resources []string) string {
@@ -1083,6 +1142,71 @@ func joinResourceList(resources []string) string {
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func normalizeLessonPlanNumber(planNumber *int32) int32 {
+	resolvedPlanNumber := defaultLessonPlanNumber
+	if planNumber != nil && *planNumber > 0 {
+		resolvedPlanNumber = *planNumber
+	}
+	return resolvedPlanNumber
+}
+
+func normalizeProgressTriples(params LessonProgressParams) ([]int32, []int32, []int32) {
+	firstTime := params.FirstTime
+	secondTime := params.SecondTime
+	thirdTime := params.ThirdTime
+
+	// Backward compatibility with old payload fields.
+	if len(firstTime) == 0 {
+		firstTime = []int32{0}
+	}
+	if len(secondTime) == 0 {
+		secondTime = []int32{0}
+	}
+	if len(thirdTime) == 0 {
+		thirdTime = []int32{0}
+	}
+
+	return firstTime, secondTime, thirdTime
+}
+
+func isValidVariantDurations(progress []GeneratedLessonProgressStep, expectedTotal int32) bool {
+	if len(progress) == 0 {
+		return false
+	}
+
+	var firstTotal int32
+	var secondTotal int32
+	var thirdTotal int32
+	for _, step := range progress {
+		if step.FirstTime < 0 || step.SecondTime < 0 || step.ThirdTime < 0 {
+			return false
+		}
+		firstTotal += step.FirstTime
+		secondTotal += step.SecondTime
+		thirdTotal += step.ThirdTime
+	}
+
+	return firstTotal == expectedTotal && secondTotal == expectedTotal && thirdTotal == expectedTotal
+}
+
+func isValidLessonProgressOptions(progress []LessonProgressParams, expectedTotal int32) bool {
+	var firstTotal int32
+	var secondTotal int32
+	var thirdTotal int32
+
+	for _, item := range progress {
+		first, second, third := normalizeProgressTriples(item)
+		if len(first) == 0 || len(second) == 0 || len(third) == 0 {
+			return false
+		}
+		firstTotal += first[0]
+		secondTotal += second[0]
+		thirdTotal += third[0]
+	}
+
+	return firstTotal == expectedTotal && secondTotal == expectedTotal && thirdTotal == expectedTotal
 }
 
 func resourceStringsForPrompt(resources []GeneratedResource) []string {
@@ -1284,28 +1408,18 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		})
 	}
 
-	// Get lesson progress sorted by start minute and then by end minute
+	// Get lesson progress in persisted order.
 	lessonProgressRows, _ := s.repo.GetLessonProgressByLessonID(ctx, lesson.ID)
-	sort.Slice(lessonProgressRows, func(i, j int) bool {
-		leftStart := extractMinuteForSort(lessonProgressRows[i].StartMinute)
-		rightStart := extractMinuteForSort(lessonProgressRows[j].StartMinute)
-		if leftStart != rightStart {
-			return leftStart < rightStart
-		}
-
-		leftEnd := extractMinuteForSort(lessonProgressRows[i].EndMinute)
-		rightEnd := extractMinuteForSort(lessonProgressRows[j].EndMinute)
-		return leftEnd < rightEnd
-	})
 
 	lessonProgress := make([]LessonProgressData, 0, len(lessonProgressRows))
 	for _, item := range lessonProgressRows {
 		lessonProgress = append(lessonProgress, LessonProgressData{
-			ID:          item.ID,
-			Name:        item.Name,
-			StartMinute: item.StartMinute,
-			EndMinute:   item.EndMinute,
-			Content:     item.Content,
+			ID:         item.ID,
+			Name:       item.Name,
+			FirstTime:  item.FirstTime,
+			SecondTime: item.SecondTime,
+			ThirdTime:  item.ThirdTime,
+			Content:    item.Content,
 		})
 	}
 
@@ -1324,6 +1438,7 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		RupName:            lesson.RupName,
 		DisciplineName:     helpers.PgTextToPtr(lesson.DisciplineName),
 		TopicName:          helpers.PgTextToPtr(lesson.TopicName),
+		PlanNumber:         lesson.PlanNumber,
 		Topic:              topic,
 		Teacher:            teacher,
 		EventDate:          helpers.PgTimeToString(lesson.EventDate),
@@ -1339,13 +1454,6 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		CreatedAt:          helpers.PgTimeToString(lesson.CreatedAt),
 		UpdatedAt:          helpers.PgTimeToString(lesson.UpdatedAt),
 	}, nil
-}
-
-func extractMinuteForSort(minutes []int32) int32 {
-	if len(minutes) == 0 {
-		return math.MaxInt32
-	}
-	return minutes[0]
 }
 
 func (s *LessonService) resolveLessonLinks(

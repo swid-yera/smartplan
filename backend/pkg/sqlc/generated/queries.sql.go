@@ -572,27 +572,30 @@ INSERT INTO
     lesson_progress (
         lesson_id,
         name,
-        start_minute,
-        end_minute,
+        first_time,
+        second_time,
+        third_time,
         content
     )
-VALUES ($1, $2, $3, $4, $5) RETURNING id
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
 `
 
 type CreateLessonProgressParams struct {
-	LessonID    uuid.UUID `json:"lesson_id"`
-	Name        string    `json:"name"`
-	StartMinute []int32   `json:"start_minute"`
-	EndMinute   []int32   `json:"end_minute"`
-	Content     []string  `json:"content"`
+	LessonID   uuid.UUID `json:"lesson_id"`
+	Name       string    `json:"name"`
+	FirstTime  []int32   `json:"first_time"`
+	SecondTime []int32   `json:"second_time"`
+	ThirdTime  []int32   `json:"third_time"`
+	Content    []string  `json:"content"`
 }
 
 func (q *Queries) CreateLessonProgress(ctx context.Context, arg CreateLessonProgressParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, createLessonProgress,
 		arg.LessonID,
 		arg.Name,
-		arg.StartMinute,
-		arg.EndMinute,
+		arg.FirstTime,
+		arg.SecondTime,
+		arg.ThirdTime,
 		arg.Content,
 	)
 	var id uuid.UUID
@@ -606,6 +609,7 @@ INSERT INTO
         rup_name,
         discipline_name,
         topic_name,
+        plan_number,
         teacher,
         event_date,
         group_id,
@@ -628,7 +632,8 @@ VALUES (
         $9,
         $10,
         $11,
-        $12
+        $12,
+        $13
     ) RETURNING id
 `
 
@@ -636,6 +641,7 @@ type CreateLessonsParams struct {
 	RupName            string             `json:"rup_name"`
 	DisciplineName     pgtype.Text        `json:"discipline_name"`
 	TopicName          pgtype.Text        `json:"topic_name"`
+	PlanNumber         int32              `json:"plan_number"`
 	Teacher            uuid.UUID          `json:"teacher"`
 	EventDate          pgtype.Timestamptz `json:"event_date"`
 	GroupID            uuid.UUID          `json:"group_id"`
@@ -652,6 +658,7 @@ func (q *Queries) CreateLessons(ctx context.Context, arg CreateLessonsParams) (u
 		arg.RupName,
 		arg.DisciplineName,
 		arg.TopicName,
+		arg.PlanNumber,
 		arg.Teacher,
 		arg.EventDate,
 		arg.GroupID,
@@ -1672,7 +1679,7 @@ func (q *Queries) GetGroupByKeycloakID(ctx context.Context, keycloakID uuid.UUID
 }
 
 const getLessonProgressByID = `-- name: GetLessonProgressByID :one
-SELECT id, lesson_id, name, start_minute, end_minute, content FROM lesson_progress WHERE id = $1
+SELECT id, lesson_id, name, first_time, second_time, third_time, content FROM lesson_progress WHERE id = $1
 `
 
 func (q *Queries) GetLessonProgressByID(ctx context.Context, id uuid.UUID) (LessonProgress, error) {
@@ -1682,19 +1689,20 @@ func (q *Queries) GetLessonProgressByID(ctx context.Context, id uuid.UUID) (Less
 		&i.ID,
 		&i.LessonID,
 		&i.Name,
-		&i.StartMinute,
-		&i.EndMinute,
+		&i.FirstTime,
+		&i.SecondTime,
+		&i.ThirdTime,
 		&i.Content,
 	)
 	return i, err
 }
 
 const getLessonProgressByLessonID = `-- name: GetLessonProgressByLessonID :many
-SELECT id, lesson_id, name, start_minute, end_minute, content
+SELECT id, lesson_id, name, first_time, second_time, third_time, content
 FROM lesson_progress
 WHERE
     lesson_id = $1
-ORDER BY name ASC
+ORDER BY id ASC
 `
 
 func (q *Queries) GetLessonProgressByLessonID(ctx context.Context, lessonID uuid.UUID) ([]LessonProgress, error) {
@@ -1710,8 +1718,9 @@ func (q *Queries) GetLessonProgressByLessonID(ctx context.Context, lessonID uuid
 			&i.ID,
 			&i.LessonID,
 			&i.Name,
-			&i.StartMinute,
-			&i.EndMinute,
+			&i.FirstTime,
+			&i.SecondTime,
+			&i.ThirdTime,
 			&i.Content,
 		); err != nil {
 			return nil, err
@@ -1725,7 +1734,7 @@ func (q *Queries) GetLessonProgressByLessonID(ctx context.Context, lessonID uuid
 }
 
 const getLessons = `-- name: GetLessons :many
-SELECT id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at FROM lessons
+SELECT id, rup_name, discipline_name, topic_name, plan_number, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at FROM lessons
 WHERE
     (
         $3::uuid IS NULL
@@ -1765,6 +1774,7 @@ func (q *Queries) GetLessons(ctx context.Context, arg GetLessonsParams) ([]Lesso
 			&i.RupName,
 			&i.DisciplineName,
 			&i.TopicName,
+			&i.PlanNumber,
 			&i.Teacher,
 			&i.EventDate,
 			&i.GroupID,
@@ -1789,7 +1799,7 @@ func (q *Queries) GetLessons(ctx context.Context, arg GetLessonsParams) ([]Lesso
 }
 
 const getLessonsByID = `-- name: GetLessonsByID :one
-SELECT id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at FROM lessons WHERE id = $1
+SELECT id, rup_name, discipline_name, topic_name, plan_number, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at FROM lessons WHERE id = $1
 `
 
 func (q *Queries) GetLessonsByID(ctx context.Context, id uuid.UUID) (Lesson, error) {
@@ -1800,6 +1810,7 @@ func (q *Queries) GetLessonsByID(ctx context.Context, id uuid.UUID) (Lesson, err
 		&i.RupName,
 		&i.DisciplineName,
 		&i.TopicName,
+		&i.PlanNumber,
 		&i.Teacher,
 		&i.EventDate,
 		&i.GroupID,
@@ -1817,7 +1828,7 @@ func (q *Queries) GetLessonsByID(ctx context.Context, id uuid.UUID) (Lesson, err
 }
 
 const getRecentLessonsByDiscipline = `-- name: GetRecentLessonsByDiscipline :many
-SELECT id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at
+SELECT id, rup_name, discipline_name, topic_name, plan_number, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at
 FROM lessons
 WHERE
     rup_name = $1
@@ -1846,6 +1857,7 @@ func (q *Queries) GetRecentLessonsByDiscipline(ctx context.Context, arg GetRecen
 			&i.RupName,
 			&i.DisciplineName,
 			&i.TopicName,
+			&i.PlanNumber,
 			&i.Teacher,
 			&i.EventDate,
 			&i.GroupID,
@@ -2549,14 +2561,15 @@ SET
     rup_name = $2,
     discipline_name = $3,
     topic_name = $4,
-    event_date = $5,
-    group_id = $6,
-    type = $7,
-    goals = $8,
-    tasks = $9,
-    expected = $10,
-    internet_resources = $11,
-    technical_resources = $12,
+    plan_number = $5,
+    event_date = $6,
+    group_id = $7,
+    type = $8,
+    goals = $9,
+    tasks = $10,
+    expected = $11,
+    internet_resources = $12,
+    technical_resources = $13,
     updated_at = NOW()
 WHERE
     id = $1
@@ -2567,6 +2580,7 @@ type UpdateLessonParams struct {
 	RupName            string             `json:"rup_name"`
 	DisciplineName     pgtype.Text        `json:"discipline_name"`
 	TopicName          pgtype.Text        `json:"topic_name"`
+	PlanNumber         int32              `json:"plan_number"`
 	EventDate          pgtype.Timestamptz `json:"event_date"`
 	GroupID            uuid.UUID          `json:"group_id"`
 	Type               EnumLessonType     `json:"type"`
@@ -2583,6 +2597,7 @@ func (q *Queries) UpdateLesson(ctx context.Context, arg UpdateLessonParams) erro
 		arg.RupName,
 		arg.DisciplineName,
 		arg.TopicName,
+		arg.PlanNumber,
 		arg.EventDate,
 		arg.GroupID,
 		arg.Type,
@@ -2618,27 +2633,30 @@ const updateLessonProgress = `-- name: UpdateLessonProgress :exec
 UPDATE lesson_progress
 SET
     name = $2,
-    start_minute = $3,
-    end_minute = $4,
-    content = $5
+    first_time = $3,
+    second_time = $4,
+    third_time = $5,
+    content = $6
 WHERE
     id = $1
 `
 
 type UpdateLessonProgressParams struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	StartMinute []int32   `json:"start_minute"`
-	EndMinute   []int32   `json:"end_minute"`
-	Content     []string  `json:"content"`
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	FirstTime  []int32   `json:"first_time"`
+	SecondTime []int32   `json:"second_time"`
+	ThirdTime  []int32   `json:"third_time"`
+	Content    []string  `json:"content"`
 }
 
 func (q *Queries) UpdateLessonProgress(ctx context.Context, arg UpdateLessonProgressParams) error {
 	_, err := q.db.Exec(ctx, updateLessonProgress,
 		arg.ID,
 		arg.Name,
-		arg.StartMinute,
-		arg.EndMinute,
+		arg.FirstTime,
+		arg.SecondTime,
+		arg.ThirdTime,
 		arg.Content,
 	)
 	return err

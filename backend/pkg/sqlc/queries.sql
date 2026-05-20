@@ -669,6 +669,7 @@ INSERT INTO
         rup_name,
         discipline_name,
         topic_name,
+        plan_number,
         teacher,
         event_date,
         group_id,
@@ -691,7 +692,8 @@ VALUES (
         $9,
         $10,
         $11,
-        $12
+        $12,
+        $13
     ) RETURNING id;
 
 -- name: UpdateLesson :exec
@@ -700,14 +702,15 @@ SET
     rup_name = $2,
     discipline_name = $3,
     topic_name = $4,
-    event_date = $5,
-    group_id = $6,
-    type = $7,
-    goals = $8,
-    tasks = $9,
-    expected = $10,
-    internet_resources = $11,
-    technical_resources = $12,
+    plan_number = $5,
+    event_date = $6,
+    group_id = $7,
+    type = $8,
+    goals = $9,
+    tasks = $10,
+    expected = $11,
+    internet_resources = $12,
+    technical_resources = $13,
     updated_at = NOW()
 WHERE
     id = $1;
@@ -754,7 +757,7 @@ SELECT *
 FROM lesson_progress
 WHERE
     lesson_id = $1
-ORDER BY name ASC;
+ORDER BY id ASC;
 
 -- name: DeleteLessonProgress :exec
 DELETE FROM lesson_progress WHERE id = $1;

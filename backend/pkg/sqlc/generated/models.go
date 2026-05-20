@@ -493,6 +493,7 @@ type Lesson struct {
 	RupName            string             `json:"rup_name"`
 	DisciplineName     pgtype.Text        `json:"discipline_name"`
 	TopicName          pgtype.Text        `json:"topic_name"`
+	PlanNumber         int32              `json:"plan_number"`
 	Teacher            uuid.UUID          `json:"teacher"`
 	EventDate          pgtype.Timestamptz `json:"event_date"`
 	GroupID            uuid.UUID          `json:"group_id"`
@@ -508,12 +509,13 @@ type Lesson struct {
 }
 
 type LessonProgress struct {
-	ID          uuid.UUID `json:"id"`
-	LessonID    uuid.UUID `json:"lesson_id"`
-	Name        string    `json:"name"`
-	StartMinute []int32   `json:"start_minute"`
-	EndMinute   []int32   `json:"end_minute"`
-	Content     []string  `json:"content"`
+	ID         uuid.UUID `json:"id"`
+	LessonID   uuid.UUID `json:"lesson_id"`
+	Name       string    `json:"name"`
+	FirstTime  []int32   `json:"first_time"`
+	SecondTime []int32   `json:"second_time"`
+	ThirdTime  []int32   `json:"third_time"`
+	Content    []string  `json:"content"`
 }
 
 type Rup struct {

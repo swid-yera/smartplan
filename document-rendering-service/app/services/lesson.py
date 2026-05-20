@@ -29,6 +29,29 @@ def to_multiline_text(value) -> str:
     return "\n".join(items)
 
 
+def to_int(value, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def first_list_number(value, default: int = 0) -> int:
+    if isinstance(value, list):
+        if not value:
+            return default
+        return to_int(value[0], default)
+    return to_int(value, default)
+
+
+def extract_step_times(row: dict, fallback: tuple[int, int, int]) -> tuple[int, int, int]:
+    first_time = first_list_number(row.get("first_time"), fallback[0])
+    second_time = first_list_number(row.get("second_time"), fallback[1])
+    third_time = first_list_number(row.get("third_time"), fallback[2])
+
+    return first_time, second_time, third_time
+
+
 def map_progress_rows(rows: list[dict]) -> list[dict]:
     fixed_names = [
         "Организационно-\nмотивационный момент",
@@ -41,22 +64,24 @@ def map_progress_rows(rows: list[dict]) -> list[dict]:
     ]
     fixed_times = [
         [5, 10, 15],
-        [15, 10, 0],
-        [40, 40, 15],
-        [15, 20, 0],
-        [7, 5, 5],
+        [15, 10, 10],
+        [40, 35, 30],
+        [15, 15, 15],
+        [7, 8, 8],
         [5, 7, 7],
-        [3, 3, 3],
+        [3, 5, 5],
     ]
     mapped: list[dict] = []
     for i, name in enumerate(fixed_names):
-        times = fixed_times[i]
-        time_str = f"{times[0]}/{times[1]}/{times[2]}мин."
+        fallback_times = fixed_times[i]
         row = rows[i] if i < len(rows) else {}
+        first_time, second_time, third_time = extract_step_times(row, tuple(fallback_times))
+        time_str = f"{first_time}/{second_time}/{third_time}мин."
+        resolved_name = str(row.get("name", "")).strip() or name
         content = to_multiline_text(row.get("content", []))
         mapped.append({
             "num": str(i + 1),
-            "name": f"{name}\n{time_str}",
+            "name": f"{resolved_name}\n{time_str}",
             "content": content,
         })
     return mapped
@@ -75,8 +100,6 @@ def generate_lesson_docx(data: dict) -> Path:
         "college": "КГКП «ALMATY POLYTECHNIC COLLEGE»",
         "plan_num": str(data.get("plan_num", "47")),
         "topic_name": str(data.get("topic_name", "")).strip(),
-        "module_name": str(data.get("module_name", "БМЗ (******)")),
-        "ro_code": str(data.get("ro_code", "РО 3.1(******)")),
         "teacher_name": str(data.get("teacher_name", "")).strip(),
         "event_date": str(data.get("event_date", "")).strip(),
         "course": data.get("course", ""),
