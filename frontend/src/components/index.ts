@@ -4,6 +4,7 @@ export * from './ui/forbidden'
 export * from './ui/loader'
 export * from './ui/page-title'
 export * from './ui/pagination'
+export * from './ui/section-title'
 
 // sheet
 export * from './sheets/rup-sheet'
