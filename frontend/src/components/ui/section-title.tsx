@@ -2,7 +2,7 @@ import type { ComponentProps, FC, ReactNode } from 'react'
 
 import { cn } from '@lib'
 
-interface ISectionTitleProps extends ComponentProps<'div'> {
+interface ISectionTitleProps extends Omit<ComponentProps<'div'>, 'title'> {
 	title: ReactNode
 	description?: ReactNode
 	actions?: ReactNode
