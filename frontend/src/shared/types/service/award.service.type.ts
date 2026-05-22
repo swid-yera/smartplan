@@ -10,7 +10,7 @@ export interface ICreateAwardRequest {
 	criteria: string
 	bonusCriteria?: string
 	categoryId?: string
-	fieldValues?: Record<string, string | string[]>
+	fieldValues?: Record<string, string | string[] | number>
 }
 
 export type IUpdateAwardRequest = ICreateAwardRequest

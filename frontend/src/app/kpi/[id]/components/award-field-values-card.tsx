@@ -24,7 +24,13 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 						<div className='space-y-4'>
 							{awardFieldValues.map(([fieldKey, rawValue]) => {
 								const values = Array.isArray(rawValue) ? rawValue : [rawValue]
-								const nonEmptyValues = values.filter((value) => value && value.trim())
+								const nonEmptyValues = values.filter((value) => {
+									if (value === null || value === undefined) return false
+									if (typeof value === 'number') return true
+									if (typeof value === 'string') return value.trim().length > 0
+
+									return false
+								})
 								const isFileField = fieldKey.toLowerCase() === 'file'
 
 								return (
@@ -36,24 +42,30 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 										) : (
 											<div className='space-y-3'>
 												{nonEmptyValues.map((value, idx) => {
+													const normalizedValue = typeof value === 'number' ? String(value) : value
+
 													if (isFileField) {
 														return (
-															<MediaViewer key={`${fieldKey}-${idx}`} fileUrl={value} type={fieldKey} />
+															<MediaViewer
+																key={`${fieldKey}-${idx}`}
+																fileUrl={normalizedValue}
+																type={fieldKey}
+															/>
 														)
 													}
 
-													const isHttp = /^https?:\/\//i.test(value)
+													const isHttp = /^https?:\/\//i.test(normalizedValue)
 
 													if (isHttp) {
 														return (
 															<a
 																key={`${fieldKey}-${idx}`}
 																className='block truncate max-w-[500px] text-sm hover:underline text-primary'
-																href={value}
+																href={normalizedValue}
 																rel='noopener noreferrer'
 																target='_blank'
 															>
-																{value}
+																{normalizedValue}
 															</a>
 														)
 													}
@@ -63,7 +75,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 															key={`${fieldKey}-${idx}`}
 															className='text-sm whitespace-pre-wrap wrap-break-word'
 														>
-															{value}
+															{normalizedValue}
 														</p>
 													)
 												})}

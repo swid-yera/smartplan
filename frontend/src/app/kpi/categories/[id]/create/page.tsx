@@ -149,11 +149,27 @@ export default function CreateAwardPage() {
 			criteria: selectedCriteria.id,
 			bonusCriteria: selectedBonusCriteria?.id,
 			categoryId: category.id,
-			fieldValues: category.fieldsExpanded.reduce<Record<string, string | string[]>>((acc, field) => {
+			fieldValues: category.fieldsExpanded.reduce<Record<string, string | string[] | number>>((acc, field) => {
 				const value = categoryFieldValues[field.key]
 
 				if (field.type === 'file') {
 					acc[field.key] = ['']
+
+					return acc
+				}
+
+				if (field.type === 'number') {
+					const rawValue = typeof value === 'string' ? value.trim() : ''
+
+					if (!rawValue) {
+						acc[field.key] = ''
+
+						return acc
+					}
+
+					const parsedValue = Number(rawValue)
+
+					acc[field.key] = Number.isFinite(parsedValue) ? parsedValue : ''
 
 					return acc
 				}
