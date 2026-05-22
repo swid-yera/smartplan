@@ -1,13 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-
 import { CategoryCard, Loader, SectionTitle } from '@components'
 import { services } from '@services'
-import { Button } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
 
 import { UserCard } from '../../users/[id]/user-card'
 

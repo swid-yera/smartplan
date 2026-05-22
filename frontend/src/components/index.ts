@@ -17,6 +17,7 @@ export * from './cards/empty-card'
 export * from './cards/groups-card'
 export * from './cards/responsible-users-card'
 export * from './cards/rups-card'
+export * from './cards/status-info-card'
 
 // badges
 export * from './badges/status-badge'

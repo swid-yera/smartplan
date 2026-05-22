@@ -1,8 +1,8 @@
 import type { FC } from 'react'
 
-import { normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
+import { normalizeTotalPoints, normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import type { IUser } from '@types'
+import { type IUser, RoleEnum } from '@types'
 import { Mail, Phone, UserIcon } from 'lucide-react'
 
 interface IUserMainProps {
@@ -10,6 +10,8 @@ interface IUserMainProps {
 }
 
 export const UserCard: FC<IUserMainProps> = ({ user }) => {
+	const isTeacher = user.role === RoleEnum.TEACHER
+
 	return (
 		<Card>
 			<CardHeader className='flex items-center gap-4'>
@@ -25,7 +27,12 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 					</CardDescription>
 				</div>
 
-				<Badge variant='outline'>{user.keycloakId}</Badge>
+				<Badge
+					className='opacity-0 relative overflow-hidden px-3 py-1 font-mono tracking-wide hover:opacity-100 transition-opacity duration-300 ease-out'
+					variant='outline'
+				>
+					{user.keycloakId}
+				</Badge>
 			</CardHeader>
 
 			<CardContent className='space-y-6'>
@@ -68,6 +75,13 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 							)}
 						</p>
 					</div>
+
+					{isTeacher && (
+						<div className='space-y-1'>
+							<p className='text-sm font-medium text-muted-foreground'>Всего баллов</p>
+							<p className='text-primary'>{normalizeTotalPoints(user.totalPoints ?? 0)}</p>
+						</div>
+					)}
 				</div>
 			</CardContent>
 		</Card>

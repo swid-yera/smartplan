@@ -3,11 +3,9 @@ import {
 	Award,
 	BookCopy,
 	BookOpen,
-	BookType,
 	Cctv,
 	ChartBar,
 	ClipboardClock,
-	FileBadge,
 	FilePlus,
 	Film,
 	Group,
@@ -17,7 +15,6 @@ import {
 	ListCheck,
 	type LucideIcon,
 	Medal,
-	MessageCircleQuestionMark,
 	Notebook,
 	NotebookPen,
 	PenIcon,
@@ -156,18 +153,23 @@ export const navMain: INav[] = [
 		role: RoleEnum.ADMIN,
 		items: [
 			{
-				title: 'Настройки',
-				url: '/settings',
-				icon: Group,
-			},
-			{
 				title: 'Пользователи',
 				url: '/users',
 				icon: Users,
 			},
 			{
-				title: 'Создание категорий',
-				url: '/kpi/categories/create',
+				title: 'Настройки',
+				url: '/settings',
+				icon: Group,
+			},
+			{
+				title: 'Категорий KPI',
+				url: '/kpi/categories',
+				icon: ListCheck,
+			},
+			{
+				title: 'Критерий оценивание KPI',
+				url: '/kpi/types',
 				icon: ListCheck,
 			},
 			{

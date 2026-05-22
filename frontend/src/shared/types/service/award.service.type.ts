@@ -2,12 +2,15 @@ import type { CriteriaMethodEnum } from '../award.type'
 
 // create award
 export interface ICreateAwardRequest {
-	links?: string
+	links?: string | string[]
+	text?: string
 
 	type: string
 	variant: string
 	criteria: string
 	bonusCriteria?: string
+	categoryId?: string
+	fieldValues?: Record<string, string | string[]>
 }
 
 export type IUpdateAwardRequest = ICreateAwardRequest

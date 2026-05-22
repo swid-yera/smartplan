@@ -57,7 +57,7 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 		<Card className={className}>
 			<CardHeader>
 				<CardTitle>Фильтры</CardTitle>
-				<CardDescription>Можно быстро отфильтровать награды преподавателей по статусу.</CardDescription>
+				<CardDescription>Можно быстро отфильтровать данные преподавателей по статусу.</CardDescription>
 			</CardHeader>
 			<CardContent className='h-full'>
 				<form className='h-full flex justify-between items-center gap-3' onSubmit={(e) => handleSubmit(e)}>

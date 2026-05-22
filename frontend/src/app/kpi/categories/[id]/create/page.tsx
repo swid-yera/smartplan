@@ -11,7 +11,6 @@ import {
 	Loader,
 	PageTitle,
 	buildInitialCategoryFieldValues,
-	collectCategoryFieldFiles,
 	findFutureDateCategoryField,
 	findInvalidUrlCategoryField,
 	findMissingRequiredCategoryField,
@@ -144,25 +143,51 @@ export default function CreateAwardPage() {
 		}
 
 		const newAward: ICreateAwardRequest = {
+			text: typeof categoryFieldValues.text === 'string' ? categoryFieldValues.text : '',
 			type: selectedType.id,
 			variant: selectedVariant.id,
 			criteria: selectedCriteria.id,
+			bonusCriteria: selectedBonusCriteria?.id,
+			categoryId: category.id,
+			fieldValues: category.fieldsExpanded.reduce<Record<string, string | string[]>>((acc, field) => {
+				const value = categoryFieldValues[field.key]
+
+				if (field.type === 'file') {
+					acc[field.key] = ['']
+
+					return acc
+				}
+
+				acc[field.key] = typeof value === 'string' ? value : ''
+
+				return acc
+			}, {}),
 		}
-		const files = collectCategoryFieldFiles(category.fieldsExpanded, categoryFieldValues)
+		const filesByField = category.fieldsExpanded.reduce<Record<string, File>>((acc, field) => {
+			if (field.type !== 'file') return acc
+
+			const value = categoryFieldValues[field.key]
+
+			if (!Array.isArray(value) || !value[0]) return acc
+
+			acc[field.key] = value[0]
+
+			return acc
+		}, {})
 
 		const toastId = `award-${selectedType.name}-create`
 
-		toast.loading(`Создание награды в категории - ${category.name}`, { id: toastId })
+		toast.loading(`Ввод данных в категории - ${category.name}`, { id: toastId })
 
 		mutateCreate(
-			{ newAward, files },
+			{ newAward, filesByField },
 			{
 				onSuccess: (createdAward) => {
 					toast.success(`Награда успешно создана с типом - ${createdAward.type.name}`, { id: toastId })
 					push(`/kpi/${createdAward.id}`)
 				},
 				onError: () => {
-					toast.error(`Ошибка создания награды - ${selectedType.name}`, { id: toastId })
+					toast.error(`Ошибка ввода данных - ${selectedType.name}`, { id: toastId })
 				},
 			},
 		)
@@ -187,9 +212,9 @@ export default function CreateAwardPage() {
 		<section className='mx-auto w-full p-6 space-y-6'>
 			<PageTitle
 				backHref={`/kpi/categories/${category.id}`}
-				description='Создание награды с ограничениями и полями выбранной категории'
+				description='Ввод данных с ограничениями и полями выбранной категории'
 			>
-				Создание награды
+				Ввод данных
 			</PageTitle>
 
 			<Card>
@@ -221,7 +246,7 @@ export default function CreateAwardPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Создание награды</CardTitle>
+					<CardTitle>Ввод данных</CardTitle>
 					<CardDescription>
 						Сначала заполните поля категории, затем выберите тип, вариант и критерий
 					</CardDescription>
@@ -238,7 +263,7 @@ export default function CreateAwardPage() {
 					<Separator />
 
 					<div className='space-y-2'>
-						<Label htmlFor='type'>Тип награды</Label>
+						<Label htmlFor='type'>Тип оценивания</Label>
 						<Select
 							value={selectedType?.id || ''}
 							onValueChange={(id: string) => {
@@ -290,7 +315,7 @@ export default function CreateAwardPage() {
 							{selectedVariant?.description ? (
 								<p className='ml-2 text-xs text-muted-foreground'>{selectedVariant.description}</p>
 							) : !selectedType ? (
-								<p className='ml-2 text-xs text-muted-foreground'>Сначала выберите тип награды</p>
+								<p className='ml-2 text-xs text-muted-foreground'>Сначала выберите тип оценивания</p>
 							) : null}
 						</div>
 

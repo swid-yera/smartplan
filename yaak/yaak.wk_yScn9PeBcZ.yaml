@@ -2,13 +2,22 @@ type: workspace
 model: workspace
 id: wk_yScn9PeBcZ
 createdAt: 2025-11-20T11:32:24.656414200
-updatedAt: 2025-12-25T14:24:26.304651500
+updatedAt: 2026-05-22T03:53:17.932526100
 authentication: {}
 authenticationType: null
 description: ''
-headers: []
+headers:
+- enabled: true
+  name: C
+  value: ''
+  id: ii3qRJ5Uj7
+- enabled: true
+  name: ''
+  value: ''
+  id: AvqVvaMZUn
 name: eduplan
 encryptionKeyChallenge: null
 settingValidateCertificates: true
 settingFollowRedirects: true
 settingRequestTimeout: 0
+settingDnsOverrides: []

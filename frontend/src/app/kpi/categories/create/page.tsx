@@ -246,9 +246,9 @@ const Page = () => {
 							</PopoverTrigger>
 							<PopoverContent align='start' className='w-[--radix-popover-trigger-width] p-0'>
 								<Command>
-									<CommandInput placeholder='Поиск типа награды...' />
+									<CommandInput placeholder='Поиск типа оценивания...' />
 									<CommandList>
-										<CommandEmpty>Тип награды не найден.</CommandEmpty>
+										<CommandEmpty>Тип оценивания не найден.</CommandEmpty>
 										<CommandGroup>
 											{awardTypes?.map((awardType) => (
 												<CommandItem

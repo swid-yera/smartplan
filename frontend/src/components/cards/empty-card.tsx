@@ -41,9 +41,9 @@ interface IConfig {
 
 const typeConfig: Record<ReviewEntityType, IConfig> = {
 	AWARD: {
-		title: 'Ваши награды не найдены',
+		title: 'Ваши данные не найдены',
 		icon: AwardIcon,
-		description: 'Здесь будут отображаться ваши достижения для оценки KPI.',
+		description: 'Здесь будут отображаться ваши данные для оценки KPI.',
 		href: '/kpi/create',
 		create: 'Опубликовать достижение',
 	},
