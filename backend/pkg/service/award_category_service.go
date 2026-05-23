@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"eduplan/backend/pkg/localization"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
@@ -30,45 +31,45 @@ var allowedDynamicFieldTypes = map[string]struct{}{
 }
 
 type AwardCategoryFieldRequest struct {
-	Key         string         `json:"key"`
-	Label       string         `json:"label"`
-	Type        string         `json:"type"`
-	Required    bool           `json:"required"`
-	Placeholder string         `json:"placeholder"`
-	HelpText    string         `json:"helpText"`
-	Options     any            `json:"options"`
-	Validation  map[string]any `json:"validation"`
-	SortOrder   int32          `json:"sortOrder"`
+	Key         string                   `json:"key"`
+	Label       localization.LocaleText  `json:"label"`
+	Type        string                   `json:"type"`
+	Required    bool                     `json:"required"`
+	Placeholder *localization.LocaleText `json:"placeholder"`
+	HelpText    *localization.LocaleText `json:"helpText"`
+	Options     any                      `json:"options"`
+	Validation  map[string]any           `json:"validation"`
+	SortOrder   int32                    `json:"sortOrder"`
 }
 
 type AwardCategoryFieldResponse struct {
-	ID          uuid.UUID      `json:"id"`
-	Key         string         `json:"key"`
-	Label       string         `json:"label"`
-	Type        string         `json:"type"`
-	Required    bool           `json:"required"`
-	Placeholder string         `json:"placeholder,omitempty"`
-	HelpText    string         `json:"helpText,omitempty"`
-	Options     any            `json:"options"`
-	Validation  map[string]any `json:"validation"`
-	SortOrder   int32          `json:"sortOrder"`
-	CreatedAt   time.Time      `json:"createdAt"`
-	UpdatedAt   time.Time      `json:"updatedAt"`
+	ID          uuid.UUID                `json:"id"`
+	Key         string                   `json:"key"`
+	Label       localization.LocaleText  `json:"label"`
+	Type        string                   `json:"type"`
+	Required    bool                     `json:"required"`
+	Placeholder *localization.LocaleText `json:"placeholder,omitempty"`
+	HelpText    *localization.LocaleText `json:"helpText,omitempty"`
+	Options     any                      `json:"options"`
+	Validation  map[string]any           `json:"validation"`
+	SortOrder   int32                    `json:"sortOrder"`
+	CreatedAt   time.Time                `json:"createdAt"`
+	UpdatedAt   time.Time                `json:"updatedAt"`
 }
 
 type AwardCategoryRequest struct {
-	Name        string                      `json:"name"`
+	Name        localization.LocaleText     `json:"name"`
 	Icon        string                      `json:"icon"`
-	Description string                      `json:"description"`
+	Description localization.LocaleText     `json:"description"`
 	AwardTypes  []string                    `json:"awardTypes"`
 	Fields      []AwardCategoryFieldRequest `json:"fields"`
 }
 
 type AwardCategoryResponse struct {
 	ID                 uuid.UUID                    `json:"id"`
-	Name               string                       `json:"name"`
+	Name               localization.LocaleText      `json:"name"`
 	Icon               string                       `json:"icon,omitempty"`
-	Description        string                       `json:"description,omitempty"`
+	Description        localization.LocaleText      `json:"description,omitempty"`
 	AwardTypes         []string                     `json:"awardTypes"`
 	AwardTypesExpanded []TypeResponse               `json:"awardTypesExpanded,omitempty"`
 	FieldsExpanded     []AwardCategoryFieldResponse `json:"fieldsExpanded"`
@@ -77,10 +78,10 @@ type AwardCategoryResponse struct {
 }
 
 type AwardCategoryListItemResponse struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Icon        string    `json:"icon,omitempty"`
-	Description string    `json:"description,omitempty"`
+	ID          uuid.UUID               `json:"id"`
+	Name        localization.LocaleText `json:"name"`
+	Icon        string                  `json:"icon,omitempty"`
+	Description localization.LocaleText `json:"description,omitempty"`
 }
 
 func (s *AwardService) CreateCategory(ctx context.Context, req AwardCategoryRequest) (AwardCategoryResponse, error) {
@@ -90,9 +91,9 @@ func (s *AwardService) CreateCategory(ctx context.Context, req AwardCategoryRequ
 	}
 
 	category, err := s.repo.CreateAwardCategory(ctx, &storage.CreateAwardCategoryParams{
-		Name:        strings.TrimSpace(req.Name),
+		Name:        req.Name.ToJSONB(),
 		Icon:        toPgText(req.Icon),
-		Description: toPgText(req.Description),
+		Description: req.Description.ToJSONB(),
 		AwardTypes:  awardTypeIDs,
 	})
 	if err != nil {
@@ -116,9 +117,9 @@ func (s *AwardService) GetAllCategories(ctx context.Context) ([]AwardCategoryLis
 	for _, category := range categories {
 		result = append(result, AwardCategoryListItemResponse{
 			ID:          category.ID,
-			Name:        category.Name,
+			Name:        localization.LocaleTextFromJSONB(category.Name),
 			Icon:        fromPgText(category.Icon),
-			Description: fromPgText(category.Description),
+			Description: localization.LocaleTextFromJSONB(category.Description),
 		})
 	}
 
@@ -153,9 +154,9 @@ func (s *AwardService) UpdateCategory(ctx context.Context, id uuid.UUID, req Awa
 
 	_, err = s.repo.UpdateAwardCategory(ctx, storage.UpdateAwardCategoryParams{
 		ID:          id,
-		Name:        strings.TrimSpace(req.Name),
+		Name:        req.Name.ToJSONB(),
 		Icon:        toPgText(req.Icon),
-		Description: toPgText(req.Description),
+		Description: req.Description.ToJSONB(),
 		AwardTypes:  awardTypeIDs,
 	})
 	if err != nil {
@@ -209,11 +210,11 @@ func (s *AwardService) createCategoryFields(ctx context.Context, categoryID uuid
 		_, err = s.repo.CreateAwardCategoryField(ctx, &storage.CreateAwardCategoryFieldParams{
 			CategoryID:  categoryID,
 			Key:         strings.TrimSpace(field.Key),
-			Label:       strings.TrimSpace(field.Label),
+			Label:       field.Label.ToJSONB(),
 			Type:        strings.ToLower(strings.TrimSpace(field.Type)),
 			Required:    field.Required,
-			Placeholder: toPgText(field.Placeholder),
-			HelpText:    toPgText(field.HelpText),
+			Placeholder: localePtrToJSONB(field.Placeholder),
+			HelpText:    localePtrToJSONB(field.HelpText),
 			Options:     optionsJSON,
 			Validation:  validationJSON,
 			SortOrder:   field.SortOrder,
@@ -227,7 +228,7 @@ func (s *AwardService) createCategoryFields(ctx context.Context, categoryID uuid
 }
 
 func (s *AwardService) validateCategoryRequest(ctx context.Context, req AwardCategoryRequest) ([]uuid.UUID, error) {
-	if strings.TrimSpace(req.Name) == "" {
+	if req.Name.Ru == "" && req.Name.Kz == "" {
 		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "name is required"}
 	}
 
@@ -249,13 +250,14 @@ func (s *AwardService) validateCategoryRequest(ctx context.Context, req AwardCat
 	seen := make(map[string]struct{}, len(req.Fields))
 	for _, field := range req.Fields {
 		key := strings.TrimSpace(field.Key)
-		label := strings.TrimSpace(field.Label)
+		labelRu := strings.TrimSpace(field.Label.Ru)
+		labelKz := strings.TrimSpace(field.Label.Kz)
 		fieldType := strings.ToLower(strings.TrimSpace(field.Type))
 
 		if key == "" {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "field key is required"}
 		}
-		if label == "" {
+		if labelRu == "" && labelKz == "" {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "field label is required"}
 		}
 		if _, ok := allowedDynamicFieldTypes[fieldType]; !ok {
@@ -287,9 +289,9 @@ func (s *AwardService) mapCategoryResponse(ctx context.Context, category storage
 
 	response := AwardCategoryResponse{
 		ID:             category.ID,
-		Name:           category.Name,
+		Name:           localization.LocaleTextFromJSONB(category.Name),
 		Icon:           category.Icon.String,
-		Description:    category.Description.String,
+		Description:    localization.LocaleTextFromJSONB(category.Description),
 		AwardTypes:     formatUUIDs(category.AwardTypes),
 		FieldsExpanded: fieldsExpanded,
 		CreatedAt:      category.CreatedAt.Time,
@@ -339,11 +341,11 @@ func (s *AwardService) mapCategoryFieldResponse(field storage.AwardCategoryField
 	return AwardCategoryFieldResponse{
 		ID:          field.ID,
 		Key:         field.Key,
-		Label:       field.Label,
+		Label:       localization.LocaleTextFromJSONB(field.Label),
 		Type:        field.Type,
 		Required:    field.Required,
-		Placeholder: field.Placeholder.String,
-		HelpText:    field.HelpText.String,
+		Placeholder: localization.LocaleTextPtrFromJSONB(field.Placeholder),
+		HelpText:    localization.LocaleTextPtrFromJSONB(field.HelpText),
 		Options:     options,
 		Validation:  validation,
 		SortOrder:   field.SortOrder,
@@ -784,6 +786,13 @@ func formatUUIDs(values []uuid.UUID) []string {
 		out = append(out, id.String())
 	}
 	return out
+}
+
+func localePtrToJSONB(value *localization.LocaleText) []byte {
+	if value == nil {
+		return nil
+	}
+	return value.ToJSONB()
 }
 
 func toPgText(value string) pgtype.Text {

@@ -17,6 +17,7 @@ import (
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/helpers"
+	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -27,53 +28,53 @@ import (
 )
 
 type LessonParams struct {
-	RupName            string      `json:"rup_name"`
-	DisciplineName     *string     `json:"discipline_name"`
-	TopicName          *string     `json:"topic_name"`
-	PlanNumber         *int32      `json:"plan_number"`
-	TeacherID          uuid.UUID   `json:"teacher_id"`
-	EventDate          string      `json:"event_date"`
-	GroupID            uuid.UUID   `json:"group_id"`
-	Type               string      `json:"type"`
-	Goals              *string     `json:"goals"`
-	Tasks              *string     `json:"tasks"`
-	Expected           *string     `json:"expected"`
-	InternetResources  []uuid.UUID `json:"internet_resources"`
-	TechnicalResources []uuid.UUID `json:"technical_resources"`
+	RupName            localization.LocaleText  `json:"rup_name"`
+	DisciplineName     *localization.LocaleText `json:"discipline_name"`
+	TopicName          *localization.LocaleText `json:"topic_name"`
+	PlanNumber         *int32                   `json:"plan_number"`
+	TeacherID          uuid.UUID                `json:"teacher_id"`
+	EventDate          string                   `json:"event_date"`
+	GroupID            uuid.UUID                `json:"group_id"`
+	Type               string                   `json:"type"`
+	Goals              *localization.LocaleText `json:"goals"`
+	Tasks              *localization.LocaleText `json:"tasks"`
+	Expected           *localization.LocaleText `json:"expected"`
+	InternetResources  []uuid.UUID              `json:"internet_resources"`
+	TechnicalResources []uuid.UUID              `json:"technical_resources"`
 }
 
 type LessonResponse struct {
-	ID                 uuid.UUID             `json:"id"`
-	RupID              *uuid.UUID            `json:"rupId,omitempty"`
-	DisciplineID       *uuid.UUID            `json:"disciplineId,omitempty"`
-	TopicID            *uuid.UUID            `json:"topicId,omitempty"`
-	RupName            string                `json:"rup_name"`
-	DisciplineName     *string               `json:"discipline_name"`
-	TopicName          *string               `json:"topic_name"`
-	PlanNumber         int32                 `json:"plan_number"`
-	Topic              *TopicResponse        `json:"topic,omitempty"`
-	Teacher            *helpers.UserResponse `json:"teacher"`
-	EventDate          string                `json:"event_date"`
-	Group              *GroupResponse        `json:"group"`
-	Type               string                `json:"type"`
-	Goals              *string               `json:"goals"`
-	Tasks              *string               `json:"tasks"`
-	Expected           *string               `json:"expected"`
-	InternetResources  []*ResourceResponse   `json:"internet_resources"`
-	TechnicalResources []*ResourceResponse   `json:"technical_resources"`
-	LessonProgress     []LessonProgressData  `json:"lesson_progress"`
-	FileURL            *string               `json:"file_url"`
-	CreatedAt          string                `json:"created_at"`
-	UpdatedAt          string                `json:"updated_at"`
+	ID                 uuid.UUID                `json:"id"`
+	RupID              *uuid.UUID               `json:"rupId,omitempty"`
+	DisciplineID       *uuid.UUID               `json:"disciplineId,omitempty"`
+	TopicID            *uuid.UUID               `json:"topicId,omitempty"`
+	RupName            localization.LocaleText  `json:"rup_name"`
+	DisciplineName     *localization.LocaleText `json:"discipline_name"`
+	TopicName          *localization.LocaleText `json:"topic_name"`
+	PlanNumber         int32                    `json:"plan_number"`
+	Topic              *TopicResponse           `json:"topic,omitempty"`
+	Teacher            *helpers.UserResponse    `json:"teacher"`
+	EventDate          string                   `json:"event_date"`
+	Group              *GroupResponse           `json:"group"`
+	Type               string                   `json:"type"`
+	Goals              *localization.LocaleText `json:"goals"`
+	Tasks              *localization.LocaleText `json:"tasks"`
+	Expected           *localization.LocaleText `json:"expected"`
+	InternetResources  []*ResourceResponse      `json:"internet_resources"`
+	TechnicalResources []*ResourceResponse      `json:"technical_resources"`
+	LessonProgress     []LessonProgressData     `json:"lesson_progress"`
+	FileURL            *string                  `json:"file_url"`
+	CreatedAt          string                   `json:"created_at"`
+	UpdatedAt          string                   `json:"updated_at"`
 }
 
 type LessonProgressData struct {
-	ID         uuid.UUID `json:"id"`
-	Name       string    `json:"name"`
-	FirstTime  []int32   `json:"first_time"`
-	SecondTime []int32   `json:"second_time"`
-	ThirdTime  []int32   `json:"third_time"`
-	Content    []string  `json:"content"`
+	ID         uuid.UUID               `json:"id"`
+	Name       localization.LocaleText `json:"name"`
+	FirstTime  []int32                 `json:"first_time"`
+	SecondTime []int32                 `json:"second_time"`
+	ThirdTime  []int32                 `json:"third_time"`
+	Content    []string                `json:"content"`
 }
 
 type PaginatedLessonsResponse struct {
@@ -82,12 +83,12 @@ type PaginatedLessonsResponse struct {
 }
 
 type LessonProgressParams struct {
-	ID         uuid.UUID `json:"id"`
-	Name       string    `json:"name"`
-	FirstTime  []int32   `json:"first_time"`
-	SecondTime []int32   `json:"second_time"`
-	ThirdTime  []int32   `json:"third_time"`
-	Content    []string  `json:"content"`
+	ID         uuid.UUID               `json:"id"`
+	Name       localization.LocaleText `json:"name"`
+	FirstTime  []int32                 `json:"first_time"`
+	SecondTime []int32                 `json:"second_time"`
+	ThirdTime  []int32                 `json:"third_time"`
+	Content    []string                `json:"content"`
 }
 
 type GenerateLessonInput struct {
@@ -99,24 +100,24 @@ type GenerateLessonInput struct {
 }
 
 type GenerateLessonTopicInput struct {
-	Name            string `json:"name"`
-	Type            string `json:"type"`
-	TotalHours      int32  `json:"total_hours"`
-	TheoryHours     int32  `json:"theory_hours"`
-	PracticeHours   int32  `json:"practice_hours"`
-	IndividualHours int32  `json:"individual_hours"`
-	SrspHours       int32  `json:"srsp_hours"`
-	SrsHours        int32  `json:"srs_hours"`
+	Name            localization.LocaleText `json:"name"`
+	Type            string                  `json:"type"`
+	TotalHours      int32                   `json:"total_hours"`
+	TheoryHours     int32                   `json:"theory_hours"`
+	PracticeHours   int32                   `json:"practice_hours"`
+	IndividualHours int32                   `json:"individual_hours"`
+	SrspHours       int32                   `json:"srsp_hours"`
+	SrsHours        int32                   `json:"srs_hours"`
 }
 
 type RegenerateLessonByIDInput struct {
-	TopicName string `json:"topic_name"`
-	Type      string `json:"type"`
-	EventDate string `json:"event_date"`
-	Goals     string `json:"goals"`
-	Tasks     string `json:"tasks"`
-	Expected  string `json:"expected"`
-	Message   string `json:"message"`
+	TopicName localization.LocaleText `json:"topic_name"`
+	Type      string                  `json:"type"`
+	EventDate string                  `json:"event_date"`
+	Goals     localization.LocaleText `json:"goals"`
+	Tasks     localization.LocaleText `json:"tasks"`
+	Expected  localization.LocaleText `json:"expected"`
+	Message   string                  `json:"message"`
 }
 
 type generatedLessonPlan struct {
@@ -198,17 +199,17 @@ func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) e
 	}
 	planNumber := normalizeLessonPlanNumber(params.PlanNumber)
 	createParams := storage.CreateLessonsParams{
-		RupName:            params.RupName,
-		DisciplineName:     pgtype.Text{String: helpers.PtrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
-		TopicName:          pgtype.Text{String: helpers.PtrToString(params.TopicName), Valid: params.TopicName != nil},
+		RupName:            params.RupName.ToJSONB(),
+		DisciplineName:     localePtrToJSONB(params.DisciplineName),
+		TopicName:          localePtrToJSONB(params.TopicName),
 		PlanNumber:         planNumber,
 		Teacher:            params.TeacherID,
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
 		Type:               storage.EnumLessonType(params.Type),
-		Goals:              pgtype.Text{String: helpers.PtrToString(params.Goals), Valid: params.Goals != nil},
-		Tasks:              pgtype.Text{String: helpers.PtrToString(params.Tasks), Valid: params.Tasks != nil},
-		Expected:           pgtype.Text{String: helpers.PtrToString(params.Expected), Valid: params.Expected != nil},
+		Goals:              localePtrToJSONB(params.Goals),
+		Tasks:              localePtrToJSONB(params.Tasks),
+		Expected:           localePtrToJSONB(params.Expected),
 		InternetResources:  params.InternetResources,
 		TechnicalResources: params.TechnicalResources,
 	}
@@ -244,7 +245,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 
 	if err := s.rupRepo.UpdateTopic(ctx, storage.UpdateDisciplineTopicParams{
 		ID:              input.TopicID,
-		Name:            strings.TrimSpace(input.UpdatedTopic.Name),
+		Name:            input.UpdatedTopic.Name.ToJSONB(),
 		Type:            topicType,
 		TotalHours:      input.UpdatedTopic.TotalHours,
 		TheoryHours:     input.UpdatedTopic.TheoryHours,
@@ -276,8 +277,8 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 
 	recentLessons, err := s.repo.GetRecentLessonsByDiscipline(
 		ctx,
-		rup.Name,
-		pgtype.Text{String: discipline.Name, Valid: discipline.Name != ""},
+		localePrimary(rup.Name),
+		localePrimary(discipline.Name),
 		3,
 	)
 	if err != nil {
@@ -286,9 +287,9 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 
 	previousLessonNames := extractPreviousLessonNames(recentLessons)
 	aiResult, err := s.aiService.GenerateLesson(ctx, GenerateLessonRequest{
-		RupName:            rup.Name,
-		DisciplineName:     discipline.Name,
-		TopicName:          updatedTopic.Name,
+		RupName:            localePrimary(rup.Name),
+		DisciplineName:     localePrimary(discipline.Name),
+		TopicName:          localePrimary(updatedTopic.Name),
 		TopicType:          string(updatedTopic.Type),
 		TotalHours:         updatedTopic.TotalHours,
 		TheoryHours:        updatedTopic.TheoryHours,
@@ -297,12 +298,12 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		SrspHours:          updatedTopic.SrspHours,
 		SrsHours:           updatedTopic.SrsHours,
 		GroupName:          group.Name,
-		GroupSpecialty:     group.Specialty.String,
-		GroupQualification: group.Qualification.String,
-		ExplorationGoals:   exploration.Goals.String,
-		ExplorationSummary: exploration.Summary.String,
-		Prerequisites:      exploration.Prerequisites.String,
-		Postrequisites:     exploration.Postrequisites.String,
+		GroupSpecialty:     localePrimary(group.Specialty),
+		GroupQualification: localePrimary(group.Qualification),
+		ExplorationGoals:   localePrimary(exploration.Goals),
+		ExplorationSummary: localePrimary(exploration.Summary),
+		Prerequisites:      localePrimary(exploration.Prerequisites),
+		Postrequisites:     localePrimary(exploration.Postrequisites),
 		InternetResources:  resourceStringsForPrompt(internetResources),
 		TechnicalResources: resourceStringsForPrompt(technicalResources),
 		PreviousLessons:    previousLessonNames,
@@ -339,16 +340,16 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 
 	lessonParams := storage.CreateLessonsParams{
 		RupName:            rup.Name,
-		DisciplineName:     pgtype.Text{String: discipline.Name, Valid: discipline.Name != ""},
-		TopicName:          pgtype.Text{String: updatedTopic.Name, Valid: updatedTopic.Name != ""},
+		DisciplineName:     discipline.Name,
+		TopicName:          updatedTopic.Name,
 		PlanNumber:         planNumber,
 		Teacher:            teacherID,
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: true},
 		GroupID:            group.KeycloakID,
 		Type:               generatedPlan.LessonType,
-		Goals:              pgtype.Text{String: generatedPlan.Goals, Valid: generatedPlan.Goals != ""},
-		Tasks:              pgtype.Text{String: generatedPlan.Tasks, Valid: generatedPlan.Tasks != ""},
-		Expected:           pgtype.Text{String: generatedPlan.Expected, Valid: generatedPlan.Expected != ""},
+		Goals:              localization.NewLocaleText(generatedPlan.Goals, "").ToJSONB(),
+		Tasks:              localization.NewLocaleText(generatedPlan.Tasks, "").ToJSONB(),
+		Expected:           localization.NewLocaleText(generatedPlan.Expected, "").ToJSONB(),
 		InternetResources:  internetResourceIDs,
 		TechnicalResources: technicalResourceIDs,
 	}
@@ -368,9 +369,9 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 	}
 
 	documentPayload := buildLessonDocumentPayload(
-		rup.Name,
-		discipline.Name,
-		updatedTopic.Name,
+		localePrimary(rup.Name),
+		localePrimary(discipline.Name),
+		localePrimary(updatedTopic.Name),
 		lessonParams.PlanNumber,
 		teacherName,
 		eventDate,
@@ -386,7 +387,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		return uuid.Nil, err
 	}
 
-	objectName := buildLessonObjectName(lessonID, updatedTopic.Name)
+	objectName := buildLessonObjectName(lessonID, localePrimary(updatedTopic.Name))
 	if err := s.fileStorage.UploadFile(ctx, objectName, bytes.NewReader(document.Content), int64(len(document.Content))); err != nil {
 		return uuid.Nil, fmt.Errorf("upload lesson to minio: %w", err)
 	}
@@ -481,7 +482,7 @@ func (s *LessonService) replaceLessonProgress(
 
 		if err := s.repo.CreateLessonProgress(ctx, storage.CreateLessonProgressParams{
 			LessonID:   lessonID,
-			Name:       step.Name,
+			Name:       localization.NewLocaleText(step.Name, "").ToJSONB(),
 			FirstTime:  []int32{step.FirstTime},
 			SecondTime: []int32{step.SecondTime},
 			ThirdTime:  []int32{step.ThirdTime},
@@ -510,16 +511,16 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params L
 	planNumber := normalizeLessonPlanNumber(params.PlanNumber)
 	updateParams := storage.UpdateLessonParams{
 		ID:                 id,
-		RupName:            params.RupName,
-		DisciplineName:     pgtype.Text{String: helpers.PtrToString(params.DisciplineName), Valid: params.DisciplineName != nil},
-		TopicName:          pgtype.Text{String: helpers.PtrToString(params.TopicName), Valid: params.TopicName != nil},
+		RupName:            params.RupName.ToJSONB(),
+		DisciplineName:     localePtrToJSONB(params.DisciplineName),
+		TopicName:          localePtrToJSONB(params.TopicName),
 		PlanNumber:         planNumber,
 		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
 		GroupID:            params.GroupID,
 		Type:               storage.EnumLessonType(params.Type),
-		Goals:              pgtype.Text{String: helpers.PtrToString(params.Goals), Valid: params.Goals != nil},
-		Tasks:              pgtype.Text{String: helpers.PtrToString(params.Tasks), Valid: params.Tasks != nil},
-		Expected:           pgtype.Text{String: helpers.PtrToString(params.Expected), Valid: params.Expected != nil},
+		Goals:              localePtrToJSONB(params.Goals),
+		Tasks:              localePtrToJSONB(params.Tasks),
+		Expected:           localePtrToJSONB(params.Expected),
 		InternetResources:  params.InternetResources,
 		TechnicalResources: params.TechnicalResources,
 	}
@@ -533,7 +534,7 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params L
 		firstTime, secondTime, thirdTime := normalizeProgressTriples(item)
 		updateProgress := storage.UpdateLessonProgressParams{
 			ID:         item.ID,
-			Name:       item.Name,
+			Name:       item.Name.ToJSONB(),
 			FirstTime:  firstTime,
 			SecondTime: secondTime,
 			ThirdTime:  thirdTime,
@@ -579,9 +580,9 @@ func (s *LessonService) RegenerateLessonByID(
 		return uuid.Nil, fmt.Errorf("get rup by discipline id: %w", err)
 	}
 
-	topicName := strings.TrimSpace(input.TopicName)
-	if topicName == "" {
-		topicName = topic.Name
+	topicName := input.TopicName
+	if topicName.Ru == "" && topicName.Kz == "" {
+		topicName = localization.LocaleTextFromJSONB(topic.Name)
 	}
 
 	topicType := mapLessonTypeToTopicType(input.Type, topic.Type)
@@ -693,7 +694,7 @@ func (s *LessonService) CreateLessonProgress(ctx context.Context, params LessonP
 	firstTime, secondTime, thirdTime := normalizeProgressTriples(params)
 	createParams := storage.CreateLessonProgressParams{
 		LessonID:   lessonID,
-		Name:       params.Name,
+		Name:       params.Name.ToJSONB(),
 		FirstTime:  firstTime,
 		SecondTime: secondTime,
 		ThirdTime:  thirdTime,
@@ -935,13 +936,13 @@ func buildRegenerationMessage(input RegenerateLessonByIDInput) string {
 	}
 
 	parts := make([]string, 0, 4)
-	if goals := strings.TrimSpace(input.Goals); goals != "" {
+	if goals := strings.TrimSpace(localePrimaryText(input.Goals)); goals != "" {
 		parts = append(parts, "Сфокусируйся на целях: "+goals)
 	}
-	if tasks := strings.TrimSpace(input.Tasks); tasks != "" {
+	if tasks := strings.TrimSpace(localePrimaryText(input.Tasks)); tasks != "" {
 		parts = append(parts, "Учти задачи: "+tasks)
 	}
-	if expected := strings.TrimSpace(input.Expected); expected != "" {
+	if expected := strings.TrimSpace(localePrimaryText(input.Expected)); expected != "" {
 		parts = append(parts, "Ожидаемые результаты: "+expected)
 	}
 	if eventDate := strings.TrimSpace(input.EventDate); eventDate != "" {
@@ -1171,6 +1172,21 @@ func normalizeProgressTriples(params LessonProgressParams) ([]int32, []int32, []
 	return firstTime, secondTime, thirdTime
 }
 
+func localePrimary(raw []byte) string {
+	value := localization.LocaleTextFromJSONB(raw)
+	if strings.TrimSpace(value.Ru) != "" {
+		return strings.TrimSpace(value.Ru)
+	}
+	return strings.TrimSpace(value.Kz)
+}
+
+func localePrimaryText(value localization.LocaleText) string {
+	if strings.TrimSpace(value.Ru) != "" {
+		return strings.TrimSpace(value.Ru)
+	}
+	return strings.TrimSpace(value.Kz)
+}
+
 func isValidVariantDurations(progress []GeneratedLessonProgressStep, expectedTotal int32) bool {
 	if len(progress) == 0 {
 		return false
@@ -1248,10 +1264,7 @@ func extractPreviousLessonNames(lessons []storage.Lesson) []string {
 	result := make([]string, 0, len(lessons))
 
 	for _, lesson := range lessons {
-		if !lesson.TopicName.Valid {
-			continue
-		}
-		name := strings.TrimSpace(lesson.TopicName.String)
+		name := strings.TrimSpace(localePrimary(lesson.TopicName))
 		if name == "" {
 			continue
 		}
@@ -1275,7 +1288,7 @@ func validateGenerateLessonInput(input GenerateLessonInput) error {
 	if input.TopicID == uuid.Nil {
 		return fmt.Errorf("topicId is required")
 	}
-	if strings.TrimSpace(input.UpdatedTopic.Name) == "" {
+	if input.UpdatedTopic.Name.Ru == "" && input.UpdatedTopic.Name.Kz == "" {
 		return fmt.Errorf("updatedTopic.name is required")
 	}
 	if strings.TrimSpace(input.UpdatedTopic.Type) == "" {
@@ -1373,8 +1386,8 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		group = &GroupResponse{
 			KeycloakID:    lessonGroup.KeycloakID,
 			Name:          lessonGroup.Name,
-			Qualification: lessonGroup.Qualification.String,
-			Specialty:     lessonGroup.Specialty.String,
+			Qualification: localization.LocaleTextFromJSONB(lessonGroup.Qualification),
+			Specialty:     localization.LocaleTextFromJSONB(lessonGroup.Specialty),
 		}
 	}
 
@@ -1415,7 +1428,7 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 	for _, item := range lessonProgressRows {
 		lessonProgress = append(lessonProgress, LessonProgressData{
 			ID:         item.ID,
-			Name:       item.Name,
+			Name:       localization.LocaleTextFromJSONB(item.Name),
 			FirstTime:  item.FirstTime,
 			SecondTime: item.SecondTime,
 			ThirdTime:  item.ThirdTime,
@@ -1435,18 +1448,18 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		RupID:              rupID,
 		DisciplineID:       disciplineID,
 		TopicID:            topicID,
-		RupName:            lesson.RupName,
-		DisciplineName:     helpers.PgTextToPtr(lesson.DisciplineName),
-		TopicName:          helpers.PgTextToPtr(lesson.TopicName),
+		RupName:            localization.LocaleTextFromJSONB(lesson.RupName),
+		DisciplineName:     localization.LocaleTextPtrFromJSONB(lesson.DisciplineName),
+		TopicName:          localization.LocaleTextPtrFromJSONB(lesson.TopicName),
 		PlanNumber:         lesson.PlanNumber,
 		Topic:              topic,
 		Teacher:            teacher,
 		EventDate:          helpers.PgTimeToString(lesson.EventDate),
 		Group:              group,
 		Type:               string(lesson.Type),
-		Goals:              helpers.PgTextToPtr(lesson.Goals),
-		Tasks:              helpers.PgTextToPtr(lesson.Tasks),
-		Expected:           helpers.PgTextToPtr(lesson.Expected),
+		Goals:              localization.LocaleTextPtrFromJSONB(lesson.Goals),
+		Tasks:              localization.LocaleTextPtrFromJSONB(lesson.Tasks),
+		Expected:           localization.LocaleTextPtrFromJSONB(lesson.Expected),
 		InternetResources:  internetResources,
 		TechnicalResources: technicalResources,
 		LessonProgress:     lessonProgress,
@@ -1474,7 +1487,7 @@ func (s *LessonService) resolveLessonLinks(
 
 	topic := &TopicResponse{
 		ID:              topicEntity.ID,
-		Name:            topicEntity.Name,
+		Name:            localization.LocaleTextFromJSONB(topicEntity.Name),
 		Type:            topicEntity.Type,
 		LessonID:        topicLessonID,
 		TotalHours:      topicEntity.TotalHours,

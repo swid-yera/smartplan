@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-05-18T14:56:11.774873
+updatedAt: 2026-05-23T13:38:38.987970700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -15,14 +15,14 @@ body:
     name: data
     value: |-
       {
-        "text": "Описание ",
-        "type": "2d7984c8-90cf-4f68-8d4a-1829ac64e664",
-        "variant": "aa7a4744-2612-4609-b54d-98e3fa43acf2",
-        "criteria": "d31f602e-b594-451c-aed8-0ca09d4bf116",
-        "categoryId": "cf3bc16a-10a5-4a20-a9f4-5375f6544d51",
+        "type": "ab70534a-4acf-4f17-89de-d4ca1c89e8dd",
+        "variant": "54f69de7-5fd4-4f50-95d2-7f167e4d1ee0",
+        "criteria": "7f8c2e08-9f3c-40b3-a8c9-bb3a5b9d7f45",
+        "bonusCriteria": "5f9d2460-ea83-4531-b6b5-2fcb7a8fdd8f",
+        "categoryId": "4b7f5c2d-ec96-4dd1-b27b-1cf4f9f0aeb6",
         "fieldValues": {
-          "proofFiles": [""],
-          "proofLinks": "https://example.com/proof-1"
+          "articleTitle": "Анализ производительности алгоритмов сортировки",
+          "doi": "https://doi.org/10.1234/eduplan.2026.001"
         }
       }
   - enabled: true
@@ -30,7 +30,7 @@ body:
     id: H2zgvD0mut
     name: files
   - enabled: true
-    id: 2H37RbuZyp
+    id: Zf5Eygc8V4
     name: ''
     value: ''
 bodyType: multipart/form-data

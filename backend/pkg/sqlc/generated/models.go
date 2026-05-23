@@ -418,9 +418,9 @@ type Award struct {
 type AwardCategory struct {
 	ID          uuid.UUID          `json:"id"`
 	AwardTypes  []uuid.UUID        `json:"award_types"`
-	Name        string             `json:"name"`
+	Name        []byte             `json:"name"`
 	Icon        pgtype.Text        `json:"icon"`
-	Description pgtype.Text        `json:"description"`
+	Description []byte             `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
@@ -429,11 +429,11 @@ type AwardCategoryField struct {
 	ID          uuid.UUID          `json:"id"`
 	CategoryID  uuid.UUID          `json:"category_id"`
 	Key         string             `json:"key"`
-	Label       string             `json:"label"`
+	Label       []byte             `json:"label"`
 	Type        string             `json:"type"`
 	Required    bool               `json:"required"`
-	Placeholder pgtype.Text        `json:"placeholder"`
-	HelpText    pgtype.Text        `json:"help_text"`
+	Placeholder []byte             `json:"placeholder"`
+	HelpText    []byte             `json:"help_text"`
 	Options     []byte             `json:"options"`
 	Validation  []byte             `json:"validation"`
 	SortOrder   int32              `json:"sort_order"`
@@ -443,21 +443,21 @@ type AwardCategoryField struct {
 
 type AwardType struct {
 	ID       uuid.UUID   `json:"id"`
-	Name     string      `json:"name"`
+	Name     []byte      `json:"name"`
 	Variants []uuid.UUID `json:"variants"`
 }
 
 type AwardTypeCriterium struct {
 	ID     uuid.UUID          `json:"id"`
-	Name   string             `json:"name"`
+	Name   []byte             `json:"name"`
 	Points []int32            `json:"points"`
 	Method EnumCriteriaMethod `json:"method"`
 }
 
 type AwardTypeVariant struct {
 	ID            uuid.UUID   `json:"id"`
-	Name          string      `json:"name"`
-	Description   pgtype.Text `json:"description"`
+	Name          []byte      `json:"name"`
+	Description   []byte      `json:"description"`
 	Criteria      []uuid.UUID `json:"criteria"`
 	BonusCriteria []uuid.UUID `json:"bonus_criteria"`
 }
@@ -470,7 +470,7 @@ type DisciplineSemester struct {
 
 type DisciplineTopic struct {
 	ID              uuid.UUID           `json:"id"`
-	Name            string              `json:"name"`
+	Name            []byte              `json:"name"`
 	Type            DisciplineTopicType `json:"type"`
 	LessonID        pgtype.UUID         `json:"lesson_id"`
 	TotalHours      int32               `json:"total_hours"`
@@ -482,25 +482,25 @@ type DisciplineTopic struct {
 }
 
 type Group struct {
-	KeycloakID    uuid.UUID   `json:"keycloak_id"`
-	Name          string      `json:"name"`
-	Qualification pgtype.Text `json:"qualification"`
-	Specialty     pgtype.Text `json:"specialty"`
+	KeycloakID    uuid.UUID `json:"keycloak_id"`
+	Name          string    `json:"name"`
+	Qualification []byte    `json:"qualification"`
+	Specialty     []byte    `json:"specialty"`
 }
 
 type Lesson struct {
 	ID                 uuid.UUID          `json:"id"`
-	RupName            string             `json:"rup_name"`
-	DisciplineName     pgtype.Text        `json:"discipline_name"`
-	TopicName          pgtype.Text        `json:"topic_name"`
+	RupName            []byte             `json:"rup_name"`
+	DisciplineName     []byte             `json:"discipline_name"`
+	TopicName          []byte             `json:"topic_name"`
 	PlanNumber         int32              `json:"plan_number"`
 	Teacher            uuid.UUID          `json:"teacher"`
 	EventDate          pgtype.Timestamptz `json:"event_date"`
 	GroupID            uuid.UUID          `json:"group_id"`
 	Type               EnumLessonType     `json:"type"`
-	Goals              pgtype.Text        `json:"goals"`
-	Tasks              pgtype.Text        `json:"tasks"`
-	Expected           pgtype.Text        `json:"expected"`
+	Goals              []byte             `json:"goals"`
+	Tasks              []byte             `json:"tasks"`
+	Expected           []byte             `json:"expected"`
 	InternetResources  []uuid.UUID        `json:"internet_resources"`
 	TechnicalResources []uuid.UUID        `json:"technical_resources"`
 	FileUrl            pgtype.Text        `json:"file_url"`
@@ -511,7 +511,7 @@ type Lesson struct {
 type LessonProgress struct {
 	ID         uuid.UUID `json:"id"`
 	LessonID   uuid.UUID `json:"lesson_id"`
-	Name       string    `json:"name"`
+	Name       []byte    `json:"name"`
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`
 	ThirdTime  []int32   `json:"third_time"`
@@ -520,7 +520,7 @@ type LessonProgress struct {
 
 type Rup struct {
 	ID                uuid.UUID          `json:"id"`
-	Name              string             `json:"name"`
+	Name              []byte             `json:"name"`
 	Status            RupsStatus         `json:"status"`
 	Reason            pgtype.Text        `json:"reason"`
 	Course            int32              `json:"course"`
@@ -540,7 +540,7 @@ type Rup struct {
 
 type RupDiscipline struct {
 	ID         uuid.UUID   `json:"id"`
-	Name       string      `json:"name"`
+	Name       []byte      `json:"name"`
 	TotalHours int32       `json:"total_hours"`
 	Semesters  []uuid.UUID `json:"semesters"`
 	Topics     []uuid.UUID `json:"topics"`
@@ -548,12 +548,12 @@ type RupDiscipline struct {
 
 type RupExplorationNote struct {
 	ID                 uuid.UUID   `json:"id"`
-	Basis              pgtype.Text `json:"basis"`
-	Goals              pgtype.Text `json:"goals"`
-	Summary            pgtype.Text `json:"summary"`
-	Competencies       pgtype.Text `json:"competencies"`
-	Prerequisites      pgtype.Text `json:"prerequisites"`
-	Postrequisites     pgtype.Text `json:"postrequisites"`
+	Basis              []byte      `json:"basis"`
+	Goals              []byte      `json:"goals"`
+	Summary            []byte      `json:"summary"`
+	Competencies       []byte      `json:"competencies"`
+	Prerequisites      []byte      `json:"prerequisites"`
+	Postrequisites     []byte      `json:"postrequisites"`
 	InternetResources  []uuid.UUID `json:"internet_resources"`
 	TechnicalResources []uuid.UUID `json:"technical_resources"`
 }
@@ -571,6 +571,7 @@ type User struct {
 	FirstName         pgtype.Text        `json:"first_name"`
 	LastName          pgtype.Text        `json:"last_name"`
 	Phone             pgtype.Text        `json:"phone"`
+	Department        pgtype.Text        `json:"department"`
 	Role              UserRole           `json:"role"`
 	Rups              []string           `json:"rups"`
 	TotalPoints       int32              `json:"total_points"`

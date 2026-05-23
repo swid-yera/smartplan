@@ -2,13 +2,34 @@ type: http_request
 model: http_request
 id: rq_XDFVgwE2W4
 createdAt: 2026-01-28T22:54:26.495662
-updatedAt: 2026-01-28T22:58:02.591620
+updatedAt: 2026-05-23T13:27:16.699362300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_tqqPjuByKX
 authentication: {}
 authenticationType: null
 body:
-  text: ''
+  text: |-
+    {
+      "topic_name": {
+        "ru": "Графы: обход в ширину и глубину",
+        "kz": "Графтар: ені бойынша және тереңдігі бойынша өту"
+      },
+      "type": "THEORY",
+      "event_date": "2026-10-12T10:00:00Z",
+      "goals": {
+        "ru": "Понять принципы BFS и DFS",
+        "kz": "BFS және DFS қағидаларын түсіну"
+      },
+      "tasks": {
+        "ru": "Разобрать 2 примера обхода графа",
+        "kz": "Графты өтудің 2 мысалын талдау"
+      },
+      "expected": {
+        "ru": "Студент объясняет различия BFS и DFS",
+        "kz": "Студент BFS пен DFS айырмашылықтарын түсіндіреді"
+      },
+      "message": "Добавь больше практических примеров на BFS"
+    }
 bodyType: application/json
 description: ''
 headers:
@@ -20,4 +41,12 @@ method: PUT
 name: update
 sortPriority: 802.4691358024692
 url: ${[ url ]}/lessons/:id
-urlParameters: []
+urlParameters:
+- enabled: true
+  name: :id
+  value: 6cd21598-2974-4f83-8e2f-20dec792c02f
+  id: xEwPExrZ0U
+- enabled: true
+  name: ''
+  value: ''
+  id: 8n3sbqTJZN

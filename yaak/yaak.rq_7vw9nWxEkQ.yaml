@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_7vw9nWxEkQ
 createdAt: 2026-01-15T08:10:01.378255200
-updatedAt: 2026-05-18T12:29:56.692256100
+updatedAt: 2026-05-23T13:35:23.558355700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -12,26 +12,37 @@ authenticationType: bearer
 body:
   text: |-
     {
-      "name": "Достижения",
+      "name": {
+        "ru": "Научно-методическая деятельность",
+        "kz": "Ғылыми-әдістемелік қызмет"
+      },
       "variants": [
         {
-          "name": "Победа студента",
-          "description": "Победа в конкурсе",
+          "name": {
+            "ru": "Публикация статьи",
+            "kz": "Мақала жариялау"
+          },
+          "description": {
+            "ru": "Статья в рецензируемом журнале",
+            "kz": "Рецензияланатын журналдағы мақала"
+          },
           "criteria": [
             {
-              "name": "Республиканский",
-              "points": [
-                10
-              ],
+              "name": {
+                "ru": "Журнал Q1-Q2",
+                "kz": "Q1-Q2 журнал"
+              },
+              "points": [30],
               "method": "NORMAL"
             }
           ],
           "bonus_criteria": [
             {
-              "name": "Международный",
-              "points": [
-                5
-              ],
+              "name": {
+                "ru": "Соавторство со студентом",
+                "kz": "Студентпен бірлескен авторлық"
+              },
+              "points": [5],
               "method": "NORMAL"
             }
           ]

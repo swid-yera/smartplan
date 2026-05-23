@@ -107,7 +107,8 @@ FROM rups
 WHERE
     (
         $1 = ''
-        OR name ILIKE '%' || $1 || '%'
+        OR COALESCE(name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(name->>'kz', '') ILIKE '%' || $1 || '%'
         OR (
             $1 ~* '^[0-9a-f-]{36}$'
             AND id = $1::uuid
@@ -169,6 +170,8 @@ WHERE
         ) OR
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 `
@@ -195,6 +198,7 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 `
@@ -284,9 +288,9 @@ VALUES ($1, $2, $3, $4) RETURNING id, award_types, name, icon, description, crea
 
 type CreateAwardCategoryParams struct {
 	AwardTypes  []uuid.UUID `json:"award_types"`
-	Name        string      `json:"name"`
+	Name        []byte      `json:"name"`
 	Icon        pgtype.Text `json:"icon"`
-	Description pgtype.Text `json:"description"`
+	Description []byte      `json:"description"`
 }
 
 func (q *Queries) CreateAwardCategory(ctx context.Context, arg CreateAwardCategoryParams) (AwardCategory, error) {
@@ -327,16 +331,16 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, category_id, key,
 `
 
 type CreateAwardCategoryFieldParams struct {
-	CategoryID  uuid.UUID   `json:"category_id"`
-	Key         string      `json:"key"`
-	Label       string      `json:"label"`
-	Type        string      `json:"type"`
-	Required    bool        `json:"required"`
-	Placeholder pgtype.Text `json:"placeholder"`
-	HelpText    pgtype.Text `json:"help_text"`
-	Options     []byte      `json:"options"`
-	Validation  []byte      `json:"validation"`
-	SortOrder   int32       `json:"sort_order"`
+	CategoryID  uuid.UUID `json:"category_id"`
+	Key         string    `json:"key"`
+	Label       []byte    `json:"label"`
+	Type        string    `json:"type"`
+	Required    bool      `json:"required"`
+	Placeholder []byte    `json:"placeholder"`
+	HelpText    []byte    `json:"help_text"`
+	Options     []byte    `json:"options"`
+	Validation  []byte    `json:"validation"`
+	SortOrder   int32     `json:"sort_order"`
 }
 
 func (q *Queries) CreateAwardCategoryField(ctx context.Context, arg CreateAwardCategoryFieldParams) (AwardCategoryField, error) {
@@ -378,7 +382,7 @@ VALUES ($1, $2) RETURNING id, name, variants
 `
 
 type CreateAwardTypeParams struct {
-	Name     string      `json:"name"`
+	Name     []byte      `json:"name"`
 	Variants []uuid.UUID `json:"variants"`
 }
 
@@ -396,7 +400,7 @@ VALUES ($1, $2, $3) RETURNING id, name, points, method
 `
 
 type CreateAwardTypeCriteriaParams struct {
-	Name   string             `json:"name"`
+	Name   []byte             `json:"name"`
 	Points []int32            `json:"points"`
 	Method EnumCriteriaMethod `json:"method"`
 }
@@ -425,8 +429,8 @@ VALUES ($1, $2, $3, $4) RETURNING id, name, description, criteria, bonus_criteri
 `
 
 type CreateAwardTypesVariantParams struct {
-	Name          string      `json:"name"`
-	Description   pgtype.Text `json:"description"`
+	Name          []byte      `json:"name"`
+	Description   []byte      `json:"description"`
 	Criteria      []uuid.UUID `json:"criteria"`
 	BonusCriteria []uuid.UUID `json:"bonus_criteria"`
 }
@@ -492,7 +496,7 @@ VALUES (
 `
 
 type CreateDisciplineTopicParams struct {
-	Name            string              `json:"name"`
+	Name            []byte              `json:"name"`
 	Type            DisciplineTopicType `json:"type"`
 	TotalHours      int32               `json:"total_hours"`
 	TheoryHours     int32               `json:"theory_hours"`
@@ -544,10 +548,10 @@ VALUES ($1, $2, $3, $4) RETURNING keycloak_id,
 `
 
 type CreateGroupParams struct {
-	KeycloakID    uuid.UUID   `json:"keycloak_id"`
-	Name          string      `json:"name"`
-	Qualification pgtype.Text `json:"qualification"`
-	Specialty     pgtype.Text `json:"specialty"`
+	KeycloakID    uuid.UUID `json:"keycloak_id"`
+	Name          string    `json:"name"`
+	Qualification []byte    `json:"qualification"`
+	Specialty     []byte    `json:"specialty"`
 }
 
 func (q *Queries) CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error) {
@@ -582,7 +586,7 @@ VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
 
 type CreateLessonProgressParams struct {
 	LessonID   uuid.UUID `json:"lesson_id"`
-	Name       string    `json:"name"`
+	Name       []byte    `json:"name"`
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`
 	ThirdTime  []int32   `json:"third_time"`
@@ -638,17 +642,17 @@ VALUES (
 `
 
 type CreateLessonsParams struct {
-	RupName            string             `json:"rup_name"`
-	DisciplineName     pgtype.Text        `json:"discipline_name"`
-	TopicName          pgtype.Text        `json:"topic_name"`
+	RupName            []byte             `json:"rup_name"`
+	DisciplineName     []byte             `json:"discipline_name"`
+	TopicName          []byte             `json:"topic_name"`
 	PlanNumber         int32              `json:"plan_number"`
 	Teacher            uuid.UUID          `json:"teacher"`
 	EventDate          pgtype.Timestamptz `json:"event_date"`
 	GroupID            uuid.UUID          `json:"group_id"`
 	Type               EnumLessonType     `json:"type"`
-	Goals              pgtype.Text        `json:"goals"`
-	Tasks              pgtype.Text        `json:"tasks"`
-	Expected           pgtype.Text        `json:"expected"`
+	Goals              []byte             `json:"goals"`
+	Tasks              []byte             `json:"tasks"`
+	Expected           []byte             `json:"expected"`
 	InternetResources  []uuid.UUID        `json:"internet_resources"`
 	TechnicalResources []uuid.UUID        `json:"technical_resources"`
 }
@@ -686,7 +690,7 @@ VALUES ($1, $2, $3, $4) RETURNING id, name, total_hours, semesters, topics
 `
 
 type CreateRupDisciplineParams struct {
-	Name       string      `json:"name"`
+	Name       []byte      `json:"name"`
 	TotalHours int32       `json:"total_hours"`
 	Semesters  []uuid.UUID `json:"semesters"`
 	Topics     []uuid.UUID `json:"topics"`
@@ -735,12 +739,12 @@ VALUES (
 `
 
 type CreateRupExplorationNoteParams struct {
-	Basis              pgtype.Text `json:"basis"`
-	Goals              pgtype.Text `json:"goals"`
-	Summary            pgtype.Text `json:"summary"`
-	Competencies       pgtype.Text `json:"competencies"`
-	Prerequisites      pgtype.Text `json:"prerequisites"`
-	Postrequisites     pgtype.Text `json:"postrequisites"`
+	Basis              []byte      `json:"basis"`
+	Goals              []byte      `json:"goals"`
+	Summary            []byte      `json:"summary"`
+	Competencies       []byte      `json:"competencies"`
+	Prerequisites      []byte      `json:"prerequisites"`
+	Postrequisites     []byte      `json:"postrequisites"`
 	InternetResources  []uuid.UUID `json:"internet_resources"`
 	TechnicalResources []uuid.UUID `json:"technical_resources"`
 }
@@ -822,7 +826,7 @@ VALUES (
 `
 
 type CreateRupsParams struct {
-	Name              string        `json:"name"`
+	Name              []byte        `json:"name"`
 	Status            RupsStatus    `json:"status"`
 	Course            int32         `json:"course"`
 	StudyForm         StudyFormEnum `json:"study_form"`
@@ -883,9 +887,10 @@ INSERT INTO
         first_name,
         last_name,
         role,
-        phone
+        phone,
+        department
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -896,6 +901,7 @@ type CreateUserParams struct {
 	LastName   pgtype.Text `json:"last_name"`
 	Role       UserRole    `json:"role"`
 	Phone      pgtype.Text `json:"phone"`
+	Department pgtype.Text `json:"department"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -907,6 +913,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.LastName,
 		arg.Role,
 		arg.Phone,
+		arg.Department,
 	)
 	var i User
 	err := row.Scan(
@@ -916,6 +923,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
+		&i.Department,
 		&i.Role,
 		&i.Rups,
 		&i.TotalPoints,
@@ -1034,9 +1042,9 @@ ORDER BY created_at DESC
 
 type GetAllAwardCategoriesRow struct {
 	ID          uuid.UUID   `json:"id"`
-	Name        string      `json:"name"`
+	Name        []byte      `json:"name"`
 	Icon        pgtype.Text `json:"icon"`
-	Description pgtype.Text `json:"description"`
+	Description []byte      `json:"description"`
 }
 
 func (q *Queries) GetAllAwardCategories(ctx context.Context) ([]GetAllAwardCategoriesRow, error) {
@@ -1352,7 +1360,7 @@ func (q *Queries) GetAllRups(ctx context.Context, arg GetAllRupsParams) ([]Rup, 
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type GetAllUsersParams struct {
@@ -1376,6 +1384,7 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 			&i.FirstName,
 			&i.LastName,
 			&i.Phone,
+			&i.Department,
 			&i.Role,
 			&i.Rups,
 			&i.TotalPoints,
@@ -1831,20 +1840,26 @@ const getRecentLessonsByDiscipline = `-- name: GetRecentLessonsByDiscipline :man
 SELECT id, rup_name, discipline_name, topic_name, plan_number, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at
 FROM lessons
 WHERE
-    rup_name = $1
-    AND discipline_name = $2
+    (
+        COALESCE(rup_name->>'ru', '') = $1::text
+        OR COALESCE(rup_name->>'kz', '') = $1::text
+    )
+    AND (
+        COALESCE(discipline_name->>'ru', '') = $2::text
+        OR COALESCE(discipline_name->>'kz', '') = $2::text
+    )
 ORDER BY created_at DESC
 LIMIT $3
 `
 
 type GetRecentLessonsByDisciplineParams struct {
-	RupName        string      `json:"rup_name"`
-	DisciplineName pgtype.Text `json:"discipline_name"`
-	Limit          int32       `json:"limit"`
+	Column1 string `json:"column_1"`
+	Column2 string `json:"column_2"`
+	Limit   int32  `json:"limit"`
 }
 
 func (q *Queries) GetRecentLessonsByDiscipline(ctx context.Context, arg GetRecentLessonsByDisciplineParams) ([]Lesson, error) {
-	rows, err := q.db.Query(ctx, getRecentLessonsByDiscipline, arg.RupName, arg.DisciplineName, arg.Limit)
+	rows, err := q.db.Query(ctx, getRecentLessonsByDiscipline, arg.Column1, arg.Column2, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2106,7 +2121,8 @@ SELECT id, name, status, reason, course, study_form, study_year, type, total_hou
 FROM rups WHERE
     (
         $1 = ''
-        OR name ILIKE '%' || $1 || '%'
+        OR COALESCE(name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(name->>'kz', '') ILIKE '%' || $1 || '%'
     )
     AND (
         $4::uuid IS NULL
@@ -2177,7 +2193,7 @@ func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedPara
 }
 
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
+SELECT keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
 `
 
 func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error) {
@@ -2190,6 +2206,7 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
+		&i.Department,
 		&i.Role,
 		&i.Rups,
 		&i.TotalPoints,
@@ -2204,7 +2221,7 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 }
 
 const getUsersPaginated = `-- name: GetUsersPaginated :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 WHERE
     (
@@ -2216,6 +2233,7 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username) ILIKE '%' || $1 || '%' OR
+        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 ORDER BY created_at DESC
@@ -2244,6 +2262,7 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 			&i.FirstName,
 			&i.LastName,
 			&i.Phone,
+			&i.Department,
 			&i.Role,
 			&i.Rups,
 			&i.TotalPoints,
@@ -2265,7 +2284,7 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 }
 
 const getUsersRatingPaginated = `-- name: GetUsersRatingPaginated :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 WHERE
     total_points > 0
@@ -2279,6 +2298,7 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 ORDER BY total_points DESC, created_at DESC
@@ -2307,6 +2327,7 @@ func (q *Queries) GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatin
 			&i.FirstName,
 			&i.LastName,
 			&i.Phone,
+			&i.Department,
 			&i.Role,
 			&i.Rups,
 			&i.TotalPoints,
@@ -2420,9 +2441,9 @@ WHERE
 type UpdateAwardCategoryParams struct {
 	ID          uuid.UUID   `json:"id"`
 	AwardTypes  []uuid.UUID `json:"award_types"`
-	Name        string      `json:"name"`
+	Name        []byte      `json:"name"`
 	Icon        pgtype.Text `json:"icon"`
-	Description pgtype.Text `json:"description"`
+	Description []byte      `json:"description"`
 }
 
 func (q *Queries) UpdateAwardCategory(ctx context.Context, arg UpdateAwardCategoryParams) (AwardCategory, error) {
@@ -2488,7 +2509,7 @@ WHERE
 
 type UpdateAwardTypeParams struct {
 	ID       uuid.UUID   `json:"id"`
-	Name     string      `json:"name"`
+	Name     []byte      `json:"name"`
 	Variants []uuid.UUID `json:"variants"`
 }
 
@@ -2530,7 +2551,7 @@ WHERE
 
 type UpdateDisciplineTopicParams struct {
 	ID              uuid.UUID           `json:"id"`
-	Name            string              `json:"name"`
+	Name            []byte              `json:"name"`
 	Type            DisciplineTopicType `json:"type"`
 	TotalHours      int32               `json:"total_hours"`
 	TheoryHours     int32               `json:"theory_hours"`
@@ -2577,16 +2598,16 @@ WHERE
 
 type UpdateLessonParams struct {
 	ID                 uuid.UUID          `json:"id"`
-	RupName            string             `json:"rup_name"`
-	DisciplineName     pgtype.Text        `json:"discipline_name"`
-	TopicName          pgtype.Text        `json:"topic_name"`
+	RupName            []byte             `json:"rup_name"`
+	DisciplineName     []byte             `json:"discipline_name"`
+	TopicName          []byte             `json:"topic_name"`
 	PlanNumber         int32              `json:"plan_number"`
 	EventDate          pgtype.Timestamptz `json:"event_date"`
 	GroupID            uuid.UUID          `json:"group_id"`
 	Type               EnumLessonType     `json:"type"`
-	Goals              pgtype.Text        `json:"goals"`
-	Tasks              pgtype.Text        `json:"tasks"`
-	Expected           pgtype.Text        `json:"expected"`
+	Goals              []byte             `json:"goals"`
+	Tasks              []byte             `json:"tasks"`
+	Expected           []byte             `json:"expected"`
 	InternetResources  []uuid.UUID        `json:"internet_resources"`
 	TechnicalResources []uuid.UUID        `json:"technical_resources"`
 }
@@ -2643,7 +2664,7 @@ WHERE
 
 type UpdateLessonProgressParams struct {
 	ID         uuid.UUID `json:"id"`
-	Name       string    `json:"name"`
+	Name       []byte    `json:"name"`
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`
 	ThirdTime  []int32   `json:"third_time"`
@@ -2682,7 +2703,7 @@ WHERE
 
 type UpdateRupParams struct {
 	ID                uuid.UUID     `json:"id"`
-	Name              string        `json:"name"`
+	Name              []byte        `json:"name"`
 	Course            int32         `json:"course"`
 	StudyForm         StudyFormEnum `json:"study_form"`
 	StudyYear         string        `json:"study_year"`
@@ -2807,6 +2828,7 @@ SET
     last_name = $5,
     phone = $6,
     role = $7,
+    department = $8,
     updated_at = NOW()
 WHERE
     keycloak_id = $1
@@ -2820,6 +2842,7 @@ type UpdateUserProfileParams struct {
 	LastName   pgtype.Text `json:"last_name"`
 	Phone      pgtype.Text `json:"phone"`
 	Role       UserRole    `json:"role"`
+	Department pgtype.Text `json:"department"`
 }
 
 func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error {
@@ -2831,6 +2854,7 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		arg.LastName,
 		arg.Phone,
 		arg.Role,
+		arg.Department,
 	)
 	return err
 }
@@ -2888,10 +2912,10 @@ SET
 `
 
 type UpsertGroupParams struct {
-	KeycloakID    uuid.UUID   `json:"keycloak_id"`
-	Name          string      `json:"name"`
-	Qualification pgtype.Text `json:"qualification"`
-	Specialty     pgtype.Text `json:"specialty"`
+	KeycloakID    uuid.UUID `json:"keycloak_id"`
+	Name          string    `json:"name"`
+	Qualification []byte    `json:"qualification"`
+	Specialty     []byte    `json:"specialty"`
 }
 
 func (q *Queries) UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error) {

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -12,8 +13,8 @@ import (
 
 type AuthRepository interface {
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
-	CreateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone string) (*storage.User, error)
-	UpdateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone string) error
+	CreateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone, department string) (*storage.User, error)
+	UpdateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone, department string) error
 }
 
 type AuthPostgres struct {
@@ -39,10 +40,10 @@ func (r *AuthPostgres) CreateUser(
 	ctx context.Context,
 	keycloakID uuid.UUID,
 	role storage.UserRole,
-	email, username, firstName, lastName, phone string,
+	email, username, firstName, lastName, phone, department string,
 ) (*storage.User, error) {
-	fmt.Printf("HandleCallback: keycloakID=%s roles=%s email=%s username=%s firstName=%s lastName=%s phone=%s\n",
-		keycloakID, role, email, username, firstName, lastName, phone)
+	fmt.Printf("HandleCallback: keycloakID=%s roles=%s email=%s username=%s firstName=%s lastName=%s phone=%s department=%s\n",
+		keycloakID, role, email, username, firstName, lastName, phone, department)
 
 	user, err := r.queries.CreateUser(ctx, storage.CreateUserParams{
 		KeycloakID: keycloakID,
@@ -52,6 +53,7 @@ func (r *AuthPostgres) CreateUser(
 		LastName:   pgtype.Text{String: lastName, Valid: true},
 		Role:       role,
 		Phone:      pgtype.Text{String: phone, Valid: true},
+		Department: nullableText(department),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
@@ -65,10 +67,10 @@ func (r *AuthPostgres) UpdateUser(
 	ctx context.Context,
 	keycloakID uuid.UUID,
 	role storage.UserRole,
-	email, username, firstName, lastName, phone string,
+	email, username, firstName, lastName, phone, department string,
 ) error {
-	fmt.Printf("HandleCallback: keycloakID=%s roles=%s email=%s username=%s firstName=%s lastName=%s phone=%s\n",
-		keycloakID, role, email, username, firstName, lastName, phone)
+	fmt.Printf("HandleCallback: keycloakID=%s roles=%s email=%s username=%s firstName=%s lastName=%s phone=%s department=%s\n",
+		keycloakID, role, email, username, firstName, lastName, phone, department)
 
 	err := r.queries.UpdateUserProfile(ctx, storage.UpdateUserProfileParams{
 		KeycloakID: keycloakID,
@@ -78,11 +80,20 @@ func (r *AuthPostgres) UpdateUser(
 		FirstName:  pgtype.Text{String: firstName, Valid: true},
 		LastName:   pgtype.Text{String: lastName, Valid: true},
 		Phone:      pgtype.Text{String: phone, Valid: true},
+		Department: nullableText(department),
 	})
 
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return nil
+}
+
+func nullableText(v string) pgtype.Text {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return pgtype.Text{Valid: false}
+	}
+	return pgtype.Text{String: v, Valid: true}
 }
