@@ -21,6 +21,7 @@ import (
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/helpers"
+	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -47,7 +48,7 @@ type PaginatedRupsResponse struct {
 }
 
 type CreateRupRequest struct {
-	Name            string                  `json:"name"`
+	Name            localization.LocaleText `json:"name"`
 	Type            string                  `json:"type"`
 	StudyYear       string                  `json:"studyYear"`
 	Course          int32                   `json:"course"`
@@ -61,7 +62,7 @@ type CreateRupRequest struct {
 }
 
 type Rup struct {
-	Name            string                  `json:"name"`
+	Name            localization.LocaleText `json:"name"`
 	Type            string                  `json:"type"`
 	StudyYear       string                  `json:"studyYear"`
 	Course          int32                   `json:"course"`
@@ -75,14 +76,14 @@ type Rup struct {
 }
 
 type ExplorationNoteRequest struct {
-	Basis              string             `json:"basis"`
-	Goals              string             `json:"goals"`
-	Summary            string             `json:"summary"`
-	Competencies       string             `json:"competencies"`
-	Prerequisites      string             `json:"prerequisites"`
-	Postrequisites     string             `json:"postrequisites"`
-	InternetResources  []*ResourceRequest `json:"internetResources"`
-	TechnicalResources []*ResourceRequest `json:"technicalResources"`
+	Basis              localization.LocaleText `json:"basis"`
+	Goals              localization.LocaleText `json:"goals"`
+	Summary            localization.LocaleText `json:"summary"`
+	Competencies       localization.LocaleText `json:"competencies"`
+	Prerequisites      localization.LocaleText `json:"prerequisites"`
+	Postrequisites     localization.LocaleText `json:"postrequisites"`
+	InternetResources  []*ResourceRequest      `json:"internetResources"`
+	TechnicalResources []*ResourceRequest      `json:"technicalResources"`
 }
 
 type ResourceRequest struct {
@@ -91,9 +92,9 @@ type ResourceRequest struct {
 }
 
 type DisciplineRequest struct {
-	Name      string             `json:"name"`
-	Semesters []*SemesterRequest `json:"semesters"`
-	Topics    []*TopicRequest    `json:"topics"`
+	Name      localization.LocaleText `json:"name"`
+	Semesters []*SemesterRequest      `json:"semesters"`
+	Topics    []*TopicRequest         `json:"topics"`
 }
 
 type SemesterRequest struct {
@@ -102,18 +103,18 @@ type SemesterRequest struct {
 }
 
 type TopicRequest struct {
-	Name            string `json:"name"`
-	Type            string `json:"type"`
-	TheoryHours     int32  `json:"theoryHours"`
-	PracticeHours   int32  `json:"practiceHours"`
-	IndividualHours int32  `json:"individualHours"`
-	SrspHours       int32  `json:"srspHours"`
-	SrsHours        int32  `json:"srsHours"`
+	Name            localization.LocaleText `json:"name"`
+	Type            string                  `json:"type"`
+	TheoryHours     int32                   `json:"theoryHours"`
+	PracticeHours   int32                   `json:"practiceHours"`
+	IndividualHours int32                   `json:"individualHours"`
+	SrspHours       int32                   `json:"srspHours"`
+	SrsHours        int32                   `json:"srsHours"`
 }
 
 type RupResponse struct {
 	ID              uuid.UUID               `json:"id"`
-	Name            string                  `json:"name"`
+	Name            localization.LocaleText `json:"name"`
 	Status          string                  `json:"status"`
 	Reason          string                  `json:"reason"`
 	Course          int32                   `json:"course"`
@@ -146,39 +147,39 @@ type RupDocumentPayload struct {
 }
 
 type ListAllRupsResponse struct {
-	ID         uuid.UUID             `json:"id"`
-	Name       string                `json:"name"`
-	Status     string                `json:"status"`
-	Reason     string                `json:"reason"`
-	Course     int32                 `json:"course"`
-	StudyForm  string                `json:"studyForm"`
-	StudyYear  string                `json:"studyYear"`
-	Type       string                `json:"type"`
-	TotalHours int32                 `json:"totalHours"`
-	Groups     []*GroupResponse      `json:"groups"`
-	Methodist  *helpers.UserResponse `json:"methodist"`
-	Teacher    *helpers.UserResponse `json:"teacher"`
-	CreatedAt  time.Time             `json:"createdAt"`
-	UpdatedAt  time.Time             `json:"updatedAt"`
+	ID         uuid.UUID               `json:"id"`
+	Name       localization.LocaleText `json:"name"`
+	Status     string                  `json:"status"`
+	Reason     string                  `json:"reason"`
+	Course     int32                   `json:"course"`
+	StudyForm  string                  `json:"studyForm"`
+	StudyYear  string                  `json:"studyYear"`
+	Type       string                  `json:"type"`
+	TotalHours int32                   `json:"totalHours"`
+	Groups     []*GroupResponse        `json:"groups"`
+	Methodist  *helpers.UserResponse   `json:"methodist"`
+	Teacher    *helpers.UserResponse   `json:"teacher"`
+	CreatedAt  time.Time               `json:"createdAt"`
+	UpdatedAt  time.Time               `json:"updatedAt"`
 }
 
 type GroupResponse struct {
-	KeycloakID    uuid.UUID `json:"keycloakId"`
-	Name          string    `json:"name"`
-	Qualification string    `json:"qualification"`
-	Specialty     string    `json:"specialty"`
+	KeycloakID    uuid.UUID               `json:"keycloakId"`
+	Name          string                  `json:"name"`
+	Qualification localization.LocaleText `json:"qualification"`
+	Specialty     localization.LocaleText `json:"specialty"`
 }
 
 type ExplorationNoteResponse struct {
-	ID                 uuid.UUID           `json:"id"`
-	Basis              string              `json:"basis"`
-	Goals              string              `json:"goals"`
-	Summary            string              `json:"summary"`
-	Competencies       string              `json:"competencies"`
-	Prerequisites      string              `json:"prerequisites"`
-	Postrequisites     string              `json:"postrequisites"`
-	InternetResources  []*ResourceResponse `json:"internetResources"`
-	TechnicalResources []*ResourceResponse `json:"technicalResources"`
+	ID                 uuid.UUID                `json:"id"`
+	Basis              *localization.LocaleText `json:"basis,omitempty"`
+	Goals              *localization.LocaleText `json:"goals,omitempty"`
+	Summary            *localization.LocaleText `json:"summary,omitempty"`
+	Competencies       *localization.LocaleText `json:"competencies,omitempty"`
+	Prerequisites      *localization.LocaleText `json:"prerequisites,omitempty"`
+	Postrequisites     *localization.LocaleText `json:"postrequisites,omitempty"`
+	InternetResources  []*ResourceResponse      `json:"internetResources"`
+	TechnicalResources []*ResourceResponse      `json:"technicalResources"`
 }
 
 type ResourceResponse struct {
@@ -189,13 +190,13 @@ type ResourceResponse struct {
 }
 
 type DisciplineResponse struct {
-	ID         uuid.UUID           `json:"id"`
-	Name       string              `json:"name"`
-	TotalHours int32               `json:"totalHours"`
-	Semesters  []*SemesterResponse `json:"semesters"`
-	Topics     []*TopicResponse    `json:"topics"`
-	CreatedAt  time.Time           `json:"createdAt"`
-	UpdatedAt  time.Time           `json:"updatedAt"`
+	ID         uuid.UUID               `json:"id"`
+	Name       localization.LocaleText `json:"name"`
+	TotalHours int32                   `json:"totalHours"`
+	Semesters  []*SemesterResponse     `json:"semesters"`
+	Topics     []*TopicResponse        `json:"topics"`
+	CreatedAt  time.Time               `json:"createdAt"`
+	UpdatedAt  time.Time               `json:"updatedAt"`
 }
 
 type SemesterResponse struct {
@@ -206,7 +207,7 @@ type SemesterResponse struct {
 
 type TopicResponse struct {
 	ID              uuid.UUID                   `json:"id"`
-	Name            string                      `json:"name"`
+	Name            localization.LocaleText     `json:"name"`
 	Type            storage.DisciplineTopicType `json:"type"`
 	LessonID        *uuid.UUID                  `json:"lessonId"`
 	TotalHours      int32                       `json:"totalHours"`
@@ -740,7 +741,7 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 				objectName := fmt.Sprintf(
 					"rups/%s/%s_%s.docx",
 					req.ID.String(),
-					rup.Name,
+					localePrimaryText(rup.Name),
 					creationTime,
 				)
 
@@ -1050,7 +1051,7 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 
 	return RupDocumentPayload{
 		ID:              rup.ID,
-		Name:            rup.Name,
+		Name:            localePrimaryText(rup.Name),
 		Type:            rup.Type,
 		StudyForm:       rup.StudyForm,
 		StudyYear:       rup.StudyYear,
@@ -1095,7 +1096,7 @@ func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {
 
 func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRupRequest) error {
 	fmt.Printf("Validating request: contacts=%v, groups=%v\n", req.Contacts, req.Groups)
-	if req.Name == "" {
+	if req.Name.Ru == "" && req.Name.Kz == "" {
 		return fmt.Errorf("name is required")
 	}
 	if req.StudyYear == "" {
@@ -1201,7 +1202,7 @@ func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNote
 	}
 
 	return storage.CreateRupsParams{
-		Name:              req.Name,
+		Name:              req.Name.ToJSONB(),
 		Status:            storage.RupsStatusDRAFT,
 		Course:            req.Course,
 		StudyForm:         studyForm,
@@ -1252,7 +1253,7 @@ func (s *rupService) convertToUpdateParams(
 
 	return storage.UpdateRupParams{
 		ID:                id,
-		Name:              req.Name,
+		Name:              req.Name.ToJSONB(),
 		Course:            req.Course,
 		StudyForm:         studyForm,
 		StudyYear:         req.StudyYear,
@@ -1325,12 +1326,12 @@ func (s *rupService) createExplorationNote(ctx context.Context, note *Exploratio
 	}
 
 	params := storage.CreateRupExplorationNoteParams{
-		Basis:              pgtype.Text{String: note.Basis, Valid: note.Basis != ""},
-		Goals:              pgtype.Text{String: note.Goals, Valid: note.Goals != ""},
-		Summary:            pgtype.Text{String: note.Summary, Valid: note.Summary != ""},
-		Competencies:       pgtype.Text{String: note.Competencies, Valid: note.Competencies != ""},
-		Prerequisites:      pgtype.Text{String: note.Prerequisites, Valid: note.Prerequisites != ""},
-		Postrequisites:     pgtype.Text{String: note.Postrequisites, Valid: note.Postrequisites != ""},
+		Basis:              note.Basis.ToJSONB(),
+		Goals:              note.Goals.ToJSONB(),
+		Summary:            note.Summary.ToJSONB(),
+		Competencies:       note.Competencies.ToJSONB(),
+		Prerequisites:      note.Prerequisites.ToJSONB(),
+		Postrequisites:     note.Postrequisites.ToJSONB(),
 		InternetResources:  internetResourceIDs,
 		TechnicalResources: technicalResourceIDs,
 	}
@@ -1366,7 +1367,7 @@ func (s *rupService) createDisciplines(ctx context.Context, disciplines []*Disci
 		}
 
 		params := storage.CreateRupDisciplineParams{
-			Name:       disc.Name,
+			Name:       disc.Name.ToJSONB(),
 			TotalHours: discTotalHours,
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
@@ -1420,7 +1421,7 @@ func (s *rupService) createTopics(ctx context.Context, topics []*TopicRequest) (
 		TotalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
 
 		params := storage.CreateDisciplineTopicParams{
-			Name:            topic.Name,
+			Name:            topic.Name.ToJSONB(),
 			Type:            topicType,
 			TotalHours:      TotalHours,
 			TheoryHours:     topic.TheoryHours,
@@ -1484,7 +1485,7 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 
 	return &ListAllRupsResponse{
 		ID:         rup.ID,
-		Name:       rup.Name,
+		Name:       localization.LocaleTextFromJSONB(rup.Name),
 		Status:     string(rup.Status),
 		Reason:     rup.Reason.String,
 		Course:     rup.Course,
@@ -1546,12 +1547,12 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	// Get exploration note
 	explorationNote := ExplorationNoteResponse{
 		ID:                 uuid.Nil,
-		Basis:              "",
-		Goals:              "",
-		Summary:            "",
-		Competencies:       "",
-		Prerequisites:      "",
-		Postrequisites:     "",
+		Basis:              nil,
+		Goals:              nil,
+		Summary:            nil,
+		Competencies:       nil,
+		Prerequisites:      nil,
+		Postrequisites:     nil,
 		InternetResources:  []*ResourceResponse{},
 		TechnicalResources: []*ResourceResponse{},
 	}
@@ -1578,7 +1579,7 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 
 	return &RupResponse{
 		ID:              rup.ID,
-		Name:            rup.Name,
+		Name:            localization.LocaleTextFromJSONB(rup.Name),
 		Status:          string(rup.Status),
 		Reason:          rup.Reason.String,
 		Course:          rup.Course,
@@ -1601,8 +1602,8 @@ func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse 
 	return &GroupResponse{
 		KeycloakID:    group.KeycloakID,
 		Name:          group.Name,
-		Qualification: group.Qualification.String,
-		Specialty:     group.Specialty.String,
+		Qualification: localization.LocaleTextFromJSONB(group.Qualification),
+		Specialty:     localization.LocaleTextFromJSONB(group.Specialty),
 	}
 }
 
@@ -1637,12 +1638,12 @@ func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note 
 
 	return ExplorationNoteResponse{
 		ID:                 note.ID,
-		Basis:              note.Basis.String,
-		Goals:              note.Goals.String,
-		Summary:            note.Summary.String,
-		Competencies:       note.Competencies.String,
-		Prerequisites:      note.Prerequisites.String,
-		Postrequisites:     note.Postrequisites.String,
+		Basis:              localization.LocaleTextPtrFromJSONB(note.Basis),
+		Goals:              localization.LocaleTextPtrFromJSONB(note.Goals),
+		Summary:            localization.LocaleTextPtrFromJSONB(note.Summary),
+		Competencies:       localization.LocaleTextPtrFromJSONB(note.Competencies),
+		Prerequisites:      localization.LocaleTextPtrFromJSONB(note.Prerequisites),
+		Postrequisites:     localization.LocaleTextPtrFromJSONB(note.Postrequisites),
 		InternetResources:  internetResources,
 		TechnicalResources: technicalResources,
 	}
@@ -1671,7 +1672,7 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 
 		topics = append(topics, &TopicResponse{
 			ID:              topic.ID,
-			Name:            topic.Name,
+			Name:            localization.LocaleTextFromJSONB(topic.Name),
 			Type:            topic.Type,
 			LessonID:        helpers.PgUUIDToPtr(topic.LessonID),
 			TotalHours:      topic.TotalHours,
@@ -1685,7 +1686,7 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 
 	return &DisciplineResponse{
 		ID:         disc.ID,
-		Name:       disc.Name,
+		Name:       localization.LocaleTextFromJSONB(disc.Name),
 		TotalHours: disc.TotalHours,
 		Semesters:  semesters,
 		Topics:     topics,

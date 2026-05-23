@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_NKNzwuPNSE
 createdAt: 2026-01-19T12:03:08.633091100
-updatedAt: 2026-04-21T11:20:42.105589
+updatedAt: 2026-05-23T13:36:25.993071900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -12,28 +12,35 @@ authenticationType: bearer
 body:
   text: |-
     {
-        "name": "Лучший студент2",
-        "variants": [
-          {
-            "name": "Вариант ",
-            "description": "Описание варианта 1",
-            "criteria": [
-              {
-                "name": "Критерий 1",
-                "points": [20],
-                "method": "NORMAL"
-              }
-            ],
-             "bonus_criteria": [
-              {
-                "name": "Критерий 1",
-                "points": [20],
-                "method": "MEASURING"
-              }
-            ]
-          }
-        ]
-      }
+      "id": "ab70534a-4acf-4f17-89de-d4ca1c89e8dd",
+      "name": {
+        "ru": "Научно-исследовательская деятельность",
+        "kz": "Ғылыми-зерттеу қызметі"
+      },
+      "variants": [
+        {
+          "name": {
+            "ru": "Публикация в международном журнале",
+            "kz": "Халықаралық журналда жариялау"
+          },
+          "description": {
+            "ru": "Статья с DOI в Scopus/WoS",
+            "kz": "Scopus/WoS базасындағы DOI-і бар мақала"
+          },
+          "criteria": [
+            {
+              "name": {
+                "ru": "Индексируется в Scopus",
+                "kz": "Scopus-та индекстелген"
+              },
+              "points": [35],
+              "method": "NORMAL"
+            }
+          ],
+          "bonus_criteria": []
+        }
+      ]
+    }
 bodyType: application/json
 description: ''
 headers:
@@ -52,9 +59,9 @@ url: ${[ url ]}/awards/types/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: aefc4a3c-eb64-473b-9238-f99e824a0813
+  value: 34fb619f-61c7-4ee6-969f-3ce09ac237ae
   id: vkPyrqS7EW
 - enabled: true
   name: ''
   value: ''
-  id: HxUaZ6WPsn
+  id: 6x8NuNgRsN

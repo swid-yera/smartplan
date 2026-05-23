@@ -32,6 +32,7 @@ CREATE TABLE users (
     first_name TEXT,
     last_name TEXT,
     phone TEXT,
+    department TEXT,
 
     role user_role NOT NULL,
     rups TEXT[],
@@ -52,8 +53,14 @@ CREATE TABLE users (
 CREATE TABLE groups (
     keycloak_id UUID PRIMARY KEY,
     name TEXT NOT NULL,
-    qualification TEXT,
-    specialty TEXT
+    qualification JSONB,
+    specialty JSONB,
+    CONSTRAINT groups_qualification_locale_check CHECK (
+        qualification IS NULL OR (qualification ? 'ru' AND qualification ? 'kz')
+    ),
+    CONSTRAINT groups_specialty_locale_check CHECK (
+        specialty IS NULL OR (specialty ? 'ru' AND specialty ? 'kz')
+    )
 );
 
 -- =====================
@@ -72,16 +79,35 @@ CREATE TABLE rup_resources (
 
 CREATE TABLE rup_exploration_notes (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    basis TEXT,
-    goals TEXT,
-    summary TEXT,
-    competencies TEXT,
+    basis JSONB,
+    goals JSONB,
+    summary JSONB,
+    competencies JSONB,
 
-    prerequisites TEXT,
-    postrequisites TEXT,
+    prerequisites JSONB,
+    postrequisites JSONB,
 
     internet_resources UUID[],
-    technical_resources UUID[]
+    technical_resources UUID[],
+
+    CONSTRAINT rup_exploration_notes_basis_locale_check CHECK (
+        basis IS NULL OR (basis ? 'ru' AND basis ? 'kz')
+    ),
+    CONSTRAINT rup_exploration_notes_goals_locale_check CHECK (
+        goals IS NULL OR (goals ? 'ru' AND goals ? 'kz')
+    ),
+    CONSTRAINT rup_exploration_notes_summary_locale_check CHECK (
+        summary IS NULL OR (summary ? 'ru' AND summary ? 'kz')
+    ),
+    CONSTRAINT rup_exploration_notes_competencies_locale_check CHECK (
+        competencies IS NULL OR (competencies ? 'ru' AND competencies ? 'kz')
+    ),
+    CONSTRAINT rup_exploration_notes_prerequisites_locale_check CHECK (
+        prerequisites IS NULL OR (prerequisites ? 'ru' AND prerequisites ? 'kz')
+    ),
+    CONSTRAINT rup_exploration_notes_postrequisites_locale_check CHECK (
+        postrequisites IS NULL OR (postrequisites ? 'ru' AND postrequisites ? 'kz')
+    )
 );
 
 -- =====================
@@ -98,7 +124,7 @@ CREATE TABLE discipline_semesters (
 -- =====================
 CREATE TABLE discipline_topics (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid (),
-    name TEXT NOT NULL,
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     type discipline_topic_type NOT NULL,
     lesson_id UUID,
     total_hours INT NOT NULL DEFAULT 0,
@@ -106,7 +132,10 @@ CREATE TABLE discipline_topics (
     practice_hours INT NOT NULL DEFAULT 0,
     individual_hours INT NOT NULL DEFAULT 0,
     srsp_hours INT NOT NULL DEFAULT 0,
-    srs_hours INT NOT NULL DEFAULT 0
+    srs_hours INT NOT NULL DEFAULT 0,
+    CONSTRAINT discipline_topics_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    )
 );
 
 -- =====================
@@ -116,11 +145,14 @@ CREATE TABLE discipline_topics (
 
 CREATE TABLE rup_disciplines (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     total_hours INT NOT NULL DEFAULT 0,
 
     semesters UUID[],
-    topics UUID[]
+    topics UUID[],
+    CONSTRAINT rup_disciplines_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    )
 );
 
 -- =====================
@@ -130,7 +162,7 @@ CREATE TABLE rup_disciplines (
 
 CREATE TABLE rups (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     status rups_status NOT NULL,
     reason TEXT,
     course INT NOT NULL CHECK (course BETWEEN 1 AND 4),
@@ -150,6 +182,9 @@ CREATE TABLE rups (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
+    CONSTRAINT rups_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    ),
     CONSTRAINT fk_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id),
     CONSTRAINT fk_teacher FOREIGN KEY (teacher) REFERENCES users(keycloak_id)
 );
@@ -159,9 +194,12 @@ CREATE TABLE rups (
 -- =====================
 CREATE TABLE award_type_criteria (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     points INT[],
-    method enum_criteria_method NOT NULL
+    method enum_criteria_method NOT NULL,
+    CONSTRAINT award_type_criteria_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    )
 );
 
 -- =====================
@@ -169,10 +207,16 @@ CREATE TABLE award_type_criteria (
 -- =====================
 CREATE TABLE award_type_variants (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    description TEXT,
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    description JSONB,
     criteria UUID[],
-    bonus_criteria UUID[]
+    bonus_criteria UUID[],
+    CONSTRAINT award_type_variants_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    ),
+    CONSTRAINT award_type_variants_description_locale_check CHECK (
+        description IS NULL OR (description ? 'ru' AND description ? 'kz')
+    )
 );
 
 -- =====================
@@ -180,8 +224,11 @@ CREATE TABLE award_type_variants (
 -- =====================
 CREATE TABLE award_types (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    variants UUID[]
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    variants UUID[],
+    CONSTRAINT award_types_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    )
 );
 
 -- =====================
@@ -190,11 +237,17 @@ CREATE TABLE award_types (
 CREATE TABLE award_categories (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     award_types UUID[] NOT NULL DEFAULT '{}',
-    name TEXT NOT NULL,
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     icon TEXT,
-    description TEXT,
+    description JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT award_categories_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    ),
+    CONSTRAINT award_categories_description_locale_check CHECK (
+        description ? 'ru' AND description ? 'kz'
+    )
 );
 
 -- =====================
@@ -204,16 +257,25 @@ CREATE TABLE award_category_fields (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     category_id UUID NOT NULL REFERENCES award_categories(id) ON DELETE CASCADE,
     key TEXT NOT NULL,
-    label TEXT NOT NULL,
+    label JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     type TEXT NOT NULL,
     required BOOLEAN NOT NULL DEFAULT false,
-    placeholder TEXT,
-    help_text TEXT,
+    placeholder JSONB,
+    help_text JSONB,
     options JSONB NOT NULL DEFAULT '[]'::jsonb,
     validation JSONB NOT NULL DEFAULT '{}'::jsonb,
     sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT award_category_fields_label_locale_check CHECK (
+        label ? 'ru' AND label ? 'kz'
+    ),
+    CONSTRAINT award_category_fields_placeholder_locale_check CHECK (
+        placeholder IS NULL OR (placeholder ? 'ru' AND placeholder ? 'kz')
+    ),
+    CONSTRAINT award_category_fields_help_text_locale_check CHECK (
+        help_text IS NULL OR (help_text ? 'ru' AND help_text ? 'kz')
+    ),
     UNIQUE (category_id, key)
 );
 
@@ -259,22 +321,40 @@ CREATE SEQUENCE lessons_plan_number_seq
 
 CREATE TABLE lessons (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    rup_name TEXT NOT NULL,
-    discipline_name TEXT,
-    topic_name TEXT,
+    rup_name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    discipline_name JSONB,
+    topic_name JSONB,
     plan_number INT NOT NULL DEFAULT nextval('lessons_plan_number_seq'::regclass),
     teacher UUID NOT NULL,
     event_date TIMESTAMPTZ,
     group_id UUID NOT NULL,
     type enum_lesson_type NOT NULL,
-    goals TEXT,
-    tasks TEXT,
-    expected TEXT,
+    goals JSONB,
+    tasks JSONB,
+    expected JSONB,
     internet_resources UUID[],
     technical_resources UUID[],
     file_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT lessons_rup_name_locale_check CHECK (
+        rup_name ? 'ru' AND rup_name ? 'kz'
+    ),
+    CONSTRAINT lessons_discipline_name_locale_check CHECK (
+        discipline_name IS NULL OR (discipline_name ? 'ru' AND discipline_name ? 'kz')
+    ),
+    CONSTRAINT lessons_topic_name_locale_check CHECK (
+        topic_name IS NULL OR (topic_name ? 'ru' AND topic_name ? 'kz')
+    ),
+    CONSTRAINT lessons_goals_locale_check CHECK (
+        goals IS NULL OR (goals ? 'ru' AND goals ? 'kz')
+    ),
+    CONSTRAINT lessons_tasks_locale_check CHECK (
+        tasks IS NULL OR (tasks ? 'ru' AND tasks ? 'kz')
+    ),
+    CONSTRAINT lessons_expected_locale_check CHECK (
+        expected IS NULL OR (expected ? 'ru' AND expected ? 'kz')
+    ),
     CONSTRAINT fk_lesson_teacher FOREIGN KEY (teacher) REFERENCES users(keycloak_id),
     CONSTRAINT fk_lesson_groups FOREIGN KEY (group_id) REFERENCES groups(keycloak_id)
 );
@@ -286,10 +366,13 @@ CREATE TABLE lessons (
 CREATE TABLE lesson_progress(
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     lesson_id UUID NOT NULL,
-    name TEXT NOT NULL,
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     first_time INT[] NOT NULL,
     second_time INT[] NOT NULL,
     third_time INT[] NOT NULL,
     content TEXT[],
+    CONSTRAINT lesson_progress_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    ),
     CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id)
 );

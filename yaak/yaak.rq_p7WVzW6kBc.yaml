@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_p7WVzW6kBc
 createdAt: 2026-01-28T22:54:26.496129500
-updatedAt: 2026-01-28T23:02:00.830001900
+updatedAt: 2026-05-23T13:26:15.385248400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_tqqPjuByKX
 authentication: {}
@@ -10,22 +10,33 @@ authenticationType: null
 body:
   text: |-
     {
-      "rup_name": "Проектирование информационных систем",
-      "discipline_name": "Разработка ПО на Go",
-      "topic_name": "Структуры и JSON сериализация",
-      "teacher_id": "550e8400-e29b-41d4-a716-446655440000",
-      "event_date": "2026-01-29T10:00:00Z",
-      "group_id": "b1234567-89ab-cdef-0123-456789abcdef",
-      "type": "THEORY",
-      "goals": "Изучить принципы работы с тегами структур в Go",
-      "tasks": "1. Создать структуру. 2. Написать маршалер. 3. Протестировать на моках.",
-      "expected": "Студент должен уметь генерировать корректный JSON из объектов Go",
-      "internet_resources": [
-        "dc6c750c-2c39-4d0c-b2d6-059293e9e2d1"
-      ],
-      "technical_resources": [
-        "dc6c750c-2c39-4d0c-b2d6-059293e9e2d1"
-      ]
+      "rup_name": {
+        "ru": "Рабочий учебный план по дисциплине Алгоритмы и структуры данных",
+        "kz": "Алгоритмдер және деректер құрылымдары пәні бойынша жұмыс оқу жоспары"
+      },
+      "discipline_name": {
+        "ru": "Алгоритмы и структуры данных",
+        "kz": "Алгоритмдер және деректер құрылымдары"
+      },
+      "topic_name": {
+        "ru": "Сортировки: quicksort и mergesort",
+        "kz": "Сұрыптау: quicksort және mergesort"
+      },
+      "plan_number": 47,
+      "event_date": "2026-09-10T10:00:00Z",
+      "group_id": "e6eff862-03f0-4852-821c-a190f83420d5",
+      "type": "PRACTICE",
+      "goals": {
+        "ru": "Научиться выбирать алгоритм сортировки под задачу",
+        "kz": "Есепке сай сұрыптау алгоритмін таңдауды үйрену"
+      },
+      "tasks": "Решить 3 задачи на сортировку массивов",
+      "expected": {
+        "ru": "Студент реализует и сравнивает 2 алгоритма сортировки",
+        "kz": "Студент 2 сұрыптау алгоритмін іске асырып, салыстырады"
+      },
+      "internet_resources": [],
+      "technical_resources": []
     }
 bodyType: application/json
 description: ''
@@ -38,4 +49,12 @@ method: POST
 name: create
 sortPriority: 703.7037037037037
 url: ${[ url ]}/lessons
-urlParameters: []
+urlParameters:
+- enabled: true
+  name: ''
+  value: ''
+  id: 0UdK6pWEkI
+- enabled: true
+  name: ''
+  value: ''
+  id: 2tgMP03xMA

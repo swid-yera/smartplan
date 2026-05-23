@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"eduplan/backend/pkg/helpers"
+	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 	"fmt"
@@ -25,9 +26,9 @@ type CreateAwardParams struct {
 }
 
 type CreateTypeParams struct {
-	Name      string           `json:"name"`
-	Variants  []VariantRequest `json:"variants"`
-	AwardType uuid.UUID        `json:"type"`
+	Name      localization.LocaleText `json:"name"`
+	Variants  []VariantRequest        `json:"variants"`
+	AwardType uuid.UUID               `json:"type"`
 }
 
 type AwardResponse struct {
@@ -48,8 +49,8 @@ type AwardResponse struct {
 }
 
 type SelectedTypeResponse struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID   uuid.UUID               `json:"id"`
+	Name localization.LocaleText `json:"name"`
 }
 
 type PaginatedAwardsResponse struct {
@@ -58,54 +59,54 @@ type PaginatedAwardsResponse struct {
 }
 
 type SelectedVariantResponse struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
+	ID          uuid.UUID                `json:"id"`
+	Name        localization.LocaleText  `json:"name"`
+	Description *localization.LocaleText `json:"description"`
 }
 
 type SelectedCriteriaResponse struct {
 	ID     uuid.UUID                  `json:"id"`
-	Name   string                     `json:"name"`
+	Name   localization.LocaleText    `json:"name"`
 	Points []int32                    `json:"points"`
 	Method storage.EnumCriteriaMethod `json:"method"`
 }
 
 type TypeResponse struct {
-	ID       uuid.UUID         `json:"id"`
-	Name     string            `json:"name"`
-	Variants []VariantResponse `json:"variants"`
+	ID       uuid.UUID               `json:"id"`
+	Name     localization.LocaleText `json:"name"`
+	Variants []VariantResponse       `json:"variants"`
 }
 
 type VariantResponse struct {
-	ID            uuid.UUID          `json:"id"`
-	Name          string             `json:"name"`
-	Description   string             `json:"description"`
-	Criteria      []CriteriaResponse `json:"criteria"`
-	BonusCriteria []CriteriaResponse `json:"bonus_criteria"`
+	ID            uuid.UUID                `json:"id"`
+	Name          localization.LocaleText  `json:"name"`
+	Description   *localization.LocaleText `json:"description"`
+	Criteria      []CriteriaResponse       `json:"criteria"`
+	BonusCriteria []CriteriaResponse       `json:"bonus_criteria"`
 }
 
 type CriteriaResponse struct {
 	ID     uuid.UUID                  `json:"id"`
-	Name   string                     `json:"name"`
+	Name   localization.LocaleText    `json:"name"`
 	Points []int32                    `json:"points"`
 	Method storage.EnumCriteriaMethod `json:"method"`
 }
 
 type VariantRequest struct {
-	Name          string      `json:"name"`
-	Description   pgtype.Text `json:"description"`
-	Criteria      []Criteria  `json:"criteria"`
-	BonusCriteria []Criteria  `json:"bonus_criteria"`
+	Name          localization.LocaleText  `json:"name"`
+	Description   *localization.LocaleText `json:"description"`
+	Criteria      []Criteria               `json:"criteria"`
+	BonusCriteria []Criteria               `json:"bonus_criteria"`
 }
 
 type CreateAwardTypeRequest struct {
-	ID       uuid.UUID        `json:"id"`
-	Name     string           `json:"name"`
-	Variants []VariantRequest `json:"variants"`
+	ID       uuid.UUID               `json:"id"`
+	Name     localization.LocaleText `json:"name"`
+	Variants []VariantRequest        `json:"variants"`
 }
 
 type Criteria struct {
-	Name   string                     `json:"name"`
+	Name   localization.LocaleText    `json:"name"`
 	Points []int32                    `json:"points"`
 	Method storage.EnumCriteriaMethod `json:"method"`
 }
@@ -407,7 +408,7 @@ func (s *AwardService) CreateType(ctx context.Context, params *CreateTypeParams)
 
 	// Create type
 	typeParams := storage.CreateAwardTypeParams{
-		Name:     params.Name,
+		Name:     params.Name.ToJSONB(),
 		Variants: variantIDs,
 	}
 	awardType, err := s.repo.CreateAwardType(ctx, &typeParams)
@@ -434,7 +435,7 @@ func (s *AwardService) GetAllFullTypes(ctx context.Context) ([]TypeResponse, err
 
 		result = append(result, TypeResponse{
 			ID:       at.ID,
-			Name:     at.Name,
+			Name:     localization.LocaleTextFromJSONB(at.Name),
 			Variants: payload.Variants,
 		})
 	}
@@ -459,7 +460,7 @@ func (s *AwardService) BuildType(ctx context.Context, awardType storage.AwardTyp
 			}
 			criteria = append(criteria, CriteriaResponse{
 				ID:     crit.ID,
-				Name:   crit.Name,
+				Name:   localization.LocaleTextFromJSONB(crit.Name),
 				Points: crit.Points,
 				Method: crit.Method,
 			})
@@ -473,7 +474,7 @@ func (s *AwardService) BuildType(ctx context.Context, awardType storage.AwardTyp
 			}
 			bonusCriteria = append(bonusCriteria, CriteriaResponse{
 				ID:     crit.ID,
-				Name:   crit.Name,
+				Name:   localization.LocaleTextFromJSONB(crit.Name),
 				Points: crit.Points,
 				Method: crit.Method,
 			})
@@ -481,8 +482,8 @@ func (s *AwardService) BuildType(ctx context.Context, awardType storage.AwardTyp
 
 		variants = append(variants, VariantResponse{
 			ID:            variant.ID,
-			Name:          variant.Name,
-			Description:   variant.Description.String,
+			Name:          localization.LocaleTextFromJSONB(variant.Name),
+			Description:   localization.LocaleTextPtrFromJSONB(variant.Description),
 			Criteria:      criteria,
 			BonusCriteria: bonusCriteria,
 		})
@@ -490,7 +491,7 @@ func (s *AwardService) BuildType(ctx context.Context, awardType storage.AwardTyp
 
 	return TypeResponse{
 		ID:       awardType.ID,
-		Name:     awardType.Name,
+		Name:     localization.LocaleTextFromJSONB(awardType.Name),
 		Variants: variants,
 	}, nil
 }
@@ -506,7 +507,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 
 	mappedType := SelectedTypeResponse{
 		ID:   dbType.ID,
-		Name: dbType.Name,
+		Name: localization.LocaleTextFromJSONB(dbType.Name),
 	}
 
 	// variant
@@ -518,8 +519,8 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 
 	mappedVariant := SelectedVariantResponse{
 		ID:          dbVariant.ID,
-		Name:        dbVariant.Name,
-		Description: dbVariant.Description.String,
+		Name:        localization.LocaleTextFromJSONB(dbVariant.Name),
+		Description: localization.LocaleTextPtrFromJSONB(dbVariant.Description),
 	}
 
 	// criteria
@@ -531,7 +532,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 
 	mappedCriteria := SelectedCriteriaResponse{
 		ID:     dbCriteria.ID,
-		Name:   dbCriteria.Name,
+		Name:   localization.LocaleTextFromJSONB(dbCriteria.Name),
 		Points: dbCriteria.Points,
 		Method: dbCriteria.Method,
 	}
@@ -547,7 +548,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 
 		mappedBonusCriteria = &SelectedCriteriaResponse{
 			ID:     dbBonusCriteria.ID,
-			Name:   dbBonusCriteria.Name,
+			Name:   localization.LocaleTextFromJSONB(dbBonusCriteria.Name),
 			Points: dbBonusCriteria.Points,
 			Method: dbBonusCriteria.Method,
 		}
@@ -629,7 +630,7 @@ func (s *AwardService) UpdateType(ctx context.Context, id uuid.UUID, req CreateA
 
 	params := storage.UpdateAwardTypeParams{
 		ID:       id,
-		Name:     req.Name,
+		Name:     req.Name.ToJSONB(),
 		Variants: variantIDs,
 	}
 	updatedType, err := s.repo.UpdateAwardType(ctx, params)
@@ -666,7 +667,7 @@ func (s *AwardService) CreateCriteria(ctx context.Context, params *storage.Creat
 }
 
 func (s *AwardService) validateCreateFullTypeParams(ctx context.Context, params *CreateTypeParams) error {
-	if params.Name == "" {
+	if params.Name.Ru == "" && params.Name.Kz == "" {
 		return fmt.Errorf("award type name is required")
 	}
 	if len(params.Variants) == 0 {
@@ -684,7 +685,7 @@ func (s *AwardService) createVariantsWithCriteria(ctx context.Context, variants 
 		var criteriaIDs []uuid.UUID
 		for _, crit := range variant.Criteria {
 			params := storage.CreateAwardTypeCriteriaParams{
-				Name:   crit.Name,
+				Name:   crit.Name.ToJSONB(),
 				Points: crit.Points,
 				Method: crit.Method,
 			}
@@ -699,7 +700,7 @@ func (s *AwardService) createVariantsWithCriteria(ctx context.Context, variants 
 		var bonusCriteriaIDs []uuid.UUID
 		for _, crit := range variant.BonusCriteria {
 			params := storage.CreateAwardTypeCriteriaParams{
-				Name:   crit.Name,
+				Name:   crit.Name.ToJSONB(),
 				Points: crit.Points,
 				Method: crit.Method,
 			}
@@ -712,8 +713,8 @@ func (s *AwardService) createVariantsWithCriteria(ctx context.Context, variants 
 
 		// Create variant
 		variantParams := storage.CreateAwardTypesVariantParams{
-			Name:          variant.Name,
-			Description:   variant.Description,
+			Name:          variant.Name.ToJSONB(),
+			Description:   localePtrToJSONB(variant.Description),
 			Criteria:      criteriaIDs,
 			BonusCriteria: bonusCriteriaIDs,
 		}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"eduplan/backend/config"
@@ -47,6 +48,7 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	firstName, _ := claims["given_name"].(string)
 	lastName, _ := claims["family_name"].(string)
 	phone, _ := claims["phone"].(string)
+	department := extractStringClaim(claims, "department", "department_name", "org_department")
 
 	// new
 	realmAccess, ok := claims["realm_access"].(map[string]interface{})
@@ -77,13 +79,13 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	}).Info("Resolved user role")
 
 	// 1. Попытка создать пользователя
-	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
+	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone, department)
 
 	if err != nil {
 		// Если пользователь уже существует (Unique Violation)
 		if isUniqueViolation(err) {
 			// 2. Обновляем профиль существующего пользователя
-			err = s.users.UpdateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
+			err = s.users.UpdateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone, department)
 
 			if err != nil {
 				s.log.WithError(err).Error("Failed to update existing user profile")
@@ -187,4 +189,30 @@ func isUniqueViolation(err error) bool {
 		return pgErr.Code == "23505"
 	}
 	return false
+}
+
+func extractStringClaim(claims jwt.MapClaims, keys ...string) string {
+	for _, key := range keys {
+		raw, exists := claims[key]
+		if !exists || raw == nil {
+			continue
+		}
+		switch v := raw.(type) {
+		case string:
+			v = strings.TrimSpace(v)
+			if v != "" {
+				return v
+			}
+		case []interface{}:
+			if len(v) > 0 {
+				if s, ok := v[0].(string); ok {
+					s = strings.TrimSpace(s)
+					if s != "" {
+						return s
+					}
+				}
+			}
+		}
+	}
+	return ""
 }

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type SyncResult struct {
@@ -24,10 +24,10 @@ type GroupsSyncService struct {
 }
 
 type GetAllGroupsResponse struct {
-	KeycloakID    uuid.UUID `json:"keycloakId"`
-	Name          string    `json:"name"`
-	Qualification string    `json:"qualification"`
-	Specialty     string    `json:"specialty"`
+	KeycloakID    uuid.UUID               `json:"keycloakId"`
+	Name          string                  `json:"name"`
+	Qualification localization.LocaleText `json:"qualification"`
+	Specialty     localization.LocaleText `json:"specialty"`
 }
 
 func NewGroupsSyncService(kc *Client, repo repository.GroupsRepository) *GroupsSyncService {
@@ -47,8 +47,8 @@ func (s *GroupsSyncService) GetAllGroups(ctx context.Context) ([]*GetAllGroupsRe
 		response := &GetAllGroupsResponse{
 			KeycloakID:    group.KeycloakID,
 			Name:          group.Name,
-			Qualification: group.Qualification.String,
-			Specialty:     group.Specialty.String,
+			Qualification: localization.LocaleTextFromJSONB(group.Qualification),
+			Specialty:     localization.LocaleTextFromJSONB(group.Specialty),
 		}
 
 		responses = append(responses, response)
@@ -109,8 +109,8 @@ func (s *GroupsSyncService) SyncGroups(ctx context.Context) (*SyncResult, error)
 		params = append(params, storage.UpsertGroupParams{
 			KeycloakID:    id,
 			Name:          g.Name,
-			Qualification: toPgText(qual),
-			Specialty:     toPgText(spec),
+			Qualification: toLocaleJSONB(qual),
+			Specialty:     toLocaleJSONB(spec),
 		})
 
 		actualIDs = append(actualIDs, id)
@@ -198,11 +198,12 @@ func firstAttrRaw(attrs map[string][]string, key string) *string {
 	return &s
 }
 
-func toPgText(p *string) pgtype.Text {
+func toLocaleJSONB(p *string) []byte {
 	if p == nil {
-		return pgtype.Text{Valid: false}
+		return nil
 	}
-	return pgtype.Text{String: *p, Valid: true}
+	locale := localization.NewLocaleText(*p, "")
+	return locale.ToJSONB()
 }
 
 func (s *GroupsSyncService) DebugFetchStudentsTree(ctx context.Context) (*GroupRepresentation, error) {

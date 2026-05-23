@@ -19,6 +19,7 @@ type User struct {
 	LastName    string    `json:"lastName"`
 	Role        string    `json:"role"`
 	Phone       string    `json:"phone"`
+	Department  string    `json:"department"`
 	TotalPoints int32     `json:"totalPoints"`
 }
 
@@ -192,6 +193,7 @@ func toServiceUser(u *storage.User) *User {
 	firstName := ""
 	lastName := ""
 	phone := ""
+	department := ""
 
 	if u.FirstName.Valid {
 		firstName = u.FirstName.String
@@ -202,6 +204,9 @@ func toServiceUser(u *storage.User) *User {
 	if u.Phone.Valid {
 		phone = u.Phone.String
 	}
+	if u.Department.Valid {
+		department = u.Department.String
+	}
 
 	return &User{
 		KeycloakID:  u.KeycloakID,
@@ -211,6 +216,7 @@ func toServiceUser(u *storage.User) *User {
 		LastName:    lastName,
 		Role:        string(u.Role),
 		Phone:       phone,
+		Department:  department,
 		TotalPoints: u.TotalPoints,
 	}
 }

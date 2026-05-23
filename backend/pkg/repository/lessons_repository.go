@@ -63,11 +63,11 @@ func (r *LessonRepository) GetLessonByID(ctx context.Context, id uuid.UUID) (sto
 	return r.queries.GetLessonsByID(ctx, id)
 }
 
-func (r *LessonRepository) GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName pgtype.Text, limit int32) ([]storage.Lesson, error) {
+func (r *LessonRepository) GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName string, limit int32) ([]storage.Lesson, error) {
 	return r.queries.GetRecentLessonsByDiscipline(ctx, storage.GetRecentLessonsByDisciplineParams{
-		RupName:        rupName,
-		DisciplineName: disciplineName,
-		Limit:          limit,
+		Column1: rupName,
+		Column2: disciplineName,
+		Limit:   limit,
 	})
 }
 

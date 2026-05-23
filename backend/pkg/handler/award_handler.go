@@ -312,13 +312,23 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 			return
 		}
 
+		existingAward, getErr := h.service.GetAwardByID(c.Request.Context(), id)
+		if getErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve current award", "details": getErr.Error()})
+			return
+		}
+
+		fieldValuesForMerge, mergeValuesErr := mergeFieldValuesPayload(existingAward.FieldValues, req.FieldValues)
+		if mergeValuesErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid fieldValues payload",
+				"details": mergeValuesErr.Error(),
+			})
+			return
+		}
+
 		uploadCategoryID := req.CategoryID
 		if !uploadCategoryID.Valid {
-			existingAward, getErr := h.service.GetAwardByID(c.Request.Context(), id)
-			if getErr != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve current award category", "details": getErr.Error()})
-				return
-			}
 			if existingAward.CategoryID != nil {
 				uploadCategoryID = parseUUIDPgtype(existingAward.CategoryID.String())
 			}
@@ -328,7 +338,7 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 			c.Request.Context(),
 			currentUser.KeycloakID,
 			uploadCategoryID,
-			req.FieldValues,
+			fieldValuesForMerge,
 			form.File,
 		)
 		if mergeErr != nil {
@@ -372,6 +382,63 @@ func mustMarshalFieldValues(v any) []byte {
 		return []byte("{}")
 	}
 	return b
+}
+
+func mergeFieldValuesPayload(existing map[string]any, incoming any) (map[string]any, error) {
+	base, err := normalizeFieldValuesPayload(existing)
+	if err != nil {
+		return nil, err
+	}
+
+	next, err := normalizeFieldValuesPayload(incoming)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, value := range next {
+		base[key] = value
+	}
+
+	return base, nil
+}
+
+func normalizeFieldValuesPayload(input any) (map[string]any, error) {
+	switch v := input.(type) {
+	case nil:
+		return map[string]any{}, nil
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for key, value := range v {
+			out[key] = value
+		}
+		return out, nil
+	case []byte:
+		if len(v) == 0 {
+			return map[string]any{}, nil
+		}
+		var out map[string]any
+		if err := json.Unmarshal(v, &out); err != nil {
+			return nil, err
+		}
+		if out == nil {
+			out = map[string]any{}
+		}
+		return out, nil
+	default:
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+
+		var out map[string]any
+		if err = json.Unmarshal(b, &out); err != nil {
+			return nil, err
+		}
+		if out == nil {
+			out = map[string]any{}
+		}
+		return out, nil
+	}
 }
 
 // --- award type

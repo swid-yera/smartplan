@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_3PEVpn4nTJ
 createdAt: 2026-01-19T12:20:28.897108600
-updatedAt: 2026-04-21T11:19:44.545894200
+updatedAt: 2026-05-23T13:39:23.043674900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -14,13 +14,20 @@ body:
     name: data
     value: |-
       {
-        "text": "Обновленное описание",
-        "type": "aefc4a3c-eb64-473b-9238-f99e824a0813",
-        "variant": "008b5555-157e-4c4f-981d-3c887406c000",
-        "criteria": "d2a7b4f0-4401-49aa-8091-2fe3179a352b"
+        "type": "ab70534a-4acf-4f17-89de-d4ca1c89e8dd",
+        "variant": "54f69de7-5fd4-4f50-95d2-7f167e4d1ee0",
+        "criteria": "7f8c2e08-9f3c-40b3-a8c9-bb3a5b9d7f45",
+        "bonusCriteria": "5f9d2460-ea83-4531-b6b5-2fcb7a8fdd8f",
+        "categoryId": "4b7f5c2d-ec96-4dd1-b27b-1cf4f9f0aeb6",
+        "fieldValues": {
+          "articleTitle": "Сравнение BFS и DFS в учебных задачах",
+          "doi": "https://doi.org/10.1234/eduplan.2026.002",
+          "articleFile": "awards/9f7a4d65-5c49-4d64-88f8-baf7a7d1d8f2/articleFile/5c2f98fd-0b14-4f0b-aef8-ff9ea7762e9e_article.pdf"
+        },
+        "totalPoints": 35
       }
   - enabled: true
-    id: E4WPtZfhQY
+    id: CFND3I4pMK
     name: ''
     value: ''
 bodyType: multipart/form-data

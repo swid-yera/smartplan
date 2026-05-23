@@ -7,9 +7,10 @@ INSERT INTO
         first_name,
         last_name,
         role,
-        phone
+        phone,
+        department
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
 
 -- name: GetUserByKeycloakID :one
 SELECT * FROM users WHERE keycloak_id = $1;
@@ -23,6 +24,7 @@ SET
     last_name = $5,
     phone = $6,
     role = $7,
+    department = $8,
     updated_at = NOW()
 WHERE
     keycloak_id = $1;
@@ -69,6 +71,7 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username) ILIKE '%' || $1 || '%' OR
+        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 ORDER BY created_at DESC
@@ -89,6 +92,7 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 ORDER BY total_points DESC, created_at DESC
@@ -109,6 +113,7 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     );
 
@@ -124,6 +129,8 @@ WHERE
         ) OR
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     );
 
@@ -317,7 +324,8 @@ SELECT *
 FROM rups WHERE
     (
         $1 = ''
-        OR name ILIKE '%' || $1 || '%'
+        OR COALESCE(name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(name->>'kz', '') ILIKE '%' || $1 || '%'
     )
     AND (
         sqlc.narg('teacher')::uuid IS NULL
@@ -338,7 +346,8 @@ FROM rups
 WHERE
     (
         $1 = ''
-        OR name ILIKE '%' || $1 || '%'
+        OR COALESCE(name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(name->>'kz', '') ILIKE '%' || $1 || '%'
         OR (
             $1 ~* '^[0-9a-f-]{36}$'
             AND id = $1::uuid
@@ -783,8 +792,14 @@ LIMIT $1 OFFSET $2;
 SELECT *
 FROM lessons
 WHERE
-    rup_name = $1
-    AND discipline_name = $2
+    (
+        COALESCE(rup_name->>'ru', '') = $1::text
+        OR COALESCE(rup_name->>'kz', '') = $1::text
+    )
+    AND (
+        COALESCE(discipline_name->>'ru', '') = $2::text
+        OR COALESCE(discipline_name->>'kz', '') = $2::text
+    )
 ORDER BY created_at DESC
 LIMIT $3;
 

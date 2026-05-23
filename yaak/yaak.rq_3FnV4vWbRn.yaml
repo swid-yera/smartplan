@@ -2,13 +2,97 @@ type: http_request
 model: http_request
 id: rq_3FnV4vWbRn
 createdAt: 2026-01-15T20:10:19.309558700
-updatedAt: 2026-04-21T11:22:46.139821400
+updatedAt: 2026-05-23T13:12:25.007497400
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
 authenticationType: null
 body:
-  text: "{\n  \"name\": \"rup module\",\n  \"code\": \"RM1\",\n  \"type\": \"PRACTICE\",\n  \"course\": 4,\n  \"studyForm\": \"FULL_TIME\",\n  \"studyYear\": \"2025-2026\",\n  \"groups\": [\"ca2eec3f-8ab4-41f1-8a13-2210240296f9\"],\n  \"methodist\": \"f387d51c-6df1-421f-b38b-a97140998177\", \n  \"explorationNote\": {\n    \"basis\": \"basis note\",             \n    \"goals\": \"goals note\",            \n    \"competencies\": \"competencies goals\",      \n    \"prerequisites\": \"prerequisites\",     \n    \"postrequisites\": \"postrequisites\",   \n    \n    \"internetResources\": [\n      { \"name\": \"internet_resources 1\", \"link\": \"\" },\n      { \"name\": \"internet_resources 2\", \"link\": \"\" },\n      { \"name\": \"internet_resources 4\", \"link\": \"\" }\n    ], \n    \"technicalResources\": [\n      { \"name\": \"technical_resources 3\", \"link\": \"\" },\n      { \"name\": \"technical_resources 2\", \"link\": \"\" }\n    ]\n  },\n  \"disciplines\": [\n    {\n      \"name\": \"discipline\",\n      \"code\": \"dc1\",\n      \"semesters\": [\n        { \"semester\": 1, \"totalHours\": 0 },\n        { \"semester\": 2, \"totalHours\": 0 },\n        { \"semester\": 3, \"totalHours\": 0 },\n        { \"semester\": 4, \"totalHours\": 0 },\n        { \"semester\": 5, \"totalHours\": 6 },\n        { \"semester\": 6, \"totalHours\": 0 },\n        { \"semester\": 7, \"totalHours\": 0 },\n        { \"semester\": 8, \"totalHours\": 0 }\n      ],\n      \"topics\": [\n        {\n          \"name\": \"topic 1\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 6,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        },\n        {\n          \"name\": \"topic 2\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 2,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        },\n        {\n          \"name\": \"topic 3\",\n          \"type\": \"COMBINED\",\n          \"theoryHours\": 2,\n          \"practiceHours\": 0,\n          \"individualHours\": 0,\n          \"srspHours\": 0,\n          \"srsHours\": 0\n        }\n      ]\n    }\n  ]\n}"
+  text: |-
+    {
+      "name": {
+        "ru": "Обновленный рабочий учебный план по дисциплине Алгоритмы и структуры данных",
+        "kz": "Алгоритмдер және деректер құрылымдары пәні бойынша жаңартылған жұмыс оқу жоспары"
+      },
+      "type": "THEORY",
+      "studyYear": "2026-2027",
+      "course": 2,
+      "studyForm": "FULL_TIME",
+      "contacts": [
+        "46313143-eadb-4798-b7f5-2fa97869e716"
+      ],
+      "groups": [
+        "8b7e56e6-fc1a-4cc6-a795-f66c5d268229"
+      ],
+      "methodist": "46313143-eadb-4798-b7f5-2fa97869e716",
+      "explorationNote": {
+        "basis": "Основа подготовки IT-специалистов",
+        "goals": {
+          "ru": "Углубить навыки разработки алгоритмов",
+          "kz": "Алгоритмдерді әзірлеу дағдыларын тереңдету"
+        },
+        "summary": {
+          "ru": "Обновлен перечень тем и практических работ",
+          "kz": "Тақырыптар мен практикалық жұмыстар тізімі жаңартылды"
+        },
+        "competencies": {
+          "ru": "Проектирование, оценка и оптимизация алгоритмов",
+          "kz": "Алгоритмдерді жобалау, бағалау және оңтайландыру"
+        },
+        "prerequisites": {
+          "ru": "ООП, базы данных",
+          "kz": "ООП, дерекқорлар"
+        },
+        "postrequisites": {
+          "ru": "Машинное обучение",
+          "kz": "Машиналық оқыту"
+        },
+        "internetResources": [
+          {
+            "name": "GeeksforGeeks",
+            "link": "https://www.geeksforgeeks.org"
+          }
+        ],
+        "technicalResources": [
+          {
+            "name": "Компьютерный класс",
+            "link": ""
+          }
+        ]
+      },
+      "disciplines": [
+        {
+          "name": {
+            "ru": "Алгоритмы и структуры данных",
+            "kz": "Алгоритмдер және деректер құрылымдары"
+          },
+          "semesters": [
+            { "semester": 1, "totalHours": 64 },
+            { "semester": 2, "totalHours": 64 },
+            { "semester": 3, "totalHours": 64 },
+            { "semester": 4, "totalHours": 64 },
+            { "semester": 5, "totalHours": 64 },
+            { "semester": 6, "totalHours": 64 },
+            { "semester": 7, "totalHours": 64 },
+            { "semester": 8, "totalHours": 64 }
+          ],
+          "topics": [
+            {
+              "name": {
+                "ru": "Графы: обход и кратчайшие пути",
+                "kz": "Графтар: өту және ең қысқа жолдар"
+              },
+              "type": "SNZ",
+              "theoryHours": 10,
+              "practiceHours": 6,
+              "individualHours": 4,
+              "srspHours": 2,
+              "srsHours": 2
+            }
+          ]
+        }
+      ]
+    }
 bodyType: application/json
 description: ''
 headers:
@@ -23,9 +107,9 @@ url: ${[ url ]}/rups/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: d387b80a-bcf2-4814-8ef0-c32271073087
+  value: 69e41ba3-f402-4c0e-ae70-b85daedfe986
   id: WxCX3uxDAD
 - enabled: true
   name: ''
   value: ''
-  id: smZzy3vMdZ
+  id: Qq8VB8q5Nv
