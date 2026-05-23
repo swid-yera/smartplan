@@ -25,6 +25,9 @@ export interface IAward {
 	variant: IVariant
 	criteria: ICriteria
 	bonusCriteria?: ICriteria
+	bonus_criteria?: ICriteria | null
+	categoryId?: string
+	fieldValues?: Record<string, string | string[]>
 
 	totalPoints: number
 	text: string

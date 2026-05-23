@@ -1,85 +1,51 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-
-import { AwardsCard, Loader, PageTitle, Pagination } from '@components'
+import { CategoryCard, Loader, SectionTitle } from '@components'
 import { services } from '@services'
-import { Button } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+
+import { UserCard } from '../../users/[id]/user-card'
 
 const MethodistAwardsPage = () => {
-	const searchParams = useSearchParams()
-	const router = useRouter()
-	const pathname = usePathname()
-
-	const page = Number(searchParams.get('page')) || 1
-	const pageSize = Number(searchParams.get('pageSize')) || 10
-
 	const { user, authLoading } = useAuthStore()
 
-	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
-		...services.award.getAllOptions({
-			currentPage: page,
-			pageSize: pageSize,
-			teacher: user?.keycloakId,
-		}),
+	const { data: categories, isLoading: isCategoriesLoading } = useQuery({
+		...services.categories.getAllOptions(),
 		enabled: !!user,
 	})
 
-	const setCurrentPage = (newPage: number) => {
-		const params = new URLSearchParams(searchParams.toString())
-
-		params.set('page', String(newPage))
-		router.push(`${pathname}?${params.toString()}`)
-	}
-
-	const setPageSize = (newSize: number) => {
-		const params = new URLSearchParams(searchParams.toString())
-
-		params.set('pageSize', String(newSize))
-		params.set('page', '1')
-		router.push(`${pathname}?${params.toString()}`)
-	}
-
-	if (!user || authLoading) return <Loader type='data' />
+	if (!user || authLoading || isCategoriesLoading) return <Loader type='data' />
 
 	return (
-		<section className='p-4 w-full space-y-4'>
-			<PageTitle
-				actions={
-					<Button asChild>
-						<Link href='/kpi/create'>
-							<Plus className='mr-2 h-4 w-4' />
-							Создать Награду
-						</Link>
-					</Button>
-				}
-				description='Мои достижения'
-			>
-				Мои опубликованные достижения
-			</PageTitle>
+		<section className='p-4 max-w-6xl w-full mx-auto space-y-6'>
+			<SectionTitle description='Профиль и категории KPI' title='Мой KPI профиль' />
 
-			<AwardsCard
-				showCreateOnEmpty
-				awards={awardsData?.data || []}
-				currentPage={awardsData?.meta.currentPage || 1}
-				isLoading={isAwardsLoading}
-				title='Список ваших наград'
-				totalPages={awardsData?.meta.pages || 1}
-				onPageChange={setCurrentPage}
-			/>
+			<UserCard user={user} />
 
-			<Pagination
-				page={awardsData?.meta.currentPage || 1}
-				pageSize={awardsData?.meta.pageSize || 10}
-				pageSizeOptions={[10, 20, 50]}
-				totalPages={awardsData?.meta.pages || 1}
-				onPageChange={setCurrentPage}
-				onPageSizeChange={setPageSize}
-			/>
+			<div className='space-y-4'>
+				<div className='flex items-center justify-between gap-4'>
+					<SectionTitle
+						className='flex-1'
+						description='Выберите категорию для создания данных для KPI'
+						title='Ввод данных'
+					/>
+				</div>
+
+				{categories?.length ? (
+					<div className='mx-auto w-full max-w-4xl'>
+						<div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4'>
+							{categories.map((category) => (
+								<CategoryCard key={category.id} category={category} />
+							))}
+						</div>
+					</div>
+				) : (
+					<div className='flex h-40 items-center justify-center rounded-lg border border-dashed text-muted-foreground'>
+						Категории пока не созданы
+					</div>
+				)}
+			</div>
 		</section>
 	)
 }

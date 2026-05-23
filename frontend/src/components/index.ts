@@ -4,6 +4,7 @@ export * from './ui/forbidden'
 export * from './ui/loader'
 export * from './ui/page-title'
 export * from './ui/pagination'
+export * from './ui/section-title'
 
 // sheet
 export * from './sheets/rup-sheet'
@@ -16,6 +17,7 @@ export * from './cards/empty-card'
 export * from './cards/groups-card'
 export * from './cards/responsible-users-card'
 export * from './cards/rups-card'
+export * from './cards/status-info-card'
 
 // badges
 export * from './badges/status-badge'

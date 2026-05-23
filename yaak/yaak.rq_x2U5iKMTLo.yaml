@@ -1,0 +1,26 @@
+type: http_request
+model: http_request
+id: rq_x2U5iKMTLo
+createdAt: 2026-05-22T03:51:36.474066800
+updatedAt: 2026-05-22T03:53:49.033302600
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_oAFVcfRqht
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers: []
+method: GET
+name: ''
+sortPriority: 2000.0
+url: ${[ url ]}/awards/:id
+urlParameters:
+- enabled: true
+  name: :id
+  value: bf386d5d-8bc1-4717-8da8-67b5db8bec05
+  id: vQBrzBVaKI
+- enabled: true
+  name: ''
+  value: ''
+  id: DwC2cEJuZ9

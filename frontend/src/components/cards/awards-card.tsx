@@ -17,9 +17,12 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
 } from '@shadcn'
 import { type IAward } from '@types'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, UserIcon } from 'lucide-react'
 
 import { StatusBadge } from '../badges/status-badge'
 import { AwardSheet } from '../sheets/award-sheet'
@@ -64,12 +67,11 @@ export const AwardsCard: FC<IProps> = ({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Преподаватель</TableHead>
-									<TableHead>Критерия</TableHead>
-									<TableHead>Описание</TableHead>
-									<TableHead>Кол. баллов</TableHead>
-									<TableHead>Кол. файлов</TableHead>
-									<TableHead className='text-right'>Статус</TableHead>
+									<TableHead className='font-bold'>Создано</TableHead>
+									<TableHead className='font-bold'>Преподаватель</TableHead>
+									<TableHead className='font-bold'>Критерия</TableHead>
+									<TableHead className='font-bold'>Баллы</TableHead>
+									<TableHead className='text-right font-bold'>Статус</TableHead>
 									{/* Убрали колонку "Действия", так как кликаем по строке */}
 								</TableRow>
 							</TableHeader>
@@ -136,21 +138,41 @@ interface IAwardRow {
 
 const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 	const teacherName = `${award?.teacher?.firstName} ${award?.teacher.lastName}`.trim() || 'Неизвестно'
+	const createdAt = new Date(award.createdAt).toLocaleDateString('ru-RU')
+	const updatedAt = new Date(award.updatedAt).toLocaleString('ru-RU')
 
 	return (
-		<TableRow className='cursor-pointer hover:bg-muted/50 transition-colors' onClick={() => onSelect(award)}>
-			<TableCell className='font-medium whitespace-break-spaces min-w-[100px]'>{teacherName}</TableCell>
-			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-				{`${award.variant.name}, ${award.criteria.name}`}
-			</TableCell>
-			<TableCell className='font-medium whitespace-break-spaces min-w-[200px] py-4'>
-				{award.text || 'Пусто'}
-			</TableCell>
-			<TableCell className='py-6'>{award.totalPoints || 0}</TableCell>
-			<TableCell className='py-6'>{award.files?.length || 0}</TableCell>
-			<TableCell className='text-right'>
-				<StatusBadge status={award.status} />
-			</TableCell>
-		</TableRow>
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<TableRow className='cursor-pointer hover:bg-muted/50 transition-colors' onClick={() => onSelect(award)}>
+					<TableCell className='font-medium whitespace-nowrap w-[84px] min-w-[84px]'>{createdAt}</TableCell>
+					<TableCell className='font-medium whitespace-break-spaces min-w-[100px]'>
+						<div className='flex items-center gap-2'>
+							<UserIcon className='h-4 w-4 text-muted-foreground' />
+							<span>{teacherName}</span>
+						</div>
+					</TableCell>
+					<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
+						{`${award.variant.name}, ${award.criteria.name}`}
+					</TableCell>
+					<TableCell className='py-6'>{award.totalPoints || 0}</TableCell>
+					<TableCell className='text-right'>
+						<StatusBadge status={award.status} />
+					</TableCell>
+				</TableRow>
+			</TooltipTrigger>
+			<TooltipContent side='top' sideOffset={8}>
+				<div className='max-w-sm space-y-1'>
+					<p className='text-sm'>
+						Обновлено: <span className='font-medium'>{updatedAt}</span>
+					</p>
+					{award.reason && (
+						<p className='text-sm'>
+							Причина отказа: <span className='font-medium'>{award.reason}</span>
+						</p>
+					)}
+				</div>
+			</TooltipContent>
+		</Tooltip>
 	)
 }

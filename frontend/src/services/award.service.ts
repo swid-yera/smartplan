@@ -54,13 +54,19 @@ export class AwardService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: async ({ newAward, files }: { newAward: ICreateAwardRequest; files: File[] }) => {
+			mutationFn: async ({
+				newAward,
+				filesByField,
+			}: {
+				newAward: ICreateAwardRequest
+				filesByField: Record<string, File>
+			}) => {
 				const formData = new FormData()
 
 				formData.append('data', JSON.stringify(newAward))
-				if (files[0]) {
-					formData.append('files', files[0])
-				}
+				Object.entries(filesByField).forEach(([fieldKey, file]) => {
+					formData.append(fieldKey, file)
+				})
 
 				const { data } = await api.post<IAward>('/awards', formData, {
 					headers: { 'Content-Type': 'multipart/form-data' },
@@ -81,8 +87,34 @@ export class AwardService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ id, changedAward }: { id: string; changedAward: IUpdateAwardRequest }) =>
-				api.put<IAward>(`/awards/${id}`, changedAward).then((r) => r.data),
+			mutationFn: ({
+				id,
+				changedAward,
+				filesByField,
+			}: {
+				id: string
+				changedAward: IUpdateAwardRequest
+				filesByField?: Record<string, File>
+			}) => {
+				const hasFiles = filesByField && Object.keys(filesByField).length > 0
+
+				if (!hasFiles) {
+					return api.put<IAward>(`/awards/${id}`, changedAward).then((r) => r.data)
+				}
+
+				const formData = new FormData()
+
+				formData.append('data', JSON.stringify(changedAward))
+				Object.entries(filesByField).forEach(([fieldKey, file]) => {
+					formData.append(fieldKey, file)
+				})
+
+				return api
+					.put<IAward>(`/awards/${id}`, formData, {
+						headers: { 'Content-Type': 'multipart/form-data' },
+					})
+					.then((r) => r.data)
+			},
 
 			onSuccess: (updatedAward, { id }) => {
 				queryClient.setQueryData(['award', id], updatedAward)

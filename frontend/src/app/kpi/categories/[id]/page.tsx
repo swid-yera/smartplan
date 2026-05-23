@@ -152,7 +152,7 @@ const Page = () => {
 					currentPage={currentPage}
 					description='Список достижений, относящихся к этой категории'
 					isLoading={false}
-					title='Достижения категории'
+					title='Данные KPI категории'
 					totalPages={totalPages}
 					onPageChange={setCurrentPage}
 				/>

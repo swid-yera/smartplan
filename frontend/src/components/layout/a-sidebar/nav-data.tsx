@@ -3,11 +3,9 @@ import {
 	Award,
 	BookCopy,
 	BookOpen,
-	BookType,
 	Cctv,
 	ChartBar,
 	ClipboardClock,
-	FileBadge,
 	FilePlus,
 	Film,
 	Group,
@@ -17,7 +15,6 @@ import {
 	ListCheck,
 	type LucideIcon,
 	Medal,
-	MessageCircleQuestionMark,
 	Notebook,
 	NotebookPen,
 	PenIcon,
@@ -103,11 +100,6 @@ export const navMain: INav[] = [
 				url: '/lessons/create',
 				role: RoleEnum.TEACHER,
 			},
-			{
-				icon: MessageCircleQuestionMark,
-				title: 'Как работает генерация?',
-				url: '/guides/lessons',
-			},
 		],
 	},
 	{
@@ -118,20 +110,14 @@ export const navMain: INav[] = [
 			// teacher
 			{
 				icon: Medal,
-				title: 'Мои достижения',
+				title: 'Мои данные',
 				url: '/kpi/my',
-				role: RoleEnum.TEACHER,
-			},
-			{
-				icon: FileBadge,
-				title: 'Опубликовать награду',
-				url: '/kpi/create',
 				role: RoleEnum.TEACHER,
 			},
 			// methodist
 			{
 				icon: Ribbon,
-				title: 'Все награды',
+				title: 'Все данные',
 				url: '/kpi/all',
 				role: RoleEnum.METHODIST,
 			},
@@ -152,24 +138,12 @@ export const navMain: INav[] = [
 				url: '/kpi/types',
 				role: RoleEnum.METHODIST,
 			},
-			// help
-			{
-				icon: MessageCircleQuestionMark,
-				title: 'Что такое KPI?',
-				url: '/guides/kpi',
-				role: RoleEnum.TEACHER,
-			},
 		],
 	},
 	{
 		title: 'Группы',
 		url: '/groups',
 		icon: Group,
-	},
-	{
-		title: 'Материал для обучения',
-		url: '/guides',
-		icon: BookType,
 	},
 	{
 		icon: ShieldUser,
@@ -179,14 +153,24 @@ export const navMain: INav[] = [
 		role: RoleEnum.ADMIN,
 		items: [
 			{
+				title: 'Пользователи',
+				url: '/users',
+				icon: Users,
+			},
+			{
 				title: 'Настройки',
 				url: '/settings',
 				icon: Group,
 			},
 			{
-				title: 'Пользователи',
-				url: '/users',
-				icon: Users,
+				title: 'Категорий KPI',
+				url: '/kpi/categories',
+				icon: ListCheck,
+			},
+			{
+				title: 'Критерий оценивание KPI',
+				url: '/kpi/types',
+				icon: ListCheck,
 			},
 			{
 				title: 'HikCentral',

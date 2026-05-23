@@ -35,6 +35,8 @@ const Page = () => {
 		enabled: !!user,
 	})
 
+	console.log(awardsData)
+
 	const setCurrentPage = (newPage: number) => {
 		const params = new URLSearchParams(searchParams.toString())
 

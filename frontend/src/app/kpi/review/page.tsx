@@ -52,7 +52,7 @@ const MethodistAwardsPage = () => {
 
 	return (
 		<section className='p-4 w-full space-y-4'>
-			<PageTitle description='Награды, ожидающие проверки'>Проверка достижений</PageTitle>
+			<PageTitle description='Данные KPI, ожидающие проверки'>Проверка достижений</PageTitle>
 
 			<Button asChild variant='default' onClick={handleViewAll}>
 				<Link href='/kpi/all'>Просмотреть все</Link>

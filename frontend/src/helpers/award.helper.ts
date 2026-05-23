@@ -23,3 +23,23 @@ export const normalizeCriteriaMethod = (criteriaMethod: CriteriaMethodEnum, poin
 
 	return `${label}, ${points[0]} балла`
 }
+
+export const normalizeTotalPoints = (points: number = 0): string => {
+	const absPoints = Math.abs(points)
+	const lastTwo = absPoints % 100
+	const lastDigit = absPoints % 10
+
+	if (lastTwo >= 11 && lastTwo <= 14) {
+		return `${points} баллов`
+	}
+
+	if (lastDigit === 1) {
+		return `${points} балл`
+	}
+
+	if (lastDigit >= 2 && lastDigit <= 4) {
+		return `${points} балла`
+	}
+
+	return `${points} баллов`
+}
