@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-05-23T13:38:38.987970700
+updatedAt: 2026-05-23T14:19:27.428477300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -15,22 +15,20 @@ body:
     name: data
     value: |-
       {
-        "type": "ab70534a-4acf-4f17-89de-d4ca1c89e8dd",
-        "variant": "54f69de7-5fd4-4f50-95d2-7f167e4d1ee0",
-        "criteria": "7f8c2e08-9f3c-40b3-a8c9-bb3a5b9d7f45",
-        "bonusCriteria": "5f9d2460-ea83-4531-b6b5-2fcb7a8fdd8f",
-        "categoryId": "4b7f5c2d-ec96-4dd1-b27b-1cf4f9f0aeb6",
+        "type": "34fb619f-61c7-4ee6-969f-3ce09ac237ae",
+        "variant": "371ce695-da28-4dfd-9fa7-8550a5939eb2",
+        "criteria": "8cde41fe-c0b3-46e5-9b79-c366f08f60ed",
+        "categoryId": "852c3fd5-ee6c-41ee-a771-e0e76229bf29",
         "fieldValues": {
-          "articleTitle": "Анализ производительности алгоритмов сортировки",
-          "doi": "https://doi.org/10.1234/eduplan.2026.001"
+          "articleTitle": "Анализ производительности алгоритмов сортировки"
         }
       }
   - enabled: true
     file: C:\Users\justs\OneDrive\Pictures\delovoi_kot.jpg
     id: H2zgvD0mut
-    name: files
+    name: articleFile
   - enabled: true
-    id: Zf5Eygc8V4
+    id: WkrIvp00JI
     name: ''
     value: ''
 bodyType: multipart/form-data
