@@ -94,7 +94,7 @@
 		},
 		"responsibleUsers": {
 			"title": "Қатысушылар",
-			"teacher": "Оқытушы",
+			"teacher": "Мұғалім",
 			"methodist": "Әдіскер",
 			"createdAt": "Құрылған күні",
 			"updatedAt": "Жаңартылған күні"
@@ -104,7 +104,7 @@
 		},
 		"awardsCard": {
 			"createdAt": "Құрылған күні",
-			"teacher": "Оқытушы",
+			"teacher": "Мұғалім",
 			"criteria": "Критерий",
 			"points": "Ұпай",
 			"status": "Мәртебе",
@@ -118,7 +118,7 @@
 		},
 		"rupsCard": {
 			"name": "Атауы",
-			"teacher": "Оқытушы",
+			"teacher": "Мұғалім",
 			"specialty": "Мамандық",
 			"qualification": "Біліктілік",
 			"studyYear": "Оқу жылы",

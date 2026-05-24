@@ -2,8 +2,12 @@
 
 import Link from 'next/link'
 
+import { getUILocaleSection } from '@helpers'
 import { Button, ButtonGroup } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { CheckCircle, Edit, SendIcon, SendToBack, ShieldAlert, Trash } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 interface IKpiDetailsActionsProps {
 	id: string
@@ -32,32 +36,35 @@ export const KpiDetailsActions = ({
 	onOpenRejectSheet,
 	onOpenApproveSheet,
 }: IKpiDetailsActionsProps) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).actions
+
 	return (
 		<ButtonGroup>
 			<ButtonGroup>
 				{isAdmin && (
 					<Button className='hover:text-primary' size='sm' variant='outline' onClick={onOpenStatusSheet}>
 						<ShieldAlert />
-						Поменять статус
+						{t.changeStatus}
 					</Button>
 				)}
 				{isAwardCreator && (
 					<Button className='hover:text-destructive' size='sm' variant='outline' onClick={onOpenDeleteDialog}>
 						<Trash />
-						Удалить
+						{t.delete}
 					</Button>
 				)}
 				{canEdit && (
 					<Button asChild size='sm' variant='outline'>
 						<Link href={`/kpi/${id}/edit`}>
-							<Edit /> Редактировать
+							<Edit /> {t.edit}
 						</Link>
 					</Button>
 				)}
 				{isStatusForEdit && (
 					<Button className='hover:text-primary' size='sm' variant='outline' onClick={onSendToReview}>
 						<SendIcon />
-						Отправить на проверку
+						{t.sendToReview}
 					</Button>
 				)}
 			</ButtonGroup>
@@ -66,12 +73,12 @@ export const KpiDetailsActions = ({
 				<ButtonGroup>
 					<Button className='hover:text-destructive' size='sm' variant='outline' onClick={onOpenRejectSheet}>
 						<SendToBack className='mr-2 h-4 w-4' />
-						Отклонить
+						{t.reject}
 					</Button>
 
 					<Button className='hover:text-primary' size='sm' variant='outline' onClick={onOpenApproveSheet}>
 						<CheckCircle className='mr-2 h-4 w-4' />
-						Утвердить
+						{t.approve}
 					</Button>
 				</ButtonGroup>
 			)}

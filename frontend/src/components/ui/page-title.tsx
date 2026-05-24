@@ -15,6 +15,7 @@ interface IPageHeadingProps extends ComponentProps<'div'> {
 	description?: ReactNode
 	actions?: ReactNode
 	backHref?: string
+	backLabel?: ReactNode
 	sticky?: boolean
 	top?: ReactNode
 }
@@ -25,6 +26,7 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 	description,
 	className,
 	backHref,
+	backLabel,
 	sticky = false,
 	...props
 }) => {
@@ -54,7 +56,7 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 					<Button asChild size='sm' type='button' variant='outline'>
 						<Link href={backHref}>
 							<ArrowLeft />
-							{t.pageTitle.back}
+							{backLabel || t.pageTitle.back}
 						</Link>
 					</Button>
 				)}

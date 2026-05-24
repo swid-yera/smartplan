@@ -7,8 +7,10 @@
       "title": "Данные пользователя {firstName} {lastName}",
       "createdTab": "Созданные РУП",
       "assessmentTab": "Проверяемые РУП",
+      "kpiTab": "KPI",
       "createdRupsTitle": "Рабочие учебные программы пользователя",
-      "assessmentRupsTitle": "Методические работы пользователя"
+      "assessmentRupsTitle": "Методические работы пользователя",
+      "kpiTitle": "KPI достижения пользователя"
     },
     "card": {
       "firstName": "Имя",
@@ -26,8 +28,10 @@
       "title": "{firstName} {lastName} пайдаланушы деректері",
       "createdTab": "Құрылған ЖОБ",
       "assessmentTab": "Тексерілетін ЖОБ",
+      "kpiTab": "KPI",
       "createdRupsTitle": "Пайдаланушының жұмыс оқу бағдарламалары",
-      "assessmentRupsTitle": "Пайдаланушының әдістемелік жұмыстары"
+      "assessmentRupsTitle": "Пайдаланушының әдістемелік жұмыстары",
+      "kpiTitle": "Пайдаланушының KPI жетістіктері"
     },
     "card": {
       "firstName": "Аты",

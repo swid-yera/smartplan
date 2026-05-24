@@ -37,6 +37,8 @@ const Page = () => {
 		...services.award.getAllOptions({
 			currentPage: 1,
 			pageSize: AWARDS_FETCH_SIZE,
+			teacher: user?.keycloakId,
+			categoryId: categoryId,
 		}),
 		enabled: !!categoryId,
 	})

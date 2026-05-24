@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
+
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, PageTitle, RupsCard } from '@components'
+import { AwardsCard, Loader, PageTitle, RupsCard } from '@components'
 import { getUILocaleSection, hasRole, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
@@ -11,14 +13,15 @@ import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
 import { ArrowLeft } from 'lucide-react'
 
-import { UserCard } from './user-card'
 import localeDictionary from './locale.json'
+import { UserCard } from './user-card'
 
 export default function UserPage() {
 	const router = useRouter()
 	const params = useParams<{ id: string }>()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
+	const [kpiPage, setKpiPage] = useState(1)
 
 	// queries
 	const {
@@ -35,6 +38,10 @@ export default function UserPage() {
 	})
 	const { data: assessmentRups, isLoading: assessmentRupsLoading } = useQuery({
 		...services.rup.getAllOptions({ methodist: params.id }),
+		enabled: !userLoading && !isError,
+	})
+	const { data: awardsData, isLoading: awardsLoading } = useQuery({
+		...services.award.getAllOptions({ currentPage: kpiPage, teacher: params.id }),
 		enabled: !userLoading && !isError,
 	})
 
@@ -83,6 +90,9 @@ export default function UserPage() {
 					<TabsTrigger className='px-6' value='assessment'>
 						{t.page.assessmentTab}
 					</TabsTrigger>
+					<TabsTrigger className='px-6' value='kpi'>
+						{t.page.kpiTab}
+					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value='created'>
@@ -104,6 +114,17 @@ export default function UserPage() {
 						title={t.page.assessmentRupsTitle}
 						totalPages={assessmentRups?.meta.pages || 1}
 						onPageChange={() => true}
+					/>
+				</TabsContent>
+
+				<TabsContent value='kpi'>
+					<AwardsCard
+						awards={awardsData?.data || []}
+						currentPage={awardsData?.meta.currentPage || 1}
+						isLoading={awardsLoading}
+						title={t.page.kpiTitle}
+						totalPages={awardsData?.meta.pages || 1}
+						onPageChange={setKpiPage}
 					/>
 				</TabsContent>
 			</Tabs>

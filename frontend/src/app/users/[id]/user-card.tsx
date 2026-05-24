@@ -1,8 +1,14 @@
 import type { FC } from 'react'
 
-import { getUILocaleSection, normalizeTotalPoints, normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
+import {
+	getUILocaleSection,
+	normalizeTotalPoints,
+	normalizeUserRole,
+	prettifyPhone,
+	userRoleButtonVariants,
+} from '@helpers'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import { useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { type IUser, RoleEnum } from '@types'
 import { Mail, Phone, UserIcon } from 'lucide-react'
 
@@ -14,8 +20,9 @@ interface IUserMainProps {
 
 export const UserCard: FC<IUserMainProps> = ({ user }) => {
 	const locale = useLocaleStore((state) => state.locale)
+	const me = useAuthStore((state) => state.user)
 	const t = getUILocaleSection(localeDictionary, locale)
-	const isTeacher = user.role === RoleEnum.TEACHER
+	const isTeacher = me?.role !== RoleEnum.TEACHER
 
 	return (
 		<Card>

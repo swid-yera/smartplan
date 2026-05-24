@@ -148,12 +148,6 @@ export const navMain: INav[] = [
 				icon: ChartBar,
 				titleKey: 'kpiRating',
 				url: '/kpi/rating',
-			},
-			{
-				id: 'kpi-types',
-				icon: ListCheck,
-				titleKey: 'kpiTypes',
-				url: '/kpi/types',
 				role: RoleEnum.METHODIST,
 			},
 		],

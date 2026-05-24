@@ -17,9 +17,17 @@ import { getCurrentBackendLocale } from './service-locale'
 
 export class AwardService {
 	// get all awards
-	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, status, teacher }: IGetAllRequest) => {
+	getAllOptions = ({
+		currentPage = 1,
+		pageSize = 10,
+		search,
+		methodist,
+		status,
+		teacher,
+		categoryId,
+	}: IGetAllRequest & { categoryId?: string }) => {
 		return queryOptions<IPagination<IAward>>({
-			queryKey: ['awards', { currentPage, pageSize, search, methodist, teacher, status }],
+			queryKey: ['awards', { currentPage, pageSize, search, methodist, teacher, status, categoryId }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IAward>>('/awards', {
 					params: {
@@ -29,6 +37,7 @@ export class AwardService {
 						search,
 						methodist,
 						teacher,
+						categoryId,
 						status: status?.join(','),
 					},
 				})

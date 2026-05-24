@@ -59,7 +59,7 @@ const userRoleLabelsByLocale: Record<Locale, Record<RoleEnum, string>> = {
 	kk: {
 		ADMIN: 'Әкімші',
 		METHODIST: 'Әдіскер',
-		TEACHER: 'Оқытушы',
+		TEACHER: 'Мұғалім',
 	},
 }
 

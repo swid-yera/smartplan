@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UGzRzai8Bc
 createdAt: 2026-01-13T03:16:46.890644700
-updatedAt: 2026-05-19T11:50:56.445778900
+updatedAt: 2026-05-24T19:40:34.920803200
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -20,10 +20,22 @@ name: all
 sortPriority: 0.0
 url: ${[ url ]}/awards
 urlParameters:
-- enabled: false
+- enabled: true
   name: teacher
   value: f2546909-a510-49e7-9185-bd576e76784c
   id: SI4jPNREUJ
+- enabled: false
+  name: methodist
+  value: f2546909-a510-49e7-9185-bd576e76784c
+  id: ZBzDyXRfn5
+- enabled: true
+  name: categoryId
+  value: e3b92947-967c-4dca-8762-0b037d264fdd
+  id: 4hdDpT9UVw
+- enabled: false
+  name: status
+  value: DRAFT,APPROVED
+  id: 6B7si0de8A
 - enabled: true
   name: pageSize
   value: '10'
@@ -32,15 +44,7 @@ urlParameters:
   name: currentPage
   value: '1'
   id: atSBHDyCT7
-- enabled: false
-  name: status
-  value: DRAFT,APPROVED
-  id: 6B7si0de8A
-- enabled: true
-  name: categoryId
-  value: cf3bc16a-10a5-4a20-a9f4-5375f6544d51
-  id: 4hdDpT9UVw
 - enabled: true
   name: ''
   value: ''
-  id: iFnqXPWNv6
+  id: sgqB4rIjxC

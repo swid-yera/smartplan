@@ -18,9 +18,9 @@ import { AwardFieldValuesCard } from './components/award-field-values-card'
 import { AwardMainInfoCard } from './components/award-main-info-card'
 import { DeleteAlert } from './components/delete-alert'
 import { KpiDetailsActions } from './components/kpi-details-actions'
+import localeDictionary from './components/locale.json'
 import { RejectSheet } from './components/reject-sheet'
 import { StatusChangeSheet } from './components/status-change-sheet'
-import localeDictionary from './components/locale.json'
 
 const Page = () => {
 	const { id } = useParams()
@@ -130,6 +130,7 @@ const Page = () => {
 					/>
 				}
 				backHref='/kpi/my'
+				backLabel={t.back}
 				description={t.pageDescription}
 			>
 				{t.pageTitle}

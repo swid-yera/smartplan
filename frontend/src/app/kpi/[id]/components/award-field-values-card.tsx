@@ -1,11 +1,11 @@
 'use client'
 
-import { getUILocaleSection } from '@helpers'
-import { Card, CardContent, CardHeader, CardTitle } from '@shadcn'
+import { MediaPreviwer } from '@components'
+import { getLocaleText, getUILocaleSection } from '@helpers'
+import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useLocaleStore } from '@store'
 import type { IAward } from '@types'
 
-import { MediaViewer } from './media-viewer'
 import localeDictionary from './locale.json'
 
 interface IAwardFieldValuesCardProps {
@@ -16,6 +16,113 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).fieldValues
 	const awardFieldValues = Object.entries(award.fieldValues || {})
+	const fileKeyRegex = /(file|document|attachment|image|photo|scan)/i
+	const urlKeyRegex = /(url|link|website)/i
+	const fileValueRegex = /\.(jpg|jpeg|png|gif|webp|bmp|svg|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip|rar)(\?.*)?$/i
+	const urlValueRegex = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(?:[/?#].*)?$/i
+
+	const normalizeValue = (value: unknown): string => {
+		if (value === null || value === undefined) return ''
+		if (typeof value === 'string') return value.trim()
+		if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+		if (typeof value === 'object') {
+			const localizedText = getLocaleText(value as Parameters<typeof getLocaleText>[0], locale)
+
+			if (localizedText) return localizedText.trim()
+
+			return ''
+		}
+
+		return ''
+	}
+
+	const isFileValue = (value: string) => fileValueRegex.test(value.trim())
+	const isUrlValue = (value: string) => urlValueRegex.test(value.trim())
+
+	const sections = awardFieldValues.reduce(
+		(acc, [fieldKey, rawValue]) => {
+			const values = (Array.isArray(rawValue) ? rawValue : [rawValue])
+				.map((value) => normalizeValue(value))
+				.filter((value) => value.length > 0)
+			const lowerFieldKey = fieldKey.toLowerCase()
+
+			if (fileKeyRegex.test(lowerFieldKey) || (values.length > 0 && values.every((value) => isFileValue(value)))) {
+				acc.file.push({ fieldKey, values })
+
+				return acc
+			}
+
+			if (urlKeyRegex.test(lowerFieldKey) || (values.length > 0 && values.every((value) => isUrlValue(value)))) {
+				acc.url.push({ fieldKey, values })
+
+				return acc
+			}
+
+			acc.info.push({ fieldKey, values })
+
+			return acc
+		},
+		{
+			file: [] as Array<{ fieldKey: string; values: string[] }>,
+			info: [] as Array<{ fieldKey: string; values: string[] }>,
+			url: [] as Array<{ fieldKey: string; values: string[] }>,
+		},
+	)
+
+	const renderTextValues = (values: string[]) => {
+		if (values.length === 0) {
+			return <p className='text-sm text-muted-foreground'>{t.emptyValue}</p>
+		}
+
+		return values.map((value, idx) => (
+			<p key={`${value}-${idx}`} className='text-sm whitespace-pre-wrap break-all'>
+				{value}
+			</p>
+		))
+	}
+
+	const renderUrlValues = (values: string[]) => {
+		if (values.length === 0) {
+			return <p className='text-sm text-muted-foreground'>{t.emptyValue}</p>
+		}
+
+		return values.map((value, idx) => {
+			const href = /^https?:\/\//i.test(value) ? value : `https://${value}`
+
+			return (
+				<a
+					key={`${value}-${idx}`}
+					className='block text-sm text-primary hover:underline break-all'
+					href={href}
+					rel='noopener noreferrer'
+					target='_blank'
+				>
+					{value}
+				</a>
+			)
+		})
+	}
+
+	const renderFileValues = (fieldKey: string, values: string[]) => {
+		if (values.length === 0) {
+			return <p className='text-sm text-muted-foreground'>{t.emptyValue}</p>
+		}
+
+		return values.map((value, idx) => (
+			<MediaPreviwer
+				key={`${fieldKey}-${value}-${idx}`}
+				fileName={fieldKey}
+				fileUrl={value}
+				labels={{
+					download: t.download,
+					hidePreview: t.hidePreview,
+					preview: t.preview,
+				}}
+			/>
+		))
+	}
+
+	const hasAdditionalSections = sections.url.length > 0 || sections.file.length > 0
 
 	return (
 		<Card className='md:col-span-3'>
@@ -23,79 +130,59 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 				<CardTitle>{t.title}</CardTitle>
 			</CardHeader>
 			<CardContent className='space-y-6'>
-				<div>
-					<h3 className='mb-2 font-semibold'>{t.categoryFields}</h3>
-					{awardFieldValues.length ? (
-						<div className='space-y-4'>
-							{awardFieldValues.map(([fieldKey, rawValue]) => {
-								const values = Array.isArray(rawValue) ? rawValue : [rawValue]
-								const nonEmptyValues = values.filter((value) => {
-									if (value === null || value === undefined) return false
-									if (typeof value === 'number') return true
-									if (typeof value === 'string') return value.trim().length > 0
-
-									return false
-								})
-								const isFileField = fieldKey.toLowerCase() === 'file'
-
-								return (
-									<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
-										<p className='text-sm font-medium text-muted-foreground'>{fieldKey}</p>
-
-										{nonEmptyValues.length === 0 ? (
-											<p className='text-sm text-muted-foreground'>{t.emptyValue}</p>
-										) : (
-											<div className='space-y-3'>
-												{nonEmptyValues.map((value, idx) => {
-													const normalizedValue = typeof value === 'number' ? String(value) : value
-
-													if (isFileField) {
-														return (
-															<MediaViewer
-																key={`${fieldKey}-${idx}`}
-																fileUrl={normalizedValue}
-																type={fieldKey}
-															/>
-														)
-													}
-
-													const isHttp = /^https?:\/\//i.test(normalizedValue)
-
-													if (isHttp) {
-														return (
-															<a
-																key={`${fieldKey}-${idx}`}
-																className='block truncate max-w-[500px] text-sm hover:underline text-primary'
-																href={normalizedValue}
-																rel='noopener noreferrer'
-																target='_blank'
-															>
-																{normalizedValue}
-															</a>
-														)
-													}
-
-													return (
-														<p
-															key={`${fieldKey}-${idx}`}
-															className='text-sm whitespace-pre-wrap wrap-break-word'
-														>
-															{normalizedValue}
-														</p>
-													)
-												})}
-											</div>
-										)}
-									</div>
-								)
-							})}
+				{awardFieldValues.length === 0 ? (
+					<div className='rounded-md bg-muted/50 p-4 text-sm text-muted-foreground'>{t.noAdditionalFields}</div>
+				) : (
+					<>
+						<div className='space-y-3'>
+							<h3 className='font-semibold'>{t.categoryFields}</h3>
+							{sections.info.length > 0 ? (
+								<div className='grid gap-4 md:grid-cols-2'>
+									{sections.info.map(({ fieldKey, values }) => (
+										<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
+											<p className='text-sm font-medium text-muted-foreground'>{fieldKey}</p>
+											<div className='space-y-2'>{renderTextValues(values)}</div>
+										</div>
+									))}
+								</div>
+							) : (
+								<p className='text-sm text-muted-foreground'>{t.emptyValue}</p>
+							)}
 						</div>
-					) : (
-						<div className='rounded-md bg-muted/50 p-4 text-sm text-muted-foreground'>
-							{t.noAdditionalFields}
-						</div>
-					)}
-				</div>
+
+						{hasAdditionalSections ? <Separator /> : null}
+
+						{sections.url.length > 0 ? (
+							<div className='space-y-3'>
+								<h3 className='font-semibold'>{t.urlFields}</h3>
+								<div className='space-y-4'>
+									{sections.url.map(({ fieldKey, values }) => (
+										<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
+											<p className='text-sm font-medium text-muted-foreground'>{fieldKey}</p>
+											<div className='space-y-2'>{renderUrlValues(values)}</div>
+										</div>
+									))}
+								</div>
+							</div>
+						) : null}
+
+						{sections.url.length > 0 && sections.file.length > 0 ? <Separator /> : null}
+
+						{sections.file.length > 0 ? (
+							<div className='space-y-3'>
+								<h3 className='font-semibold'>{t.fileFields}</h3>
+								<div className='space-y-4'>
+									{sections.file.map(({ fieldKey, values }) => (
+										<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
+											<p className='text-sm font-medium text-muted-foreground'>{fieldKey}</p>
+											<div className='space-y-3'>{renderFileValues(fieldKey, values)}</div>
+										</div>
+									))}
+								</div>
+							</div>
+						) : null}
+					</>
+				)}
 			</CardContent>
 		</Card>
 	)

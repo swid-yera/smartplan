@@ -28,3 +28,6 @@ export * from './form/numeric-input'
 
 // fields
 export * from './fields'
+
+// media
+export * from './media-previwer'
