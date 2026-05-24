@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, Pagination } from '@components'
-import { lessonTypeLabels, topicTypeIcons } from '@helpers'
+import { getLessonTypeLabels, getUILocaleSection, topicTypeIcons } from '@helpers'
 import { services } from '@services'
 import {
 	Alert,
@@ -26,9 +26,11 @@ import {
 	SelectValue,
 } from '@shadcn'
 import { useAuthStore } from '@store'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { ILesson, LessonTypeEnum } from '@types'
 import { Calendar, FileText, Search, Users } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 const ALL_FILTER = 'ALL'
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
@@ -37,24 +39,24 @@ const lessonTypeIcons = {
 	THEORY: topicTypeIcons.COMBINED,
 } as const
 
-const getLessonDescription = (lesson: ILesson): string => {
+const getLessonDescription = (lesson: ILesson, fallback: string): string => {
 	const description = [lesson.goals, lesson.tasks, lesson.expected].find((item) => item?.trim())
 
-	return description?.trim() || 'Описание урока будет доступно после генерации.'
+	return description?.trim() || fallback
 }
 
-const formatLessonDate = (value?: string): string => {
+const formatLessonDate = (value: string | undefined, locale: 'ru' | 'kk', emptyText: string): string => {
 	if (!value) {
-		return 'Не указана'
+		return emptyText
 	}
 
 	const date = new Date(value)
 
 	if (Number.isNaN(date.getTime())) {
-		return 'Не указана'
+		return emptyText
 	}
 
-	return new Intl.DateTimeFormat('ru-RU', {
+	return new Intl.DateTimeFormat(locale === 'kk' ? 'kk-KZ' : 'ru-RU', {
 		day: '2-digit',
 		month: 'long',
 		year: 'numeric',
@@ -62,6 +64,9 @@ const formatLessonDate = (value?: string): string => {
 }
 
 export default function MyLessonPlansPage() {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+	const lessonTypeLabels = getLessonTypeLabels(locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -91,9 +96,10 @@ export default function MyLessonPlansPage() {
 	})
 
 	const lessons = data?.data || []
+	const localeCode = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
 	const disciplineOptions = useMemo(() => {
 		const values = Array.from(new Set(lessons.map((lesson) => lesson.discipline_name).filter(Boolean))).sort((a, b) =>
-			a.localeCompare(b, 'ru-RU'),
+			a.localeCompare(b, localeCode),
 		)
 
 		if (rawDiscipline !== ALL_FILTER && !values.includes(rawDiscipline)) {
@@ -101,10 +107,10 @@ export default function MyLessonPlansPage() {
 		}
 
 		return values
-	}, [lessons, rawDiscipline])
+	}, [lessons, localeCode, rawDiscipline])
 	const groupOptions = useMemo(() => {
 		const values = Array.from(new Set(lessons.map((lesson) => lesson.group?.name).filter(Boolean))).sort((a, b) =>
-			a.localeCompare(b, 'ru-RU'),
+			a.localeCompare(b, localeCode),
 		)
 
 		if (rawGroup !== ALL_FILTER && !values.includes(rawGroup)) {
@@ -112,7 +118,7 @@ export default function MyLessonPlansPage() {
 		}
 
 		return values
-	}, [lessons, rawGroup])
+	}, [lessons, localeCode, rawGroup])
 
 	const updateSearchParams = (params: Record<string, string | number | null>) => {
 		const nextParams = new URLSearchParams(searchParams.toString())
@@ -161,23 +167,21 @@ export default function MyLessonPlansPage() {
 
 	return (
 		<section className='mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 md:p-6'>
-			<PageTitle description='Список ваших поурочных планов с быстрым поиском и фильтрами.'>
-				Мои поурочные планы
-			</PageTitle>
+			<PageTitle description={t.pageDescription}>{t.pageTitle}</PageTitle>
 
 			<Alert>
 				<AlertDescription>
-					Все поурочные планы генерируются после создания Рабочего учебного плана.{' '}
+					{t.alertDescription}{' '}
 					<Link className='underline underline-offset-4' href='/rups/my'>
-						Перейти к моим РУП
+						{t.goToRups}
 					</Link>
 				</AlertDescription>
 			</Alert>
 
 			<Card>
 				<CardHeader className='pb-3'>
-					<CardTitle className='text-base'>Фильтрация</CardTitle>
-					<CardDescription>Поиск по названию, дисциплине, РУП и группе.</CardDescription>
+					<CardTitle className='text-base'>{t.filterTitle}</CardTitle>
+					<CardDescription>{t.filterDescription}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form className='grid gap-3 md:grid-cols-2 xl:grid-cols-4' onSubmit={handleSearchSubmit}>
@@ -188,7 +192,7 @@ export default function MyLessonPlansPage() {
 								className='pl-9'
 								defaultValue={search}
 								name='q'
-								placeholder='Поиск по теме или описанию'
+								placeholder={t.searchPlaceholder}
 							/>
 						</div>
 
@@ -199,10 +203,10 @@ export default function MyLessonPlansPage() {
 							}
 						>
 							<SelectTrigger className='w-full'>
-								<SelectValue placeholder='Тип занятия' />
+								<SelectValue placeholder={t.lessonType} />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value={ALL_FILTER}>Все типы</SelectItem>
+								<SelectItem value={ALL_FILTER}>{t.allTypes}</SelectItem>
 								{Object.entries(lessonTypeLabels).map(([value, label]) => (
 									<SelectItem key={value} value={value}>
 										{label}
@@ -218,10 +222,10 @@ export default function MyLessonPlansPage() {
 							}
 						>
 							<SelectTrigger className='w-full'>
-								<SelectValue placeholder='Дисциплина' />
+								<SelectValue placeholder={t.discipline} />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value={ALL_FILTER}>Все дисциплины</SelectItem>
+								<SelectItem value={ALL_FILTER}>{t.allDisciplines}</SelectItem>
 								{disciplineOptions.map((discipline) => (
 									<SelectItem key={discipline} value={discipline}>
 										{discipline}
@@ -237,10 +241,10 @@ export default function MyLessonPlansPage() {
 							}
 						>
 							<SelectTrigger className='w-full'>
-								<SelectValue placeholder='Группа' />
+								<SelectValue placeholder={t.group} />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value={ALL_FILTER}>Все группы</SelectItem>
+								<SelectItem value={ALL_FILTER}>{t.allGroups}</SelectItem>
 								{groupOptions.map((group) => (
 									<SelectItem key={group} value={group}>
 										{group}
@@ -252,10 +256,10 @@ export default function MyLessonPlansPage() {
 						<div className='flex flex-wrap items-center justify-end gap-2 md:col-span-2 xl:col-span-4'>
 							<Button type='submit' variant='secondary'>
 								<Search data-icon='inline-start' />
-								Применить
+								{t.apply}
 							</Button>
 							<Button type='button' variant='outline' onClick={clearFilters}>
-								Сбросить
+								{t.reset}
 							</Button>
 						</div>
 					</form>
@@ -271,10 +275,12 @@ export default function MyLessonPlansPage() {
 							<Card key={lesson.id} className='flex h-full flex-col'>
 								<CardHeader className='gap-3'>
 									<CardTitle className='line-clamp-2 text-base leading-snug'>
-										{lesson.topic_name || 'Без названия'}
+										{lesson.topic_name || t.untitled}
 									</CardTitle>
 
-									<CardDescription className='line-clamp-3'>{getLessonDescription(lesson)}</CardDescription>
+									<CardDescription className='line-clamp-3'>
+										{getLessonDescription(lesson, t.lessonDescriptionFallback)}
+									</CardDescription>
 								</CardHeader>
 
 								<CardContent className='mt-auto flex flex-1 flex-col gap-4 text-sm'>
@@ -284,27 +290,27 @@ export default function MyLessonPlansPage() {
 											<span>{lessonTypeLabels[lesson.type]}</span>
 										</div>
 										<div className='flex flex-col gap-1'>
-											<p className='text-xs uppercase tracking-wide'>РУП</p>
-											<p className='font-medium text-foreground'>{lesson.rup_name || 'Не указан'}</p>
+											<p className='text-xs uppercase tracking-wide'>{t.rup}</p>
+											<p className='font-medium text-foreground'>{lesson.rup_name || t.notSpecified}</p>
 										</div>
 										<div className='flex flex-col gap-1'>
-											<p className='text-xs uppercase tracking-wide'>Дисциплина</p>
-											<p className='font-medium text-foreground'>{lesson.discipline_name || 'Не указана'}</p>
+											<p className='text-xs uppercase tracking-wide'>{t.discipline}</p>
+											<p className='font-medium text-foreground'>{lesson.discipline_name || t.notSpecifiedFemale}</p>
 										</div>
 										<div className='flex items-center gap-2'>
 											<Users className='size-4' />
-											<span>{lesson.group?.name || 'Группа не указана'}</span>
+											<span>{lesson.group?.name || t.groupNotSpecified}</span>
 										</div>
 										<div className='flex items-center gap-2'>
 											<Calendar className='size-4' />
-											<span>{formatLessonDate(lesson.event_date)}</span>
+											<span>{formatLessonDate(lesson.event_date, locale, t.dateNotSpecified)}</span>
 										</div>
 									</div>
 
 									<Button asChild className='mt-auto w-full' size='sm'>
 										<Link href={`/lessons/${lesson.id}`}>
 											<FileText data-icon='inline-start' />
-											Открыть план
+											{t.openPlan}
 										</Link>
 									</Button>
 								</CardContent>
@@ -315,10 +321,8 @@ export default function MyLessonPlansPage() {
 			) : (
 				<Card className='border-dashed'>
 					<CardContent className='py-12 text-center'>
-						<p className='text-base font-medium'>Подходящие планы не найдены</p>
-						<p className='mt-2 text-sm text-muted-foreground'>
-							Измените фильтры или создайте Рабочий учебный план, чтобы сгенерировать новые поурочные планы.
-						</p>
+						<p className='text-base font-medium'>{t.emptyTitle}</p>
+						<p className='mt-2 text-sm text-muted-foreground'>{t.emptyDescription}</p>
 					</CardContent>
 				</Card>
 			)}

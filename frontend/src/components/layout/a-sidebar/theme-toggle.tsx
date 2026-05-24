@@ -8,24 +8,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useLocaleStore } from '@store'
 import { Monitor, Moon, Sun } from 'lucide-react'
 
-const THEME_LABELS = {
-	ru: {
-		light: 'Светлая тема',
-		dark: 'Темная тема',
-		system: 'Системная тема',
-	},
-	kk: {
-		light: 'Жарық тақырып',
-		dark: 'Қараңғы тақырып',
-		system: 'Жүйелік тақырып',
-	},
-} as const
+import sidebarLocale from './locale.json'
 
 export function ThemeToggle() {
 	const locale = useLocaleStore((state) => state.locale)
-	const [themeText, setThemeText] = useState(THEME_LABELS.ru.system)
+	const t = sidebarLocale[locale] ?? sidebarLocale.ru
+	const [themeText, setThemeText] = useState(sidebarLocale.ru.theme.system)
 	const { setTheme, theme } = useTheme()
-	const labels = THEME_LABELS[locale]
+	const labels = t.theme
 
 	useEffect(() => {
 		if (!theme) return

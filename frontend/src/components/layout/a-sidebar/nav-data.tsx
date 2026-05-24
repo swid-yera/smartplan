@@ -24,14 +24,16 @@ import {
 } from 'lucide-react'
 
 export interface INav {
-	title: string
+	id: string
+	titleKey: string
 	url: string
 	icon: LucideIcon
 	defaultOpen?: boolean
 	role?: RoleEnum
 	items?: {
+		id: string
 		icon: LucideIcon
-		title: string
+		titleKey: string
 		url: string
 		role?: RoleEnum
 	}[]
@@ -39,141 +41,164 @@ export interface INav {
 
 export const navMain: INav[] = [
 	{
-		title: 'Панель управления',
+		id: 'dashboard',
+		titleKey: 'dashboard',
 		url: '/dashboard',
 		icon: LayoutDashboard,
 	},
 	{
-		title: 'Рабочие учебные программы',
+		id: 'rups',
+		titleKey: 'rups',
 		url: '/rups',
 		icon: PenIcon,
 		items: [
 			// teacher
 			{
+				id: 'rups-my',
 				icon: LibraryBig,
-				title: 'Мои РУП',
+				titleKey: 'rupsMy',
 				url: '/rups/my',
 				role: RoleEnum.TEACHER,
 			},
 			{
+				id: 'rups-create',
 				icon: FilePlus,
-				title: 'Создать РУП',
+				titleKey: 'rupsCreate',
 				url: '/rups/create',
 				role: RoleEnum.TEACHER,
 			},
 			{
+				id: 'rups-guides',
 				icon: Film,
-				title: 'Обучение',
+				titleKey: 'rupsGuides',
 				url: '/guides/rups',
 				role: RoleEnum.TEACHER,
 			},
 			// methodist
 			{
+				id: 'rups-all',
 				icon: BookCopy,
-				title: 'Все РУП',
+				titleKey: 'rupsAll',
 				url: '/rups/all',
 				role: RoleEnum.METHODIST,
 			},
 			{
+				id: 'rups-review',
 				icon: ClipboardClock,
-				title: 'Ожидают проверки',
+				titleKey: 'rupsReview',
 				url: '/rups/review',
 				role: RoleEnum.METHODIST,
 			},
 		],
 	},
 	{
-		title: 'План учебного занятия',
+		id: 'lessons',
+		titleKey: 'lessons',
 		url: '/lessons',
 		icon: BookOpen,
 		role: RoleEnum.TEACHER,
 		items: [
 			{
+				id: 'lessons-my',
 				icon: Notebook,
-				title: 'Мои планы учебных занятий',
+				titleKey: 'lessonsMy',
 				url: '/lessons/my',
 				role: RoleEnum.TEACHER,
 			},
 			{
+				id: 'lessons-create',
 				icon: NotebookPen,
-				title: 'Создать план учебного занятия',
+				titleKey: 'lessonsCreate',
 				url: '/lessons/create',
 				role: RoleEnum.TEACHER,
 			},
 		],
 	},
 	{
-		title: 'KPI',
+		id: 'kpi',
+		titleKey: 'kpi',
 		url: '/kpi',
 		icon: Award,
 		items: [
 			// teacher
 			{
+				id: 'kpi-my',
 				icon: Medal,
-				title: 'Мои данные',
+				titleKey: 'kpiMy',
 				url: '/kpi/my',
 				role: RoleEnum.TEACHER,
 			},
 			// methodist
 			{
+				id: 'kpi-all',
 				icon: Ribbon,
-				title: 'Все данные',
+				titleKey: 'kpiAll',
 				url: '/kpi/all',
 				role: RoleEnum.METHODIST,
 			},
 			{
+				id: 'kpi-review',
 				icon: ClipboardClock,
-				title: 'Ожидают проверки',
+				titleKey: 'kpiReview',
 				url: '/kpi/review',
 				role: RoleEnum.METHODIST,
 			},
 			{
+				id: 'kpi-rating',
 				icon: ChartBar,
-				title: 'Рейтинг преподавателей',
+				titleKey: 'kpiRating',
 				url: '/kpi/rating',
 			},
 			{
+				id: 'kpi-types',
 				icon: ListCheck,
-				title: 'Критерии оценивания KPI',
+				titleKey: 'kpiTypes',
 				url: '/kpi/types',
 				role: RoleEnum.METHODIST,
 			},
 		],
 	},
 	{
-		title: 'Группы',
+		id: 'groups',
+		titleKey: 'groups',
 		url: '/groups',
 		icon: Group,
 	},
 	{
+		id: 'admin',
 		icon: ShieldUser,
-		title: 'Администрирование',
+		titleKey: 'admin',
 		url: '/admin',
 		defaultOpen: true,
 		role: RoleEnum.ADMIN,
 		items: [
 			{
-				title: 'Пользователи',
+				id: 'users',
+				titleKey: 'users',
 				url: '/users',
 				icon: Users,
 			},
 			{
-				title: 'Настройки',
+				id: 'settings',
+				titleKey: 'settings',
 				url: '/settings',
 				icon: Group,
 			},
 			{
-				title: 'Категорий KPI',
+				id: 'kpi-categories',
+				titleKey: 'kpiCategories',
 				url: '/kpi/categories',
 				icon: ListCheck,
 			},
 			{
-				title: 'Критерий оценивание KPI',
+				id: 'kpi-criteria',
+				titleKey: 'kpiCriteria',
 				url: '/kpi/types',
 				icon: ListCheck,
 			},
 			{
-				title: 'HikCentral',
+				id: 'hik',
+				titleKey: 'hik',
 				url: '/settings/hik',
 				icon: Cctv,
 			},
@@ -183,7 +208,8 @@ export const navMain: INav[] = [
 
 export const navFooter = [
 	{
-		title: 'Поддержка',
+		id: 'support',
+		titleKey: 'support',
 		url: '/support',
 		icon: Headset,
 	},

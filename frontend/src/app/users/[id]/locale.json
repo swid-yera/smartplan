@@ -1,0 +1,40 @@
+{
+  "ru": {
+    "page": {
+      "notFound": "Пользователь не найден",
+      "back": "Вернуться назад",
+      "toList": "К списку пользователей",
+      "title": "Данные пользователя {firstName} {lastName}",
+      "createdTab": "Созданные РУП",
+      "assessmentTab": "Проверяемые РУП",
+      "createdRupsTitle": "Рабочие учебные программы пользователя",
+      "assessmentRupsTitle": "Методические работы пользователя"
+    },
+    "card": {
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "username": "Логин",
+      "phone": "Телефон",
+      "totalPoints": "Всего баллов"
+    }
+  },
+  "kk": {
+    "page": {
+      "notFound": "Пайдаланушы табылмады",
+      "back": "Артқа қайту",
+      "toList": "Пайдаланушылар тізіміне",
+      "title": "{firstName} {lastName} пайдаланушы деректері",
+      "createdTab": "Құрылған ЖОБ",
+      "assessmentTab": "Тексерілетін ЖОБ",
+      "createdRupsTitle": "Пайдаланушының жұмыс оқу бағдарламалары",
+      "assessmentRupsTitle": "Пайдаланушының әдістемелік жұмыстары"
+    },
+    "card": {
+      "firstName": "Аты",
+      "lastName": "Тегі",
+      "username": "Логин",
+      "phone": "Телефон",
+      "totalPoints": "Жалпы ұпай"
+    }
+  }
+}

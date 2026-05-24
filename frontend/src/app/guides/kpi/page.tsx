@@ -3,13 +3,16 @@
 import type { FC, PropsWithChildren } from 'react'
 
 import { Loader, PageTitle } from '@components'
-import { normalizeCriteriaMethod } from '@helpers'
+import { getUILocaleSection, normalizeCriteriaMethod } from '@helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Separator } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { CriteriaMethodEnum } from '@types'
 import { CheckCircle, ClipboardList, type LucideIcon, TrendingUp, Users } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const { user, authLoading } = useAuthStore()
 
 	if (!user || authLoading) return <Loader type='data' />
@@ -51,7 +54,7 @@ const Page = () => {
 			<Card>
 				<CardHeader>
 					<CardTitle>KPI преподавателей и подразделений</CardTitle>
-					<CardDescription>Общая информация о целях и принципах системы KPI</CardDescription>
+					<CardDescription>{t.mainCardDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-4 text-sm leading-relaxed'>
@@ -94,8 +97,8 @@ const Page = () => {
 			{/* METHOD */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Методика расчёта и порядок проведения</CardTitle>
-					<CardDescription>Как формируется итоговый KPI</CardDescription>
+					<CardTitle>{t.methodTitle}</CardTitle>
+					<CardDescription>{t.methodDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-4 text-sm'>
@@ -131,8 +134,8 @@ const Page = () => {
 			{/* types */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Критерии оценивания</CardTitle>
-					<CardDescription>Роль критериев в системе KPI преподавателей и подразделений</CardDescription>
+					<CardTitle>{t.criteriaTitle}</CardTitle>
+					<CardDescription>{t.criteriaDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-3 text-sm leading-relaxed'>
@@ -161,8 +164,8 @@ const Page = () => {
 			{/* types  */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Структура критериев</CardTitle>
-					<CardDescription>Варианты критериев и способы начисления баллов</CardDescription>
+					<CardTitle>{t.structureTitle}</CardTitle>
+					<CardDescription>{t.structureDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-3 text-sm leading-relaxed'>

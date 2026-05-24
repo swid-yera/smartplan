@@ -1,14 +1,18 @@
 'use client'
 
 import { CategoryCard, Loader, SectionTitle } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 
 import { UserCard } from '../../users/[id]/user-card'
+import localeDictionary from './locale.json'
 
 const MethodistAwardsPage = () => {
 	const { user, authLoading } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 
 	const { data: categories, isLoading: isCategoriesLoading } = useQuery({
 		...services.categories.getAllOptions(),
@@ -19,17 +23,13 @@ const MethodistAwardsPage = () => {
 
 	return (
 		<section className='p-4 max-w-6xl w-full mx-auto space-y-6'>
-			<SectionTitle description='Профиль и категории KPI' title='Мой KPI профиль' />
+			<SectionTitle description={t.profileDescription} title={t.profileTitle} />
 
 			<UserCard user={user} />
 
 			<div className='space-y-4'>
 				<div className='flex items-center justify-between gap-4'>
-					<SectionTitle
-						className='flex-1'
-						description='Выберите категорию для создания данных для KPI'
-						title='Ввод данных'
-					/>
+					<SectionTitle className='flex-1' description={t.inputDescription} title={t.inputTitle} />
 				</div>
 
 				{categories?.length ? (
@@ -42,7 +42,7 @@ const MethodistAwardsPage = () => {
 					</div>
 				) : (
 					<div className='flex h-40 items-center justify-center rounded-lg border border-dashed text-muted-foreground'>
-						Категории пока не созданы
+						{t.empty}
 					</div>
 				)}
 			</div>

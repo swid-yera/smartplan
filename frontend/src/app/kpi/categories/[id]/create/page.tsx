@@ -16,7 +16,7 @@ import {
 	findMissingRequiredCategoryField,
 	getCategoryFieldValidationError,
 } from '@components'
-import { getCategoryIconOptionByName, getLocaleText } from '@helpers'
+import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
 	Badge,
@@ -37,6 +37,7 @@ import { Folder } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { AwardTypeSelectionFields } from '../../../components'
+import localeDictionary from './locale.json'
 
 const DOMAIN_ONLY_REGEX = /^(?=.{1,253}$)(?!-)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/
 
@@ -59,6 +60,7 @@ export default function CreateAwardPage() {
 	const categoryId = params.id
 	const { push } = useRouter()
 	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 
 	const [selectedType, setSelectedType] = useState<ITypeResponse | null>(null)
 	const [selectedVariant, setSelectedVariant] = useState<IVariantResponse | null>(null)
@@ -398,9 +400,9 @@ export default function CreateAwardPage() {
 		<section className='mx-auto w-full p-6 space-y-6'>
 			<PageTitle
 				backHref={`/kpi/categories/${category.id}`}
-				description='Ввод данных с ограничениями и полями выбранной категории'
+				description={t.pageDescription}
 			>
-				Ввод данных
+				{t.pageTitle}
 			</PageTitle>
 
 			<Card>
@@ -432,10 +434,8 @@ export default function CreateAwardPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Ввод данных</CardTitle>
-					<CardDescription>
-						Сначала заполните поля категории, затем выберите тип, вариант и критерий
-					</CardDescription>
+					<CardTitle>{t.formTitle}</CardTitle>
+					<CardDescription>{t.formDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-5'>
@@ -463,7 +463,7 @@ export default function CreateAwardPage() {
 						setSelectedCriteria={setSelectedCriteria}
 						setSelectedType={setSelectedType}
 						setSelectedVariant={setSelectedVariant}
-						typeLabel='Тип оценивания'
+						typeLabel={t.typeLabel}
 					/>
 
 					{bottomCategoryFields.length > 0 && (
@@ -473,7 +473,7 @@ export default function CreateAwardPage() {
 							<CategoryFieldsSection
 								columns={1}
 								fields={bottomCategoryFieldsWithEffectiveRequired}
-								title='Поля URL и FILE'
+								title={t.bottomFieldsTitle}
 								values={categoryFieldValues}
 								onChange={handleCategoryFieldChange}
 							/>
@@ -483,7 +483,7 @@ export default function CreateAwardPage() {
 
 				<CardFooter className='flex justify-end'>
 					<Button disabled={isPending || !availableTypes.length} variant='default' onClick={handleSubmit}>
-						Создать награду
+						{t.createAward}
 					</Button>
 				</CardFooter>
 			</Card>

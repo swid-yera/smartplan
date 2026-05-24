@@ -1,7 +1,7 @@
 import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 
 import type { badgeVariants } from '@shadcn'
-import type { IPagination, StatusEnum } from '@types'
+import type { IPagination, Locale, StatusEnum } from '@types'
 import type { VariantProps } from 'class-variance-authority'
 import { BanIcon, CheckCheckIcon, type LucideProps, PencilIcon, TextSearchIcon } from 'lucide-react'
 
@@ -20,11 +20,26 @@ export const generateEmptyMetaPagination = (): IPagination<''>['meta'] => {
 }
 
 // status
-export const statusLabels: Record<StatusEnum, string> = {
-	DRAFT: 'Черновик',
-	IN_REVIEW: 'На проверке',
-	APPROVED: 'Утверждён',
-	REJECTED: 'Отклонен',
+const statusLabelsByLocale: Record<Locale, Record<StatusEnum, string>> = {
+	ru: {
+		DRAFT: 'Черновик',
+		IN_REVIEW: 'На проверке',
+		APPROVED: 'Утверждён',
+		REJECTED: 'Отклонен',
+	},
+	kk: {
+		DRAFT: 'Нобай',
+		IN_REVIEW: 'Тексеруде',
+		APPROVED: 'Бекітілді',
+		REJECTED: 'Қабылданбады',
+	},
+}
+
+// backwards-compatible default dictionary
+export const statusLabels: Record<StatusEnum, string> = statusLabelsByLocale.ru
+
+export const getStatusLabels = (locale: Locale = 'ru'): Record<StatusEnum, string> => {
+	return statusLabelsByLocale[locale] || statusLabelsByLocale.ru
 }
 
 export const statusIcons: Record<
@@ -44,6 +59,6 @@ export const statusVariants: Record<StatusEnum, VariantProps<typeof badgeVariant
 	REJECTED: 'destructive',
 }
 
-export const normalizeStatus = (status: StatusEnum): string => {
-	return statusLabels[status] ?? ''
+export const normalizeStatus = (status: StatusEnum, locale: Locale = 'ru'): string => {
+	return getStatusLabels(locale)[status] ?? ''
 }

@@ -14,7 +14,7 @@ import {
 	findFutureDateCategoryField,
 	findInvalidUrlCategoryField,
 } from '@components'
-import { getLocaleText } from '@helpers'
+import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -24,6 +24,7 @@ import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 
 import { AwardTypeSelectionFields } from '../../components'
+import localeDictionary from './locale.json'
 
 const removeHttpProtocol = (value: string) => value.replace(/^https?:\/\//i, '')
 
@@ -37,6 +38,7 @@ const Page = () => {
 	const { id } = useParams<{ id: string }>()
 	const { push } = useRouter()
 	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 
 	const [selectedType, setSelectedType] = useState<ITypeResponse | null>(null)
 	const [selectedVariant, setSelectedVariant] = useState<IVariantResponse | null>(null)
@@ -174,7 +176,7 @@ const Page = () => {
 
 	const handleSubmit = () => {
 		if (!award || !category || !selectedType || !selectedVariant || !selectedCriteria) {
-			toast.error('Заполните обязательные поля')
+			toast.error(t.requiredFields)
 
 			return
 		}
@@ -197,7 +199,9 @@ const Page = () => {
 		})
 
 		if (missingRequiredField) {
-			toast.error(`Заполните обязательное поле: ${getLocaleText(missingRequiredField.label, locale)}`)
+			toast.error(
+				interpolateUILocaleText(t.requiredField, { field: getLocaleText(missingRequiredField.label, locale) }),
+			)
 
 			return
 		}
@@ -206,7 +210,7 @@ const Page = () => {
 
 		if (invalidUrlField) {
 			toast.error(
-				`Поле «${getLocaleText(invalidUrlField.label, locale)}» должно содержать корректный домен/ссылку без https://`,
+				interpolateUILocaleText(t.invalidDomain, { field: getLocaleText(invalidUrlField.label, locale) }),
 			)
 
 			return
@@ -215,7 +219,7 @@ const Page = () => {
 		const futureDateField = findFutureDateCategoryField(category.fieldsExpanded, categoryFieldValues)
 
 		if (futureDateField) {
-			toast.error(`Поле «${getLocaleText(futureDateField.label, locale)}» не может быть будущей датой`)
+			toast.error(interpolateUILocaleText(t.futureDate, { field: getLocaleText(futureDateField.label, locale) }))
 
 			return
 		}
@@ -286,17 +290,17 @@ const Page = () => {
 
 		const toastId = `award-${id}-update`
 
-		toast.loading('Сохранение изменений...', { id: toastId })
+		toast.loading(t.saving, { id: toastId })
 
 		mutateUpdate(
 			{ changedAward, id: award.id, filesByField },
 			{
 				onSuccess: () => {
-					toast.success('Данные успешно обновлены', { id: toastId })
+					toast.success(t.saved, { id: toastId })
 					push(`/kpi/${id}`)
 				},
 				onError: (error) => {
-					let errorMessage = 'Ошибка при обновлении данных'
+					let errorMessage = t.updateError
 
 					if (isAxiosError<IApiErrorResponse>(error)) {
 						const details = error.response?.data?.details
@@ -311,7 +315,7 @@ const Page = () => {
 						errorMessage = error.message
 					}
 
-					toast.error('Ошибка при обновлении данных', { description: errorMessage, id: toastId })
+					toast.error(t.updateError, { description: errorMessage, id: toastId })
 				},
 			},
 		)
@@ -326,28 +330,28 @@ const Page = () => {
 	}
 
 	if (!award) {
-		return <p className='p-6 text-center text-muted-foreground'>Награда не найдена</p>
+		return <p className='p-6 text-center text-muted-foreground'>{t.awardNotFound}</p>
 	}
 
 	if (!category) {
-		return <p className='p-6 text-center text-muted-foreground'>Категория не найдена</p>
+		return <p className='p-6 text-center text-muted-foreground'>{t.categoryNotFound}</p>
 	}
 
 	return (
 		<section className='mx-auto w-full p-6 space-y-6'>
-			<PageTitle backHref={`/kpi/${id}`} description='Редактирование данных'>
-				Редактирование данных
+			<PageTitle backHref={`/kpi/${id}`} description={t.pageDescription}>
+				{t.pageTitle}
 			</PageTitle>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Редактирование данных</CardTitle>
-					<CardDescription>Изменяйте только те поля, которые заполнялись при создании</CardDescription>
+					<CardTitle>{t.cardTitle}</CardTitle>
+					<CardDescription>{t.cardDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-5'>
 					<CategoryFieldsSection
-						emptyText='Нет полей кроме URL/FILE'
+						emptyText={t.emptyTopFields}
 						fields={topCategoryFields}
 						values={categoryFieldValues}
 						onChange={handleCategoryFieldChange}
@@ -367,7 +371,7 @@ const Page = () => {
 						setSelectedCriteria={setSelectedCriteria}
 						setSelectedType={setSelectedType}
 						setSelectedVariant={setSelectedVariant}
-						typeLabel='Тип награды'
+						typeLabel={t.typeLabel}
 					/>
 
 					{bottomCategoryFields.length > 0 && (
@@ -377,14 +381,14 @@ const Page = () => {
 							<CategoryFieldsSection
 								columns={1}
 								fields={bottomCategoryFields}
-								title='Файл или ссылка на файл'
+								title={t.bottomTitle}
 								values={categoryFieldValues}
 								onChange={handleCategoryFieldChange}
 							/>
 
 							{Object.keys(existingFileValues).length > 0 && (
 								<div className='rounded-md border border-dashed p-3 space-y-2'>
-									<h4 className='text-sm font-semibold'>Текущие загруженные файлы</h4>
+									<h4 className='text-sm font-semibold'>{t.uploadedFiles}</h4>
 									<ul className='space-y-1 text-sm'>
 										{Object.entries(existingFileValues).map(([fieldKey, fileUrl]) => {
 											const hasNewFile =
@@ -402,7 +406,7 @@ const Page = () => {
 														rel='noopener noreferrer'
 														target='_blank'
 													>
-														Открыть текущий файл
+														{t.openCurrentFile}
 													</a>
 												</li>
 											)
@@ -416,7 +420,7 @@ const Page = () => {
 
 				<CardFooter className='justify-end'>
 					<Button disabled={isPending} onClick={handleSubmit}>
-						Сохранить изменения
+						{t.save}
 					</Button>
 				</CardFooter>
 			</Card>

@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 
+import { getUILocaleSection } from '@helpers'
 import { Button, Input } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { Filter, Search } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 interface UsersFilterProps {
 	search: string
@@ -10,6 +14,8 @@ interface UsersFilterProps {
 }
 
 export function UsersFilter({ search, onSearchSubmit, onRefetch }: UsersFilterProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const [inputValue, setInputValue] = useState(search)
 
 	useEffect(() => {
@@ -42,7 +48,7 @@ export function UsersFilter({ search, onSearchSubmit, onRefetch }: UsersFilterPr
 					</Button>
 					<Input
 						className='pl-10'
-						placeholder='Поиск по имени или email...'
+						placeholder={t.filter.searchPlaceholder}
 						value={inputValue}
 						onChange={(e) => setInputValue(e.target.value)}
 						onKeyDown={handleKeyDown}
@@ -51,7 +57,7 @@ export function UsersFilter({ search, onSearchSubmit, onRefetch }: UsersFilterPr
 			</div>
 
 			<Button className='w-full lg:w-auto' size='default' variant='default' onClick={onRefetch}>
-				Применить
+				{t.filter.apply}
 				<Filter className='ml-2 h-4 w-4' />
 			</Button>
 		</div>

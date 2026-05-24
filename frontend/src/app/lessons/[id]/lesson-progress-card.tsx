@@ -1,10 +1,13 @@
 'use client'
 
+import { getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { ListChecks } from 'lucide-react'
 
 import type { INormalizedLessonProgress } from './lesson-page.types'
 import { formatMinuteRange } from './lesson-page.utils'
+import localeDictionary from './locale.json'
 
 type IProps = {
 	cardClassName: string
@@ -12,6 +15,9 @@ type IProps = {
 }
 
 export function LessonProgressCard({ cardClassName, lessonProgress }: IProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<Card className={cardClassName}>
 			<CardHeader>
@@ -21,7 +27,7 @@ export function LessonProgressCard({ cardClassName, lessonProgress }: IProps) {
 					</span>
 					Ход занятия
 				</CardTitle>
-				<CardDescription>Этапы урока с таймингом и содержанием</CardDescription>
+				<CardDescription>{t.progressDescription}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{lessonProgress.length ? (

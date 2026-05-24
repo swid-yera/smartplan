@@ -26,6 +26,8 @@ import { useLocaleStore } from '@store'
 import type { IUser } from '@types'
 import { ChevronsUpDown, LogOut, Mail, Phone, ShieldUser, User } from 'lucide-react'
 
+import sidebarLocale from './locale.json'
+
 interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElement>, HTMLUListElement> {
 	user: IUser
 }
@@ -33,7 +35,8 @@ interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElemen
 export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 	const { isMobile } = useSidebar()
 	const locale = useLocaleStore((state) => state.locale)
-	const logoutLabel = locale === 'kk' ? 'Шығу' : 'Выйти'
+	const t = sidebarLocale[locale] ?? sidebarLocale.ru
+	const logoutLabel = t.logout
 
 	return (
 		<SidebarMenu className={className} {...props}>
@@ -53,7 +56,7 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 								<span className='truncate font-medium'>
 									{user.firstName} {user.lastName}
 								</span>
-								<span className='truncate text-xs text-muted-foreground'>{normalizeUserRole(user.role)}</span>
+								<span className='truncate text-xs text-muted-foreground'>{normalizeUserRole(user.role, locale)}</span>
 							</div>
 							<ChevronsUpDown className='ml-auto size-4' />
 						</SidebarMenuButton>
@@ -86,7 +89,7 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 							</DropdownMenuItem>
 							<DropdownMenuItem>
 								<ShieldUser />
-								{normalizeUserRole(user.role)}
+								{normalizeUserRole(user.role, locale)}
 							</DropdownMenuItem>
 							{user.email && (
 								<DropdownMenuItem>

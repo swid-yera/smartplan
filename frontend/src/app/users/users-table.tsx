@@ -3,10 +3,13 @@ import type { FC } from 'react'
 import Link from 'next/link'
 
 import { Loader } from '@components'
-import { normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
+import { getUILocaleSection, normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
 import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IUser } from '@types'
 import { User } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 interface UsersTableProps {
 	users?: IUser[]
@@ -14,6 +17,8 @@ interface UsersTableProps {
 }
 
 export function UsersTable({ users = [], isLoading }: UsersTableProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const isExist = users.length > 0 || !isLoading
 
 	return (
@@ -21,11 +26,11 @@ export function UsersTable({ users = [], isLoading }: UsersTableProps) {
 			<Table className='min-w-[900px]'>
 				<TableHeader>
 					<TableRow>
-						<TableHead className='font-semibold pl-4 max-w-[300px]'>ФИО</TableHead>
-						<TableHead className='font-semibold'>Логин</TableHead>
+						<TableHead className='font-semibold pl-4 max-w-[300px]'>{t.table.fullName}</TableHead>
+						<TableHead className='font-semibold'>{t.table.login}</TableHead>
 						<TableHead className='font-semibold'>Email</TableHead>
-						<TableHead className='font-semibold'>Телефон</TableHead>
-						<TableHead className='font-semibold text-right pr-4'>Роль</TableHead>
+						<TableHead className='font-semibold'>{t.table.phone}</TableHead>
+						<TableHead className='font-semibold text-right pr-4'>{t.table.role}</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
@@ -41,7 +46,7 @@ export function UsersTable({ users = [], isLoading }: UsersTableProps) {
 										type='data'
 									/>
 								) : (
-									'Ничего не найдено.'
+									t.table.empty
 								)}
 							</TableCell>
 						</TableRow>
@@ -57,6 +62,8 @@ interface IUserRow {
 }
 
 const UserRow: FC<IUserRow> = ({ user }) => {
+	const locale = useLocaleStore((state) => state.locale)
+
 	return (
 		<TableRow key={user.keycloakId}>
 			<TableCell className='font-medium'>
@@ -75,7 +82,7 @@ const UserRow: FC<IUserRow> = ({ user }) => {
 			<TableCell>{prettifyPhone(user.phone)}</TableCell>
 
 			<TableCell className='text-right'>
-				<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role)}</Badge>
+				<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role, locale)}</Badge>
 			</TableCell>
 		</TableRow>
 	)

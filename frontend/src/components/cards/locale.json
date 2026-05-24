@@ -1,0 +1,134 @@
+{
+	"ru": {
+		"statusInfo": {
+			"draft": "Проверьте документ и отправьте на согласование",
+			"inReview": "Ожидайте пока методист проверит ваш документ",
+			"approved": "Редактирование запрещено, файл сгенерирован.",
+			"rejectedTitle": "Причина отказа",
+			"emptyReason": "Пусто"
+		},
+		"emptyCard": {
+			"awardTitle": "Ваши данные не найдены",
+			"awardDescription": "Здесь будут отображаться ваши данные для оценки KPI.",
+			"awardCreate": "Опубликовать достижение",
+			"lessonTitle": "Планы учебных занятий не найдены",
+			"lessonDescription": "Здесь будут отображаться планы учебных занятий, созданные вами или сгенерированные системой.",
+			"lessonCreate": "Создать первый план",
+			"rupTitle": "Рабочие учебные планы не найдены",
+			"rupDescription": "Здесь будут отображаться ваши РУП.",
+			"rupCreate": "Создать РУП"
+		},
+		"groupsCard": {
+			"title": "Список групп",
+			"searchPlaceholder": "Поиск по группе, специальности или квалификации",
+			"specialty": "Специальность",
+			"qualification": "Квалификация",
+			"notFound": "Ничего не найдено",
+			"empty": "Группы не найдены"
+		},
+		"responsibleUsers": {
+			"title": "Участники",
+			"teacher": "Преподаватель",
+			"methodist": "Методист",
+			"createdAt": "Создано",
+			"updatedAt": "Обновлено"
+		},
+		"categoryCard": {
+			"missingDescription": "Описание отсутствует"
+		},
+		"awardsCard": {
+			"createdAt": "Создано",
+			"teacher": "Преподаватель",
+			"criteria": "Критерий",
+			"points": "Баллы",
+			"status": "Статус",
+			"empty": "Пока ничего нет.",
+			"back": "Назад",
+			"next": "Вперед",
+			"page": "Страница {current} из {total}",
+			"unknownTeacher": "Неизвестно",
+			"updatedAt": "Обновлено",
+			"rejectReason": "Причина отказа"
+		},
+		"rupsCard": {
+			"name": "Наименование",
+			"teacher": "Преподаватель",
+			"specialty": "Специальность",
+			"qualification": "Квалификация",
+			"studyYear": "Учебный год",
+			"status": "Статус",
+			"empty": "Пока нет ни одного модуля.",
+			"back": "Назад",
+			"next": "Вперед",
+			"page": "Страница {current} из {total}",
+			"untitled": "Без названия",
+			"unknownTeacher": "Неизвестно"
+		}
+	},
+	"kk": {
+		"statusInfo": {
+			"draft": "Құжатты тексеріп, келісуге жіберіңіз",
+			"inReview": "Әдіскер тексергенше күтіңіз",
+			"approved": "Өңдеуге тыйым салынған, файл жасалды.",
+			"rejectedTitle": "Қабылдамау себебі",
+			"emptyReason": "Бос"
+		},
+		"emptyCard": {
+			"awardTitle": "Деректеріңіз табылмады",
+			"awardDescription": "Мұнда KPI бағалау деректеріңіз көрсетіледі.",
+			"awardCreate": "Жетістікті жариялау",
+			"lessonTitle": "Сабақ жоспарлары табылмады",
+			"lessonDescription": "Мұнда сіз жасаған немесе жүйе құрған сабақ жоспарлары көрсетіледі.",
+			"lessonCreate": "Алғашқы жоспарды құру",
+			"rupTitle": "Жұмыс оқу жоспарлары табылмады",
+			"rupDescription": "Мұнда сіздің ЖОБ-тарыңыз көрсетіледі.",
+			"rupCreate": "ЖОБ құру"
+		},
+		"groupsCard": {
+			"title": "Топтар тізімі",
+			"searchPlaceholder": "Топ, мамандық немесе біліктілік бойынша іздеу",
+			"specialty": "Мамандық",
+			"qualification": "Біліктілік",
+			"notFound": "Ештеңе табылмады",
+			"empty": "Топтар табылмады"
+		},
+		"responsibleUsers": {
+			"title": "Қатысушылар",
+			"teacher": "Оқытушы",
+			"methodist": "Әдіскер",
+			"createdAt": "Құрылған күні",
+			"updatedAt": "Жаңартылған күні"
+		},
+		"categoryCard": {
+			"missingDescription": "Сипаттама жоқ"
+		},
+		"awardsCard": {
+			"createdAt": "Құрылған күні",
+			"teacher": "Оқытушы",
+			"criteria": "Критерий",
+			"points": "Ұпай",
+			"status": "Мәртебе",
+			"empty": "Әзірге ештеңе жоқ.",
+			"back": "Артқа",
+			"next": "Алға",
+			"page": "{current}/{total} бет",
+			"unknownTeacher": "Белгісіз",
+			"updatedAt": "Жаңартылды",
+			"rejectReason": "Қабылдамау себебі"
+		},
+		"rupsCard": {
+			"name": "Атауы",
+			"teacher": "Оқытушы",
+			"specialty": "Мамандық",
+			"qualification": "Біліктілік",
+			"studyYear": "Оқу жылы",
+			"status": "Мәртебе",
+			"empty": "Әзірге бірде-бір модуль жоқ.",
+			"back": "Артқа",
+			"next": "Алға",
+			"page": "{current}/{total} бет",
+			"untitled": "Атаусыз",
+			"unknownTeacher": "Белгісіз"
+		}
+	}
+}

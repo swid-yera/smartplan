@@ -1,15 +1,20 @@
 import type { FC } from 'react'
 
-import { normalizeTotalPoints, normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
+import { getUILocaleSection, normalizeTotalPoints, normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { type IUser, RoleEnum } from '@types'
 import { Mail, Phone, UserIcon } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 interface IUserMainProps {
 	user: IUser
 }
 
 export const UserCard: FC<IUserMainProps> = ({ user }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const isTeacher = user.role === RoleEnum.TEACHER
 
 	return (
@@ -23,7 +28,7 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 						{user.firstName} {user.lastName}
 					</CardTitle>
 					<CardDescription>
-						<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role)}</Badge>
+						<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role, locale)}</Badge>
 					</CardDescription>
 				</div>
 
@@ -38,17 +43,17 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 			<CardContent className='space-y-6'>
 				<div className='grid gap-4 md:grid-cols-2'>
 					<div className='space-y-1'>
-						<p className='text-sm font-medium text-muted-foreground'>Имя</p>
+						<p className='text-sm font-medium text-muted-foreground'>{t.card.firstName}</p>
 						<p className='flex items-center gap-2'>{user.firstName}</p>
 					</div>
 
 					<div className='space-y-1'>
-						<p className='text-sm font-medium text-muted-foreground'>Фамилия</p>
+						<p className='text-sm font-medium text-muted-foreground'>{t.card.lastName}</p>
 						<p className=''>{user.lastName}</p>
 					</div>
 
 					<div className='space-y-1'>
-						<p className='text-sm font-medium text-muted-foreground'>Логин</p>
+						<p className='text-sm font-medium text-muted-foreground'>{t.card.username}</p>
 						<p>{user.username}</p>
 					</div>
 
@@ -65,7 +70,7 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 					</div>
 
 					<div className='space-y-1'>
-						<p className='text-sm font-medium text-muted-foreground'>Телефон</p>
+						<p className='text-sm font-medium text-muted-foreground'>{t.card.phone}</p>
 						<p className='flex items-center gap-2'>
 							{user.phone && (
 								<>
@@ -78,8 +83,8 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 
 					{isTeacher && (
 						<div className='space-y-1'>
-							<p className='text-sm font-medium text-muted-foreground'>Всего баллов</p>
-							<p className='text-primary'>{normalizeTotalPoints(user.totalPoints ?? 0)}</p>
+							<p className='text-sm font-medium text-muted-foreground'>{t.card.totalPoints}</p>
+							<p className='text-primary'>{normalizeTotalPoints(user.totalPoints ?? 0, locale)}</p>
 						</div>
 					)}
 				</div>

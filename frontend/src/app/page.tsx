@@ -13,21 +13,21 @@ const features = [
 		title: 'Создание РУП',
 		description:
 			'SmartPlan использует искусственный интеллект для автоматического создания рабочих учебных программ, значительно сокращая время и усилия, необходимые для их разработки.',
-		preview: '/videos/example.mp4',
+		preview: '/trailer/rup-trailer.mov',
 	},
 	{
 		icon: <BarChart3 className='h-16 w-16 text-primary' />,
 		title: 'Система KPI и рейтинг',
 		description:
 			'Платформа включает систему KPI для объективной оценки эффективности преподавателей, формируя прозрачный рейтинг на основе их достижений и вклада в учебный процесс.',
-		preview: '/videos/example.mp4',
+		preview: '/trailer/kpi-trailer.mov',
 	},
 	{
 		icon: <FileText className='h-16 w-16 text-primary' />,
 		title: 'Создание плана учебного занятия',
 		description:
 			'SmartPlan использует искусственный интеллект для автоматического создания планов учебных занятий, значительно сокращая время и усилия, необходимые для их разработки.',
-		preview: '/videos/example.mp4',
+		preview: '/trailer/lesson-trailer.mov',
 	},
 ]
 

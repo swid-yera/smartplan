@@ -4,13 +4,17 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { StatusEnum } from '@types'
+import localeDictionary from './locale.json'
 
 const MethodistAwardsPage = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -52,17 +56,17 @@ const MethodistAwardsPage = () => {
 
 	return (
 		<section className='p-4 w-full space-y-4'>
-			<PageTitle description='Данные KPI, ожидающие проверки'>Проверка достижений</PageTitle>
+			<PageTitle description={t.description}>{t.title}</PageTitle>
 
 			<Button asChild variant='default' onClick={handleViewAll}>
-				<Link href='/kpi/all'>Просмотреть все</Link>
+				<Link href='/kpi/all'>{t.viewAll}</Link>
 			</Button>
 
 			<AwardsCard
 				awards={awardsData?.data || []}
 				currentPage={awardsData?.meta.currentPage || 1}
 				isLoading={isAwardsLoading}
-				title='Список наград'
+				title={t.listTitle}
 				totalPages={awardsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>

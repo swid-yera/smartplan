@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { formatCourseFromYearAndGroupName, generateStudyYears, getGroupYear } from '@helpers'
+import { formatCourseFromYearAndGroupName, generateStudyYears, getGroupYear, getUILocaleSection } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -32,11 +32,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IGroup } from '@types'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
+import localeDictionary from './locale.json'
 
 type IProps = FieldValues & {
 	groupId: string
@@ -45,6 +47,8 @@ type IProps = FieldValues & {
 }
 
 export function GroupEdit<T extends IProps>() {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const form = useFormContext<T>()
 
 	const [selectedGroup, setSelectedGroup] = useState<IGroup | undefined>(undefined)
@@ -99,7 +103,7 @@ export function GroupEdit<T extends IProps>() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Группа</CardTitle>
+				<CardTitle>{t.groupTitle}</CardTitle>
 				<CardDescription>
 					Выберите группу и проверьте специальность и квалификацию.
 					<span className='text-primary '>

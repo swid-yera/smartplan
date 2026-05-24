@@ -19,6 +19,7 @@ import {
 import { useAuthStore, useLocaleStore } from '@store'
 import { LogInIcon } from 'lucide-react'
 
+import sidebarLocale from './locale.json'
 import { NavUser } from './nav-user'
 
 interface ASidebarHeaderProps {
@@ -28,8 +29,9 @@ interface ASidebarHeaderProps {
 export function ASidebarHeader({ hasSid }: ASidebarHeaderProps) {
 	const { user, isAuthenticated, authLoading } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
+	const t = sidebarLocale[locale] ?? sidebarLocale.ru
 	const { state, isMobile } = useSidebar()
-	const loginLabel = locale === 'kk' ? 'Кіру' : 'Войти'
+	const loginLabel = t.login
 	const showAuthSkeleton = authLoading && hasSid
 
 	return (

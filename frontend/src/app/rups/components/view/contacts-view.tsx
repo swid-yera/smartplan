@@ -2,7 +2,7 @@
 
 import { type FC } from 'react'
 
-import { formatAsDash } from '@helpers'
+import { formatAsDash, getUILocaleSection } from '@helpers'
 import {
 	Card,
 	CardContent,
@@ -16,8 +16,10 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IUser } from '@types'
 import { Mail, Phone, User, UserPlus } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 type IProps = {
 	contacts: IUser[]
@@ -25,12 +27,15 @@ type IProps = {
 }
 
 export const ContactsView: FC<IProps> = ({ creatorId, contacts }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<Card className='overflow-hidden'>
 			<CardHeader className='flex flex-row items-center justify-between space-y-0'>
 				<div className='space-y-1'>
-					<CardTitle className='text-xl'>Контактные данные</CardTitle>
-					<CardDescription>Ответственные преподаватели за данный план</CardDescription>
+					<CardTitle className='text-xl'>{t.contactsTitle}</CardTitle>
+					<CardDescription>{t.contactsDescription}</CardDescription>
 				</div>
 			</CardHeader>
 

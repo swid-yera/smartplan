@@ -1,0 +1,20 @@
+{
+  "ru": {
+    "basicTitle": "Общие сведения",
+    "basicDescription": "Основные данные модуля рабочей учебной программы.",
+    "disciplineTitle": "Распределение часов",
+    "disciplineDescription": "Создание дисциплин и расчет часов",
+    "contactsTitle": "Педагогический состав",
+    "contactsDescription": "Укажите преподавателей, ответственных за данной программой",
+    "groupTitle": "Группа"
+  },
+  "kk": {
+    "basicTitle": "Жалпы мәліметтер",
+    "basicDescription": "Жұмыс оқу бағдарламасы модулінің негізгі деректері.",
+    "disciplineTitle": "Сағаттарды бөлу",
+    "disciplineDescription": "Пәндерді құру және сағаттарды есептеу",
+    "contactsTitle": "Педагогикалық құрам",
+    "contactsDescription": "Осы бағдарламаға жауапты оқытушыларды көрсетіңіз",
+    "groupTitle": "Топ"
+  }
+}

@@ -3,14 +3,19 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, Pagination, RupsCard } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
+import { useLocaleStore } from '@store'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { StatusEnum } from '@types'
 
 import { RupsFilterCard } from '../components'
+import localeDictionary from './locale.json'
 
 const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -53,7 +58,7 @@ const Page = () => {
 
 	return (
 		<section className='p-4 w-full space-y-4'>
-			<PageTitle description='Все созданные рабочие учебные программы'>Все РУП</PageTitle>
+			<PageTitle description={t.description}>{t.title}</PageTitle>
 
 			<RupsFilterCard />
 
@@ -61,7 +66,7 @@ const Page = () => {
 				currentPage={rupsData?.meta.currentPage || 1}
 				isLoading={isRupsLoading}
 				rups={rupsData?.data || []}
-				title='Список всех созданных РУП'
+				title={t.listTitle}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>

@@ -3,7 +3,7 @@
 import type { FC, ReactNode } from 'react'
 import { useState } from 'react'
 
-import { formatAsDash } from '@helpers'
+import { formatAsDash, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
 	Button,
 	Card,
@@ -19,6 +19,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { type IRup } from '@types'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -26,6 +27,7 @@ import { StatusBadge } from '../badges/status-badge'
 import { RupSheet } from '../sheets/rup-sheet'
 import { Loader } from '../ui/loader'
 import { EmptyCard } from './empty-card'
+import localeDictionary from './locale.json'
 
 interface IRupsProps {
 	rups: IRup[]
@@ -50,6 +52,8 @@ export const RupsCard: FC<IRupsProps> = ({
 	className,
 	showCreateOnEmpty = false,
 }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).rupsCard
 	const [selectedRup, setSelectedRup] = useState<IRup | null>(null)
 	const isExist = rups.length > 0 && !isLoading
 
@@ -67,12 +71,12 @@ export const RupsCard: FC<IRupsProps> = ({
 						<Table className='min-w-[200px]'>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Наименование</TableHead>
-									<TableHead>Преподаватель</TableHead>
-									<TableHead>Специальность</TableHead>
-									<TableHead>Квалификация</TableHead>
-									<TableHead>Учебный год</TableHead>
-									<TableHead className='text-right'>Статус</TableHead>
+									<TableHead>{t.name}</TableHead>
+									<TableHead>{t.teacher}</TableHead>
+									<TableHead>{t.specialty}</TableHead>
+									<TableHead>{t.qualification}</TableHead>
+									<TableHead>{t.studyYear}</TableHead>
+									<TableHead className='text-right'>{t.status}</TableHead>
 								</TableRow>
 							</TableHeader>
 
@@ -89,7 +93,7 @@ export const RupsCard: FC<IRupsProps> = ({
 													type='data'
 												/>
 											) : (
-												'Пока нет ни одного модуля.'
+												t.empty
 											)}
 										</TableCell>
 									</TableRow>
@@ -108,10 +112,10 @@ export const RupsCard: FC<IRupsProps> = ({
 							onClick={() => onPageChange(currentPage - 1)}
 						>
 							<ChevronLeft className='h-4 w-4 mr-2' />
-							Назад
+							{t.back}
 						</Button>
 						<div className='text-sm font-medium'>
-							Страница {currentPage} из {totalPages}
+							{interpolateUILocaleText(t.page, { current: currentPage, total: totalPages })}
 						</div>
 						<Button
 							disabled={currentPage >= totalPages}
@@ -119,7 +123,7 @@ export const RupsCard: FC<IRupsProps> = ({
 							variant='outline'
 							onClick={() => onPageChange(currentPage + 1)}
 						>
-							Вперед
+							{t.next}
 							<ChevronRight className='h-4 w-4 ml-2' />
 						</Button>
 					</CardFooter>
@@ -137,13 +141,16 @@ interface IRupRow {
 }
 
 const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).rupsCard
+
 	return (
 		<TableRow className='cursor-pointer hover:bg-muted/50 transition-colors' onClick={() => onSelect(rup)}>
 			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-				{rup?.name || 'Без названия'}
+				{rup?.name || t.untitled}
 			</TableCell>
 			<TableCell className='whitespace-break-spaces min-w-[100px]'>
-				{rup?.teacher?.firstName || 'Неизвестно'}
+				{rup?.teacher?.firstName || t.unknownTeacher}
 			</TableCell>
 			<TableCell className='whitespace-break-spaces min-w-[200px]'>
 				{formatAsDash(rup?.groups[0]?.specialty)}

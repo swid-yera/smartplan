@@ -1,5 +1,5 @@
 import type { badgeVariants } from '@shadcn'
-import { type IUser, RoleEnum } from '@types'
+import { type IUser, type Locale, RoleEnum } from '@types'
 import type { VariantProps } from 'class-variance-authority'
 
 // has role
@@ -50,14 +50,28 @@ export const userRoleButtonVariants: Record<RoleEnum, VariantProps<typeof badgeV
 }
 
 // normalize user role
-export const userRoleLabels: Record<RoleEnum, string> = {
-	ADMIN: 'Администратор',
-	METHODIST: 'Методист',
-	TEACHER: 'Преподаватель',
+const userRoleLabelsByLocale: Record<Locale, Record<RoleEnum, string>> = {
+	ru: {
+		ADMIN: 'Администратор',
+		METHODIST: 'Методист',
+		TEACHER: 'Преподаватель',
+	},
+	kk: {
+		ADMIN: 'Әкімші',
+		METHODIST: 'Әдіскер',
+		TEACHER: 'Оқытушы',
+	},
 }
 
-export const normalizeUserRole = (role: RoleEnum): string => {
-	return userRoleLabels[role]
+// backwards-compatible default dictionary
+export const userRoleLabels: Record<RoleEnum, string> = userRoleLabelsByLocale.ru
+
+export const getUserRoleLabels = (locale: Locale = 'ru'): Record<RoleEnum, string> => {
+	return userRoleLabelsByLocale[locale] || userRoleLabelsByLocale.ru
+}
+
+export const normalizeUserRole = (role: RoleEnum, locale: Locale = 'ru'): string => {
+	return getUserRoleLabels(locale)[role]
 }
 
 // prettify phone number

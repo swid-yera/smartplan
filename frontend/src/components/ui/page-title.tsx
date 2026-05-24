@@ -1,10 +1,15 @@
+'use client'
+
 import type { ComponentProps, FC, PropsWithChildren, ReactNode } from 'react'
 
 import Link from 'next/link'
 
 import { cn } from '@lib'
 import { Button, SidebarTrigger } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { ArrowLeft } from 'lucide-react'
+
+import uiLocale from './locale.json'
 
 interface IPageHeadingProps extends ComponentProps<'div'> {
 	description?: ReactNode
@@ -23,6 +28,8 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 	sticky = false,
 	...props
 }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = uiLocale[locale] ?? uiLocale.ru
 	const stickyClassNames =
 		'sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'
 
@@ -47,7 +54,7 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 					<Button asChild size='sm' type='button' variant='outline'>
 						<Link href={backHref}>
 							<ArrowLeft />
-							Назад
+							{t.pageTitle.back}
 						</Link>
 					</Button>
 				)}

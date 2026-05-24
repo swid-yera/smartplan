@@ -1,7 +1,13 @@
+'use client'
+
 import type { FC } from 'react'
 
+import { interpolateUILocaleText } from '@helpers'
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+import uiLocale from './locale.json'
 
 interface IProps {
 	page: number
@@ -20,12 +26,15 @@ export const Pagination: FC<IProps> = ({
 	onPageChange,
 	onPageSizeChange,
 }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = uiLocale[locale] ?? uiLocale.ru
+
 	return (
 		<div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-4'>
 			{/* Page size */}
 			{onPageSizeChange && (
 				<div className='flex items-center gap-2 text-sm text-muted-foreground'>
-					<span>Строк на странице</span>
+					<span>{t.pagination.rowsPerPage}</span>
 
 					<Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value))}>
 						<SelectTrigger className='h-8 w-20'>
@@ -45,7 +54,7 @@ export const Pagination: FC<IProps> = ({
 			{/* Navigation */}
 			<div className='flex items-center gap-2'>
 				<span className='mr-2 text-sm text-muted-foreground'>
-					Страница {page} из {totalPages || 1}
+					{interpolateUILocaleText(t.pagination.pageOf, { page, totalPages: totalPages || 1 })}
 				</span>
 
 				<Button disabled={page <= 1} size='sm' variant='outline' onClick={() => onPageChange(page - 1)}>

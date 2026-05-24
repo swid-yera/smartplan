@@ -1,5 +1,6 @@
 'use client'
 
+import { getUILocaleSection } from '@helpers'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -20,7 +21,9 @@ import {
 	Label,
 	Textarea,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { Plus, Trash, Waypoints } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 import type { ILessonProgressRow } from './lesson-edit.types'
 
@@ -32,6 +35,9 @@ type IProps = {
 }
 
 export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<Card>
 			<CardHeader>
@@ -39,7 +45,7 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 					<Waypoints className='h-4 w-4 text-primary' />
 					Ход занятия
 				</CardTitle>
-				<CardDescription>Этапы занятия с 3 вариантами длительности (каждый вариант в сумме 90 минут)</CardDescription>
+				<CardDescription>{t.progressDescription}</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>
 				<div className='space-y-3'>

@@ -20,10 +20,12 @@ import {
 	useSidebar,
 } from '@shadcn'
 import { useAuthStore } from '@store'
+import { useLocaleStore } from '@store'
 import { RoleEnum } from '@types'
 import { ChevronRight } from 'lucide-react'
 
 import type { INav } from './nav-data'
+import sidebarLocale from './locale.json'
 
 interface IProps {
 	items: INav[]
@@ -32,15 +34,17 @@ interface IProps {
 export const NavMain: FC<IProps> = ({ items }) => {
 	const { setOpen } = useSidebar()
 	const { user, authLoading } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = sidebarLocale[locale] ?? sidebarLocale.ru
 
 	if (authLoading || !user) return
 
 	return (
 		<SidebarGroup>
-			<SidebarGroupLabel>SmartPlan</SidebarGroupLabel>
+			<SidebarGroupLabel>{t.groupLabel}</SidebarGroupLabel>
 			<SidebarMenu>
 				{items.map((item) => (
-					<MenuItem key={item.title} item={item} setOpen={setOpen} userRole={user.role} />
+					<MenuItem key={item.id} item={item} setOpen={setOpen} userRole={user.role} />
 				))}
 			</SidebarMenu>
 		</SidebarGroup>
@@ -54,6 +58,9 @@ interface IMenuItem {
 }
 
 const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = sidebarLocale[locale] ?? sidebarLocale.ru
+
 	if (item.role && !hasRole(userRole, item.role, true)) return null
 
 	if (item.items) {
@@ -61,7 +68,7 @@ const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
 
 		if (!filteredSubItems.length) return null
 
-		const storageKey = `collapse:${item.title}`
+		const storageKey = `collapse:${item.id}`
 
 		const [open, setOpenState] = useState(false)
 
@@ -80,9 +87,9 @@ const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
 			<SidebarMenuItem onClick={() => setOpen(true)}>
 				<Collapsible open={open} onOpenChange={handleOpenChange}>
 					<CollapsibleTrigger asChild>
-						<SidebarMenuButton className='group' tooltip={item.title}>
+						<SidebarMenuButton className='group' tooltip={t.nav[item.titleKey as keyof typeof t.nav] || item.titleKey}>
 							<item.icon />
-							<span>{item.title}</span>
+							<span>{t.nav[item.titleKey as keyof typeof t.nav] || item.titleKey}</span>
 							<ChevronRight
 								className='ml-auto transition-transform duration-200 group-data-[state=open]:rotate-90'
 								data-state={open ? 'open' : 'closed'}
@@ -93,11 +100,11 @@ const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
 					<CollapsibleContent>
 						<SidebarMenuSub>
 							{filteredSubItems.map((subItem) => (
-								<SidebarMenuSubItem key={subItem.title}>
+								<SidebarMenuSubItem key={subItem.id}>
 									<SidebarMenuSubButton asChild>
 										<Link href={subItem.url}>
 											{subItem.icon && <subItem.icon />}
-											<span>{subItem.title}</span>
+											<span>{t.nav[subItem.titleKey as keyof typeof t.nav] || subItem.titleKey}</span>
 										</Link>
 									</SidebarMenuSubButton>
 								</SidebarMenuSubItem>
@@ -111,10 +118,10 @@ const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
 
 	return (
 		<SidebarMenuItem>
-			<SidebarMenuButton asChild tooltip={item.title}>
+			<SidebarMenuButton asChild tooltip={t.nav[item.titleKey as keyof typeof t.nav] || item.titleKey}>
 				<Link href={item.url}>
 					<item.icon />
-					<span>{item.title}</span>
+					<span>{t.nav[item.titleKey as keyof typeof t.nav] || item.titleKey}</span>
 				</Link>
 			</SidebarMenuButton>
 		</SidebarMenuItem>

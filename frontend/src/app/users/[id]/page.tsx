@@ -3,18 +3,22 @@
 import { useParams, useRouter } from 'next/navigation'
 
 import { Loader, PageTitle, RupsCard } from '@components'
-import { hasRole } from '@helpers'
+import { getUILocaleSection, hasRole, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
 import { ArrowLeft } from 'lucide-react'
 
 import { UserCard } from './user-card'
+import localeDictionary from './locale.json'
 
 export default function UserPage() {
 	const router = useRouter()
 	const params = useParams<{ id: string }>()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 
 	// queries
 	const {
@@ -41,9 +45,9 @@ export default function UserPage() {
 	if (isError || !userData) {
 		return (
 			<div className='container mx-auto py-10 space-y-8 max-w-7xl text-center'>
-				<h2 className='text-2xl font-bold'>Пользователь не найден</h2>
+				<h2 className='text-2xl font-bold'>{t.page.notFound}</h2>
 				<Button onClick={() => router.back()}>
-					<ArrowLeft className='mr-2 h-4 w-4' /> Вернуться назад
+					<ArrowLeft className='mr-2 h-4 w-4' /> {t.page.back}
 				</Button>
 			</div>
 		)
@@ -57,12 +61,16 @@ export default function UserPage() {
 				actions={
 					<div>
 						<Button className='' size='sm' variant='outline' onClick={() => router.push('/users')}>
-							<ArrowLeft className='mr-2 h-4 w-4' />К списку пользователей
+							<ArrowLeft className='mr-2 h-4 w-4' />
+							{t.page.toList}
 						</Button>
 					</div>
 				}
 			>
-				Данные пользователя {userData.firstName} {userData.lastName}
+				{interpolateUILocaleText(t.page.title, {
+					firstName: userData.firstName,
+					lastName: userData.lastName,
+				})}
 			</PageTitle>
 
 			<UserCard user={userData} />
@@ -70,10 +78,10 @@ export default function UserPage() {
 			<Tabs defaultValue={isTeacher ? 'created' : 'assessment'}>
 				<TabsList>
 					<TabsTrigger className='px-6' value='created'>
-						Созданные РУП
+						{t.page.createdTab}
 					</TabsTrigger>
 					<TabsTrigger className='px-6' value='assessment'>
-						Проверяемые РУП
+						{t.page.assessmentTab}
 					</TabsTrigger>
 				</TabsList>
 
@@ -82,7 +90,7 @@ export default function UserPage() {
 						currentPage={createdRups?.meta.currentPage || 1}
 						isLoading={createdRupsLoading}
 						rups={createdRups?.data || []}
-						title='Рабочие учебные программы пользователя'
+						title={t.page.createdRupsTitle}
 						totalPages={createdRups?.meta.pages || 1}
 						onPageChange={() => true}
 					/>
@@ -93,7 +101,7 @@ export default function UserPage() {
 						currentPage={assessmentRups?.meta.currentPage || 1}
 						isLoading={assessmentRupsLoading}
 						rups={assessmentRups?.data || []}
-						title='Методические работы пользователя'
+						title={t.page.assessmentRupsTitle}
 						totalPages={assessmentRups?.meta.pages || 1}
 						onPageChange={() => true}
 					/>

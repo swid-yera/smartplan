@@ -1,7 +1,12 @@
+'use client'
+
 import type { FC } from 'react'
 
 import { StatusEnum } from '@types'
+import { useLocaleStore } from '@store'
 import { Search, ShieldAlert, Timer } from 'lucide-react'
+
+import locale from './locale.json'
 
 interface IStatusInfoCardMessages {
 	draft: string
@@ -15,15 +20,13 @@ interface IStatusInfoCardProps {
 	messages?: Partial<IStatusInfoCardMessages>
 }
 
-const DEFAULT_MESSAGES: IStatusInfoCardMessages = {
-	draft: 'Проверьте документ и отправьте на согласование',
-	inReview: 'Ожидайте пока методист проверит ваш документ',
-	approved: 'Редактирование запрещено, файл сгенерирован.',
-}
-
 export const StatusInfoCard: FC<IStatusInfoCardProps> = ({ status, reason, messages }) => {
+	const currentLocale = useLocaleStore((state) => state.locale)
+	const t = locale[currentLocale] ?? locale.ru
 	const mergedMessages: IStatusInfoCardMessages = {
-		...DEFAULT_MESSAGES,
+		draft: t.statusInfo.draft,
+		inReview: t.statusInfo.inReview,
+		approved: t.statusInfo.approved,
 		...messages,
 	}
 
@@ -32,9 +35,9 @@ export const StatusInfoCard: FC<IStatusInfoCardProps> = ({ status, reason, messa
 			<div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive'>
 				<div className='flex items-center gap-2 font-medium'>
 					<ShieldAlert className='h-5 w-5' />
-					Причина отказа
+					{t.statusInfo.rejectedTitle}
 				</div>
-				<div className='mt-2 text-sm whitespace-pre-wrap'>{reason || 'Пусто'}</div>
+				<div className='mt-2 text-sm whitespace-pre-wrap'>{reason || t.statusInfo.emptyReason}</div>
 			</div>
 		)
 	}

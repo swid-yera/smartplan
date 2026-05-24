@@ -2,6 +2,7 @@
 
 import { type FC, useEffect, useMemo, useState } from 'react'
 
+import { getUILocaleSection } from '@helpers'
 import { formatAsDash } from '@helpers'
 import {
 	Button,
@@ -26,9 +27,11 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IUser } from '@types'
 import { ChevronsUpDown, Mail, Phone, Trash2, User, UserPlus } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext, useWatch } from 'react-hook-form'
+import localeDictionary from './locale.json'
 
 type IProps = FieldValues & {
 	contacts: string[]
@@ -43,6 +46,8 @@ export function ContactsEdit<T extends IProps>({
 	creatorId: string
 	teachersData: IUser[]
 }) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const form = useFormContext<T>()
 	const watchedContacts = (useWatch({ control: form.control, name: 'contacts' as Path<T> }) as string[]) || []
 
@@ -81,8 +86,8 @@ export function ContactsEdit<T extends IProps>({
 		<Card className='overflow-hidden'>
 			<CardHeader className='flex flex-row items-center justify-between space-y-0'>
 				<div className='space-y-1'>
-					<CardTitle className='text-xl'>Педагогический состав</CardTitle>
-					<CardDescription>Укажите преподавателей, ответственных за данной программой</CardDescription>
+					<CardTitle className='text-xl'>{t.contactsTitle}</CardTitle>
+					<CardDescription>{t.contactsDescription}</CardDescription>
 				</div>
 				<TeacherSelector
 					teachersData={teachersData}
