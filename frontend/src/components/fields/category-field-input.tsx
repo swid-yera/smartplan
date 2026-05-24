@@ -1,5 +1,6 @@
 'use client'
 
+import { getLocaleText } from '@helpers'
 import {
 	Button,
 	Calendar,
@@ -15,6 +16,7 @@ import {
 	SelectValue,
 	Textarea,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { CategoryFieldType, ICategoryFieldResponse } from '@types'
 import { format } from 'date-fns'
 import { ChevronDown } from 'lucide-react'
@@ -58,7 +60,11 @@ type CategoryFieldInputProps = {
 }
 
 export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInputProps) => {
-	const commonLabel = `${field.label}${field.required ? ' *' : ''}`
+	const locale = useLocaleStore((state) => state.locale)
+	const labelText = getLocaleText(field.label, locale)
+	const placeholderText = getLocaleText(field.placeholder, locale)
+	const helpText = getLocaleText(field.helpText, locale)
+	const commonLabel = `${labelText}${field.required ? ' *' : ''}`
 
 	if (field.type === 'textarea') {
 		return (
@@ -66,7 +72,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 				<Label htmlFor={field.key}>{commonLabel}</Label>
 				<Textarea
 					id={field.key}
-					placeholder={field.placeholder || ''}
+					placeholder={placeholderText}
 					value={typeof value === 'string' ? value : ''}
 					onChange={(event) => onChange(field.key, event.target.value)}
 				/>
@@ -86,7 +92,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 						onValueChange={(nextValue) => onChange(field.key, nextValue)}
 					>
 						<SelectTrigger id={field.key}>
-							<SelectValue placeholder={field.placeholder || 'Выберите значение'} />
+							<SelectValue placeholder={placeholderText || 'Выберите значение'} />
 						</SelectTrigger>
 						<SelectContent>
 							{options.map((option) => (
@@ -111,13 +117,13 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 						className='border-0 shadow-none focus-visible:ring-0'
 						id={field.key}
 						inputMode='url'
-						placeholder={field.placeholder || 'example.com/path'}
+						placeholder={placeholderText || 'example.com/path'}
 						type='text'
 						value={typeof value === 'string' ? value : ''}
 						onChange={(event) => onChange(field.key, normalizeUrlWithoutProtocol(event.target.value))}
 					/>
 				</div>
-				{field.helpText && <p className='text-xs text-muted-foreground'>{field.helpText}</p>}
+				{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
 			</div>
 		)
 	}
@@ -131,7 +137,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 				<Popover>
 					<PopoverTrigger asChild>
 						<Button className='w-full justify-between font-normal' id={field.key} variant='outline'>
-							{selectedDate ? format(selectedDate, 'dd.MM.yyyy') : field.placeholder || 'Выберите дату'}
+							{selectedDate ? format(selectedDate, 'dd.MM.yyyy') : placeholderText || 'Выберите дату'}
 							<ChevronDown />
 						</Button>
 					</PopoverTrigger>
@@ -153,7 +159,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 						/>
 					</PopoverContent>
 				</Popover>
-				{field.helpText && <p className='text-xs text-muted-foreground'>{field.helpText}</p>}
+				{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
 			</div>
 		)
 	}
@@ -183,12 +189,12 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 			<Label htmlFor={field.key}>{commonLabel}</Label>
 			<Input
 				id={field.key}
-				placeholder={field.placeholder || ''}
+				placeholder={placeholderText}
 				type={inputTypeByFieldType[field.type]}
 				value={typeof value === 'string' ? value : ''}
 				onChange={(event) => onChange(field.key, event.target.value)}
 			/>
-			{field.helpText && <p className='text-xs text-muted-foreground'>{field.helpText}</p>}
+			{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
 		</div>
 	)
 }

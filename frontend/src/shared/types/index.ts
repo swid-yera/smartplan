@@ -2,6 +2,7 @@ export * from './adapter.type'
 export * from './award.type'
 export * from './global.type'
 export * from './lesson.type'
+export * from './locale.type'
 export * from './rup.type'
 
 // service

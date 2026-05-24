@@ -3,6 +3,7 @@ import * as React from 'react'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@shadcn'
 import { type LucideIcon } from 'lucide-react'
 
+import { LanguageToggle } from './language-toggle'
 import { ThemeToggle } from './theme-toggle'
 
 export function NavFooter({
@@ -17,6 +18,7 @@ export function NavFooter({
 } & React.ComponentPropsWithoutRef<typeof SidebarMenu>) {
 	return (
 		<SidebarMenu {...props}>
+			<LanguageToggle />
 			<ThemeToggle />
 
 			{items.map((item) => (

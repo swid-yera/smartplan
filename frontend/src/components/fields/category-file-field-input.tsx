@@ -1,6 +1,8 @@
 'use client'
 
+import { getLocaleText } from '@helpers'
 import { Dropzone, DropzoneContent, DropzoneEmptyState, Label } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { ICategoryFieldResponse } from '@types'
 
 type CategoryFileFieldInputProps = {
@@ -10,7 +12,10 @@ type CategoryFileFieldInputProps = {
 }
 
 export const CategoryFileFieldInput = ({ field, value, onChange }: CategoryFileFieldInputProps) => {
-	const commonLabel = `${field.label}${field.required ? ' *' : ''}`
+	const locale = useLocaleStore((state) => state.locale)
+	const labelText = getLocaleText(field.label, locale)
+	const helpText = getLocaleText(field.helpText, locale)
+	const commonLabel = `${labelText}${field.required ? ' *' : ''}`
 
 	return (
 		<div className='space-y-2'>
@@ -39,7 +44,7 @@ export const CategoryFileFieldInput = ({ field, value, onChange }: CategoryFileF
 				<DropzoneEmptyState />
 				<DropzoneContent />
 			</Dropzone>
-			{field.helpText && <p className='text-xs text-muted-foreground'>{field.helpText}</p>}
+			{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
 		</div>
 	)
 }

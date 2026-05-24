@@ -1,4 +1,5 @@
 import type { IUser, StatusEnum } from './global.type'
+import type { LocalizedText } from './locale.type'
 
 export enum ViolationEnum {
 	NONE = 'NONE',
@@ -40,21 +41,21 @@ export interface IAward {
 
 export interface IType {
 	id: string
-	name: string
+	name: LocalizedText
 	variants: IVariant[]
 }
 
 export interface IVariant {
 	id: string
-	name: string
-	description: string
+	name: LocalizedText
+	description: LocalizedText
 	criteria: ICriteria[]
 	bonusCriteria: ICriteria[]
 }
 
 export interface ICriteria {
 	id: string
-	name: string
+	name: LocalizedText
 	points: number[]
 	method: CriteriaMethodEnum
 }

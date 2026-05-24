@@ -14,14 +14,16 @@ import {
 	TooltipTrigger,
 	useSidebar,
 } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { GraduationCap, LogInIcon } from 'lucide-react'
 
 import { NavUser } from './nav-user'
 
 export function ASidebarHeader() {
 	const { user, isAuthenticated, authLoading } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
 	const { state, isMobile } = useSidebar()
+	const loginLabel = locale === 'kk' ? 'Кіру' : 'Войти'
 
 	return (
 		<SidebarHeader>
@@ -61,12 +63,12 @@ export function ASidebarHeader() {
 						>
 							<LogInIcon />
 							<span className='whitespace-nowrap overflow-hidden transition-all duration-200 max-w-24 opacity-100 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0'>
-								Войти
+								{loginLabel}
 							</span>
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent align='center' hidden={state !== 'collapsed' || isMobile} side='right'>
-						Войти
+						{loginLabel}
 					</TooltipContent>
 				</Tooltip>
 			)}

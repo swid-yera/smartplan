@@ -1,4 +1,5 @@
 import axios from 'axios'
+
 import { getApiBaseUrl, getRenderApiBaseUrl } from './public-env'
 
 export const api = axios.create({
@@ -14,12 +15,14 @@ export const renderApi = axios.create({
 	withCredentials: true,
 })
 
-api.interceptors.request.use(config => {
+api.interceptors.request.use((config) => {
 	config.baseURL = getApiBaseUrl()
+
 	return config
 })
 
-renderApi.interceptors.request.use(config => {
+renderApi.interceptors.request.use((config) => {
 	config.baseURL = getRenderApiBaseUrl()
+
 	return config
 })

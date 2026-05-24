@@ -6,10 +6,10 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle } from '@components'
-import { getCategoryIconOptionByName, hasRole } from '@helpers'
+import { getCategoryIconOptionByName, getLocaleText, hasRole } from '@helpers'
 import { services } from '@services'
 import { Badge, Button, ButtonGroup, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
 import { Edit, Folder, Plus } from 'lucide-react'
@@ -21,6 +21,7 @@ const Page = () => {
 	const params = useParams<{ id: string }>()
 	const categoryId = params.id
 	const { user, authLoading } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
 
 	const [currentPage, setCurrentPage] = useState(1)
 
@@ -69,15 +70,15 @@ const Page = () => {
 
 	const categoryAwardTypeNames = useMemo(() => {
 		if (category?.awardTypesExpanded?.length) {
-			return category.awardTypesExpanded.map((type) => type.name)
+			return category.awardTypesExpanded.map((type) => getLocaleText(type.name, locale))
 		}
 
 		if (!category?.awardTypes?.length) return []
 
-		const awardTypeNameById = new Map((awardTypes || []).map((type) => [type.id, type.name]))
+		const awardTypeNameById = new Map((awardTypes || []).map((type) => [type.id, getLocaleText(type.name, locale)]))
 
 		return category.awardTypes.map((typeId) => awardTypeNameById.get(typeId) || typeId)
-	}, [awardTypes, category?.awardTypes, category?.awardTypesExpanded])
+	}, [locale, awardTypes, category?.awardTypes, category?.awardTypesExpanded])
 
 	if (isCategoryLoading || isAwardsLoading || authLoading) {
 		return <Loader type='data' />
@@ -90,6 +91,8 @@ const Page = () => {
 	const categoryIconOption = getCategoryIconOptionByName(category.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const isAdmin = user ? hasRole(user.role, RoleEnum.ADMIN) : false
+	const categoryName = getLocaleText(category.name, locale)
+	const categoryDescription = getLocaleText(category.description, locale) || 'Описание отсутствует'
 
 	return (
 		<section className='p-4 w-full max-w-6xl mx-auto space-y-6'>
@@ -116,16 +119,16 @@ const Page = () => {
 				backHref='/kpi/categories'
 				description='Категория и список связанных достижений'
 			>
-				{category.name}
+				{categoryName}
 			</PageTitle>
 
 			<Card>
 				<CardHeader>
 					<CardTitle className='flex items-center gap-3'>
 						<CategoryIcon className='h-6 w-6 text-primary' />
-						<span>{category.name}</span>
+						<span>{categoryName}</span>
 					</CardTitle>
-					<CardDescription>{category.description || 'Описание отсутствует'}</CardDescription>
+					<CardDescription>{categoryDescription}</CardDescription>
 				</CardHeader>
 				<CardContent className='space-y-4'>
 					<div className='flex flex-wrap gap-2'>

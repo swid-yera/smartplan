@@ -11,20 +11,43 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@shadcn'
-import { CriteriaMethodEnum, type ICriteriaRequest, type IVariantRequest } from '@types'
+import type { Locale } from '@types'
+import { CriteriaMethodEnum } from '@types'
 import { Plus, Trash } from 'lucide-react'
+
+export interface ILocalizedDraft {
+	ru: string
+	kk: string
+}
+
+export interface ICriteriaForm {
+	name: ILocalizedDraft
+	points: number[]
+	method: CriteriaMethodEnum
+}
+
+export interface IVariantForm {
+	name: ILocalizedDraft
+	description: ILocalizedDraft
+	criteria: ICriteriaForm[]
+	bonusCriteria: ICriteriaForm[]
+}
 
 interface IProps {
 	index: number
-	variant: IVariantRequest
-	onChange: (v: IVariantRequest) => void
+	locale: Locale
+	variant: IVariantForm
+	onChange: (v: IVariantForm) => void
 	onDelete: () => void
 }
 
-export const VariantEdit = ({ index, variant, onChange, onDelete }: IProps) => {
+export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IProps) => {
 	const addCriteria = () => {
-		const newCriteria: ICriteriaRequest = {
-			name: '',
+		const newCriteria: ICriteriaForm = {
+			name: {
+				ru: '',
+				kk: '',
+			},
 			points: [0],
 			method: CriteriaMethodEnum.NORMAL,
 		}
@@ -50,14 +73,30 @@ export const VariantEdit = ({ index, variant, onChange, onDelete }: IProps) => {
 			<CardContent className='space-y-4'>
 				<Input
 					placeholder='Название варианта'
-					value={variant.name}
-					onChange={(e) => onChange({ ...variant, name: e.target.value })}
+					value={variant.name[locale]}
+					onChange={(e) =>
+						onChange({
+							...variant,
+							name: {
+								...variant.name,
+								[locale]: e.target.value,
+							},
+						})
+					}
 				/>
 
 				<Input
 					placeholder='Описание'
-					value={variant.description}
-					onChange={(e) => onChange({ ...variant, description: e.target.value })}
+					value={variant.description[locale]}
+					onChange={(e) =>
+						onChange({
+							...variant,
+							description: {
+								...variant.description,
+								[locale]: e.target.value,
+							},
+						})
+					}
 				/>
 
 				{/* criteria */}
@@ -75,11 +114,17 @@ export const VariantEdit = ({ index, variant, onChange, onDelete }: IProps) => {
 							<li key={i} className='space-y-3'>
 								<Input
 									placeholder='Название критерия'
-									value={c.name}
+									value={c.name[locale]}
 									onChange={(e) => {
 										const next = [...variant.criteria]
 
-										next[i] = { ...c, name: e.target.value }
+										next[i] = {
+											...c,
+											name: {
+												...c.name,
+												[locale]: e.target.value,
+											},
+										}
 										onChange({ ...variant, criteria: next })
 									}}
 								/>

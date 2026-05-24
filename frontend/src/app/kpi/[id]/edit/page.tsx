@@ -14,6 +14,7 @@ import {
 	findFutureDateCategoryField,
 	findInvalidUrlCategoryField,
 } from '@components'
+import { getLocaleText } from '@helpers'
 import { services } from '@services'
 import {
 	Button,
@@ -31,6 +32,7 @@ import {
 	SelectValue,
 	Separator,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
 import { toast } from 'sonner'
@@ -38,6 +40,7 @@ import { toast } from 'sonner'
 const Page = () => {
 	const { id } = useParams<{ id: string }>()
 	const { push } = useRouter()
+	const locale = useLocaleStore((state) => state.locale)
 
 	const [selectedType, setSelectedType] = useState<ITypeResponse | null>(null)
 	const [selectedVariant, setSelectedVariant] = useState<IVariantResponse | null>(null)
@@ -192,7 +195,7 @@ const Page = () => {
 		})
 
 		if (missingRequiredField) {
-			toast.error(`Заполните обязательное поле: ${missingRequiredField.label}`)
+			toast.error(`Заполните обязательное поле: ${getLocaleText(missingRequiredField.label, locale)}`)
 
 			return
 		}
@@ -200,7 +203,9 @@ const Page = () => {
 		const invalidUrlField = findInvalidUrlCategoryField(category.fieldsExpanded, categoryFieldValues)
 
 		if (invalidUrlField) {
-			toast.error(`Поле «${invalidUrlField.label}» должно содержать корректный домен/ссылку без https://`)
+			toast.error(
+				`Поле «${getLocaleText(invalidUrlField.label, locale)}» должно содержать корректный домен/ссылку без https://`,
+			)
 
 			return
 		}
@@ -208,7 +213,7 @@ const Page = () => {
 		const futureDateField = findFutureDateCategoryField(category.fieldsExpanded, categoryFieldValues)
 
 		if (futureDateField) {
-			toast.error(`Поле «${futureDateField.label}» не может быть будущей датой`)
+			toast.error(`Поле «${getLocaleText(futureDateField.label, locale)}» не может быть будущей датой`)
 
 			return
 		}
@@ -330,7 +335,7 @@ const Page = () => {
 							<SelectContent>
 								{availableTypes.map((type) => (
 									<SelectItem key={type.id} value={type.id}>
-										{type.name}
+										{getLocaleText(type.name, locale)}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -356,7 +361,7 @@ const Page = () => {
 								<SelectContent>
 									{(selectedType?.variants || []).map((variant) => (
 										<SelectItem key={variant.id} value={variant.id}>
-											{variant.name}
+											{getLocaleText(variant.name, locale)}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -380,7 +385,7 @@ const Page = () => {
 								<SelectContent>
 									{(selectedVariant?.criteria || []).map((criteria) => (
 										<SelectItem key={criteria.id} value={criteria.id}>
-											{criteria.name} ({criteria.points.join('-')} баллов)
+											{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} баллов)
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -406,7 +411,7 @@ const Page = () => {
 								<SelectContent>
 									{selectedVariant.bonusCriteria.map((criteria) => (
 										<SelectItem key={criteria.id} value={criteria.id}>
-											{criteria.name} ({criteria.points.join('-')} бонусных баллов)
+											{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} бонусных баллов)
 										</SelectItem>
 									))}
 								</SelectContent>

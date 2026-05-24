@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
-import { CATEGORY_ICON_OPTIONS } from '@helpers'
+import { CATEGORY_ICON_OPTIONS, createLocaleText, getLocaleText } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -35,23 +35,38 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Separator,
+	Tabs,
+	TabsList,
+	TabsTrigger,
 	Textarea,
 } from '@shadcn'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { CategoryFieldType, IApiErrorResponse, ICategoryFieldRequest, ICategoryRequest } from '@types'
+import type { CategoryFieldType, IApiErrorResponse, ICategoryRequest, Locale } from '@types'
 import { isAxiosError } from 'axios'
 import { Check, ChevronsUpDown, Minus, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 const FIELD_TYPE_OPTIONS: CategoryFieldType[] = ['text', 'textarea', 'number', 'select', 'date', 'file', 'url']
 
-const createEmptyField = (sortOrder: number): ICategoryFieldRequest => ({
+interface ICategoryFieldFormState {
+	key: string
+	label: Record<Locale, string>
+	type: CategoryFieldType
+	required: boolean
+	placeholder: Record<Locale, string>
+	helpText: Record<Locale, string>
+	options: unknown[]
+	validation: Record<string, unknown>
+	sortOrder: number
+}
+
+const createEmptyField = (sortOrder: number): ICategoryFieldFormState => ({
 	key: '',
-	label: '',
+	label: { ru: '', kk: '' },
 	type: 'text',
 	required: false,
-	placeholder: '',
-	helpText: '',
+	placeholder: { ru: '', kk: '' },
+	helpText: { ru: '', kk: '' },
 	options: [],
 	validation: {},
 	sortOrder,
@@ -59,13 +74,14 @@ const createEmptyField = (sortOrder: number): ICategoryFieldRequest => ({
 
 const Page = () => {
 	const { replace } = useRouter()
+	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
 
-	const [name, setName] = useState('')
+	const [name, setName] = useState<Record<Locale, string>>({ ru: '', kk: '' })
 	const [iconName, setIconName] = useState('')
-	const [description, setDescription] = useState('')
+	const [description, setDescription] = useState<Record<Locale, string>>({ ru: '', kk: '' })
 	const [awardTypeIds, setAwardTypeIds] = useState<string[]>([])
 	const [isAwardTypesOpen, setIsAwardTypesOpen] = useState(false)
-	const [fields, setFields] = useState<ICategoryFieldRequest[]>([])
+	const [fields, setFields] = useState<ICategoryFieldFormState[]>([])
 
 	const { data: awardTypes } = useQuery({
 		...services.award.getAllTypesOptions(),
@@ -78,7 +94,9 @@ const Page = () => {
 	const selectedAwardTypes =
 		awardTypes
 			?.filter((awardType) => awardTypeIds.includes(awardType.id))
-			.sort((a, b) => a.name.localeCompare(b.name)) || []
+			.sort((a, b) =>
+				getLocaleText(a.name, activeLocale).localeCompare(getLocaleText(b.name, activeLocale), activeLocale),
+			) || []
 
 	const toggleAwardType = (typeId: string) => {
 		setAwardTypeIds((prev) => (prev.includes(typeId) ? prev.filter((id) => id !== typeId) : [...prev, typeId]))
@@ -96,18 +114,20 @@ const Page = () => {
 		)
 	}
 
-	const updateField = (index: number, patch: Partial<ICategoryFieldRequest>) => {
+	const updateField = (index: number, patch: Partial<ICategoryFieldFormState>) => {
 		setFields((prev) => prev.map((field, currentIndex) => (currentIndex === index ? { ...field, ...patch } : field)))
 	}
 
 	const handleSubmit = () => {
-		if (!name.trim()) {
+		if (!name.ru.trim() && !name.kk.trim()) {
 			toast.error('Название категории обязательно')
 
 			return
 		}
 
-		const invalidField = fields.find((field) => !field.key.trim() || !field.label.trim())
+		const invalidField = fields.find(
+			(field) => !field.key.trim() || (!field.label.ru.trim() && !field.label.kk.trim()),
+		)
 
 		if (invalidField) {
 			toast.error('У каждого поля должны быть key и label')
@@ -116,29 +136,42 @@ const Page = () => {
 		}
 
 		const payload: ICategoryRequest = {
-			name: name.trim(),
+			name: createLocaleText(name.ru.trim(), name.kk.trim()),
 			icon: iconName || undefined,
-			description: description.trim() || undefined,
+			description:
+				description.ru.trim() || description.kk.trim()
+					? createLocaleText(description.ru.trim(), description.kk.trim())
+					: undefined,
 			awardTypes: awardTypeIds,
 			fields: fields.map((field, index) => ({
 				...field,
 				key: field.key.trim(),
-				label: field.label.trim(),
-				placeholder: field.placeholder?.trim() || undefined,
-				helpText: field.helpText?.trim() || undefined,
+				required: field.type === 'url' || field.type === 'file' ? false : field.required,
+				label: createLocaleText(field.label.ru.trim(), field.label.kk.trim()),
+				placeholder:
+					field.placeholder.ru.trim() || field.placeholder.kk.trim()
+						? createLocaleText(field.placeholder.ru.trim(), field.placeholder.kk.trim())
+						: null,
+				helpText:
+					field.helpText.ru.trim() || field.helpText.kk.trim()
+						? createLocaleText(field.helpText.ru.trim(), field.helpText.kk.trim())
+						: null,
 				sortOrder: index + 1,
 			})),
 		}
 
-		const toastId = `create-category-${payload.name}`
+		const categoryName = name[activeLocale].trim() || name.ru.trim() || name.kk.trim()
+		const toastId = `create-category-${categoryName}`
 
-		toast.loading(`Создание категории ${payload.name}`, { id: toastId })
+		toast.loading(`Создание категории ${categoryName}`, { id: toastId })
 
 		mutate(
 			{ newCategory: payload },
 			{
 				onSuccess: (createdCategory) => {
-					toast.success(`Категория ${createdCategory.name} успешно создана`, { id: toastId })
+					const categoryName = getLocaleText(createdCategory.name, activeLocale)
+
+					toast.success(`Категория ${categoryName} успешно создана`, { id: toastId })
 					replace('/kpi/categories')
 				},
 				onError: (error) => {
@@ -161,7 +194,19 @@ const Page = () => {
 
 	return (
 		<section className='mx-auto w-full p-6 space-y-6'>
-			<PageTitle backHref='/kpi/create/categories' description='Создание новой категории для KPI'>
+			<PageTitle
+				sticky
+				actions={
+					<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
+						<TabsList>
+							<TabsTrigger value='ru'>Русский</TabsTrigger>
+							<TabsTrigger value='kk'>Қазақша</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				}
+				backHref='/kpi/create/categories'
+				description='Создание новой категории для KPI'
+			>
 				Создание категории
 			</PageTitle>
 
@@ -178,8 +223,13 @@ const Page = () => {
 							<Input
 								id='name'
 								placeholder='Например: Публикации'
-								value={name}
-								onChange={(event) => setName(event.target.value)}
+								value={name[activeLocale]}
+								onChange={(event) =>
+									setName((prev) => ({
+										...prev,
+										[activeLocale]: event.target.value,
+									}))
+								}
 							/>
 						</div>
 
@@ -224,8 +274,13 @@ const Page = () => {
 						<Textarea
 							id='description'
 							placeholder='Короткое описание категории'
-							value={description}
-							onChange={(event) => setDescription(event.target.value)}
+							value={description[activeLocale]}
+							onChange={(event) =>
+								setDescription((prev) => ({
+									...prev,
+									[activeLocale]: event.target.value,
+								}))
+							}
 						/>
 					</div>
 
@@ -250,21 +305,25 @@ const Page = () => {
 									<CommandList>
 										<CommandEmpty>Тип оценивания не найден.</CommandEmpty>
 										<CommandGroup>
-											{awardTypes?.map((awardType) => (
-												<CommandItem
-													key={awardType.id}
-													value={awardType.name}
-													onSelect={() => toggleAwardType(awardType.id)}
-												>
-													<Check
-														className={cn(
-															'mr-2 h-4 w-4',
-															awardTypeIds.includes(awardType.id) ? 'opacity-100' : 'opacity-0',
-														)}
-													/>
-													{awardType.name}
-												</CommandItem>
-											))}
+											{awardTypes?.map((awardType) => {
+												const awardTypeName = getLocaleText(awardType.name, activeLocale)
+
+												return (
+													<CommandItem
+														key={awardType.id}
+														value={awardTypeName}
+														onSelect={() => toggleAwardType(awardType.id)}
+													>
+														<Check
+															className={cn(
+																'mr-2 h-4 w-4',
+																awardTypeIds.includes(awardType.id) ? 'opacity-100' : 'opacity-0',
+															)}
+														/>
+														{awardTypeName}
+													</CommandItem>
+												)
+											})}
 										</CommandGroup>
 									</CommandList>
 								</Command>
@@ -273,19 +332,23 @@ const Page = () => {
 
 						{selectedAwardTypes.length ? (
 							<div className='flex flex-wrap gap-2'>
-								{selectedAwardTypes.map((awardType) => (
-									<Badge key={awardType.id} className='gap-1 py-1 pr-1.5 pl-2' variant='secondary'>
-										<span>{awardType.name}</span>
-										<button
-											aria-label={`Удалить ${awardType.name}`}
-											className='rounded-sm p-0.5 hover:bg-black/10'
-											type='button'
-											onClick={() => toggleAwardType(awardType.id)}
-										>
-											<X className='h-3.5 w-3.5' />
-										</button>
-									</Badge>
-								))}
+								{selectedAwardTypes.map((awardType) => {
+									const awardTypeName = getLocaleText(awardType.name, activeLocale)
+
+									return (
+										<Badge key={awardType.id} className='gap-1 py-1 pr-1.5 pl-2' variant='secondary'>
+											<span>{awardTypeName}</span>
+											<button
+												aria-label={`Удалить ${awardTypeName}`}
+												className='rounded-sm p-0.5 hover:bg-black/10'
+												type='button'
+												onClick={() => toggleAwardType(awardType.id)}
+											>
+												<X className='h-3.5 w-3.5' />
+											</button>
+										</Badge>
+									)
+								})}
 							</div>
 						) : (
 							<p className='text-sm text-muted-foreground'>Выбранные типы будут показаны здесь</p>
@@ -327,8 +390,15 @@ const Page = () => {
 													<Input
 														id={`field-label-${index}`}
 														placeholder='Ссылка на публикацию'
-														value={field.label}
-														onChange={(event) => updateField(index, { label: event.target.value })}
+														value={field.label[activeLocale]}
+														onChange={(event) =>
+															updateField(index, {
+																label: {
+																	...field.label,
+																	[activeLocale]: event.target.value,
+																},
+															})
+														}
 													/>
 												</div>
 											</div>
@@ -339,7 +409,10 @@ const Page = () => {
 													<Select
 														value={field.type}
 														onValueChange={(value: CategoryFieldType) =>
-															updateField(index, { type: value })
+															updateField(index, {
+																type: value,
+																required: value === 'url' || value === 'file' ? false : field.required,
+															})
 														}
 													>
 														<SelectTrigger id={`field-type-${index}`}>
@@ -360,8 +433,15 @@ const Page = () => {
 													<Input
 														id={`field-placeholder-${index}`}
 														placeholder='https://...'
-														value={field.placeholder || ''}
-														onChange={(event) => updateField(index, { placeholder: event.target.value })}
+														value={field.placeholder[activeLocale] || ''}
+														onChange={(event) =>
+															updateField(index, {
+																placeholder: {
+																	...field.placeholder,
+																	[activeLocale]: event.target.value,
+																},
+															})
+														}
 													/>
 												</div>
 											</div>
@@ -371,23 +451,34 @@ const Page = () => {
 												<Input
 													id={`field-help-${index}`}
 													placeholder='Подсказка для пользователя'
-													value={field.helpText || ''}
-													onChange={(event) => updateField(index, { helpText: event.target.value })}
+													value={field.helpText[activeLocale] || ''}
+													onChange={(event) =>
+														updateField(index, {
+															helpText: {
+																...field.helpText,
+																[activeLocale]: event.target.value,
+															},
+														})
+													}
 												/>
 											</div>
 
-											<div className='flex items-center justify-between rounded-md border p-3'>
-												<div>
-													<p className='text-sm font-medium'>Обязательное поле</p>
-													<p className='text-xs text-muted-foreground'>
-														Пользователь не сможет отправить форму без значения
-													</p>
+											{field.type !== 'url' && field.type !== 'file' ? (
+												<div className='flex items-center justify-between rounded-md border p-3'>
+													<div>
+														<p className='text-sm font-medium'>Обязательное поле</p>
+														<p className='text-xs text-muted-foreground'>
+															Пользователь не сможет отправить форму без значения
+														</p>
+													</div>
+													<Checkbox
+														checked={field.required}
+														onCheckedChange={(checked) =>
+															updateField(index, { required: checked === true })
+														}
+													/>
 												</div>
-												<Checkbox
-													checked={field.required}
-													onCheckedChange={(checked) => updateField(index, { required: checked === true })}
-												/>
-											</div>
+											) : null}
 
 											<div className='flex justify-end'>
 												<Button

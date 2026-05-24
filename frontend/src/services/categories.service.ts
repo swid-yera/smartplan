@@ -2,13 +2,19 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type { ICategoryListItemResponse, ICategoryRequest, ICategoryResponse, IMessageResponse } from '@types'
 
+import { getCurrentBackendLocale } from './service-locale'
+
 export class CategoriesService {
 	// get all categories
 	getAllOptions = () => {
 		return queryOptions<ICategoryListItemResponse[]>({
 			queryKey: ['categories'],
 			queryFn: async () => {
-				const { data } = await api.get<ICategoryListItemResponse[] | null>('/categories')
+				const { data } = await api.get<ICategoryListItemResponse[] | null>('/categories', {
+					params: {
+						locale: getCurrentBackendLocale(),
+					},
+				})
 
 				if (!data) return []
 
@@ -22,7 +28,11 @@ export class CategoriesService {
 		return queryOptions<ICategoryResponse>({
 			queryKey: ['category', id],
 			queryFn: async () => {
-				const { data } = await api.get<ICategoryResponse>(`/categories/${id}`)
+				const { data } = await api.get<ICategoryResponse>(`/categories/${id}`, {
+					params: {
+						locale: getCurrentBackendLocale(),
+					},
+				})
 
 				return data
 			},

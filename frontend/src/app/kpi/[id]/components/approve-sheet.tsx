@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
+import { getLocaleText } from '@helpers'
 import {
 	Button,
 	Input,
@@ -13,6 +14,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { CriteriaMethodEnum, type ICriteria } from '@types'
 
 interface IApproveSheetProps {
@@ -23,10 +25,12 @@ interface IApproveSheetProps {
 }
 
 export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }: IApproveSheetProps) => {
+	const locale = useLocaleStore((state) => state.locale)
 	const isMeasuring = criteria.method === CriteriaMethodEnum.MEASURING
 
 	const min = criteria.points[0]
 	const max = criteria.points[1] ?? criteria.points[0]
+	const criteriaName = getLocaleText(criteria.name, locale)
 
 	const [awardPoints, setAwardPoints] = useState<number>(min)
 
@@ -50,7 +54,7 @@ export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }:
 				<div className='px-3 space-y-3 text-sm'>
 					<p>
 						<span className='text-muted-foreground'>Критерий:</span>{' '}
-						<span className='font-medium'>{criteria.name}</span>
+						<span className='font-medium'>{criteriaName}</span>
 					</p>
 
 					<p>

@@ -13,6 +13,8 @@ import type {
 	IUpdateStatusRequest,
 } from '@types'
 
+import { getCurrentBackendLocale } from './service-locale'
+
 export class AwardService {
 	// get all awards
 	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, status, teacher }: IGetAllRequest) => {
@@ -21,6 +23,7 @@ export class AwardService {
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IAward>>('/awards', {
 					params: {
+						locale: getCurrentBackendLocale(),
 						currentPage,
 						pageSize,
 						search,
@@ -42,7 +45,11 @@ export class AwardService {
 		return queryOptions<IAward>({
 			queryKey: ['award', id],
 			queryFn: async () => {
-				const { data } = await api.get<IAward>(`/awards/${id}`)
+				const { data } = await api.get<IAward>(`/awards/${id}`, {
+					params: {
+						locale: getCurrentBackendLocale(),
+					},
+				})
 
 				return data
 			},
@@ -171,7 +178,11 @@ export class AwardService {
 		return queryOptions<ITypeResponse[]>({
 			queryKey: ['types'],
 			queryFn: async () => {
-				const { data } = await api.get<ITypeResponse[]>('/awards/types')
+				const { data } = await api.get<ITypeResponse[]>('/awards/types', {
+					params: {
+						locale: getCurrentBackendLocale(),
+					},
+				})
 
 				if (!data) return []
 
@@ -185,7 +196,11 @@ export class AwardService {
 		return queryOptions<ITypeResponse>({
 			queryKey: ['type', id],
 			queryFn: async () => {
-				const { data } = await api.get<ITypeResponse>(`/awards/types/${id}`)
+				const { data } = await api.get<ITypeResponse>(`/awards/types/${id}`, {
+					params: {
+						locale: getCurrentBackendLocale(),
+					},
+				})
 
 				return data
 			},
