@@ -12,7 +12,9 @@ import {
 	PageTitle,
 	buildInitialCategoryFieldValues,
 	findFutureDateCategoryField,
+	findInvalidCategoryFieldByValidation,
 	findMissingRequiredCategoryField,
+	getCategoryFieldValidationError,
 } from '@components'
 import { getCategoryIconOptionByName, getLocaleText } from '@helpers'
 import { services } from '@services'
@@ -25,12 +27,6 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
 	Separator,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -39,6 +35,8 @@ import type { IApiErrorResponse, ICreateAwardRequest, ICriteriaResponse, ITypeRe
 import { isAxiosError } from 'axios'
 import { Folder } from 'lucide-react'
 import { toast } from 'sonner'
+
+import { AwardTypeSelectionFields } from '../../../components'
 
 const DOMAIN_ONLY_REGEX = /^(?=.{1,253}$)(?!-)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/
 
@@ -226,6 +224,26 @@ export default function CreateAwardPage() {
 
 		if (missingRequiredField) {
 			toast.error(`Заполните обязательное поле: ${getLocaleText(missingRequiredField.label, locale)}`)
+
+			return
+		}
+
+		const invalidFieldByValidation = findInvalidCategoryFieldByValidation(
+			category.fieldsExpanded,
+			categoryFieldValues,
+		)
+
+		if (invalidFieldByValidation) {
+			const validationErrorMessage = getCategoryFieldValidationError(
+				invalidFieldByValidation,
+				categoryFieldValues[invalidFieldByValidation.key],
+			)
+
+			toast.error(
+				validationErrorMessage
+					? `Поле «${getLocaleText(invalidFieldByValidation.label, locale)}»: ${validationErrorMessage}`
+					: `Поле «${getLocaleText(invalidFieldByValidation.label, locale)}» заполнено некорректно`,
+			)
 
 			return
 		}
@@ -430,113 +448,23 @@ export default function CreateAwardPage() {
 
 					<Separator className='my-8' />
 
-					<div className='space-y-2'>
-						<Label htmlFor='type'>Тип оценивания</Label>
-						<Select
-							value={selectedType?.id || ''}
-							onValueChange={(id: string) => {
-								const type = availableTypes.find((item) => item.id === id) || null
-
-								setSelectedType(type)
-								setSelectedVariant(null)
-								setSelectedCriteria(null)
-								setSelectedBonusCriteria(null)
-							}}
-						>
-							<SelectTrigger className='w-full' id='type'>
-								<SelectValue placeholder='Выберите тип' />
-							</SelectTrigger>
-							<SelectContent>
-								{availableTypes.map((type) => (
-									<SelectItem key={type.id} value={type.id}>
-										{getLocaleText(type.name, locale)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className='space-y-2'>
-						<Label htmlFor='variant'>Вариант</Label>
-						<Select
-							disabled={!selectedType || !selectedType.variants.length}
-							value={selectedVariant?.id || ''}
-							onValueChange={(id: string) => {
-								const variant = selectedType?.variants.find((item) => item.id === id) || null
-
-								setSelectedVariant(variant)
-								setSelectedCriteria(null)
-							}}
-						>
-							<SelectTrigger className='w-full' id='variant'>
-								<SelectValue placeholder='Выберите вариант' />
-							</SelectTrigger>
-							<SelectContent>
-								{(selectedType?.variants || []).map((variant) => (
-									<SelectItem key={variant.id} value={variant.id}>
-										{getLocaleText(variant.name, locale)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{selectedVariant?.description ? (
-							<p className='ml-2 text-xs text-muted-foreground'>
-								{getLocaleText(selectedVariant.description, locale)}
-							</p>
-						) : !selectedType ? (
-							<p className='ml-2 text-xs text-muted-foreground'>Сначала выберите тип оценивания</p>
-						) : null}
-					</div>
-
-					<div className='space-y-2'>
-						<Label htmlFor='criteria'>Критерий</Label>
-						<Select
-							disabled={!selectedVariant || !selectedVariant.criteria.length}
-							value={selectedCriteria?.id || ''}
-							onValueChange={(id: string) => {
-								const criteria = selectedVariant?.criteria.find((item) => item.id === id) || null
-
-								setSelectedCriteria(criteria)
-							}}
-						>
-							<SelectTrigger className='w-full' id='criteria'>
-								<SelectValue placeholder='Выберите критерий' />
-							</SelectTrigger>
-							<SelectContent>
-								{(selectedVariant?.criteria || []).map((criteria) => (
-									<SelectItem key={criteria.id} value={criteria.id}>
-										{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} баллов)
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						{!selectedVariant && <p className='ml-2 text-xs text-muted-foreground'>Сначала выберите вариант</p>}
-					</div>
-
-					{selectedVariant && selectedVariant.bonusCriteria && (
-						<div className='space-y-2'>
-							<Label htmlFor='bonus-criteria'>Бонусный критерий</Label>
-							<Select
-								value={selectedBonusCriteria?.id || ''}
-								onValueChange={(id: string) => {
-									const criteria = selectedVariant.bonusCriteria?.find((item) => item.id === id) || null
-
-									setSelectedBonusCriteria(criteria)
-								}}
-							>
-								<SelectTrigger className='w-full' id='bonus-criteria'>
-									<SelectValue placeholder='Выберите критерий' />
-								</SelectTrigger>
-								<SelectContent>
-									{selectedVariant.criteria.map((criteria) => (
-										<SelectItem key={criteria.id} value={criteria.id}>
-											{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} бонусных баллов)
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-					)}
+					<AwardTypeSelectionFields
+						showHints
+						showVariantDescription
+						availableTypes={availableTypes}
+						bonusCriteriaOptionsSource='criteria'
+						layout='stack'
+						locale={locale}
+						selectedBonusCriteria={selectedBonusCriteria}
+						selectedCriteria={selectedCriteria}
+						selectedType={selectedType}
+						selectedVariant={selectedVariant}
+						setSelectedBonusCriteria={setSelectedBonusCriteria}
+						setSelectedCriteria={setSelectedCriteria}
+						setSelectedType={setSelectedType}
+						setSelectedVariant={setSelectedVariant}
+						typeLabel='Тип оценивания'
+					/>
 
 					{bottomCategoryFields.length > 0 && (
 						<>

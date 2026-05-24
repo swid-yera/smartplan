@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { services } from '@services'
 import {
 	Button,
@@ -15,21 +17,26 @@ import {
 	useSidebar,
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
-import { GraduationCap, LogInIcon } from 'lucide-react'
+import { LogInIcon } from 'lucide-react'
 
 import { NavUser } from './nav-user'
 
-export function ASidebarHeader() {
+interface ASidebarHeaderProps {
+	hasSid: boolean
+}
+
+export function ASidebarHeader({ hasSid }: ASidebarHeaderProps) {
 	const { user, isAuthenticated, authLoading } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
 	const { state, isMobile } = useSidebar()
 	const loginLabel = locale === 'kk' ? 'Кіру' : 'Войти'
+	const showAuthSkeleton = authLoading && hasSid
 
 	return (
 		<SidebarHeader>
 			<div className='pb-2 flex items-center justify-between group-data-[collapsible=icon]:justify-center'>
 				<div className='flex justify-center items-top font-bold text-primary whitespace-nowrap overflow-hidden transition-all duration-500 max-w-40 opacity-100 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0'>
-					<GraduationCap className='inline' size={36} />
+					<Image alt='' className='inline shrink-0' height={36} src='/eduplan-icon.svg' width={36} />
 					<span className='pl-2 text-2xl'>SmartPlan</span>
 				</div>
 
@@ -37,7 +44,7 @@ export function ASidebarHeader() {
 				<SidebarTrigger className='hover:opacity-100 group-data-[collapsible=icon]:opacity-100 opacity-0' />
 			</div>
 
-			{authLoading ? (
+			{showAuthSkeleton ? (
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton className='flex items-center gap-2 p-2' size='lg'>

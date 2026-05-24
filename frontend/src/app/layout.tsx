@@ -11,11 +11,72 @@ import './globals.css'
 
 // metadata
 export const metadata: Metadata = {
-	title: 'Smartplan',
-	description: 'Smartplan',
-	icons: {
-		icon: '/Smartplan_icon.png',
+	title: {
+		default: 'SmartPlan',
+		template: '%s | SmartPlan',
 	},
+	description: 'Система управления учебными планами для колледжей',
+
+	// TODO: edit
+	applicationName: 'SmartPlan',
+	creator: 'SmartPlan',
+	publisher: 'SmartPlan',
+
+	icons: {
+		icon: [
+			{
+				url: '/favicon.ico',
+				sizes: 'any',
+			},
+			{
+				url: '/eduplan.png',
+				type: 'image/png',
+			},
+			{
+				url: '/eduplan-icon-16x16.png',
+				sizes: '16x16',
+				type: 'image/png',
+			},
+			{
+				url: '/eduplan-icon-32x32.png',
+				sizes: '32x32',
+				type: 'image/png',
+			},
+		],
+		apple: [
+			{
+				url: '/eduplan-icon-180x180.png',
+				sizes: '180x180',
+				type: 'image/png',
+			},
+		],
+		shortcut: ['/favicon.ico'],
+	},
+
+	openGraph: {
+		type: 'website',
+		locale: 'ru_RU',
+		siteName: 'SmartPlan',
+		title: 'SmartPlan',
+		description: 'Система управления учебными планами для колледжей',
+		images: [
+			{
+				url: '/eduplan.png',
+				width: 1200,
+				height: 630,
+				alt: 'SmartPlan — система управления учебными планами для колледжей',
+			},
+		],
+	},
+
+	twitter: {
+		card: 'summary_large_image',
+		title: 'SmartPlan',
+		description: 'Система управления учебными планами для колледжей',
+		images: ['/eduplan.png'],
+	},
+
+	manifest: '/site.webmanifest',
 }
 
 // layout
@@ -27,6 +88,7 @@ export default async function RootLayout({
 	const cookieStore = await cookies()
 	const localeFromCookie = cookieStore.get(SITE_LOCALE_COOKIE_KEY)?.value
 	const locale = isSiteLocale(localeFromCookie) ? localeFromCookie : 'ru'
+	const hasSid = cookieStore.has('sid')
 
 	return (
 		<html suppressHydrationWarning lang={locale}>
@@ -37,9 +99,9 @@ export default async function RootLayout({
 					<QueryProvider>
 						<LocaleProvider>
 							<ASidebarProvider>
-								<AuthProvider />
+								<AuthProvider hasSid={hasSid} />
 
-								<ASidebar />
+								<ASidebar hasSid={hasSid} />
 								<SidebarInset className='flex-1 min-w-0 justify-between items-stretch'>
 									{children}
 

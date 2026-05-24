@@ -33,7 +33,6 @@ interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElemen
 export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 	const { isMobile } = useSidebar()
 	const locale = useLocaleStore((state) => state.locale)
-	const profileLabel = locale === 'kk' ? 'Профиль' : 'Профиль'
 	const logoutLabel = locale === 'kk' ? 'Шығу' : 'Выйти'
 
 	return (
@@ -82,12 +81,8 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 							<DropdownMenuItem asChild>
 								<Link href={`/users/${user.keycloakId}`}>
 									<User />
-									{profileLabel}
+									{user.username}
 								</Link>
-							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<User />
-								{user.username}
 							</DropdownMenuItem>
 							<DropdownMenuItem>
 								<ShieldUser />

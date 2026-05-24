@@ -93,3 +93,109 @@ export const collectCategoryFieldFiles = (fields: ICategoryFieldResponse[], valu
 		return value
 	})
 }
+
+const getValidationNumber = (validation: Record<string, unknown>, key: string) => {
+	const rawValue = validation?.[key]
+	const parsedValue = typeof rawValue === 'number' ? rawValue : Number(rawValue)
+
+	return Number.isFinite(parsedValue) ? parsedValue : null
+}
+
+const getValidationStringArray = (validation: Record<string, unknown>, key: string) => {
+	const rawValue = validation?.[key]
+
+	if (!Array.isArray(rawValue)) return []
+
+	return rawValue
+		.filter((item): item is string => typeof item === 'string')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
+
+const getFileExtension = (fileName: string) => {
+	const extension = fileName.split('.').pop()?.toLowerCase()
+
+	return extension || ''
+}
+
+export const getCategoryFieldValidationError = (
+	field: ICategoryFieldResponse,
+	value: ICategoryFieldValue | undefined,
+): string | null => {
+	if (field.type === 'text' || field.type === 'textarea') {
+		if (typeof value !== 'string' || !value.length) return null
+
+		const minLength = getValidationNumber(field.validation, 'minLength')
+		const maxLength = getValidationNumber(field.validation, 'maxLength')
+
+		if (minLength !== null && value.length < minLength) {
+			return `Минимальная длина: ${minLength}`
+		}
+
+		if (maxLength !== null && value.length > maxLength) {
+			return `Максимальная длина: ${maxLength}`
+		}
+
+		return null
+	}
+
+	if (field.type === 'number') {
+		if (typeof value !== 'string' || !value.trim()) return null
+
+		const numberValue = Number(value)
+
+		if (!Number.isFinite(numberValue)) {
+			return 'Введите корректное число'
+		}
+
+		const min = getValidationNumber(field.validation, 'min')
+		const max = getValidationNumber(field.validation, 'max')
+
+		if (min !== null && numberValue < min) {
+			return `Минимальное значение: ${min}`
+		}
+
+		if (max !== null && numberValue > max) {
+			return `Максимальное значение: ${max}`
+		}
+
+		return null
+	}
+
+	if (field.type === 'file') {
+		if (!Array.isArray(value) || !value.length) return null
+
+		const maxSizeMb = getValidationNumber(field.validation, 'maxSizeMb')
+		const allowedExtensions = getValidationStringArray(field.validation, 'extensions').map((item) =>
+			item.replace(/^\./, '').toLowerCase(),
+		)
+		const maxSizeBytes = maxSizeMb !== null ? maxSizeMb * 1024 * 1024 : null
+
+		for (const file of value) {
+			if (maxSizeBytes !== null && file.size > maxSizeBytes) {
+				return `Максимальный размер файла: ${maxSizeMb}MB`
+			}
+
+			if (allowedExtensions.length > 0) {
+				const extension = getFileExtension(file.name)
+
+				if (!extension || !allowedExtensions.includes(extension)) {
+					return `Недопустимое расширение файла: ${file.name}`
+				}
+			}
+		}
+	}
+
+	return null
+}
+
+export const findInvalidCategoryFieldByValidation = (
+	fields: ICategoryFieldResponse[],
+	values: ICategoryFieldValues,
+) => {
+	return fields.find((field) => {
+		const error = getCategoryFieldValidationError(field, values[field.key])
+
+		return Boolean(error)
+	})
+}

@@ -1,0 +1,21 @@
+{
+	"name": "SmartPlan",
+	"short_name": "SmartPlan",
+	"description": "Система управления учебными планами",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#ffffff",
+	"theme_color": "#d27e4d",
+	"icons": [
+		{
+			"src": "/eduplan-icon-192x192.png",
+			"sizes": "192x192",
+			"type": "image/png"
+		},
+		{
+			"src": "/eduplan-icon-512x512.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}
+	]
+}
