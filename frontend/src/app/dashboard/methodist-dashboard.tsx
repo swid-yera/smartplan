@@ -3,13 +3,15 @@ import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 
 import { CombineCard, Loader, PageTitle } from '@components'
-import { buildReviewItems, isCurrentDay } from '@helpers'
+import { buildReviewItems, getUILocaleSection, isCurrentDay } from '@helpers'
 import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useQueries } from '@tanstack/react-query'
 import { StatusEnum } from '@types'
 import { CheckCircle, FileText } from 'lucide-react'
 
+import localeDictionary from './locale.json'
 import { StatCard } from './stat-card'
 
 const StatusChart = dynamic(() => import('./status-chart'), {
@@ -20,6 +22,9 @@ const StatusChart = dynamic(() => import('./status-chart'), {
 const queryParams = { currentPage: 1, pageSize: 10, status: [StatusEnum.IN_REVIEW] }
 
 export const MethodistDashboard = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).methodist
+	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
 	const [rupsQuery, awardsQuery] = useQueries({
 		queries: [services.rup.getAllOptions(queryParams), services.award.getAllOptions(queryParams)],
 	})
@@ -64,7 +69,7 @@ export const MethodistDashboard = () => {
 			})
 
 			return {
-				date: date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
+				date: date.toLocaleDateString(dateLocale, { day: '2-digit', month: '2-digit' }),
 				approved: dayRups.filter((r) => r.status === StatusEnum.APPROVED).length,
 				review: dayRups.filter((r) => r.status === StatusEnum.IN_REVIEW).length,
 				rejected: dayRups.filter((r) => r.status === StatusEnum.REJECTED).length,
@@ -77,41 +82,39 @@ export const MethodistDashboard = () => {
 
 	return (
 		<div className='px-4 space-y-6 pt-6'>
-			<PageTitle description='Контроль и проверка учебных программ и KPI.'>Административная панель</PageTitle>
+			<PageTitle description={t.description}>{t.title}</PageTitle>
 
 			<section className='space-y-6'>
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-2 '>
 					<StatCard
 						accent='warning'
 						approvedCount={approvedRupsCount}
-						description='РУП на проверке'
+						description={t.rupsDescription}
 						href='/rups/review'
 						icon={FileText}
 						reviewCount={reviewRupsCount}
-						title='Рабочие учебные программы'
+						title={t.rupsTitle}
 					/>
 
 					<StatCard
 						accent='success'
 						approvedCount={approvedAwardsCount}
-						description='Оценка деятельности'
+						description={t.kpiDescription}
 						href='/kpi/review'
 						icon={CheckCircle}
 						reviewCount={reviewAwardsCount}
-						title='KPI преподавателей'
+						title={t.kpiTitle}
 					/>
 				</div>
 
-				<CombineCard isLoading={isLoading} items={items} more={totalCount} title='Ожидают проверки' />
+				<CombineCard isLoading={isLoading} items={items} more={totalCount} title={t.reviewTitle} />
 			</section>
 
 			<section>
 				<Card className='lg:col-span-4 min-w-0'>
 					<CardHeader>
-						<CardTitle className='lg:text-xl text-lg'>Динамика статусов Рабочих учебных программ</CardTitle>
-						<CardDescription>
-							Изменение количества рабочих учебных программ по статусам за последние 7 дней
-						</CardDescription>
+						<CardTitle className='lg:text-xl text-lg'>{t.chartTitle}</CardTitle>
+						<CardDescription>{t.chartDescription}</CardDescription>
 					</CardHeader>
 					<CardContent className='min-w-0'>
 						<StatusChart data={chartData} />

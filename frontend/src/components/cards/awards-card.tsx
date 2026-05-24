@@ -3,6 +3,7 @@
 import type { FC, ReactNode } from 'react'
 import { useState } from 'react'
 
+import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
 	Button,
 	Card,
@@ -21,6 +22,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { type IAward } from '@types'
 import { ChevronLeft, ChevronRight, UserIcon } from 'lucide-react'
 
@@ -28,6 +30,7 @@ import { StatusBadge } from '../badges/status-badge'
 import { AwardSheet } from '../sheets/award-sheet'
 import { Loader } from '../ui/loader'
 import { EmptyCard } from './empty-card'
+import localeDictionary from './locale.json'
 
 interface IProps {
 	awards: IAward[]
@@ -50,6 +53,9 @@ export const AwardsCard: FC<IProps> = ({
 	isLoading,
 	showCreateOnEmpty = false,
 }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).awardsCard
+	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
 	const [selectedAward, setSelectedAward] = useState<IAward | null>(null)
 	const isExist = awards.length > 0 && !isLoading
 
@@ -67,11 +73,11 @@ export const AwardsCard: FC<IProps> = ({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead className='font-bold'>Создано</TableHead>
-									<TableHead className='font-bold'>Преподаватель</TableHead>
-									<TableHead className='font-bold'>Критерия</TableHead>
-									<TableHead className='font-bold'>Баллы</TableHead>
-									<TableHead className='text-right font-bold'>Статус</TableHead>
+									<TableHead className='font-bold'>{t.createdAt}</TableHead>
+									<TableHead className='font-bold'>{t.teacher}</TableHead>
+									<TableHead className='font-bold'>{t.criteria}</TableHead>
+									<TableHead className='font-bold'>{t.points}</TableHead>
+									<TableHead className='text-right font-bold'>{t.status}</TableHead>
 									{/* Убрали колонку "Действия", так как кликаем по строке */}
 								</TableRow>
 							</TableHeader>
@@ -89,7 +95,7 @@ export const AwardsCard: FC<IProps> = ({
 													type='data'
 												/>
 											) : (
-												'Пока ничего нет.'
+												t.empty
 											)}
 										</TableCell>
 									</TableRow>
@@ -108,10 +114,10 @@ export const AwardsCard: FC<IProps> = ({
 							onClick={() => onPageChange(currentPage - 1)}
 						>
 							<ChevronLeft className='h-4 w-4 mr-2' />
-							Назад
+							{t.back}
 						</Button>
 						<div className='text-sm font-medium'>
-							Страница {currentPage} из {totalPages}
+							{interpolateUILocaleText(t.page, { current: currentPage, total: totalPages })}
 						</div>
 						<Button
 							disabled={currentPage >= totalPages}
@@ -119,7 +125,7 @@ export const AwardsCard: FC<IProps> = ({
 							variant='outline'
 							onClick={() => onPageChange(currentPage + 1)}
 						>
-							Вперед
+							{t.next}
 							<ChevronRight className='h-4 w-4 ml-2' />
 						</Button>
 					</CardFooter>
@@ -137,9 +143,12 @@ interface IAwardRow {
 }
 
 const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
-	const teacherName = `${award?.teacher?.firstName} ${award?.teacher.lastName}`.trim() || 'Неизвестно'
-	const createdAt = new Date(award.createdAt).toLocaleDateString('ru-RU')
-	const updatedAt = new Date(award.updatedAt).toLocaleString('ru-RU')
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).awardsCard
+	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
+	const teacherName = `${award?.teacher?.firstName} ${award?.teacher.lastName}`.trim() || t.unknownTeacher
+	const createdAt = new Date(award.createdAt).toLocaleDateString(dateLocale)
+	const updatedAt = new Date(award.updatedAt).toLocaleString(dateLocale)
 
 	return (
 		<Tooltip>
@@ -153,7 +162,7 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 						</div>
 					</TableCell>
 					<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-						{`${award.variant.name}, ${award.criteria.name}`}
+						{`${getLocaleText(award.variant.name, locale)}, ${getLocaleText(award.criteria.name, locale)}`}
 					</TableCell>
 					<TableCell className='py-6'>{award.totalPoints || 0}</TableCell>
 					<TableCell className='text-right'>
@@ -164,11 +173,11 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 			<TooltipContent side='top' sideOffset={8}>
 				<div className='max-w-sm space-y-1'>
 					<p className='text-sm'>
-						Обновлено: <span className='font-medium'>{updatedAt}</span>
+						{t.updatedAt}: <span className='font-medium'>{updatedAt}</span>
 					</p>
 					{award.reason && (
 						<p className='text-sm'>
-							Причина отказа: <span className='font-medium'>{award.reason}</span>
+							{t.rejectReason}: <span className='font-medium'>{award.reason}</span>
 						</p>
 					)}
 				</div>

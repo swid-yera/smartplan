@@ -5,14 +5,19 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 
 import { Loader, PageTitle } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IUser } from '@types'
 import { ArrowLeft, BarChart3 } from 'lucide-react'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import localeDictionary from './locale.json'
 
 export default function RatingStatsPage() {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const { data: usersData, isLoading } = useQuery({
 		...services.user.getAllRatingOptions({ currentPage: 1, pageSize: 100 }),
 	})
@@ -40,28 +45,28 @@ export default function RatingStatsPage() {
 
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
-			<PageTitle description='Статистика по KPI преподавателей'>Статистика</PageTitle>
+			<PageTitle description={t.description}>{t.title}</PageTitle>
 
 			{/* HEADER */}
 			<Card>
 				<CardHeader className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4'>
 					<div>
-						<CardTitle>Аналитика по KPI</CardTitle>
-						<CardDescription>Средние баллы, топ преподавателей и распределение по totalPoints</CardDescription>
+						<CardTitle>{t.headerTitle}</CardTitle>
+						<CardDescription>{t.headerDescription}</CardDescription>
 					</div>
 
 					<div className='flex gap-2'>
 						<Button asChild size='sm' variant='outline'>
-							<Link href='/rating'>
+							<Link href='/kpi/rating'>
 								<ArrowLeft className='mr-2 h-4 w-4' />
-								Топ-20
+								{t.top20}
 							</Link>
 						</Button>
 
 						<Button asChild size='sm' variant='outline'>
-							<Link href='/rating/all'>
+							<Link href='/kpi/rating/all'>
 								<BarChart3 className='mr-2 h-4 w-4' />
-								Все преподаватели
+								{t.allTeachers}
 							</Link>
 						</Button>
 					</div>
@@ -71,7 +76,7 @@ export default function RatingStatsPage() {
 			{/* СРЕДНИЙ БАЛЛ */}
 			<Card>
 				<CardContent className='text-center'>
-					<p className='text-muted-foreground'>Средний балл всех преподавателей</p>
+					<p className='text-muted-foreground'>{t.averageTitle}</p>
 					<p className='text-3xl font-bold'>{averagePoints.toFixed(1)}</p>
 				</CardContent>
 			</Card>
@@ -79,7 +84,7 @@ export default function RatingStatsPage() {
 			{/* ТОП 10 */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Топ 10 преподавателей</CardTitle>
+					<CardTitle>{t.top10}</CardTitle>
 				</CardHeader>
 				<CardContent className='space-y-2'>
 					{topUsers.map((u, i) => (
@@ -107,7 +112,7 @@ export default function RatingStatsPage() {
 			{/* ГРАФИК РАСПРЕДЕЛЕНИЯ */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Распределение баллов</CardTitle>
+					<CardTitle>{t.distribution}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<ResponsiveContainer height={300} width='100%'>

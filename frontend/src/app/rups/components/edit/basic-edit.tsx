@@ -1,6 +1,6 @@
 'use client'
 
-import { normalizeRupType, normalizeStudyForm } from '@helpers'
+import { getUILocaleSection, normalizeRupType, normalizeStudyForm } from '@helpers'
 import {
 	Card,
 	CardContent,
@@ -22,10 +22,12 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { RupTypeEnum, StudyFormEnum } from '@types'
 import { Info } from 'lucide-react'
 import type { FieldValues, Path } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'
+import localeDictionary from './locale.json'
 
 // Define a base shape for the form data that this component needs.
 // Any form passed to this component must have at least these fields.
@@ -38,13 +40,15 @@ type IProps = FieldValues & {
 }
 
 export function BasicEdit<T extends IProps>() {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const { control } = useFormContext<T>()
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Общие сведения</CardTitle>
-				<CardDescription>Основные данные модуля рабочей учебной программы.</CardDescription>
+				<CardTitle>{t.basicTitle}</CardTitle>
+				<CardDescription>{t.basicDescription}</CardDescription>
 			</CardHeader>
 
 			<CardContent className='space-y-3 text-sm'>
@@ -77,7 +81,7 @@ export function BasicEdit<T extends IProps>() {
 										<TooltipContent side='top'>
 											{Object.entries(rupTypeTips).map((obj) => (
 												<p key={obj[0]}>
-													<span className='font-bold'>{normalizeRupType(obj[0] as RupTypeEnum)}:</span>
+													<span className='font-bold'>{normalizeRupType(obj[0] as RupTypeEnum, locale)}:</span>
 													<br />
 													{obj[1]}
 												</p>
@@ -93,7 +97,7 @@ export function BasicEdit<T extends IProps>() {
 										<SelectContent position='popper'>
 											{Object.values(RupTypeEnum).map((val) => (
 												<SelectItem key={val} value={val}>
-													{normalizeRupType(val)}
+													{normalizeRupType(val, locale)}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -118,7 +122,7 @@ export function BasicEdit<T extends IProps>() {
 										<SelectContent position='popper'>
 											{Object.keys(StudyFormEnum).map((studyForm) => (
 												<SelectItem key={studyForm} value={studyForm}>
-													{normalizeStudyForm(studyForm as StudyFormEnum)}
+													{normalizeStudyForm(studyForm as StudyFormEnum, locale)}
 												</SelectItem>
 											))}
 										</SelectContent>

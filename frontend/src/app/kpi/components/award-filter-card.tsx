@@ -5,7 +5,7 @@ import { type FC, type FormEvent, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { StatusBadge } from '@components'
-import { statusLabels } from '@helpers'
+import { getStatusLabels } from '@helpers'
 import {
 	Button,
 	Card,
@@ -19,14 +19,20 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { StatusEnum } from '@types'
 import { Filter } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 interface IProps {
 	className?: string
 }
 
 export const AwardFilterCard: FC<IProps> = ({ className }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = localeDictionary[locale] ?? localeDictionary.ru
+	const labels = getStatusLabels(locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -56,15 +62,15 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 	return (
 		<Card className={className}>
 			<CardHeader>
-				<CardTitle>Фильтры</CardTitle>
-				<CardDescription>Можно быстро отфильтровать данные преподавателей по статусу.</CardDescription>
+				<CardTitle>{t.awardFilter.title}</CardTitle>
+				<CardDescription>{t.awardFilter.description}</CardDescription>
 			</CardHeader>
 			<CardContent className='h-full'>
 				<form className='h-full flex justify-between items-center gap-3' onSubmit={(e) => handleSubmit(e)}>
 					<div className='grid gap-3 lg:grid-cols-2 w-full'>
 						{/* status */}
 						<div className='space-y-1 col-span-2'>
-							<Label>Статус</Label>
+							<Label>{t.awardFilter.status}</Label>
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button className='w-full justify-start font-normal' variant='outline'>
@@ -75,13 +81,13 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 												))}
 											</div>
 										) : (
-											<span className='text-muted-foreground'>Выберите статусы</span>
+											<span className='text-muted-foreground'>{t.awardFilter.selectStatuses}</span>
 										)}
 									</Button>
 								</PopoverTrigger>
 								<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-2'>
 									<div className='space-y-2'>
-										{Object.entries(statusLabels).map((option) => (
+										{Object.entries(labels).map((option) => (
 											<div key={option[0]} className='flex items-center space-x-2'>
 												<Checkbox
 													checked={selectedStatuses.includes(option[0])}
@@ -104,7 +110,7 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 
 					<div className='flex justify-end w-full'>
 						<Button className='w-min px-8!' type='submit'>
-							Применить <Filter />
+							{t.awardFilter.apply} <Filter />
 						</Button>
 					</div>
 				</form>

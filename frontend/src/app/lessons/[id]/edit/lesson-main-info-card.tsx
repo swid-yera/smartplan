@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from 'react'
 
-import { lessonTypeLabels } from '@helpers'
+import { getLessonTypeLabels, getUILocaleSection } from '@helpers'
 import { cn } from '@lib'
 import {
 	Button,
@@ -23,12 +23,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { LessonTypeEnum } from '@types'
 import { format } from 'date-fns'
 import { CalendarDays, ChevronDown, FileText, Grid2X2, SquareMenu } from 'lucide-react'
 
 import type { ILessonFormState } from './lesson-edit.types'
 import { getEventTimeError, normalizeTimeInputOnBlur, sanitizeTimeInput } from './lesson-edit.utils'
+import localeDictionary from './locale.json'
 
 type IProps = {
 	eventTimeError: string | null
@@ -47,6 +49,10 @@ export function LessonMainInfoCard({
 	onEventTimeErrorChange,
 	onFormDataChange,
 }: IProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+	const lessonTypeLabels = getLessonTypeLabels(locale)
+
 	return (
 		<Card>
 			<CardHeader>
@@ -54,7 +60,7 @@ export function LessonMainInfoCard({
 					<FileText className='h-4 w-4 text-primary' />
 					Основные данные
 				</CardTitle>
-				<CardDescription>Измените тему, тип и дату урока</CardDescription>
+				<CardDescription>{t.mainInfoDescription}</CardDescription>
 			</CardHeader>
 			<CardContent className='grid gap-4 sm:grid-cols-2'>
 				<div className='grid gap-2 sm:col-span-2'>

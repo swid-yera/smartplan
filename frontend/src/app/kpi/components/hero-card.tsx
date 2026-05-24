@@ -1,22 +1,29 @@
 import type { FC } from 'react'
 
+import { getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { BarChart3, BookOpen, Clock, GraduationCap, MessageSquare } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 interface IProps {
 	className?: string
 }
 
 export const HeroCard: FC<IProps> = ({ className }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).hero
+
 	return (
 		<Card className={className}>
 			<CardHeader>
 				<CardTitle className='flex items-center gap-2'>
 					<BarChart3 className='h-5 w-5 text-primary' />
-					Рейтинг преподавателей
+					{t.title}
 				</CardTitle>
 
-				<CardDescription>Оценка эффективности преподавателей на основе KPI</CardDescription>
+				<CardDescription>{t.description}</CardDescription>
 			</CardHeader>
 
 			<CardContent className='space-y-4 text-sm'>

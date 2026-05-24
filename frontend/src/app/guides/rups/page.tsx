@@ -1,14 +1,20 @@
 'use client'
 
+import { getUILocaleSection } from '@helpers'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { Book, CheckCircle, Clock, FileText, Layers, Users, XCircle } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<section className='px-6 py-10 max-w-4xl mx-auto space-y-6'>
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-2xl font-bold'>Рабочая учебная программа (РУП)</CardTitle>
+					<CardTitle className='text-2xl font-bold'>{t.title}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<p className='text-base text-muted-foreground'>
@@ -20,7 +26,7 @@ const Page = () => {
 
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-xl font-semibold'>Процесс создания РУПа</CardTitle>
+					<CardTitle className='text-xl font-semibold'>{t.processTitle}</CardTitle>
 				</CardHeader>
 				<CardContent className='space-y-4'>
 					<div className='flex items-start gap-3'>

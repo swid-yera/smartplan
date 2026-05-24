@@ -6,16 +6,20 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { PageTitle, Pagination } from '@components'
+import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 
 import { UsersFilter } from './users-filter'
 import { UsersTable } from './users-table'
+import localeDictionary from './locale.json'
 
 function Page() {
 	const { authLoading, isAuthenticated } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const router = useRouter()
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
@@ -71,17 +75,15 @@ function Page() {
 
 	return (
 		<div className='w-full mx-auto py-10 px-2 md:px-4 space-y-8'>
-			<PageTitle description='Управляйте списком пользователей, просматривайте их контактные данные и роли.'>
-				Пользователи сайта
-			</PageTitle>
+			<PageTitle description={t.page.description}>{t.page.title}</PageTitle>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Список пользователи</CardTitle>
+					<CardTitle>{t.page.cardTitle}</CardTitle>
 					<CardDescription>
-						Всего пользователи: {totalUsers}. Используйте поиск для фильтрации.{' '}
+						{interpolateUILocaleText(t.page.cardDescription, { total: totalUsers })}{' '}
 						<Link className='underline text-accent-foreground' href='/kpi/rating'>
-							Посмотреть рейтинг преподавателей
+							{t.page.ratingLink}
 						</Link>
 					</CardDescription>
 				</CardHeader>

@@ -1,0 +1,38 @@
+{
+  "ru": {
+    "rupsFilter": {
+      "title": "Фильтры",
+      "description": "Можно быстро отфильтровать РУП по году, специальности и статусу.",
+      "search": "Поиск",
+      "searchPlaceholder": "Наименование...",
+      "status": "Статус",
+      "selectStatuses": "Выберите статусы",
+      "studyYear": "Учебный год",
+      "selectYear": "Выберите год",
+      "allYears": "Все годы обучения",
+      "specialty": "Специальность",
+      "selectSpecialty": "Выберите специальность",
+      "allSpecialties": "Все специальности",
+      "apply": "Применить"
+    },
+    "newRupTitle": "Создать новый модуль РУП"
+  },
+  "kk": {
+    "rupsFilter": {
+      "title": "Сүзгілер",
+      "description": "ЖОБ-ты оқу жылы, мамандық және мәртебе бойынша жылдам сүзуге болады.",
+      "search": "Іздеу",
+      "searchPlaceholder": "Атауы...",
+      "status": "Мәртебе",
+      "selectStatuses": "Мәртебелерді таңдаңыз",
+      "studyYear": "Оқу жылы",
+      "selectYear": "Жылды таңдаңыз",
+      "allYears": "Барлық оқу жылдары",
+      "specialty": "Мамандық",
+      "selectSpecialty": "Мамандықты таңдаңыз",
+      "allSpecialties": "Барлық мамандықтар",
+      "apply": "Қолдану"
+    },
+    "newRupTitle": "Жаңа ЖОБ модулін құру"
+  }
+}

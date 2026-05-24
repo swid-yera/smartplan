@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
-import { getLocaleText } from '@helpers'
+import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
 	AlertDialog,
@@ -32,6 +32,7 @@ import { Pen, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PointsBadge } from '../components'
+import localeDictionary from './locale.json'
 
 interface IProps {
 	type: ITypeResponse
@@ -40,6 +41,7 @@ interface IProps {
 export const TypeView = ({ type }: IProps) => {
 	const { replace } = useRouter()
 	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
+	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
 	// query
@@ -51,17 +53,20 @@ export const TypeView = ({ type }: IProps) => {
 		setIsDeleteDialogOpen(false)
 
 		const toastId = `type-${type.id}-delete`
-		const typeName = getLocaleText(type.name, activeLocale) || 'Критерии оценивания'
+		const typeName = getLocaleText(type.name, activeLocale) || t.defaultTypeName
 
-		toast.loading(`Удаление ${typeName}...`, { id: toastId })
+		toast.loading(interpolateUILocaleText(t.toastDeleting, { name: typeName }), { id: toastId })
 
 		deleteMutate(type.id, {
 			onSuccess: () => {
-				toast.success(`${typeName} успешно удален`, { id: toastId })
+				toast.success(interpolateUILocaleText(t.toastDeleted, { name: typeName }), { id: toastId })
 				replace('/kpi/types')
 			},
 			onError: (err) => {
-				toast.error(`Произошла ошибка при удалений ${typeName}`, { id: toastId, description: err.message })
+				toast.error(interpolateUILocaleText(t.toastError, { name: typeName }), {
+					id: toastId,
+					description: err.message,
+				})
 			},
 		})
 	}
@@ -76,7 +81,7 @@ export const TypeView = ({ type }: IProps) => {
 							<Button asChild className='hover:text-primary' size='sm' variant='outline'>
 								<Link href={`/kpi/types/${type.id}/edit`}>
 									<Pen />
-									Редактировать
+									{t.edit}
 								</Link>
 							</Button>
 							<Button
@@ -86,22 +91,22 @@ export const TypeView = ({ type }: IProps) => {
 								onClick={() => setIsDeleteDialogOpen(true)}
 							>
 								<Trash />
-								Удалить
+								{t.delete}
 							</Button>
 						</ButtonGroup>
 
 						<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
 							<TabsList>
-								<TabsTrigger value='ru'>Русский</TabsTrigger>
-								<TabsTrigger value='kk'>Қазақша</TabsTrigger>
+								<TabsTrigger value='ru'>{t.langRu}</TabsTrigger>
+								<TabsTrigger value='kk'>{t.langKk}</TabsTrigger>
 							</TabsList>
 						</Tabs>
 					</div>
 				}
 				backHref='/kpi/types'
-				description='Критерий оценивания, для редактирования перейдите в другую страницу'
+				description={t.description}
 			>
-				Просмотр {getLocaleText(type.name, activeLocale)}
+				{interpolateUILocaleText(t.title, { name: getLocaleText(type.name, activeLocale) })}
 			</PageTitle>
 
 			<div className='space-y-6 mt-8'>
@@ -109,7 +114,10 @@ export const TypeView = ({ type }: IProps) => {
 					<Card key={variant.id} className='border-muted'>
 						<CardHeader className='pb-2'>
 							<CardTitle className='text-base'>
-								Вариант {index + 1}: {getLocaleText(variant.name, activeLocale)}
+								{interpolateUILocaleText(t.variant, {
+									index: index + 1,
+									name: getLocaleText(variant.name, activeLocale),
+								})}
 							</CardTitle>
 
 							{variant.description && (
@@ -123,7 +131,7 @@ export const TypeView = ({ type }: IProps) => {
 							{/* criteria */}
 							{variant.criteria && (
 								<div>
-									<p className='mb-2 text-sm font-medium'>Критерии</p>
+									<p className='mb-2 text-sm font-medium'>{t.criteria}</p>
 
 									<ol className='list-[lower-roman] space-y-2 pl-5'>
 										{variant.criteria.map((c) => (
@@ -143,7 +151,7 @@ export const TypeView = ({ type }: IProps) => {
 									<Separator />
 
 									<div>
-										<p className='mb-2 text-sm font-medium'>Бонусные критерии</p>
+										<p className='mb-2 text-sm font-medium'>{t.bonusCriteria}</p>
 
 										<ol className='list-[lower-roman] space-y-2 pl-5'>
 											{variant.bonusCriteria.map((c) => (
@@ -164,6 +172,7 @@ export const TypeView = ({ type }: IProps) => {
 			<DeleteAlert
 				isDeleteDialogOpen={isDeleteDialogOpen}
 				setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+				t={t}
 				onDelete={handleDelete}
 			/>
 		</section>
@@ -174,23 +183,22 @@ export const TypeView = ({ type }: IProps) => {
 interface IDeleteAlert {
 	isDeleteDialogOpen: boolean
 	setIsDeleteDialogOpen: (state: boolean) => void
+	t: Record<string, string>
 	onDelete: () => void
 }
 
-const DeleteAlert: FC<IDeleteAlert> = ({ isDeleteDialogOpen, setIsDeleteDialogOpen, onDelete }) => {
+const DeleteAlert: FC<IDeleteAlert> = ({ isDeleteDialogOpen, setIsDeleteDialogOpen, onDelete, t }) => {
 	return (
 		<AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-					<AlertDialogDescription>
-						Это действие невозможно отменить. Это приведет к необратимому удалению критерии оценивания.
-					</AlertDialogDescription>
+					<AlertDialogTitle>{t.deleteTitle}</AlertDialogTitle>
+					<AlertDialogDescription>{t.deleteDescription}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Отмена</AlertDialogCancel>
+					<AlertDialogCancel>{t.cancel}</AlertDialogCancel>
 					<AlertDialogAction variant='destructive' onClick={onDelete}>
-						Удалить
+						{t.delete}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

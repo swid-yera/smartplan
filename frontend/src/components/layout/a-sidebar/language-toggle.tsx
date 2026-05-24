@@ -8,23 +8,15 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { Locale } from '@types'
 import { Languages } from 'lucide-react'
 
-const LANGUAGE_TITLES: Record<Locale, { label: string; name: string }> = {
-	ru: {
-		label: 'RU',
-		name: 'Русский',
-	},
-	kk: {
-		label: 'KK',
-		name: 'Қазақша',
-	},
-}
+import sidebarLocale from './locale.json'
 
 export function LanguageToggle() {
 	const queryClient = useQueryClient()
 	const locale = useLocaleStore((state) => state.locale)
 	const setLocale = useLocaleStore((state) => state.setLocale)
+	const t = sidebarLocale[locale] ?? sidebarLocale.ru
 
-	const localeName = useMemo(() => LANGUAGE_TITLES[locale].name, [locale])
+	const localeName = useMemo(() => (locale === 'kk' ? t.language.kkName : t.language.ruName), [locale, t.language.kkName, t.language.ruName])
 
 	const changeLocale = (nextLocale: Locale) => {
 		if (nextLocale === locale) return
@@ -44,11 +36,11 @@ export function LanguageToggle() {
 			<DropdownMenuContent align='end'>
 				<DropdownMenuItem onClick={() => changeLocale('ru')}>
 					RU
-					<span className='text-muted-foreground'>Русский</span>
+					<span className='text-muted-foreground'>{t.language.ruName}</span>
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={() => changeLocale('kk')}>
 					KK
-					<span className='text-muted-foreground'>Қазақша</span>
+					<span className='text-muted-foreground'>{t.language.kkName}</span>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

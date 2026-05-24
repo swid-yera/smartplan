@@ -2,20 +2,25 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { formatAsDash } from '@helpers'
+import { formatAsDash, getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IRup } from '@types'
 import { ExternalLink } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 interface IProps {
 	data: IRup
 }
 
 export const ExplorationView: FC<IProps> = ({ data }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className='text-xl'>Пояснительная записка</CardTitle>
+				<CardTitle className='text-xl'>{t.explorationTitle}</CardTitle>
 			</CardHeader>
 
 			<CardContent>

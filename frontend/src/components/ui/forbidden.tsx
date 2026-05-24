@@ -1,11 +1,19 @@
+'use client'
+
 import type { FC } from 'react'
 
 import Link from 'next/link'
 
 import { Button } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { Home, MoveLeft, ShieldAlert } from 'lucide-react'
 
+import uiLocale from './locale.json'
+
 export const Forbidden: FC = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = uiLocale[locale] ?? uiLocale.ru
+
 	return (
 		<div className='container flex flex-1 flex-col items-center justify-center gap-8 py-12 text-center'>
 			{/* Иконка с анимацией */}
@@ -20,11 +28,8 @@ export const Forbidden: FC = () => {
 			{/* Текстовый блок */}
 			<div className='space-y-4 max-w-[600px]'>
 				<h1 className='text-8xl font-black tracking-tighter text-foreground select-none'>403</h1>
-				<h2 className='text-3xl font-bold tracking-tight'>Доступ ограничен</h2>
-				<p className='text-muted-foreground text-lg leading-relaxed'>
-					У вас недостаточно прав для просмотра этой страницы. Если вы считаете, что это ошибка, обратитесь к
-					администратору или попробуйте войти под другой учетной записью.
-				</p>
+				<h2 className='text-3xl font-bold tracking-tight'>{t.forbidden.title}</h2>
+				<p className='text-muted-foreground text-lg leading-relaxed'>{t.forbidden.description}</p>
 			</div>
 
 			{/* Кнопки действий */}
@@ -32,14 +37,14 @@ export const Forbidden: FC = () => {
 				<Button asChild className='gap-2' size='lg'>
 					<Link href='/'>
 						<Home className='h-4 w-4' />
-						На главную
+						{t.forbidden.home}
 					</Link>
 				</Button>
 
 				<Button asChild className='gap-2' size='lg' variant='outline'>
 					<Link href='javascript:history.back()'>
 						<MoveLeft className='h-4 w-4' />
-						Вернуться назад
+						{t.forbidden.back}
 					</Link>
 				</Button>
 			</div>
@@ -47,7 +52,7 @@ export const Forbidden: FC = () => {
 			{/* Декоративный элемент (опционально) */}
 			<div className='mt-8 flex items-center gap-2 text-xs text-muted-foreground/50 uppercase tracking-widest'>
 				<span className='h-px w-8 bg-border' />
-				Access Denied
+				{t.forbidden.caption}
 				<span className='h-px w-8 bg-border' />
 			</div>
 		</div>

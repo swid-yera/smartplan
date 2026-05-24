@@ -1,6 +1,6 @@
 import { type FC, useState } from 'react'
 
-import { createLocaleText, getLocaleText } from '@helpers'
+import { createLocaleText, getLocaleText, getUILocaleSection } from '@helpers'
 import {
 	Button,
 	Card,
@@ -13,10 +13,12 @@ import {
 	Label,
 	Separator,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { ICreateTypesRequest, ITypeResponse, Locale } from '@types'
 import { Plus } from 'lucide-react'
 
 import { type ILocalizedDraft, type IVariantForm, VariantEdit } from './variant-edit'
+import localeDictionary from './locale.json'
 
 interface IProps {
 	activeLocale: Locale
@@ -25,6 +27,8 @@ interface IProps {
 }
 
 export const EditCard: FC<IProps> = ({ activeLocale, onSubmit, type }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const [name, setName] = useState<ILocalizedDraft>({
 		ru: getLocaleText(type?.name, 'ru'),
 		kk: getLocaleText(type?.name, 'kk'),
@@ -104,16 +108,16 @@ export const EditCard: FC<IProps> = ({ activeLocale, onSubmit, type }) => {
 	return (
 		<Card className='mt-6'>
 			<CardHeader>
-				<CardTitle>Создайте новую критерию оценивания</CardTitle>
-				<CardDescription>Создайте варианты оценивания и критерии с баллами</CardDescription>
+				<CardTitle>{t.cardTitle}</CardTitle>
+				<CardDescription>{t.cardDescription}</CardDescription>
 			</CardHeader>
 
 			<CardContent className='space-y-6'>
 				{/* type name */}
 				<div className='space-y-2'>
-					<Label>Название критерия</Label>
+					<Label>{t.nameLabel}</Label>
 					<Input
-						placeholder='Например: Оценка практической работы'
+						placeholder={t.namePlaceholder}
 						value={name[activeLocale]}
 						onChange={(e) =>
 							setName((prev) => ({
@@ -129,10 +133,10 @@ export const EditCard: FC<IProps> = ({ activeLocale, onSubmit, type }) => {
 				{/* variants */}
 				<div className='space-y-4'>
 					<div className='flex items-center justify-between'>
-						<h3 className='font-semibold'>Варианты оценивания</h3>
+						<h3 className='font-semibold'>{t.variantsTitle}</h3>
 						<Button size='sm' variant='outline' onClick={addVariant}>
 							<Plus className='mr-2 h-4 w-4' />
-							Добавить вариант
+							{t.addVariant}
 						</Button>
 					</div>
 
@@ -148,16 +152,16 @@ export const EditCard: FC<IProps> = ({ activeLocale, onSubmit, type }) => {
 					))}
 
 					{!variants.length && (
-						<p className='text-sm text-muted-foreground'>Добавьте хотя бы один вариант оценивания</p>
+						<p className='text-sm text-muted-foreground'>{t.emptyVariants}</p>
 					)}
 				</div>
 			</CardContent>
 
 			<CardFooter className='flex justify-end gap-2'>
 				<Button asChild variant='outline'>
-					<a href='/kpi/types'>Отмена</a>
+					<a href='/kpi/types'>{t.cancel}</a>
 				</Button>
-				<Button onClick={handleSubmit}>Сохранить</Button>
+				<Button onClick={handleSubmit}>{t.save}</Button>
 			</CardFooter>
 		</Card>
 	)

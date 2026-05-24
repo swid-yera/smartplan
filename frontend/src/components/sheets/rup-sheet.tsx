@@ -14,9 +14,11 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IRup } from '@types'
 import { BookOpen, Clock, ComponentIcon, Users } from 'lucide-react'
 
+import locale from './locale.json'
 import { StatusBadge } from '../badges/status-badge'
 
 interface IRupSheet {
@@ -25,6 +27,9 @@ interface IRupSheet {
 }
 
 export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
+	const currentLocale = useLocaleStore((state) => state.locale)
+	const t = locale[currentLocale] ?? locale.ru
+
 	return (
 		<Sheet open={!!rup} onOpenChange={(open) => !open && onSelect(null)}>
 			<SheetContent className='overflow-y-auto sm:max-w-md w-full'>
@@ -35,31 +40,31 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 								{rup.name + ' '}
 								<StatusBadge status={rup.status} />
 							</SheetTitle>
-							<SheetDescription>Краткая информация о рабочей учебной программе .</SheetDescription>
+							<SheetDescription>{t.description}</SheetDescription>
 						</SheetHeader>
 
 						<div className='grid flex-1 auto-rows-min gap-6 px-4'>
 							<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-									<BookOpen className='w-4 h-4 mr-2' /> Основное
+									<BookOpen className='w-4 h-4 mr-2' /> {t.main}
 								</h4>
 
 								<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
-									<p className='font-medium'>Статус:</p>
+									<p className='font-medium'>{t.status}:</p>
 									<StatusBadge status={rup.status} />
 
 									{rup?.reason && (
 										<>
-											<p className='font-medium'>Причина отказа:</p>
+											<p className='font-medium'>{t.rejectReason}:</p>
 											<p>{rup?.reason}</p>
 										</>
 									)}
 
-									<p className='font-medium'>Наименование:</p>
+									<p className='font-medium'>{t.name}:</p>
 									<p>{rup.name}</p>
 
-									<p className='font-medium'>Форма обучения:</p>
-									<p>{normalizeStudyForm(rup.studyForm)}</p>
+									<p className='font-medium'>{t.studyForm}:</p>
+									<p>{normalizeStudyForm(rup.studyForm, currentLocale)}</p>
 								</div>
 							</div>
 
@@ -67,11 +72,11 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 
 							<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-									<Users className='w-4 h-4 mr-2' /> Ответственные
+									<Users className='w-4 h-4 mr-2' /> {t.responsible}
 								</h4>
 
 								<div className='grid grid-cols-[1fr_2fr] space-y-3 text-sm'>
-									<p className='font-medium'>Преподаватель:</p>
+									<p className='font-medium'>{t.teacher}:</p>
 									<p>
 										{rup.teacher ? (
 											<Link
@@ -81,11 +86,11 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 												{rup.teacher.firstName} {rup.teacher.lastName}
 											</Link>
 										) : (
-											'пусто'
+											t.empty
 										)}
 									</p>
 
-									<p className='font-medium'>Методист:</p>
+									<p className='font-medium'>{t.methodist}:</p>
 									<p>
 										{rup.methodist ? (
 											<Link
@@ -95,7 +100,7 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 												{rup.methodist.firstName} {rup.methodist.lastName}
 											</Link>
 										) : (
-											'пусто'
+											t.empty
 										)}
 									</p>
 								</div>
@@ -107,23 +112,23 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 
 									<div className='space-y-3'>
 										<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-											<ComponentIcon className='w-4 h-4 mr-2' /> Группа
+											<ComponentIcon className='w-4 h-4 mr-2' /> {t.group}
 										</h4>
 
 										<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
-											<p className='font-medium'>Называние:</p>
+											<p className='font-medium'>{t.name}:</p>
 											<p>{rup.groups[0]?.name}</p>
 
-											<p className='font-medium'>Курс:</p>
+											<p className='font-medium'>{t.course}:</p>
 											<p>{rup.course}</p>
 
-											<p className='font-medium'>Учебный год:</p>
+											<p className='font-medium'>{t.studyYear}:</p>
 											<p>{rup.studyYear}</p>
 
-											<p className='font-medium'>Специальность:</p>
+											<p className='font-medium'>{t.specialty}:</p>
 											<p>{rup.groups[0]?.specialty}</p>
 
-											<p className='font-medium'>Квалификация:</p>
+											<p className='font-medium'>{t.qualification}:</p>
 											<p>{rup.groups[0]?.qualification}</p>
 										</div>
 									</div>
@@ -134,11 +139,11 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 
 							<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-									<Clock className='w-4 h-4 mr-2' /> Часы
+									<Clock className='w-4 h-4 mr-2' /> {t.hours}
 								</h4>
 
 								<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
-									<p className='font-medium'>Всего часов:</p>
+									<p className='font-medium'>{t.totalHours}:</p>
 									<p>{formatHours(rup.totalHours)}</p>
 								</div>
 							</div>
@@ -146,10 +151,10 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 
 						<SheetFooter className='mt-4'>
 							<Button asChild className='w-full'>
-								<Link href={`/rups/${rup.id}`}>Открыть полную страницу</Link>
+								<Link href={`/rups/${rup.id}`}>{t.openFullPage}</Link>
 							</Button>
 							<SheetClose asChild>
-								<Button variant='outline'>Закрыть</Button>
+								<Button variant='outline'>{t.close}</Button>
 							</SheetClose>
 						</SheetFooter>
 					</>

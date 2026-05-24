@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
-import { CATEGORY_ICON_OPTIONS, createLocaleText, getLocaleText } from '@helpers'
+import { CATEGORY_ICON_OPTIONS, createLocaleText, getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
 	Button,
@@ -42,10 +42,12 @@ import {
 	sanitizeFieldOptions,
 	sanitizeFieldValidation,
 } from '../components'
+import localeDictionary from './locale.json'
 
 const Page = () => {
 	const { replace } = useRouter()
 	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
+	const t = getUILocaleSection(localeDictionary, activeLocale)
 
 	const [name, setName] = useState<Record<Locale, string>>({ ru: '', kk: '' })
 	const [iconName, setIconName] = useState('')
@@ -63,7 +65,7 @@ const Page = () => {
 	})
 	const handleSubmit = () => {
 		if (!name.ru.trim() && !name.kk.trim()) {
-			toast.error('Название категории обязательно')
+			toast.error(t.validationRequiredName)
 
 			return
 		}
@@ -73,7 +75,7 @@ const Page = () => {
 		)
 
 		if (invalidField) {
-			toast.error('У каждого поля должны быть key и label')
+			toast.error(t.validationFieldKeyLabel)
 
 			return
 		}
@@ -83,7 +85,7 @@ const Page = () => {
 		)
 
 		if (invalidSelectField) {
-			toast.error(`Для поля «${invalidSelectField.key || 'select'}» добавьте хотя бы одну опцию`)
+			toast.error(interpolateUILocaleText(t.validationSelectOption, { key: invalidSelectField.key || 'select' }))
 
 			return
 		}
@@ -118,7 +120,7 @@ const Page = () => {
 		const categoryName = name[activeLocale].trim() || name.ru.trim() || name.kk.trim()
 		const toastId = `create-category-${categoryName}`
 
-		toast.loading(`Создание категории ${categoryName}`, { id: toastId })
+		toast.loading(interpolateUILocaleText(t.toastCreating, { name: categoryName }), { id: toastId })
 
 		mutate(
 			{ newCategory: payload },
@@ -126,11 +128,11 @@ const Page = () => {
 				onSuccess: (createdCategory) => {
 					const categoryName = getLocaleText(createdCategory.name, activeLocale)
 
-					toast.success(`Категория ${categoryName} успешно создана`, { id: toastId })
+					toast.success(interpolateUILocaleText(t.toastCreated, { name: categoryName }), { id: toastId })
 					replace('/kpi/categories')
 				},
 				onError: (error) => {
-					let errorMessage = 'Ошибка создания категории'
+					let errorMessage = t.toastError
 
 					if (isAxiosError<IApiErrorResponse>(error)) {
 						errorMessage = error.response?.data?.error || error.message || errorMessage
@@ -138,7 +140,7 @@ const Page = () => {
 						errorMessage = error.message
 					}
 
-					toast.error('Ошибка при создании категории', {
+					toast.error(t.toastError, {
 						id: toastId,
 						description: errorMessage,
 					})
@@ -154,30 +156,30 @@ const Page = () => {
 				actions={
 					<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
 						<TabsList>
-							<TabsTrigger value='ru'>Русский</TabsTrigger>
-							<TabsTrigger value='kk'>Қазақша</TabsTrigger>
+							<TabsTrigger value='ru'>{t.langRu}</TabsTrigger>
+							<TabsTrigger value='kk'>{t.langKk}</TabsTrigger>
 						</TabsList>
 					</Tabs>
 				}
 				backHref='/kpi/categories'
-				description='Создание новой категории для KPI'
+				description={t.pageDescription}
 			>
-				Создание категории
+				{t.pageTitle}
 			</PageTitle>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Новая категория</CardTitle>
-					<CardDescription>Заполните основные данные и настройте поля формы для достижений</CardDescription>
+					<CardTitle>{t.newCategory}</CardTitle>
+					<CardDescription>{t.cardDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-6'>
 					<div className='grid gap-4 md:grid-cols-2'>
 						<div className='space-y-2'>
-							<Label htmlFor='name'>Название *</Label>
+							<Label htmlFor='name'>{t.labelName}</Label>
 							<Input
 								id='name'
-								placeholder='Например: Публикации'
+								placeholder={t.placeholderName}
 								value={name[activeLocale]}
 								onChange={(event) =>
 									setName((prev) => ({
@@ -189,23 +191,23 @@ const Page = () => {
 						</div>
 
 						<div className='space-y-2'>
-							<Label htmlFor='icon'>Иконка</Label>
+							<Label htmlFor='icon'>{t.labelIcon}</Label>
 							<Select
 								value={iconName || 'none'}
 								onValueChange={(value) => setIconName(value === 'none' ? '' : value)}
 							>
 								<SelectTrigger id='icon'>
-									<SelectValue placeholder='Выберите иконку' />
+									<SelectValue placeholder={t.placeholderIcon} />
 								</SelectTrigger>
 								<SelectContent className='w-[220px]'>
 									<div className='grid grid-cols-4 gap-1 p-1'>
 										<SelectItem
 											className='h-10 w-10 justify-center p-0 pr-0'
-											textValue='Без иконки'
+											textValue={t.noneIcon}
 											value='none'
 										>
 											<Minus aria-hidden='true' className='h-4 w-4' />
-											<span className='sr-only'>Без иконки</span>
+											<span className='sr-only'>{t.noneIcon}</span>
 										</SelectItem>
 										{CATEGORY_ICON_OPTIONS.map((option) => (
 											<SelectItem
@@ -225,10 +227,10 @@ const Page = () => {
 					</div>
 
 					<div className='space-y-2'>
-						<Label htmlFor='description'>Описание</Label>
+						<Label htmlFor='description'>{t.labelDescription}</Label>
 						<Textarea
 							id='description'
-							placeholder='Короткое описание категории'
+							placeholder={t.placeholderDescription}
 							value={description[activeLocale]}
 							onChange={(event) =>
 								setDescription((prev) => ({
@@ -255,7 +257,7 @@ const Page = () => {
 
 				<CardFooter className='flex justify-end'>
 					<Button disabled={isPending} onClick={handleSubmit}>
-						Создать категорию
+						{t.create}
 					</Button>
 				</CardFooter>
 			</Card>

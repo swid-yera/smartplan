@@ -5,10 +5,10 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 
 import { Loader, PageTitle, ResponsibleUsersCard, StatusInfoCard } from '@components'
-import { hasRole, isAuthor } from '@helpers'
+import { getUILocaleSection, hasRole, isAuthor } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
 import { toast } from 'sonner'
@@ -20,10 +20,13 @@ import { DeleteAlert } from './components/delete-alert'
 import { KpiDetailsActions } from './components/kpi-details-actions'
 import { RejectSheet } from './components/reject-sheet'
 import { StatusChangeSheet } from './components/status-change-sheet'
+import localeDictionary from './components/locale.json'
 
 const Page = () => {
 	const { id } = useParams()
 	const router = useRouter()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).page
 
 	const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -50,8 +53,8 @@ const Page = () => {
 	if (!award) {
 		return (
 			<div className='flex flex-col items-center justify-center h-[50vh] space-y-4'>
-				<h2 className='text-xl font-semibold'>Награда не найдена</h2>
-				<Button onClick={() => router.back()}>Вернуться назад</Button>
+				<h2 className='text-xl font-semibold'>{t.notFoundTitle}</h2>
+				<Button onClick={() => router.back()}>{t.back}</Button>
 			</div>
 		)
 	}
@@ -63,7 +66,7 @@ const Page = () => {
 		const payloadTotalPoints = newStatus === StatusEnum.APPROVED ? totalPoints || 0 : 0
 		const payloadReason = newStatus === StatusEnum.REJECTED ? reason || '' : ''
 
-		toast.loading('Изменение статуса...', { id: toastId })
+		toast.loading(t.toastStatusLoading, { id: toastId })
 
 		const updateStatusPayload: IUpdateStatusRequest = {
 			id: award.id,
@@ -74,11 +77,11 @@ const Page = () => {
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
-				toast.success('Статус успешно изменен!', { id: toastId })
+				toast.success(t.toastStatusSuccess, { id: toastId })
 				refetch()
 			},
 			onError: (err) => {
-				toast.error('Произошла ошибка при изменении статуса', { id: toastId, description: err.message })
+				toast.error(t.toastStatusError, { id: toastId, description: err.message })
 			},
 		})
 	}
@@ -88,15 +91,15 @@ const Page = () => {
 
 		const toastId = `award-${award.id}-delete`
 
-		toast.loading('Удаление...', { id: toastId })
+		toast.loading(t.toastDeleteLoading, { id: toastId })
 
 		deleteMutation.mutate(award.id, {
 			onSuccess: () => {
-				toast.success('Успешно удален', { id: toastId })
+				toast.success(t.toastDeleteSuccess, { id: toastId })
 				router.replace('/kpi')
 			},
 			onError: (err) => {
-				toast.error('Произошла ошибка при удалений', { id: toastId, description: err.message })
+				toast.error(t.toastDeleteError, { id: toastId, description: err.message })
 			},
 		})
 	}
@@ -127,16 +130,16 @@ const Page = () => {
 					/>
 				}
 				backHref='/kpi/my'
-				description='Просмотр'
+				description={t.pageDescription}
 			>
-				Детали KPI данных
+				{t.pageTitle}
 			</PageTitle>
 
 			<StatusInfoCard
 				messages={{
-					approved: 'Редактирование недоступно после утверждения.',
-					draft: 'Проверьте данные и отправьте на согласование.',
-					inReview: 'Ожидайте, пока методист проверит ваши данные.',
+					approved: t.statusApproved,
+					draft: t.statusDraft,
+					inReview: t.statusInReview,
 				}}
 				reason={award.reason}
 				status={award.status}

@@ -55,6 +55,10 @@ export const getSiteLocaleFromStorage = (): Locale => {
 	return DEFAULT_SITE_LOCALE
 }
 
+export const readSiteLocaleFromCookieValue = (value?: string | null): Locale => {
+	return isSiteLocale(value) ? value : DEFAULT_SITE_LOCALE
+}
+
 export const writeSiteLocale = (locale: Locale) => {
 	if (typeof window === 'undefined') return
 

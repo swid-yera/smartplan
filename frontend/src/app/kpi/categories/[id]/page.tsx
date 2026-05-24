@@ -6,13 +6,15 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle } from '@components'
-import { getCategoryIconOptionByName, getLocaleText, hasRole } from '@helpers'
+import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
 import { Badge, Button, ButtonGroup, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
 import { Edit, Folder, Plus } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 const AWARDS_FETCH_SIZE = 500
 const AWARDS_PAGE_SIZE = 10
@@ -22,6 +24,7 @@ const Page = () => {
 	const categoryId = params.id
 	const { user, authLoading } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 
 	const [currentPage, setCurrentPage] = useState(1)
 
@@ -85,14 +88,14 @@ const Page = () => {
 	}
 
 	if (!category) {
-		return <p className='p-6 text-center text-muted-foreground'>Категория не найдена</p>
+		return <p className='p-6 text-center text-muted-foreground'>{t.notFound}</p>
 	}
 
 	const categoryIconOption = getCategoryIconOptionByName(category.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const isAdmin = user ? hasRole(user.role, RoleEnum.ADMIN) : false
 	const categoryName = getLocaleText(category.name, locale)
-	const categoryDescription = getLocaleText(category.description, locale) || 'Описание отсутствует'
+	const categoryDescription = getLocaleText(category.description, locale) || t.missingDescription
 
 	return (
 		<section className='p-4 w-full max-w-6xl mx-auto space-y-6'>
@@ -104,20 +107,20 @@ const Page = () => {
 							<Button asChild size='sm' variant='outline'>
 								<Link href={`/kpi/categories/${category.id}/edit`}>
 									<Edit className='mr-2 h-4 w-4' />
-									Редактировать
+									{t.edit}
 								</Link>
 							</Button>
 						)}
 						<Button asChild size='sm'>
 							<Link href={`/kpi/categories/${category.id}/create`}>
 								<Plus className='mr-2 h-4 w-4' />
-								Создать
+								{t.create}
 							</Link>
 						</Button>
 					</ButtonGroup>
 				}
 				backHref='/kpi/categories'
-				description='Категория и список связанных достижений'
+				description={t.pageDescription}
 			>
 				{categoryName}
 			</PageTitle>
@@ -139,11 +142,11 @@ const Page = () => {
 								</Badge>
 							))
 						) : (
-							<Badge variant='outline'>Типы наград не указаны</Badge>
+							<Badge variant='outline'>{t.typesEmpty}</Badge>
 						)}
 					</div>
 					<div className='text-sm text-muted-foreground'>
-						Полей в категории:{' '}
+						{t.fieldsCount}{' '}
 						<span className='font-medium text-foreground'>{category.fieldsExpanded?.length || 0}</span>
 					</div>
 				</CardContent>
@@ -153,9 +156,9 @@ const Page = () => {
 				<AwardsCard
 					awards={paginatedAwards}
 					currentPage={currentPage}
-					description='Список достижений, относящихся к этой категории'
+					description={t.awardsDescription}
 					isLoading={false}
-					title='Данные KPI категории'
+					title={t.awardsTitle}
 					totalPages={totalPages}
 					onPageChange={setCurrentPage}
 				/>

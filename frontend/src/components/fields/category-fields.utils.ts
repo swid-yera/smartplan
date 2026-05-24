@@ -1,5 +1,8 @@
-import type { ICategoryFieldResponse } from '@types'
+import { interpolateUILocaleText } from '@helpers'
+import type { ICategoryFieldResponse, Locale } from '@types'
 import { isAfter, isValid as isValidDate, parseISO, startOfDay } from 'date-fns'
+
+import locale from './locale.json'
 
 export type ICategoryFieldValue = string | File[]
 export type ICategoryFieldValues = Record<string, ICategoryFieldValue>
@@ -121,7 +124,10 @@ const getFileExtension = (fileName: string) => {
 export const getCategoryFieldValidationError = (
 	field: ICategoryFieldResponse,
 	value: ICategoryFieldValue | undefined,
+	currentLocale: Locale = 'ru',
 ): string | null => {
+	const t = locale[currentLocale] ?? locale.ru
+
 	if (field.type === 'text' || field.type === 'textarea') {
 		if (typeof value !== 'string' || !value.length) return null
 
@@ -129,11 +135,11 @@ export const getCategoryFieldValidationError = (
 		const maxLength = getValidationNumber(field.validation, 'maxLength')
 
 		if (minLength !== null && value.length < minLength) {
-			return `Минимальная длина: ${minLength}`
+			return interpolateUILocaleText(t.errors.minLength, { value: minLength })
 		}
 
 		if (maxLength !== null && value.length > maxLength) {
-			return `Максимальная длина: ${maxLength}`
+			return interpolateUILocaleText(t.errors.maxLength, { value: maxLength })
 		}
 
 		return null
@@ -145,18 +151,18 @@ export const getCategoryFieldValidationError = (
 		const numberValue = Number(value)
 
 		if (!Number.isFinite(numberValue)) {
-			return 'Введите корректное число'
+			return t.errors.invalidNumber
 		}
 
 		const min = getValidationNumber(field.validation, 'min')
 		const max = getValidationNumber(field.validation, 'max')
 
 		if (min !== null && numberValue < min) {
-			return `Минимальное значение: ${min}`
+			return interpolateUILocaleText(t.errors.minValue, { value: min })
 		}
 
 		if (max !== null && numberValue > max) {
-			return `Максимальное значение: ${max}`
+			return interpolateUILocaleText(t.errors.maxValue, { value: max })
 		}
 
 		return null
@@ -173,14 +179,14 @@ export const getCategoryFieldValidationError = (
 
 		for (const file of value) {
 			if (maxSizeBytes !== null && file.size > maxSizeBytes) {
-				return `Максимальный размер файла: ${maxSizeMb}MB`
+				return interpolateUILocaleText(t.errors.maxFileSize, { value: maxSizeMb || 0 })
 			}
 
 			if (allowedExtensions.length > 0) {
 				const extension = getFileExtension(file.name)
 
 				if (!extension || !allowedExtensions.includes(extension)) {
-					return `Недопустимое расширение файла: ${file.name}`
+					return interpolateUILocaleText(t.errors.invalidFileExtension, { name: file.name })
 				}
 			}
 		}
@@ -192,9 +198,10 @@ export const getCategoryFieldValidationError = (
 export const findInvalidCategoryFieldByValidation = (
 	fields: ICategoryFieldResponse[],
 	values: ICategoryFieldValues,
+	currentLocale: Locale = 'ru',
 ) => {
 	return fields.find((field) => {
-		const error = getCategoryFieldValidationError(field, values[field.key])
+		const error = getCategoryFieldValidationError(field, values[field.key], currentLocale)
 
 		return Boolean(error)
 	})

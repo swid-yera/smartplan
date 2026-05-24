@@ -1,0 +1,66 @@
+{
+	"ru": {
+		"actions": {
+			"save": "Сохранить",
+			"cancel": "Отмена",
+			"delete": "Удалить",
+			"edit": "Редактировать",
+			"create": "Создать",
+			"back": "Назад",
+			"close": "Закрыть",
+			"apply": "Применить",
+			"reset": "Сбросить",
+			"login": "Войти",
+			"logout": "Выйти",
+			"search": "Поиск"
+		},
+		"states": {
+			"loading": "Загрузка...",
+			"notFound": "Не найдено",
+			"empty": "Пусто",
+			"error": "Ошибка",
+			"success": "Успешно"
+		},
+		"meta": {
+			"createdAt": "Создано",
+			"updatedAt": "Обновлено",
+			"requiredMark": "*"
+		},
+		"pagination": {
+			"rowsPerPage": "Строк на странице",
+			"pageOf": "Страница {page} из {totalPages}"
+		}
+	},
+	"kk": {
+		"actions": {
+			"save": "Сақтау",
+			"cancel": "Бас тарту",
+			"delete": "Жою",
+			"edit": "Өңдеу",
+			"create": "Құру",
+			"back": "Артқа",
+			"close": "Жабу",
+			"apply": "Қолдану",
+			"reset": "Қалпына келтіру",
+			"login": "Кіру",
+			"logout": "Шығу",
+			"search": "Іздеу"
+		},
+		"states": {
+			"loading": "Жүктелуде...",
+			"notFound": "Табылмады",
+			"empty": "Бос",
+			"error": "Қате",
+			"success": "Сәтті"
+		},
+		"meta": {
+			"createdAt": "Құрылған күні",
+			"updatedAt": "Жаңартылған күні",
+			"requiredMark": "*"
+		},
+		"pagination": {
+			"rowsPerPage": "Беттегі жол саны",
+			"pageOf": "{page} / {totalPages} бет"
+		}
+	}
+}

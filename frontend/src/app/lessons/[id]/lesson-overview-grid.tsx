@@ -4,13 +4,15 @@ import type { ReactNode } from 'react'
 
 import Link from 'next/link'
 
-import { normalizeTopicType } from '@helpers'
+import { getUILocaleSection, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { ILesson, TopicTypeEnum } from '@types'
 import { FileText, Folder, GraduationCap, Grid2X2, type LucideIcon, Phone, Timer, UserRound } from 'lucide-react'
 
 import { formatDate } from './lesson-page.utils'
+import localeDictionary from './locale.json'
 
 type IProps = {
 	cardClassName: string
@@ -31,6 +33,9 @@ export function LessonOverviewGrid({
 	teacherId,
 	teacherName,
 }: IProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<div className='grid gap-6 xl:grid-cols-3'>
 			<Card className={cn(cardClassName, 'xl:col-span-2')}>
@@ -41,7 +46,7 @@ export function LessonOverviewGrid({
 						</span>
 						Основная информация
 					</CardTitle>
-					<CardDescription>Ключевые сведения о занятии, теме и формате</CardDescription>
+					<CardDescription>{t.overviewDescription}</CardDescription>
 				</CardHeader>
 				<CardContent className='space-y-5'>
 					<InfoRow icon={<Folder className='h-4 w-4' />} label='РУП' value={lesson.rup_name} />
@@ -70,7 +75,7 @@ export function LessonOverviewGrid({
 						</span>
 						Преподаватель
 					</CardTitle>
-					<CardDescription>Ответственный за проведение занятия</CardDescription>
+					<CardDescription>{t.responsibleDescription}</CardDescription>
 				</CardHeader>
 				<CardContent className='w-full h-full flex flex-col gap-8 justify-between'>
 					<div className='grid gap-5'>

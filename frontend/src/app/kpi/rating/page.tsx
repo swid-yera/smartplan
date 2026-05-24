@@ -3,6 +3,7 @@
 import Link from 'next/link'
 
 import { Loader, PageTitle } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
 	Button,
@@ -18,8 +19,10 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { BarChart3, Crown, Medal, Users } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 const placeStyles = (index: number) => {
 	if (index === 0) return 'bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400'
@@ -38,6 +41,8 @@ const placeIcon = (index: number) => {
 }
 
 export default function RatingPage() {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const { data: usersData, isLoading } = useQuery({
 		...services.user.getAllRatingOptions({
 			currentPage: 1,
@@ -52,28 +57,28 @@ export default function RatingPage() {
 
 	return (
 		<section className='mx-auto w-full max-w-4xl p-6 space-y-6'>
-			<PageTitle description='Топ 20 лучших преподавателей по программе KPI'>Рейтинг преподавателей</PageTitle>
+			<PageTitle description={t.description}>{t.title}</PageTitle>
 
 			{/* HEADER */}
 			<Card>
 				<CardHeader className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
 					<div>
-						<CardTitle>🏆 Топ-20 преподавателей</CardTitle>
-						<CardDescription>Лучшие преподаватели по суммарным KPI баллам</CardDescription>
+						<CardTitle>{t.headerTitle}</CardTitle>
+						<CardDescription>{t.headerDescription}</CardDescription>
 					</div>
 
 					<div className='flex gap-2'>
 						<Button asChild size='sm' variant='outline'>
 							<Link href='/kpi/rating/all'>
 								<Users className='mr-2 h-4 w-4' />
-								Все преподаватели
+								{t.allTeachers}
 							</Link>
 						</Button>
 
 						<Button asChild size='sm' variant='outline'>
 							<Link href='/kpi/rating/stats'>
 								<BarChart3 className='mr-2 h-4 w-4' />
-								Статистика
+								{t.stats}
 							</Link>
 						</Button>
 					</div>
@@ -87,8 +92,8 @@ export default function RatingPage() {
 						<TableHeader>
 							<TableRow>
 								<TableHead className='w-16 text-center'>#</TableHead>
-								<TableHead>Преподаватель</TableHead>
-								<TableHead className='text-right pr-10'>Баллы</TableHead>
+								<TableHead>{t.teacher}</TableHead>
+								<TableHead className='text-right pr-10'>{t.points}</TableHead>
 							</TableRow>
 						</TableHeader>
 

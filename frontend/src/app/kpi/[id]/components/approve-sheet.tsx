@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { getLocaleText } from '@helpers'
+import { getLocaleText, getUILocaleSection } from '@helpers'
 import {
 	Button,
 	Input,
@@ -16,6 +16,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { CriteriaMethodEnum, type ICriteria } from '@types'
+import localeDictionary from './locale.json'
 
 interface IApproveSheetProps {
 	isOpen: boolean
@@ -26,6 +27,7 @@ interface IApproveSheetProps {
 
 export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }: IApproveSheetProps) => {
 	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).approveSheet
 	const isMeasuring = criteria.method === CriteriaMethodEnum.MEASURING
 
 	const min = criteria.points[0]
@@ -47,27 +49,27 @@ export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }:
 		<Sheet open={isOpen} onOpenChange={onOpenChange}>
 			<SheetContent>
 				<SheetHeader>
-					<SheetTitle>Утвердить</SheetTitle>
-					<SheetDescription>Проверка и утверждение баллов</SheetDescription>
+					<SheetTitle>{t.title}</SheetTitle>
+					<SheetDescription>{t.description}</SheetDescription>
 				</SheetHeader>
 
 				<div className='px-3 space-y-3 text-sm'>
 					<p>
-						<span className='text-muted-foreground'>Критерий:</span>{' '}
+						<span className='text-muted-foreground'>{t.criteriaLabel}:</span>{' '}
 						<span className='font-medium'>{criteriaName}</span>
 					</p>
 
 					<p>
-						<span className='text-muted-foreground'>Метод:</span>{' '}
+						<span className='text-muted-foreground'>{t.methodLabel}:</span>{' '}
 						<span className='font-medium'>
-							{criteria.method === CriteriaMethodEnum.NORMAL ? 'Фиксированный' : 'Измеряемый'}
+							{criteria.method === CriteriaMethodEnum.NORMAL ? t.methodFixed : t.methodMeasuring}
 						</span>
 					</p>
 
 					{criteria.method === CriteriaMethodEnum.NORMAL && (
 						<div className='rounded-md border px-3 py-2 bg-muted'>
 							<p>
-								Балл за критерий: <span className='font-semibold'>{criteria.points[0]}</span>
+								{t.pointsLabel}: <span className='font-semibold'>{criteria.points[0]}</span>
 							</p>
 						</div>
 					)}
@@ -75,7 +77,7 @@ export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }:
 					{isMeasuring && (
 						<div className='space-y-2'>
 							<Label htmlFor='points'>
-								Балл ({min} - {max})
+								{t.scoreLabel} ({min} - {max})
 							</Label>
 							<Input
 								id='points'
@@ -97,10 +99,10 @@ export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }:
 
 				<SheetFooter className='mt-4'>
 					<Button variant='outline' onClick={() => onOpenChange(false)}>
-						Отмена
+						{t.cancel}
 					</Button>
 					<Button variant='default' onClick={handleApprove}>
-						Утвердить
+						{t.approve}
 					</Button>
 				</SheetFooter>
 			</SheetContent>

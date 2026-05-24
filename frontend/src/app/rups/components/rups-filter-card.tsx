@@ -5,7 +5,7 @@ import { type FC, type FormEvent, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { StatusBadge } from '@components'
-import { statusLabels } from '@helpers'
+import { getStatusLabels } from '@helpers'
 import {
 	Button,
 	Card,
@@ -25,14 +25,20 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { StatusEnum } from '@types'
 import { Filter } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 interface IProps {
 	className?: string
 }
 
 export const RupsFilterCard: FC<IProps> = ({ className }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = localeDictionary[locale] ?? localeDictionary.ru
+	const labels = getStatusLabels(locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -74,20 +80,20 @@ export const RupsFilterCard: FC<IProps> = ({ className }) => {
 	return (
 		<Card className={className}>
 			<CardHeader>
-				<CardTitle>Фильтры</CardTitle>
-				<CardDescription>Можно быстро отфильтровать РУП по году, специальности и статусу.</CardDescription>
+				<CardTitle>{t.rupsFilter.title}</CardTitle>
+				<CardDescription>{t.rupsFilter.description}</CardDescription>
 			</CardHeader>
 			<CardContent className='h-full'>
 				<form className='h-full flex flex-col justify-between gap-3' onSubmit={(e) => handleSubmit(e)}>
 					<div className='grid gap-3 lg:grid-cols-2'>
 						{/* search */}
 						<div className='space-y-1 col-span-2'>
-							<Label>Поиск</Label>
-							<Input defaultValue={q} name='q' placeholder='Наименование...' />
+							<Label>{t.rupsFilter.search}</Label>
+							<Input defaultValue={q} name='q' placeholder={t.rupsFilter.searchPlaceholder} />
 						</div>
 
 						<div className='space-y-1 col-span-2'>
-							<Label>Статус</Label>
+							<Label>{t.rupsFilter.status}</Label>
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button className='w-full justify-start font-normal' variant='outline'>
@@ -98,13 +104,13 @@ export const RupsFilterCard: FC<IProps> = ({ className }) => {
 												))}
 											</div>
 										) : (
-											<span className='text-muted-foreground'>Выберите статусы</span>
+											<span className='text-muted-foreground'>{t.rupsFilter.selectStatuses}</span>
 										)}
 									</Button>
 								</PopoverTrigger>
 								<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-2'>
 									<div className='space-y-2'>
-										{Object.entries(statusLabels).map((option) => (
+										{Object.entries(labels).map((option) => (
 											<div key={option[0]} className='flex items-center space-x-2'>
 												<Checkbox
 													checked={selectedStatuses.includes(option[0])}
@@ -125,13 +131,13 @@ export const RupsFilterCard: FC<IProps> = ({ className }) => {
 						</div>
 
 						<div className='space-y-1'>
-							<Label>Учебный год</Label>
+							<Label>{t.rupsFilter.studyYear}</Label>
 							<Select disabled defaultValue={yearFilter} name='year'>
 								<SelectTrigger className='w-full'>
-									<SelectValue placeholder='Выберите год' />
+									<SelectValue placeholder={t.rupsFilter.selectYear} />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value='ALL'>Все годы обучения</SelectItem>
+									<SelectItem value='ALL'>{t.rupsFilter.allYears}</SelectItem>
 									{distinctYears.map((y) => (
 										<SelectItem key={y as string} value={y as string}>
 											{y}
@@ -142,13 +148,13 @@ export const RupsFilterCard: FC<IProps> = ({ className }) => {
 						</div>
 
 						<div className='space-y-1'>
-							<Label>Специальность</Label>
+							<Label>{t.rupsFilter.specialty}</Label>
 							<Select disabled defaultValue={specialtyFilter} name='specialty'>
 								<SelectTrigger className='w-full'>
-									<SelectValue placeholder='Выберите специальность' />
+									<SelectValue placeholder={t.rupsFilter.selectSpecialty} />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value='ALL'>Все специальности</SelectItem>
+									<SelectItem value='ALL'>{t.rupsFilter.allSpecialties}</SelectItem>
 									{distinctSpecialties.map((s) => (
 										<SelectItem key={s as string} value={s as string}>
 											{s}
@@ -160,7 +166,7 @@ export const RupsFilterCard: FC<IProps> = ({ className }) => {
 					</div>
 
 					<Button className='w-full' type='submit'>
-						Применить <Filter />
+						{t.rupsFilter.apply} <Filter />
 					</Button>
 				</form>
 			</CardContent>

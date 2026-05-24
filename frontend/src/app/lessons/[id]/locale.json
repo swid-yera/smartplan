@@ -1,0 +1,16 @@
+{
+  "ru": {
+    "overviewDescription": "Ключевые сведения о занятии, теме и формате",
+    "responsibleDescription": "Ответственный за проведение занятия",
+    "progressDescription": "Этапы урока с таймингом и содержанием",
+    "resourcesOnlineDescription": "Ссылки и онлайн-материалы к занятию",
+    "resourcesOfflineDescription": "Оборудование и локальные материалы"
+  },
+  "kk": {
+    "overviewDescription": "Сабақ, тақырып және формат туралы негізгі мәліметтер",
+    "responsibleDescription": "Сабақты өткізуге жауапты",
+    "progressDescription": "Тайминг пен мазмұны бар сабақ кезеңдері",
+    "resourcesOnlineDescription": "Сабаққа арналған сілтемелер мен онлайн материалдар",
+    "resourcesOfflineDescription": "Жабдықтар мен жергілікті материалдар"
+  }
+}

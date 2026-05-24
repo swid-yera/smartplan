@@ -1,25 +1,30 @@
 'use client'
 
+import { getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IAward } from '@types'
 
 import { MediaViewer } from './media-viewer'
+import localeDictionary from './locale.json'
 
 interface IAwardFieldValuesCardProps {
 	award: IAward
 }
 
 export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).fieldValues
 	const awardFieldValues = Object.entries(award.fieldValues || {})
 
 	return (
 		<Card className='md:col-span-3'>
 			<CardHeader>
-				<CardTitle>Данные</CardTitle>
+				<CardTitle>{t.title}</CardTitle>
 			</CardHeader>
 			<CardContent className='space-y-6'>
 				<div>
-					<h3 className='mb-2 font-semibold'>Поля категории</h3>
+					<h3 className='mb-2 font-semibold'>{t.categoryFields}</h3>
 					{awardFieldValues.length ? (
 						<div className='space-y-4'>
 							{awardFieldValues.map(([fieldKey, rawValue]) => {
@@ -38,7 +43,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 										<p className='text-sm font-medium text-muted-foreground'>{fieldKey}</p>
 
 										{nonEmptyValues.length === 0 ? (
-											<p className='text-sm text-muted-foreground'>Пусто</p>
+											<p className='text-sm text-muted-foreground'>{t.emptyValue}</p>
 										) : (
 											<div className='space-y-3'>
 												{nonEmptyValues.map((value, idx) => {
@@ -87,7 +92,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 						</div>
 					) : (
 						<div className='rounded-md bg-muted/50 p-4 text-sm text-muted-foreground'>
-							Дополнительные поля отсутствуют
+							{t.noAdditionalFields}
 						</div>
 					)}
 				</div>

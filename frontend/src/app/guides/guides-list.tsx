@@ -3,12 +3,16 @@
 import { useMemo, useState } from 'react'
 
 import { Badge, Card, CardContent, CardHeader, CardTitle, Input } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IGuide } from '@types'
 import { BookOpen, Lock } from 'lucide-react'
 
 import { guides } from './data.mock'
+import locale from './locale.json'
 
 export const GuidesList = () => {
+	const currentLocale = useLocaleStore((state) => state.locale)
+	const t = locale[currentLocale] ?? locale.ru
 	const [search, setSearch] = useState('')
 
 	const filtered = useMemo(() => {
@@ -22,7 +26,7 @@ export const GuidesList = () => {
 		<div className='space-y-4'>
 			<Input
 				className='max-w-sm'
-				placeholder='Поиск по гайдам'
+				placeholder={t.searchPlaceholder}
 				value={search}
 				onChange={(e) => setSearch(e.target.value)}
 			/>
@@ -31,7 +35,7 @@ export const GuidesList = () => {
 				{filtered.length ? (
 					filtered.map((guide) => <GuideCard key={guide.id} disabled guide={guide} />)
 				) : (
-					<p className='text-muted-foreground'>Ничего не найдено</p>
+					<p className='text-muted-foreground'>{t.notFound}</p>
 				)}
 			</div>
 		</div>
@@ -45,6 +49,9 @@ interface IProps {
 }
 
 export const GuideCard = ({ guide, disabled = false }: IProps) => {
+	const currentLocale = useLocaleStore((state) => state.locale)
+	const t = locale[currentLocale] ?? locale.ru
+
 	return (
 		<Card
 			className={`
@@ -60,7 +67,7 @@ export const GuideCard = ({ guide, disabled = false }: IProps) => {
 				<div className='absolute top-3 right-3 flex items-center gap-1'>
 					<Lock className='h-4 w-4 text-muted-foreground' />
 					<Badge className='text-muted-foreground' variant='outline'>
-						В разработке
+						{t.inDevelopment}
 					</Badge>
 				</div>
 			)}
@@ -80,7 +87,9 @@ export const GuideCard = ({ guide, disabled = false }: IProps) => {
 					<Badge variant='outline'>{guide.level}</Badge>
 				</div>
 
-				<p className='text-xs'>Обновлено: {guide.updatedAt}</p>
+				<p className='text-xs'>
+					{t.updatedAt}: {guide.updatedAt}
+				</p>
 			</CardContent>
 		</Card>
 	)

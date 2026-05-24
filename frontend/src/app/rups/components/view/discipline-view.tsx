@@ -2,7 +2,7 @@
 
 import type { FC } from 'react'
 
-import { formatAsDash } from '@helpers'
+import { formatAsDash, getUILocaleSection } from '@helpers'
 import {
 	Card,
 	CardContent,
@@ -17,7 +17,9 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IDiscipline } from '@types'
+import localeDictionary from './locale.json'
 
 interface IProps {
 	disciplines: IDiscipline[]
@@ -25,6 +27,8 @@ interface IProps {
 }
 
 export const DisciplineView: FC<IProps> = ({ disciplines = [], rupName }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const totalModuleHours = disciplines.reduce((acc, d) => acc + d.totalHours, 0)
 
 	const semesterTotals = Array(8).fill(0)
@@ -39,10 +43,8 @@ export const DisciplineView: FC<IProps> = ({ disciplines = [], rupName }) => {
 		<Card>
 			<CardHeader className='flex-row items-start justify-between gap-4'>
 				<div>
-					<CardTitle>Дисциплины и распределение часов</CardTitle>
-					<CardDescription>
-						Общее количество часов и распределение по семестрам для каждой дисциплины в модуле.
-					</CardDescription>
+					<CardTitle>{t.disciplineTitle}</CardTitle>
+					<CardDescription>{t.disciplineDescription}</CardDescription>
 				</div>
 			</CardHeader>
 			<CardContent>

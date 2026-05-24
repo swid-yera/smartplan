@@ -7,6 +7,7 @@ import type {
 	ICreateSemester,
 	IDiscipline,
 	ISemester,
+	Locale,
 	RupTypeEnum,
 	StudyFormEnum,
 	TopicTypeEnum,
@@ -15,30 +16,64 @@ import type { VariantProps } from 'class-variance-authority'
 import { Combine, FlaskConical, type LucideProps, NotebookPen } from 'lucide-react'
 
 // rup type
-export const rupTypeLabels: Record<RupTypeEnum, string> = {
-	PRACTICE: 'Производственно-практический',
-	THEORY: 'Теоретический',
+const rupTypeLabelsByLocale: Record<Locale, Record<RupTypeEnum, string>> = {
+	ru: {
+		PRACTICE: 'Производственно-практический',
+		THEORY: 'Теоретический',
+	},
+	kk: {
+		PRACTICE: 'Өндірістік-практикалық',
+		THEORY: 'Теориялық',
+	},
 }
 
-export const normalizeRupType = (status: RupTypeEnum): string => {
-	return rupTypeLabels[status] ?? ''
+export const rupTypeLabels: Record<RupTypeEnum, string> = rupTypeLabelsByLocale.ru
+export const getRupTypeLabels = (locale: Locale = 'ru'): Record<RupTypeEnum, string> => {
+	return rupTypeLabelsByLocale[locale] || rupTypeLabelsByLocale.ru
+}
+
+export const normalizeRupType = (status: RupTypeEnum, locale: Locale = 'ru'): string => {
+	return getRupTypeLabels(locale)[status] ?? ''
 }
 
 // study form
-export const studyFormLabels: Record<StudyFormEnum, string> = {
-	CORRESPONDENCE: 'Заочная',
-	FULL_TIME: 'Очная',
+const studyFormLabelsByLocale: Record<Locale, Record<StudyFormEnum, string>> = {
+	ru: {
+		CORRESPONDENCE: 'Заочная',
+		FULL_TIME: 'Очная',
+	},
+	kk: {
+		CORRESPONDENCE: 'Сырттай',
+		FULL_TIME: 'Күндізгі',
+	},
 }
 
-export const normalizeStudyForm = (studyForm: StudyFormEnum): string => {
-	return studyFormLabels[studyForm] ?? ''
+export const studyFormLabels: Record<StudyFormEnum, string> = studyFormLabelsByLocale.ru
+export const getStudyFormLabels = (locale: Locale = 'ru'): Record<StudyFormEnum, string> => {
+	return studyFormLabelsByLocale[locale] || studyFormLabelsByLocale.ru
+}
+
+export const normalizeStudyForm = (studyForm: StudyFormEnum, locale: Locale = 'ru'): string => {
+	return getStudyFormLabels(locale)[studyForm] ?? ''
 }
 
 // topic type
-export const topicTypeLabels: Record<TopicTypeEnum, string> = {
-	COMBINED: 'Комбинированный',
-	PRACTICAL: 'Практический',
-	SNZ: 'СНЗ',
+const topicTypeLabelsByLocale: Record<Locale, Record<TopicTypeEnum, string>> = {
+	ru: {
+		COMBINED: 'Комбинированный',
+		PRACTICAL: 'Практический',
+		SNZ: 'СНЗ',
+	},
+	kk: {
+		COMBINED: 'Аралас',
+		PRACTICAL: 'Практикалық',
+		SNZ: 'СӨЖ',
+	},
+}
+
+export const topicTypeLabels: Record<TopicTypeEnum, string> = topicTypeLabelsByLocale.ru
+export const getTopicTypeLabels = (locale: Locale = 'ru'): Record<TopicTypeEnum, string> => {
+	return topicTypeLabelsByLocale[locale] || topicTypeLabelsByLocale.ru
 }
 
 export const topicTypeVariants: Record<TopicTypeEnum, VariantProps<typeof badgeVariants>['variant']> = {
@@ -56,8 +91,8 @@ export const topicTypeIcons: Record<
 	SNZ: NotebookPen,
 }
 
-export const normalizeTopicType = (studyForm: TopicTypeEnum): string => {
-	return topicTypeLabels[studyForm] ?? ''
+export const normalizeTopicType = (studyForm: TopicTypeEnum, locale: Locale = 'ru'): string => {
+	return getTopicTypeLabels(locale)[studyForm] ?? ''
 }
 
 // hours styles

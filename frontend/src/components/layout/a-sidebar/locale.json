@@ -1,0 +1,82 @@
+{
+	"ru": {
+		"groupLabel": "SmartPlan",
+		"login": "Войти",
+		"logout": "Выйти",
+		"language": {
+			"ruName": "Русский",
+			"kkName": "Қазақша"
+		},
+		"theme": {
+			"light": "Светлая тема",
+			"dark": "Темная тема",
+			"system": "Системная тема"
+		},
+		"nav": {
+			"dashboard": "Панель управления",
+			"rups": "Рабочие учебные программы",
+			"rupsMy": "Мои РУП",
+			"rupsCreate": "Создать РУП",
+			"rupsGuides": "Обучение",
+			"rupsAll": "Все РУП",
+			"rupsReview": "Ожидают проверки",
+			"lessons": "План учебного занятия",
+			"lessonsMy": "Мои планы учебных занятий",
+			"lessonsCreate": "Создать план учебного занятия",
+			"kpi": "KPI",
+			"kpiMy": "Мои данные",
+			"kpiAll": "Все данные",
+			"kpiReview": "Ожидают проверки",
+			"kpiRating": "Рейтинг преподавателей",
+			"kpiTypes": "Критерии оценивания KPI",
+			"groups": "Группы",
+			"admin": "Администрирование",
+			"users": "Пользователи",
+			"settings": "Настройки",
+			"kpiCategories": "Категорий KPI",
+			"kpiCriteria": "Критерий оценивание KPI",
+			"hik": "HikCentral",
+			"support": "Поддержка"
+		}
+	},
+	"kk": {
+		"groupLabel": "SmartPlan",
+		"login": "Кіру",
+		"logout": "Шығу",
+		"language": {
+			"ruName": "Орысша",
+			"kkName": "Қазақша"
+		},
+		"theme": {
+			"light": "Жарық тақырып",
+			"dark": "Қараңғы тақырып",
+			"system": "Жүйелік тақырып"
+		},
+		"nav": {
+			"dashboard": "Басқару панелі",
+			"rups": "Жұмыс оқу бағдарламалары",
+			"rupsMy": "Менің ЖОБ",
+			"rupsCreate": "ЖОБ құру",
+			"rupsGuides": "Оқыту",
+			"rupsAll": "Барлық ЖОБ",
+			"rupsReview": "Тексеруді күтуде",
+			"lessons": "Сабақ жоспары",
+			"lessonsMy": "Менің сабақ жоспарларым",
+			"lessonsCreate": "Сабақ жоспарын құру",
+			"kpi": "KPI",
+			"kpiMy": "Менің деректерім",
+			"kpiAll": "Барлық деректер",
+			"kpiReview": "Тексеруді күтуде",
+			"kpiRating": "Оқытушылар рейтингі",
+			"kpiTypes": "KPI бағалау критерийлері",
+			"groups": "Топтар",
+			"admin": "Әкімшілеу",
+			"users": "Пайдаланушылар",
+			"settings": "Баптаулар",
+			"kpiCategories": "KPI санаттары",
+			"kpiCriteria": "KPI бағалау критерийі",
+			"hik": "HikCentral",
+			"support": "Қолдау"
+		}
+	}
+}

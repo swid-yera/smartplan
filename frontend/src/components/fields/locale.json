@@ -1,0 +1,30 @@
+{
+	"ru": {
+		"selectPlaceholder": "Выберите значение",
+		"urlPlaceholder": "example.com/path",
+		"datePlaceholder": "Выберите дату",
+		"errors": {
+			"minLength": "Минимальная длина: {value}",
+			"maxLength": "Максимальная длина: {value}",
+			"invalidNumber": "Введите корректное число",
+			"minValue": "Минимальное значение: {value}",
+			"maxValue": "Максимальное значение: {value}",
+			"maxFileSize": "Максимальный размер файла: {value}MB",
+			"invalidFileExtension": "Недопустимое расширение файла: {name}"
+		}
+	},
+	"kk": {
+		"selectPlaceholder": "Мәнді таңдаңыз",
+		"urlPlaceholder": "example.com/path",
+		"datePlaceholder": "Күнді таңдаңыз",
+		"errors": {
+			"minLength": "Ең аз ұзындық: {value}",
+			"maxLength": "Ең көп ұзындық: {value}",
+			"invalidNumber": "Дұрыс сан енгізіңіз",
+			"minValue": "Ең аз мән: {value}",
+			"maxValue": "Ең көп мән: {value}",
+			"maxFileSize": "Файлдың ең үлкен өлшемі: {value}MB",
+			"invalidFileExtension": "Рұқсат етілмеген файл кеңейтімі: {name}"
+		}
+	}
+}

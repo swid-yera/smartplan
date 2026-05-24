@@ -4,13 +4,19 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, Pagination, RupsCard } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useAuthStore } from '@store'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 
+import localeDictionary from './locale.json'
+
 const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -53,13 +59,13 @@ const Page = () => {
 					<Button asChild>
 						<Link href='/rups/create'>
 							<Plus className='mr-2 h-4 w-4' />
-							Создать РУП
+							{t.create}
 						</Link>
 					</Button>
 				}
-				description='Мои созданные рабочие учебные программы'
+				description={t.description}
 			>
-				Мои РУП
+				{t.title}
 			</PageTitle>
 
 			<RupsCard
@@ -67,7 +73,7 @@ const Page = () => {
 				currentPage={rupsData?.meta.currentPage || 1}
 				isLoading={isRupsLoading}
 				rups={rupsData?.data || []}
-				title='Список ваших РУП'
+				title={t.listTitle}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>

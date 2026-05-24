@@ -1,0 +1,12 @@
+{
+  "ru": {
+    "title": "KPI",
+    "description": "KPI всех преподавателей",
+    "listTitle": "Список достижений"
+  },
+  "kk": {
+    "title": "KPI",
+    "description": "Барлық оқытушылардың KPI",
+    "listTitle": "Жетістіктер тізімі"
+  }
+}

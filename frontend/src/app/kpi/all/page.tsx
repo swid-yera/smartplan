@@ -3,14 +3,19 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
+import { useLocaleStore } from '@store'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { StatusEnum } from '@types'
 
 import { AwardFilterCard } from '../components'
+import localeDictionary from './locale.json'
 
 const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -54,7 +59,7 @@ const Page = () => {
 
 	return (
 		<section className='p-4 w-full space-y-4'>
-			<PageTitle description='KPI всех преподавателей'>KPI</PageTitle>
+			<PageTitle description={t.description}>{t.title}</PageTitle>
 
 			{/* фильтр и поиск */}
 			<AwardFilterCard className='mb-4' />
@@ -64,7 +69,7 @@ const Page = () => {
 				awards={awardsData?.data || []}
 				currentPage={awardsData?.meta.currentPage || 1}
 				isLoading={isAwardsLoading}
-				title='Список достижений'
+				title={t.listTitle}
 				totalPages={awardsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>

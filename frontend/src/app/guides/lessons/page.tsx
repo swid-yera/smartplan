@@ -3,24 +3,28 @@
 import Link from 'next/link'
 
 import { PageTitle } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { BookOpen, Bot, FileText, Sparkles } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 export default function LessonPlansPage() {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
-			<PageTitle description='Автоматическое создание плана учебного занятия с учетом учебных программ и требований'>
-				Генерация плана учебного занятия
-			</PageTitle>
+			<PageTitle description={t.description}>{t.title}</PageTitle>
 
 			{/* Что это */}
 			<Card>
 				<CardHeader>
 					<CardTitle className='flex items-center gap-2'>
 						<BookOpen className='h-5 w-5 text-primary' />
-						Что такое генерация плана учебного занятия
+						{t.whatIsTitle}
 					</CardTitle>
-					<CardDescription>Интеллектуальный инструмент для преподавателей</CardDescription>
+					<CardDescription>{t.whatIsDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent className='space-y-3 text-sm leading-relaxed'>
@@ -41,7 +45,7 @@ export default function LessonPlansPage() {
 				<CardHeader>
 					<CardTitle className='flex items-center gap-2'>
 						<Bot className='h-5 w-5 text-primary' />
-						Как работает генерация
+						{t.howWorksTitle}
 					</CardTitle>
 				</CardHeader>
 
@@ -63,7 +67,7 @@ export default function LessonPlansPage() {
 				<CardHeader>
 					<CardTitle className='flex items-center gap-2'>
 						<Sparkles className='h-5 w-5 text-primary' />
-						Преимущества
+						{t.advantagesTitle}
 					</CardTitle>
 				</CardHeader>
 
@@ -82,22 +86,22 @@ export default function LessonPlansPage() {
 			<Card>
 				<CardContent className='flex flex-col sm:flex-row gap-4 justify-between items-center'>
 					<div className='space-y-1'>
-						<p className='font-medium'>Начать работу с планами учебных занятий</p>
-						<p className='text-sm text-muted-foreground'>Создавайте новые планы или управляйте уже созданными</p>
+						<p className='font-medium'>{t.startTitle}</p>
+						<p className='text-sm text-muted-foreground'>{t.startDescription}</p>
 					</div>
 
 					<div className='flex gap-3'>
 						<Button asChild>
 							<Link href='/lessons/create'>
 								<FileText className='mr-2 h-4 w-4' />
-								Сгенерировать план
+								{t.generatePlan}
 							</Link>
 						</Button>
 
 						<Button asChild variant='outline'>
 							<Link href='/lessons/my'>
 								<BookOpen className='mr-2 h-4 w-4' />
-								Мои планы учебных занятий
+								{t.myPlans}
 							</Link>
 						</Button>
 					</div>

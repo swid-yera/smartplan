@@ -1,3 +1,4 @@
+import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
 	Button,
 	Card,
@@ -11,9 +12,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { Locale } from '@types'
 import { CriteriaMethodEnum } from '@types'
 import { Plus, Trash } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 export interface ILocalizedDraft {
 	ru: string
@@ -42,6 +45,9 @@ interface IProps {
 }
 
 export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IProps) => {
+	const uiLocale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, uiLocale)
+
 	const addCriteria = () => {
 		const newCriteria: ICriteriaForm = {
 			name: {
@@ -62,7 +68,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 		<Card className='relative'>
 			<CardHeader className='pb-2'>
 				<div className='flex items-start justify-between'>
-					<CardTitle className='text-base'>Вариант {index + 1}</CardTitle>
+					<CardTitle className='text-base'>{interpolateUILocaleText(t.variantTitle, { index: index + 1 })}</CardTitle>
 
 					<Button size='icon' variant='ghost' onClick={onDelete}>
 						<Trash className='h-4 w-4 text-muted-foreground' />
@@ -72,7 +78,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 
 			<CardContent className='space-y-4'>
 				<Input
-					placeholder='Название варианта'
+					placeholder={t.variantNamePlaceholder}
 					value={variant.name[locale]}
 					onChange={(e) =>
 						onChange({
@@ -86,7 +92,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 				/>
 
 				<Input
-					placeholder='Описание'
+					placeholder={t.variantDescriptionPlaceholder}
 					value={variant.description[locale]}
 					onChange={(e) =>
 						onChange({
@@ -102,10 +108,10 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 				{/* criteria */}
 				<div className='space-y-2'>
 					<div className='flex items-center justify-between'>
-						<p className='text-sm font-medium'>Критерии</p>
+						<p className='text-sm font-medium'>{t.criteriaTitle}</p>
 						<Button size='sm' variant='outline' onClick={addCriteria}>
 							<Plus className='mr-2 h-3 w-3' />
-							Критерий
+							{t.addCriteria}
 						</Button>
 					</div>
 
@@ -113,7 +119,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 						{variant.criteria.map((c, i) => (
 							<li key={i} className='space-y-3'>
 								<Input
-									placeholder='Название критерия'
+									placeholder={t.criteriaNamePlaceholder}
 									value={c.name[locale]}
 									onChange={(e) => {
 										const next = [...variant.criteria]
@@ -149,12 +155,12 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 										}}
 									>
 										<SelectTrigger className='w-48'>
-											<SelectValue placeholder='Метод' />
+											<SelectValue placeholder={t.methodPlaceholder} />
 										</SelectTrigger>
 
 										<SelectContent>
-											<SelectItem value={CriteriaMethodEnum.NORMAL}>Фиксированный</SelectItem>
-											<SelectItem value={CriteriaMethodEnum.MEASURING}>Диапазон</SelectItem>
+											<SelectItem value={CriteriaMethodEnum.NORMAL}>{t.fixedMethod}</SelectItem>
+											<SelectItem value={CriteriaMethodEnum.MEASURING}>{t.rangeMethod}</SelectItem>
 										</SelectContent>
 									</Select>
 
@@ -162,7 +168,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 									{c.method === CriteriaMethodEnum.NORMAL ? (
 										<Input
 											min={0}
-											placeholder='Баллы'
+											placeholder={t.pointsPlaceholder}
 											type='number'
 											value={c.points?.[0] ?? 0}
 											onChange={(e) => {
@@ -182,7 +188,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 										<div className='flex gap-2'>
 											<Input
 												min={0}
-												placeholder='Мин'
+												placeholder={t.minPlaceholder}
 												type='number'
 												value={c.points?.[0] ?? 0}
 												onChange={(e) => {
@@ -202,7 +208,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 
 											<Input
 												min={0}
-												placeholder='Макс'
+												placeholder={t.maxPlaceholder}
 												type='number'
 												value={c.points?.[1] ?? 0}
 												onChange={(e) => {

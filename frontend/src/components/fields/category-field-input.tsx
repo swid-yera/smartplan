@@ -29,6 +29,7 @@ import {
 	parseDateFromFieldValue,
 } from './category-fields.utils'
 import { CategoryFileFieldInput } from './category-file-field-input'
+import localeDictionary from './locale.json'
 
 const parseSelectOptions = (options: unknown): { label: string; value: string }[] => {
 	if (!Array.isArray(options)) return []
@@ -65,8 +66,9 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 	const labelText = getLocaleText(field.label, locale)
 	const placeholderText = getLocaleText(field.placeholder, locale)
 	const helpText = getLocaleText(field.helpText, locale)
+	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const commonLabel = `${labelText}${field.required ? ' *' : ''}`
-	const validationError = getCategoryFieldValidationError(field, value)
+	const validationError = getCategoryFieldValidationError(field, value, locale)
 
 	if (field.type === 'textarea') {
 		return (
@@ -97,7 +99,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 						onValueChange={(nextValue) => onChange(field.key, nextValue)}
 					>
 						<SelectTrigger className='w-full' id={field.key}>
-							<SelectValue placeholder={placeholderText || 'Выберите значение'} />
+							<SelectValue placeholder={placeholderText || t.selectPlaceholder} />
 						</SelectTrigger>
 						<SelectContent>
 							{options.map((option) => (
@@ -122,7 +124,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 						className='border-0 shadow-none focus-visible:ring-0'
 						id={field.key}
 						inputMode='url'
-						placeholder={placeholderText || 'example.com/path'}
+						placeholder={placeholderText || t.urlPlaceholder}
 						type='text'
 						value={typeof value === 'string' ? value : ''}
 						onChange={(event) => onChange(field.key, normalizeUrlWithoutProtocol(event.target.value))}
@@ -143,7 +145,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 				<Popover>
 					<PopoverTrigger asChild>
 						<Button className='w-full justify-between font-normal' id={field.key} variant='outline'>
-							{selectedDate ? format(selectedDate, 'dd.MM.yyyy') : placeholderText || 'Выберите дату'}
+							{selectedDate ? format(selectedDate, 'dd.MM.yyyy') : placeholderText || t.datePlaceholder}
 							<ChevronDown />
 						</Button>
 					</PopoverTrigger>

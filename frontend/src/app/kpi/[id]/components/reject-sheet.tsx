@@ -1,5 +1,6 @@
 'use client'
 
+import { getUILocaleSection } from '@helpers'
 import {
 	Button,
 	Label,
@@ -11,7 +12,9 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { toast } from 'sonner'
+import localeDictionary from './locale.json'
 
 interface IRejectSheetProps {
 	isOpen: boolean
@@ -28,21 +31,22 @@ export const RejectSheet = ({
 	setGeneralComment,
 	onStatusChange,
 }: IRejectSheetProps) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).rejectSheet
+
 	return (
 		<Sheet open={isOpen} onOpenChange={onOpenChange}>
 			<SheetContent>
 				<SheetHeader>
-					<SheetTitle>Отклонить</SheetTitle>
-					<SheetDescription>
-						Укажите причину отклонения (проблемы), чтобы преподаватель мог их исправить.
-					</SheetDescription>
+					<SheetTitle>{t.title}</SheetTitle>
+					<SheetDescription>{t.description}</SheetDescription>
 				</SheetHeader>
 				<div className='px-4 grid gap-4 py-4'>
 					<div className='grid gap-2'>
-						<Label htmlFor='reject-reason'>Причина отказа</Label>
+						<Label htmlFor='reject-reason'>{t.reasonLabel}</Label>
 						<Textarea
 							id='reject-reason'
-							placeholder='Опишите проблемы...'
+							placeholder={t.reasonPlaceholder}
 							rows={12}
 							value={generalComment}
 							onChange={(e) => setGeneralComment(e.target.value)}
@@ -51,14 +55,14 @@ export const RejectSheet = ({
 				</div>
 				<SheetFooter>
 					<Button variant='outline' onClick={() => onOpenChange(false)}>
-						Отмена
+						{t.cancel}
 					</Button>
 					<Button
 						disabled={!generalComment}
 						variant='destructive'
 						onClick={() => {
 							if (!generalComment.trim()) {
-								toast.error('Пожалуйста, укажите причину отклонения')
+								toast.error(t.reasonRequired)
 
 								return
 							}
@@ -66,7 +70,7 @@ export const RejectSheet = ({
 							onOpenChange(false)
 						}}
 					>
-						Отклонить
+						{t.reject}
 					</Button>
 				</SheetFooter>
 			</SheetContent>

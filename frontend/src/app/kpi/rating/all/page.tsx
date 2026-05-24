@@ -5,6 +5,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 import { Loader, PageTitle, Pagination } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
 	Button,
@@ -21,10 +22,14 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, BarChart3, Search, UserIcon } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 export default function RatingAllPage() {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const [searchInput, setSearchInput] = useState('')
 	const [search, setSearch] = useState('')
 	const [currentPage, setCurrentPage] = useState(1)
@@ -49,30 +54,30 @@ export default function RatingAllPage() {
 
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
-			<PageTitle description='Полный рейтинг преподавателей'>Все преподаватели</PageTitle>
+			<PageTitle description={t.description}>{t.title}</PageTitle>
 
 			{/* HEADER */}
 			<Card>
 				<CardHeader className='space-y-4'>
 					<div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
 						<div>
-							<CardTitle>Полный рейтинг</CardTitle>
-							<CardDescription>Все преподаватели с учетом KPI баллов</CardDescription>
+							<CardTitle>{t.headerTitle}</CardTitle>
+							<CardDescription>{t.headerDescription}</CardDescription>
 						</div>
 
 						<div className='flex gap-2'>
 							<Button asChild size='sm' variant='outline'>
-								<Link href='/kpi/rating'>
-									<ArrowLeft className='mr-2 h-4 w-4' />
-									Топ-20
-								</Link>
+							<Link href='/kpi/rating'>
+								<ArrowLeft className='mr-2 h-4 w-4' />
+								{t.top20}
+							</Link>
 							</Button>
 
 							<Button asChild size='sm' variant='outline'>
-								<Link href='/kpi/rating/stats'>
-									<BarChart3 className='mr-2 h-4 w-4' />
-									Статистика
-								</Link>
+							<Link href='/kpi/rating/stats'>
+								<BarChart3 className='mr-2 h-4 w-4' />
+								{t.stats}
+							</Link>
 							</Button>
 						</div>
 					</div>
@@ -83,7 +88,7 @@ export default function RatingAllPage() {
 							<Search className='absolute left-3 top-2.5 h-4 w-4 text-muted-foreground' />
 							<Input
 								className='pl-9'
-								placeholder='Поиск по ФИО'
+								placeholder={t.searchPlaceholder}
 								value={searchInput}
 								onChange={(e) => setSearchInput(e.target.value)}
 								onKeyDown={(e) => {
@@ -94,7 +99,7 @@ export default function RatingAllPage() {
 
 						<Button onClick={applySearch}>
 							<Search className='mr-2 h-4 w-4' />
-							Найти
+							{t.search}
 						</Button>
 					</div>
 				</CardHeader>
@@ -107,8 +112,8 @@ export default function RatingAllPage() {
 						<TableHeader>
 							<TableRow>
 								<TableHead className='w-16 text-center'>#</TableHead>
-								<TableHead>Преподаватель</TableHead>
-								<TableHead className='text-right pr-10'>Баллы</TableHead>
+								<TableHead>{t.teacher}</TableHead>
+								<TableHead className='text-right pr-10'>{t.points}</TableHead>
 							</TableRow>
 						</TableHeader>
 

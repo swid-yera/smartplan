@@ -1,5 +1,6 @@
 'use client'
 
+import { getUILocaleSection } from '@helpers'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -10,6 +11,8 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
+import localeDictionary from './locale.json'
 
 interface IDeleteAlertProps {
 	isOpen: boolean
@@ -18,19 +21,20 @@ interface IDeleteAlertProps {
 }
 
 export const DeleteAlert = ({ isOpen, onOpenChange, onDelete }: IDeleteAlertProps) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).deleteAlert
+
 	return (
 		<AlertDialog open={isOpen} onOpenChange={onOpenChange}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-					<AlertDialogDescription>
-						Это действие невозможно отменить. Это приведет к необратимому удалению рабочей учебной программы.
-					</AlertDialogDescription>
+					<AlertDialogTitle>{t.title}</AlertDialogTitle>
+					<AlertDialogDescription>{t.description}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Отмена</AlertDialogCancel>
+					<AlertDialogCancel>{t.cancel}</AlertDialogCancel>
 					<AlertDialogAction variant='destructive' onClick={onDelete}>
-						Удалить
+						{t.delete}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

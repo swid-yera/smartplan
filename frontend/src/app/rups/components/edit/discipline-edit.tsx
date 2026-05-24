@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
+import { getUILocaleSection } from '@helpers'
 import { EditableHourCell } from '@components'
 import { formatAsDash } from '@helpers'
 import {
@@ -31,6 +32,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { Plus, Trash } from 'lucide-react'
 import {
 	type ArrayPath,
@@ -41,6 +43,7 @@ import {
 	useFormContext,
 	useWatch,
 } from 'react-hook-form'
+import localeDictionary from './locale.json'
 
 type Semester = { semester: number; totalHours: number }
 
@@ -55,6 +58,8 @@ type IProps = FieldValues & {
 }
 
 export function DisciplineEdit<T extends IProps>() {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const form = useFormContext<T>()
 	const { control } = form
 
@@ -108,8 +113,8 @@ export function DisciplineEdit<T extends IProps>() {
 		<Card>
 			<CardHeader className='flex justify-between items-start'>
 				<div>
-					<CardTitle>Распределение часов</CardTitle>
-					<CardDescription>Создание дисциплин и расчет часов</CardDescription>
+					<CardTitle>{t.disciplineTitle}</CardTitle>
+					<CardDescription>{t.disciplineDescription}</CardDescription>
 				</div>
 
 				<Button type='button' variant='outline' onClick={() => append(newDiscipline as PathValue<T, ArrayPath<T>>)}>

@@ -1,0 +1,128 @@
+{
+  "ru": {
+    "page": {
+      "notFoundTitle": "Награда не найдена",
+      "back": "Вернуться назад",
+      "pageTitle": "Детали KPI данных",
+      "pageDescription": "Просмотр",
+      "statusDraft": "Проверьте данные и отправьте на согласование.",
+      "statusInReview": "Ожидайте, пока методист проверит ваши данные.",
+      "statusApproved": "Редактирование недоступно после утверждения.",
+      "toastStatusLoading": "Изменение статуса...",
+      "toastStatusSuccess": "Статус успешно изменен!",
+      "toastStatusError": "Произошла ошибка при изменении статуса",
+      "toastDeleteLoading": "Удаление...",
+      "toastDeleteSuccess": "Успешно удален",
+      "toastDeleteError": "Произошла ошибка при удалений"
+    },
+    "statusSheet": {
+      "title": "Изменить статус",
+      "description": "Выберите новый статус для KPI и укажите причину изменения.",
+      "statusLabel": "Статус",
+      "statusPlaceholder": "Выберите статус",
+      "reasonLabel": "Причина / Комментарий",
+      "reasonPlaceholder": "Укажите причину...",
+      "save": "Сохранить"
+    },
+    "rejectSheet": {
+      "title": "Отклонить",
+      "description": "Укажите причину отклонения (проблемы), чтобы преподаватель мог их исправить.",
+      "reasonLabel": "Причина отказа",
+      "reasonPlaceholder": "Опишите проблемы...",
+      "cancel": "Отмена",
+      "reject": "Отклонить",
+      "reasonRequired": "Пожалуйста, укажите причину отклонения"
+    },
+    "deleteAlert": {
+      "title": "Вы уверены?",
+      "description": "Это действие невозможно отменить. Это приведет к необратимому удалению достижения KPI.",
+      "cancel": "Отмена",
+      "delete": "Удалить"
+    },
+    "approveSheet": {
+      "title": "Утвердить",
+      "description": "Проверка и утверждение баллов",
+      "criteriaLabel": "Критерий",
+      "methodLabel": "Метод",
+      "methodFixed": "Фиксированный",
+      "methodMeasuring": "Измеряемый",
+      "pointsLabel": "Балл за критерий",
+      "scoreLabel": "Балл",
+      "cancel": "Отмена",
+      "approve": "Утвердить"
+    },
+    "hero": {
+      "title": "Рейтинг преподавателей",
+      "description": "Оценка эффективности преподавателей на основе KPI"
+    },
+    "fieldValues": {
+      "title": "Данные",
+      "categoryFields": "Поля категории",
+      "emptyValue": "Пусто",
+      "noAdditionalFields": "Дополнительные поля отсутствуют"
+    }
+  },
+  "kk": {
+    "page": {
+      "notFoundTitle": "Жетістік табылмады",
+      "back": "Артқа қайту",
+      "pageTitle": "KPI деректерінің егжей-тегжейі",
+      "pageDescription": "Қарау",
+      "statusDraft": "Деректерді тексеріп, келісуге жіберіңіз.",
+      "statusInReview": "Әдіскер деректеріңізді тексергенше күтіңіз.",
+      "statusApproved": "Бекітілгеннен кейін өңдеу қолжетімсіз.",
+      "toastStatusLoading": "Мәртебе өзгертілуде...",
+      "toastStatusSuccess": "Мәртебе сәтті өзгертілді!",
+      "toastStatusError": "Мәртебені өзгерту кезінде қате орын алды",
+      "toastDeleteLoading": "Жойылуда...",
+      "toastDeleteSuccess": "Сәтті жойылды",
+      "toastDeleteError": "Жою кезінде қате орын алды"
+    },
+    "statusSheet": {
+      "title": "Мәртебені өзгерту",
+      "description": "KPI үшін жаңа мәртебені таңдап, өзгерту себебін көрсетіңіз.",
+      "statusLabel": "Мәртебе",
+      "statusPlaceholder": "Мәртебені таңдаңыз",
+      "reasonLabel": "Себеп / Пікір",
+      "reasonPlaceholder": "Себебін көрсетіңіз...",
+      "save": "Сақтау"
+    },
+    "rejectSheet": {
+      "title": "Қабылдамау",
+      "description": "Оқытушы түзете алуы үшін қабылдамау себебін (мәселені) көрсетіңіз.",
+      "reasonLabel": "Қабылдамау себебі",
+      "reasonPlaceholder": "Мәселелерді сипаттаңыз...",
+      "cancel": "Болдырмау",
+      "reject": "Қабылдамау",
+      "reasonRequired": "Қабылдамау себебін көрсетіңіз"
+    },
+    "deleteAlert": {
+      "title": "Сенімдісіз бе?",
+      "description": "Бұл әрекетті болдырмау мүмкін емес. Бұл KPI жетістігін қайтымсыз жоюға әкеледі.",
+      "cancel": "Болдырмау",
+      "delete": "Жою"
+    },
+    "approveSheet": {
+      "title": "Бекіту",
+      "description": "Ұпайларды тексеру және бекіту",
+      "criteriaLabel": "Критерий",
+      "methodLabel": "Әдіс",
+      "methodFixed": "Тұрақты",
+      "methodMeasuring": "Өлшенетін",
+      "pointsLabel": "Критерий ұпайы",
+      "scoreLabel": "Ұпай",
+      "cancel": "Болдырмау",
+      "approve": "Бекіту"
+    },
+    "hero": {
+      "title": "Оқытушылар рейтингі",
+      "description": "KPI негізінде оқытушылар тиімділігін бағалау"
+    },
+    "fieldValues": {
+      "title": "Деректер",
+      "categoryFields": "Санат өрістері",
+      "emptyValue": "Бос",
+      "noAdditionalFields": "Қосымша өрістер жоқ"
+    }
+  }
+}

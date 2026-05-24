@@ -8,16 +8,19 @@ import { useLocaleStore } from '@store'
 import type { ICategoryListItemResponse } from '@types'
 import { Folder } from 'lucide-react'
 
+import localeDictionary from './locale.json'
+
 interface IProps {
 	category: ICategoryListItemResponse
 }
 
 export const CategoryCard = ({ category }: IProps) => {
 	const locale = useLocaleStore((state) => state.locale)
+	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const matchedIcon = getCategoryIconOptionByName(category.icon)
 	const IconComponent = matchedIcon?.Icon || Folder
 	const name = getLocaleText(category.name, locale)
-	const description = getLocaleText(category.description, locale) || 'Описание отсутствует'
+	const description = getLocaleText(category.description, locale) || t.categoryCard.missingDescription
 
 	return (
 		<Tooltip>

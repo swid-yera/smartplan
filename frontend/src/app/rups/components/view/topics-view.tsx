@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { TopicTypeBadge } from '@components'
-import { formatAsDash, formatHours, normalizeTopicType } from '@helpers'
+import { formatAsDash, formatHours, getUILocaleSection, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -41,10 +41,12 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
 import { type RupTypeEnum, StatusEnum, TopicTypeEnum } from '@types'
 import { BookOpenText, ChevronDown, Info } from 'lucide-react'
 import { toast } from 'sonner'
+import localeDictionary from './locale.json'
 
 type Topic = {
 	id: string
@@ -74,6 +76,8 @@ interface IProps {
 }
 
 export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus }: IProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const total = {
 		totalHours: 0,
 		theoryHours: 0,
@@ -97,8 +101,8 @@ export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className='text-xl'>Содержание учебной рабочей программы</CardTitle>
-				<CardDescription>Темы занятий для каждой дисциплины.</CardDescription>
+				<CardTitle className='text-xl'>{t.topicsTitle}</CardTitle>
+				<CardDescription>{t.topicsDescription}</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>
 				{disciplines.length > 0 ? (

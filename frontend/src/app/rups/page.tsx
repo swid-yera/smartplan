@@ -4,15 +4,19 @@ import type { NextPage } from 'next'
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, RupsCard } from '@components'
-import { hasRole } from '@helpers'
+import { getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { RoleEnum, StatusEnum } from '@types'
 
 import { NewCard, RupsFilterCard } from './components/'
+import localeDictionary from './locale.json'
 
 const Page: NextPage = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -53,11 +57,11 @@ const Page: NextPage = () => {
 			<PageTitle
 				description={
 					canCreate
-						? 'Здесь вы можете создавать и управлять своими рабочими учебными программами.'
-						: 'Реестр всех рабочих учебных программ для проверки и утверждения.'
+						? t.teacherDescription
+						: t.methodistDescription
 				}
 			>
-				{isTeacher ? 'Мои рабочие учебные программы' : 'Все рабочие учебные программы'}
+				{isTeacher ? t.teacherTitle : t.methodistTitle}
 			</PageTitle>
 
 			<div className='grid gap-6 lg:grid-cols-5'>
@@ -76,7 +80,7 @@ const Page: NextPage = () => {
 				currentPage={rupsData?.meta.currentPage || 1}
 				isLoading={isLoading}
 				rups={rupsData?.data || []}
-				title={isTeacher ? 'Мои рабочие учебные программы' : 'Все рабочие учебные программы'}
+				title={isTeacher ? t.listTeacher : t.listMethodist}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>

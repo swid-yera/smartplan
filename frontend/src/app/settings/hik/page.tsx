@@ -2,13 +2,19 @@
 
 import { useState } from 'react'
 
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
 import { FileSpreadsheet, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import localeDictionary from './locale.json'
+
 const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const [isDragging, setIsDragging] = useState(false)
 
 	const { mutate, isPending } = useMutation({
@@ -19,7 +25,7 @@ const Page = () => {
 		if (!file) return
 
 		if (!file.name.endsWith('.xlsx')) {
-			toast.error('Поддерживаются только файлы .xlsx')
+			toast.error(t.onlyXlsx)
 
 			return
 		}
@@ -27,10 +33,10 @@ const Page = () => {
 		mutate(file, {
 			onError(err) {
 				console.error(err)
-				toast.error('Произошла ошибка при генерации отчёта')
+				toast.error(t.generateError)
 			},
 			onSuccess() {
-				toast.success('Отчёт успешно сгенерирован')
+				toast.success(t.generateSuccess)
 			},
 		})
 	}
@@ -64,11 +70,8 @@ const Page = () => {
 		<div className='flex min-h-[60vh] items-center justify-center px-6'>
 			<Card className='w-full'>
 				<CardHeader>
-					<CardTitle>Генерация отчёта</CardTitle>
-					<CardDescription>
-						Загрузите <span className='font-medium'>.xlsx</span> файл с payload, чтобы автоматически получить
-						отчёт
-					</CardDescription>
+					<CardTitle>{t.cardTitle}</CardTitle>
+					<CardDescription>{t.cardDescription}</CardDescription>
 				</CardHeader>
 
 				<CardContent>
@@ -97,15 +100,15 @@ const Page = () => {
 						{isPending ? (
 							<>
 								<Loader2 className='mb-3 h-8 w-8 animate-spin text-muted-foreground' />
-								<p className='text-sm text-muted-foreground'>Генерация отчёта…</p>
+								<p className='text-sm text-muted-foreground'>{t.generating}</p>
 							</>
 						) : (
 							<>
 								<FileSpreadsheet className='mb-3 h-8 w-8 text-muted-foreground' />
 								<p className='text-sm font-medium'>
-									{isDragging ? 'Отпустите файл для загрузки' : 'Перетащите файл сюда или нажмите'}
+									{isDragging ? t.dropHere : t.dragHint}
 								</p>
-								<p className='mt-1 text-xs text-muted-foreground'>Только .xlsx</p>
+								<p className='mt-1 text-xs text-muted-foreground'>{t.onlyXlsxShort}</p>
 							</>
 						)}
 					</label>
@@ -116,7 +119,7 @@ const Page = () => {
 						onClick={() => document.getElementById('hik-upload')?.click()}
 					>
 						{isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-						Загрузить и скачать отчёт
+						{t.uploadAndDownload}
 					</Button>
 				</CardContent>
 			</Card>

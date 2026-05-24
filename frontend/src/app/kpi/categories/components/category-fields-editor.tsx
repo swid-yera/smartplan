@@ -1,5 +1,6 @@
 'use client'
 
+import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
 	Badge,
 	Button,
@@ -24,6 +25,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { CategoryFieldType, Locale } from '@types'
 import { Plus, Trash2, X } from 'lucide-react'
 
@@ -36,6 +38,7 @@ import {
 	getValidationStringArray,
 	normalizeSortOrder,
 } from './category-form.shared'
+import localeDictionary from './locale.json'
 
 interface ICategoryFieldsEditorProps {
 	activeLocale: Locale
@@ -44,6 +47,9 @@ interface ICategoryFieldsEditorProps {
 }
 
 export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICategoryFieldsEditorProps) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	const addField = () => {
 		onChange([...fields, createEmptyField(fields.length + 1)])
 	}
@@ -122,10 +128,10 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 	return (
 		<div className='space-y-4'>
 			<div className='flex items-center justify-between'>
-				<h3 className='font-semibold'>Поля категории</h3>
+				<h3 className='font-semibold'>{t.fieldsTitle}</h3>
 				<Button size='sm' type='button' variant='outline' onClick={addField}>
 					<Plus className='mr-2 h-4 w-4' />
-					Добавить поле
+					{t.addField}
 				</Button>
 			</div>
 
@@ -134,7 +140,9 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 					{fields.map((field, index) => (
 						<Card key={`field-${index}`}>
 							<CardHeader className='pb-3'>
-								<CardTitle className='text-base'>Поле #{index + 1}</CardTitle>
+								<CardTitle className='text-base'>
+									{interpolateUILocaleText(t.fieldTitle, { index: index + 1 })}
+								</CardTitle>
 							</CardHeader>
 							<CardContent className='space-y-4'>
 								<div className='grid gap-4 md:grid-cols-2'>
@@ -168,7 +176,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 
 								<div className='grid gap-4 md:grid-cols-3'>
 									<div className='space-y-2'>
-										<Label htmlFor={`field-type-${index}`}>Тип</Label>
+										<Label htmlFor={`field-type-${index}`}>{t.type}</Label>
 										<Select
 											value={field.type}
 											onValueChange={(value: CategoryFieldType) =>
@@ -179,7 +187,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 											}
 										>
 											<SelectTrigger className='w-full' id={`field-type-${index}`}>
-												<SelectValue placeholder='Выберите тип поля' />
+												<SelectValue placeholder={t.type} />
 											</SelectTrigger>
 											<SelectContent>
 												{FIELD_TYPE_OPTIONS.map((type) => (
@@ -192,7 +200,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 									</div>
 
 									<div className='space-y-2'>
-										<Label htmlFor={`field-placeholder-${index}`}>Placeholder</Label>
+										<Label htmlFor={`field-placeholder-${index}`}>{t.placeholder}</Label>
 										<Input
 											id={`field-placeholder-${index}`}
 											placeholder='https://...'
@@ -209,7 +217,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 									</div>
 
 									<div className='space-y-2'>
-										<Label htmlFor={`field-sort-order-${index}`}>Sort order</Label>
+										<Label htmlFor={`field-sort-order-${index}`}>{t.sortOrder}</Label>
 										<Input
 											id={`field-sort-order-${index}`}
 											min={1}
@@ -224,7 +232,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 								</div>
 
 								<div className='space-y-2'>
-									<Label htmlFor={`field-help-${index}`}>Help text</Label>
+									<Label htmlFor={`field-help-${index}`}>{t.helpText}</Label>
 									<Input
 										id={`field-help-${index}`}
 										placeholder='Подсказка для пользователя'
@@ -243,10 +251,8 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 								{field.type !== 'url' && field.type !== 'file' ? (
 									<div className='flex items-center justify-between rounded-md border p-3'>
 										<div>
-											<p className='text-sm font-medium'>Обязательное поле</p>
-											<p className='text-xs text-muted-foreground'>
-												Пользователь не сможет отправить форму без значения
-											</p>
+											<p className='text-sm font-medium'>{t.required}</p>
+											<p className='text-xs text-muted-foreground'>{t.requiredDescription}</p>
 										</div>
 										<Checkbox
 											checked={field.required}
@@ -258,7 +264,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 								{field.type === 'select' ? (
 									<div className='space-y-3 rounded-md border p-3'>
 										<div className='flex items-center justify-between'>
-											<p className='text-sm font-medium'>Опции select</p>
+											<p className='text-sm font-medium'>{t.selectOptions}</p>
 											<Button
 												size='sm'
 												type='button'
@@ -270,7 +276,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 												}
 											>
 												<Plus className='mr-2 h-4 w-4' />
-												Добавить опцию
+												{t.addOption}
 											</Button>
 										</div>
 
@@ -311,7 +317,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 												))}
 											</div>
 										) : (
-											<p className='text-sm text-muted-foreground'>Добавьте хотя бы одну опцию для select</p>
+											<p className='text-sm text-muted-foreground'>{t.selectNeedOption}</p>
 										)}
 									</div>
 								) : null}
@@ -321,7 +327,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 								field.type === 'number' ||
 								field.type === 'file' ? (
 									<div className='space-y-3 rounded-md border p-3'>
-										<p className='text-sm font-medium'>Валидация</p>
+										<p className='text-sm font-medium'>{t.validation}</p>
 
 										{field.type === 'text' || field.type === 'textarea' ? (
 											<div className='grid gap-3 md:grid-cols-2'>
@@ -389,7 +395,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 												/>
 
 												<div className='space-y-2'>
-													<Label htmlFor={`field-validation-extensions-${index}`}>Расширения файлов</Label>
+													<Label htmlFor={`field-validation-extensions-${index}`}>{t.fileExtensions}</Label>
 													<Popover>
 														<PopoverTrigger asChild>
 															<Button
@@ -398,13 +404,13 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 																type='button'
 																variant='outline'
 															>
-																Добавить расширение
+																{t.addExtension}
 															</Button>
 														</PopoverTrigger>
 														<PopoverContent align='start' className='w-[340px] p-0'>
 															<Command>
-																<CommandInput placeholder='Поиск расширения...' />
-																<CommandEmpty>Расширение не найдено</CommandEmpty>
+																<CommandInput placeholder={t.searchExtension} />
+																<CommandEmpty>{t.extensionNotFound}</CommandEmpty>
 																<CommandGroup>
 																	{getUnselectedFileExtensions(field.validation).map((option) => (
 																		<CommandItem
@@ -450,7 +456,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 								<div className='flex justify-end'>
 									<Button size='sm' type='button' variant='destructive' onClick={() => removeField(index)}>
 										<Trash2 className='mr-2 h-4 w-4' />
-										Удалить поле
+										{t.deleteField}
 									</Button>
 								</div>
 							</CardContent>
@@ -459,7 +465,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 				</div>
 			) : (
 				<div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
-					Поля пока не добавлены. Нажмите «Добавить поле», чтобы настроить форму категории.
+					{t.emptyFields}
 				</div>
 			)}
 		</div>
