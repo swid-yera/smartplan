@@ -22,6 +22,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IUser } from '@types'
 import { ChevronsUpDown, LogOut, Mail, Phone, ShieldUser, User } from 'lucide-react'
 
@@ -31,6 +32,8 @@ interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElemen
 
 export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 	const { isMobile } = useSidebar()
+	const locale = useLocaleStore((state) => state.locale)
+	const logoutLabel = locale === 'kk' ? 'Шығу' : 'Выйти'
 
 	return (
 		<SidebarMenu className={className} {...props}>
@@ -78,12 +81,8 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 							<DropdownMenuItem asChild>
 								<Link href={`/users/${user.keycloakId}`}>
 									<User />
-									Профиль
+									{user.username}
 								</Link>
-							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<User />
-								{user.username}
 							</DropdownMenuItem>
 							<DropdownMenuItem>
 								<ShieldUser />
@@ -105,7 +104,7 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 						<DropdownMenuSeparator />
 						<DropdownMenuItem className='cursor-pointer' onClick={() => services.auth.redirectToLogout()}>
 							<LogOut />
-							Выйти
+							{logoutLabel}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

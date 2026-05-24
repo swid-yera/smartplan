@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_pHyJAb8G6T
 createdAt: 2026-05-18T10:50:01.632387900
-updatedAt: 2026-05-23T13:38:06.213387300
+updatedAt: 2026-05-24T12:40:20.191976600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_iW5CQsevG9
 authentication: {}
@@ -20,7 +20,7 @@ body:
         "kz": "Ғылыми белсенділікті растауға арналған санат"
       },
       "awardTypes": [
-        "34fb619f-61c7-4ee6-969f-3ce09ac237ae"
+        "ba7b2348-9044-4847-a880-ce1799d07e97"
       ],
       "fields": [
         {

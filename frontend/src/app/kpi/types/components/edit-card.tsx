@@ -1,5 +1,6 @@
 import { type FC, useState } from 'react'
 
+import { createLocaleText, getLocaleText } from '@helpers'
 import {
 	Button,
 	Card,
@@ -12,25 +13,49 @@ import {
 	Label,
 	Separator,
 } from '@shadcn'
-import type { ICreateTypesRequest, ITypeResponse, IVariantRequest } from '@types'
+import type { ICreateTypesRequest, ITypeResponse, Locale } from '@types'
 import { Plus } from 'lucide-react'
 
-import { VariantEdit } from './variant-edit'
+import { type ILocalizedDraft, type IVariantForm, VariantEdit } from './variant-edit'
 
 interface IProps {
+	activeLocale: Locale
 	onSubmit: (data: ICreateTypesRequest) => void
 	type?: ITypeResponse
 }
 
-export const EditCard: FC<IProps> = ({ onSubmit, type }) => {
-	const [name, setName] = useState(type?.name || '')
-	const [variants, setVariants] = useState<IVariantRequest[]>(
+export const EditCard: FC<IProps> = ({ activeLocale, onSubmit, type }) => {
+	const [name, setName] = useState<ILocalizedDraft>({
+		ru: getLocaleText(type?.name, 'ru'),
+		kk: getLocaleText(type?.name, 'kk'),
+	})
+	const [variants, setVariants] = useState<IVariantForm[]>(
 		() =>
 			type?.variants.map((v) => ({
-				name: v.name,
-				description: v.description,
-				criteria: v.criteria || [],
-				bonusCriteria: v.bonusCriteria || [],
+				name: {
+					ru: getLocaleText(v.name, 'ru'),
+					kk: getLocaleText(v.name, 'kk'),
+				},
+				description: {
+					ru: getLocaleText(v.description, 'ru'),
+					kk: getLocaleText(v.description, 'kk'),
+				},
+				criteria:
+					v.criteria?.map((criteria) => ({
+						...criteria,
+						name: {
+							ru: getLocaleText(criteria.name, 'ru'),
+							kk: getLocaleText(criteria.name, 'kk'),
+						},
+					})) || [],
+				bonusCriteria:
+					v.bonusCriteria?.map((criteria) => ({
+						...criteria,
+						name: {
+							ru: getLocaleText(criteria.name, 'ru'),
+							kk: getLocaleText(criteria.name, 'kk'),
+						},
+					})) || [],
 			})) || [],
 	)
 
@@ -38,8 +63,14 @@ export const EditCard: FC<IProps> = ({ onSubmit, type }) => {
 		setVariants((prev) => [
 			...prev,
 			{
-				name: '',
-				description: '',
+				name: {
+					ru: '',
+					kk: '',
+				},
+				description: {
+					ru: '',
+					kk: '',
+				},
 				criteria: [],
 				bonusCriteria: [],
 			},
@@ -48,9 +79,26 @@ export const EditCard: FC<IProps> = ({ onSubmit, type }) => {
 
 	const handleSubmit = () => {
 		// check
-		if (!variants.length || !name) return
+		if (!variants.length || (!name.ru.trim() && !name.kk.trim())) return
 
-		onSubmit({ name, variants })
+		onSubmit({
+			name: createLocaleText(name.ru, name.kk),
+			variants: variants.map((variant) => ({
+				name: createLocaleText(variant.name.ru, variant.name.kk),
+				description:
+					variant.description.ru.trim() || variant.description.kk.trim()
+						? createLocaleText(variant.description.ru, variant.description.kk)
+						: null,
+				criteria: variant.criteria.map((criteria) => ({
+					...criteria,
+					name: createLocaleText(criteria.name.ru, criteria.name.kk),
+				})),
+				bonusCriteria: variant.bonusCriteria.map((criteria) => ({
+					...criteria,
+					name: createLocaleText(criteria.name.ru, criteria.name.kk),
+				})),
+			})),
+		})
 	}
 
 	return (
@@ -66,8 +114,13 @@ export const EditCard: FC<IProps> = ({ onSubmit, type }) => {
 					<Label>Название критерия</Label>
 					<Input
 						placeholder='Например: Оценка практической работы'
-						value={name}
-						onChange={(e) => setName(e.target.value)}
+						value={name[activeLocale]}
+						onChange={(e) =>
+							setName((prev) => ({
+								...prev,
+								[activeLocale]: e.target.value,
+							}))
+						}
 					/>
 				</div>
 
@@ -87,6 +140,7 @@ export const EditCard: FC<IProps> = ({ onSubmit, type }) => {
 						<VariantEdit
 							key={index}
 							index={index}
+							locale={activeLocale}
 							variant={variant}
 							onChange={(v) => setVariants((prev) => prev.map((item, i) => (i === index ? v : item)))}
 							onDelete={() => setVariants((prev) => prev.filter((_, i) => i !== index))}
@@ -100,7 +154,9 @@ export const EditCard: FC<IProps> = ({ onSubmit, type }) => {
 			</CardContent>
 
 			<CardFooter className='flex justify-end gap-2'>
-				<Button variant='outline'>Отмена</Button>
+				<Button asChild variant='outline'>
+					<a href='/kpi/types'>Отмена</a>
+				</Button>
 				<Button onClick={handleSubmit}>Сохранить</Button>
 			</CardFooter>
 		</Card>

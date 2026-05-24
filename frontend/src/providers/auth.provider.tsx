@@ -1,12 +1,11 @@
 import type { FC } from 'react'
 
-import { cookies } from 'next/headers'
-
 import { AuthInitializer } from '@store'
 
-export const AuthProvider: FC = async () => {
-	const cookieStore = await cookies()
-	const hasSid = cookieStore.has('sid')
+interface AuthProviderProps {
+	hasSid: boolean
+}
 
+export const AuthProvider: FC<AuthProviderProps> = ({ hasSid }) => {
 	return <AuthInitializer hasSid={hasSid} />
 }

@@ -14,30 +14,29 @@ import {
 	findFutureDateCategoryField,
 	findInvalidUrlCategoryField,
 } from '@components'
+import { getLocaleText } from '@helpers'
 import { services } from '@services'
-import {
-	Button,
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-	Separator,
-} from '@shadcn'
+import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
+import type { IApiErrorResponse, ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
+import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
+
+import { AwardTypeSelectionFields } from '../../components'
+
+const removeHttpProtocol = (value: string) => value.replace(/^https?:\/\//i, '')
+
+const withHttpsProtocol = (value: string) => {
+	const normalizedValue = removeHttpProtocol(value.trim())
+
+	return normalizedValue ? `https://${normalizedValue}` : ''
+}
 
 const Page = () => {
 	const { id } = useParams<{ id: string }>()
 	const { push } = useRouter()
+	const locale = useLocaleStore((state) => state.locale)
 
 	const [selectedType, setSelectedType] = useState<ITypeResponse | null>(null)
 	const [selectedVariant, setSelectedVariant] = useState<IVariantResponse | null>(null)
@@ -142,6 +141,12 @@ const Page = () => {
 				return acc
 			}
 
+			if (field.type === 'number' && typeof rawValue === 'number' && Number.isFinite(rawValue)) {
+				acc[field.key] = String(rawValue)
+
+				return acc
+			}
+
 			acc[field.key] = typeof rawValue === 'string' ? rawValue : ''
 
 			return acc
@@ -192,7 +197,7 @@ const Page = () => {
 		})
 
 		if (missingRequiredField) {
-			toast.error(`Заполните обязательное поле: ${missingRequiredField.label}`)
+			toast.error(`Заполните обязательное поле: ${getLocaleText(missingRequiredField.label, locale)}`)
 
 			return
 		}
@@ -200,7 +205,9 @@ const Page = () => {
 		const invalidUrlField = findInvalidUrlCategoryField(category.fieldsExpanded, categoryFieldValues)
 
 		if (invalidUrlField) {
-			toast.error(`Поле «${invalidUrlField.label}» должно содержать корректный домен/ссылку без https://`)
+			toast.error(
+				`Поле «${getLocaleText(invalidUrlField.label, locale)}» должно содержать корректный домен/ссылку без https://`,
+			)
 
 			return
 		}
@@ -208,12 +215,12 @@ const Page = () => {
 		const futureDateField = findFutureDateCategoryField(category.fieldsExpanded, categoryFieldValues)
 
 		if (futureDateField) {
-			toast.error(`Поле «${futureDateField.label}» не может быть будущей датой`)
+			toast.error(`Поле «${getLocaleText(futureDateField.label, locale)}» не может быть будущей датой`)
 
 			return
 		}
 
-		const fieldValues = category.fieldsExpanded.reduce<Record<string, string | string[]>>((acc, field) => {
+		const fieldValues = category.fieldsExpanded.reduce<Record<string, string | string[] | number>>((acc, field) => {
 			const value = categoryFieldValues[field.key]
 
 			if (field.type === 'file') {
@@ -224,6 +231,28 @@ const Page = () => {
 				}
 
 				acc[field.key] = existingFileValues[field.key] || ''
+
+				return acc
+			}
+
+			if (field.type === 'url') {
+				acc[field.key] = typeof value === 'string' ? withHttpsProtocol(value) : ''
+
+				return acc
+			}
+
+			if (field.type === 'number') {
+				const rawValue = typeof value === 'string' ? value.trim() : ''
+
+				if (!rawValue) {
+					acc[field.key] = ''
+
+					return acc
+				}
+
+				const parsedValue = Number(rawValue)
+
+				acc[field.key] = Number.isFinite(parsedValue) ? parsedValue : ''
 
 				return acc
 			}
@@ -266,8 +295,23 @@ const Page = () => {
 					toast.success('Данные успешно обновлены', { id: toastId })
 					push(`/kpi/${id}`)
 				},
-				onError: () => {
-					toast.error('Ошибка при обновлении данных', { id: toastId })
+				onError: (error) => {
+					let errorMessage = 'Ошибка при обновлении данных'
+
+					if (isAxiosError<IApiErrorResponse>(error)) {
+						const details = error.response?.data?.details
+						const backendError = error.response?.data?.error
+
+						errorMessage =
+							(typeof details === 'string' && details.trim()) ||
+							(typeof backendError === 'string' && backendError.trim()) ||
+							error.message ||
+							errorMessage
+					} else if (error instanceof Error) {
+						errorMessage = error.message
+					}
+
+					toast.error('Ошибка при обновлении данных', { description: errorMessage, id: toastId })
 				},
 			},
 		)
@@ -311,108 +355,20 @@ const Page = () => {
 
 					<Separator />
 
-					<div className='space-y-2'>
-						<Label htmlFor='type'>Тип награды</Label>
-						<Select
-							value={selectedType?.id || ''}
-							onValueChange={(typeId) => {
-								const type = availableTypes.find((item) => item.id === typeId) || null
-
-								setSelectedType(type)
-								setSelectedVariant(null)
-								setSelectedCriteria(null)
-								setSelectedBonusCriteria(null)
-							}}
-						>
-							<SelectTrigger className='w-full' id='type'>
-								<SelectValue placeholder='Выберите тип' />
-							</SelectTrigger>
-							<SelectContent>
-								{availableTypes.map((type) => (
-									<SelectItem key={type.id} value={type.id}>
-										{type.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className='grid grid-cols-2 gap-4'>
-						<div className='space-y-2'>
-							<Label htmlFor='variant'>Вариант</Label>
-							<Select
-								disabled={!selectedType || !selectedType.variants.length}
-								value={selectedVariant?.id || ''}
-								onValueChange={(variantId) => {
-									const variant = selectedType?.variants.find((item) => item.id === variantId) || null
-
-									setSelectedVariant(variant)
-									setSelectedCriteria(null)
-								}}
-							>
-								<SelectTrigger className='w-full' id='variant'>
-									<SelectValue placeholder='Выберите вариант' />
-								</SelectTrigger>
-								<SelectContent>
-									{(selectedType?.variants || []).map((variant) => (
-										<SelectItem key={variant.id} value={variant.id}>
-											{variant.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div className='space-y-2'>
-							<Label htmlFor='criteria'>Критерий</Label>
-							<Select
-								disabled={!selectedVariant || !selectedVariant.criteria.length}
-								value={selectedCriteria?.id || ''}
-								onValueChange={(criteriaId) => {
-									const criteria = selectedVariant?.criteria.find((item) => item.id === criteriaId) || null
-
-									setSelectedCriteria(criteria)
-								}}
-							>
-								<SelectTrigger className='w-full' id='criteria'>
-									<SelectValue placeholder='Выберите критерий' />
-								</SelectTrigger>
-								<SelectContent>
-									{(selectedVariant?.criteria || []).map((criteria) => (
-										<SelectItem key={criteria.id} value={criteria.id}>
-											{criteria.name} ({criteria.points.join('-')} баллов)
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-
-					{selectedVariant?.bonusCriteria?.length ? (
-						<div className='space-y-2'>
-							<Label htmlFor='bonus-criteria'>Бонусный критерий</Label>
-							<Select
-								value={selectedBonusCriteria?.id || ''}
-								onValueChange={(criteriaId) => {
-									const criteria =
-										selectedVariant.bonusCriteria?.find((item) => item.id === criteriaId) || null
-
-									setSelectedBonusCriteria(criteria)
-								}}
-							>
-								<SelectTrigger className='w-full' id='bonus-criteria'>
-									<SelectValue placeholder='Выберите критерий' />
-								</SelectTrigger>
-								<SelectContent>
-									{selectedVariant.bonusCriteria.map((criteria) => (
-										<SelectItem key={criteria.id} value={criteria.id}>
-											{criteria.name} ({criteria.points.join('-')} бонусных баллов)
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-					) : null}
+					<AwardTypeSelectionFields
+						availableTypes={availableTypes}
+						layout='grid'
+						locale={locale}
+						selectedBonusCriteria={selectedBonusCriteria}
+						selectedCriteria={selectedCriteria}
+						selectedType={selectedType}
+						selectedVariant={selectedVariant}
+						setSelectedBonusCriteria={setSelectedBonusCriteria}
+						setSelectedCriteria={setSelectedCriteria}
+						setSelectedType={setSelectedType}
+						setSelectedVariant={setSelectedVariant}
+						typeLabel='Тип награды'
+					/>
 
 					{bottomCategoryFields.length > 0 && (
 						<>

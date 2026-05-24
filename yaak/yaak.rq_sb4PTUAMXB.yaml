@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_sb4PTUAMXB
 createdAt: 2026-01-14T14:37:15.839580800
-updatedAt: 2026-05-19T13:00:52.643361900
+updatedAt: 2026-05-24T13:49:20.999834200
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -18,7 +18,7 @@ headers:
   id: zFMz5dauKr
 method: GET
 name: by id
-sortPriority: 333.3333333333333
+sortPriority: 2000.0
 url: ${[ url ]}/rups/:id
 urlParameters:
 - enabled: true

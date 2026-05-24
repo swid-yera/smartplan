@@ -1,4 +1,5 @@
 import type { CriteriaMethodEnum } from '../award.type'
+import type { LocaleText, LocalizedText } from '../locale.type'
 
 // create award
 export interface ICreateAwardRequest {
@@ -17,19 +18,19 @@ export type IUpdateAwardRequest = ICreateAwardRequest
 
 // create types
 export interface ICreateTypesRequest {
-	name: string
+	name: LocaleText
 	variants: IVariantRequest[]
 }
 
 export interface IVariantRequest {
-	name: string
-	description: string
+	name: LocaleText
+	description: LocaleText | null
 	criteria: ICriteriaRequest[]
 	bonusCriteria: ICriteriaRequest[]
 }
 
 export interface ICriteriaRequest {
-	name: string
+	name: LocaleText
 	points: number[]
 	method: CriteriaMethodEnum
 }
@@ -37,21 +38,21 @@ export interface ICriteriaRequest {
 // variant response
 export interface ITypeResponse {
 	id: string
-	name: string
+	name: LocalizedText
 	variants: IVariantResponse[]
 }
 
 export interface IVariantResponse {
 	id: string
-	name: string
-	description: string
+	name: LocalizedText
+	description: LocalizedText
 	criteria: ICriteriaResponse[]
 	bonusCriteria?: ICriteriaResponse[]
 }
 
 export interface ICriteriaResponse {
 	id: string
-	name: string
+	name: LocalizedText
 	points: number[]
 	method: CriteriaMethodEnum
 }

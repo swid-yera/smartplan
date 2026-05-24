@@ -2,7 +2,9 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
+import { getLocaleText } from '@helpers'
 import { Button, Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { ITypeResponse } from '@types'
 import { Pencil } from 'lucide-react'
 
@@ -13,6 +15,8 @@ interface IProps {
 }
 
 export const TypesList: FC<IProps> = ({ types, title, description }) => {
+	const locale = useLocaleStore((state) => state.locale)
+
 	return (
 		<section className='space-y-6'>
 			{/* header */}
@@ -25,7 +29,7 @@ export const TypesList: FC<IProps> = ({ types, title, description }) => {
 			{types?.length ? (
 				<div className='grid gap-6 sm:grid-cols-1 lg:grid-cols-2'>
 					{types.map((type) => (
-						<TypeCard key={type.id} type={type} />
+						<TypeCard key={type.id} locale={locale} type={type} />
 					))}
 				</div>
 			) : (
@@ -38,14 +42,15 @@ export const TypesList: FC<IProps> = ({ types, title, description }) => {
 }
 
 interface ITypeCardProps {
+	locale: 'ru' | 'kk'
 	type: ITypeResponse
 }
 
-const TypeCard: FC<ITypeCardProps> = ({ type }) => {
+const TypeCard: FC<ITypeCardProps> = ({ locale, type }) => {
 	return (
 		<Card className='group relative'>
 			<CardHeader className='pb-3'>
-				<CardTitle className='text-lg text-center'>{type.name}</CardTitle>
+				<CardTitle className='text-lg text-center'>{getLocaleText(type.name, locale)}</CardTitle>
 
 				{/* edit */}
 				<Button
@@ -65,12 +70,14 @@ const TypeCard: FC<ITypeCardProps> = ({ type }) => {
 					<div key={variant.id} className='rounded-lg border bg-muted/30 p-4'>
 						{/* variant title */}
 						<h4 className='text-center font-semibold'>
-							{index + 1}. {variant.name}
+							{index + 1}. {getLocaleText(variant.name, locale)}
 						</h4>
 
 						{/* description */}
 						{variant.description && (
-							<p className='mt-1 text-sm italic text-muted-foreground'>{variant.description}</p>
+							<p className='mt-1 text-sm italic text-muted-foreground'>
+								{getLocaleText(variant.description, locale)}
+							</p>
 						)}
 
 						{/* criteria */}
@@ -78,7 +85,7 @@ const TypeCard: FC<ITypeCardProps> = ({ type }) => {
 							<ol className='mt-3 space-y-2 pl-4'>
 								{variant.criteria.map((criteria) => (
 									<li key={criteria.id} className='list-[lower-roman] text-sm'>
-										<span className='font-medium'>{criteria.name}</span>
+										<span className='font-medium'>{getLocaleText(criteria.name, locale)}</span>
 										<span className='ml-1 text-muted-foreground'>({criteria.points.join('-')}) баллов</span>
 									</li>
 								))}
@@ -93,7 +100,7 @@ const TypeCard: FC<ITypeCardProps> = ({ type }) => {
 								<ol className='space-y-2 pl-4'>
 									{variant.bonusCriteria.map((criteria) => (
 										<li key={criteria.id} className='list-[lower-roman] text-sm'>
-											<span className='font-medium'>{criteria.name}</span>
+											<span className='font-medium'>{getLocaleText(criteria.name, locale)}</span>
 											<span className='ml-1 opacity-80'>({criteria.points.join(', ')})</span>
 										</li>
 									))}

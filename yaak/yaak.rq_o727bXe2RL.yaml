@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_o727bXe2RL
 createdAt: 2026-01-15T07:34:44.889749
-updatedAt: 2026-05-18T12:29:14.907551800
+updatedAt: 2026-05-24T12:14:31.765898100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -35,13 +35,9 @@ bodyType: null
 description: ''
 headers:
 - enabled: true
-  name: Cookie
-  value: sid=17a87c4c-8419-43e9-80d2-06b31de9d4ed
-  id: IbqKxWm6Xg
-- enabled: true
   name: ''
   value: ''
-  id: YsSXduGdAs
+  id: jICz6ja7yu
 method: GET
 name: all
 sortPriority: 0.0

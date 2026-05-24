@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
+import { getLocaleText } from '@helpers'
 import { services } from '@services'
 import {
 	AlertDialog,
@@ -21,9 +22,12 @@ import {
 	CardHeader,
 	CardTitle,
 	Separator,
+	Tabs,
+	TabsList,
+	TabsTrigger,
 } from '@shadcn'
 import { useMutation } from '@tanstack/react-query'
-import type { ITypeResponse } from '@types'
+import type { ITypeResponse, Locale } from '@types'
 import { Pen, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -35,6 +39,7 @@ interface IProps {
 
 export const TypeView = ({ type }: IProps) => {
 	const { replace } = useRouter()
+	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
 	// query
@@ -46,7 +51,7 @@ export const TypeView = ({ type }: IProps) => {
 		setIsDeleteDialogOpen(false)
 
 		const toastId = `type-${type.id}-delete`
-		const typeName = type.name || 'Критерии оценивания'
+		const typeName = getLocaleText(type.name, activeLocale) || 'Критерии оценивания'
 
 		toast.loading(`Удаление ${typeName}...`, { id: toastId })
 
@@ -64,29 +69,39 @@ export const TypeView = ({ type }: IProps) => {
 	return (
 		<section className='p-4 w-full '>
 			<PageTitle
+				sticky
 				actions={
-					<ButtonGroup>
-						<Button asChild className='hover:text-primary' size='sm' variant='outline'>
-							<Link href={`/kpi/types/${type.id}/edit`}>
-								<Pen />
-								Редактировать
-							</Link>
-						</Button>
-						<Button
-							className='hover:text-destructive'
-							size='sm'
-							variant='outline'
-							onClick={() => setIsDeleteDialogOpen(true)}
-						>
-							<Trash />
-							Удалить
-						</Button>
-					</ButtonGroup>
+					<div className='flex flex-col gap-2 items-end justify-center'>
+						<ButtonGroup>
+							<Button asChild className='hover:text-primary' size='sm' variant='outline'>
+								<Link href={`/kpi/types/${type.id}/edit`}>
+									<Pen />
+									Редактировать
+								</Link>
+							</Button>
+							<Button
+								className='hover:text-destructive'
+								size='sm'
+								variant='outline'
+								onClick={() => setIsDeleteDialogOpen(true)}
+							>
+								<Trash />
+								Удалить
+							</Button>
+						</ButtonGroup>
+
+						<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
+							<TabsList>
+								<TabsTrigger value='ru'>Русский</TabsTrigger>
+								<TabsTrigger value='kk'>Қазақша</TabsTrigger>
+							</TabsList>
+						</Tabs>
+					</div>
 				}
 				backHref='/kpi/types'
 				description='Критерий оценивания, для редактирования перейдите в другую страницу'
 			>
-				Просмотр {type.name}
+				Просмотр {getLocaleText(type.name, activeLocale)}
 			</PageTitle>
 
 			<div className='space-y-6 mt-8'>
@@ -94,10 +109,14 @@ export const TypeView = ({ type }: IProps) => {
 					<Card key={variant.id} className='border-muted'>
 						<CardHeader className='pb-2'>
 							<CardTitle className='text-base'>
-								Вариант {index + 1}: {variant.name}
+								Вариант {index + 1}: {getLocaleText(variant.name, activeLocale)}
 							</CardTitle>
 
-							{variant.description && <p className='text-sm text-muted-foreground'>{variant.description}</p>}
+							{variant.description && (
+								<p className='text-sm text-muted-foreground'>
+									{getLocaleText(variant.description, activeLocale)}
+								</p>
+							)}
 						</CardHeader>
 
 						<CardContent className='space-y-4'>
@@ -109,7 +128,7 @@ export const TypeView = ({ type }: IProps) => {
 									<ol className='list-[lower-roman] space-y-2 pl-5'>
 										{variant.criteria.map((c) => (
 											<li key={c.id} className='flex flex-wrap gap-2'>
-												<span className='font-medium'>{c.name}</span>
+												<span className='font-medium'>{getLocaleText(c.name, activeLocale)}</span>
 
 												<PointsBadge points={c.points} />
 											</li>
@@ -129,7 +148,7 @@ export const TypeView = ({ type }: IProps) => {
 										<ol className='list-[lower-roman] space-y-2 pl-5'>
 											{variant.bonusCriteria.map((c) => (
 												<li key={c.id} className='flex flex-wrap gap-2'>
-													<span className='font-medium'>{c.name}</span>
+													<span className='font-medium'>{getLocaleText(c.name, activeLocale)}</span>
 													<PointsBadge points={c.points} />
 												</li>
 											))}

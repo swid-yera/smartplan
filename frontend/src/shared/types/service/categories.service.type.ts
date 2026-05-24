@@ -1,36 +1,38 @@
+import type { LocaleText, LocalizedText } from '../locale.type'
+
 export type CategoryFieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'file' | 'url'
 
 export interface ICategoryFieldRequest {
 	key: string
-	label: string
+	label: LocaleText
 	type: CategoryFieldType
 	required: boolean
-	placeholder?: string
-	helpText?: string
+	placeholder?: LocaleText | null
+	helpText?: LocaleText | null
 	options?: unknown
 	validation?: Record<string, unknown>
 	sortOrder: number
 }
 
 export interface ICategoryRequest {
-	name: string
+	name: LocaleText
 	icon?: string
-	description?: string
+	description?: LocaleText
 	awardTypes: string[]
 	fields: ICategoryFieldRequest[]
 }
 
 export interface ICategoryTypeCriteriaResponse {
 	id: string
-	name: string
+	name: LocalizedText
 	points: number[]
 	method: string
 }
 
 export interface ICategoryTypeVariantResponse {
 	id: string
-	name: string
-	description: string
+	name: LocalizedText
+	description: LocalizedText
 	criteria: ICategoryTypeCriteriaResponse[]
 	bonusCriteria?: ICategoryTypeCriteriaResponse[]
 	bonus_criteria?: ICategoryTypeCriteriaResponse[]
@@ -38,18 +40,18 @@ export interface ICategoryTypeVariantResponse {
 
 export interface ICategoryTypeResponse {
 	id: string
-	name: string
+	name: LocalizedText
 	variants: ICategoryTypeVariantResponse[]
 }
 
 export interface ICategoryFieldResponse {
 	id: string
 	key: string
-	label: string
+	label: LocalizedText
 	type: CategoryFieldType
 	required: boolean
-	placeholder?: string
-	helpText?: string
+	placeholder?: LocalizedText
+	helpText?: LocalizedText
 	options: unknown
 	validation: Record<string, unknown>
 	sortOrder: number
@@ -59,16 +61,16 @@ export interface ICategoryFieldResponse {
 
 export interface ICategoryListItemResponse {
 	id: string
-	name: string
+	name: LocalizedText
 	icon?: string
-	description?: string
+	description?: LocalizedText
 }
 
 export interface ICategoryResponse {
 	id: string
-	name: string
+	name: LocalizedText
 	icon?: string
-	description?: string
+	description?: LocalizedText
 	awardTypes: string[]
 	awardTypesExpanded?: ICategoryTypeResponse[]
 	fieldsExpanded: ICategoryFieldResponse[]

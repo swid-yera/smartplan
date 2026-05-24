@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_HdF6yXaFsD
 createdAt: 2026-01-19T12:02:01.095908600
-updatedAt: 2026-05-23T14:18:25.741972700
+updatedAt: 2026-05-24T12:14:45.917981300
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_RSWsGmeehe
 authentication:
@@ -35,13 +35,9 @@ bodyType: null
 description: ''
 headers:
 - enabled: true
-  name: Cookie
-  value: sid=0de6ac58-da73-4620-af05-eb6cd5507b2f
-  id: IbqKxWm6Xg
-- enabled: true
   name: ''
   value: ''
-  id: VeQcrN7Mb9
+  id: Ffc23tKed4
 method: GET
 name: by id
 sortPriority: 0.001
@@ -49,9 +45,13 @@ url: ${[ url ]}/awards/types/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: 34fb619f-61c7-4ee6-969f-3ce09ac237ae
+  value: ba7b2348-9044-4847-a880-ce1799d07e97
   id: UjetwQtFvK
+- enabled: false
+  name: locale
+  value: ru
+  id: nzuNVBfQvu
 - enabled: true
   name: ''
   value: ''
-  id: 8jNDy0r26g
+  id: cM9m5G5SDj

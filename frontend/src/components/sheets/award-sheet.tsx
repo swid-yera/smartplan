@@ -2,6 +2,7 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
+import { getLocaleText } from '@helpers'
 import {
 	Button,
 	Separator,
@@ -13,6 +14,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { type IAward, StatusEnum } from '@types'
 import { BookOpen, Download, FileText, Files, SearchCode, Users } from 'lucide-react'
 import Zoom from 'react-medium-image-zoom'
@@ -25,6 +27,7 @@ interface IAwardSheet {
 }
 
 export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
+	const locale = useLocaleStore((state) => state.locale)
 	const totalPoints =
 		award?.status !== StatusEnum.APPROVED ? 'Баллы зачисляются после утверждений методиста' : award.totalPoints
 
@@ -35,7 +38,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 					<>
 						<SheetHeader>
 							<SheetTitle className='mt-2'>
-								{`${award.variant.name}, ${award.criteria.name} `}
+								{`${getLocaleText(award.variant.name, locale)}, ${getLocaleText(award.criteria.name, locale)} `}
 								<StatusBadge status={award.status} />
 							</SheetTitle>
 							<SheetDescription>Краткая информация о рабочей учебной программы.</SheetDescription>
@@ -60,7 +63,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 
 									<p className='font-medium'>Критерия:</p>
 									<p>
-										{award.variant.name}, {award.criteria.name}
+										{getLocaleText(award.variant.name, locale)}, {getLocaleText(award.criteria.name, locale)}
 									</p>
 
 									<p className='font-medium'>Количество баллов:</p>
@@ -118,13 +121,13 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 
 								<div className='grid grid-cols-[1fr_2fr] space-y-3 text-sm'>
 									<p className='font-medium'>Критерия оценок:</p>
-									<p>{award.type.name || 'Пусто'}</p>
+									<p>{getLocaleText(award.type.name, locale) || 'Пусто'}</p>
 
 									<p className='font-medium'>Вариант:</p>
-									<p>{award.variant.name || 'Пусто'}</p>
+									<p>{getLocaleText(award.variant.name, locale) || 'Пусто'}</p>
 
 									<p className='font-medium'>Критерий:</p>
-									<p className='font-semibold'>{award.criteria.name || 'Пусто'}</p>
+									<p className='font-semibold'>{getLocaleText(award.criteria.name, locale) || 'Пусто'}</p>
 
 									<p className='font-medium'>Баллы за критерию:</p>
 									<p className='font-bold'>{award.criteria.points.join('-') || 'Пусто'}</p>

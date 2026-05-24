@@ -1,5 +1,6 @@
 'use client'
 
+import { getLocaleText } from '@helpers'
 import {
 	Button,
 	Calendar,
@@ -15,12 +16,14 @@ import {
 	SelectValue,
 	Textarea,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { CategoryFieldType, ICategoryFieldResponse } from '@types'
 import { format } from 'date-fns'
 import { ChevronDown } from 'lucide-react'
 
 import {
 	type ICategoryFieldValue,
+	getCategoryFieldValidationError,
 	isFutureDate,
 	normalizeUrlWithoutProtocol,
 	parseDateFromFieldValue,
@@ -58,7 +61,12 @@ type CategoryFieldInputProps = {
 }
 
 export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInputProps) => {
-	const commonLabel = `${field.label}${field.required ? ' *' : ''}`
+	const locale = useLocaleStore((state) => state.locale)
+	const labelText = getLocaleText(field.label, locale)
+	const placeholderText = getLocaleText(field.placeholder, locale)
+	const helpText = getLocaleText(field.helpText, locale)
+	const commonLabel = `${labelText}${field.required ? ' *' : ''}`
+	const validationError = getCategoryFieldValidationError(field, value)
 
 	if (field.type === 'textarea') {
 		return (
@@ -66,10 +74,13 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 				<Label htmlFor={field.key}>{commonLabel}</Label>
 				<Textarea
 					id={field.key}
-					placeholder={field.placeholder || ''}
+					maxLength={typeof field.validation?.maxLength === 'number' ? field.validation.maxLength : undefined}
+					minLength={typeof field.validation?.minLength === 'number' ? field.validation.minLength : undefined}
+					placeholder={placeholderText}
 					value={typeof value === 'string' ? value : ''}
 					onChange={(event) => onChange(field.key, event.target.value)}
 				/>
+				{validationError && <p className='text-xs text-destructive'>{validationError}</p>}
 			</div>
 		)
 	}
@@ -85,8 +96,8 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 						value={typeof value === 'string' ? value : ''}
 						onValueChange={(nextValue) => onChange(field.key, nextValue)}
 					>
-						<SelectTrigger id={field.key}>
-							<SelectValue placeholder={field.placeholder || 'Выберите значение'} />
+						<SelectTrigger className='w-full' id={field.key}>
+							<SelectValue placeholder={placeholderText || 'Выберите значение'} />
 						</SelectTrigger>
 						<SelectContent>
 							{options.map((option) => (
@@ -111,13 +122,14 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 						className='border-0 shadow-none focus-visible:ring-0'
 						id={field.key}
 						inputMode='url'
-						placeholder={field.placeholder || 'example.com/path'}
+						placeholder={placeholderText || 'example.com/path'}
 						type='text'
 						value={typeof value === 'string' ? value : ''}
 						onChange={(event) => onChange(field.key, normalizeUrlWithoutProtocol(event.target.value))}
 					/>
 				</div>
-				{field.helpText && <p className='text-xs text-muted-foreground'>{field.helpText}</p>}
+				{validationError && <p className='text-xs text-destructive'>{validationError}</p>}
+				{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
 			</div>
 		)
 	}
@@ -131,7 +143,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 				<Popover>
 					<PopoverTrigger asChild>
 						<Button className='w-full justify-between font-normal' id={field.key} variant='outline'>
-							{selectedDate ? format(selectedDate, 'dd.MM.yyyy') : field.placeholder || 'Выберите дату'}
+							{selectedDate ? format(selectedDate, 'dd.MM.yyyy') : placeholderText || 'Выберите дату'}
 							<ChevronDown />
 						</Button>
 					</PopoverTrigger>
@@ -153,7 +165,8 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 						/>
 					</PopoverContent>
 				</Popover>
-				{field.helpText && <p className='text-xs text-muted-foreground'>{field.helpText}</p>}
+				{validationError && <p className='text-xs text-destructive'>{validationError}</p>}
+				{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
 			</div>
 		)
 	}
@@ -183,12 +196,29 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 			<Label htmlFor={field.key}>{commonLabel}</Label>
 			<Input
 				id={field.key}
-				placeholder={field.placeholder || ''}
+				max={
+					field.type === 'number' && typeof field.validation?.max === 'number' ? field.validation.max : undefined
+				}
+				maxLength={
+					field.type === 'text' && typeof field.validation?.maxLength === 'number'
+						? field.validation.maxLength
+						: undefined
+				}
+				min={
+					field.type === 'number' && typeof field.validation?.min === 'number' ? field.validation.min : undefined
+				}
+				minLength={
+					field.type === 'text' && typeof field.validation?.minLength === 'number'
+						? field.validation.minLength
+						: undefined
+				}
+				placeholder={placeholderText}
 				type={inputTypeByFieldType[field.type]}
 				value={typeof value === 'string' ? value : ''}
 				onChange={(event) => onChange(field.key, event.target.value)}
 			/>
-			{field.helpText && <p className='text-xs text-muted-foreground'>{field.helpText}</p>}
+			{validationError && <p className='text-xs text-destructive'>{validationError}</p>}
+			{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
 		</div>
 	)
 }

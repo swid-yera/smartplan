@@ -5,23 +5,33 @@ import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, SidebarMenuButton } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { Monitor, Moon, Sun } from 'lucide-react'
 
-enum ThemeEnum {
-	light = 'Светлая тема',
-	dark = 'Темная тема',
-	system = 'Системная тема',
-}
+const THEME_LABELS = {
+	ru: {
+		light: 'Светлая тема',
+		dark: 'Темная тема',
+		system: 'Системная тема',
+	},
+	kk: {
+		light: 'Жарық тақырып',
+		dark: 'Қараңғы тақырып',
+		system: 'Жүйелік тақырып',
+	},
+} as const
 
 export function ThemeToggle() {
-	const [themeText, setThemeText] = useState(ThemeEnum.system)
+	const locale = useLocaleStore((state) => state.locale)
+	const [themeText, setThemeText] = useState(THEME_LABELS.ru.system)
 	const { setTheme, theme } = useTheme()
+	const labels = THEME_LABELS[locale]
 
 	useEffect(() => {
 		if (!theme) return
 
-		setThemeText(ThemeEnum[theme])
-	}, [theme])
+		setThemeText(labels[theme])
+	}, [labels, theme])
 
 	return (
 		<DropdownMenu>
@@ -35,13 +45,13 @@ export function ThemeToggle() {
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align='end'>
 				<DropdownMenuItem onClick={() => setTheme('light')}>
-					<Sun /> {ThemeEnum.light}
+					<Sun /> {labels.light}
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={() => setTheme('dark')}>
-					<Moon /> {ThemeEnum.dark}
+					<Moon /> {labels.dark}
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={() => setTheme('system')}>
-					<Monitor /> {ThemeEnum.system}
+					<Monitor /> {labels.system}
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
