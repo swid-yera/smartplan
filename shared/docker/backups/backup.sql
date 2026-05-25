@@ -1,448 +1,149 @@
 --
--- PostgreSQL database dump
+-- Data-only backup adapted for the current schema (locale JSONB fields + departments table).
+-- Generated from legacy full backup on 2026-05-25.
 --
 
-\restrict EqQLhUWdXZVtWOLZl8my0NWMA0s1p9Qg3EusRS6Ne3zAociNi20UjD0AZSagrq8
-
--- Dumped from database version 16.11 (Debian 16.11-1.pgdg13+1)
--- Dumped by pg_dump version 16.11 (Debian 16.11-1.pgdg13+1)
+BEGIN;
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
---
--- Name: atlas_schema_revisions; Type: SCHEMA; Schema: -; Owner: admin
---
-
-CREATE SCHEMA atlas_schema_revisions;
-
-
-ALTER SCHEMA atlas_schema_revisions OWNER TO admin;
-
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: admin
---
-
--- *not* creating schema, since initdb creates it
-
-
-ALTER SCHEMA public OWNER TO admin;
-
---
--- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
-
-
---
--- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
-
-
---
--- Name: awards_status; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.awards_status AS ENUM (
-    'DRAFT',
-    'IN_REVIEW',
-    'APPROVED',
-    'REJECTED'
-);
-
-
-ALTER TYPE public.awards_status OWNER TO admin;
-
---
--- Name: discipline_topic_type; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.discipline_topic_type AS ENUM (
-    'SNZ',
-    'PRACTICAL',
-    'COMBINED'
-);
-
-
-ALTER TYPE public.discipline_topic_type OWNER TO admin;
-
---
--- Name: enum_criteria_method; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.enum_criteria_method AS ENUM (
-    'NORMAL',
-    'MEASURING'
-);
-
-
-ALTER TYPE public.enum_criteria_method OWNER TO admin;
-
---
--- Name: enum_lesson_type; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.enum_lesson_type AS ENUM (
-    'PRACTICE',
-    'THEORY'
-);
-
-
-ALTER TYPE public.enum_lesson_type OWNER TO admin;
-
---
--- Name: rups_status; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.rups_status AS ENUM (
-    'DRAFT',
-    'IN_REVIEW',
-    'APPROVED',
-    'REJECTED'
-);
-
-
-ALTER TYPE public.rups_status OWNER TO admin;
-
---
--- Name: rups_type_enum; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.rups_type_enum AS ENUM (
-    'PRACTICE',
-    'THEORY'
-);
-
-
-ALTER TYPE public.rups_type_enum OWNER TO admin;
-
---
--- Name: study_form_enum; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.study_form_enum AS ENUM (
-    'CORRESPONDENCE',
-    'FULL_TIME'
-);
-
-
-ALTER TYPE public.study_form_enum OWNER TO admin;
-
---
--- Name: user_role; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.user_role AS ENUM (
-    'ADMIN',
-    'TEACHER',
-    'METHODIST'
-);
-
-
-ALTER TYPE public.user_role OWNER TO admin;
-
---
--- Name: violation_enum; Type: TYPE; Schema: public; Owner: admin
---
-
-CREATE TYPE public.violation_enum AS ENUM (
-    'NONE',
-    'REMARK',
-    'REBUKE',
-    'SEVERE_REPRIMAND'
-);
-
-
-ALTER TYPE public.violation_enum OWNER TO admin;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
---
--- Name: atlas_schema_revisions; Type: TABLE; Schema: atlas_schema_revisions; Owner: admin
---
-
-CREATE TABLE atlas_schema_revisions.atlas_schema_revisions (
-    version character varying NOT NULL,
-    description character varying NOT NULL,
-    type bigint DEFAULT 2 NOT NULL,
-    applied bigint DEFAULT 0 NOT NULL,
-    total bigint DEFAULT 0 NOT NULL,
-    executed_at timestamp with time zone NOT NULL,
-    execution_time bigint NOT NULL,
-    error text,
-    error_stmt text,
-    hash character varying NOT NULL,
-    partial_hashes jsonb,
-    operator_version character varying NOT NULL
-);
-
-
-ALTER TABLE atlas_schema_revisions.atlas_schema_revisions OWNER TO admin;
-
---
--- Name: award_categories; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.award_categories (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    award_types uuid[] DEFAULT '{}'::uuid[] NOT NULL,
-    name text NOT NULL,
-    icon text,
-    description text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE public.award_categories OWNER TO admin;
-
---
--- Name: award_category_fields; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.award_category_fields (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    key text NOT NULL,
-    label text NOT NULL,
-    type text NOT NULL,
-    required boolean DEFAULT false NOT NULL,
-    placeholder text,
-    help_text text,
-    options jsonb DEFAULT '[]'::jsonb NOT NULL,
-    validation jsonb DEFAULT '{}'::jsonb NOT NULL,
-    sort_order integer DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    category_id uuid NOT NULL
-);
-
-
-ALTER TABLE public.award_category_fields OWNER TO admin;
-
---
--- Name: award_type_criteria; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.award_type_criteria (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    name text NOT NULL,
-    points integer[],
-    method public.enum_criteria_method NOT NULL
-);
-
-
-ALTER TABLE public.award_type_criteria OWNER TO admin;
-
---
--- Name: award_type_variants; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.award_type_variants (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    name text NOT NULL,
-    description text,
-    criteria uuid[],
-    bonus_criteria uuid[]
-);
-
-
-ALTER TABLE public.award_type_variants OWNER TO admin;
-
---
--- Name: award_types; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.award_types (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    name text NOT NULL,
-    variants uuid[]
-);
-
-
-ALTER TABLE public.award_types OWNER TO admin;
-
---
--- Name: awards; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.awards (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    status public.awards_status NOT NULL,
-    reason text,
-    methodist uuid,
-    teacher uuid,
-    total_points integer DEFAULT 0 NOT NULL,
-    type uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    variant uuid,
-    criteria uuid,
-    bonus_criteria uuid,
-    category_id uuid,
-    field_values jsonb DEFAULT '{}'::jsonb NOT NULL
-);
-
-
-ALTER TABLE public.awards OWNER TO admin;
-
---
--- Name: discipline_semesters; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.discipline_semesters (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    semester integer NOT NULL,
-    total_hours integer DEFAULT 0 NOT NULL,
-    CONSTRAINT discipline_semesters_semester_check CHECK (((semester >= 1) AND (semester <= 8)))
-);
-
-
-ALTER TABLE public.discipline_semesters OWNER TO admin;
-
---
--- Name: discipline_topics; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.discipline_topics (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    name text NOT NULL,
-    type public.discipline_topic_type NOT NULL,
-    total_hours integer DEFAULT 0 NOT NULL,
-    theory_hours integer DEFAULT 0 NOT NULL,
-    practice_hours integer DEFAULT 0 NOT NULL,
-    individual_hours integer DEFAULT 0 NOT NULL,
-    srsp_hours integer DEFAULT 0 NOT NULL,
-    srs_hours integer DEFAULT 0 NOT NULL,
-    lesson_id uuid
-);
-
-
-ALTER TABLE public.discipline_topics OWNER TO admin;
-
---
--- Name: groups; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.groups (
+TRUNCATE TABLE
+    public.lesson_progress,
+    public.lessons,
+    public.awards,
+    public.award_category_fields,
+    public.award_categories,
+    public.award_types,
+    public.award_type_variants,
+    public.award_type_criteria,
+    public.rups,
+    public.rup_disciplines,
+    public.discipline_topics,
+    public.discipline_semesters,
+    public.rup_exploration_notes,
+    public.rup_resources,
+    public.groups,
+    public.departments,
+    public.users
+RESTART IDENTITY CASCADE;
+
+-- users (compatible as-is)
+COPY public.users (keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at) FROM stdin;
+46313143-eadb-4798-b7f5-2fa97869e716		kpopov27	Кирилл	Попов		ADMIN	\N	0	\N	NONE	\N	\N	2026-05-20 10:27:46.972872+00	2026-05-21 14:25:47.434576+00
+\.
+
+-- departments is a new table in the current schema (no legacy source data)
+-- keep it empty by default
+
+-- groups: qualification/specialty TEXT -> JSONB locale objects
+CREATE TEMP TABLE _old_groups (
     keycloak_id uuid NOT NULL,
     name text NOT NULL,
     qualification text,
     specialty text
-);
+) ON COMMIT DROP;
 
+COPY _old_groups (keycloak_id, name, qualification, specialty) FROM stdin;
+8b7e56e6-fc1a-4cc6-a795-f66c5d268229	Test-ednev-group	\N	\N
+e6eff862-03f0-4852-821c-a190f83420d5	WEB25-А	3W06130102 "Web-дизайнер"	06130100 "Программное обеспечение"
+4cadb558-be47-4ca5-b45c-7d5d94bf6366	WEB25-Б	3W06130102 "Web-дизайнер"	06130100 "Программное обеспечение"
+ca2eec3f-8ab4-41f1-8a13-2210240296f9	ИС22-А	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+273aa813-7f5d-4c63-9bde-c8ba5643cf7c	ИС22-Б	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+2e25f729-2552-4c19-b1f4-66f4da78995e	ИС23-А	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+6435262a-2e4e-4901-9408-e99b63b87ab4	ИС23-Б	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+cba2cc54-6dd5-47ed-ba00-997e0a216fb7	ИС24	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+9c55597a-0c49-4853-879e-7eff13c70934	ИС25-А	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+af1cabf9-1e1c-4735-a3be-cdf264a3fe36	ИС25-Б	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+c98fddb4-9d8b-4f02-be13-7ef297279171	ОП24-А	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06130100 "Программное обеспечение"
+1f50b039-a7e0-4d0c-80db-531cdf3ff64f	ОП24-Б	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06130100 "Программное обеспечение"
+637ae75c-ea8b-4ba9-b937-a7c7d8f13d00	П22-А	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+615a632b-52e3-4981-8154-6a274e32e137	П22-Б	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+a0b37d63-2233-49fa-b427-e3a7a5a23c43	П22-В	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+822d3bb4-4370-4728-afd7-56dfff4ce4ee	П22-Г	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+b20b8e4a-2e3a-454e-8bad-ef9f722d798a	П22-Д	4S06130103 "Разработчик программного обеспечения	06130100 "Программное обеспечение"
+0062438c-39d3-4f1c-be6f-8651652f931a	П22-ЕК	4S06130103 "Разработчик программного обеспечения	06130100 "Программное обеспечение"
+0f6986f1-a950-40c1-ac1e-87e72225b44e	П22-ЖК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+0aa8c842-4a36-443a-a8c4-c30349a73ee2	П22-ЗК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+a0aefbb0-5576-4496-baac-b9680c3765d6	П22-ИК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+838b6665-805b-4635-84f2-b84beea4d5f9	П23-3С	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+31ee78b8-abb4-4269-8d72-9b76802157aa	П23-А	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+7970a724-19e4-476f-a74d-c9efd2c80afa	П23-Б	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+e2c5b0dd-12cf-4d94-a06a-534a5a351479	П23-В	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+d0a4ad94-922f-4442-86e6-af5ea4cca674	П23-Г	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+fa0b764a-90ca-45a5-b012-d7ea166fc7a5	П23-Д	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+f38cb698-2e0d-4d76-92b2-df9d8f77722b	П23-Е	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+1a21de7e-2601-406f-8d46-66ce950e9cd7	П23-ЖК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+620aa0f9-616c-404c-8139-24f2354088d9	П24-2С	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+f292f86b-7475-4784-95fb-a2da2fa1a2c1	П24-А	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+49f52724-960f-494a-8497-b6db3e8ad433	П24-Б	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+01510e61-0c7d-4d71-a1f8-9b35c6540607	П24-В	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+db6258a6-8106-493c-b09e-cc60289f76ed	П24-Г	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+760a6096-7577-4198-bd82-c380b920bf76	П24-Д	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+44666e40-2cb5-4621-9630-8b727f5a3556	П24-ЖК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+6ff7e6c7-aa04-4262-a400-d34edfceea92	П25-1С	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
+3edeab81-7b4a-4845-9744-8120cebe1afb	П25-А	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+9b098cf8-b7c1-44f5-922b-665711b922f8	П25-Б	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+466ceedd-1d36-444f-9696-265c225ce0c0	П25-В	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+de7e617e-f1bd-4136-a76f-876a2387073a	П25-Г	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+b537f6aa-8baf-4fec-8307-2ba7a6361633	П25-ДК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
+b32c7cbb-14c9-4f76-8767-d3b062130430	РЭТ22	4S07140905 "Техник мультимедийных и цифровых систем"	07140900 "Радиотехника, электроника и телекоммуникации"
+ae1c35dc-92c8-4fda-8a17-50f743d91ab1	РЭТ23	4S07140905 "Техник мультимедийных и цифровых систем"	07140900 "Радиотехника, электроника и телекоммуникации"
+ede3e4c3-b6af-4afb-b1cf-9cc0f77bda00	РЭТ24	4S07140905 "Техник мультимедийных и цифровых систем"	07140900 "Радиотехника, электроника и телекоммуникации"
+b8a1cec0-02c9-40b7-8259-a02802a86cf9	РЭТ25	4S07140902 "Техник телекоммуникационных систем связи"	07140900 "Радиотехника, электроника и телекоммуникации"
+75e27058-209f-4a98-b766-b24621d6d09b	С25	3W07140901 "Электромонтажник-накладчик телекоммуникационного оборудования и каналов связи"	07140900 "Радиотехника, электроника и телекоммуникации"
+d3bf7a16-5778-443c-b6c1-af12d7c3f013	Т22-А	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+61f729f4-32c5-4dde-a12f-8eb90e18eab1	Т22-Б	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+65fc15fb-5ab1-4295-9e27-399c6f8960c4	Т23-А	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+b252af6e-c1bd-49a7-aea2-d7d1e08e00b7	Т23-Б	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+2f03e505-b72f-406c-aabf-3197a1ac0073	Т23-В	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+edc49d4e-e1ca-4e58-bdc5-a2166a464a44	Т24	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+df78fca4-5436-4101-9796-3f3786ce2b08	Т25	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+8521526c-cb69-46ce-9588-0b6a23d3a77b	Т25-1	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+4eef5c48-7a57-4c39-959c-7dcbd96ed7bf	Т25-4В	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+0df6145c-bf76-42c0-8dd9-237e4b1af427	Т25-4Г	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
+3edb761e-00a3-4213-a6fe-58bfd295604b	ТЗИ22	4S06120202 "Техник по информационной безопасности"	06120200 "Системы информационной безопасности"
+92ad65eb-80f8-4b80-813b-fc3229a20f06	ТЗИ24	4S06120202 "Техник по информационной безопасности"	06120200 "Системы информационной безопасности"
+05622ecb-80fa-412d-b2ef-f2ab077bc733	ТЗИ25	4S06120202 "Техник по информационной безопасности"	06120200 "Системы информационной безопасности"
+cb61cf1f-1dd0-4be0-af31-76e25275ad8e	ТМ22	4S07151102 "Техник-механик"	07151100 "Эксплуатация и техническое обслуживание машин и оборудования"
+748d32a1-9abe-4a76-9b82-59169b1695aa	ТМ23	4S07151102 "Техник-механик"	07151100 "Эксплуатация и техническое обслуживание машин и оборудования"
+51889c72-412e-4297-b4ea-b5b2bf908642	ТМ25	4S07151102 "Техник-механик"	07151100 "Эксплуатация и техническое обслуживание машин и оборудования"
+bfb73da8-2ef8-4dba-b3ae-7b7f8c47e21f	ЭВМ23-А	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06120100 "Вычислительная техника и информационные сети"
+4126bd33-9b50-41fe-a29a-23f85bd0a3a2	ЭВМ23-Б	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06120100 "Вычислительная техника и информационные сети"
+7eae6ae6-56dd-4246-b88b-51035b482d59	ЭВМ23-В	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06120100 "Вычислительная техника и информационные сети"
+\.
 
-ALTER TABLE public.groups OWNER TO admin;
+INSERT INTO public.groups (keycloak_id, name, qualification, specialty)
+SELECT
+    keycloak_id,
+    name,
+    CASE WHEN qualification IS NULL THEN NULL ELSE jsonb_build_object('ru', qualification, 'kz', '') END,
+    CASE WHEN specialty IS NULL THEN NULL ELSE jsonb_build_object('ru', specialty, 'kz', '') END
+FROM _old_groups;
 
---
--- Name: lesson_progress; Type: TABLE; Schema: public; Owner: admin
---
+-- rup_resources (compatible as-is)
+COPY public.rup_resources (id, name, link) FROM stdin;
+f57e041b-bac2-4262-aa9e-ff6de82335b6	Официальная документация Python по типам данных	https://docs.python.org/3/tutorial/datastructures.html
+5c86b995-5cf2-4a5f-ae0a-f19af8fe7a73	Руководство по спискам в Python	https://www.w3schools.com/python/python_lists.asp
+8b1a900a-5789-407c-83d5-c07eb19f0467	Уроки по кортежам в Python	https://www.w3schools.com/python/python_tuples.asp
+3c6e2735-7b03-40af-8d6a-676f571256e0	Работа со словарями в Python	https://www.w3schools.com/python/python_dictionaries.asp
+da82eac6-0794-45aa-b7f2-9a47a8c48307	Практические примеры использования структур данных Python	https://realpython.com/python-data-structures/
+ec02d1b1-62b7-423e-bda9-9e711956177c	Компьютер с установленной ОС (Windows, macOS, Linux)	\N
+0f5c93b3-6082-4a9e-8406-b01fa7005709	Среда разработки Python (например, PyCharm Community Edition, VS Code с расширением Python)	\N
+8535eb6b-470d-4b01-a4f4-45764d17aba3	Установленная версия Python 3	\N
+b6e668c7-f626-4a63-9e39-d9fb2e59dce5	Доступ к сети Интернет	\N
+\.
 
-CREATE TABLE public.lesson_progress (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    lesson_id uuid NOT NULL,
-    name text NOT NULL,
-    first_time integer[] NOT NULL,
-    second_time integer[] NOT NULL,
-    content text[],
-    third_time integer[] NOT NULL
-);
-
-
-ALTER TABLE public.lesson_progress OWNER TO admin;
-
---
--- Name: lessons_plan_number_seq; Type: SEQUENCE; Schema: public; Owner: admin
---
-
-CREATE SEQUENCE public.lessons_plan_number_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.lessons_plan_number_seq OWNER TO admin;
-
---
--- Name: lessons; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.lessons (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    rup_name text NOT NULL,
-    discipline_name text,
-    topic_name text,
-    teacher uuid NOT NULL,
-    event_date timestamp with time zone,
-    group_id uuid NOT NULL,
-    type public.enum_lesson_type NOT NULL,
-    goals text,
-    tasks text,
-    expected text,
-    internet_resources uuid[],
-    technical_resources uuid[],
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    file_url text,
-    plan_number integer DEFAULT nextval('public.lessons_plan_number_seq'::regclass) NOT NULL
-);
-
-
-ALTER TABLE public.lessons OWNER TO admin;
-
---
--- Name: rup_approve_challenges; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.rup_approve_challenges (
-    challenge text NOT NULL,
-    rup_id uuid NOT NULL,
-    key_id text NOT NULL,
-    user_id uuid NOT NULL,
-    expires_at timestamp with time zone NOT NULL,
-    used_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE public.rup_approve_challenges OWNER TO admin;
-
---
--- Name: rup_disciplines; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.rup_disciplines (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    name text NOT NULL,
-    total_hours integer DEFAULT 0 NOT NULL,
-    semesters uuid[],
-    topics uuid[]
-);
-
-
-ALTER TABLE public.rup_disciplines OWNER TO admin;
-
---
--- Name: rup_exploration_notes; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.rup_exploration_notes (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
+-- rup_exploration_notes: locale TEXT fields -> JSONB
+CREATE TEMP TABLE _old_rup_exploration_notes (
+    id uuid NOT NULL,
     basis text,
     goals text,
     summary text,
@@ -451,30 +152,81 @@ CREATE TABLE public.rup_exploration_notes (
     postrequisites text,
     internet_resources uuid[],
     technical_resources uuid[]
-);
+) ON COMMIT DROP;
 
+COPY _old_rup_exploration_notes (id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources) FROM stdin;
+33ba1128-0c22-4a26-a592-d0635f1c7abe	крутой питон курс	выучить питон	\N	питон	ничего	крутой питон программист	\N	\N
+\.
 
-ALTER TABLE public.rup_exploration_notes OWNER TO admin;
+INSERT INTO public.rup_exploration_notes (
+    id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources
+)
+SELECT
+    id,
+    CASE WHEN basis IS NULL THEN NULL ELSE jsonb_build_object('ru', basis, 'kz', '') END,
+    CASE WHEN goals IS NULL THEN NULL ELSE jsonb_build_object('ru', goals, 'kz', '') END,
+    CASE WHEN summary IS NULL THEN NULL ELSE jsonb_build_object('ru', summary, 'kz', '') END,
+    CASE WHEN competencies IS NULL THEN NULL ELSE jsonb_build_object('ru', competencies, 'kz', '') END,
+    CASE WHEN prerequisites IS NULL THEN NULL ELSE jsonb_build_object('ru', prerequisites, 'kz', '') END,
+    CASE WHEN postrequisites IS NULL THEN NULL ELSE jsonb_build_object('ru', postrequisites, 'kz', '') END,
+    internet_resources,
+    technical_resources
+FROM _old_rup_exploration_notes;
 
---
--- Name: rup_resources; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.rup_resources (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
+-- discipline_semesters (compatible as-is)
+-- discipline_topics: name TEXT -> JSONB
+CREATE TEMP TABLE _old_discipline_topics (
+    id uuid NOT NULL,
     name text NOT NULL,
-    link text
-);
+    type public.discipline_topic_type NOT NULL,
+    total_hours integer NOT NULL,
+    theory_hours integer NOT NULL,
+    practice_hours integer NOT NULL,
+    individual_hours integer NOT NULL,
+    srsp_hours integer NOT NULL,
+    srs_hours integer NOT NULL,
+    lesson_id uuid
+) ON COMMIT DROP;
 
+COPY _old_discipline_topics (id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours, lesson_id) FROM stdin;
+78c78428-fc32-421d-a5bc-5befa181668a	Объясняет основные концепции программирования на Python	COMBINED	2	2	0	0	0	0	\N
+dc601ef5-9300-4acb-ad44-1edcf6329257	Разрабатывает простые программы с использованием функций Python	COMBINED	2	2	0	0	0	0	\N
+a819c36b-629d-43b5-b437-1a57bfed963a	Реализовывает условные конструкции и циклы в Python	PRACTICAL	2	0	2	0	0	0	\N
+8e432c38-68db-4ca6-a3eb-5e602934371c	Применяет базовые структуры данных Python (списки, кортежи, словари)	PRACTICAL	2	0	2	0	0	0	c8cec635-aa93-4648-9a6a-f23b9090190e
+\.
 
-ALTER TABLE public.rup_resources OWNER TO admin;
+INSERT INTO public.discipline_topics (
+    id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours, lesson_id
+)
+SELECT
+    id,
+    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours, lesson_id
+FROM _old_discipline_topics;
 
---
--- Name: rups; Type: TABLE; Schema: public; Owner: admin
---
+-- rup_disciplines: name TEXT -> JSONB
+CREATE TEMP TABLE _old_rup_disciplines (
+    id uuid NOT NULL,
+    name text NOT NULL,
+    total_hours integer NOT NULL,
+    semesters uuid[],
+    topics uuid[]
+) ON COMMIT DROP;
 
-CREATE TABLE public.rups (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
+COPY _old_rup_disciplines (id, name, total_hours, semesters, topics) FROM stdin;
+a3f0ff5f-14a5-429b-82fb-cfe959a471cc	РО1.1 Основы программирования на Python	8	{2c102c78-c6a1-4015-a659-6c0fc92f78dd,bf170aee-7dbe-469c-ac35-c552e5a50341,954c3a41-1f18-48ca-8306-7c624ec71858,a897b49a-8a21-4024-ae14-3ed8c4d500c4,2727609f-62f7-475c-8689-4f2f4c683f66,f29e55c2-884e-4b99-9b74-f90dbc1ae9e8,30044c88-2bd2-45e6-ae90-2c9686df498d,7b3f351a-8b7a-426d-9fbc-3234c6e1ab41}	{78c78428-fc32-421d-a5bc-5befa181668a,dc601ef5-9300-4acb-ad44-1edcf6329257,8e432c38-68db-4ca6-a3eb-5e602934371c,a819c36b-629d-43b5-b437-1a57bfed963a}
+\.
+
+INSERT INTO public.rup_disciplines (id, name, total_hours, semesters, topics)
+SELECT
+    id,
+    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    total_hours, semesters, topics
+FROM _old_rup_disciplines;
+
+-- rups: name TEXT -> JSONB
+CREATE TEMP TABLE _old_rups (
+    id uuid NOT NULL,
     name text NOT NULL,
     status public.rups_status NOT NULL,
     reason text,
@@ -482,77 +234,42 @@ CREATE TABLE public.rups (
     study_form public.study_form_enum NOT NULL,
     study_year text NOT NULL,
     type public.rups_type_enum NOT NULL,
-    total_hours integer DEFAULT 0 NOT NULL,
+    total_hours integer NOT NULL,
     contacts uuid[],
     group_ids text[],
     methodist uuid,
     teacher uuid,
     exploration_note_id uuid,
     disciplines uuid[],
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT rups_course_check CHECK (((course >= 1) AND (course <= 4)))
-);
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL
+) ON COMMIT DROP;
 
-
-ALTER TABLE public.rups OWNER TO admin;
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: admin
---
-
-CREATE TABLE public.users (
-    keycloak_id uuid NOT NULL,
-    email text NOT NULL,
-    username text NOT NULL,
-    first_name text,
-    last_name text,
-    phone text,
-    role public.user_role NOT NULL,
-    rups text[],
-    total_points integer DEFAULT 0 NOT NULL,
-    awards text[],
-    violation public.violation_enum DEFAULT 'NONE'::public.violation_enum NOT NULL,
-    password_changed_at timestamp with time zone,
-    last_seen_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE public.users OWNER TO admin;
-
---
--- Data for Name: atlas_schema_revisions; Type: TABLE DATA; Schema: atlas_schema_revisions; Owner: admin
---
-
-COPY atlas_schema_revisions.atlas_schema_revisions (version, description, type, applied, total, executed_at, execution_time, error, error_stmt, hash, partial_hashes, operator_version) FROM stdin;
-20260518091630		2	3	3	2026-05-20 10:27:16.155855+00	2075400			oJQ9vhpw0AcP4QFwdS8gntFt7QJc5HY6A0SLlXOonJg=	null	Atlas CLI v1.0.1-03cd806-canary
-20260119094407		2	1	1	2026-05-20 10:27:14.116639+00	2245100			jbgqVJYSaZFnszKO4RQ9F58/kAi/+TEJtNmt2iPzB6Q=	null	Atlas CLI v1.0.1-03cd806-canary
-20260119082723		2	20	20	2026-05-20 10:27:13.640418+00	1563000			E9otq3u1wVHLQtDuNijuCejM3SMgkTf/TISayUaxnFI=	null	Atlas CLI v1.0.1-03cd806-canary
-20260119134802		2	2	2	2026-05-20 10:27:14.214758+00	1576400			icq25vhFU2f/UvXko2TxWPyHhnBGibKY514PmFgHnkI=	null	Atlas CLI v1.0.1-03cd806-canary
-20260119083027		2	2	2	2026-05-20 10:27:14.018847+00	2685600			ZcB2KIl6dTKT7Szzv/0y5JRScW5XueaUqOnpDgx1+lI=	null	Atlas CLI v1.0.1-03cd806-canary
-20260518145113		2	1	1	2026-05-20 10:27:16.788894+00	1586400			/pFXPtYZNHQ09j/wTmCxgzxLiuIANslEsjLD/dVnAr8=	null	Atlas CLI v1.0.1-03cd806-canary
-20260121033543		2	1	1	2026-05-20 10:27:14.297962+00	1586800			wlTGRNPaiAcY9fMBhmuXupLKiAdAzZlcxLFQY9a1sxM=	null	Atlas CLI v1.0.1-03cd806-canary
-20260122052237		2	1	1	2026-05-20 10:27:14.384701+00	2207400			+c96xlTijLZwM1lC3m3b0nttKSVZYq2PlZ44Lt15iNc=	null	Atlas CLI v1.0.1-03cd806-canary
-20260122082143		2	1	1	2026-05-20 10:27:14.488149+00	1578000			00l2GWiI71Ceu1CvNQrOYx/rzflAjyeP+w54Wd7h6XQ=	null	Atlas CLI v1.0.1-03cd806-canary
-20260519144311		2	3	3	2026-05-20 10:27:16.809884+00	1730000			A7fFarL4nOiPWor7y7gQbWiq4AlVsktgLNzcBJooNKQ=	null	Atlas CLI v1.0.1-03cd806-canary
-20260122185957		2	3	3	2026-05-20 10:27:14.721146+00	1549300			CbgX2dB2faM8yzq+BFVG+ykzR4Lww7kR56vqNBWk3c4=	null	Atlas CLI v1.0.1-03cd806-canary
-20260123003834		2	1	1	2026-05-20 10:27:15.379656+00	1759300			chMElAWyhf79hy1QIT7ejsC0k+XodtSJas3+UtwclAY=	null	Atlas CLI v1.0.1-03cd806-canary
-20260518103000		2	8	8	2026-05-20 10:27:16.330736+00	3190000			6VsBxOeaQxFVxClgBLVe/91CJk2wvfmUP0HrPOAcd7c=	null	Atlas CLI v1.0.1-03cd806-canary
-20260127122605		2	1	1	2026-05-20 10:27:15.78294+00	3870900			/488CXNTxCYtVpX5Xge06rJdRsZA507sIOp/STmmPDQ=	null	Atlas CLI v1.0.1-03cd806-canary
-20260422100803		2	2	2	2026-05-20 10:27:15.942855+00	1601100			7YqcX1BHxw/xFChiyu6B8STkX/wKjXfHznVD2NHSO4g=	null	Atlas CLI v1.0.1-03cd806-canary
-20260518120000		2	1	1	2026-05-20 10:27:16.653768+00	1837100			WYuXTPijrZd19oOEtLKR+1f/XDrk9uACiO5jczUMGnA=	null	Atlas CLI v1.0.1-03cd806-canary
-20260520150000		2	5	5	2026-05-20 10:27:16.843393+00	1581300			f+5Yw22q0R1k11HVvBCulZBgpKO5GQKsYCyOU2LTQPQ=	null	Atlas CLI v1.0.1-03cd806-canary
-20260520153000		2	1	1	2026-05-20 10:27:17.000235+00	1595500			NzsP9HAb8uEQ+qPeDRUxH++CLOBUMoUVowr0WrTallE=	null	Atlas CLI v1.0.1-03cd806-canary
+COPY _old_rups (id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at) FROM stdin;
+6412d85e-bcff-4f1a-9f1b-cd87e7ddf861	питон	APPROVED	\N	1	FULL_TIME	2025-2026	THEORY	8	{46313143-eadb-4798-b7f5-2fa97869e716}	{de7e617e-f1bd-4136-a76f-876a2387073a}	46313143-eadb-4798-b7f5-2fa97869e716	46313143-eadb-4798-b7f5-2fa97869e716	33ba1128-0c22-4a26-a592-d0635f1c7abe	{a3f0ff5f-14a5-429b-82fb-cfe959a471cc}	2026-05-20 10:30:06.941322+00	2026-05-20 10:30:28.29285+00
 \.
 
+INSERT INTO public.rups (
+    id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+)
+SELECT
+    id,
+    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
+FROM _old_rups;
 
---
--- Data for Name: award_categories; Type: TABLE DATA; Schema: public; Owner: admin
---
+-- award_categories: name/description TEXT -> JSONB
+CREATE TEMP TABLE _old_award_categories (
+    id uuid NOT NULL,
+    award_types uuid[] NOT NULL,
+    name text NOT NULL,
+    icon text,
+    description text,
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL
+) ON COMMIT DROP;
 
-COPY public.award_categories (id, award_types, name, icon, description, created_at, updated_at) FROM stdin;
+COPY _old_award_categories (id, award_types, name, icon, description, created_at, updated_at) FROM stdin;
 44444444-4444-4444-8444-444444444441	{}	Качество знаний	brain	Показатели успеваемости и качества знаний по дисциплинам	2026-05-20 12:42:03.004591+00	2026-05-20 13:02:57.021428+00
 44444444-4444-4444-8444-444444444442	{}	Результаты конкурсов и соревнований	award	Награды, дипломы, сертификаты и иные достижения	2026-05-20 12:42:03.004591+00	2026-05-20 13:21:36.906382+00
 44444444-4444-4444-8444-444444444443	{}	Трансляция практики	presentation	Передача педагогического опыта через мастер-классы и семинары	2026-05-20 12:42:03.004591+00	2026-05-20 13:24:48.089632+00
@@ -563,12 +280,33 @@ COPY public.award_categories (id, award_types, name, icon, description, created_
 44444444-4444-4444-8444-444444444448	{}	Классное руководство / кураторство	graduation-cap	Кураторская и воспитательная работа с группой	2026-05-20 12:42:03.004591+00	2026-05-21 13:43:17.795283+00
 \.
 
+INSERT INTO public.award_categories (id, award_types, name, icon, description, created_at, updated_at)
+SELECT
+    id, award_types,
+    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    icon,
+    jsonb_build_object('ru', COALESCE(description, ''), 'kz', ''),
+    created_at, updated_at
+FROM _old_award_categories;
 
---
--- Data for Name: award_category_fields; Type: TABLE DATA; Schema: public; Owner: admin
---
+-- award_category_fields: label/placeholder/help_text TEXT -> JSONB
+CREATE TEMP TABLE _old_award_category_fields (
+    id uuid NOT NULL,
+    key text NOT NULL,
+    label text NOT NULL,
+    type text NOT NULL,
+    required boolean NOT NULL,
+    placeholder text,
+    help_text text,
+    options jsonb NOT NULL,
+    validation jsonb NOT NULL,
+    sort_order integer NOT NULL,
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL,
+    category_id uuid NOT NULL
+) ON COMMIT DROP;
 
-COPY public.award_category_fields (id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at, category_id) FROM stdin;
+COPY _old_award_category_fields (id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at, category_id) FROM stdin;
 6705ce81-a679-4b45-aa0a-538b0724a657	title	Название публикации	text	t	Название статьи или материала	\N	[]	{}	1	2026-05-21 13:24:26.147558+00	2026-05-21 13:24:26.147558+00	44444444-4444-4444-8444-444444444445
 ac3241db-81db-4838-be00-3e64b14a3c65	event_date	Дата публикации	date	t	Выберите дату	\N	[]	{}	2	2026-05-21 13:24:26.162835+00	2026-05-21 13:24:26.162835+00	44444444-4444-4444-8444-444444444445
 80dd32b8-3bd7-4493-96bd-46117124931f	study_year	Учебный год	text	t	Например: 2025-2026	\N	[]	{}	3	2026-05-21 13:24:26.171227+00	2026-05-21 13:24:26.171227+00	44444444-4444-4444-8444-444444444445
@@ -629,12 +367,27 @@ d1c29dbf-a78d-406c-9eb6-87d9fb8b5126	job_title	Должность	text	t	\N	\N	[
 684f5e91-3a22-4419-a9e1-83905ce44c50	material_recommended	Материал рекомендован	text	t	\N	\N	[]	{}	11	2026-05-21 13:38:33.432219+00	2026-05-21 13:38:33.432219+00	44444444-4444-4444-8444-444444444447
 \.
 
+INSERT INTO public.award_category_fields (
+    id, category_id, key, label, type, required, placeholder, help_text, options, validation, sort_order, created_at, updated_at
+)
+SELECT
+    id, category_id, key,
+    jsonb_build_object('ru', COALESCE(label, ''), 'kz', ''),
+    type, required,
+    CASE WHEN placeholder IS NULL THEN NULL ELSE jsonb_build_object('ru', placeholder, 'kz', '') END,
+    CASE WHEN help_text IS NULL THEN NULL ELSE jsonb_build_object('ru', help_text, 'kz', '') END,
+    options, validation, sort_order, created_at, updated_at
+FROM _old_award_category_fields;
 
---
--- Data for Name: award_type_criteria; Type: TABLE DATA; Schema: public; Owner: admin
---
+-- award_type_criteria: name TEXT -> JSONB
+CREATE TEMP TABLE _old_award_type_criteria (
+    id uuid NOT NULL,
+    name text NOT NULL,
+    points integer[],
+    method public.enum_criteria_method NOT NULL
+) ON COMMIT DROP;
 
-COPY public.award_type_criteria (id, name, points, method) FROM stdin;
+COPY _old_award_type_criteria (id, name, points, method) FROM stdin;
 639da9c7-fa6d-4998-82b7-edbffeacd5cf	ПОӘК/УМКД (теория және тәжірибе / теория и практика)	{1,2,3}	MEASURING
 7fb47243-2423-4d03-983c-a31452ccf2ea	ҰТО тест тапсырмаларын әзірлеу немесе сараптамадан өткізу / Разработка или экспертиза тестовых заданий НЦТ	{10}	NORMAL
 7949fddc-75d2-4b41-bb82-67c2dc671c22	Әдістемелік құралдарды құрастыру / Разработка методических пособий — колледжішілік / внутриколледжный	{10}	NORMAL
@@ -726,12 +479,23 @@ eaab6486-ca32-4fb8-905b-bc469d5a2895	Іс-шараларды медиялық с
 128eb7c3-f996-41fd-9694-8fa87ed0976f	Қатаң сөгіс / Строгий выговор	{-30}	NORMAL
 \.
 
+INSERT INTO public.award_type_criteria (id, name, points, method)
+SELECT
+    id,
+    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    points, method
+FROM _old_award_type_criteria;
 
---
--- Data for Name: award_type_variants; Type: TABLE DATA; Schema: public; Owner: admin
---
+-- award_type_variants: name/description TEXT -> JSONB
+CREATE TEMP TABLE _old_award_type_variants (
+    id uuid NOT NULL,
+    name text NOT NULL,
+    description text,
+    criteria uuid[],
+    bonus_criteria uuid[]
+) ON COMMIT DROP;
 
-COPY public.award_type_variants (id, name, description, criteria, bonus_criteria) FROM stdin;
+COPY _old_award_type_variants (id, name, description, criteria, bonus_criteria) FROM stdin;
 475f6d11-0b22-435b-a4d6-f8c3441c700e	1.1. Оқу-әдістемелік материалдарды құрастыру / Разработка учебно-методических материалов	Оценка разработки учебно-методических материалов.	{639da9c7-fa6d-4998-82b7-edbffeacd5cf}	{}
 62846162-ae21-49c2-88d0-a53fe3f3b801	1.2. Авторлық жұмыстар / Авторские работы	Оценка авторских работ, методических пособий, образовательных программ, учебных пособий и учебников.	{7fb47243-2423-4d03-983c-a31452ccf2ea,7949fddc-75d2-4b41-bb82-67c2dc671c22,6d9f6738-14bc-4b3c-8070-3e1856444bfc,f65d1a9a-c546-4ce8-b88f-0375667e7da0,7bd3128d-0bff-47d1-a3a3-19d8f90a735f,d2543007-1077-4335-a10e-f866fbd7b331,27905d14-4c4e-4dd2-ac3d-10770ff6e1d5,70ecf794-d776-4842-9994-4dcb149f7306,d1266b7f-0f12-4167-a610-474badfcd6e1,f00a1242-7539-448e-928b-76c0328a73a5}	{}
 9c16db1b-b4c5-4c66-8bb2-ab16a1876894	2.1. Біліктілікті арттыру курстарынан өту / Прохождение курсов повышения квалификации	Оценка курсов повышения квалификации и стажировок.	{6a49355a-9a52-4603-b58a-d7e41f710017,37bed84f-6737-47d2-b87f-fe452af78cee,f0ec0010-fa44-4ecb-985d-d867b00aefc5,79e2894f-5fc6-44ab-996d-5c3ef79421c9}	{}
@@ -753,12 +517,22 @@ df74ed52-6be7-4c03-9cd5-906b57e1506a	11.1. Өндірістік оқыту ше�
 f2fd6dcf-723b-4c07-ad3d-a9849eecdd8e	Еңбек шартының талаптарын бұзу / Нарушение условий трудового договора	При нарушении условий трудового договора вычитается от 10 до 30 баллов.	{885f6769-1bc8-42bd-808b-b3e446db7190,898798e8-2987-49e6-af6b-de897a972b0b,128eb7c3-f996-41fd-9694-8fa87ed0976f}	{}
 \.
 
+INSERT INTO public.award_type_variants (id, name, description, criteria, bonus_criteria)
+SELECT
+    id,
+    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    CASE WHEN description IS NULL THEN NULL ELSE jsonb_build_object('ru', description, 'kz', '') END,
+    criteria, bonus_criteria
+FROM _old_award_type_variants;
 
---
--- Data for Name: award_types; Type: TABLE DATA; Schema: public; Owner: admin
---
+-- award_types: name TEXT -> JSONB
+CREATE TEMP TABLE _old_award_types (
+    id uuid NOT NULL,
+    name text NOT NULL,
+    variants uuid[]
+) ON COMMIT DROP;
 
-COPY public.award_types (id, name, variants) FROM stdin;
+COPY _old_award_types (id, name, variants) FROM stdin;
 21bc6259-5e89-4d40-ace1-f8428f3971c9	1. Әдістемелік материалдарды, оқу бағдарламаларын, оқу құралдарын әзірлеу және жариялау / Подготовка и опубликование методических материалов, учебных программ, учебных пособий	{475f6d11-0b22-435b-a4d6-f8c3441c700e,62846162-ae21-49c2-88d0-a53fe3f3b801}
 67f54cb3-903e-4945-b10d-4b65ce8b6cd7	2. Біліктілікті арттыру курстарынан және тағылымдамадан өту / Прохождение курсов повышения квалификации и стажировка	{9c16db1b-b4c5-4c66-8bb2-ab16a1876894}
 567648cc-ef48-43a2-a3c8-a398b6522374	3. Ғылыми-практикалық және әдістемелік конференциялар, семинарлар мен іс-шараларда сөз сөйлеу / Выступление в научно-практических и методических конференциях, семинарах, мероприятиях	{c50c7546-4212-4718-9d0c-f14999cd8225,11bf9f18-c8b3-42e5-9209-d41fa85683c3,0661345f-2a13-4a22-b0b5-9e8aee10b6b5}
@@ -774,11 +548,14 @@ e3d17d4b-bd06-4590-bce9-7790c1b2c071	12. Колледжтің имиджін н�
 d6c9b76a-ec70-4829-92b6-8da1b8725cba	Ескерту / Примечание: еңбек шартының талаптарын бұзған жағдайда балл шегеру / Вычитание баллов при нарушении условий трудового договора	{f2fd6dcf-723b-4c07-ad3d-a9849eecdd8e}
 \.
 
+INSERT INTO public.award_types (id, name, variants)
+SELECT
+    id,
+    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    variants
+FROM _old_award_types;
 
---
--- Data for Name: awards; Type: TABLE DATA; Schema: public; Owner: admin
---
-
+-- awards (compatible as-is)
 COPY public.awards (id, status, reason, methodist, teacher, total_points, type, created_at, updated_at, variant, criteria, bonus_criteria, category_id, field_values) FROM stdin;
 \.
 
@@ -798,98 +575,58 @@ f29e55c2-884e-4b99-9b74-f90dbc1ae9e8	6	0
 7b3f351a-8b7a-426d-9fbc-3234c6e1ab41	8	0
 \.
 
+-- lessons: locale TEXT fields -> JSONB
+CREATE TEMP TABLE _old_lessons (
+    id uuid NOT NULL,
+    rup_name text NOT NULL,
+    discipline_name text,
+    topic_name text,
+    teacher uuid NOT NULL,
+    event_date timestamptz,
+    group_id uuid NOT NULL,
+    type public.enum_lesson_type NOT NULL,
+    goals text,
+    tasks text,
+    expected text,
+    internet_resources uuid[],
+    technical_resources uuid[],
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL,
+    file_url text,
+    plan_number integer NOT NULL
+) ON COMMIT DROP;
 
---
--- Data for Name: discipline_topics; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.discipline_topics (id, name, type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours, lesson_id) FROM stdin;
-78c78428-fc32-421d-a5bc-5befa181668a	Объясняет основные концепции программирования на Python	COMBINED	2	2	0	0	0	0	\N
-dc601ef5-9300-4acb-ad44-1edcf6329257	Разрабатывает простые программы с использованием функций Python	COMBINED	2	2	0	0	0	0	\N
-a819c36b-629d-43b5-b437-1a57bfed963a	Реализовывает условные конструкции и циклы в Python	PRACTICAL	2	0	2	0	0	0	\N
-8e432c38-68db-4ca6-a3eb-5e602934371c	Применяет базовые структуры данных Python (списки, кортежи, словари)	PRACTICAL	2	0	2	0	0	0	c8cec635-aa93-4648-9a6a-f23b9090190e
+COPY _old_lessons (id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, created_at, updated_at, file_url, plan_number) FROM stdin;
+c8cec635-aa93-4648-9a6a-f23b9090190e	питон	РО1.1 Основы программирования на Python	Применяет базовые структуры данных Python (списки, кортежи, словари)	46313143-eadb-4798-b7f5-2fa97869e716	2026-05-20 10:31:40.785724+00	de7e617e-f1bd-4136-a76f-876a2387073a	PRACTICE	Сформировать у студентов понимание и навыки применения базовых структур данных Python: списков, кортежей и словарей, для решения практических задач программирования.	Научить студентов создавать, изменять и использовать списки, кортежи и словари в Python. Развить умение выбирать подходящую структуру данных для конкретной задачи. Ознакомить с основными операциями над списками, кортежами и словарями. Способствовать формированию алгоритмического мышления при работе с данными.	Студенты будут уверенно использовать списки, кортежи и словари в своих программах на Python. Смогут самостоятельно выбирать и применять эти структуры данных для эффективного решения поставленных задач. Будут способны анализировать и модифицировать существующий код, содержащий данные структуры.	{f57e041b-bac2-4262-aa9e-ff6de82335b6,5c86b995-5cf2-4a5f-ae0a-f19af8fe7a73,8b1a900a-5789-407c-83d5-c07eb19f0467,3c6e2735-7b03-40af-8d6a-676f571256e0,da82eac6-0794-45aa-b7f2-9a47a8c48307}	{ec02d1b1-62b7-423e-bda9-9e711956177c,0f5c93b3-6082-4a9e-8406-b01fa7005709,8535eb6b-470d-4b01-a4f4-45764d17aba3,b6e668c7-f626-4a63-9e39-d9fb2e59dce5}	2026-05-20 10:31:40.786204+00	2026-05-20 10:31:41.157997+00	lessons/c8cec635-aa93-4648-9a6a-f23b9090190e/Применяет_базовые_структуры_данных_Python__списки__кортежи__словари_20260520_103140_c8cec635.docx	47
 \.
 
+INSERT INTO public.lessons (
+    id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, created_at, updated_at, file_url, plan_number
+)
+SELECT
+    id,
+    jsonb_build_object('ru', COALESCE(rup_name, ''), 'kz', ''),
+    CASE WHEN discipline_name IS NULL THEN NULL ELSE jsonb_build_object('ru', discipline_name, 'kz', '') END,
+    CASE WHEN topic_name IS NULL THEN NULL ELSE jsonb_build_object('ru', topic_name, 'kz', '') END,
+    teacher, event_date, group_id, type,
+    CASE WHEN goals IS NULL THEN NULL ELSE jsonb_build_object('ru', goals, 'kz', '') END,
+    CASE WHEN tasks IS NULL THEN NULL ELSE jsonb_build_object('ru', tasks, 'kz', '') END,
+    CASE WHEN expected IS NULL THEN NULL ELSE jsonb_build_object('ru', expected, 'kz', '') END,
+    internet_resources, technical_resources, created_at, updated_at, file_url, plan_number
+FROM _old_lessons;
 
---
--- Data for Name: groups; Type: TABLE DATA; Schema: public; Owner: admin
---
+-- lesson_progress: name TEXT -> JSONB
+CREATE TEMP TABLE _old_lesson_progress (
+    id uuid NOT NULL,
+    lesson_id uuid NOT NULL,
+    name text NOT NULL,
+    first_time integer[] NOT NULL,
+    second_time integer[] NOT NULL,
+    content text[],
+    third_time integer[] NOT NULL
+) ON COMMIT DROP;
 
-COPY public.groups (keycloak_id, name, qualification, specialty) FROM stdin;
-8b7e56e6-fc1a-4cc6-a795-f66c5d268229	Test-ednev-group	\N	\N
-e6eff862-03f0-4852-821c-a190f83420d5	WEB25-А	3W06130102 "Web-дизайнер"	06130100 "Программное обеспечение"
-4cadb558-be47-4ca5-b45c-7d5d94bf6366	WEB25-Б	3W06130102 "Web-дизайнер"	06130100 "Программное обеспечение"
-ca2eec3f-8ab4-41f1-8a13-2210240296f9	ИС22-А	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-273aa813-7f5d-4c63-9bde-c8ba5643cf7c	ИС22-Б	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-2e25f729-2552-4c19-b1f4-66f4da78995e	ИС23-А	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-6435262a-2e4e-4901-9408-e99b63b87ab4	ИС23-Б	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-cba2cc54-6dd5-47ed-ba00-997e0a216fb7	ИС24	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-9c55597a-0c49-4853-879e-7eff13c70934	ИС25-А	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-af1cabf9-1e1c-4735-a3be-cdf264a3fe36	ИС25-Б	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-c98fddb4-9d8b-4f02-be13-7ef297279171	ОП24-А	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06130100 "Программное обеспечение"
-1f50b039-a7e0-4d0c-80db-531cdf3ff64f	ОП24-Б	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06130100 "Программное обеспечение"
-637ae75c-ea8b-4ba9-b937-a7c7d8f13d00	П22-А	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-615a632b-52e3-4981-8154-6a274e32e137	П22-Б	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-a0b37d63-2233-49fa-b427-e3a7a5a23c43	П22-В	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-822d3bb4-4370-4728-afd7-56dfff4ce4ee	П22-Г	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-b20b8e4a-2e3a-454e-8bad-ef9f722d798a	П22-Д	4S06130103 "Разработчик программного обеспечения	06130100 "Программное обеспечение"
-0062438c-39d3-4f1c-be6f-8651652f931a	П22-ЕК	4S06130103 "Разработчик программного обеспечения	06130100 "Программное обеспечение"
-0f6986f1-a950-40c1-ac1e-87e72225b44e	П22-ЖК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-0aa8c842-4a36-443a-a8c4-c30349a73ee2	П22-ЗК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-a0aefbb0-5576-4496-baac-b9680c3765d6	П22-ИК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-838b6665-805b-4635-84f2-b84beea4d5f9	П23-3С	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-31ee78b8-abb4-4269-8d72-9b76802157aa	П23-А	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-7970a724-19e4-476f-a74d-c9efd2c80afa	П23-Б	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-e2c5b0dd-12cf-4d94-a06a-534a5a351479	П23-В	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-d0a4ad94-922f-4442-86e6-af5ea4cca674	П23-Г	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-fa0b764a-90ca-45a5-b012-d7ea166fc7a5	П23-Д	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-f38cb698-2e0d-4d76-92b2-df9d8f77722b	П23-Е	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-1a21de7e-2601-406f-8d46-66ce950e9cd7	П23-ЖК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-620aa0f9-616c-404c-8139-24f2354088d9	П24-2С	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-f292f86b-7475-4784-95fb-a2da2fa1a2c1	П24-А	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-49f52724-960f-494a-8497-b6db3e8ad433	П24-Б	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-01510e61-0c7d-4d71-a1f8-9b35c6540607	П24-В	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-db6258a6-8106-493c-b09e-cc60289f76ed	П24-Г	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-760a6096-7577-4198-bd82-c380b920bf76	П24-Д	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-44666e40-2cb5-4621-9630-8b727f5a3556	П24-ЖК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-6ff7e6c7-aa04-4262-a400-d34edfceea92	П25-1С	4S06130105 "Техник информационных систем"	06130100 "Программное обеспечение"
-3edeab81-7b4a-4845-9744-8120cebe1afb	П25-А	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-9b098cf8-b7c1-44f5-922b-665711b922f8	П25-Б	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-466ceedd-1d36-444f-9696-265c225ce0c0	П25-В	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-de7e617e-f1bd-4136-a76f-876a2387073a	П25-Г	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-b537f6aa-8baf-4fec-8307-2ba7a6361633	П25-ДК	4S06130103 "Разработчик программного обеспечения"	06130100 "Программное обеспечение"
-b32c7cbb-14c9-4f76-8767-d3b062130430	РЭТ22	4S07140905 "Техник мультимедийных и цифровых систем"	07140900 "Радиотехника, электроника и телекоммуникации"
-ae1c35dc-92c8-4fda-8a17-50f743d91ab1	РЭТ23	4S07140905 "Техник мультимедийных и цифровых систем"	07140900 "Радиотехника, электроника и телекоммуникации"
-ede3e4c3-b6af-4afb-b1cf-9cc0f77bda00	РЭТ24	4S07140905 "Техник мультимедийных и цифровых систем"	07140900 "Радиотехника, электроника и телекоммуникации"
-b8a1cec0-02c9-40b7-8259-a02802a86cf9	РЭТ25	4S07140902 "Техник телекоммуникационных систем связи"	07140900 "Радиотехника, электроника и телекоммуникации"
-75e27058-209f-4a98-b766-b24621d6d09b	С25	3W07140901 "Электромонтажник-накладчик телекоммуникационного оборудования и каналов связи"	07140900 "Радиотехника, электроника и телекоммуникации"
-d3bf7a16-5778-443c-b6c1-af12d7c3f013	Т22-А	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-61f729f4-32c5-4dde-a12f-8eb90e18eab1	Т22-Б	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-65fc15fb-5ab1-4295-9e27-399c6f8960c4	Т23-А	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-b252af6e-c1bd-49a7-aea2-d7d1e08e00b7	Т23-Б	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-2f03e505-b72f-406c-aabf-3197a1ac0073	Т23-В	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-edc49d4e-e1ca-4e58-bdc5-a2166a464a44	Т24	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-df78fca4-5436-4101-9796-3f3786ce2b08	Т25	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-8521526c-cb69-46ce-9588-0b6a23d3a77b	Т25-1	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-4eef5c48-7a57-4c39-959c-7dcbd96ed7bf	Т25-4В	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-0df6145c-bf76-42c0-8dd9-237e4b1af427	Т25-4Г	4S06120102 "Техник сетевого и системного администрирования"	06120100 "Вычислительная техника и информационные сети'"
-3edb761e-00a3-4213-a6fe-58bfd295604b	ТЗИ22	4S06120202 "Техник по информационной безопасности"	06120200 "Системы информационной безопасности"
-92ad65eb-80f8-4b80-813b-fc3229a20f06	ТЗИ24	4S06120202 "Техник по информационной безопасности"	06120200 "Системы информационной безопасности"
-05622ecb-80fa-412d-b2ef-f2ab077bc733	ТЗИ25	4S06120202 "Техник по информационной безопасности"	06120200 "Системы информационной безопасности"
-cb61cf1f-1dd0-4be0-af31-76e25275ad8e	ТМ22	4S07151102 "Техник-механик"	07151100 "Эксплуатация и техническое обслуживание машин и оборудования"
-748d32a1-9abe-4a76-9b82-59169b1695aa	ТМ23	4S07151102 "Техник-механик"	07151100 "Эксплуатация и техническое обслуживание машин и оборудования"
-51889c72-412e-4297-b4ea-b5b2bf908642	ТМ25	4S07151102 "Техник-механик"	07151100 "Эксплуатация и техническое обслуживание машин и оборудования"
-bfb73da8-2ef8-4dba-b3ae-7b7f8c47e21f	ЭВМ23-А	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06120100 "Вычислительная техника и информационные сети"
-4126bd33-9b50-41fe-a29a-23f85bd0a3a2	ЭВМ23-Б	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06120100 "Вычислительная техника и информационные сети"
-7eae6ae6-56dd-4246-b88b-51035b482d59	ЭВМ23-В	3W06120101 "Оператор компьютерного аппаратного обеспечения"	06120100 "Вычислительная техника и информационные сети"
-\.
-
-
---
--- Data for Name: lesson_progress; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.lesson_progress (id, lesson_id, name, first_time, second_time, content, third_time) FROM stdin;
+COPY _old_lesson_progress (id, lesson_id, name, first_time, second_time, content, third_time) FROM stdin;
 383acd4a-d35d-4fff-b0ac-f9316b3cb448	c8cec635-aa93-4648-9a6a-f23b9090190e	Введение и мотивация	{10}	{15}	{"Приветствие студентов, проверка присутствующих.","Озвучивание темы и целей практического занятия.","Краткое обсуждение важности структур данных в программировании на примерах из реальной жизни.","Актуализация знаний о предыдущих темах (если применимо)."}	{10}
 905e841e-ec56-4c4f-a34d-9b6c2502ebf9	c8cec635-aa93-4648-9a6a-f23b9090190e	Изучение и применение списков	{20}	{25}	{"Объяснение концепции списков в Python: создание, доступ к элементам, изменение, добавление, удаление.","Демонстрация основных методов списков (append, insert, remove, pop, len, index).","Решение практических задач: составление списка покупок, хранение результатов измерений.","Индивидуальное выполнение мини-заданий студентами под контролем преподавателя."}	{20}
 5969a83b-5eb1-470c-b5a1-ed834cf769fa	c8cec635-aa93-4648-9a6a-f23b9090190e	Работа с кортежами	{15}	{15}	{"Объяснение особенностей кортежей: неизменяемость, создание, доступ.","Сравнение списков и кортежей, определение сценариев использования кортежей.","Примеры использования: хранение координат, неизменяемых настроек.","Практическое задание: создание кортежа с данными студента."}	{20}
@@ -897,326 +634,17 @@ COPY public.lesson_progress (id, lesson_id, name, first_time, second_time, conte
 c2fd0be7-5a26-4927-b6d3-db4b824ba2db	c8cec635-aa93-4648-9a6a-f23b9090190e	Закрепление материала и подведение итогов	{20}	{15}	{"Обсуждение возникших вопросов и сложностей.","Решение комплексной задачи, требующей применения всех трех структур данных.","Краткое повторение основных моментов занятия.","Оценка работы студентов, объявление домашнего задания (при наличии).","Анонс следующей темы (если применимо)."}	{15}
 \.
 
-
---
--- Data for Name: lessons; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.lessons (id, rup_name, discipline_name, topic_name, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, created_at, updated_at, file_url, plan_number) FROM stdin;
-c8cec635-aa93-4648-9a6a-f23b9090190e	питон	РО1.1 Основы программирования на Python	Применяет базовые структуры данных Python (списки, кортежи, словари)	46313143-eadb-4798-b7f5-2fa97869e716	2026-05-20 10:31:40.785724+00	de7e617e-f1bd-4136-a76f-876a2387073a	PRACTICE	Сформировать у студентов понимание и навыки применения базовых структур данных Python: списков, кортежей и словарей, для решения практических задач программирования.	Научить студентов создавать, изменять и использовать списки, кортежи и словари в Python. Развить умение выбирать подходящую структуру данных для конкретной задачи. Ознакомить с основными операциями над списками, кортежами и словарями. Способствовать формированию алгоритмического мышления при работе с данными.	Студенты будут уверенно использовать списки, кортежи и словари в своих программах на Python. Смогут самостоятельно выбирать и применять эти структуры данных для эффективного решения поставленных задач. Будут способны анализировать и модифицировать существующий код, содержащий данные структуры.	{f57e041b-bac2-4262-aa9e-ff6de82335b6,5c86b995-5cf2-4a5f-ae0a-f19af8fe7a73,8b1a900a-5789-407c-83d5-c07eb19f0467,3c6e2735-7b03-40af-8d6a-676f571256e0,da82eac6-0794-45aa-b7f2-9a47a8c48307}	{ec02d1b1-62b7-423e-bda9-9e711956177c,0f5c93b3-6082-4a9e-8406-b01fa7005709,8535eb6b-470d-4b01-a4f4-45764d17aba3,b6e668c7-f626-4a63-9e39-d9fb2e59dce5}	2026-05-20 10:31:40.786204+00	2026-05-20 10:31:41.157997+00	lessons/c8cec635-aa93-4648-9a6a-f23b9090190e/Применяет_базовые_структуры_данных_Python__списки__кортежи__словари_20260520_103140_c8cec635.docx	47
-\.
-
-
---
--- Data for Name: rup_approve_challenges; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.rup_approve_challenges (challenge, rup_id, key_id, user_id, expires_at, used_at, created_at) FROM stdin;
-eyJ0eXBlIjoicnVwX2FwcHJvdmVfY2hhbGxlbmdlIiwicnVwX2lkIjoiNjQxMmQ4NWUtYmNmZi00ZjFhLTlmMWItY2Q4N2U3ZGRmODYxIiwiYWN0aW9uIjoiQVBQUk9WRSIsImtleV9pZCI6IjA5YWFiY2JlLTFjYmMtNGZlOC04YTgxLTE3YjRlOWI4ODFmYSIsInVzZXJfaWQiOiI0NjMxMzE0My1lYWRiLTQ3OTgtYjdmNS0yZmE5Nzg2OWU3MTYiLCJub25jZSI6IjExMFZmTzFEemxGT3hsR3FqN1V3UjJRQ3BjM1V0Z0dCIiwiZXhwaXJlc19hdCI6IjIwMjYtMDUtMjBUMTA6MzU6MjZaIn0.I-C70jjn0YdE8Y7Ed9QlXYupJtZRVa5q16GHbu4eFM4	6412d85e-bcff-4f1a-9f1b-cd87e7ddf861	09aabcbe-1cbc-4fe8-8a81-17b4e9b881fa	46313143-eadb-4798-b7f5-2fa97869e716	2026-05-20 10:35:26.515115+00	2026-05-20 10:30:26.633684+00	2026-05-20 10:30:26.516406+00
-\.
-
-
---
--- Data for Name: rup_disciplines; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.rup_disciplines (id, name, total_hours, semesters, topics) FROM stdin;
-a3f0ff5f-14a5-429b-82fb-cfe959a471cc	РО1.1 Основы программирования на Python	8	{2c102c78-c6a1-4015-a659-6c0fc92f78dd,bf170aee-7dbe-469c-ac35-c552e5a50341,954c3a41-1f18-48ca-8306-7c624ec71858,a897b49a-8a21-4024-ae14-3ed8c4d500c4,2727609f-62f7-475c-8689-4f2f4c683f66,f29e55c2-884e-4b99-9b74-f90dbc1ae9e8,30044c88-2bd2-45e6-ae90-2c9686df498d,7b3f351a-8b7a-426d-9fbc-3234c6e1ab41}	{78c78428-fc32-421d-a5bc-5befa181668a,dc601ef5-9300-4acb-ad44-1edcf6329257,8e432c38-68db-4ca6-a3eb-5e602934371c,a819c36b-629d-43b5-b437-1a57bfed963a}
-\.
-
-
---
--- Data for Name: rup_exploration_notes; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.rup_exploration_notes (id, basis, goals, summary, competencies, prerequisites, postrequisites, internet_resources, technical_resources) FROM stdin;
-33ba1128-0c22-4a26-a592-d0635f1c7abe	крутой питон курс	выучить питон	\N	питон	ничего	крутой питон программист	\N	\N
-\.
-
-
---
--- Data for Name: rup_resources; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.rup_resources (id, name, link) FROM stdin;
-f57e041b-bac2-4262-aa9e-ff6de82335b6	Официальная документация Python по типам данных	https://docs.python.org/3/tutorial/datastructures.html
-5c86b995-5cf2-4a5f-ae0a-f19af8fe7a73	Руководство по спискам в Python	https://www.w3schools.com/python/python_lists.asp
-8b1a900a-5789-407c-83d5-c07eb19f0467	Уроки по кортежам в Python	https://www.w3schools.com/python/python_tuples.asp
-3c6e2735-7b03-40af-8d6a-676f571256e0	Работа со словарями в Python	https://www.w3schools.com/python/python_dictionaries.asp
-da82eac6-0794-45aa-b7f2-9a47a8c48307	Практические примеры использования структур данных Python	https://realpython.com/python-data-structures/
-ec02d1b1-62b7-423e-bda9-9e711956177c	Компьютер с установленной ОС (Windows, macOS, Linux)	\N
-0f5c93b3-6082-4a9e-8406-b01fa7005709	Среда разработки Python (например, PyCharm Community Edition, VS Code с расширением Python)	\N
-8535eb6b-470d-4b01-a4f4-45764d17aba3	Установленная версия Python 3	\N
-b6e668c7-f626-4a63-9e39-d9fb2e59dce5	Доступ к сети Интернет	\N
-\.
-
-
---
--- Data for Name: rups; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.rups (id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at) FROM stdin;
-6412d85e-bcff-4f1a-9f1b-cd87e7ddf861	питон	APPROVED	\N	1	FULL_TIME	2025-2026	THEORY	8	{46313143-eadb-4798-b7f5-2fa97869e716}	{de7e617e-f1bd-4136-a76f-876a2387073a}	46313143-eadb-4798-b7f5-2fa97869e716	46313143-eadb-4798-b7f5-2fa97869e716	33ba1128-0c22-4a26-a592-d0635f1c7abe	{a3f0ff5f-14a5-429b-82fb-cfe959a471cc}	2026-05-20 10:30:06.941322+00	2026-05-20 10:30:28.29285+00
-\.
-
-
---
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: admin
---
-
-COPY public.users (keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at) FROM stdin;
-46313143-eadb-4798-b7f5-2fa97869e716		kpopov27	Кирилл	Попов		ADMIN	\N	0	\N	NONE	\N	\N	2026-05-20 10:27:46.972872+00	2026-05-21 14:25:47.434576+00
-\.
-
-
---
--- Name: lessons_plan_number_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
---
-
-SELECT pg_catalog.setval('public.lessons_plan_number_seq', 1, true);
-
-
---
--- Name: atlas_schema_revisions atlas_schema_revisions_pkey; Type: CONSTRAINT; Schema: atlas_schema_revisions; Owner: admin
---
-
-ALTER TABLE ONLY atlas_schema_revisions.atlas_schema_revisions
-    ADD CONSTRAINT atlas_schema_revisions_pkey PRIMARY KEY (version);
-
-
---
--- Name: award_categories award_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.award_categories
-    ADD CONSTRAINT award_categories_pkey PRIMARY KEY (id);
-
-
---
--- Name: award_category_fields award_category_fields_category_id_key_key; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.award_category_fields
-    ADD CONSTRAINT award_category_fields_category_id_key_key UNIQUE (category_id, key);
-
-
---
--- Name: award_category_fields award_category_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.award_category_fields
-    ADD CONSTRAINT award_category_fields_pkey PRIMARY KEY (id);
-
-
---
--- Name: award_type_criteria award_type_criteria_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.award_type_criteria
-    ADD CONSTRAINT award_type_criteria_pkey PRIMARY KEY (id);
-
-
---
--- Name: award_type_variants award_type_variants_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.award_type_variants
-    ADD CONSTRAINT award_type_variants_pkey PRIMARY KEY (id);
-
-
---
--- Name: award_types award_types_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.award_types
-    ADD CONSTRAINT award_types_pkey PRIMARY KEY (id);
-
-
---
--- Name: awards awards_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.awards
-    ADD CONSTRAINT awards_pkey PRIMARY KEY (id);
-
-
---
--- Name: discipline_semesters discipline_semesters_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.discipline_semesters
-    ADD CONSTRAINT discipline_semesters_pkey PRIMARY KEY (id);
-
-
---
--- Name: discipline_topics discipline_topics_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.discipline_topics
-    ADD CONSTRAINT discipline_topics_pkey PRIMARY KEY (id);
-
-
---
--- Name: groups groups_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.groups
-    ADD CONSTRAINT groups_pkey PRIMARY KEY (keycloak_id);
-
-
---
--- Name: lesson_progress lesson_progress_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.lesson_progress
-    ADD CONSTRAINT lesson_progress_pkey PRIMARY KEY (id);
-
-
---
--- Name: lessons lessons_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.lessons
-    ADD CONSTRAINT lessons_pkey PRIMARY KEY (id);
-
-
---
--- Name: rup_approve_challenges rup_approve_challenges_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.rup_approve_challenges
-    ADD CONSTRAINT rup_approve_challenges_pkey PRIMARY KEY (challenge);
-
-
---
--- Name: rup_disciplines rup_disciplines_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.rup_disciplines
-    ADD CONSTRAINT rup_disciplines_pkey PRIMARY KEY (id);
-
-
---
--- Name: rup_exploration_notes rup_exploration_notes_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.rup_exploration_notes
-    ADD CONSTRAINT rup_exploration_notes_pkey PRIMARY KEY (id);
-
-
---
--- Name: rup_resources rup_resources_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.rup_resources
-    ADD CONSTRAINT rup_resources_pkey PRIMARY KEY (id);
-
-
---
--- Name: rups rups_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.rups
-    ADD CONSTRAINT rups_pkey PRIMARY KEY (id);
-
-
---
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_pkey PRIMARY KEY (keycloak_id);
-
-
---
--- Name: idx_rup_approve_challenges_expires_at; Type: INDEX; Schema: public; Owner: admin
---
-
-CREATE INDEX idx_rup_approve_challenges_expires_at ON public.rup_approve_challenges USING btree (expires_at);
-
-
---
--- Name: award_category_fields award_category_fields_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.award_category_fields
-    ADD CONSTRAINT award_category_fields_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.award_categories(id) ON DELETE CASCADE;
-
-
---
--- Name: awards fk_award_category; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.awards
-    ADD CONSTRAINT fk_award_category FOREIGN KEY (category_id) REFERENCES public.award_categories(id) ON DELETE RESTRICT;
-
-
---
--- Name: awards fk_award_methodist; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.awards
-    ADD CONSTRAINT fk_award_methodist FOREIGN KEY (methodist) REFERENCES public.users(keycloak_id);
-
-
---
--- Name: lessons fk_lesson_groups; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.lessons
-    ADD CONSTRAINT fk_lesson_groups FOREIGN KEY (group_id) REFERENCES public.groups(keycloak_id);
-
-
---
--- Name: lesson_progress fk_lesson_progress_lesson; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.lesson_progress
-    ADD CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES public.lessons(id);
-
-
---
--- Name: lessons fk_lesson_teacher; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.lessons
-    ADD CONSTRAINT fk_lesson_teacher FOREIGN KEY (teacher) REFERENCES public.users(keycloak_id);
-
-
---
--- Name: rups fk_methodist; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.rups
-    ADD CONSTRAINT fk_methodist FOREIGN KEY (methodist) REFERENCES public.users(keycloak_id);
-
-
---
--- Name: rups fk_teacher; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.rups
-    ADD CONSTRAINT fk_teacher FOREIGN KEY (teacher) REFERENCES public.users(keycloak_id);
-
-
---
--- Name: rups rups_exploration_note_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: admin
---
-
-ALTER TABLE ONLY public.rups
-    ADD CONSTRAINT rups_exploration_note_id_fkey FOREIGN KEY (exploration_note_id) REFERENCES public.rup_exploration_notes(id);
-
-
---
--- Name: SCHEMA public; Type: ACL; Schema: -; Owner: admin
---
-
-REVOKE USAGE ON SCHEMA public FROM PUBLIC;
-
-
---
--- PostgreSQL database dump complete
---
-
-\unrestrict EqQLhUWdXZVtWOLZl8my0NWMA0s1p9Qg3EusRS6Ne3zAociNi20UjD0AZSagrq8
+INSERT INTO public.lesson_progress (id, lesson_id, name, first_time, second_time, third_time, content)
+SELECT
+    id, lesson_id,
+    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    first_time, second_time, third_time, content
+FROM _old_lesson_progress;
+
+-- Keep lessons plan number sequence in sync after explicit plan_number inserts
+SELECT setval('public.lessons_plan_number_seq', COALESCE((SELECT MAX(plan_number) FROM public.lessons), 1), true);
+
+COMMIT;
+
+-- End of adapted backup
 
