@@ -73,6 +73,16 @@ func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 	c.JSON(http.StatusOK, awards)
 }
 
+func (h *AwardHandler) GetAwardDepartments(c *gin.Context) {
+	departments, err := h.service.GetAwardDepartmentsStats(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, departments)
+}
+
 func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 	idParam := c.Param("id")
 

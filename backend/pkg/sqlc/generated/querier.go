@@ -12,13 +12,14 @@ import (
 )
 
 type Querier interface {
+	AddUserToDepartment(ctx context.Context, arg AddUserToDepartmentParams) error
 	CountAwards(ctx context.Context) (int64, error)
 	CountAwardsFiltered(ctx context.Context, arg CountAwardsFilteredParams) (int64, error)
 	CountLessonsFiltered(ctx context.Context, arg CountLessonsFilteredParams) (int64, error)
 	CountRups(ctx context.Context) (int64, error)
 	CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
-	CountUsersFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
+	CountUsersFiltered(ctx context.Context, arg CountUsersFilteredParams) (int64, error)
 	CountUsersRatingFiltered(ctx context.Context, dollar_1 interface{}) (int64, error)
 	CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error)
 	CreateAwardCategory(ctx context.Context, arg CreateAwardCategoryParams) (AwardCategory, error)
@@ -60,10 +61,12 @@ type Querier interface {
 	GetAwardByID(ctx context.Context, id uuid.UUID) (Award, error)
 	GetAwardCategoryByID(ctx context.Context, id uuid.UUID) (AwardCategory, error)
 	GetAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) ([]AwardCategoryField, error)
+	GetAwardDepartmentsStats(ctx context.Context) ([]GetAwardDepartmentsStatsRow, error)
 	GetAwardTypeByID(ctx context.Context, id uuid.UUID) (AwardType, error)
 	GetAwardTypeCriteriaByID(ctx context.Context, id uuid.UUID) (AwardTypeCriterium, error)
 	GetAwardTypeVariantByID(ctx context.Context, id uuid.UUID) (AwardTypeVariant, error)
 	GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginatedParams) ([]Award, error)
+	GetDepartmentsByUserID(ctx context.Context, dollar_1 uuid.UUID) ([]Department, error)
 	GetDisciplineSemesterByID(ctx context.Context, id uuid.UUID) (DisciplineSemester, error)
 	GetDisciplineTopicByID(ctx context.Context, id uuid.UUID) (DisciplineTopic, error)
 	GetDisciplineTopicByLessonID(ctx context.Context, lessonID pgtype.UUID) (DisciplineTopic, error)
@@ -86,6 +89,7 @@ type Querier interface {
 	GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error)
 	GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatingPaginatedParams) ([]User, error)
 	LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error
+	RemoveUserFromAllDepartments(ctx context.Context, dollar_1 uuid.UUID) error
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
 	UpdateAwardCategory(ctx context.Context, arg UpdateAwardCategoryParams) (AwardCategory, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
@@ -103,6 +107,7 @@ type Querier interface {
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
 	UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error
+	UpsertDepartment(ctx context.Context, arg UpsertDepartmentParams) (uuid.UUID, error)
 	UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error)
 }
 

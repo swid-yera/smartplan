@@ -124,3 +124,32 @@ func (c *Client) GetGroupChildrenRawHTTP(ctx context.Context, accessToken, group
 	}
 	return out, nil
 }
+
+func (c *Client) GetUserGroupsRawHTTP(ctx context.Context, accessToken, userID string, first, max int) ([]GroupRepresentation, error) {
+	base, err := c.adminURL("/admin/realms/" + c.cfg.KeycloakRealm + "/users/" + userID + "/groups")
+	if err != nil {
+		return nil, err
+	}
+
+	u, _ := url.Parse(base)
+	q := u.Query()
+	q.Set("first", strconv.Itoa(first))
+	q.Set("max", strconv.Itoa(max))
+	q.Set("briefRepresentation", "false")
+	u.RawQuery = q.Encode()
+
+	body, code, err := c.doAdminGET(ctx, accessToken, u.String())
+	if err != nil {
+		return nil, err
+	}
+	if code < 200 || code >= 300 {
+		return nil, fmt.Errorf("admin user groups http %d: %s", code, string(body))
+	}
+
+	var out []GroupRepresentation
+	if err := json.Unmarshal(body, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal user groups: %w", err)
+	}
+
+	return out, nil
+}

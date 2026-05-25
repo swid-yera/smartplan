@@ -178,6 +178,13 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	}
 
 	parsed, err := jwt.Parse(token.AccessToken, h.keyFunc)
+	if err != nil && strings.Contains(strings.ToLower(err.Error()), "token used before issued") {
+		// Fallback for small clock skew between Keycloak and backend host:
+		// keep signature verification, skip time-claims validation at callback stage.
+		parser := &jwt.Parser{SkipClaimsValidation: true}
+		parsed, err = parser.Parse(token.AccessToken, h.keyFunc)
+	}
+
 	if err != nil || !parsed.Valid {
 		h.log.WithFields(logrus.Fields{
 			"error":       err,

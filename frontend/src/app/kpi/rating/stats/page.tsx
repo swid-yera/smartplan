@@ -11,7 +11,7 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } fro
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IUser } from '@types'
-import { ArrowLeft, BarChart3 } from 'lucide-react'
+import { ArrowLeft, BarChart3, Building2 } from 'lucide-react'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import localeDictionary from './locale.json'
 
@@ -67,6 +67,13 @@ export default function RatingStatsPage() {
 							<Link href='/kpi/rating/all'>
 								<BarChart3 className='mr-2 h-4 w-4' />
 								{t.allTeachers}
+							</Link>
+						</Button>
+
+						<Button asChild size='sm' variant='outline'>
+							<Link href='/kpi/rating/departments'>
+								<Building2 className='mr-2 h-4 w-4' />
+								{t.departments}
 							</Link>
 						</Button>
 					</div>

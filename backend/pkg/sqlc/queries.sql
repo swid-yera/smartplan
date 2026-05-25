@@ -7,10 +7,9 @@ INSERT INTO
         first_name,
         last_name,
         role,
-        phone,
-        department
+        phone
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 -- name: GetUserByKeycloakID :one
 SELECT * FROM users WHERE keycloak_id = $1;
@@ -24,7 +23,6 @@ SET
     last_name = $5,
     phone = $6,
     role = $7,
-    department = $8,
     updated_at = NOW()
 WHERE
     keycloak_id = $1;
@@ -60,21 +58,30 @@ SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 
 -- name: GetUsersPaginated :many
 SELECT *
-FROM users
+FROM users u
 WHERE
     (
         $1 = '' OR
         (
             $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND keycloak_id = $1::uuid
+            AND u.keycloak_id = $1::uuid
         ) OR
-        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(username) ILIKE '%' || $1 || '%' OR
-        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
-        email ILIKE '%' || $1 || '%'
+        COALESCE(u.first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(u.last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(u.username, '') ILIKE '%' || $1 || '%' OR
+        u.email ILIKE '%' || $1 || '%'
     )
-ORDER BY created_at DESC
+    AND (
+        sqlc.narg('department_id')::uuid IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM departments d
+            WHERE
+                d.keycloak_id = sqlc.narg('department_id')::uuid
+                AND u.keycloak_id = ANY(d.users)
+        )
+    )
+ORDER BY u.created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: GetUsersRatingPaginated :many
@@ -92,7 +99,6 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 ORDER BY total_points DESC, created_at DESC
@@ -113,26 +119,76 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     );
 
 -- name: CountUsersFiltered :one
 SELECT COUNT(*)
-FROM users
+FROM users u
 WHERE
     (
         $1 = '' OR
         (
             $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND keycloak_id = $1::uuid
+            AND u.keycloak_id = $1::uuid
         ) OR
-        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
-        email ILIKE '%' || $1 || '%'
+        COALESCE(u.first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(u.last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(u.username, '') ILIKE '%' || $1 || '%' OR
+        u.email ILIKE '%' || $1 || '%'
+    )
+    AND (
+        sqlc.narg('department_id')::uuid IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM departments d
+            WHERE
+                d.keycloak_id = sqlc.narg('department_id')::uuid
+                AND u.keycloak_id = ANY(d.users)
+        )
     );
+
+-- name: UpsertDepartment :one
+INSERT INTO
+    departments (keycloak_id, name)
+VALUES ($1, $2) ON CONFLICT (keycloak_id) DO
+UPDATE
+SET
+    name = EXCLUDED.name RETURNING keycloak_id;
+
+-- name: AddUserToDepartment :exec
+UPDATE departments
+SET
+    users = CASE
+        WHEN $2::uuid = ANY(users) THEN users
+        ELSE array_append(users, $2::uuid)
+    END
+WHERE
+    keycloak_id = $1;
+
+-- name: RemoveUserFromAllDepartments :exec
+UPDATE departments
+SET
+    users = array_remove(users, $1::uuid)
+WHERE
+    $1::uuid = ANY(users);
+
+-- name: GetDepartmentsByUserID :many
+SELECT * FROM departments WHERE $1::uuid = ANY(users);
+
+-- name: GetAwardDepartmentsStats :many
+SELECT
+    d.keycloak_id,
+    d.name,
+    COALESCE(SUM(u.total_points), 0)::INT AS total_points,
+    COALESCE(COUNT(u.keycloak_id), 0)::INT AS user_count
+FROM departments d
+LEFT JOIN LATERAL unnest(d.users) AS du(user_id) ON TRUE
+LEFT JOIN users u ON u.keycloak_id = du.user_id
+GROUP BY
+    d.keycloak_id,
+    d.name
+ORDER BY d.keycloak_id;
 
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;

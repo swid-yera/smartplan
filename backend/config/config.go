@@ -95,6 +95,7 @@ type KeycloakConfig struct {
 	CookieDomain     string
 	BaseURL          string
 	GroupID          string
+	TeacherGroupID   string
 	TeacherRoles     []string
 	AdminRoles       []string
 	MethodistRoles   []string
@@ -214,6 +215,7 @@ func LoadKeycloakConfig() *KeycloakConfig {
 		CookieDomain:     getEnv("COOKIE_DOMAIN", "localhost"),
 		BaseURL:          getEnv("BASE_URL", "http://localhost:8080"),
 		GroupID:          getEnv("GROUP_ID", ""),
+		TeacherGroupID:   getEnv("TEACHER_GROUP_ID", ""),
 		TeacherRoles:     splitEnv("TEACHER_ROLES"),
 		AdminRoles:       splitEnv("ADMIN_ROLES"),
 		MethodistRoles:   splitEnv("METHODIST_ROLES"),

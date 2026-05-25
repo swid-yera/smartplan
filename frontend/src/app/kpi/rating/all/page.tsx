@@ -24,7 +24,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, BarChart3, Search, UserIcon } from 'lucide-react'
+import { ArrowLeft, BarChart3, Building2, Search, UserIcon } from 'lucide-react'
 import localeDictionary from './locale.json'
 
 export default function RatingAllPage() {
@@ -73,14 +73,21 @@ export default function RatingAllPage() {
 							</Link>
 							</Button>
 
-							<Button asChild size='sm' variant='outline'>
+						<Button asChild size='sm' variant='outline'>
 							<Link href='/kpi/rating/stats'>
 								<BarChart3 className='mr-2 h-4 w-4' />
 								{t.stats}
 							</Link>
-							</Button>
-						</div>
+						</Button>
+
+						<Button asChild size='sm' variant='outline'>
+							<Link href='/kpi/rating/departments'>
+								<Building2 className='mr-2 h-4 w-4' />
+								{t.departments}
+							</Link>
+						</Button>
 					</div>
+				</div>
 
 					{/* SEARCH */}
 					<div className='flex gap-2 max-w-xl'>

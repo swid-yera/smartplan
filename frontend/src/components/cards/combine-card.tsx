@@ -3,6 +3,7 @@
 import type { FC } from 'react'
 import { useState } from 'react'
 
+import { getLocaleText } from '@helpers'
 import { cn } from '@lib'
 import {
 	Card,
@@ -16,6 +17,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import type { IAward, IReviewItem, IRup, ReviewEntityType } from '@types'
 import { BookOpen, CheckCircle } from 'lucide-react'
 
@@ -102,6 +104,27 @@ interface IReviewTableRow {
 }
 
 const ReviewTableRow: FC<IReviewTableRow> = ({ item, onSelect }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const teacherName =
+		[item.teacher?.firstName, item.teacher?.lastName].filter(Boolean).join(' ').trim() ||
+		item.teacher?.username ||
+		item.teacher?.email ||
+		'—'
+	const fallbackTitle = item.title && !item.title.includes('[object Object]') ? item.title : ''
+	const displayTitle = (() => {
+		if (item.type !== 'AWARD') return fallbackTitle || 'Без названия'
+
+		const award = item.raw as IAward
+		const variantName = getLocaleText(award.variant?.name, locale)
+		const criteriaName = getLocaleText(award.criteria?.name, locale)
+
+		if (variantName && criteriaName) return `${variantName} / ${criteriaName}`
+		if (variantName) return variantName
+		if (criteriaName) return criteriaName
+
+		return fallbackTitle || 'Без названия'
+	})()
+
 	return (
 		<TableRow
 			key={item.id}
@@ -110,12 +133,12 @@ const ReviewTableRow: FC<IReviewTableRow> = ({ item, onSelect }) => {
 		>
 			<ReviewTypeCell type={item.type} />
 
-			<TableCell className='font-medium py-5'>{item.title || 'Без названия'}</TableCell>
+			<TableCell className='font-medium py-5'>{displayTitle}</TableCell>
 
-			<TableCell>{item.teacher?.firstName ? `${item.teacher.firstName} ${item.teacher.lastName}` : '—'}</TableCell>
+			<TableCell>{teacherName}</TableCell>
 
 			<TableCell className='text-right text-xs text-muted-foreground'>
-				{new Date(item.updatedAt).toLocaleDateString('ru-RU', {
+				{new Date(item.updatedAt).toLocaleDateString(locale === 'kk' ? 'kk-KZ' : 'ru-RU', {
 					day: '2-digit',
 					month: '2-digit',
 					year: 'numeric',

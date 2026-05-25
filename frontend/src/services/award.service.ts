@@ -5,6 +5,7 @@ import type {
 	IAward,
 	ICreateAwardRequest,
 	ICreateTypesRequest,
+	IDepartmentRatingResponse,
 	IGetAllRequest,
 	IMessageResponse,
 	IPagination,
@@ -16,6 +17,24 @@ import type {
 import { getCurrentBackendLocale } from './service-locale'
 
 export class AwardService {
+	// get departments rating
+	getAllDepartmentsOptions = () => {
+		return queryOptions<IDepartmentRatingResponse[]>({
+			queryKey: ['awards-departments'],
+			queryFn: async () => {
+				const { data } = await api.get<IDepartmentRatingResponse[]>('/awards/departments', {
+					params: {
+						locale: getCurrentBackendLocale(),
+					},
+				})
+
+				if (!data) return []
+
+				return data
+			},
+		})
+	}
+
 	// get all awards
 	getAllOptions = ({
 		currentPage = 1,

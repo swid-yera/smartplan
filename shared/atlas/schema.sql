@@ -32,7 +32,6 @@ CREATE TABLE users (
     first_name TEXT,
     last_name TEXT,
     phone TEXT,
-    department TEXT,
 
     role user_role NOT NULL,
     rups TEXT[],
@@ -45,6 +44,18 @@ CREATE TABLE users (
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =====================
+-- DEPARTMENTS
+-- =====================
+CREATE TABLE departments (
+    keycloak_id UUID PRIMARY KEY,
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    users UUID[] NOT NULL DEFAULT '{}',
+    CONSTRAINT departments_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    )
 );
 
 -- =====================

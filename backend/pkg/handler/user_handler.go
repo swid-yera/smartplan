@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type UserHandler struct {
@@ -51,12 +52,24 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	}
 
 	search := strings.TrimSpace(c.Query("search"))
+	departmentID := pgtype.UUID{}
+	if raw := strings.TrimSpace(c.Query("departmentId")); raw != "" {
+		parsed, err := uuid.Parse(raw)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "invalid departmentId",
+			})
+			return
+		}
+		departmentID = pgtype.UUID{Bytes: parsed, Valid: true}
+	}
 
 	result, err := h.userService.GetUsersPaginated(
 		c.Request.Context(),
 		currentPage,
 		pageSize,
 		search,
+		departmentID,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

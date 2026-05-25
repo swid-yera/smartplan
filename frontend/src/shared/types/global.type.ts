@@ -1,4 +1,5 @@
 import type { IAward, ViolationEnum } from './award.type'
+import type { LocalizedText } from './locale.type'
 import type { IRup } from './rup.type'
 
 export enum StatusEnum {
@@ -41,6 +42,8 @@ export interface IUser {
 	firstName: string
 	lastName: string
 	phone: string
+	departments?: IUserDepartment[]
+	deparments?: IUserDepartment[]
 
 	rups?: IRup[]
 	totalPoints?: number
@@ -49,6 +52,11 @@ export interface IUser {
 
 	createdAt: string
 	updatedAt: string
+}
+
+export interface IUserDepartment {
+	keycloakId: string
+	name: LocalizedText
 }
 
 // resources

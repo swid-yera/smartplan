@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 
 import {
+	getLocaleText,
 	getUILocaleSection,
 	normalizeTotalPoints,
 	normalizeUserRole,
@@ -23,6 +24,10 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 	const me = useAuthStore((state) => state.user)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const isTeacher = me?.role !== RoleEnum.TEACHER
+	const departmentNames = (user.departments ?? user.deparments ?? [])
+		.map((department) => getLocaleText(department.name, locale))
+		.filter(Boolean)
+		.join(', ')
 
 	return (
 		<Card>
@@ -34,8 +39,9 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 					<CardTitle className='text-2xl capitalize'>
 						{user.firstName} {user.lastName}
 					</CardTitle>
-					<CardDescription>
+					<CardDescription className='flex flex-wrap items-center gap-2'>
 						<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role, locale)}</Badge>
+						{departmentNames ? <Badge variant='outline'>{departmentNames}</Badge> : null}
 					</CardDescription>
 				</div>
 

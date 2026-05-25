@@ -83,7 +83,7 @@ func main() {
 	)
 
 	// ---------- SERVICES ----------
-	authService := service.NewAuthService(rdb, authRepo, kcCfg, log)
+	authService := service.NewAuthService(rdb, authRepo, kcSyncClient, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
 
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, minioRepo, cryptoClient, log)
