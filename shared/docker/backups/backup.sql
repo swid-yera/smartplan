@@ -15,6 +15,29 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+-- Extract Russian part from mixed "kz / ru" strings.
+-- If delimiter is absent, keep original text.
+CREATE OR REPLACE FUNCTION public.ru_only_text(src text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+AS $$
+SELECT CASE
+    WHEN src IS NULL THEN NULL
+    WHEN position(' / ' in src) > 0 THEN btrim(split_part(src, ' / ', 2))
+    ELSE btrim(src)
+END
+$$;
+
+-- Build locale JSONB for Russian UI without duplicating text per locale.
+CREATE OR REPLACE FUNCTION public.ru_locale(src text)
+RETURNS jsonb
+LANGUAGE sql
+IMMUTABLE
+AS $$
+SELECT jsonb_build_object('ru', COALESCE(public.ru_only_text(src), ''), 'kz', '')
+$$;
+
 TRUNCATE TABLE
     public.lesson_progress,
     public.lessons,
@@ -124,8 +147,8 @@ INSERT INTO public.groups (keycloak_id, name, qualification, specialty)
 SELECT
     keycloak_id,
     name,
-    CASE WHEN qualification IS NULL THEN NULL ELSE jsonb_build_object('ru', qualification, 'kz', '') END,
-    CASE WHEN specialty IS NULL THEN NULL ELSE jsonb_build_object('ru', specialty, 'kz', '') END
+    CASE WHEN qualification IS NULL THEN NULL ELSE public.ru_locale(qualification) END,
+    CASE WHEN specialty IS NULL THEN NULL ELSE public.ru_locale(specialty) END
 FROM _old_groups;
 
 -- rup_resources (compatible as-is)
@@ -163,12 +186,12 @@ INSERT INTO public.rup_exploration_notes (
 )
 SELECT
     id,
-    CASE WHEN basis IS NULL THEN NULL ELSE jsonb_build_object('ru', basis, 'kz', '') END,
-    CASE WHEN goals IS NULL THEN NULL ELSE jsonb_build_object('ru', goals, 'kz', '') END,
-    CASE WHEN summary IS NULL THEN NULL ELSE jsonb_build_object('ru', summary, 'kz', '') END,
-    CASE WHEN competencies IS NULL THEN NULL ELSE jsonb_build_object('ru', competencies, 'kz', '') END,
-    CASE WHEN prerequisites IS NULL THEN NULL ELSE jsonb_build_object('ru', prerequisites, 'kz', '') END,
-    CASE WHEN postrequisites IS NULL THEN NULL ELSE jsonb_build_object('ru', postrequisites, 'kz', '') END,
+    CASE WHEN basis IS NULL THEN NULL ELSE public.ru_locale(basis) END,
+    CASE WHEN goals IS NULL THEN NULL ELSE public.ru_locale(goals) END,
+    CASE WHEN summary IS NULL THEN NULL ELSE public.ru_locale(summary) END,
+    CASE WHEN competencies IS NULL THEN NULL ELSE public.ru_locale(competencies) END,
+    CASE WHEN prerequisites IS NULL THEN NULL ELSE public.ru_locale(prerequisites) END,
+    CASE WHEN postrequisites IS NULL THEN NULL ELSE public.ru_locale(postrequisites) END,
     internet_resources,
     technical_resources
 FROM _old_rup_exploration_notes;
@@ -200,7 +223,7 @@ INSERT INTO public.discipline_topics (
 )
 SELECT
     id,
-    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    public.ru_locale(name),
     type, total_hours, theory_hours, practice_hours, individual_hours, srsp_hours, srs_hours, lesson_id
 FROM _old_discipline_topics;
 
@@ -220,7 +243,7 @@ a3f0ff5f-14a5-429b-82fb-cfe959a471cc	РО1.1 Основы программиро
 INSERT INTO public.rup_disciplines (id, name, total_hours, semesters, topics)
 SELECT
     id,
-    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    public.ru_locale(name),
     total_hours, semesters, topics
 FROM _old_rup_disciplines;
 
@@ -254,7 +277,7 @@ INSERT INTO public.rups (
 )
 SELECT
     id,
-    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    public.ru_locale(name),
     status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at
 FROM _old_rups;
 
@@ -283,9 +306,9 @@ COPY _old_award_categories (id, award_types, name, icon, description, created_at
 INSERT INTO public.award_categories (id, award_types, name, icon, description, created_at, updated_at)
 SELECT
     id, award_types,
-    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    public.ru_locale(name),
     icon,
-    jsonb_build_object('ru', COALESCE(description, ''), 'kz', ''),
+    public.ru_locale(description),
     created_at, updated_at
 FROM _old_award_categories;
 
@@ -372,10 +395,10 @@ INSERT INTO public.award_category_fields (
 )
 SELECT
     id, category_id, key,
-    jsonb_build_object('ru', COALESCE(label, ''), 'kz', ''),
+    public.ru_locale(label),
     type, required,
-    CASE WHEN placeholder IS NULL THEN NULL ELSE jsonb_build_object('ru', placeholder, 'kz', '') END,
-    CASE WHEN help_text IS NULL THEN NULL ELSE jsonb_build_object('ru', help_text, 'kz', '') END,
+    CASE WHEN placeholder IS NULL THEN NULL ELSE public.ru_locale(placeholder) END,
+    CASE WHEN help_text IS NULL THEN NULL ELSE public.ru_locale(help_text) END,
     options, validation, sort_order, created_at, updated_at
 FROM _old_award_category_fields;
 
@@ -482,7 +505,7 @@ eaab6486-ca32-4fb8-905b-bc469d5a2895	Іс-шараларды медиялық с
 INSERT INTO public.award_type_criteria (id, name, points, method)
 SELECT
     id,
-    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    public.ru_locale(name),
     points, method
 FROM _old_award_type_criteria;
 
@@ -520,8 +543,8 @@ f2fd6dcf-723b-4c07-ad3d-a9849eecdd8e	Еңбек шартының талапта�
 INSERT INTO public.award_type_variants (id, name, description, criteria, bonus_criteria)
 SELECT
     id,
-    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
-    CASE WHEN description IS NULL THEN NULL ELSE jsonb_build_object('ru', description, 'kz', '') END,
+    public.ru_locale(name),
+    CASE WHEN description IS NULL THEN NULL ELSE public.ru_locale(description) END,
     criteria, bonus_criteria
 FROM _old_award_type_variants;
 
@@ -551,7 +574,7 @@ d6c9b76a-ec70-4829-92b6-8da1b8725cba	Ескерту / Примечание: ең
 INSERT INTO public.award_types (id, name, variants)
 SELECT
     id,
-    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    public.ru_locale(name),
     variants
 FROM _old_award_types;
 
@@ -605,13 +628,13 @@ INSERT INTO public.lessons (
 )
 SELECT
     id,
-    jsonb_build_object('ru', COALESCE(rup_name, ''), 'kz', ''),
-    CASE WHEN discipline_name IS NULL THEN NULL ELSE jsonb_build_object('ru', discipline_name, 'kz', '') END,
-    CASE WHEN topic_name IS NULL THEN NULL ELSE jsonb_build_object('ru', topic_name, 'kz', '') END,
+    public.ru_locale(rup_name),
+    CASE WHEN discipline_name IS NULL THEN NULL ELSE public.ru_locale(discipline_name) END,
+    CASE WHEN topic_name IS NULL THEN NULL ELSE public.ru_locale(topic_name) END,
     teacher, event_date, group_id, type,
-    CASE WHEN goals IS NULL THEN NULL ELSE jsonb_build_object('ru', goals, 'kz', '') END,
-    CASE WHEN tasks IS NULL THEN NULL ELSE jsonb_build_object('ru', tasks, 'kz', '') END,
-    CASE WHEN expected IS NULL THEN NULL ELSE jsonb_build_object('ru', expected, 'kz', '') END,
+    CASE WHEN goals IS NULL THEN NULL ELSE public.ru_locale(goals) END,
+    CASE WHEN tasks IS NULL THEN NULL ELSE public.ru_locale(tasks) END,
+    CASE WHEN expected IS NULL THEN NULL ELSE public.ru_locale(expected) END,
     internet_resources, technical_resources, created_at, updated_at, file_url, plan_number
 FROM _old_lessons;
 
@@ -637,7 +660,7 @@ c2fd0be7-5a26-4927-b6d3-db4b824ba2db	c8cec635-aa93-4648-9a6a-f23b9090190e	Зак
 INSERT INTO public.lesson_progress (id, lesson_id, name, first_time, second_time, third_time, content)
 SELECT
     id, lesson_id,
-    jsonb_build_object('ru', COALESCE(name, ''), 'kz', ''),
+    public.ru_locale(name),
     first_time, second_time, third_time, content
 FROM _old_lesson_progress;
 
