@@ -15,27 +15,78 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
--- Extract Russian part from mixed "kz / ru" strings.
--- If delimiter is absent, keep original text.
+-- Extract locale-specific text from mixed "kz / ru" strings.
+-- Works as a best-effort parser for repeated bilingual fragments.
+CREATE OR REPLACE FUNCTION public.locale_only_text(src text, lang text)
+RETURNS text
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+    current_text text;
+    next_text text;
+BEGIN
+    IF src IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    current_text := btrim(src);
+
+    LOOP
+        IF lang = 'ru' THEN
+            next_text := regexp_replace(
+                current_text,
+                '([^/;\n—()]+?)\s*/\s*([^/;\n—()]+)',
+                '\2',
+                'g'
+            );
+        ELSE
+            next_text := regexp_replace(
+                current_text,
+                '([^/;\n—()]+?)\s*/\s*([^/;\n—()]+)',
+                '\1',
+                'g'
+            );
+        END IF;
+
+        EXIT WHEN next_text = current_text;
+        current_text := next_text;
+    END LOOP;
+
+    current_text := regexp_replace(current_text, '\s+', ' ', 'g');
+    current_text := regexp_replace(current_text, '\s+([,.;:])', '\1', 'g');
+    current_text := regexp_replace(current_text, '\s*—\s*', ' — ', 'g');
+
+    RETURN btrim(current_text);
+END
+$$;
+
 CREATE OR REPLACE FUNCTION public.ru_only_text(src text)
 RETURNS text
 LANGUAGE sql
 IMMUTABLE
 AS $$
-SELECT CASE
-    WHEN src IS NULL THEN NULL
-    WHEN position(' / ' in src) > 0 THEN btrim(split_part(src, ' / ', 2))
-    ELSE btrim(src)
-END
+SELECT public.locale_only_text(src, 'ru')
 $$;
 
--- Build locale JSONB for Russian UI without duplicating text per locale.
+CREATE OR REPLACE FUNCTION public.kz_only_text(src text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+AS $$
+SELECT public.locale_only_text(src, 'kz')
+$$;
+
+-- Build locale JSONB so language switch shows localized content.
 CREATE OR REPLACE FUNCTION public.ru_locale(src text)
 RETURNS jsonb
 LANGUAGE sql
 IMMUTABLE
 AS $$
-SELECT jsonb_build_object('ru', COALESCE(public.ru_only_text(src), ''), 'kz', '')
+SELECT jsonb_build_object(
+    'ru', COALESCE(public.ru_only_text(src), ''),
+    'kz', COALESCE(public.kz_only_text(src), '')
+)
 $$;
 
 TRUNCATE TABLE
