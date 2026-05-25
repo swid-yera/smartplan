@@ -21,7 +21,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { BarChart3, Crown, Medal, Users } from 'lucide-react'
+import { BarChart3, Building2, Crown, Medal, Users } from 'lucide-react'
 import localeDictionary from './locale.json'
 
 const placeStyles = (index: number) => {
@@ -72,6 +72,13 @@ export default function RatingPage() {
 							<Link href='/kpi/rating/all'>
 								<Users className='mr-2 h-4 w-4' />
 								{t.allTeachers}
+							</Link>
+						</Button>
+
+						<Button asChild size='sm' variant='outline'>
+							<Link href='/kpi/rating/departments'>
+								<Building2 className='mr-2 h-4 w-4' />
+								{t.departments}
 							</Link>
 						</Button>
 

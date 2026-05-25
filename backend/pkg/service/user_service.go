@@ -4,23 +4,30 @@ import (
 	"context"
 	"math"
 
+	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 )
 
+type UserDepartment struct {
+	KeycloakID uuid.UUID               `json:"keycloakId"`
+	Name       localization.LocaleText `json:"name"`
+}
+
 type User struct {
-	KeycloakID  uuid.UUID `json:"keycloakId"`
-	Email       string    `json:"email"`
-	Username    string    `json:"username"`
-	FirstName   string    `json:"firstName"`
-	LastName    string    `json:"lastName"`
-	Role        string    `json:"role"`
-	Phone       string    `json:"phone"`
-	Department  string    `json:"department"`
-	TotalPoints int32     `json:"totalPoints"`
+	KeycloakID  uuid.UUID        `json:"keycloakId"`
+	Email       string           `json:"email"`
+	Username    string           `json:"username"`
+	FirstName   string           `json:"firstName"`
+	LastName    string           `json:"lastName"`
+	Role        string           `json:"role"`
+	Phone       string           `json:"phone"`
+	Departments []UserDepartment `json:"departments"`
+	TotalPoints int32            `json:"totalPoints"`
 }
 
 type PaginationMeta struct {
@@ -39,7 +46,7 @@ type UserService interface {
 	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error)
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
-	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string) (*PaginatedUsersResponse, error)
+	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
 	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string) (*PaginatedUsersResponse, error)
 	CountUsers(ctx context.Context) (int64, error)
 }
@@ -54,7 +61,6 @@ func NewUserService(repo repository.UsersRepository, redisClient *redis.Client) 
 }
 
 func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error) {
-
 	sessionKey := "session:" + sessionID.String()
 
 	keycloakIDStr, err := s.redis.HGet(ctx, sessionKey, "keycloak_id").Result()
@@ -72,11 +78,10 @@ func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUI
 		return nil, err
 	}
 
-	return toServiceUser(dbUser), nil
+	return s.toServiceUser(ctx, dbUser)
 }
 
 func (s *userService) GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error) {
-
 	sessionKey := "session:" + sessionID.String()
 
 	keycloakIDStr, err := s.redis.HGet(ctx, sessionKey, "keycloak_id").Result()
@@ -96,8 +101,8 @@ func (s *userService) GetUsersPaginated(
 	currentPage int,
 	pageSize int,
 	search string,
+	departmentID pgtype.UUID,
 ) (*PaginatedUsersResponse, error) {
-
 	if currentPage < 1 {
 		currentPage = 1
 	}
@@ -107,7 +112,7 @@ func (s *userService) GetUsersPaginated(
 
 	offset := (currentPage - 1) * pageSize
 
-	total, err := s.repo.CountUsersFiltered(ctx, search)
+	total, err := s.repo.CountUsersFiltered(ctx, search, departmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -117,14 +122,19 @@ func (s *userService) GetUsersPaginated(
 		int32(pageSize),
 		int32(offset),
 		search,
+		departmentID,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	users := make([]*User, 0, len(dbUsers))
-	for _, u := range dbUsers {
-		users = append(users, toServiceUser(&u))
+	for _, dbUser := range dbUsers {
+		mapped, mapErr := s.toServiceUser(ctx, &dbUser)
+		if mapErr != nil {
+			return nil, mapErr
+		}
+		users = append(users, mapped)
 	}
 
 	pages := int(math.Ceil(float64(total) / float64(pageSize)))
@@ -146,7 +156,6 @@ func (s *userService) GetUsersRatingPaginated(
 	pageSize int,
 	search string,
 ) (*PaginatedUsersResponse, error) {
-
 	if currentPage < 1 {
 		currentPage = 1
 	}
@@ -172,8 +181,12 @@ func (s *userService) GetUsersRatingPaginated(
 	}
 
 	users := make([]*User, 0, len(dbUsers))
-	for _, u := range dbUsers {
-		users = append(users, toServiceUser(&u))
+	for _, dbUser := range dbUsers {
+		mapped, mapErr := s.toServiceUser(ctx, &dbUser)
+		if mapErr != nil {
+			return nil, mapErr
+		}
+		users = append(users, mapped)
 	}
 
 	pages := int(math.Ceil(float64(total) / float64(pageSize)))
@@ -189,36 +202,45 @@ func (s *userService) GetUsersRatingPaginated(
 	}, nil
 }
 
-func toServiceUser(u *storage.User) *User {
+func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*User, error) {
 	firstName := ""
 	lastName := ""
 	phone := ""
-	department := ""
 
-	if u.FirstName.Valid {
-		firstName = u.FirstName.String
+	if user.FirstName.Valid {
+		firstName = user.FirstName.String
 	}
-	if u.LastName.Valid {
-		lastName = u.LastName.String
+	if user.LastName.Valid {
+		lastName = user.LastName.String
 	}
-	if u.Phone.Valid {
-		phone = u.Phone.String
+	if user.Phone.Valid {
+		phone = user.Phone.String
 	}
-	if u.Department.Valid {
-		department = u.Department.String
+
+	departments, err := s.repo.GetDepartmentsByUserID(ctx, user.KeycloakID)
+	if err != nil {
+		return nil, err
+	}
+
+	mappedDepartments := make([]UserDepartment, 0, len(departments))
+	for _, department := range departments {
+		mappedDepartments = append(mappedDepartments, UserDepartment{
+			KeycloakID: department.KeycloakID,
+			Name:       localization.LocaleTextFromJSONB(department.Name),
+		})
 	}
 
 	return &User{
-		KeycloakID:  u.KeycloakID,
-		Email:       u.Email,
-		Username:    u.Username,
+		KeycloakID:  user.KeycloakID,
+		Email:       user.Email,
+		Username:    user.Username,
 		FirstName:   firstName,
 		LastName:    lastName,
-		Role:        string(u.Role),
+		Role:        string(user.Role),
 		Phone:       phone,
-		Department:  department,
-		TotalPoints: u.TotalPoints,
-	}
+		Departments: mappedDepartments,
+		TotalPoints: user.TotalPoints,
+	}, nil
 }
 
 func (s *userService) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error) {
@@ -227,9 +249,9 @@ func (s *userService) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.U
 		return nil, err
 	}
 
-	return toServiceUser(dbUser), nil
+	return s.toServiceUser(ctx, dbUser)
 }
 
-func (r *userService) CountUsers(ctx context.Context) (int64, error) {
-	return r.repo.CountUsers(ctx)
+func (s *userService) CountUsers(ctx context.Context) (int64, error) {
+	return s.repo.CountUsers(ctx)
 }

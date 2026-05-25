@@ -58,6 +58,13 @@ type PaginatedAwardsResponse struct {
 	Meta PaginationMeta  `json:"meta"`
 }
 
+type AwardDepartmentResponse struct {
+	KeycloakID  uuid.UUID               `json:"keycloakId"`
+	Name        localization.LocaleText `json:"name"`
+	TotalPoints int32                   `json:"totalPoints"`
+	UserCount   int32                   `json:"userCount"`
+}
+
 type SelectedVariantResponse struct {
 	ID          uuid.UUID                `json:"id"`
 	Name        localization.LocaleText  `json:"name"`
@@ -816,4 +823,23 @@ func (s *AwardService) GetAwardPaginated(
 			PageSize:    pageSize,
 		},
 	}, nil
+}
+
+func (s *AwardService) GetAwardDepartmentsStats(ctx context.Context) ([]AwardDepartmentResponse, error) {
+	rows, err := s.repo.GetAwardDepartmentsStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]AwardDepartmentResponse, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, AwardDepartmentResponse{
+			KeycloakID:  row.KeycloakID,
+			Name:        localization.LocaleTextFromJSONB(row.Name),
+			TotalPoints: row.TotalPoints,
+			UserCount:   row.UserCount,
+		})
+	}
+
+	return result, nil
 }

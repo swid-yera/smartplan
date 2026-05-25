@@ -9,7 +9,9 @@ import (
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/helpers"
+	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
+	kcservice "eduplan/backend/pkg/service/keycloak"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
@@ -27,30 +29,29 @@ type AuthService interface {
 type authService struct {
 	redis *redis.Client
 	users repository.AuthRepository
+	kc    *kcservice.Client
 	cfg   *config.KeycloakConfig
 	log   *logrus.Entry
 }
 
-func NewAuthService(redis *redis.Client, users repository.AuthRepository, cfg *config.KeycloakConfig, log *logrus.Logger) AuthService {
+func NewAuthService(redis *redis.Client, users repository.AuthRepository, kc *kcservice.Client, cfg *config.KeycloakConfig, log *logrus.Logger) AuthService {
 	return &authService{
 		redis: redis,
 		users: users,
+		kc:    kc,
 		cfg:   cfg,
 		log:   log.WithField("service", "AuthService"),
 	}
 }
 
-// HandleCallback создаёт пользователя (если нужно) и сессию в Redis
+// HandleCallback создает пользователя (если нужно), синхронизирует department membership и создает сессию в Redis.
 func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, accessToken string, idToken string, claims jwt.MapClaims) (uuid.UUID, error) {
-
 	email, _ := claims["email"].(string)
 	username, _ := claims["preferred_username"].(string)
 	firstName, _ := claims["given_name"].(string)
 	lastName, _ := claims["family_name"].(string)
 	phone, _ := claims["phone"].(string)
-	department := extractStringClaim(claims, "department", "department_name", "org_department")
 
-	// new
 	realmAccess, ok := claims["realm_access"].(map[string]interface{})
 	if !ok {
 		return uuid.Nil, fmt.Errorf("realm_access missing in token claims")
@@ -78,37 +79,39 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 		"role":        role,
 	}).Info("Resolved user role")
 
-	// 1. Попытка создать пользователя
-	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone, department)
-
+	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
 	if err != nil {
-		// Если пользователь уже существует (Unique Violation)
 		if isUniqueViolation(err) {
-			// 2. Обновляем профиль существующего пользователя
-			err = s.users.UpdateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone, department)
-
+			err = s.users.UpdateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
 			if err != nil {
 				s.log.WithError(err).Error("Failed to update existing user profile")
 				return uuid.Nil, err
 			}
 
-			// 3. Получаем актуальные данные пользователя после обновления
 			user, err = s.users.GetUserByKeycloakID(ctx, keycloakID)
 			if err != nil {
 				s.log.WithError(err).Error("Failed to get existing user after update")
 				return uuid.Nil, err
 			}
 		} else {
-			// Если ошибка не связана с уникальностью, прерываем выполнение
 			s.log.WithError(err).Error("Failed to create user")
 			return uuid.Nil, err
 		}
 	}
 
-	// Чтобы Go не ругался на неиспользуемую переменную
 	_ = user
 
-	// 2. Создаём сессию в Redis
+	departments, err := s.resolveUserDepartments(ctx, keycloakID, claims)
+	if err != nil {
+		s.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Failed to resolve user departments")
+		return uuid.Nil, err
+	}
+
+	if err := s.users.SyncUserDepartments(ctx, keycloakID, departments); err != nil {
+		s.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Failed to sync user departments")
+		return uuid.Nil, err
+	}
+
 	sessionID := uuid.New()
 	sessionKey := "session:" + sessionID.String()
 	userSessionsKey := "user_sessions:" + keycloakID.String()
@@ -131,6 +134,286 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	return sessionID, nil
 }
 
+func (s *authService) resolveUserDepartments(ctx context.Context, keycloakID uuid.UUID, claims jwt.MapClaims) ([]repository.DepartmentMembershipInput, error) {
+	if departments, ok := s.extractDepartmentsFromClaims(claims); ok {
+		return departments, nil
+	}
+
+	return s.extractDepartmentsFromKeycloak(ctx, keycloakID)
+}
+
+func (s *authService) extractDepartmentsFromClaims(claims jwt.MapClaims) ([]repository.DepartmentMembershipInput, bool) {
+	teacherGroupID := strings.TrimSpace(s.cfg.TeacherGroupID)
+	if teacherGroupID == "" {
+		return nil, false
+	}
+
+	raw, exists := claims["groups"]
+	if !exists || raw == nil {
+		return nil, false
+	}
+
+	groups, ok := parseClaimGroups(raw)
+	if !ok || len(groups) == 0 {
+		return nil, false
+	}
+
+	root := findGroupByID(groups, teacherGroupID)
+	if root == nil || len(root.SubGroups) == 0 {
+		return nil, false
+	}
+
+	departments := mapGroupsToDepartments(root.SubGroups)
+	if len(departments) == 0 {
+		return nil, false
+	}
+
+	return departments, true
+}
+
+func (s *authService) extractDepartmentsFromKeycloak(ctx context.Context, keycloakID uuid.UUID) ([]repository.DepartmentMembershipInput, error) {
+	teacherGroupID := strings.TrimSpace(s.cfg.TeacherGroupID)
+	if teacherGroupID == "" {
+		return nil, nil
+	}
+
+	jwtToken, err := s.kc.LoginServiceAccount(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("keycloak login service account: %w", err)
+	}
+
+	teacherRoot, err := s.kc.GetGroupByIDRawHTTP(ctx, jwtToken.AccessToken, teacherGroupID)
+	if err != nil {
+		return nil, fmt.Errorf("keycloak get teacher root group: %w", err)
+	}
+
+	if len(teacherRoot.SubGroups) == 0 {
+		subGroups, childrenErr := s.kc.GetGroupChildrenRawHTTP(ctx, jwtToken.AccessToken, teacherGroupID, 0, 5000)
+		if childrenErr != nil {
+			return nil, fmt.Errorf("keycloak get teacher root children: %w", childrenErr)
+		}
+		teacherRoot.SubGroups = subGroups
+	}
+
+	if len(teacherRoot.SubGroups) == 0 {
+		return nil, nil
+	}
+
+	userGroups, err := s.kc.GetUserGroupsRawHTTP(ctx, jwtToken.AccessToken, keycloakID.String(), 0, 5000)
+	if err != nil {
+		return nil, fmt.Errorf("keycloak get user groups: %w", err)
+	}
+
+	memberIDs := make(map[string]struct{}, len(userGroups))
+	memberPaths := make([]string, 0, len(userGroups))
+	for _, group := range userGroups {
+		id := strings.TrimSpace(group.ID)
+		if id != "" {
+			memberIDs[id] = struct{}{}
+		}
+		path := strings.TrimSpace(group.Path)
+		if path != "" {
+			memberPaths = append(memberPaths, path)
+		}
+	}
+
+	departments := make([]repository.DepartmentMembershipInput, 0, len(teacherRoot.SubGroups))
+	for _, group := range teacherRoot.SubGroups {
+		if !isDepartmentMember(group, memberIDs, memberPaths) {
+			continue
+		}
+
+		department, ok := mapGroupToDepartment(group)
+		if !ok {
+			continue
+		}
+
+		departments = append(departments, department)
+	}
+
+	return departments, nil
+}
+
+func mapGroupsToDepartments(groups []kcservice.GroupRepresentation) []repository.DepartmentMembershipInput {
+	departments := make([]repository.DepartmentMembershipInput, 0, len(groups))
+	for _, group := range groups {
+		department, ok := mapGroupToDepartment(group)
+		if !ok {
+			continue
+		}
+		departments = append(departments, department)
+	}
+	return departments
+}
+
+func mapGroupToDepartment(group kcservice.GroupRepresentation) (repository.DepartmentMembershipInput, bool) {
+	id := strings.TrimSpace(group.ID)
+	if id == "" {
+		return repository.DepartmentMembershipInput{}, false
+	}
+
+	parsedID, err := uuid.Parse(id)
+	if err != nil {
+		return repository.DepartmentMembershipInput{}, false
+	}
+
+	name := strings.TrimSpace(group.Name)
+	ru := strings.TrimSpace(firstAttr(group.Attributes, "description"))
+	kz := strings.TrimSpace(firstAttr(group.Attributes, "mail"))
+	if ru == "" {
+		ru = name
+	}
+	if kz == "" {
+		kz = name
+	}
+
+	return repository.DepartmentMembershipInput{
+		KeycloakID: parsedID,
+		Name:       localization.NewLocaleText(ru, kz).ToJSONB(),
+	}, true
+}
+
+func isDepartmentMember(department kcservice.GroupRepresentation, memberIDs map[string]struct{}, memberPaths []string) bool {
+	if id := strings.TrimSpace(department.ID); id != "" {
+		if _, ok := memberIDs[id]; ok {
+			return true
+		}
+	}
+
+	departmentPath := strings.TrimSpace(department.Path)
+	if departmentPath == "" {
+		return false
+	}
+
+	prefix := departmentPath + "/"
+	for _, memberPath := range memberPaths {
+		if memberPath == departmentPath || strings.HasPrefix(memberPath, prefix) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func findGroupByID(groups []kcservice.GroupRepresentation, id string) *kcservice.GroupRepresentation {
+	for i := range groups {
+		if groups[i].ID == id {
+			return &groups[i]
+		}
+		if child := findGroupByID(groups[i].SubGroups, id); child != nil {
+			return child
+		}
+	}
+	return nil
+}
+
+func parseClaimGroups(raw interface{}) ([]kcservice.GroupRepresentation, bool) {
+	items, ok := raw.([]interface{})
+	if !ok {
+		return nil, false
+	}
+
+	groups := make([]kcservice.GroupRepresentation, 0, len(items))
+	for _, item := range items {
+		group, parsed := parseClaimGroup(item)
+		if parsed {
+			groups = append(groups, group)
+		}
+	}
+
+	return groups, len(groups) > 0
+}
+
+func parseClaimGroup(raw interface{}) (kcservice.GroupRepresentation, bool) {
+	payload, ok := raw.(map[string]interface{})
+	if !ok {
+		return kcservice.GroupRepresentation{}, false
+	}
+
+	group := kcservice.GroupRepresentation{}
+	if v, ok := payload["id"].(string); ok {
+		group.ID = v
+	}
+	if v, ok := payload["name"].(string); ok {
+		group.Name = v
+	}
+	if v, ok := payload["path"].(string); ok {
+		group.Path = v
+	}
+
+	group.Attributes = parseClaimGroupAttributes(payload["attributes"])
+	group.SubGroups = parseClaimSubGroups(payload)
+
+	if strings.TrimSpace(group.ID) == "" && strings.TrimSpace(group.Name) == "" && len(group.SubGroups) == 0 {
+		return kcservice.GroupRepresentation{}, false
+	}
+
+	return group, true
+}
+
+func parseClaimSubGroups(payload map[string]interface{}) []kcservice.GroupRepresentation {
+	candidates := []string{"subGroups", "subgroups", "children"}
+	for _, key := range candidates {
+		raw, ok := payload[key]
+		if !ok || raw == nil {
+			continue
+		}
+
+		items, ok := raw.([]interface{})
+		if !ok {
+			continue
+		}
+
+		subGroups := make([]kcservice.GroupRepresentation, 0, len(items))
+		for _, item := range items {
+			group, parsed := parseClaimGroup(item)
+			if parsed {
+				subGroups = append(subGroups, group)
+			}
+		}
+		return subGroups
+	}
+
+	return nil
+}
+
+func parseClaimGroupAttributes(raw interface{}) map[string][]string {
+	attrs := map[string][]string{}
+	payload, ok := raw.(map[string]interface{})
+	if !ok {
+		return attrs
+	}
+
+	for key, value := range payload {
+		switch v := value.(type) {
+		case string:
+			attrs[key] = []string{v}
+		case []string:
+			attrs[key] = append([]string(nil), v...)
+		case []interface{}:
+			items := make([]string, 0, len(v))
+			for _, item := range v {
+				if s, ok := item.(string); ok {
+					items = append(items, s)
+				}
+			}
+			if len(items) > 0 {
+				attrs[key] = items
+			}
+		}
+	}
+
+	return attrs
+}
+
+func firstAttr(attrs map[string][]string, key string) string {
+	values, ok := attrs[key]
+	if !ok || len(values) == 0 {
+		return ""
+	}
+	return values[0]
+}
+
 // Logout удаляет одну сессию по sessionID
 func (s *authService) Logout(ctx context.Context, sessionID string) error {
 	sessionKey := "session:" + sessionID
@@ -140,7 +423,6 @@ func (s *authService) Logout(ctx context.Context, sessionID string) error {
 		if !errors.Is(err, redis.Nil) {
 			s.log.WithError(err).WithField("session_id", sessionID).Error("Failed to get keycloak_id from session in Redis")
 		}
-		// if redis.Nil, session is already gone, which is fine for logout.
 		return err
 	}
 
@@ -152,7 +434,7 @@ func (s *authService) Logout(ctx context.Context, sessionID string) error {
 	if err != nil {
 		s.log.WithError(err).WithField("session_id", sessionID).Error("Redis transaction failed during logout")
 	}
-	return err // return original error if any
+	return err
 }
 
 // InvalidateAllSessions удаляет все сессии пользователя
@@ -179,7 +461,7 @@ func (s *authService) InvalidateAllSessions(ctx context.Context, keycloakID uuid
 	if err != nil {
 		s.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Redis transaction failed during InvalidateAllSessions")
 	}
-	return err // return original error if any
+	return err
 }
 
 // isUniqueViolation проверяет ошибку Postgres на уникальное ограничение
@@ -189,30 +471,4 @@ func isUniqueViolation(err error) bool {
 		return pgErr.Code == "23505"
 	}
 	return false
-}
-
-func extractStringClaim(claims jwt.MapClaims, keys ...string) string {
-	for _, key := range keys {
-		raw, exists := claims[key]
-		if !exists || raw == nil {
-			continue
-		}
-		switch v := raw.(type) {
-		case string:
-			v = strings.TrimSpace(v)
-			if v != "" {
-				return v
-			}
-		case []interface{}:
-			if len(v) > 0 {
-				if s, ok := v[0].(string); ok {
-					s = strings.TrimSpace(s)
-					if s != "" {
-						return s
-					}
-				}
-			}
-		}
-	}
-	return ""
 }

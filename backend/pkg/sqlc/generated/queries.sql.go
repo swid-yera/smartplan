@@ -12,6 +12,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addUserToDepartment = `-- name: AddUserToDepartment :exec
+UPDATE departments
+SET
+    users = CASE
+        WHEN $2::uuid = ANY(users) THEN users
+        ELSE array_append(users, $2::uuid)
+    END
+WHERE
+    keycloak_id = $1
+`
+
+type AddUserToDepartmentParams struct {
+	KeycloakID uuid.UUID `json:"keycloak_id"`
+	Column2    uuid.UUID `json:"column_2"`
+}
+
+func (q *Queries) AddUserToDepartment(ctx context.Context, arg AddUserToDepartmentParams) error {
+	_, err := q.db.Exec(ctx, addUserToDepartment, arg.KeycloakID, arg.Column2)
+	return err
+}
+
 const countAwards = `-- name: CountAwards :one
 SELECT COUNT(*) FROM awards
 `
@@ -160,24 +181,38 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 
 const countUsersFiltered = `-- name: CountUsersFiltered :one
 SELECT COUNT(*)
-FROM users
+FROM users u
 WHERE
     (
         $1 = '' OR
         (
             $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND keycloak_id = $1::uuid
+            AND u.keycloak_id = $1::uuid
         ) OR
-        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
-        email ILIKE '%' || $1 || '%'
+        COALESCE(u.first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(u.last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(u.username, '') ILIKE '%' || $1 || '%' OR
+        u.email ILIKE '%' || $1 || '%'
+    )
+    AND (
+        $2::uuid IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM departments d
+            WHERE
+                d.keycloak_id = $2::uuid
+                AND u.keycloak_id = ANY(d.users)
+        )
     )
 `
 
-func (q *Queries) CountUsersFiltered(ctx context.Context, dollar_1 interface{}) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsersFiltered, dollar_1)
+type CountUsersFilteredParams struct {
+	Column1      interface{} `json:"column_1"`
+	DepartmentID pgtype.UUID `json:"department_id"`
+}
+
+func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsersFiltered, arg.Column1, arg.DepartmentID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -198,7 +233,6 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 `
@@ -887,10 +921,9 @@ INSERT INTO
         first_name,
         last_name,
         role,
-        phone,
-        department
+        phone
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -901,7 +934,6 @@ type CreateUserParams struct {
 	LastName   pgtype.Text `json:"last_name"`
 	Role       UserRole    `json:"role"`
 	Phone      pgtype.Text `json:"phone"`
-	Department pgtype.Text `json:"department"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -913,7 +945,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.LastName,
 		arg.Role,
 		arg.Phone,
-		arg.Department,
 	)
 	var i User
 	err := row.Scan(
@@ -923,7 +954,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
-		&i.Department,
 		&i.Role,
 		&i.Rups,
 		&i.TotalPoints,
@@ -1360,7 +1390,7 @@ func (q *Queries) GetAllRups(ctx context.Context, arg GetAllRupsParams) ([]Rup, 
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type GetAllUsersParams struct {
@@ -1384,7 +1414,6 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 			&i.FirstName,
 			&i.LastName,
 			&i.Phone,
-			&i.Department,
 			&i.Role,
 			&i.Rups,
 			&i.TotalPoints,
@@ -1480,6 +1509,53 @@ func (q *Queries) GetAwardCategoryFieldsByCategoryID(ctx context.Context, catego
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAwardDepartmentsStats = `-- name: GetAwardDepartmentsStats :many
+SELECT
+    d.keycloak_id,
+    d.name,
+    COALESCE(SUM(u.total_points), 0)::INT AS total_points,
+    COALESCE(COUNT(u.keycloak_id), 0)::INT AS user_count
+FROM departments d
+LEFT JOIN LATERAL unnest(d.users) AS du(user_id) ON TRUE
+LEFT JOIN users u ON u.keycloak_id = du.user_id
+GROUP BY
+    d.keycloak_id,
+    d.name
+ORDER BY d.keycloak_id
+`
+
+type GetAwardDepartmentsStatsRow struct {
+	KeycloakID  uuid.UUID `json:"keycloak_id"`
+	Name        []byte    `json:"name"`
+	TotalPoints int32     `json:"total_points"`
+	UserCount   int32     `json:"user_count"`
+}
+
+func (q *Queries) GetAwardDepartmentsStats(ctx context.Context) ([]GetAwardDepartmentsStatsRow, error) {
+	rows, err := q.db.Query(ctx, getAwardDepartmentsStats)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAwardDepartmentsStatsRow
+	for rows.Next() {
+		var i GetAwardDepartmentsStatsRow
+		if err := rows.Scan(
+			&i.KeycloakID,
+			&i.Name,
+			&i.TotalPoints,
+			&i.UserCount,
 		); err != nil {
 			return nil, err
 		}
@@ -1599,6 +1675,30 @@ func (q *Queries) GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginated
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDepartmentsByUserID = `-- name: GetDepartmentsByUserID :many
+SELECT keycloak_id, name, users FROM departments WHERE $1::uuid = ANY(users)
+`
+
+func (q *Queries) GetDepartmentsByUserID(ctx context.Context, dollar_1 uuid.UUID) ([]Department, error) {
+	rows, err := q.db.Query(ctx, getDepartmentsByUserID, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Department
+	for rows.Next() {
+		var i Department
+		if err := rows.Scan(&i.KeycloakID, &i.Name, &i.Users); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2193,7 +2293,7 @@ func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedPara
 }
 
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
-SELECT keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
 `
 
 func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error) {
@@ -2206,7 +2306,6 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 		&i.FirstName,
 		&i.LastName,
 		&i.Phone,
-		&i.Department,
 		&i.Role,
 		&i.Rups,
 		&i.TotalPoints,
@@ -2221,33 +2320,48 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 }
 
 const getUsersPaginated = `-- name: GetUsersPaginated :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
-FROM users
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+FROM users u
 WHERE
     (
         $1 = '' OR
         (
             $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND keycloak_id = $1::uuid
+            AND u.keycloak_id = $1::uuid
         ) OR
-        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(username) ILIKE '%' || $1 || '%' OR
-        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
-        email ILIKE '%' || $1 || '%'
+        COALESCE(u.first_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(u.last_name, '') ILIKE '%' || $1 || '%' OR
+        COALESCE(u.username, '') ILIKE '%' || $1 || '%' OR
+        u.email ILIKE '%' || $1 || '%'
     )
-ORDER BY created_at DESC
+    AND (
+        $4::uuid IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM departments d
+            WHERE
+                d.keycloak_id = $4::uuid
+                AND u.keycloak_id = ANY(d.users)
+        )
+    )
+ORDER BY u.created_at DESC
 LIMIT $2 OFFSET $3
 `
 
 type GetUsersPaginatedParams struct {
-	Column1 interface{} `json:"column_1"`
-	Limit   int32       `json:"limit"`
-	Offset  int32       `json:"offset"`
+	Column1      interface{} `json:"column_1"`
+	Limit        int32       `json:"limit"`
+	Offset       int32       `json:"offset"`
+	DepartmentID pgtype.UUID `json:"department_id"`
 }
 
 func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, getUsersPaginated, arg.Column1, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, getUsersPaginated,
+		arg.Column1,
+		arg.Limit,
+		arg.Offset,
+		arg.DepartmentID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -2262,7 +2376,6 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 			&i.FirstName,
 			&i.LastName,
 			&i.Phone,
-			&i.Department,
 			&i.Role,
 			&i.Rups,
 			&i.TotalPoints,
@@ -2284,7 +2397,7 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 }
 
 const getUsersRatingPaginated = `-- name: GetUsersRatingPaginated :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, department, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 WHERE
     total_points > 0
@@ -2298,7 +2411,6 @@ WHERE
         COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
         COALESCE(username, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(department, '') ILIKE '%' || $1 || '%' OR
         email ILIKE '%' || $1 || '%'
     )
 ORDER BY total_points DESC, created_at DESC
@@ -2327,7 +2439,6 @@ func (q *Queries) GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatin
 			&i.FirstName,
 			&i.LastName,
 			&i.Phone,
-			&i.Department,
 			&i.Role,
 			&i.Rups,
 			&i.TotalPoints,
@@ -2363,6 +2474,19 @@ type LinkLessonToDisciplineTopicParams struct {
 
 func (q *Queries) LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error {
 	_, err := q.db.Exec(ctx, linkLessonToDisciplineTopic, arg.ID, arg.LessonID)
+	return err
+}
+
+const removeUserFromAllDepartments = `-- name: RemoveUserFromAllDepartments :exec
+UPDATE departments
+SET
+    users = array_remove(users, $1::uuid)
+WHERE
+    $1::uuid = ANY(users)
+`
+
+func (q *Queries) RemoveUserFromAllDepartments(ctx context.Context, dollar_1 uuid.UUID) error {
+	_, err := q.db.Exec(ctx, removeUserFromAllDepartments, dollar_1)
 	return err
 }
 
@@ -2828,7 +2952,6 @@ SET
     last_name = $5,
     phone = $6,
     role = $7,
-    department = $8,
     updated_at = NOW()
 WHERE
     keycloak_id = $1
@@ -2842,7 +2965,6 @@ type UpdateUserProfileParams struct {
 	LastName   pgtype.Text `json:"last_name"`
 	Phone      pgtype.Text `json:"phone"`
 	Role       UserRole    `json:"role"`
-	Department pgtype.Text `json:"department"`
 }
 
 func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error {
@@ -2854,7 +2976,6 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		arg.LastName,
 		arg.Phone,
 		arg.Role,
-		arg.Department,
 	)
 	return err
 }
@@ -2893,6 +3014,27 @@ type UpdateUserTotalPointsParams struct {
 func (q *Queries) UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error {
 	_, err := q.db.Exec(ctx, updateUserTotalPoints, arg.KeycloakID, arg.TotalPoints)
 	return err
+}
+
+const upsertDepartment = `-- name: UpsertDepartment :one
+INSERT INTO
+    departments (keycloak_id, name)
+VALUES ($1, $2) ON CONFLICT (keycloak_id) DO
+UPDATE
+SET
+    name = EXCLUDED.name RETURNING keycloak_id
+`
+
+type UpsertDepartmentParams struct {
+	KeycloakID uuid.UUID `json:"keycloak_id"`
+	Name       []byte    `json:"name"`
+}
+
+func (q *Queries) UpsertDepartment(ctx context.Context, arg UpsertDepartmentParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, upsertDepartment, arg.KeycloakID, arg.Name)
+	var keycloak_id uuid.UUID
+	err := row.Scan(&keycloak_id)
+	return keycloak_id, err
 }
 
 const upsertGroup = `-- name: UpsertGroup :one

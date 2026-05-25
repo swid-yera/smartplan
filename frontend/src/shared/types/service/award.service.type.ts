@@ -56,3 +56,10 @@ export interface ICriteriaResponse {
 	points: number[]
 	method: CriteriaMethodEnum
 }
+
+export interface IDepartmentRatingResponse {
+	keycloakId: string
+	name: LocalizedText
+	totalPoints: number
+	userCount: number
+}

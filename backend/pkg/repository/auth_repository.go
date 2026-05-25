@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -13,8 +12,14 @@ import (
 
 type AuthRepository interface {
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
-	CreateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone, department string) (*storage.User, error)
-	UpdateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone, department string) error
+	CreateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone string) (*storage.User, error)
+	UpdateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone string) error
+	SyncUserDepartments(ctx context.Context, userID uuid.UUID, departments []DepartmentMembershipInput) error
+}
+
+type DepartmentMembershipInput struct {
+	KeycloakID uuid.UUID
+	Name       []byte
 }
 
 type AuthPostgres struct {
@@ -40,11 +45,8 @@ func (r *AuthPostgres) CreateUser(
 	ctx context.Context,
 	keycloakID uuid.UUID,
 	role storage.UserRole,
-	email, username, firstName, lastName, phone, department string,
+	email, username, firstName, lastName, phone string,
 ) (*storage.User, error) {
-	fmt.Printf("HandleCallback: keycloakID=%s roles=%s email=%s username=%s firstName=%s lastName=%s phone=%s department=%s\n",
-		keycloakID, role, email, username, firstName, lastName, phone, department)
-
 	user, err := r.queries.CreateUser(ctx, storage.CreateUserParams{
 		KeycloakID: keycloakID,
 		Email:      email,
@@ -53,13 +55,11 @@ func (r *AuthPostgres) CreateUser(
 		LastName:   pgtype.Text{String: lastName, Valid: true},
 		Role:       role,
 		Phone:      pgtype.Text{String: phone, Valid: true},
-		Department: nullableText(department),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 
-	// возвращаем указатель, чтобы соответствовать интерфейсу
 	return &user, nil
 }
 
@@ -67,11 +67,8 @@ func (r *AuthPostgres) UpdateUser(
 	ctx context.Context,
 	keycloakID uuid.UUID,
 	role storage.UserRole,
-	email, username, firstName, lastName, phone, department string,
+	email, username, firstName, lastName, phone string,
 ) error {
-	fmt.Printf("HandleCallback: keycloakID=%s roles=%s email=%s username=%s firstName=%s lastName=%s phone=%s department=%s\n",
-		keycloakID, role, email, username, firstName, lastName, phone, department)
-
 	err := r.queries.UpdateUserProfile(ctx, storage.UpdateUserProfileParams{
 		KeycloakID: keycloakID,
 		Email:      email,
@@ -80,7 +77,6 @@ func (r *AuthPostgres) UpdateUser(
 		FirstName:  pgtype.Text{String: firstName, Valid: true},
 		LastName:   pgtype.Text{String: lastName, Valid: true},
 		Phone:      pgtype.Text{String: phone, Valid: true},
-		Department: nullableText(department),
 	})
 
 	if err != nil {
@@ -90,10 +86,26 @@ func (r *AuthPostgres) UpdateUser(
 	return nil
 }
 
-func nullableText(v string) pgtype.Text {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return pgtype.Text{Valid: false}
+func (r *AuthPostgres) SyncUserDepartments(ctx context.Context, userID uuid.UUID, departments []DepartmentMembershipInput) error {
+	if err := r.queries.RemoveUserFromAllDepartments(ctx, userID); err != nil {
+		return fmt.Errorf("clear user departments: %w", err)
 	}
-	return pgtype.Text{String: v, Valid: true}
+
+	for _, department := range departments {
+		if _, err := r.queries.UpsertDepartment(ctx, storage.UpsertDepartmentParams{
+			KeycloakID: department.KeycloakID,
+			Name:       department.Name,
+		}); err != nil {
+			return fmt.Errorf("upsert department %s: %w", department.KeycloakID, err)
+		}
+
+		if err := r.queries.AddUserToDepartment(ctx, storage.AddUserToDepartmentParams{
+			KeycloakID: department.KeycloakID,
+			Column2:    userID,
+		}); err != nil {
+			return fmt.Errorf("add user to department %s: %w", department.KeycloakID, err)
+		}
+	}
+
+	return nil
 }

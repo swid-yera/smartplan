@@ -462,6 +462,12 @@ type AwardTypeVariant struct {
 	BonusCriteria []uuid.UUID `json:"bonus_criteria"`
 }
 
+type Department struct {
+	KeycloakID uuid.UUID   `json:"keycloak_id"`
+	Name       []byte      `json:"name"`
+	Users      []uuid.UUID `json:"users"`
+}
+
 type DisciplineSemester struct {
 	ID         uuid.UUID `json:"id"`
 	Semester   int32     `json:"semester"`
@@ -571,7 +577,6 @@ type User struct {
 	FirstName         pgtype.Text        `json:"first_name"`
 	LastName          pgtype.Text        `json:"last_name"`
 	Phone             pgtype.Text        `json:"phone"`
-	Department        pgtype.Text        `json:"department"`
 	Role              UserRole           `json:"role"`
 	Rups              []string           `json:"rups"`
 	TotalPoints       int32              `json:"total_points"`

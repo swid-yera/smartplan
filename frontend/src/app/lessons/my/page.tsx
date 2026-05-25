@@ -25,11 +25,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@shadcn'
-import { useAuthStore } from '@store'
-import { useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { ILesson, LessonTypeEnum } from '@types'
 import { Calendar, FileText, Search, Users } from 'lucide-react'
+
 import localeDictionary from './locale.json'
 
 const ALL_FILTER = 'ALL'
@@ -81,6 +81,11 @@ export default function MyLessonPlansPage() {
 	const selectedType = Object.keys(lessonTypeLabels).includes(rawType) ? (rawType as LessonTypeEnum) : ALL_FILTER
 	const selectedDiscipline = rawDiscipline
 	const selectedGroup = rawGroup
+	const hasActiveFilters =
+		Boolean(search) ||
+		selectedType !== ALL_FILTER ||
+		selectedDiscipline !== ALL_FILTER ||
+		selectedGroup !== ALL_FILTER
 
 	const { data, isLoading } = useQuery({
 		...services.lesson.getAllOptions({
@@ -295,7 +300,9 @@ export default function MyLessonPlansPage() {
 										</div>
 										<div className='flex flex-col gap-1'>
 											<p className='text-xs uppercase tracking-wide'>{t.discipline}</p>
-											<p className='font-medium text-foreground'>{lesson.discipline_name || t.notSpecifiedFemale}</p>
+											<p className='font-medium text-foreground'>
+												{lesson.discipline_name || t.notSpecifiedFemale}
+											</p>
 										</div>
 										<div className='flex items-center gap-2'>
 											<Users className='size-4' />
@@ -321,20 +328,26 @@ export default function MyLessonPlansPage() {
 			) : (
 				<Card className='border-dashed'>
 					<CardContent className='py-12 text-center'>
-						<p className='text-base font-medium'>{t.emptyTitle}</p>
-						<p className='mt-2 text-sm text-muted-foreground'>{t.emptyDescription}</p>
+						<p className='text-base font-medium'>
+							{hasActiveFilters ? t.emptyFilteredTitle : t.emptyNoDataTitle}
+						</p>
+						<p className='mt-2 text-sm text-muted-foreground'>
+							{hasActiveFilters ? t.emptyFilteredDescription : t.emptyNoDataDescription}
+						</p>
 					</CardContent>
 				</Card>
 			)}
 
-			<Pagination
-				page={data?.meta.currentPage || page}
-				pageSize={data?.meta.pageSize || pageSize}
-				pageSizeOptions={PAGE_SIZE_OPTIONS}
-				totalPages={data?.meta.pages || 1}
-				onPageChange={setCurrentPage}
-				onPageSizeChange={setPageSize}
-			/>
+			{lessons.length > 0 ? (
+				<Pagination
+					page={data?.meta.currentPage || page}
+					pageSize={data?.meta.pageSize || pageSize}
+					pageSizeOptions={PAGE_SIZE_OPTIONS}
+					totalPages={data?.meta.pages || 1}
+					onPageChange={setCurrentPage}
+					onPageSizeChange={setPageSize}
+				/>
+			) : null}
 		</section>
 	)
 }

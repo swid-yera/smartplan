@@ -92,14 +92,6 @@ func (r *UsersPostgres) CountUsers(ctx context.Context) (int64, error) {
 	return r.queries.CountUsers(ctx)
 }
 
-func (r *UsersPostgres) GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error) {
-	return r.queries.GetUsersPaginated(ctx, storage.GetUsersPaginatedParams{
-		Column1: search,
-		Limit:   limit,
-		Offset:  offset,
-	})
-}
-
 func (r *UsersPostgres) GetUsersRatingPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error) {
 	return r.queries.GetUsersRatingPaginated(ctx, storage.GetUsersRatingPaginatedParams{
 		Column1: search, // $1 — поисковый фильтр
@@ -108,12 +100,28 @@ func (r *UsersPostgres) GetUsersRatingPaginated(ctx context.Context, limit int32
 	})
 }
 
-func (r *UsersPostgres) CountUsersFiltered(ctx context.Context, search string) (int64, error) {
-	return r.queries.CountUsersFiltered(ctx, search)
+func (r *UsersPostgres) GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string, departmentID pgtype.UUID) ([]storage.User, error) {
+	return r.queries.GetUsersPaginated(ctx, storage.GetUsersPaginatedParams{
+		Column1:      search,
+		Limit:        limit,
+		Offset:       offset,
+		DepartmentID: departmentID,
+	})
+}
+
+func (r *UsersPostgres) CountUsersFiltered(ctx context.Context, search string, departmentID pgtype.UUID) (int64, error) {
+	return r.queries.CountUsersFiltered(ctx, storage.CountUsersFilteredParams{
+		Column1:      search,
+		DepartmentID: departmentID,
+	})
 }
 
 func (r *UsersPostgres) CountUsersRatingFiltered(ctx context.Context, search string) (int64, error) {
 	return r.queries.CountUsersRatingFiltered(ctx, search)
+}
+
+func (r *UsersPostgres) GetDepartmentsByUserID(ctx context.Context, userID uuid.UUID) ([]storage.Department, error) {
+	return r.queries.GetDepartmentsByUserID(ctx, userID)
 }
 
 func (r *UsersPostgres) UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error {

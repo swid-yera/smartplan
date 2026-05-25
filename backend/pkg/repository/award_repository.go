@@ -167,3 +167,7 @@ func (r *AwardRepository) CountAwardsFiltered(ctx context.Context, teacher pgtyp
 		CategoryID: categoryID,
 	})
 }
+
+func (r *AwardRepository) GetAwardDepartmentsStats(ctx context.Context) ([]storage.GetAwardDepartmentsStatsRow, error) {
+	return r.queries.GetAwardDepartmentsStats(ctx)
+}

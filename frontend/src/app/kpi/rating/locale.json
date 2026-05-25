@@ -5,6 +5,7 @@
 		"headerTitle": "🏆 Топ-20 преподавателей",
 		"headerDescription": "Лучшие преподаватели по суммарным KPI баллам",
 		"allTeachers": "Все преподаватели",
+		"departments": "Отделения",
 		"stats": "Статистика",
 		"teacher": "Преподаватель",
 		"points": "Баллы"
@@ -15,6 +16,7 @@
 		"headerTitle": "🏆 Үздік-20 мұғалімдер",
 		"headerDescription": "Жалпы KPI ұпайы бойынша үздік Мұғалімдер",
 		"allTeachers": "Барлық Мұғалімдер",
+		"departments": "Бөлімдер",
 		"stats": "Статистика",
 		"teacher": "Мұғалімдер",
 		"points": "Ұпай"

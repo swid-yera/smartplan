@@ -117,6 +117,7 @@ func (r *Router) Init() *gin.Engine {
 		awards := protected.Group("/awards")
 		{
 			awards.GET("", r.award.GetAwardsPaginated)
+			awards.GET("/departments", r.award.GetAwardDepartments)
 			awards.GET("/:id", r.award.GetAwardByID)
 
 			awards.POST("", r.award.CreateAward)
