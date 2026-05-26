@@ -41,12 +41,18 @@ type AwardResponse struct {
 	CategoryID    *uuid.UUID                `json:"categoryId,omitempty"`
 	Category      *AwardCategoryResponse    `json:"category,omitempty"`
 	FieldValues   map[string]any            `json:"fieldValues"`
+	Fields        []AwardFieldValueResponse `json:"fields,omitempty"`
 	Reason        pgtype.Text               `json:"reason"`
 	Methodist     *helpers.UserResponse     `json:"methodist"`
 	Teacher       *helpers.UserResponse     `json:"teacher"`
 	TotalPoints   int32                     `json:"totalPoints"`
 	UpdatedAt     time.Time                 `json:"updatedAt"`
 	CreatedAt     time.Time                 `json:"createdAt"`
+}
+
+type AwardFieldValueResponse struct {
+	Field AwardCategoryFieldResponse `json:"field"`
+	Data  any                        `json:"data"`
 }
 
 type SelectedTypeResponse struct {

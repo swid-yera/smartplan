@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-05-26T11:17:51.767211500
+updatedAt: 2026-05-26T12:02:37.745192100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -15,20 +15,20 @@ body:
     name: data
     value: |-
       {
-        "type": "34fb619f-61c7-4ee6-969f-3ce09ac237ae",
-        "variant": "371ce695-da28-4dfd-9fa7-8550a5939eb2",
-        "criteria": "8cde41fe-c0b3-46e5-9b79-c366f08f60ed",
-        "categoryId": "852c3fd5-ee6c-41ee-a771-e0e76229bf29",
+        "type": "155f99cb-ff4c-4e0f-8ee1-677e4b7c4f52",
+        "variant": "8ae2f290-2a0c-41d2-99cf-ab7a378d8d18",
+        "criteria": "fdf7fe05-f3ea-41c8-abc8-bf0eca8dec80",
+        "categoryId": "cced00d7-ee5f-48c9-8fd8-e885ad6bffcb",
         "fieldValues": {
-          "articleTitle": "Анализ производительности алгоритмов сортировки"
+          "file": "Анализ производительности алгоритмов сортировки"
         }
       }
   - enabled: true
     file: C:\Users\kpopo\Pictures\хаха кот в галстуке.jpg
     id: H2zgvD0mut
-    name: articleFile
+    name: file
   - enabled: true
-    id: aUWcGH5gkh
+    id: U7vvXFcMbT
     name: ''
     value: ''
 bodyType: multipart/form-data
@@ -40,6 +40,6 @@ headers:
   id: Au60NHsqZd
 method: POST
 name: create
-sortPriority: 0.0
+sortPriority: 444.4444444444444
 url: ${[ url ]}/awards
 urlParameters: []

@@ -1,26 +1,22 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 # =========================
 # CONFIG
 # =========================
 
-# COMPOSE_DIR="/c/Users/justs/jop/eduplan/shared/docker/"
+SERVICE_NAME="${SERVICE_NAME:-postgres}"
+DB_USER="${DB_USER:-admin}"
+DB_NAME="${DB_NAME:-eduplan}"
 
-SERVICE_NAME="postgres"
-DB_USER="admin"
-DB_NAME="eduplan"
-
-BACKUP_DIR="./backups"
-BACKUP_FILE="backup.sql"
+BACKUP_DIR="${BACKUP_DIR:-./backups}"
+BACKUP_FILE="${BACKUP_FILE:-backup.sql}"
+MODE="${1:-full}" # full | schema | data
 
 # =========================
 # SCRIPT
 # =========================
-
-#echo "Переход в папку docker-compose..."
-#cd "$COMPOSE_DIR"
 
 echo "Создание папки для backup, если её нет..."
 mkdir -p "$BACKUP_DIR"
@@ -28,12 +24,34 @@ mkdir -p "$BACKUP_DIR"
 echo "Проверка контейнеров..."
 docker compose ps
 
-echo "Создание backup базы данных '$DB_NAME'..."
+PG_DUMP_EXTRA_ARGS=()
+case "$MODE" in
+  full)
+    echo "Режим: полный backup (структура + данные)"
+    ;;
+  schema)
+    echo "Режим: только структура (без данных)"
+    PG_DUMP_EXTRA_ARGS+=(--schema-only)
+    ;;
+  data)
+    echo "Режим: только данные (без структуры)"
+    PG_DUMP_EXTRA_ARGS+=(--data-only)
+    ;;
+  *)
+    echo "Ошибка: неизвестный режим '$MODE'. Используй: full | schema | data"
+    exit 1
+    ;;
+esac
 
-docker compose exec -T "$SERVICE_NAME" pg_dump -U "$DB_USER" -d "$DB_NAME" > "$BACKUP_DIR/$BACKUP_FILE"
+OUT_PATH="$BACKUP_DIR/$BACKUP_FILE"
+
+echo "Создание backup базы данных '$DB_NAME'..."
+docker compose exec -T "$SERVICE_NAME" \
+  pg_dump -U "$DB_USER" -d "$DB_NAME" "${PG_DUMP_EXTRA_ARGS[@]}" \
+  > "$OUT_PATH"
 
 echo "Backup создан:"
-echo "$COMPOSE_DIR/$BACKUP_DIR/$BACKUP_FILE"
+echo "$OUT_PATH"
 
 echo "Размер файла:"
-ls -lh "$BACKUP_DIR/$BACKUP_FILE"
+ls -lh "$OUT_PATH"
