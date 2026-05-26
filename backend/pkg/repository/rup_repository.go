@@ -39,7 +39,7 @@ type RupRepository interface {
 	LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error
 
 	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
-	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
+	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
 	CountRups(ctx context.Context) (int64, error)
 
 	StoreApproveChallenge(ctx context.Context, challenge string, rupID uuid.UUID, keyID string, userID uuid.UUID, expiresAt time.Time) error
@@ -259,12 +259,13 @@ func (r *RupPostgres) CountRups(ctx context.Context) (int64, error) {
 	return r.queries.CountRups(ctx)
 }
 
-func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error) {
+func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error) {
 	return r.queries.GetRupsPaginated(ctx, storage.GetRupsPaginatedParams{
-		Column1:   search,
+		Search:    search,
 		Status:    status,
-		Limit:     limit,
+		Sort:      sort,
 		Offset:    offset,
+		Limit:     limit,
 		Teacher:   teacher,
 		Methodist: methodist,
 	})
@@ -272,7 +273,7 @@ func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset 
 
 func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error) {
 	return r.queries.CountRupsFiltered(ctx, storage.CountRupsFilteredParams{
-		Column1:   search,
+		Search:    search,
 		Status:    status,
 		Teacher:   teacher,
 		Methodist: methodist,

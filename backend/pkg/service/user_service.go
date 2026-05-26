@@ -46,8 +46,8 @@ type UserService interface {
 	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error)
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
-	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
-	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string) (*PaginatedUsersResponse, error)
+	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
+	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string) (*PaginatedUsersResponse, error)
 	CountUsers(ctx context.Context) (int64, error)
 }
 
@@ -101,6 +101,7 @@ func (s *userService) GetUsersPaginated(
 	currentPage int,
 	pageSize int,
 	search string,
+	sort string,
 	departmentID pgtype.UUID,
 ) (*PaginatedUsersResponse, error) {
 	if currentPage < 1 {
@@ -122,6 +123,7 @@ func (s *userService) GetUsersPaginated(
 		int32(pageSize),
 		int32(offset),
 		search,
+		sort,
 		departmentID,
 	)
 	if err != nil {
@@ -155,6 +157,7 @@ func (s *userService) GetUsersRatingPaginated(
 	currentPage int,
 	pageSize int,
 	search string,
+	sort string,
 ) (*PaginatedUsersResponse, error) {
 	if currentPage < 1 {
 		currentPage = 1
@@ -175,6 +178,7 @@ func (s *userService) GetUsersRatingPaginated(
 		int32(pageSize),
 		int32(offset),
 		search,
+		sort,
 	)
 	if err != nil {
 		return nil, err

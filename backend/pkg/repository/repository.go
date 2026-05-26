@@ -18,8 +18,8 @@ type UsersRepository interface {
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
 	GetAllUsers(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error)
 	CountUsers(ctx context.Context) (int64, error)
-	GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string, departmentID pgtype.UUID) ([]storage.User, error)
-	GetUsersRatingPaginated(ctx context.Context, limit int32, offset int32, search string) ([]storage.User, error)
+	GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, departmentID pgtype.UUID) ([]storage.User, error)
+	GetUsersRatingPaginated(ctx context.Context, limit int32, offset int32, search string, sort string) ([]storage.User, error)
 
 	CountUsersFiltered(ctx context.Context, search string, departmentID pgtype.UUID) (int64, error)
 	CountUsersRatingFiltered(ctx context.Context, search string) (int64, error)
@@ -59,7 +59,7 @@ type Rup interface {
 	LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error
 
 	CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
-	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
+	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
 	CountRups(ctx context.Context) (int64, error)
 
 	StoreApproveChallenge(ctx context.Context, challenge string, rupID uuid.UUID, keyID string, userID uuid.UUID, expiresAt time.Time) error

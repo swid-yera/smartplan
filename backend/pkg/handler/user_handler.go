@@ -52,6 +52,14 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	}
 
 	search := strings.TrimSpace(c.Query("search"))
+	sort, err := parseSortQuery(c, "sort", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "sort must be 'asc' or 'desc'",
+		})
+		return
+	}
+
 	departmentID := pgtype.UUID{}
 	if raw := strings.TrimSpace(c.Query("departmentId")); raw != "" {
 		parsed, err := uuid.Parse(raw)
@@ -69,6 +77,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 		currentPage,
 		pageSize,
 		search,
+		sort,
 		departmentID,
 	)
 	if err != nil {
@@ -98,12 +107,20 @@ func (h *UserHandler) GetUsersRating(c *gin.Context) {
 	}
 
 	search := strings.TrimSpace(c.Query("search"))
+	sort, err := parseSortQuery(c, "sort", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "sort must be 'asc' or 'desc'",
+		})
+		return
+	}
 
 	result, err := h.userService.GetUsersRatingPaginated(
 		c.Request.Context(),
 		currentPage,
 		pageSize,
 		search,
+		sort,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
