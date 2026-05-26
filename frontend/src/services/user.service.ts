@@ -6,14 +6,16 @@ import type { IPagination, IPaginationRequest, IUser } from '@types'
 export class UserService {
 	// get all
 	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '' }: IPaginationRequest) => {
+		const text = search.trim()
+
 		return queryOptions<IPagination<IUser>>({
-			queryKey: ['users', { currentPage, pageSize, search }],
+			queryKey: ['users', { currentPage, pageSize, search: text }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IUser>>('/users', {
 					params: {
 						currentPage,
 						pageSize,
-						search,
+						search: text,
 					},
 				})
 

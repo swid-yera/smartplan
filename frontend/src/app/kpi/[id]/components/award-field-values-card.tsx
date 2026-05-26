@@ -118,6 +118,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 		return values.map((value, idx) => (
 			<MediaPreviwer
 				key={`${fieldKey}-${value}-${idx}`}
+				fileIndex={idx + 1}
 				fileName={fieldKey}
 				fileUrl={value}
 				labels={{

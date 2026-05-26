@@ -25,8 +25,10 @@ const Page = () => {
 	const pageSize = Number(searchParams.get('pageSize')) || 10
 	const statusParam = searchParams.get('status') ?? '' // "PENDING,APPROVED"
 	const categoryIdParam = searchParams.get('categoryId') ?? '' // "id1,id2"
+	const sortParam = searchParams.get('sort')
 
 	const status = statusParam ? statusParam.split(',') : undefined
+	const sort = sortParam === 'asc' || sortParam === 'desc' ? sortParam : 'desc'
 	const categoryId = categoryIdParam
 		? categoryIdParam
 				.split(',')
@@ -44,6 +46,7 @@ const Page = () => {
 			pageSize,
 			status: status as StatusEnum[],
 			categoryId,
+			sort,
 		}),
 		enabled: !!user,
 	})

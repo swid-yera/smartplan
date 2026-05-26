@@ -5,15 +5,14 @@ import { useState } from 'react'
 import type { NextPage } from 'next'
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, PageTitle } from '@components'
+import { Loader } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
-import { Tabs, TabsList, TabsTrigger } from '@shadcn'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { ICreateTypesRequest, Locale } from '@types'
 import { toast } from 'sonner'
 
-import { EditCard } from '../../components'
+import { TypeEditorLayout } from '../../components'
 import localeDictionary from './locale.json'
 
 const Page: NextPage = () => {
@@ -37,9 +36,12 @@ const Page: NextPage = () => {
 			{ id: typeData.id, changedType },
 			{
 				onSuccess: (createdType) => {
-					toast.success(interpolateUILocaleText(t.toastCreated, { name: getLocaleText(createdType.name, activeLocale) }), {
-						id: toastId,
-					})
+					toast.success(
+						interpolateUILocaleText(t.toastCreated, { name: getLocaleText(createdType.name, activeLocale) }),
+						{
+							id: toastId,
+						},
+					)
 					replace(`/kpi/types/${createdType.id}`)
 				},
 				onError: (err) => {
@@ -53,25 +55,17 @@ const Page: NextPage = () => {
 	}
 
 	return (
-		<section className='mx-auto w-full p-6'>
-			<PageTitle
-				sticky
-				actions={
-					<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
-						<TabsList>
-							<TabsTrigger value='ru'>{t.langRu}</TabsTrigger>
-							<TabsTrigger value='kk'>{t.langKk}</TabsTrigger>
-						</TabsList>
-					</Tabs>
-				}
-				backHref={`/kpi/types/${typeData.id}`}
-				description={t.description}
-			>
-				{getLocaleText(typeData.name, activeLocale)}
-			</PageTitle>
-
-			<EditCard activeLocale={activeLocale} type={typeData} onSubmit={onSubmit} />
-		</section>
+		<TypeEditorLayout
+			activeLocale={activeLocale}
+			backHref={`/kpi/types/${typeData.id}`}
+			description={t.description}
+			langKkLabel={t.langKk}
+			langRuLabel={t.langRu}
+			title={getLocaleText(typeData.name, activeLocale)}
+			type={typeData}
+			onLocaleChange={setActiveLocale}
+			onSubmit={onSubmit}
+		/>
 	)
 }
 

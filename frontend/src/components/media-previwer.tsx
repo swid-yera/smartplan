@@ -15,6 +15,7 @@ interface IMediaPreviwerLabels {
 interface IMediaPreviwerProps {
 	fileUrl: string
 	fileName?: string
+	fileIndex?: number
 	labels: IMediaPreviwerLabels
 }
 
@@ -22,12 +23,24 @@ const IMAGE_REGEX = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i
 const PDF_REGEX = /\.pdf(\?.*)?$/i
 const OFFICE_REGEX = /\.(doc|docx|xls|xlsx|ppt|pptx)(\?.*)?$/i
 
-export const MediaPreviwer = ({ fileUrl, fileName, labels }: IMediaPreviwerProps) => {
+const shortenUrl = (url: string, maxLength = 68) => {
+	if (url.length <= maxLength) return url
+
+	const prefixLength = Math.max(24, Math.floor(maxLength * 0.45))
+	const suffixLength = Math.max(20, Math.floor(maxLength * 0.35))
+	const prefix = url.slice(0, prefixLength)
+	const suffix = url.slice(-suffixLength)
+
+	return `${prefix}...${suffix}`
+}
+
+export const MediaPreviwer = ({ fileUrl, fileName, fileIndex, labels }: IMediaPreviwerProps) => {
 	const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 	const isImage = IMAGE_REGEX.test(fileUrl)
 	const isPdf = PDF_REGEX.test(fileUrl)
 	const isOfficeDocument = OFFICE_REGEX.test(fileUrl)
 	const canPreview = isImage || isPdf || isOfficeDocument
+	const shortLink = useMemo(() => shortenUrl(fileUrl), [fileUrl])
 
 	const previewUrl = useMemo(() => {
 		if (isPdf) {
@@ -44,6 +57,10 @@ export const MediaPreviwer = ({ fileUrl, fileName, labels }: IMediaPreviwerProps
 	return (
 		<div className='space-y-3'>
 			<div className='flex flex-wrap items-center gap-2'>
+				{typeof fileIndex === 'number' ? (
+					<span className='rounded-md bg-muted px-2 py-1 text-xs font-semibold'>{fileIndex}</span>
+				) : null}
+
 				{canPreview ? (
 					<Button size='sm' type='button' variant='secondary' onClick={() => setIsPreviewOpen((prev) => !prev)}>
 						{isPreviewOpen ? <EyeOff className='mr-2 h-4 w-4' /> : <Eye className='mr-2 h-4 w-4' />}
@@ -58,6 +75,14 @@ export const MediaPreviwer = ({ fileUrl, fileName, labels }: IMediaPreviwerProps
 					</a>
 				</Button>
 			</div>
+			<a
+				className='block text-xs text-primary/90 hover:text-primary hover:underline break-all'
+				href={fileUrl}
+				rel='noopener noreferrer'
+				target='_blank'
+			>
+				{shortLink}
+			</a>
 
 			{isPreviewOpen && isImage ? (
 				<div className='space-y-2 max-w-md'>

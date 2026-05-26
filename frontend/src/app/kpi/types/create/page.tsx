@@ -5,15 +5,13 @@ import { useState } from 'react'
 import type { NextPage } from 'next'
 import { useRouter } from 'next/navigation'
 
-import { PageTitle } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
-import { Tabs, TabsList, TabsTrigger } from '@shadcn'
 import { useMutation } from '@tanstack/react-query'
 import type { ICreateTypesRequest, Locale } from '@types'
 import { toast } from 'sonner'
 
-import { EditCard } from '../components'
+import { TypeEditorLayout } from '../components'
 import localeDictionary from './locale.json'
 
 const Page: NextPage = () => {
@@ -49,25 +47,16 @@ const Page: NextPage = () => {
 	}
 
 	return (
-		<section className='mx-auto w-full p-6'>
-			<PageTitle
-				sticky
-				actions={
-					<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
-						<TabsList>
-							<TabsTrigger value='ru'>{t.langRu}</TabsTrigger>
-							<TabsTrigger value='kk'>{t.langKk}</TabsTrigger>
-						</TabsList>
-					</Tabs>
-				}
-				backHref='/kpi/types'
-				description={t.description}
-			>
-				{t.title}
-			</PageTitle>
-
-			<EditCard activeLocale={activeLocale} onSubmit={onSubmit} />
-		</section>
+		<TypeEditorLayout
+			activeLocale={activeLocale}
+			backHref='/kpi/types'
+			description={t.description}
+			langKkLabel={t.langKk}
+			langRuLabel={t.langRu}
+			title={t.title}
+			onLocaleChange={setActiveLocale}
+			onSubmit={onSubmit}
+		/>
 	)
 }
 

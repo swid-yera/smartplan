@@ -63,6 +63,12 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 			criteria: [...variant.criteria, newCriteria],
 		})
 	}
+	const removeCriteria = (criteriaIndex: number) => {
+		onChange({
+			...variant,
+			criteria: variant.criteria.filter((_, index) => index !== criteriaIndex),
+		})
+	}
 
 	return (
 		<Card className='relative'>
@@ -118,22 +124,33 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 					<ol className='list-[lower-roman] space-y-8 pl-5'>
 						{variant.criteria.map((c, i) => (
 							<li key={i} className='space-y-3'>
-								<Input
-									placeholder={t.criteriaNamePlaceholder}
-									value={c.name[locale]}
-									onChange={(e) => {
-										const next = [...variant.criteria]
+								<div className='flex items-center gap-2'>
+									<Input
+										placeholder={t.criteriaNamePlaceholder}
+										value={c.name[locale]}
+										onChange={(e) => {
+											const next = [...variant.criteria]
 
-										next[i] = {
-											...c,
-											name: {
-												...c.name,
-												[locale]: e.target.value,
-											},
-										}
-										onChange({ ...variant, criteria: next })
-									}}
-								/>
+											next[i] = {
+												...c,
+												name: {
+													...c.name,
+													[locale]: e.target.value,
+												},
+											}
+											onChange({ ...variant, criteria: next })
+										}}
+									/>
+									<Button
+										aria-label={t.removeCriteria}
+										size='icon'
+										type='button'
+										variant='ghost'
+										onClick={() => removeCriteria(i)}
+									>
+										<Trash className='h-4 w-4 text-muted-foreground' />
+									</Button>
+								</div>
 
 								<div className='flex gap-3'>
 									{/* method */}

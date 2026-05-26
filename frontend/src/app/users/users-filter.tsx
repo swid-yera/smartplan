@@ -10,10 +10,9 @@ import localeDictionary from './locale.json'
 interface UsersFilterProps {
 	search: string
 	onSearchSubmit: (value: string) => void
-	onRefetch: () => void
 }
 
-export function UsersFilter({ search, onSearchSubmit, onRefetch }: UsersFilterProps) {
+export function UsersFilter({ search, onSearchSubmit }: UsersFilterProps) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const [inputValue, setInputValue] = useState(search)
@@ -29,7 +28,6 @@ export function UsersFilter({ search, onSearchSubmit, onRefetch }: UsersFilterPr
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === 'Enter') {
 			handleSearch()
-			onRefetch()
 		}
 	}
 
@@ -56,7 +54,7 @@ export function UsersFilter({ search, onSearchSubmit, onRefetch }: UsersFilterPr
 				</div>
 			</div>
 
-			<Button className='w-full lg:w-auto' size='default' variant='default' onClick={onRefetch}>
+			<Button className='w-full lg:w-auto' size='default' variant='default' onClick={handleSearch}>
 				{t.filter.apply}
 				<Filter className='ml-2 h-4 w-4' />
 			</Button>

@@ -12,9 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shad
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 
+import localeDictionary from './locale.json'
 import { UsersFilter } from './users-filter'
 import { UsersTable } from './users-table'
-import localeDictionary from './locale.json'
 
 function Page() {
 	const { authLoading, isAuthenticated } = useAuthStore()
@@ -54,7 +54,6 @@ function Page() {
 		data: usersData,
 		isLoading,
 		isFetching,
-		refetch,
 		isRefetching,
 	} = useQuery({
 		...services.user.getAllOptions({
@@ -91,7 +90,6 @@ function Page() {
 				<CardContent className='min-w-0 flex-1'>
 					<UsersFilter
 						search={search}
-						onRefetch={() => refetch()}
 						onSearchSubmit={(value) => handleUrlUpdate({ q: value || null, page: 1 })}
 					/>
 

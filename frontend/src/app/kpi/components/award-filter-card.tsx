@@ -27,6 +27,11 @@ import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
@@ -49,6 +54,7 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 
 	const currentStatusParam = searchParams.get('status')
 	const currentCategoryIdParam = searchParams.get('categoryId')
+	const currentSortParam = searchParams.get('sort')
 	const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
 		currentStatusParam ? currentStatusParam.split(',') : [],
 	)
@@ -59,6 +65,9 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 					.map((id) => id.trim())
 					.filter(Boolean)
 			: [],
+	)
+	const [selectedSort, setSelectedSort] = useState<'asc' | 'desc'>(
+		currentSortParam === 'asc' || currentSortParam === 'desc' ? currentSortParam : 'desc',
 	)
 
 	const { data: categories = [] } = useQuery({
@@ -92,6 +101,7 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 		else params.delete('status')
 		if (selectedCategoryIds.length > 0) params.set('categoryId', selectedCategoryIds.join(','))
 		else params.delete('categoryId')
+		params.set('sort', selectedSort)
 
 		params.set('page', '1')
 
@@ -106,7 +116,7 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 			</CardHeader>
 			<CardContent className='h-full'>
 				<form className='h-full flex justify-between items-center gap-3' onSubmit={(e) => handleSubmit(e)}>
-					<div className='grid gap-3 md:grid-cols-2 w-full'>
+					<div className='grid gap-3 md:grid-cols-3 w-full'>
 						{/* status */}
 						<div className='space-y-1'>
 							<Label>{t.awardFilter.status}</Label>
@@ -198,6 +208,20 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 									</Command>
 								</PopoverContent>
 							</Popover>
+						</div>
+
+						{/* sort */}
+						<div className='space-y-1'>
+							<Label>{t.awardFilter.sort}</Label>
+							<Select value={selectedSort} onValueChange={(value: 'asc' | 'desc') => setSelectedSort(value)}>
+								<SelectTrigger className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='desc'>{t.awardFilter.sortDesc}</SelectItem>
+									<SelectItem value='asc'>{t.awardFilter.sortAsc}</SelectItem>
+								</SelectContent>
+							</Select>
 						</div>
 					</div>
 
