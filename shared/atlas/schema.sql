@@ -58,6 +58,22 @@ CREATE TABLE departments (
     )
 );
 
+
+-- =====================
+-- RUP EXPLORATION NOTES
+-- =====================
+CREATE TABLE penalty (
+    id UUID PRIMARY KEY,
+    points int[],
+    teacher UUID,
+    methodist UUID,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT fk_methodist FOREIGN KEY (methodist) REFERENCES users(keycloak_id),
+    CONSTRAINT fk_teacher FOREIGN KEY (teacher) REFERENCES users(keycloak_id)
+);
+
 -- =====================
 -- GROUPS
 -- =====================

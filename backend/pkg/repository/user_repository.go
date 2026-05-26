@@ -127,9 +127,28 @@ func (r *UsersPostgres) GetDepartmentsByUserID(ctx context.Context, userID uuid.
 }
 
 func (r *UsersPostgres) UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error {
-	r.queries.UpdateUserTotalPoints(ctx, storage.UpdateUserTotalPointsParams{
+	return r.queries.UpdateUserTotalPoints(ctx, storage.UpdateUserTotalPointsParams{
 		KeycloakID:  teacher,
 		TotalPoints: points,
 	})
-	return nil
+}
+
+func (r *UsersPostgres) CreatePenalty(ctx context.Context, params storage.CreatePenaltyParams) error {
+	_, err := r.queries.CreatePenalty(ctx, params)
+	return err
+}
+
+func (r *UsersPostgres) GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]storage.Penalty, error) {
+	return r.queries.GetPenaltiesByTeacherID(ctx, pgtype.UUID{
+		Bytes: teacherID,
+		Valid: true,
+	})
+}
+
+func (r *UsersPostgres) GetPenaltyByIDAndTeacherID(ctx context.Context, params storage.GetPenaltyByIDAndTeacherIDParams) (storage.Penalty, error) {
+	return r.queries.GetPenaltyByIDAndTeacherID(ctx, params)
+}
+
+func (r *UsersPostgres) DeletePenaltyByIDAndTeacherID(ctx context.Context, params storage.DeletePenaltyByIDAndTeacherIDParams) error {
+	return r.queries.DeletePenaltyByIDAndTeacherID(ctx, params)
 }

@@ -616,6 +616,37 @@ WHERE
 -- name: DeleteAward :exec
 DELETE FROM awards WHERE id = $1;
 
+-- name: CreatePenalty :one
+INSERT INTO
+    penalty (
+        id,
+        points,
+        teacher,
+        methodist,
+        note
+    )
+VALUES ($1, $2, $3, $4, $5) RETURNING id;
+
+-- name: GetPenaltiesByTeacherID :many
+SELECT *
+FROM penalty
+WHERE
+    teacher = $1
+ORDER BY created_at DESC;
+
+-- name: GetPenaltyByIDAndTeacherID :one
+SELECT *
+FROM penalty
+WHERE
+    id = $1
+    AND teacher = $2;
+
+-- name: DeletePenaltyByIDAndTeacherID :exec
+DELETE FROM penalty
+WHERE
+    id = $1
+    AND teacher = $2;
+
 -- name: CreateAwardType :one
 INSERT INTO
     award_types (name, variants)

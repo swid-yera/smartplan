@@ -1,0 +1,43 @@
+type: http_request
+model: http_request
+id: rq_9WdxLvuqLm
+createdAt: 2026-05-26T16:23:52.957811800
+updatedAt: 2026-05-26T16:40:52.644267700
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_NSeyjGMaP6
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "points": 10,
+      "note": "Опозда отчета"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: EKNcRMyYxu
+- enabled: true
+  name: Cookie
+  value: sid=bc6cd073-c712-4bc1-aa61-28aa6926a450
+  id: mEaZXumV6z
+- enabled: true
+  name: ''
+  value: ''
+  id: MUDaAIWU7A
+method: POST
+name: create for user
+sortPriority: 2000.0
+url: ${[ url ]}/user/:teacher_id/penalty
+urlParameters:
+- enabled: true
+  name: :teacher_id
+  value: e03f5d94-1497-4514-9c92-16bb559a1cc8
+  id: E8i7TC3GMi
+- enabled: true
+  name: ''
+  value: ''
+  id: wV4gR9Q3cI
