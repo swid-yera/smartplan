@@ -38,6 +38,22 @@ func (h *AwardHandler) resolveAwardFieldValues(ctx context.Context, award servic
 	return award
 }
 
+func buildAwardFieldsPayload(award service.AwardResponse) []service.AwardFieldValueResponse {
+	if award.Category == nil || len(award.Category.FieldsExpanded) == 0 {
+		return nil
+	}
+
+	fields := make([]service.AwardFieldValueResponse, 0, len(award.Category.FieldsExpanded))
+	for _, field := range award.Category.FieldsExpanded {
+		fields = append(fields, service.AwardFieldValueResponse{
+			Field: field,
+			Data:  award.FieldValues[field.Key],
+		})
+	}
+
+	return fields
+}
+
 // parseUUIDPgtype is a helper to convert form strings to pgtype.UUID
 func parseUUIDPgtype(s string) pgtype.UUID {
 	parsed, err := uuid.Parse(s)
@@ -99,6 +115,7 @@ func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 	}
 
 	award = h.resolveAwardFieldValues(c.Request.Context(), award)
+	award.Fields = buildAwardFieldsPayload(award)
 
 	c.JSON(http.StatusOK, award)
 }
