@@ -774,6 +774,8 @@ func (s *AwardService) GetAwardPaginated(
 	ctx context.Context,
 	currentPage int,
 	pageSize int,
+	search string,
+	sort string,
 	teacher pgtype.UUID,
 	methodist pgtype.UUID,
 	categoryIDs []uuid.UUID,
@@ -797,6 +799,7 @@ func (s *AwardService) GetAwardPaginated(
 
 	total, err := s.repo.CountAwardsFiltered(
 		ctx,
+		search,
 		teacher,
 		methodist,
 		categoryIDs,
@@ -810,6 +813,8 @@ func (s *AwardService) GetAwardPaginated(
 		ctx,
 		int32(pageSize),
 		int32(offset),
+		search,
+		sort,
 		teacher,
 		methodist,
 		categoryIDs,

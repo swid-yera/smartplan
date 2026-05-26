@@ -411,6 +411,11 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	}
 
 	search := strings.TrimSpace(c.Query("search"))
+	sort, err := parseSortQuery(c, "sort", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "sort must be 'asc' or 'desc'"})
+		return
+	}
 
 	var teacherID pgtype.UUID
 	if v := c.Query("teacher"); v != "" {
@@ -437,6 +442,7 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 		currentPage,
 		pageSize,
 		search,
+		sort,
 		teacherID,
 		methodistID,
 		status,

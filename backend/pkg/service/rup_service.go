@@ -38,7 +38,7 @@ type RupService interface {
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
-	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (*PaginatedRupsResponse, error)
+	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (*PaginatedRupsResponse, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
@@ -1704,6 +1704,7 @@ func (s *rupService) GetRupPaginated(
 	currentPage int,
 	pageSize int,
 	search string,
+	sort string,
 	teacher pgtype.UUID,
 	methodist pgtype.UUID,
 	status []string,
@@ -1737,6 +1738,7 @@ func (s *rupService) GetRupPaginated(
 		int32(pageSize),
 		int32(offset),
 		search,
+		sort,
 		teacher,
 		methodist,
 		status,

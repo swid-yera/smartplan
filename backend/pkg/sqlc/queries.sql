@@ -61,15 +61,15 @@ SELECT *
 FROM users u
 WHERE
     (
-        $1 = '' OR
+        sqlc.arg('search') = '' OR
         (
-            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND u.keycloak_id = $1::uuid
+            sqlc.arg('search') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND u.keycloak_id = sqlc.arg('search')::uuid
         ) OR
-        COALESCE(u.first_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(u.last_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(u.username, '') ILIKE '%' || $1 || '%' OR
-        u.email ILIKE '%' || $1 || '%'
+        COALESCE(u.first_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        COALESCE(u.last_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        COALESCE(u.username, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        u.email ILIKE '%' || sqlc.arg('search') || '%'
     )
     AND (
         sqlc.narg('department_id')::uuid IS NULL
@@ -81,8 +81,13 @@ WHERE
                 AND u.keycloak_id = ANY(d.users)
         )
     )
-ORDER BY u.created_at DESC
-LIMIT $2 OFFSET $3;
+ORDER BY
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN u.created_at END ASC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN u.keycloak_id END ASC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN u.created_at END DESC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN u.keycloak_id END DESC,
+    u.created_at DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: GetUsersRatingPaginated :many
 SELECT *
@@ -91,18 +96,22 @@ WHERE
     total_points > 0
     AND
     (
-        $1 = '' OR
+        sqlc.arg('search') = '' OR
         (
-            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND keycloak_id = $1::uuid
+            sqlc.arg('search') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND keycloak_id = sqlc.arg('search')::uuid
         ) OR
-        COALESCE(first_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(last_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(username, '') ILIKE '%' || $1 || '%' OR
-        email ILIKE '%' || $1 || '%'
+        COALESCE(first_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        COALESCE(last_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        COALESCE(username, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        email ILIKE '%' || sqlc.arg('search') || '%'
     )
-ORDER BY total_points DESC, created_at DESC
-LIMIT $2 OFFSET $3;
+ORDER BY
+    total_points DESC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN created_at END ASC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN created_at END DESC,
+    created_at DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: CountUsersRatingFiltered :one
 SELECT COUNT(*)
@@ -127,15 +136,15 @@ SELECT COUNT(*)
 FROM users u
 WHERE
     (
-        $1 = '' OR
+        sqlc.arg('search') = '' OR
         (
-            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            AND u.keycloak_id = $1::uuid
+            sqlc.arg('search') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND u.keycloak_id = sqlc.arg('search')::uuid
         ) OR
-        COALESCE(u.first_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(u.last_name, '') ILIKE '%' || $1 || '%' OR
-        COALESCE(u.username, '') ILIKE '%' || $1 || '%' OR
-        u.email ILIKE '%' || $1 || '%'
+        COALESCE(u.first_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        COALESCE(u.last_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        COALESCE(u.username, '') ILIKE '%' || sqlc.arg('search') || '%' OR
+        u.email ILIKE '%' || sqlc.arg('search') || '%'
     )
     AND (
         sqlc.narg('department_id')::uuid IS NULL
@@ -379,9 +388,13 @@ SELECT * FROM rups ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 SELECT *
 FROM rups WHERE
     (
-        $1 = ''
-        OR COALESCE(name->>'ru', '') ILIKE '%' || $1 || '%'
-        OR COALESCE(name->>'kz', '') ILIKE '%' || $1 || '%'
+        sqlc.arg('search') = ''
+        OR COALESCE(name->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(name->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR (
+            sqlc.arg('search') ~* '^[0-9a-f-]{36}$'
+            AND id = sqlc.arg('search')::uuid
+        )
     )
     AND (
         sqlc.narg('teacher')::uuid IS NULL
@@ -393,20 +406,25 @@ FROM rups WHERE
         sqlc.narg('status')::text[] IS NULL
         OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
     )
-ORDER BY created_at DESC
-LIMIT $2 OFFSET $3;
+ORDER BY
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN status::text END ASC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN created_at END ASC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN status::text END DESC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN created_at END DESC,
+    created_at DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: CountRupsFiltered :one
 SELECT COUNT(*)
 FROM rups
 WHERE
     (
-        $1 = ''
-        OR COALESCE(name->>'ru', '') ILIKE '%' || $1 || '%'
-        OR COALESCE(name->>'kz', '') ILIKE '%' || $1 || '%'
+        sqlc.arg('search') = ''
+        OR COALESCE(name->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(name->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
         OR (
-            $1 ~* '^[0-9a-f-]{36}$'
-            AND id = $1::uuid
+            sqlc.arg('search') ~* '^[0-9a-f-]{36}$'
+            AND id = sqlc.arg('search')::uuid
         )
     )
     AND (
@@ -499,6 +517,16 @@ SELECT * FROM awards;
 SELECT * FROM awards
 WHERE
     (
+        sqlc.arg('search') = ''
+        OR (
+            sqlc.arg('search') ~* '^[0-9a-f-]{36}$'
+            AND id = sqlc.arg('search')::uuid
+        )
+        OR status::text ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(reason::text, '') ILIKE '%' || sqlc.arg('search') || '%'
+    )
+    AND
+    (
         sqlc.narg('teacher')::uuid IS NULL
         OR teacher = sqlc.narg('teacher')::uuid
     )
@@ -514,13 +542,28 @@ WHERE
         sqlc.narg('status')::text[] IS NULL
         OR status = ANY(sqlc.arg(status)::text[]::awards_status[])
     )
-ORDER BY created_at DESC
-LIMIT $1 OFFSET $2;
+ORDER BY
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN status::text END ASC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN created_at END ASC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN status::text END DESC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN created_at END DESC,
+    created_at DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: CountAwardsFiltered :one
 SELECT COUNT(*)
 FROM awards
 WHERE
+    (
+        sqlc.arg('search') = ''
+        OR (
+            sqlc.arg('search') ~* '^[0-9a-f-]{36}$'
+            AND id = sqlc.arg('search')::uuid
+        )
+        OR status::text ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(reason::text, '') ILIKE '%' || sqlc.arg('search') || '%'
+    )
+    AND
     (
         sqlc.narg('teacher')::uuid IS NULL
         OR teacher = sqlc.narg('teacher')::uuid

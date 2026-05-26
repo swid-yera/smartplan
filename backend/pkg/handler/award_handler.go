@@ -574,6 +574,12 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 			pageSize = ps
 		}
 	}
+	search := strings.TrimSpace(c.Query("search"))
+	sort, err := parseSortQuery(c, "sort", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "sort must be 'asc' or 'desc'"})
+		return
+	}
 
 	var teacherID pgtype.UUID
 	if v := c.Query("teacher"); v != "" {
@@ -618,6 +624,8 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 		c.Request.Context(),
 		currentPage,
 		pageSize,
+		search,
+		sort,
 		teacherID,
 		methodistID,
 		categoryIDs,
