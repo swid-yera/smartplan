@@ -94,13 +94,13 @@ export class AwardService {
 				filesByField,
 			}: {
 				newAward: ICreateAwardRequest
-				filesByField: Record<string, File>
+				filesByField: Record<string, File[]>
 			}) => {
 				const formData = new FormData()
 
 				formData.append('data', JSON.stringify(newAward))
-				Object.entries(filesByField).forEach(([fieldKey, file]) => {
-					formData.append(fieldKey, file)
+				Object.entries(filesByField).forEach(([fieldKey, files]) => {
+					files.forEach((file) => formData.append(fieldKey, file))
 				})
 
 				const { data } = await api.post<IAward>('/awards', formData, {
@@ -129,9 +129,11 @@ export class AwardService {
 			}: {
 				id: string
 				changedAward: IUpdateAwardRequest
-				filesByField?: Record<string, File>
+				filesByField?: Record<string, File[]>
 			}) => {
-				const hasFiles = filesByField && Object.keys(filesByField).length > 0
+				const hasFiles =
+					filesByField &&
+					Object.values(filesByField).some((files) => Array.isArray(files) && files.length > 0)
 
 				if (!hasFiles) {
 					return api.put<IAward>(`/awards/${id}`, changedAward).then((r) => r.data)
@@ -140,8 +142,8 @@ export class AwardService {
 				const formData = new FormData()
 
 				formData.append('data', JSON.stringify(changedAward))
-				Object.entries(filesByField).forEach(([fieldKey, file]) => {
-					formData.append(fieldKey, file)
+				Object.entries(filesByField).forEach(([fieldKey, files]) => {
+					files.forEach((file) => formData.append(fieldKey, file))
 				})
 
 				return api
