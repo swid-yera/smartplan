@@ -39,6 +39,7 @@ type AwardResponse struct {
 	Criteria      SelectedCriteriaResponse  `json:"criteria"`
 	BonusCriteria *SelectedCriteriaResponse `json:"bonus_criteria"`
 	CategoryID    *uuid.UUID                `json:"categoryId,omitempty"`
+	Category      *AwardCategoryResponse    `json:"category,omitempty"`
 	FieldValues   map[string]any            `json:"fieldValues"`
 	Reason        pgtype.Text               `json:"reason"`
 	Methodist     *helpers.UserResponse     `json:"methodist"`
@@ -586,9 +587,21 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 	}
 
 	var categoryID *uuid.UUID
+	var category *AwardCategoryResponse
 	if award.CategoryID.Valid {
 		id := uuid.UUID(award.CategoryID.Bytes)
 		categoryID = &id
+
+		dbCategory, categoryErr := s.repo.GetAwardCategoryByID(ctx, id)
+		if categoryErr != nil {
+			return AwardResponse{}, categoryErr
+		}
+
+		mappedCategory, categoryErr := s.mapCategoryResponse(ctx, dbCategory, true)
+		if categoryErr != nil {
+			return AwardResponse{}, categoryErr
+		}
+		category = &mappedCategory
 	}
 
 	fieldValues, err := s.decodeFieldValues(award.FieldValues)
@@ -604,6 +617,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 		Criteria:      mappedCriteria,
 		BonusCriteria: mappedBonusCriteria,
 		CategoryID:    categoryID,
+		Category:      category,
 		FieldValues:   fieldValues,
 		Reason:        award.Reason,
 		Methodist:     methodist,
