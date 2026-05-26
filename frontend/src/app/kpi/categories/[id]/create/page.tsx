@@ -327,14 +327,14 @@ export default function CreateAwardPage() {
 				return acc
 			}, {}),
 		}
-		const filesByField = category.fieldsExpanded.reduce<Record<string, File>>((acc, field) => {
+		const filesByField = category.fieldsExpanded.reduce<Record<string, File[]>>((acc, field) => {
 			if (field.type !== 'file') return acc
 
 			const value = categoryFieldValues[field.key]
 
-			if (!Array.isArray(value) || !value[0]) return acc
+			if (!Array.isArray(value) || value.length === 0) return acc
 
-			acc[field.key] = value[0]
+			acc[field.key] = value
 
 			return acc
 		}, {})

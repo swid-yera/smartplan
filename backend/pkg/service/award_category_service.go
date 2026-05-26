@@ -518,9 +518,20 @@ func hasProvidedValue(value any) bool {
 	case string:
 		return strings.TrimSpace(v) != ""
 	case []string:
-		return len(v) > 0
+		for _, item := range v {
+			if strings.TrimSpace(item) != "" {
+				return true
+			}
+		}
+		return false
 	case []any:
-		return len(v) > 0
+		for _, item := range v {
+			str, ok := item.(string)
+			if ok && strings.TrimSpace(str) != "" {
+				return true
+			}
+		}
+		return false
 	default:
 		return true
 	}
@@ -603,8 +614,8 @@ func (s *AwardService) MergeUploadedFilesIntoFieldValues(
 			continue
 		}
 
-		targetKey := formKey
-		if formKey == "files" {
+		targetKey := strings.TrimSpace(formKey)
+		if targetKey == "files" || targetKey == "files[]" {
 			if len(fileFieldKeys) != 1 {
 				return nil, &HTTPStatusError{
 					StatusCode: http.StatusBadRequest,
@@ -612,8 +623,10 @@ func (s *AwardService) MergeUploadedFilesIntoFieldValues(
 				}
 			}
 			targetKey = fileFieldKeys[0]
-		} else if strings.HasPrefix(formKey, "fieldValues.") {
-			targetKey = strings.TrimPrefix(formKey, "fieldValues.")
+		} else if strings.HasPrefix(targetKey, "fieldValues.") {
+			targetKey = strings.TrimPrefix(targetKey, "fieldValues.")
+		} else if strings.HasPrefix(targetKey, "fieldValues[") && strings.HasSuffix(targetKey, "]") {
+			targetKey = strings.TrimSuffix(strings.TrimPrefix(targetKey, "fieldValues["), "]")
 		}
 
 		if _, ok := fileFieldSet[targetKey]; !ok {
@@ -706,7 +719,11 @@ func mergeUploadedFileKeys(existing any, uploaded []string) any {
 			merged = append(merged, v)
 		}
 	case []string:
-		merged = append(merged, v...)
+		for _, item := range v {
+			if strings.TrimSpace(item) != "" {
+				merged = append(merged, item)
+			}
+		}
 	case []any:
 		for _, item := range v {
 			str, ok := item.(string)
@@ -717,9 +734,6 @@ func mergeUploadedFileKeys(existing any, uploaded []string) any {
 	}
 
 	merged = append(merged, uploaded...)
-	if len(merged) == 1 {
-		return merged[0]
-	}
 	return merged
 }
 

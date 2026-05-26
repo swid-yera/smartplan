@@ -61,12 +61,24 @@ const buildAcceptFromFieldValidation = (field: ICategoryFieldResponse) => {
 	return Object.keys(accept).length ? accept : FALLBACK_ACCEPT
 }
 
+const getMaxFilesFromFieldValidation = (field: ICategoryFieldResponse) => {
+	const rawMaxFiles = field.validation?.maxFiles
+	const parsedMaxFiles = typeof rawMaxFiles === 'number' ? rawMaxFiles : Number(rawMaxFiles)
+
+	if (!Number.isFinite(parsedMaxFiles) || parsedMaxFiles < 1) {
+		return 10
+	}
+
+	return Math.floor(parsedMaxFiles)
+}
+
 export const CategoryFileFieldInput = ({ field, value, onChange }: CategoryFileFieldInputProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const labelText = getLocaleText(field.label, locale)
 	const helpText = getLocaleText(field.helpText, locale)
 	const commonLabel = `${labelText}${field.required ? ' *' : ''}`
 	const accept = buildAcceptFromFieldValidation(field)
+	const maxFiles = getMaxFilesFromFieldValidation(field)
 
 	return (
 		<div className='space-y-2'>
@@ -74,7 +86,8 @@ export const CategoryFileFieldInput = ({ field, value, onChange }: CategoryFileF
 			<Dropzone
 				accept={accept}
 				className='min-h-44 justify-center'
-				maxFiles={1}
+				maxFiles={maxFiles}
+				multiple={maxFiles > 1}
 				src={value}
 				onDrop={(files) => onChange(field.key, files)}
 				onError={console.error}
