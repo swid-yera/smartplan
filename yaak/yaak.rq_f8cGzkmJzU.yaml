@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-05-23T14:19:27.428477300
+updatedAt: 2026-05-26T11:17:51.767211500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -24,11 +24,11 @@ body:
         }
       }
   - enabled: true
-    file: C:\Users\justs\OneDrive\Pictures\delovoi_kot.jpg
+    file: C:\Users\kpopo\Pictures\хаха кот в галстуке.jpg
     id: H2zgvD0mut
     name: articleFile
   - enabled: true
-    id: WkrIvp00JI
+    id: aUWcGH5gkh
     name: ''
     value: ''
 bodyType: multipart/form-data

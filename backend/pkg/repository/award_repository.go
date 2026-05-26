@@ -148,23 +148,23 @@ func (r *AwardRepository) CountAwards(ctx context.Context) (int64, error) {
 	return r.queries.CountAwards(ctx)
 }
 
-func (r *AwardRepository) GetAwardsPaginated(ctx context.Context, limit int32, offset int32, teacher pgtype.UUID, methodist pgtype.UUID, categoryID pgtype.UUID, status []string) ([]storage.Award, error) {
+func (r *AwardRepository) GetAwardsPaginated(ctx context.Context, limit int32, offset int32, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) ([]storage.Award, error) {
 	return r.queries.GetAwardsPaginated(ctx, storage.GetAwardsPaginatedParams{
-		Limit:      limit,
-		Offset:     offset,
-		Teacher:    teacher,
-		Methodist:  methodist,
-		CategoryID: categoryID,
-		Status:     status,
+		Limit:       limit,
+		Offset:      offset,
+		Teacher:     teacher,
+		Methodist:   methodist,
+		CategoryIDs: categoryIDs,
+		Status:      status,
 	})
 }
 
-func (r *AwardRepository) CountAwardsFiltered(ctx context.Context, teacher pgtype.UUID, methodist pgtype.UUID, categoryID pgtype.UUID, status []string) (int64, error) {
+func (r *AwardRepository) CountAwardsFiltered(ctx context.Context, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) (int64, error) {
 	return r.queries.CountAwardsFiltered(ctx, storage.CountAwardsFilteredParams{
-		Status:     status,
-		Teacher:    teacher,
-		Methodist:  methodist,
-		CategoryID: categoryID,
+		Status:      status,
+		Teacher:     teacher,
+		Methodist:   methodist,
+		CategoryIDs: categoryIDs,
 	})
 }
 

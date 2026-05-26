@@ -770,7 +770,7 @@ func (s *AwardService) GetAwardPaginated(
 	pageSize int,
 	teacher pgtype.UUID,
 	methodist pgtype.UUID,
-	categoryID pgtype.UUID,
+	categoryIDs []uuid.UUID,
 	status []string,
 ) (*PaginatedAwardsResponse, error) {
 	if currentPage < 1 {
@@ -783,6 +783,9 @@ func (s *AwardService) GetAwardPaginated(
 	if len(status) == 0 {
 		status = nil
 	}
+	if len(categoryIDs) == 0 {
+		categoryIDs = nil
+	}
 
 	offset := (currentPage - 1) * pageSize
 
@@ -790,7 +793,7 @@ func (s *AwardService) GetAwardPaginated(
 		ctx,
 		teacher,
 		methodist,
-		categoryID,
+		categoryIDs,
 		status,
 	)
 	if err != nil {
@@ -803,7 +806,7 @@ func (s *AwardService) GetAwardPaginated(
 		int32(offset),
 		teacher,
 		methodist,
-		categoryID,
+		categoryIDs,
 		status,
 	)
 	if err != nil {

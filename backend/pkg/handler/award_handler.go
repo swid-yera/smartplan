@@ -578,14 +578,23 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 		methodistID = pgtype.UUID{Bytes: id, Valid: true}
 	}
 
-	var categoryID pgtype.UUID
-	if v := c.Query("categoryId"); v != "" {
-		id, err := uuid.Parse(v)
-		if err != nil {
-			c.JSON(400, gin.H{"error": "invalid category id"})
-			return
+	var categoryIDs []uuid.UUID
+	if raw := strings.TrimSpace(c.Query("categoryId")); raw != "" {
+		parts := strings.Split(raw, ",")
+		categoryIDs = make([]uuid.UUID, 0, len(parts))
+		for _, part := range parts {
+			idStr := strings.TrimSpace(part)
+			if idStr == "" {
+				continue
+			}
+
+			id, err := uuid.Parse(idStr)
+			if err != nil {
+				c.JSON(400, gin.H{"error": "invalid category id"})
+				return
+			}
+			categoryIDs = append(categoryIDs, id)
 		}
-		categoryID = pgtype.UUID{Bytes: id, Valid: true}
 	}
 
 	result, err := h.service.GetAwardPaginated(
@@ -594,7 +603,7 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 		pageSize,
 		teacherID,
 		methodistID,
-		categoryID,
+		categoryIDs,
 		status,
 	)
 	if err != nil {
