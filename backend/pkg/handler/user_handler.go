@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,11 +11,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type UserHandler struct {
 	userService service.UserService
+}
+
+type CreatePenaltyRequest struct {
+	Points int32  `json:"points"`
+	Note   string `json:"note"`
 }
 
 func NewUserHandler(userService service.UserService) *UserHandler {
@@ -161,4 +168,143 @@ func (h *UserHandler) GetUserByKeycloakID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func (h *UserHandler) CreatePenalty(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	if currentUser.Role != "METHODIST" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	teacherID, err := uuid.Parse(c.Param("teacher_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
+		return
+	}
+
+	var req CreatePenaltyRequest
+	if err = c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	penalty, err := h.userService.CreatePenalty(
+		c.Request.Context(),
+		currentUser.KeycloakID,
+		teacherID,
+		req.Points,
+		req.Note,
+	)
+	if err != nil {
+		writeUserServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, penalty)
+}
+
+func (h *UserHandler) GetPenaltiesByTeacherID(c *gin.Context) {
+	teacherID, err := uuid.Parse(c.Param("teacher_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
+		return
+	}
+
+	penalties, err := h.userService.GetPenaltiesByTeacherID(c.Request.Context(), teacherID)
+	if err != nil {
+		writeUserServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, penalties)
+}
+
+func (h *UserHandler) GetPenaltyByIDAndTeacherID(c *gin.Context) {
+	teacherID, err := uuid.Parse(c.Param("teacher_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
+		return
+	}
+
+	penaltyID, err := uuid.Parse(c.Param("penalty_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid penalty_id"})
+		return
+	}
+
+	penalty, err := h.userService.GetPenaltyByIDAndTeacherID(c.Request.Context(), penaltyID, teacherID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "penalty not found"})
+			return
+		}
+		writeUserServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, penalty)
+}
+
+func (h *UserHandler) DeletePenaltyByIDAndTeacherID(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	if currentUser.Role != "METHODIST" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	teacherID, err := uuid.Parse(c.Param("teacher_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
+		return
+	}
+
+	penaltyID, err := uuid.Parse(c.Param("penalty_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid penalty_id"})
+		return
+	}
+
+	err = h.userService.DeletePenaltyByIDAndTeacherID(c.Request.Context(), penaltyID, teacherID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "penalty not found"})
+			return
+		}
+		writeUserServiceError(c, err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func writeUserServiceError(c *gin.Context, err error) {
+	var httpErr *service.HTTPStatusError
+	if errors.As(err, &httpErr) {
+		c.JSON(httpErr.StatusCode, gin.H{"error": httpErr.Message})
+		return
+	}
+	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 }

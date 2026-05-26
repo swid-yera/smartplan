@@ -1,0 +1,38 @@
+type: http_request
+model: http_request
+id: rq_3gpvvgpNga
+createdAt: 2026-05-26T16:24:17.175366100
+updatedAt: 2026-05-26T16:39:53.858413300
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_NSeyjGMaP6
+authentication: {}
+authenticationType: null
+body: {}
+bodyType: null
+description: ''
+headers:
+- enabled: true
+  name: Cookie
+  value: sid=bc6cd073-c712-4bc1-aa61-28aa6926a450
+  id: p6P6vmD24Q
+- enabled: true
+  name: ''
+  value: ''
+  id: 2hBeVhWbTS
+method: DELETE
+name: by id
+sortPriority: 2000.0
+url: ${[ url ]}/user/:teacher_id/penalty/:penalty_id
+urlParameters:
+- enabled: true
+  name: :teacher_id
+  value: e03f5d94-1497-4514-9c92-16bb559a1cc8
+  id: nXjFScZh96
+- enabled: true
+  name: :penalty_id
+  value: feb33417-6514-4cf0-98a0-bd04dd213958
+  id: 3Dk2uFJxgn
+- enabled: true
+  name: ''
+  value: ''
+  id: yhZzPtjz68

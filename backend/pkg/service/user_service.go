@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"math"
+	"strings"
+	"time"
 
 	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
@@ -30,6 +32,16 @@ type User struct {
 	TotalPoints int32            `json:"totalPoints"`
 }
 
+type Penalty struct {
+	ID          uuid.UUID `json:"id"`
+	Points      int32     `json:"points"`
+	TeacherID   uuid.UUID `json:"teacherId"`
+	MethodistID uuid.UUID `json:"methodistId"`
+	Note        string    `json:"note"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
 type PaginationMeta struct {
 	CurrentPage int `json:"currentPage"`
 	Pages       int `json:"pages"`
@@ -48,6 +60,10 @@ type UserService interface {
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
 	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
 	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string) (*PaginatedUsersResponse, error)
+	CreatePenalty(ctx context.Context, methodistID uuid.UUID, teacherID uuid.UUID, points int32, note string) (*Penalty, error)
+	GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]*Penalty, error)
+	GetPenaltyByIDAndTeacherID(ctx context.Context, penaltyID uuid.UUID, teacherID uuid.UUID) (*Penalty, error)
+	DeletePenaltyByIDAndTeacherID(ctx context.Context, penaltyID uuid.UUID, teacherID uuid.UUID) error
 	CountUsers(ctx context.Context) (int64, error)
 }
 
@@ -258,4 +274,121 @@ func (s *userService) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.U
 
 func (s *userService) CountUsers(ctx context.Context) (int64, error) {
 	return s.repo.CountUsers(ctx)
+}
+
+func (s *userService) CreatePenalty(ctx context.Context, methodistID uuid.UUID, teacherID uuid.UUID, points int32, note string) (*Penalty, error) {
+	if points <= 0 {
+		return nil, &HTTPStatusError{StatusCode: 400, Message: "points must be greater than 0"}
+	}
+
+	note = strings.TrimSpace(note)
+	if note == "" {
+		return nil, &HTTPStatusError{StatusCode: 400, Message: "note is required"}
+	}
+
+	teacher, err := s.repo.GetUserByKeycloakID(ctx, teacherID)
+	if err != nil {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "teacher not found"}
+	}
+
+	_, err = s.repo.GetUserByKeycloakID(ctx, methodistID)
+	if err != nil {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "methodist not found"}
+	}
+
+	penaltyID := uuid.New()
+	err = s.repo.CreatePenalty(ctx, storage.CreatePenaltyParams{
+		ID:        penaltyID,
+		Points:    []int32{points},
+		Teacher:   pgtype.UUID{Bytes: teacher.KeycloakID, Valid: true},
+		Methodist: pgtype.UUID{Bytes: methodistID, Valid: true},
+		Note:      pgtype.Text{String: note, Valid: true},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.repo.UpdateUserTotalPoints(ctx, teacherID, -points); err != nil {
+		return nil, err
+	}
+
+	return s.GetPenaltyByIDAndTeacherID(ctx, penaltyID, teacherID)
+}
+
+func (s *userService) GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]*Penalty, error) {
+	dbPenalties, err := s.repo.GetPenaltiesByTeacherID(ctx, teacherID)
+	if err != nil {
+		return nil, err
+	}
+
+	penalties := make([]*Penalty, 0, len(dbPenalties))
+	for _, dbPenalty := range dbPenalties {
+		penalties = append(penalties, mapPenalty(dbPenalty))
+	}
+
+	return penalties, nil
+}
+
+func (s *userService) GetPenaltyByIDAndTeacherID(ctx context.Context, penaltyID uuid.UUID, teacherID uuid.UUID) (*Penalty, error) {
+	dbPenalty, err := s.repo.GetPenaltyByIDAndTeacherID(ctx, storage.GetPenaltyByIDAndTeacherIDParams{
+		ID:      penaltyID,
+		Teacher: pgtype.UUID{Bytes: teacherID, Valid: true},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return mapPenalty(dbPenalty), nil
+}
+
+func (s *userService) DeletePenaltyByIDAndTeacherID(ctx context.Context, penaltyID uuid.UUID, teacherID uuid.UUID) error {
+	dbPenalty, err := s.repo.GetPenaltyByIDAndTeacherID(ctx, storage.GetPenaltyByIDAndTeacherIDParams{
+		ID:      penaltyID,
+		Teacher: pgtype.UUID{Bytes: teacherID, Valid: true},
+	})
+	if err != nil {
+		return err
+	}
+
+	if err = s.repo.DeletePenaltyByIDAndTeacherID(ctx, storage.DeletePenaltyByIDAndTeacherIDParams{
+		ID:      penaltyID,
+		Teacher: pgtype.UUID{Bytes: teacherID, Valid: true},
+	}); err != nil {
+		return err
+	}
+
+	penaltyPoints := int32(0)
+	if len(dbPenalty.Points) > 0 {
+		penaltyPoints = dbPenalty.Points[0]
+	}
+
+	if penaltyPoints != 0 {
+		if err = s.repo.UpdateUserTotalPoints(ctx, teacherID, penaltyPoints); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func mapPenalty(dbPenalty storage.Penalty) *Penalty {
+	points := int32(0)
+	if len(dbPenalty.Points) > 0 {
+		points = dbPenalty.Points[0]
+	}
+
+	note := ""
+	if dbPenalty.Note.Valid {
+		note = dbPenalty.Note.String
+	}
+
+	return &Penalty{
+		ID:          dbPenalty.ID,
+		Points:      points,
+		TeacherID:   dbPenalty.Teacher.Bytes,
+		MethodistID: dbPenalty.Methodist.Bytes,
+		Note:        note,
+		CreatedAt:   dbPenalty.CreatedAt.Time,
+		UpdatedAt:   dbPenalty.UpdatedAt.Time,
+	}
 }
