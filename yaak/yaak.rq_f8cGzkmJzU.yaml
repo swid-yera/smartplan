@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_f8cGzkmJzU
 createdAt: 2026-01-19T09:51:11.484196300
-updatedAt: 2026-05-26T12:02:37.745192100
+updatedAt: 2026-05-26T12:47:42.015259700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_oAFVcfRqht
 authentication: {}
@@ -28,7 +28,11 @@ body:
     id: H2zgvD0mut
     name: file
   - enabled: true
+    file: C:\Users\kpopo\Pictures\абои для кампутера.jpg
     id: U7vvXFcMbT
+    name: file
+  - enabled: true
+    id: XhuPYu2UtE
     name: ''
     value: ''
 bodyType: multipart/form-data

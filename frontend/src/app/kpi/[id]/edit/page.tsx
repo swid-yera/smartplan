@@ -92,14 +92,17 @@ const Page = () => {
 	const existingFileValues = useMemo(() => {
 		if (!category?.fieldsExpanded?.length || !award?.fieldValues) return {}
 
-		return category.fieldsExpanded.reduce<Record<string, string>>((acc, field) => {
+		return category.fieldsExpanded.reduce<Record<string, string[]>>((acc, field) => {
 			if (field.type !== 'file') return acc
 
 			const rawValue = award.fieldValues?.[field.key]
-			const value = Array.isArray(rawValue) ? rawValue[0] : rawValue
+			const values = Array.isArray(rawValue) ? rawValue : [rawValue]
+			const normalizedValues = values.filter(
+				(value): value is string => typeof value === 'string' && value.trim().length > 0,
+			)
 
-			if (typeof value === 'string' && value.trim()) {
-				acc[field.key] = value
+			if (normalizedValues.length > 0) {
+				acc[field.key] = normalizedValues
 			}
 
 			return acc
@@ -190,7 +193,7 @@ const Page = () => {
 				const hasNewFile = Array.isArray(value) && value.length > 0
 				const existingFile = existingFileValues[field.key]
 
-				return !hasNewFile && !existingFile
+				return !hasNewFile && (!Array.isArray(existingFile) || existingFile.length === 0)
 			}
 
 			if (Array.isArray(value)) return value.length === 0
@@ -234,7 +237,8 @@ const Page = () => {
 					return acc
 				}
 
-				acc[field.key] = existingFileValues[field.key] || ''
+				const existingFiles = existingFileValues[field.key] || []
+				acc[field.key] = existingFiles.length > 0 ? existingFiles : ''
 
 				return acc
 			}
@@ -266,14 +270,14 @@ const Page = () => {
 			return acc
 		}, {})
 
-		const filesByField = category.fieldsExpanded.reduce<Record<string, File>>((acc, field) => {
+		const filesByField = category.fieldsExpanded.reduce<Record<string, File[]>>((acc, field) => {
 			if (field.type !== 'file') return acc
 
 			const value = categoryFieldValues[field.key]
 
-			if (!Array.isArray(value) || !value[0]) return acc
+			if (!Array.isArray(value) || value.length === 0) return acc
 
-			acc[field.key] = value[0]
+			acc[field.key] = value
 
 			return acc
 		}, {})
@@ -398,16 +402,22 @@ const Page = () => {
 											if (hasNewFile) return null
 
 											return (
-												<li key={fieldKey}>
+												<li key={fieldKey} className='space-y-1'>
 													<span className='text-muted-foreground mr-2'>{fieldKey}:</span>
-													<a
-														className='text-primary hover:underline break-all'
-														href={fileUrl}
-														rel='noopener noreferrer'
-														target='_blank'
-													>
-														{t.openCurrentFile}
-													</a>
+													<ul className='space-y-1'>
+														{fileUrl.map((url, index) => (
+															<li key={`${fieldKey}-${index}`}>
+																<a
+																	className='text-primary hover:underline break-all'
+																	href={url}
+																	rel='noopener noreferrer'
+																	target='_blank'
+																>
+																	{t.openCurrentFile} {index + 1}
+																</a>
+															</li>
+														))}
+													</ul>
 												</li>
 											)
 										})}
