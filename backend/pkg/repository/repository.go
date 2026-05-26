@@ -26,6 +26,10 @@ type UsersRepository interface {
 	GetDepartmentsByUserID(ctx context.Context, userID uuid.UUID) ([]storage.Department, error)
 
 	UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error
+	CreatePenalty(ctx context.Context, params storage.CreatePenaltyParams) error
+	GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]storage.Penalty, error)
+	GetPenaltyByIDAndTeacherID(ctx context.Context, params storage.GetPenaltyByIDAndTeacherIDParams) (storage.Penalty, error)
+	DeletePenaltyByIDAndTeacherID(ctx context.Context, params storage.DeletePenaltyByIDAndTeacherIDParams) error
 }
 
 type Auth interface {
