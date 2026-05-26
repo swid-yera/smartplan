@@ -1,5 +1,7 @@
+import Link from 'next/link'
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, Badge, Heading, Separator } from '@shadcn'
-import { CircleQuestionMark, MailIcon, PhoneIcon } from 'lucide-react'
+import { CircleQuestionMark } from 'lucide-react'
 
 const faqs = [
 	{
@@ -45,11 +47,19 @@ const Page = () => {
 
 					<Separator className='mt-8' />
 
-					<div className='mt-6 flex justify-start items-center gap-3'>
-						<MailIcon className='h-6 w-6 text-muted-foreground' /> example@gmail.com
-					</div>
-					<div className='mt-6 flex justify-start items-center gap-3'>
-						<PhoneIcon className='h-6 w-6 text-muted-foreground' /> +7 (777) 777 77 77
+					<div className='mt-8'>
+						<h3 className='text-2xl font-bold'>Если возникли проблемы?</h3>
+						<p>
+							Создайте заявку в{' '}
+							<Link
+								className='text-primary underline'
+								href='https://supportik.aspc.kz/tickets/create'
+								target='_blank'
+							>
+								supportik.aspc.kz
+							</Link>{' '}
+							выбрав тип заявки "Вопрос по работе системы"
+						</p>
 					</div>
 				</div>
 
