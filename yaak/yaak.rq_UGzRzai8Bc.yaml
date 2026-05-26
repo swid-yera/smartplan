@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UGzRzai8Bc
 createdAt: 2026-01-13T03:16:46.890644700
-updatedAt: 2026-05-26T13:39:45.951514100
+updatedAt: 2026-05-26T13:59:09.463259
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -53,6 +53,14 @@ urlParameters:
   value: createdAt
   id: DQP6Ux4GnX
 - enabled: true
+  name: search
+  value: потому
+  id: imj3KSRmN8
+- enabled: true
+  name: sort
+  value: desc
+  id: n3heP42ezp
+- enabled: true
   name: ''
   value: ''
-  id: fSi0Mj5RBc
+  id: KQaig0cSJn

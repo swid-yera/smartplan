@@ -11,8 +11,18 @@ DB_USER="${DB_USER:-admin}"
 DB_NAME="${DB_NAME:-eduplan}"
 
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
-BACKUP_FILE="${BACKUP_FILE:-backup.sql}"
-MODE="${1:-full}" # full | schema | data
+BACKUP_PREFIX="${BACKUP_PREFIX:-awards_backup}"
+TIMESTAMP="$(date +%Y-%m-%d_%H-%M)"
+BACKUP_FILE="${BACKUP_FILE:-${BACKUP_PREFIX}_${TIMESTAMP}.sql}"
+
+# Таблицы по умолчанию как в awards_backup_*.sql
+TABLES=(
+  "public.award_categories"
+  "public.award_category_fields"
+  "public.award_type_criteria"
+  "public.award_type_variants"
+  "public.award_types"
+)
 
 # =========================
 # SCRIPT
@@ -24,31 +34,24 @@ mkdir -p "$BACKUP_DIR"
 echo "Проверка контейнеров..."
 docker compose ps
 
-PG_DUMP_EXTRA_ARGS=()
-case "$MODE" in
-  full)
-    echo "Режим: полный backup (структура + данные)"
-    ;;
-  schema)
-    echo "Режим: только структура (без данных)"
-    PG_DUMP_EXTRA_ARGS+=(--schema-only)
-    ;;
-  data)
-    echo "Режим: только данные (без структуры)"
-    PG_DUMP_EXTRA_ARGS+=(--data-only)
-    ;;
-  *)
-    echo "Ошибка: неизвестный режим '$MODE'. Используй: full | schema | data"
-    exit 1
-    ;;
-esac
-
 OUT_PATH="$BACKUP_DIR/$BACKUP_FILE"
+echo "Режим: только данные таблиц (без CREATE TABLE)"
+echo "Файл: $OUT_PATH"
+
+PG_DUMP_ARGS=(
+  --data-only
+  --inserts
+  --column-inserts
+  -U "$DB_USER"
+  -d "$DB_NAME"
+)
+
+for table in "${TABLES[@]}"; do
+  PG_DUMP_ARGS+=( -t "$table" )
+done
 
 echo "Создание backup базы данных '$DB_NAME'..."
-docker compose exec -T "$SERVICE_NAME" \
-  pg_dump -U "$DB_USER" -d "$DB_NAME" "${PG_DUMP_EXTRA_ARGS[@]}" \
-  > "$OUT_PATH"
+docker compose exec -T "$SERVICE_NAME" pg_dump "${PG_DUMP_ARGS[@]}" > "$OUT_PATH"
 
 echo "Backup создан:"
 echo "$OUT_PATH"
