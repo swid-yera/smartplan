@@ -1,86 +1,129 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
-# Use the current directory as docker-compose directory.
-COMPOSE_DIR="$(pwd)"
-CONTAINER_BACKUP_PATH="/tmp/restore_backup.sql"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_DIR="${COMPOSE_DIR:-$SCRIPT_DIR}"
+BACKUP_DIR_DEFAULT="$COMPOSE_DIR/backups"
 
-echo "Working directory: $COMPOSE_DIR"
-echo "This directory must contain docker-compose.yml."
+SERVICE_NAME="postgres"
+DB_USER="admin"
+DB_NAME="eduplan"
+BACKUP_FILE=""
+BACKUP_DIR="$BACKUP_DIR_DEFAULT"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  ./restore_backups.sh [options]
+
+Options:
+  -f, --file <path>       Path to backup SQL file.
+  -b, --backups <dir>     Directory with backups (default: ./backups).
+  -s, --service <name>    Docker Compose DB service (default: postgres).
+  -u, --user <name>       Database user (default: admin).
+  -d, --database <name>   Database name (default: eduplan).
+  -h, --help              Show this help.
+
+Examples:
+  ./restore_backups.sh
+  ./restore_backups.sh --file ./backups/backup.sql
+  ./restore_backups.sh --service postgres --user admin --database eduplan
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -f|--file)
+      BACKUP_FILE="${2:-}"
+      shift 2
+      ;;
+    -b|--backups)
+      BACKUP_DIR="${2:-}"
+      shift 2
+      ;;
+    -s|--service)
+      SERVICE_NAME="${2:-}"
+      shift 2
+      ;;
+    -u|--user)
+      DB_USER="${2:-}"
+      shift 2
+      ;;
+    -d|--database)
+      DB_NAME="${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
 
 if [[ ! -f "$COMPOSE_DIR/docker-compose.yml" ]]; then
-	echo "Error: docker-compose.yml was not found in $COMPOSE_DIR"
-	exit 1
+  echo "Error: docker-compose.yml not found in $COMPOSE_DIR"
+  exit 1
 fi
 
-read -r -p "Enter backup SQL file path: " BACKUP_FILE
-read -r -p "Enter DB service name or container name (example: postgres or eduplan-postgres-1): " SERVICE_INPUT
-read -r -p "Enter DB user: " DB_USER
-read -r -p "Enter DB name: " DB_NAME
-
-if [[ -z "${BACKUP_FILE}" || -z "${SERVICE_INPUT}" || -z "${DB_USER}" || -z "${DB_NAME}" ]]; then
-	echo "Error: all inputs are required."
-	exit 1
-fi
-
-if [[ ! "$BACKUP_FILE" = /* ]]; then
-	BACKUP_FILE="$COMPOSE_DIR/$BACKUP_FILE"
-fi
-
-if [[ ! -f "$BACKUP_FILE" ]]; then
-	echo "Error: backup file was not found: $BACKUP_FILE"
-	exit 1
-fi
-
-echo "Checking docker compose services..."
 cd "$COMPOSE_DIR"
-docker compose ps
 
-SERVICE_NAME="$SERVICE_INPUT"
-SERVICE_CONTAINER_ID=""
-
-# If input is not a compose service, try to resolve it as a container name.
 if ! docker compose ps --services | grep -Fxq "$SERVICE_NAME"; then
-	SERVICE_CONTAINER_ID="$(docker compose ps -q "$SERVICE_NAME" 2>/dev/null || true)"
-
-	if [[ -z "$SERVICE_CONTAINER_ID" ]]; then
-		SERVICE_CONTAINER_ID="$(docker ps -q -f "name=^${SERVICE_INPUT}$" || true)"
-	fi
-
-	if [[ -z "$SERVICE_CONTAINER_ID" ]]; then
-		echo "Error: '$SERVICE_INPUT' is neither a compose service name nor a running container name."
-		echo "Hint: for this project the compose DB service is usually 'postgres'."
-		exit 1
-	fi
+  echo "Error: service '$SERVICE_NAME' not found in docker-compose.yml"
+  docker compose ps --services || true
+  exit 1
 fi
 
-echo "Uploading backup file into container path: $CONTAINER_BACKUP_PATH"
-if [[ -n "$SERVICE_CONTAINER_ID" ]]; then
-	docker exec -i "$SERVICE_CONTAINER_ID" sh -c "cat > '$CONTAINER_BACKUP_PATH'" < "$BACKUP_FILE"
+if [[ -n "$BACKUP_FILE" ]]; then
+  if [[ ! "$BACKUP_FILE" = /* ]]; then
+    BACKUP_FILE="$COMPOSE_DIR/$BACKUP_FILE"
+  fi
+  if [[ ! -f "$BACKUP_FILE" ]]; then
+    echo "Error: backup file not found: $BACKUP_FILE"
+    exit 1
+  fi
 else
-	docker compose exec -T "$SERVICE_NAME" sh -c "cat > '$CONTAINER_BACKUP_PATH'" < "$BACKUP_FILE"
+  if [[ ! "$BACKUP_DIR" = /* ]]; then
+    BACKUP_DIR="$COMPOSE_DIR/$BACKUP_DIR"
+  fi
+
+  if [[ ! -d "$BACKUP_DIR" ]]; then
+    echo "Error: backups directory not found: $BACKUP_DIR"
+    exit 1
+  fi
+
+  mapfile -t backups < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*.sql" | sort)
+  if [[ ${#backups[@]} -eq 0 ]]; then
+    echo "Error: no .sql backups found in $BACKUP_DIR"
+    exit 1
+  fi
+
+  echo "Available backups:"
+  for i in "${!backups[@]}"; do
+    printf "  %d) %s\n" "$((i + 1))" "$(basename "${backups[$i]}")"
+  done
+
+  read -r -p "Choose backup number: " choice
+  if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#backups[@]} )); then
+    echo "Error: invalid choice."
+    exit 1
+  fi
+  BACKUP_FILE="${backups[$((choice - 1))]}"
 fi
 
-echo "Applying SQL backup to database '$DB_NAME'..."
-if [[ -n "$SERVICE_CONTAINER_ID" ]]; then
-	docker exec -i "$SERVICE_CONTAINER_ID" psql -U "$DB_USER" -d "$DB_NAME" -f "$CONTAINER_BACKUP_PATH"
-else
-	docker compose exec -T "$SERVICE_NAME" psql -U "$DB_USER" -d "$DB_NAME" -f "$CONTAINER_BACKUP_PATH"
-fi
+echo "Compose dir: $COMPOSE_DIR"
+echo "Service:     $SERVICE_NAME"
+echo "DB user:     $DB_USER"
+echo "DB name:     $DB_NAME"
+echo "Backup file: $BACKUP_FILE"
 
-echo "Checking tables..."
-if [[ -n "$SERVICE_CONTAINER_ID" ]]; then
-	docker exec -i "$SERVICE_CONTAINER_ID" psql -U "$DB_USER" -d "$DB_NAME" -c "\dt"
-else
-	docker compose exec -T "$SERVICE_NAME" psql -U "$DB_USER" -d "$DB_NAME" -c "\dt"
-fi
+echo "Restoring backup..."
+docker compose exec -T "$SERVICE_NAME" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" < "$BACKUP_FILE"
 
-echo "Cleaning temporary file inside container..."
-if [[ -n "$SERVICE_CONTAINER_ID" ]]; then
-	docker exec -i "$SERVICE_CONTAINER_ID" rm -f "$CONTAINER_BACKUP_PATH"
-else
-	docker compose exec -T "$SERVICE_NAME" rm -f "$CONTAINER_BACKUP_PATH"
-fi
-
-echo "Backup restore completed successfully."
+echo "Restore completed successfully. Current tables:"
+docker compose exec -T "$SERVICE_NAME" psql -U "$DB_USER" -d "$DB_NAME" -c '\dt'
