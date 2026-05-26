@@ -3,6 +3,9 @@
 		"selectPlaceholder": "Выберите значение",
 		"urlPlaceholder": "example.com/path",
 		"datePlaceholder": "Выберите дату",
+		"fileSelected": "Выбрано файлов",
+		"fileRemove": "Убрать",
+		"fileDropHint": "Перетащите новые файлы или нажмите для добавления",
 		"errors": {
 			"minLength": "Минимальная длина: {value}",
 			"maxLength": "Максимальная длина: {value}",
@@ -17,6 +20,9 @@
 		"selectPlaceholder": "Мәнді таңдаңыз",
 		"urlPlaceholder": "example.com/path",
 		"datePlaceholder": "Күнді таңдаңыз",
+		"fileSelected": "Таңдалған файлдар",
+		"fileRemove": "Өшіру",
+		"fileDropHint": "Жаңа файлдарды сүйреп апарыңыз немесе қосу үшін басыңыз",
 		"errors": {
 			"minLength": "Ең аз ұзындық: {value}",
 			"maxLength": "Ең көп ұзындық: {value}",

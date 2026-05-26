@@ -16,6 +16,12 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).fieldValues
 	const awardFieldValues = Object.entries(award.fieldValues || {})
+	const categoryFieldLabelByKey = new Map(
+		(award.category?.fieldsExpanded || []).map((field) => [
+			field.key,
+			getLocaleText(field.label, locale) || field.key,
+		]),
+	)
 	const fileKeyRegex = /(file|document|attachment|image|photo|scan)/i
 	const urlKeyRegex = /(url|link|website)/i
 	const fileValueRegex = /\.(jpg|jpeg|png|gif|webp|bmp|svg|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip|rar)(\?.*)?$/i
@@ -38,6 +44,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 
 	const isFileValue = (value: string) => fileValueRegex.test(value.trim())
 	const isUrlValue = (value: string) => urlValueRegex.test(value.trim())
+	const getFieldLabel = (fieldKey: string) => categoryFieldLabelByKey.get(fieldKey) || fieldKey
 
 	const sections = awardFieldValues.reduce(
 		(acc, [fieldKey, rawValue]) => {
@@ -47,25 +54,25 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 			const lowerFieldKey = fieldKey.toLowerCase()
 
 			if (fileKeyRegex.test(lowerFieldKey) || (values.length > 0 && values.every((value) => isFileValue(value)))) {
-				acc.file.push({ fieldKey, values })
+				acc.file.push({ fieldKey, fieldLabel: getFieldLabel(fieldKey), values })
 
 				return acc
 			}
 
 			if (urlKeyRegex.test(lowerFieldKey) || (values.length > 0 && values.every((value) => isUrlValue(value)))) {
-				acc.url.push({ fieldKey, values })
+				acc.url.push({ fieldKey, fieldLabel: getFieldLabel(fieldKey), values })
 
 				return acc
 			}
 
-			acc.info.push({ fieldKey, values })
+			acc.info.push({ fieldKey, fieldLabel: getFieldLabel(fieldKey), values })
 
 			return acc
 		},
 		{
-			file: [] as Array<{ fieldKey: string; values: string[] }>,
-			info: [] as Array<{ fieldKey: string; values: string[] }>,
-			url: [] as Array<{ fieldKey: string; values: string[] }>,
+			file: [] as Array<{ fieldKey: string; fieldLabel: string; values: string[] }>,
+			info: [] as Array<{ fieldKey: string; fieldLabel: string; values: string[] }>,
+			url: [] as Array<{ fieldKey: string; fieldLabel: string; values: string[] }>,
 		},
 	)
 
@@ -138,9 +145,9 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 							<h3 className='font-semibold'>{t.categoryFields}</h3>
 							{sections.info.length > 0 ? (
 								<div className='grid gap-4 md:grid-cols-2'>
-									{sections.info.map(({ fieldKey, values }) => (
+									{sections.info.map(({ fieldKey, fieldLabel, values }) => (
 										<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
-											<p className='text-sm font-medium text-muted-foreground'>{fieldKey}</p>
+											<p className='text-sm font-medium text-muted-foreground'>{fieldLabel}</p>
 											<div className='space-y-2'>{renderTextValues(values)}</div>
 										</div>
 									))}
@@ -156,9 +163,9 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 							<div className='space-y-3'>
 								<h3 className='font-semibold'>{t.urlFields}</h3>
 								<div className='space-y-4'>
-									{sections.url.map(({ fieldKey, values }) => (
+									{sections.url.map(({ fieldKey, fieldLabel, values }) => (
 										<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
-											<p className='text-sm font-medium text-muted-foreground'>{fieldKey}</p>
+											<p className='text-sm font-medium text-muted-foreground'>{fieldLabel}</p>
 											<div className='space-y-2'>{renderUrlValues(values)}</div>
 										</div>
 									))}
@@ -172,10 +179,10 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 							<div className='space-y-3'>
 								<h3 className='font-semibold'>{t.fileFields}</h3>
 								<div className='space-y-4'>
-									{sections.file.map(({ fieldKey, values }) => (
+									{sections.file.map(({ fieldKey, fieldLabel, values }) => (
 										<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
-											<p className='text-sm font-medium text-muted-foreground'>{fieldKey}</p>
-											<div className='space-y-3'>{renderFileValues(fieldKey, values)}</div>
+											<p className='text-sm font-medium text-muted-foreground'>{fieldLabel}</p>
+											<div className='space-y-3'>{renderFileValues(fieldLabel, values)}</div>
 										</div>
 									))}
 								</div>

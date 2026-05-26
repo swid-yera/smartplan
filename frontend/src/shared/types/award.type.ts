@@ -1,5 +1,6 @@
 import type { IUser, StatusEnum } from './global.type'
 import type { LocalizedText } from './locale.type'
+import type { IAwardCategoryResponse } from './service/award.service.type'
 
 export enum ViolationEnum {
 	NONE = 'NONE',
@@ -28,7 +29,7 @@ export interface IAward {
 	bonusCriteria?: ICriteria
 	bonus_criteria?: ICriteria | null
 	categoryId?: string
-	category?: IAwardCategory | null
+	category?: IAwardCategoryResponse | null
 	fieldValues?: Record<string, string | string[]>
 
 	totalPoints: number
@@ -40,20 +41,6 @@ export interface IAward {
 	updatedAt: string
 }
 
-export interface IAwardCategory {
-	id: string
-	name: LocalizedText
-	icon?: string
-	description?: LocalizedText
-	awardTypes?: string[]
-	awardTypesExpanded?: IAwardCategoryType[]
-}
-
-export interface IAwardCategoryType {
-	id: string
-	name: LocalizedText
-}
-
 export interface IType {
 	id: string
 	name: LocalizedText
@@ -63,9 +50,10 @@ export interface IType {
 export interface IVariant {
 	id: string
 	name: LocalizedText
-	description: LocalizedText
+	description: LocalizedText | null
 	criteria: ICriteria[]
-	bonusCriteria: ICriteria[]
+	bonusCriteria?: ICriteria[]
+	bonus_criteria?: ICriteria[] | null
 }
 
 export interface ICriteria {

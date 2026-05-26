@@ -397,7 +397,7 @@ export default function CreateAwardPage() {
 	const categoryDescription = getLocaleText(category.description, locale) || 'Описание категории отсутствует'
 
 	return (
-		<section className='mx-auto w-full p-6 space-y-6'>
+		<section className='mx-auto max-w-7xl w-full p-6 space-y-6'>
 			<PageTitle backHref={`/kpi/categories/${category.id}`} description={t.pageDescription}>
 				{t.pageTitle}
 			</PageTitle>

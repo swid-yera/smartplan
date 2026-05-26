@@ -1,5 +1,6 @@
 import type { CriteriaMethodEnum } from '../award.type'
 import type { LocaleText, LocalizedText } from '../locale.type'
+import type { ICategoryResponse } from './categories.service.type'
 
 // create award
 export interface ICreateAwardRequest {
@@ -45,9 +46,10 @@ export interface ITypeResponse {
 export interface IVariantResponse {
 	id: string
 	name: LocalizedText
-	description: LocalizedText
+	description: LocalizedText | null
 	criteria: ICriteriaResponse[]
 	bonusCriteria?: ICriteriaResponse[]
+	bonus_criteria?: ICriteriaResponse[] | null
 }
 
 export interface ICriteriaResponse {
@@ -63,3 +65,5 @@ export interface IDepartmentRatingResponse {
 	totalPoints: number
 	userCount: number
 }
+
+export type IAwardCategoryResponse = ICategoryResponse

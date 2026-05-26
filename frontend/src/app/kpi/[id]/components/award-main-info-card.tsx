@@ -14,17 +14,23 @@ interface IAwardMainInfoCardProps {
 export const AwardMainInfoCard = ({ award }: IAwardMainInfoCardProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const typeName = getLocaleText(award.type.name, locale)
-	const variantName = getLocaleText(award.variant.name, locale)
+	const categoryName = award.category ? getLocaleText(award.category.name, locale) : ''
 	const criteriaName = getLocaleText(award.criteria.name, locale)
+	const categoryIconOption = getCategoryIconOptionByName(award.category?.icon)
+	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const matchedTypeIcon = getCategoryIconOptionByName(typeName)
 	const TypeIcon = matchedTypeIcon?.Icon || Folder
 	const normalizedBonusCriteria = award.bonusCriteria || award.bonus_criteria || null
 	const bonusCriteriaName = normalizedBonusCriteria ? getLocaleText(normalizedBonusCriteria.name, locale) : '-'
+	const title = categoryName || getLocaleText(award.variant.name, locale)
 
 	return (
 		<Card className='md:col-span-2'>
 			<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-				<CardTitle className='text-xl font-bold'>{variantName}</CardTitle>
+				<CardTitle className='text-xl font-bold flex items-center gap-2'>
+					<CategoryIcon className='h-5 w-5 text-primary' />
+					<span>{title}</span>
+				</CardTitle>
 				<StatusBadge status={award.status} />
 			</CardHeader>
 			<CardContent className='space-y-4 pt-4'>
