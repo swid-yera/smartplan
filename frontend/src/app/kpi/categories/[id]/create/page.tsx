@@ -398,10 +398,7 @@ export default function CreateAwardPage() {
 
 	return (
 		<section className='mx-auto w-full p-6 space-y-6'>
-			<PageTitle
-				backHref={`/kpi/categories/${category.id}`}
-				description={t.pageDescription}
-			>
+			<PageTitle backHref={`/kpi/categories/${category.id}`} description={t.pageDescription}>
 				{t.pageTitle}
 			</PageTitle>
 

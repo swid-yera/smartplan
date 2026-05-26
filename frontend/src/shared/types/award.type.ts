@@ -28,6 +28,7 @@ export interface IAward {
 	bonusCriteria?: ICriteria
 	bonus_criteria?: ICriteria | null
 	categoryId?: string
+	category?: IAwardCategory | null
 	fieldValues?: Record<string, string | string[]>
 
 	totalPoints: number
@@ -37,6 +38,20 @@ export interface IAward {
 
 	createdAt: string
 	updatedAt: string
+}
+
+export interface IAwardCategory {
+	id: string
+	name: LocalizedText
+	icon?: string
+	description?: LocalizedText
+	awardTypes?: string[]
+	awardTypesExpanded?: IAwardCategoryType[]
+}
+
+export interface IAwardCategoryType {
+	id: string
+	name: LocalizedText
 }
 
 export interface IType {

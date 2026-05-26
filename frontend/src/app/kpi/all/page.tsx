@@ -24,8 +24,15 @@ const Page = () => {
 	const page = Number(searchParams.get('page')) || 1
 	const pageSize = Number(searchParams.get('pageSize')) || 10
 	const statusParam = searchParams.get('status') ?? '' // "PENDING,APPROVED"
+	const categoryIdParam = searchParams.get('categoryId') ?? '' // "id1,id2"
 
 	const status = statusParam ? statusParam.split(',') : undefined
+	const categoryId = categoryIdParam
+		? categoryIdParam
+				.split(',')
+				.map((id) => id.trim())
+				.filter(Boolean)
+		: undefined
 
 	// store
 	const { user, authLoading } = useAuthStore()
@@ -36,6 +43,7 @@ const Page = () => {
 			currentPage: page,
 			pageSize,
 			status: status as StatusEnum[],
+			categoryId,
 		}),
 		enabled: !!user,
 	})

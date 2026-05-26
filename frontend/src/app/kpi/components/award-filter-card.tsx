@@ -1,12 +1,15 @@
 'use client'
 
-import { type FC, type FormEvent, useState } from 'react'
+import { type FC, type FormEvent, useMemo, useState } from 'react'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { StatusBadge } from '@components'
-import { getStatusLabels } from '@helpers'
+import { getLocaleText, getStatusLabels } from '@helpers'
+import { cn } from '@lib'
+import { services } from '@services'
 import {
+	Badge,
 	Button,
 	Card,
 	CardContent,
@@ -14,14 +17,21 @@ import {
 	CardHeader,
 	CardTitle,
 	Checkbox,
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
 	Label,
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
 import { StatusEnum } from '@types'
-import { Filter } from 'lucide-react'
+import { Check, ChevronsUpDown, Filter } from 'lucide-react'
 
 import localeDictionary from './locale.json'
 
@@ -38,12 +48,39 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 	const pathname = usePathname()
 
 	const currentStatusParam = searchParams.get('status')
+	const currentCategoryIdParam = searchParams.get('categoryId')
 	const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
 		currentStatusParam ? currentStatusParam.split(',') : [],
+	)
+	const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
+		currentCategoryIdParam
+			? currentCategoryIdParam
+					.split(',')
+					.map((id) => id.trim())
+					.filter(Boolean)
+			: [],
+	)
+
+	const { data: categories = [] } = useQuery({
+		...services.categories.getAllOptions(),
+	})
+
+	const selectedCategoryIdSet = useMemo(() => new Set(selectedCategoryIds), [selectedCategoryIds])
+	const selectedCategories = useMemo(
+		() =>
+			categories
+				.filter((category) => selectedCategoryIdSet.has(category.id))
+				.sort((a, b) => getLocaleText(a.name, locale).localeCompare(getLocaleText(b.name, locale), locale)),
+		[categories, locale, selectedCategoryIdSet],
 	)
 
 	const toggleStatus = (status: string) => {
 		setSelectedStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]))
+	}
+	const toggleCategory = (categoryId: string) => {
+		setSelectedCategoryIds((prev) =>
+			prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
+		)
 	}
 
 	const handleSubmit = (e: FormEvent) => {
@@ -53,6 +90,8 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 
 		if (selectedStatuses.length > 0) params.set('status', selectedStatuses.join(','))
 		else params.delete('status')
+		if (selectedCategoryIds.length > 0) params.set('categoryId', selectedCategoryIds.join(','))
+		else params.delete('categoryId')
 
 		params.set('page', '1')
 
@@ -67,9 +106,9 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 			</CardHeader>
 			<CardContent className='h-full'>
 				<form className='h-full flex justify-between items-center gap-3' onSubmit={(e) => handleSubmit(e)}>
-					<div className='grid gap-3 lg:grid-cols-2 w-full'>
+					<div className='grid gap-3 md:grid-cols-2 w-full'>
 						{/* status */}
-						<div className='space-y-1 col-span-2'>
+						<div className='space-y-1'>
 							<Label>{t.awardFilter.status}</Label>
 							<Popover>
 								<PopoverTrigger asChild>
@@ -103,6 +142,60 @@ export const AwardFilterCard: FC<IProps> = ({ className }) => {
 											</div>
 										))}
 									</div>
+								</PopoverContent>
+							</Popover>
+						</div>
+
+						{/* category */}
+						<div className='space-y-1'>
+							<Label>{t.awardFilter.category}</Label>
+							<Popover>
+								<PopoverTrigger asChild>
+									<Button className='w-full justify-between font-normal' role='combobox' variant='outline'>
+										{selectedCategories.length > 0 ? (
+											<div className='flex gap-1 flex-wrap'>
+												{selectedCategories.map((category) => (
+													<Badge key={category.id} variant='secondary'>
+														{getLocaleText(category.name, locale)}
+													</Badge>
+												))}
+											</div>
+										) : (
+											<span className='text-muted-foreground'>{t.awardFilter.selectCategories}</span>
+										)}
+										<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-0'>
+									<Command>
+										<CommandInput placeholder={t.awardFilter.searchCategory} />
+										<CommandList>
+											<CommandEmpty>{t.awardFilter.categoryNotFound}</CommandEmpty>
+											<CommandGroup>
+												{categories.map((category) => {
+													const categoryName = getLocaleText(category.name, locale)
+
+													return (
+														<CommandItem
+															key={category.id}
+															value={categoryName}
+															onSelect={() => toggleCategory(category.id)}
+														>
+															<Check
+																className={cn(
+																	'mr-2 h-4 w-4',
+																	selectedCategoryIdSet.has(category.id)
+																		? 'opacity-100'
+																		: 'opacity-0',
+																)}
+															/>
+															{categoryName}
+														</CommandItem>
+													)
+												})}
+											</CommandGroup>
+										</CommandList>
+									</Command>
 								</PopoverContent>
 							</Popover>
 						</div>
