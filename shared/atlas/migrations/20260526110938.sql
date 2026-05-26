@@ -1,25 +1,7 @@
--- Create "award_type_variants" table
-CREATE TABLE "public"."award_type_variants" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-  "name" jsonb NOT NULL DEFAULT '{"kz": "", "ru": ""}',
-  "description" jsonb NULL,
-  "criteria" uuid[] NULL,
-  "bonus_criteria" uuid[] NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "award_type_variants_description_locale_check" CHECK ((description IS NULL) OR ((description ? 'ru'::text) AND (description ? 'kz'::text))),
-  CONSTRAINT "award_type_variants_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
-);
--- Create enum type "enum_criteria_method"
-CREATE TYPE "public"."enum_criteria_method" AS ENUM ('NORMAL', 'MEASURING');
--- Create "award_type_criteria" table
-CREATE TABLE "public"."award_type_criteria" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-  "name" jsonb NOT NULL DEFAULT '{"kz": "", "ru": ""}',
-  "points" integer[] NULL,
-  "method" "public"."enum_criteria_method" NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "award_type_criteria_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
-);
+-- Create enum type "rups_status"
+CREATE TYPE "public"."rups_status" AS ENUM ('DRAFT', 'IN_REVIEW', 'APPROVED', 'REJECTED');
+-- Create enum type "study_form_enum"
+CREATE TYPE "public"."study_form_enum" AS ENUM ('CORRESPONDENCE', 'FULL_TIME');
 -- Create enum type "rups_type_enum"
 CREATE TYPE "public"."rups_type_enum" AS ENUM ('PRACTICE', 'THEORY');
 -- Create enum type "discipline_topic_type"
@@ -28,10 +10,14 @@ CREATE TYPE "public"."discipline_topic_type" AS ENUM ('SNZ', 'PRACTICAL', 'COMBI
 CREATE TYPE "public"."awards_status" AS ENUM ('DRAFT', 'IN_REVIEW', 'APPROVED', 'REJECTED');
 -- Create enum type "violation_enum"
 CREATE TYPE "public"."violation_enum" AS ENUM ('NONE', 'REMARK', 'REBUKE', 'SEVERE_REPRIMAND');
+-- Create enum type "enum_criteria_method"
+CREATE TYPE "public"."enum_criteria_method" AS ENUM ('NORMAL', 'MEASURING');
 -- Create enum type "user_role"
 CREATE TYPE "public"."user_role" AS ENUM ('ADMIN', 'TEACHER', 'METHODIST');
 -- Create enum type "enum_lesson_type"
 CREATE TYPE "public"."enum_lesson_type" AS ENUM ('PRACTICE', 'THEORY');
+-- Create sequence "lessons_plan_number_seq"
+CREATE SEQUENCE "public"."lessons_plan_number_seq" AS integer;
 -- Create "award_categories" table
 CREATE TABLE "public"."award_categories" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -45,15 +31,25 @@ CREATE TABLE "public"."award_categories" (
   CONSTRAINT "award_categories_description_locale_check" CHECK ((description ? 'ru'::text) AND (description ? 'kz'::text)),
   CONSTRAINT "award_categories_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
 );
--- Create "rup_disciplines" table
-CREATE TABLE "public"."rup_disciplines" (
+-- Create "award_type_criteria" table
+CREATE TABLE "public"."award_type_criteria" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
   "name" jsonb NOT NULL DEFAULT '{"kz": "", "ru": ""}',
-  "total_hours" integer NOT NULL DEFAULT 0,
-  "semesters" uuid[] NULL,
-  "topics" uuid[] NULL,
+  "points" integer[] NULL,
+  "method" "public"."enum_criteria_method" NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "rup_disciplines_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
+  CONSTRAINT "award_type_criteria_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
+);
+-- Create "award_type_variants" table
+CREATE TABLE "public"."award_type_variants" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+  "name" jsonb NOT NULL DEFAULT '{"kz": "", "ru": ""}',
+  "description" jsonb NULL,
+  "criteria" uuid[] NULL,
+  "bonus_criteria" uuid[] NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "award_type_variants_description_locale_check" CHECK ((description IS NULL) OR ((description ? 'ru'::text) AND (description ? 'kz'::text))),
+  CONSTRAINT "award_type_variants_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
 );
 -- Create "award_types" table
 CREATE TABLE "public"."award_types" (
@@ -63,17 +59,14 @@ CREATE TABLE "public"."award_types" (
   PRIMARY KEY ("id"),
   CONSTRAINT "award_types_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
 );
--- Create enum type "study_form_enum"
-CREATE TYPE "public"."study_form_enum" AS ENUM ('CORRESPONDENCE', 'FULL_TIME');
--- Create "rup_resources" table
-CREATE TABLE "public"."rup_resources" (
-  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
-  "name" text NOT NULL,
-  "link" text NULL,
-  PRIMARY KEY ("id")
+-- Create "departments" table
+CREATE TABLE "public"."departments" (
+  "keycloak_id" uuid NOT NULL,
+  "name" jsonb NOT NULL DEFAULT '{"kz": "", "ru": ""}',
+  "users" uuid[] NOT NULL DEFAULT '{}',
+  PRIMARY KEY ("keycloak_id"),
+  CONSTRAINT "departments_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
 );
--- Create enum type "rups_status"
-CREATE TYPE "public"."rups_status" AS ENUM ('DRAFT', 'IN_REVIEW', 'APPROVED', 'REJECTED');
 -- Create "discipline_semesters" table
 CREATE TABLE "public"."discipline_semesters" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -96,6 +89,23 @@ CREATE TABLE "public"."discipline_topics" (
   "srs_hours" integer NOT NULL DEFAULT 0,
   PRIMARY KEY ("id"),
   CONSTRAINT "discipline_topics_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
+);
+-- Create "rup_disciplines" table
+CREATE TABLE "public"."rup_disciplines" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+  "name" jsonb NOT NULL DEFAULT '{"kz": "", "ru": ""}',
+  "total_hours" integer NOT NULL DEFAULT 0,
+  "semesters" uuid[] NULL,
+  "topics" uuid[] NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "rup_disciplines_name_locale_check" CHECK ((name ? 'ru'::text) AND (name ? 'kz'::text))
+);
+-- Create "rup_resources" table
+CREATE TABLE "public"."rup_resources" (
+  "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+  "name" text NOT NULL,
+  "link" text NULL,
+  PRIMARY KEY ("id")
 );
 -- Create "award_category_fields" table
 CREATE TABLE "public"."award_category_fields" (
@@ -127,7 +137,6 @@ CREATE TABLE "public"."users" (
   "first_name" text NULL,
   "last_name" text NULL,
   "phone" text NULL,
-  "department" text NULL,
   "role" "public"."user_role" NOT NULL,
   "rups" text[] NULL,
   "total_points" integer NOT NULL DEFAULT 0,
@@ -175,7 +184,7 @@ CREATE TABLE "public"."lessons" (
   "rup_name" jsonb NOT NULL DEFAULT '{"kz": "", "ru": ""}',
   "discipline_name" jsonb NULL,
   "topic_name" jsonb NULL,
-  "plan_number" serial NOT NULL,
+  "plan_number" integer NOT NULL DEFAULT nextval('public.lessons_plan_number_seq'),
   "teacher" uuid NOT NULL,
   "event_date" timestamptz NULL,
   "group_id" uuid NOT NULL,

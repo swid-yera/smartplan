@@ -507,8 +507,8 @@ WHERE
         OR methodist = sqlc.narg('methodist')::uuid
     )
     AND (
-        sqlc.narg('category_id')::uuid IS NULL
-        OR category_id = sqlc.narg('category_id')::uuid
+        sqlc.narg('category_ids')::uuid[] IS NULL
+        OR category_id = ANY(sqlc.arg(category_ids)::uuid[])
     )
     AND (
         sqlc.narg('status')::text[] IS NULL
@@ -530,8 +530,8 @@ WHERE
         OR methodist = sqlc.narg('methodist')::uuid
     )
     AND (
-        sqlc.narg('category_id')::uuid IS NULL
-        OR category_id = sqlc.narg('category_id')::uuid
+        sqlc.narg('category_ids')::uuid[] IS NULL
+        OR category_id = ANY(sqlc.arg(category_ids)::uuid[])
     )
     AND (
         sqlc.narg('status')::text[] IS NULL

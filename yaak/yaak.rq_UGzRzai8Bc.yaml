@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_UGzRzai8Bc
 createdAt: 2026-01-13T03:16:46.890644700
-updatedAt: 2026-05-24T19:40:34.920803200
+updatedAt: 2026-05-26T11:20:59.180752600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_ammwUQh5ZG
 authentication: {}
@@ -20,7 +20,7 @@ name: all
 sortPriority: 0.0
 url: ${[ url ]}/awards
 urlParameters:
-- enabled: true
+- enabled: false
   name: teacher
   value: f2546909-a510-49e7-9185-bd576e76784c
   id: SI4jPNREUJ
@@ -30,7 +30,7 @@ urlParameters:
   id: ZBzDyXRfn5
 - enabled: true
   name: categoryId
-  value: e3b92947-967c-4dca-8762-0b037d264fdd
+  value: de06b2fa-c3eb-4217-a27b-4e1f5203ef11,76161e13-ad1c-42fe-8261-191ba4a0d140
   id: 4hdDpT9UVw
 - enabled: false
   name: status
@@ -47,4 +47,4 @@ urlParameters:
 - enabled: true
   name: ''
   value: ''
-  id: sgqB4rIjxC
+  id: KHNnydjjcH

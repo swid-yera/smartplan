@@ -6,7 +6,7 @@ set -e
 # CONFIG
 # =========================
 
-COMPOSE_DIR="/c/Users/justs/jop/eduplan/shared/docker"
+# COMPOSE_DIR="/c/Users/justs/jop/eduplan/shared/docker/"
 
 SERVICE_NAME="postgres"
 DB_USER="admin"
@@ -19,8 +19,8 @@ BACKUP_FILE="backup.sql"
 # SCRIPT
 # =========================
 
-echo "Переход в папку docker-compose..."
-cd "$COMPOSE_DIR"
+#echo "Переход в папку docker-compose..."
+#cd "$COMPOSE_DIR"
 
 echo "Создание папки для backup, если её нет..."
 mkdir -p "$BACKUP_DIR"
