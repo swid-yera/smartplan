@@ -3,7 +3,7 @@
 import type { FC, ReactNode } from 'react'
 import { useState } from 'react'
 
-import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
 	Button,
 	Card,
@@ -24,7 +24,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type IAward } from '@types'
-import { ChevronLeft, ChevronRight, UserIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Folder, UserIcon } from 'lucide-react'
 
 import { StatusBadge } from '../badges/status-badge'
 import { AwardSheet } from '../sheets/award-sheet'
@@ -147,6 +147,9 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 	const t = getUILocaleSection(localeDictionary, locale).awardsCard
 	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
 	const teacherName = `${award?.teacher?.firstName} ${award?.teacher.lastName}`.trim() || t.unknownTeacher
+	const categoryIconOption = getCategoryIconOptionByName(award.category?.icon)
+	const CategoryIcon = categoryIconOption?.Icon || Folder
+	const criteriaSummary = `${getLocaleText(award.type.name, locale)} / ${getLocaleText(award.criteria.name, locale)}`
 	const createdAt = new Date(award.createdAt).toLocaleDateString(dateLocale)
 	const updatedAt = new Date(award.updatedAt).toLocaleString(dateLocale)
 
@@ -162,7 +165,10 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 						</div>
 					</TableCell>
 					<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-						{`${getLocaleText(award.variant.name, locale)}, ${getLocaleText(award.criteria.name, locale)}`}
+						<div className='flex items-center gap-2'>
+							<CategoryIcon className='h-4 w-4 shrink-0 text-primary' />
+							<span>{criteriaSummary}</span>
+						</div>
 					</TableCell>
 					<TableCell className='py-6'>{award.totalPoints || 0}</TableCell>
 					<TableCell className='text-right'>

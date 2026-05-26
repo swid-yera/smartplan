@@ -44,9 +44,20 @@ export class AwardService {
 		status,
 		teacher,
 		categoryId,
-	}: IGetAllRequest & { categoryId?: string }) => {
+	}: IGetAllRequest & { categoryId?: string | string[] }) => {
+		const categoryIdParam = Array.isArray(categoryId)
+			? categoryId
+					.map((id) => id.trim())
+					.filter(Boolean)
+					.join(',')
+			: categoryId
+					?.split(',')
+					.map((id) => id.trim())
+					.filter(Boolean)
+					.join(',')
+
 		return queryOptions<IPagination<IAward>>({
-			queryKey: ['awards', { currentPage, pageSize, search, methodist, teacher, status, categoryId }],
+			queryKey: ['awards', { currentPage, pageSize, search, methodist, teacher, status, categoryId: categoryIdParam }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IAward>>('/awards', {
 					params: {
@@ -56,7 +67,7 @@ export class AwardService {
 						search,
 						methodist,
 						teacher,
-						categoryId,
+						categoryId: categoryIdParam,
 						status: status?.join(','),
 					},
 				})

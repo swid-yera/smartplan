@@ -2,7 +2,7 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { getLocaleText } from '@helpers'
+import { getCategoryIconOptionByName, getLocaleText } from '@helpers'
 import {
 	Button,
 	Separator,
@@ -16,7 +16,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type IAward, StatusEnum } from '@types'
-import { BookOpen, Download, FileText, Files, SearchCode, Users } from 'lucide-react'
+import { BookOpen, Download, FileText, Files, Folder, SearchCode, Users } from 'lucide-react'
 import Zoom from 'react-medium-image-zoom'
 
 import { StatusBadge } from '../badges/status-badge'
@@ -31,6 +31,20 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const totalPoints = award?.status !== StatusEnum.APPROVED ? t.award.pointsAfterApprove : award.totalPoints
+	const category = award?.category ?? null
+	const categoryName = category ? getLocaleText(category.name, locale) : ''
+	const categoryDescription = category?.description ? getLocaleText(category.description, locale) : ''
+	const categoryTypeNames =
+		category?.awardTypesExpanded
+			?.map((awardType) => getLocaleText(awardType.name, locale))
+			.filter((name) => name.trim().length > 0) ?? []
+	const categoryAwardTypesText = categoryTypeNames.length
+		? categoryTypeNames.join(', ')
+		: category?.awardTypes?.length
+			? category.awardTypes.join(', ')
+			: t.empty
+	const categoryIconOption = getCategoryIconOptionByName(category?.icon)
+	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const awardFields = Object.entries(award?.fieldValues || {}).flatMap(([fieldKey, rawValue]) => {
 		const values = Array.isArray(rawValue) ? rawValue : [rawValue]
 
@@ -143,6 +157,31 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 
 									<p className='font-medium'>{t.award.criteriaPoints}:</p>
 									<p className='font-bold'>{award.criteria.points.join('-') || t.empty}</p>
+								</div>
+							</div>
+
+							<Separator />
+
+							<div className='space-y-3'>
+								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+									<CategoryIcon className='w-4 h-4 mr-2' /> {t.award.categoryDetails}
+								</h4>
+
+								<div className='grid grid-cols-[1fr_2fr] space-y-3 text-sm'>
+									<p className='font-medium'>{t.award.categoryName}:</p>
+									<div className='flex items-center gap-2'>
+										<CategoryIcon className='h-4 w-4 text-primary' />
+										<p>{categoryName || t.empty}</p>
+									</div>
+
+									<p className='font-medium'>{t.award.categoryDescription}:</p>
+									<p>{categoryDescription || t.empty}</p>
+
+									<p className='font-medium'>{t.award.categoryId}:</p>
+									<p className='break-all'>{category?.id || award.categoryId || t.empty}</p>
+
+									<p className='font-medium'>{t.award.categoryAwardTypes}:</p>
+									<p>{categoryAwardTypesText}</p>
 								</div>
 							</div>
 

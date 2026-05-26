@@ -29,6 +29,12 @@
 			"variant": "Вариант",
 			"criteria": "Критерий",
 			"criteriaPoints": "Баллы за критерию",
+			"categoryDetails": "Категория",
+			"categoryName": "Название категории",
+			"categoryDescription": "Описание категории",
+			"categoryIcon": "Иконка категории",
+			"categoryId": "ID категории",
+			"categoryAwardTypes": "Типы оценивания категории",
 			"documents": "Документы",
 			"download": "Скачать"
 		}
@@ -63,6 +69,12 @@
 			"variant": "Нұсқа",
 			"criteria": "Критерий",
 			"criteriaPoints": "Критерий ұпайы",
+			"categoryDetails": "Санат",
+			"categoryName": "Санат атауы",
+			"categoryDescription": "Санат сипаттамасы",
+			"categoryIcon": "Санат белгішесі",
+			"categoryId": "Санат ID",
+			"categoryAwardTypes": "Санат бағалау түрлері",
 			"documents": "Құжаттар",
 			"download": "Жүктеп алу"
 		}
