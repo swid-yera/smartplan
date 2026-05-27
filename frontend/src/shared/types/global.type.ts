@@ -18,8 +18,8 @@ export enum RoleEnum {
 export interface IGroup {
 	keycloakId: string
 	name: string
-	specialty?: string
-	qualification?: string
+	specialty: LocalizedText
+	qualification: LocalizedText
 }
 
 export interface IPagination<T> {

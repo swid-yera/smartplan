@@ -2,7 +2,7 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { formatHours, normalizeStudyForm } from '@helpers'
+import { formatHours, getLocaleText, normalizeStudyForm } from '@helpers'
 import {
 	Button,
 	Separator,
@@ -126,10 +126,10 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 											<p>{rup.studyYear}</p>
 
 											<p className='font-medium'>{t.specialty}:</p>
-											<p>{rup.groups[0]?.specialty}</p>
+											<p>{getLocaleText(rup.groups[0]?.specialty, currentLocale)}</p>
 
 											<p className='font-medium'>{t.qualification}:</p>
-											<p>{rup.groups[0]?.qualification}</p>
+											<p>{getLocaleText(rup.groups[0]?.qualification, currentLocale)}</p>
 										</div>
 									</div>
 								</>

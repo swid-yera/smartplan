@@ -3,7 +3,7 @@
 import type { FC, ReactNode } from 'react'
 import { useState } from 'react'
 
-import { formatAsDash, getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import { formatAsDash, getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
 	Button,
 	Card,
@@ -153,10 +153,10 @@ const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {
 				{rup?.teacher?.firstName || t.unknownTeacher}
 			</TableCell>
 			<TableCell className='whitespace-break-spaces min-w-[200px]'>
-				{formatAsDash(rup?.groups[0]?.specialty)}
+				{formatAsDash(getLocaleText(rup?.groups[0]?.specialty, locale))}
 			</TableCell>
 			<TableCell className='whitespace-break-spaces min-w-[200px]'>
-				{formatAsDash(rup?.groups[0]?.qualification)}
+				{formatAsDash(getLocaleText(rup?.groups[0]?.qualification, locale))}
 			</TableCell>
 			<TableCell>{formatAsDash(rup?.studyYear)}</TableCell>
 			<TableCell className='text-right'>

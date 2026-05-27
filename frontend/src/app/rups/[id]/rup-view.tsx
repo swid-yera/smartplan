@@ -1,7 +1,15 @@
 import { type FC, type ReactNode, useState } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
-import { createKriptoApprovalProof, extractKriptoApprovalMetadata, formatHours, hasRole, normalizeStudyForm, parseKriptoFileText } from '@helpers'
+import {
+	createKriptoApprovalProof,
+	extractKriptoApprovalMetadata,
+	formatHours,
+	getLocaleText,
+	hasRole,
+	normalizeStudyForm,
+	parseKriptoFileText,
+} from '@helpers'
 import { services } from '@services'
 import {
 	Button,
@@ -17,6 +25,7 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { type IRup, RoleEnum, StatusEnum } from '@types'
 import { CheckCircle, Search, SendToBack, ShieldAlert, Timer } from 'lucide-react'
 import { toast } from 'sonner'
@@ -35,6 +44,7 @@ interface IRupViewProps {
 }
 
 export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions }) => {
+	const locale = useLocaleStore((state) => state.locale)
 	const [generalComment, setGeneralComment] = useState('')
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
 	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
@@ -154,12 +164,12 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 							{
 								label: 'Специальность',
 								subLabel: '(код и наименование)',
-								value: data.groups[0]?.specialty,
+								value: getLocaleText(data.groups[0]?.specialty, locale),
 							},
 							{
 								label: 'Квалификация',
 								subLabel: '(код и наименование)',
-								value: data.groups[0]?.qualification,
+								value: getLocaleText(data.groups[0]?.qualification, locale),
 							},
 							{
 								label: 'Форма обучения',

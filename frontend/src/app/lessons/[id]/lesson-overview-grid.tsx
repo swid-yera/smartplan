@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 
 import Link from 'next/link'
 
-import { getUILocaleSection, normalizeTopicType } from '@helpers'
+import { getLocaleText, getUILocaleSection, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -101,8 +101,8 @@ export function LessonOverviewGrid({
 							value={lesson.teacher?.phone || 'Пусто'}
 						/>
 						<InfoRow icon={<GraduationCap className='h-4 w-4' />} label='Группа' value={groupName} />
-						<Row label='Квалификация' value={lesson.group?.qualification || 'Пусто'} />
-						<Row label='Специальность' value={lesson.group?.specialty || 'Пусто'} />
+						<Row label='Квалификация' value={getLocaleText(lesson.group?.qualification, locale) || 'Пусто'} />
+						<Row label='Специальность' value={getLocaleText(lesson.group?.specialty, locale) || 'Пусто'} />
 					</div>
 
 					<div className='grid gap-5'>

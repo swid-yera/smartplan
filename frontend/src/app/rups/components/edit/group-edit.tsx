@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { formatCourseFromYearAndGroupName, generateStudyYears, getGroupYear, getUILocaleSection } from '@helpers'
+import { formatCourseFromYearAndGroupName, generateStudyYears, getGroupYear, getLocaleText, getUILocaleSection } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -210,11 +210,11 @@ export function GroupEdit<T extends IProps>() {
 
 				<div>
 					<p>Специальность</p>
-					<p>{selectedGroup?.specialty}</p>
+					<p>{getLocaleText(selectedGroup?.specialty, locale)}</p>
 				</div>
 				<div>
 					<p>Квалификация</p>
-					<p>{selectedGroup?.qualification}</p>
+					<p>{getLocaleText(selectedGroup?.qualification, locale)}</p>
 				</div>
 				<div>
 					<p>Курс</p>

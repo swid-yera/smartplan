@@ -1,10 +1,11 @@
 import type { IAward, IReviewItem, IRup } from '@types'
+import { getLocaleText } from './locale.helper'
 
 export const mapRupToReviewItem = (rup: IRup): IReviewItem => ({
 	id: rup.id,
 	type: 'RUP',
 	title: rup.name,
-	subtitle: rup.groups[0]?.specialty,
+	subtitle: getLocaleText(rup.groups[0]?.specialty),
 	teacher: rup.teacher,
 	status: rup.status,
 	updatedAt: rup.updatedAt,
