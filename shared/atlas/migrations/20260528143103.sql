@@ -1,0 +1,2 @@
+-- Modify "violation" table
+ALTER TABLE "public"."violation" DROP CONSTRAINT "violation_issued_by_fkey", DROP CONSTRAINT "violation_user_id_fkey", ADD CONSTRAINT "fk_violation_issued_by" FOREIGN KEY ("issued_by") REFERENCES "public"."users" ("keycloak_id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "fk_violation_user" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("keycloak_id") ON UPDATE NO ACTION ON DELETE CASCADE;

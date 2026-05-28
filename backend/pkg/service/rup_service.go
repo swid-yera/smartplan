@@ -3,12 +3,6 @@ package service
 import (
 	"bytes"
 	"context"
-	"crypto/ed25519"
-	"crypto/hmac"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,7 +27,6 @@ import (
 type RupService interface {
 	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
-	CreateApproveChallenge(ctx context.Context, req CreateApproveChallengeRequest) (*CreateApproveChallengeResponse, error)
 	UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
@@ -219,24 +212,12 @@ type TopicResponse struct {
 }
 
 type rupService struct {
-	repo                    repository.RupRepository
-	cfg                     *config.DocumentRenderConfig
-	httpClient              *http.Client
-	fileStorage             FileStorage
-	crypto                  CryptoClient
-	log                     *logrus.Logger
-	approvalChallengeSecret []byte
-}
-
-type CreateApproveChallengeRequest struct {
-	RupID  uuid.UUID `json:"rupId"`
-	UserID uuid.UUID `json:"userId"`
-	KeyID  string    `json:"keyId"`
-}
-
-type CreateApproveChallengeResponse struct {
-	Challenge string    `json:"challenge"`
-	ExpiresAt time.Time `json:"expiresAt"`
+	repo        repository.RupRepository
+	cfg         *config.DocumentRenderConfig
+	httpClient  *http.Client
+	fileStorage FileStorage
+	crypto      CryptoClient
+	log         *logrus.Logger
 }
 
 type UpdateRupStatusRequest struct {
@@ -246,9 +227,6 @@ type UpdateRupStatusRequest struct {
 	MethodistID   uuid.UUID `json:"methodistId"`
 	CorrelationID string    `json:"correlationId"`
 	KeyID         string    `json:"keyId"`
-	PublicKey     string    `json:"publicKey"`
-	Challenge     string    `json:"challenge"`
-	Signature     string    `json:"signature"`
 	UserID        string    `json:"userId"`
 }
 
@@ -272,75 +250,15 @@ func NewRupService(
 	if log == nil {
 		log = logrus.New()
 	}
-	challengeSecret := make([]byte, 32)
-	if _, err := rand.Read(challengeSecret); err != nil {
-		log.WithError(err).Warn("failed to generate approval challenge secret")
-		challengeSecret = []byte("eduplan-approval-challenge-development-secret")
-	}
 
 	return &rupService{
-		repo:                    repo,
-		cfg:                     cfg,
-		httpClient:              httpClient,
-		fileStorage:             fileStorage,
-		crypto:                  cryptoClient,
-		log:                     log,
-		approvalChallengeSecret: challengeSecret,
+		repo:        repo,
+		cfg:         cfg,
+		httpClient:  httpClient,
+		fileStorage: fileStorage,
+		crypto:      cryptoClient,
+		log:         log,
 	}
-}
-
-type approveChallengePayload struct {
-	Type      string `json:"type"`
-	RupID     string `json:"rup_id"`
-	Action    string `json:"action"`
-	KeyID     string `json:"key_id"`
-	UserID    string `json:"user_id"`
-	Nonce     string `json:"nonce"`
-	ExpiresAt string `json:"expires_at"`
-}
-
-func (s *rupService) CreateApproveChallenge(ctx context.Context, req CreateApproveChallengeRequest) (*CreateApproveChallengeResponse, error) {
-	if strings.TrimSpace(req.KeyID) == "" {
-		return nil, fmt.Errorf("key_id is required")
-	}
-	if _, err := s.repo.GetRupByID(ctx, req.RupID); err != nil {
-		return nil, err
-	}
-	if _, err := s.repo.GetUserByID(ctx, req.UserID); err != nil {
-		return nil, err
-	}
-
-	nonce := make([]byte, 24)
-	if _, err := rand.Read(nonce); err != nil {
-		return nil, fmt.Errorf("generate challenge nonce: %w", err)
-	}
-	expiresAt := time.Now().Add(5 * time.Minute).UTC()
-	payload := approveChallengePayload{
-		Type:      "rup_approve_challenge",
-		RupID:     req.RupID.String(),
-		Action:    "APPROVE",
-		KeyID:     req.KeyID,
-		UserID:    req.UserID.String(),
-		Nonce:     base64.RawURLEncoding.EncodeToString(nonce),
-		ExpiresAt: expiresAt.Format(time.RFC3339),
-	}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("marshal challenge payload: %w", err)
-	}
-	payloadPart := base64.RawURLEncoding.EncodeToString(payloadBytes)
-	mac := hmac.New(sha256.New, s.approvalChallengeSecret)
-	mac.Write([]byte(payloadPart))
-	signaturePart := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	challenge := payloadPart + "." + signaturePart
-	if err := s.repo.StoreApproveChallenge(ctx, challenge, req.RupID, req.KeyID, req.UserID, expiresAt); err != nil {
-		return nil, fmt.Errorf("store approval challenge: %w", err)
-	}
-
-	return &CreateApproveChallengeResponse{
-		Challenge: challenge,
-		ExpiresAt: expiresAt,
-	}, nil
 }
 
 func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error) {
@@ -398,127 +316,6 @@ func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse
 	return s.buildRupResponse(ctx, *rup)
 }
 
-type approveChallengeVerification struct {
-	DocumentHashHex string
-	SignatureHex    string
-}
-
-func (s *rupService) verifyApproveChallenge(ctx context.Context, req UpdateRupStatusRequest) (*approveChallengeVerification, error) {
-	parts := strings.Split(req.Challenge, ".")
-	if len(parts) != 2 {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid approval challenge"}
-	}
-
-	mac := hmac.New(sha256.New, s.approvalChallengeSecret)
-	mac.Write([]byte(parts[0]))
-	expectedMAC := mac.Sum(nil)
-	actualMAC, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil || !hmac.Equal(actualMAC, expectedMAC) {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid approval challenge"}
-	}
-
-	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
-	if err != nil {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid approval challenge"}
-	}
-
-	var payload approveChallengePayload
-	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid approval challenge"}
-	}
-	if payload.Type != "rup_approve_challenge" ||
-		payload.RupID != req.ID.String() ||
-		payload.Action != "APPROVE" ||
-		payload.KeyID != req.KeyID ||
-		payload.UserID != req.UserID {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "approval challenge mismatch"}
-	}
-	expiresAt, err := time.Parse(time.RFC3339, payload.ExpiresAt)
-	if err != nil {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid approval challenge"}
-	}
-	if time.Now().After(expiresAt) {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "approval challenge expired"}
-	}
-
-	publicKey, err := decodePublicKeyHex(req.PublicKey)
-	if err != nil || len(publicKey) != ed25519.PublicKeySize {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid public_key"}
-	}
-	signature, err := decodeSignatureHex(req.Signature)
-	if err != nil || len(signature) != ed25519.SignatureSize {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid challenge signature"}
-	}
-
-	challengeHash := sha256.Sum256(payloadBytes)
-	if !ed25519.Verify(ed25519.PublicKey(publicKey), challengeHash[:], signature) {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "challenge signature verification failed"}
-	}
-
-	userID, err := uuid.Parse(req.UserID)
-	if err != nil {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "invalid user_id"}
-	}
-	consumed, err := s.repo.ConsumeApproveChallenge(ctx, req.Challenge, req.ID, req.KeyID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("consume approval challenge: %w", err)
-	}
-	if !consumed {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "approval challenge already used or expired"}
-	}
-
-	return &approveChallengeVerification{
-		DocumentHashHex: hex.EncodeToString(challengeHash[:]),
-		SignatureHex:    strings.ToLower(strings.TrimSpace(req.Signature)),
-	}, nil
-}
-
-func decodePublicKeyHex(value string) ([]byte, error) {
-	normalized := strings.TrimSpace(value)
-	if len(normalized) != ed25519.PublicKeySize*2 {
-		return nil, fmt.Errorf("public_key must be 64 hex characters")
-	}
-	return hex.DecodeString(normalized)
-}
-
-func decodeSignatureHex(value string) ([]byte, error) {
-	normalized := strings.TrimSpace(value)
-	if len(normalized) != ed25519.SignatureSize*2 {
-		return nil, fmt.Errorf("signature must be 128 hex characters")
-	}
-	return hex.DecodeString(normalized)
-}
-
-func decodeKeyMaterial(value string) ([]byte, error) {
-	normalized := strings.TrimSpace(value)
-	if len(normalized) == ed25519.PublicKeySize*2 {
-		if out, err := hex.DecodeString(normalized); err == nil {
-			return out, nil
-		}
-	}
-	normalized = strings.TrimPrefix(normalized, "-----BEGIN PUBLIC KEY-----")
-	normalized = strings.TrimSuffix(normalized, "-----END PUBLIC KEY-----")
-	normalized = strings.ReplaceAll(normalized, "\n", "")
-	normalized = strings.ReplaceAll(normalized, "\r", "")
-	normalized = strings.ReplaceAll(normalized, " ", "")
-
-	decoders := []func(string) ([]byte, error){
-		base64.StdEncoding.DecodeString,
-		base64.RawStdEncoding.DecodeString,
-		base64.URLEncoding.DecodeString,
-		base64.RawURLEncoding.DecodeString,
-	}
-	for _, decode := range decoders {
-		if out, err := decode(normalized); err == nil {
-			if len(out) == 44 && bytes.Equal(out[:12], []byte{0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00}) {
-				return out[12:], nil
-			}
-			return out, nil
-		}
-	}
-	return nil, fmt.Errorf("invalid base64 key material")
-}
-
 func cryptoStatusActive(resp *ValidateKeyOwnershipResponse) bool {
 	return strings.ToUpper(strings.TrimSpace(resp.KeyStatus)) == "ACTIVE"
 }
@@ -553,84 +350,14 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 				Message:    "key_id is required for approved status",
 			}
 		}
-		if strings.TrimSpace(req.PublicKey) == "" {
-			return &HTTPStatusError{
-				StatusCode: http.StatusBadRequest,
-				Message:    "public_key is required for approved status",
-			}
-		}
-		if strings.TrimSpace(req.Challenge) == "" || strings.TrimSpace(req.Signature) == "" {
-			return &HTTPStatusError{
-				StatusCode: http.StatusBadRequest,
-				Message:    "challenge signature is required for approved status",
-			}
-		}
 		if strings.TrimSpace(req.UserID) == "" {
 			return &HTTPStatusError{
 				StatusCode: http.StatusBadRequest,
 				Message:    "user_id is required for approved status",
 			}
 		}
-		challengeVerification, err := s.verifyApproveChallenge(ctx, req)
-		if err != nil {
-			return err
-		}
 
-		verifyStartedAt := time.Now()
-		verifyResp, err := s.crypto.VerifySignature(ctx, VerifySignatureRequest{
-			PublicKeyID:  req.KeyID,
-			DocumentHash: challengeVerification.DocumentHashHex,
-			Signature:    challengeVerification.SignatureHex,
-		}, req.CorrelationID)
-		verifyLatency := time.Since(verifyStartedAt)
-		if err != nil {
-			var httpErr *CryptoHTTPError
-			if errors.As(err, &httpErr) {
-				s.log.WithFields(logrus.Fields{
-					"correlation_id": req.CorrelationID,
-					"key_id":         req.KeyID,
-					"user_id":        req.UserID,
-					"http_status":    httpErr.StatusCode,
-					"latency_ms":     verifyLatency.Milliseconds(),
-				}).WithError(err).Error("kripto verify signature failed")
-
-				if httpErr.StatusCode == http.StatusUnauthorized || httpErr.StatusCode == http.StatusForbidden {
-					return &HTTPStatusError{StatusCode: httpErr.StatusCode, Message: "kripto authorization failed"}
-				}
-				if httpErr.StatusCode >= 500 {
-					return &HTTPStatusError{StatusCode: http.StatusBadGateway, Message: "kripto temporary error"}
-				}
-				rupStatus = storage.RupsStatusREJECTED
-				req.Reason = "Подпись ключа не подтверждена в kripto"
-			} else {
-				s.log.WithFields(logrus.Fields{
-					"correlation_id": req.CorrelationID,
-					"key_id":         req.KeyID,
-					"user_id":        req.UserID,
-					"latency_ms":     verifyLatency.Milliseconds(),
-				}).WithError(err).Error("kripto verify signature network error")
-				return &HTTPStatusError{StatusCode: http.StatusBadGateway, Message: "kripto request failed"}
-			}
-		}
-		if verifyResp != nil {
-			s.log.WithFields(logrus.Fields{
-				"correlation_id": req.CorrelationID,
-				"key_id":         req.KeyID,
-				"user_id":        req.UserID,
-				"status":         verifyResp.Status,
-				"is_valid":       verifyResp.IsValid,
-				"latency_ms":     verifyLatency.Milliseconds(),
-			}).Info("kripto verify signature response")
-			if !verifyResp.IsValid || strings.ToUpper(strings.TrimSpace(verifyResp.Status)) != "VALID" {
-				rupStatus = storage.RupsStatusREJECTED
-				req.Reason = "Подпись ключа не подтверждена в kripto"
-			}
-		}
-		if verifyResp == nil {
-			rupStatus = storage.RupsStatusREJECTED
-			req.Reason = "Подпись ключа не подтверждена в kripto"
-		}
-
+		var err error
 		var validationResp *ValidateKeyOwnershipResponse
 		if rupStatus == storage.RupsStatusAPPROVED {
 			startedAt := time.Now()
