@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_Qg57uxRjw4
 createdAt: 2026-01-15T17:44:16.579195300
-updatedAt: 2026-05-24T13:49:21.013662500
+updatedAt: 2026-05-28T15:58:02.109183600
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -10,87 +10,56 @@ authenticationType: null
 body:
   text: |-
     {
-      "name": {
-        "ru": "Рабочий учебный план по дисциплине Алгоритмы и структуры данных",
-        "kz": "Алгоритмдер және деректер құрылымдары пәні бойынша жұмыс оқу жоспары"
-      },
+      "name": { "ru": "РПУ по математике", "kz": "Математика бойынша РОӘ" },
       "type": "THEORY",
-      "studyYear": "2026-2027",
-      "course": 2,
+      "studyYear": "2025-2026",
+      "course": 1,
       "studyForm": "FULL_TIME",
-      "contacts": [
-        "46313143-eadb-4798-b7f5-2fa97869e716"
-      ],
-      "groups": [
-        "8b7e56e6-fc1a-4cc6-a795-f66c5d268229"
-      ],
+      "contacts": ["46313143-eadb-4798-b7f5-2fa97869e716"],
+      "groups": ["8b7e56e6-fc1a-4cc6-a795-f66c5d268229"],
       "methodist": "46313143-eadb-4798-b7f5-2fa97869e716",
       "explorationNote": {
-        "basis": {
-          "ru": "Подготовка специалистов по информационным технологиям",
-          "kz": "Ақпараттық технологиялар мамандарын даярлау"
-        },
-        "goals": {
-          "ru": "Сформировать навыки проектирования эффективных алгоритмов",
-          "kz": "Тиімді алгоритмдерді жобалау дағдыларын қалыптастыру"
-        },
-        "summary": {
-          "ru": "Дисциплина охватывает базовые структуры данных и алгоритмы",
-          "kz": "Пән деректердің негізгі құрылымдары мен алгоритмдерін қамтиды"
-        },
-        "competencies": {
-          "ru": "Анализ сложности, выбор структуры данных, оптимизация",
-          "kz": "Күрделілікті талдау, деректер құрылымын таңдау, оңтайландыру"
-        },
-        "prerequisites": {
-          "ru": "Программирование на C++ или Python",
-          "kz": "C++ немесе Python тілінде бағдарламалау"
-        },
-        "postrequisites": {
-          "ru": "Проектирование программных систем",
-          "kz": "Бағдарламалық жүйелерді жобалау"
-        },
+        "basis": { "ru": "Основание", "kz": "Негіздеме" },
+        "goals": { "ru": "Цели", "kz": "Мақсаттар" },
+        "summary": { "ru": "Кратко", "kz": "Қысқаша" },
+        "competencies": { "ru": "Компетенции", "kz": "Құзыреттер" },
+        "prerequisites": { "ru": "Пререквизиты", "kz": "Пререквизиттер" },
+        "postrequisites": { "ru": "Постреквизиты", "kz": "Постреквизиттер" },
         "internetResources": [
           {
-            "name": "VisuAlgo",
-            "link": "https://visualgo.net"
+            "name": { "ru": "Видеолекция", "kz": "Бейне дәріс" },
+            "link": "https://example.com/video"
           }
         ],
         "technicalResources": [
           {
-            "name": "Ноутбук с IDE",
+            "name": { "ru": "Проектор", "kz": "Проектор" },
             "link": ""
           }
         ]
       },
       "disciplines": [
         {
-          "name": {
-            "ru": "Алгоритмы и структуры данных",
-            "kz": "Алгоритмдер және деректер құрылымдары"
-          },
+          "name": { "ru": "Алгебра", "kz": "Алгебра" },
           "semesters": [
-            { "semester": 1, "totalHours": 60 },
-            { "semester": 2, "totalHours": 60 },
-            { "semester": 3, "totalHours": 60 },
-            { "semester": 4, "totalHours": 60 },
-            { "semester": 5, "totalHours": 60 },
-            { "semester": 6, "totalHours": 60 },
-            { "semester": 7, "totalHours": 60 },
-            { "semester": 8, "totalHours": 60 }
+            { "semester": 1, "totalHours": 10 },
+            { "semester": 2, "totalHours": 10 },
+            { "semester": 3, "totalHours": 10 },
+            { "semester": 4, "totalHours": 10 },
+            { "semester": 5, "totalHours": 10 },
+            { "semester": 6, "totalHours": 10 },
+            { "semester": 7, "totalHours": 10 },
+            { "semester": 8, "totalHours": 10 }
           ],
           "topics": [
             {
-              "name": {
-                "ru": "Сортировки: quicksort и mergesort",
-                "kz": "Сұрыптау: quicksort және mergesort"
-              },
-              "type": "COMBINED",
-              "theoryHours": 8,
-              "practiceHours": 8,
-              "individualHours": 4,
-              "srspHours": 2,
-              "srsHours": 2
+              "name": { "ru": "Тема 1", "kz": "Тақырып 1" },
+              "type": "SNZ",
+              "theoryHours": 2,
+              "practiceHours": 2,
+              "individualHours": 1,
+              "srspHours": 0,
+              "srsHours": 0
             }
           ]
         }

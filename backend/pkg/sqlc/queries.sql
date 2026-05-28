@@ -245,7 +245,6 @@ ORDER BY array_position(sqlc.arg('ids')::uuid[], id);
 UPDATE users
 SET
     violation_ids = array_append(violation_ids, sqlc.arg('violation_id')::uuid),
-    total_points = total_points - 1,
     violation = CASE
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 2 THEN 'REBUKE'::violation_enum

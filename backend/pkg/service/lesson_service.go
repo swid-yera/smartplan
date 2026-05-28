@@ -751,7 +751,7 @@ func (s *LessonService) resolveResources(ctx context.Context, ids []uuid.UUID) (
 		}
 
 		resourceIDs = append(resourceIDs, id)
-		name := strings.TrimSpace(resource.Name)
+		name := strings.TrimSpace(localePrimary(resource.Name))
 		if name != "" {
 			resources = append(resources, GeneratedResource{
 				Name: name,
@@ -790,7 +790,7 @@ func (s *LessonService) persistGeneratedResources(ctx context.Context, generated
 		seen[key] = struct{}{}
 
 		resource, err := s.rupRepo.CreateResource(ctx, storage.CreateRupResourceParams{
-			Name: name,
+			Name: localization.NewLocaleText(name, "").ToJSONB(),
 			Link: pgtype.Text{String: link, Valid: link != ""},
 		})
 		if err != nil {
@@ -802,7 +802,7 @@ func (s *LessonService) persistGeneratedResources(ctx context.Context, generated
 
 		createdIDs = append(createdIDs, resource.ID)
 		createdResources = append(createdResources, GeneratedResource{
-			Name: strings.TrimSpace(resource.Name),
+			Name: strings.TrimSpace(localePrimary(resource.Name)),
 			Link: strings.TrimSpace(resource.Link.String),
 		})
 	}
@@ -1400,7 +1400,7 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		}
 		internetResources = append(internetResources, &ResourceResponse{
 			ID:   resource.ID,
-			Name: resource.Name,
+			Name: localization.LocaleTextFromJSONB(resource.Name),
 			Link: resource.Link.String,
 			Type: "INTERNET",
 		})
@@ -1415,7 +1415,7 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		}
 		technicalResources = append(technicalResources, &ResourceResponse{
 			ID:   resource.ID,
-			Name: resource.Name,
+			Name: localization.LocaleTextFromJSONB(resource.Name),
 			Link: resource.Link.String,
 			Type: "TECHNICAL",
 		})
