@@ -3,6 +3,7 @@ export * from './award.type'
 export * from './global.type'
 export * from './lesson.type'
 export * from './locale.type'
+export * from './penalty.type'
 export * from './rup.type'
 
 // service
@@ -13,3 +14,4 @@ export * from './service/global.service.type'
 export * from './service/group.service.type'
 export * from './service/lesson.service.type'
 export * from './service/rup.service.type'
+export * from './service/user.service.type'

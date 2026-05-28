@@ -8,6 +8,7 @@ import {
 	prettifyPhone,
 	userRoleButtonVariants,
 } from '@helpers'
+import { cn } from '@lib'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { type IUser, RoleEnum } from '@types'
@@ -17,9 +18,10 @@ import localeDictionary from './locale.json'
 
 interface IUserMainProps {
 	user: IUser
+	className?: string
 }
 
-export const UserCard: FC<IUserMainProps> = ({ user }) => {
+export const UserCard: FC<IUserMainProps> = ({ user, className }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const me = useAuthStore((state) => state.user)
 	const t = getUILocaleSection(localeDictionary, locale)
@@ -30,7 +32,7 @@ export const UserCard: FC<IUserMainProps> = ({ user }) => {
 		.join(', ')
 
 	return (
-		<Card>
+		<Card className={cn(className)}>
 			<CardHeader className='flex items-center gap-4'>
 				<div className='flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary'>
 					<UserIcon className='h-8 w-8' />

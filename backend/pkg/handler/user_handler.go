@@ -188,7 +188,7 @@ func (h *UserHandler) CreatePenalty(c *gin.Context) {
 		return
 	}
 
-	if currentUser.Role != "METHODIST" {
+	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
@@ -275,7 +275,7 @@ func (h *UserHandler) DeletePenaltyByIDAndTeacherID(c *gin.Context) {
 		return
 	}
 
-	if currentUser.Role != "METHODIST" {
+	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}

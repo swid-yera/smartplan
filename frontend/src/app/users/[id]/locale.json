@@ -3,7 +3,7 @@
     "page": {
       "notFound": "Пользователь не найден",
       "back": "Вернуться назад",
-      "toList": "К списку пользователей",
+      "penalties": "Нарушения",
       "title": "Данные пользователя {firstName} {lastName}",
       "createdTab": "Созданные РУП",
       "assessmentTab": "Проверяемые РУП",
@@ -24,7 +24,7 @@
     "page": {
       "notFound": "Пайдаланушы табылмады",
       "back": "Артқа қайту",
-      "toList": "Пайдаланушылар тізіміне",
+      "penalties": "Бұзушылықтар",
       "title": "{firstName} {lastName} пайдаланушы деректері",
       "createdTab": "Құрылған ЖОБ",
       "assessmentTab": "Тексерілетін ЖОБ",
