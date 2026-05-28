@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_3FnV4vWbRn
 createdAt: 2026-01-15T20:10:19.309558700
-updatedAt: 2026-05-24T13:49:21.026828400
+updatedAt: 2026-05-28T15:59:18.035478100
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -10,84 +10,56 @@ authenticationType: null
 body:
   text: |-
     {
-      "name": {
-        "ru": "Обновленный рабочий учебный план по дисциплине Алгоритмы и структуры данных",
-        "kz": "Алгоритмдер және деректер құрылымдары пәні бойынша жаңартылған жұмыс оқу жоспары"
-      },
+      "name": { "ru": "РПУ по математике", "kz": "Математика бойынша РОӘ" },
       "type": "THEORY",
-      "studyYear": "2026-2027",
-      "course": 2,
+      "studyYear": "2025-2026",
+      "course": 1,
       "studyForm": "FULL_TIME",
-      "contacts": [
-        "46313143-eadb-4798-b7f5-2fa97869e716"
-      ],
-      "groups": [
-        "8b7e56e6-fc1a-4cc6-a795-f66c5d268229"
-      ],
+      "contacts": ["46313143-eadb-4798-b7f5-2fa97869e716"],
+      "groups": ["8b7e56e6-fc1a-4cc6-a795-f66c5d268229"],
       "methodist": "46313143-eadb-4798-b7f5-2fa97869e716",
       "explorationNote": {
-        "basis": "Основа подготовки IT-специалистов",
-        "goals": {
-          "ru": "Углубить навыки разработки алгоритмов",
-          "kz": "Алгоритмдерді әзірлеу дағдыларын тереңдету"
-        },
-        "summary": {
-          "ru": "Обновлен перечень тем и практических работ",
-          "kz": "Тақырыптар мен практикалық жұмыстар тізімі жаңартылды"
-        },
-        "competencies": {
-          "ru": "Проектирование, оценка и оптимизация алгоритмов",
-          "kz": "Алгоритмдерді жобалау, бағалау және оңтайландыру"
-        },
-        "prerequisites": {
-          "ru": "ООП, базы данных",
-          "kz": "ООП, дерекқорлар"
-        },
-        "postrequisites": {
-          "ru": "Машинное обучение",
-          "kz": "Машиналық оқыту"
-        },
+        "basis": { "ru": "Основание", "kz": "Негіздеме" },
+        "goals": { "ru": "Цели", "kz": "Мақсаттар" },
+        "summary": { "ru": "Кратко", "kz": "Қысқаша" },
+        "competencies": { "ru": "Компетенции", "kz": "Құзыреттер" },
+        "prerequisites": { "ru": "Пререквизиты", "kz": "Пререквизиттер" },
+        "postrequisites": { "ru": "Постреквизиты", "kz": "Постреквизиттер" },
         "internetResources": [
           {
-            "name": "GeeksforGeeks",
-            "link": "https://www.geeksforgeeks.org"
+            "name": { "ru": "Видеолекция", "kz": "Бейне дәріс" },
+            "link": "https://example.com/video"
           }
         ],
         "technicalResources": [
           {
-            "name": "Компьютерный класс",
+            "name": { "ru": "Проектор", "kz": "Проектор" },
             "link": ""
           }
         ]
       },
       "disciplines": [
         {
-          "name": {
-            "ru": "Алгоритмы и структуры данных",
-            "kz": "Алгоритмдер және деректер құрылымдары"
-          },
+          "name": { "ru": "Алгебра", "kz": "Алгебра" },
           "semesters": [
-            { "semester": 1, "totalHours": 64 },
-            { "semester": 2, "totalHours": 64 },
-            { "semester": 3, "totalHours": 64 },
-            { "semester": 4, "totalHours": 64 },
-            { "semester": 5, "totalHours": 64 },
-            { "semester": 6, "totalHours": 64 },
-            { "semester": 7, "totalHours": 64 },
-            { "semester": 8, "totalHours": 64 }
+            { "semester": 1, "totalHours": 10 },
+            { "semester": 2, "totalHours": 10 },
+            { "semester": 3, "totalHours": 10 },
+            { "semester": 4, "totalHours": 10 },
+            { "semester": 5, "totalHours": 10 },
+            { "semester": 6, "totalHours": 10 },
+            { "semester": 7, "totalHours": 10 },
+            { "semester": 8, "totalHours": 10 }
           ],
           "topics": [
             {
-              "name": {
-                "ru": "Графы: обход и кратчайшие пути",
-                "kz": "Графтар: өту және ең қысқа жолдар"
-              },
+              "name": { "ru": "Тема 1", "kz": "Тақырып 1" },
               "type": "SNZ",
-              "theoryHours": 10,
-              "practiceHours": 6,
-              "individualHours": 4,
-              "srspHours": 2,
-              "srsHours": 2
+              "theoryHours": 2,
+              "practiceHours": 2,
+              "individualHours": 1,
+              "srspHours": 0,
+              "srsHours": 0
             }
           ]
         }
@@ -107,9 +79,9 @@ url: ${[ url ]}/rups/:id
 urlParameters:
 - enabled: true
   name: :id
-  value: 69e41ba3-f402-4c0e-ae70-b85daedfe986
+  value: 34ab286b-0c17-4054-b3e0-a4aa673db941
   id: WxCX3uxDAD
 - enabled: true
   name: ''
   value: ''
-  id: Qq8VB8q5Nv
+  id: QE4v9VjRQf

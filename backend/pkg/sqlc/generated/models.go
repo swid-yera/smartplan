@@ -576,7 +576,7 @@ type RupExplorationNote struct {
 
 type RupResource struct {
 	ID   uuid.UUID   `json:"id"`
-	Name string      `json:"name"`
+	Name []byte      `json:"name"`
 	Link pgtype.Text `json:"link"`
 }
 

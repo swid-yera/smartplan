@@ -37,7 +37,6 @@ const applyViolationToUser = `-- name: ApplyViolationToUser :one
 UPDATE users
 SET
     violation_ids = array_append(violation_ids, $1::uuid),
-    total_points = total_points - 1,
     violation = CASE
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 2 THEN 'REBUKE'::violation_enum
@@ -906,7 +905,7 @@ VALUES ($1, $2) RETURNING id, name, link
 `
 
 type CreateRupResourceParams struct {
-	Name string      `json:"name"`
+	Name []byte      `json:"name"`
 	Link pgtype.Text `json:"link"`
 }
 
@@ -3183,7 +3182,7 @@ WHERE
 
 type UpdateRupResourceParams struct {
 	ID   uuid.UUID   `json:"id"`
-	Name string      `json:"name"`
+	Name []byte      `json:"name"`
 	Link pgtype.Text `json:"link"`
 }
 

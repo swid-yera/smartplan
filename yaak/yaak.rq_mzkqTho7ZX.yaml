@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_mzkqTho7ZX
 createdAt: 2026-05-28T14:45:51.472015400
-updatedAt: 2026-05-28T15:01:06.372906600
+updatedAt: 2026-05-28T15:05:02.520964
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_gPAuJ5SYGd
 authentication: {}
@@ -23,4 +23,16 @@ method: PUT
 name: update violation
 sortPriority: 0.0
 url: ${[ url ]}/users/:id/violation/:violation_id
-urlParameters: []
+urlParameters:
+- enabled: true
+  name: :id
+  value: 46313143-eadb-4798-b7f5-2fa97869e716
+  id: kGR4pky96n
+- enabled: true
+  name: :violation_id
+  value: 30a7d767-b5a4-43f3-8e6c-8c616834b081
+  id: CMkmrttkdN
+- enabled: true
+  name: ''
+  value: ''
+  id: qsCMxe2Aqq

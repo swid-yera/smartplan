@@ -107,8 +107,11 @@ CREATE TABLE groups (
 -- =====================
 CREATE TABLE rup_resources (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid (),
-    name TEXT NOT NULL,
-    link TEXT
+    name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    link TEXT,
+    CONSTRAINT rup_resources_name_locale_check CHECK (
+        name ? 'ru' AND name ? 'kz'
+    )
 );
 
 -- =====================
