@@ -13,6 +13,7 @@ import (
 
 type Querier interface {
 	AddUserToDepartment(ctx context.Context, arg AddUserToDepartmentParams) error
+	ApplyViolationToUser(ctx context.Context, arg ApplyViolationToUserParams) (User, error)
 	CountAwards(ctx context.Context) (int64, error)
 	CountAwardsFiltered(ctx context.Context, arg CountAwardsFilteredParams) (int64, error)
 	CountLessonsFiltered(ctx context.Context, arg CountLessonsFilteredParams) (int64, error)
@@ -38,6 +39,7 @@ type Querier interface {
 	CreateRupResource(ctx context.Context, arg CreateRupResourceParams) (RupResource, error)
 	CreateRups(ctx context.Context, arg CreateRupsParams) (Rup, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateViolation(ctx context.Context, arg CreateViolationParams) (Violation, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
 	DeleteAwardCategory(ctx context.Context, id uuid.UUID) error
 	DeleteAwardCategoryFieldsByCategoryID(ctx context.Context, categoryID uuid.UUID) error
@@ -92,6 +94,7 @@ type Querier interface {
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error)
 	GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error)
 	GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatingPaginatedParams) ([]User, error)
+	GetViolationByIDAndUserID(ctx context.Context, arg GetViolationByIDAndUserIDParams) (Violation, error)
 	LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error
 	RemoveUserFromAllDepartments(ctx context.Context, dollar_1 uuid.UUID) error
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
@@ -111,6 +114,7 @@ type Querier interface {
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
 	UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error
+	UpdateViolationByIDAndUserID(ctx context.Context, arg UpdateViolationByIDAndUserIDParams) (Violation, error)
 	UpsertDepartment(ctx context.Context, arg UpsertDepartmentParams) (uuid.UUID, error)
 	UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error)
 }

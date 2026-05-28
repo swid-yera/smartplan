@@ -30,6 +30,11 @@ type UsersRepository interface {
 	GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]storage.Penalty, error)
 	GetPenaltyByIDAndTeacherID(ctx context.Context, params storage.GetPenaltyByIDAndTeacherIDParams) (storage.Penalty, error)
 	DeletePenaltyByIDAndTeacherID(ctx context.Context, params storage.DeletePenaltyByIDAndTeacherIDParams) error
+
+	CreateViolation(ctx context.Context, params storage.CreateViolationParams) (storage.Violation, error)
+	UpdateViolationByIDAndUserID(ctx context.Context, params storage.UpdateViolationByIDAndUserIDParams) (storage.Violation, error)
+	GetViolationByIDAndUserID(ctx context.Context, params storage.GetViolationByIDAndUserIDParams) (storage.Violation, error)
+	ApplyViolationToUser(ctx context.Context, params storage.ApplyViolationToUserParams) (*storage.User, error)
 }
 
 type Auth interface {

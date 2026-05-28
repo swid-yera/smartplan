@@ -38,12 +38,24 @@ CREATE TABLE users (
     total_points INT NOT NULL DEFAULT 0,
     awards TEXT[],
     violation violation_enum NOT NULL DEFAULT 'NONE',
+    violation_ids UUID[] NOT NULL DEFAULT '{}',
 
     password_changed_at TIMESTAMPTZ,
     last_seen_at TIMESTAMPTZ,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE violation (
+    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    issued_by UUID NOT NULL,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT fk_violation_user FOREIGN KEY (user_id) REFERENCES users(keycloak_id) ON DELETE CASCADE,
+    CONSTRAINT fk_violation_issued_by FOREIGN KEY (issued_by) REFERENCES users(keycloak_id)
 );
 
 -- =====================
