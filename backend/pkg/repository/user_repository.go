@@ -165,6 +165,10 @@ func (r *UsersPostgres) GetViolationByIDAndUserID(ctx context.Context, params st
 	return r.queries.GetViolationByIDAndUserID(ctx, params)
 }
 
+func (r *UsersPostgres) GetViolationsByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.Violation, error) {
+	return r.queries.GetViolationsByIDs(ctx, ids)
+}
+
 func (r *UsersPostgres) ApplyViolationToUser(ctx context.Context, params storage.ApplyViolationToUserParams) (*storage.User, error) {
 	user, err := r.queries.ApplyViolationToUser(ctx, params)
 	if err != nil {

@@ -1,0 +1,34 @@
+type: http_request
+model: http_request
+id: rq_95nE47EZpL
+createdAt: 2026-05-28T14:36:09.194604
+updatedAt: 2026-05-28T14:45:49.069118400
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_gPAuJ5SYGd
+authentication: {}
+authenticationType: null
+body:
+  text: |-
+    {
+      "note": "Опоздание на методсовет"
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: kuH2hwRF9C
+method: POST
+name: create violation
+sortPriority: 0.0
+url: ${[ url ]}/users/:id/violation
+urlParameters:
+- enabled: true
+  name: :id
+  value: 46313143-eadb-4798-b7f5-2fa97869e716
+  id: 63WTMt8DTv
+- enabled: true
+  name: ''
+  value: ''
+  id: s75XrKnBVf

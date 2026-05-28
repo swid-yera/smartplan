@@ -234,6 +234,13 @@ WHERE
     id = $1
     AND user_id = $2;
 
+-- name: GetViolationsByIDs :many
+SELECT *
+FROM violation
+WHERE
+    id = ANY(sqlc.arg('ids')::uuid[])
+ORDER BY array_position(sqlc.arg('ids')::uuid[], id);
+
 -- name: ApplyViolationToUser :one
 UPDATE users
 SET
