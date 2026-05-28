@@ -70,9 +70,6 @@ type Rup interface {
 	CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
 	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
 	CountRups(ctx context.Context) (int64, error)
-
-	StoreApproveChallenge(ctx context.Context, challenge string, rupID uuid.UUID, keyID string, userID uuid.UUID, expiresAt time.Time) error
-	ConsumeApproveChallenge(ctx context.Context, challenge string, rupID uuid.UUID, keyID string, userID uuid.UUID) (bool, error)
 }
 
 type Lessons interface {
