@@ -209,6 +209,46 @@ SET
 WHERE
     keycloak_id = $1;
 
+-- name: CreateViolation :one
+INSERT INTO
+    violation (
+        user_id,
+        issued_by,
+        note
+    )
+VALUES ($1, $2, $3) RETURNING *;
+
+-- name: UpdateViolationByIDAndUserID :one
+UPDATE violation
+SET
+    note = $3,
+    updated_at = NOW()
+WHERE
+    id = $1
+    AND user_id = $2 RETURNING *;
+
+-- name: GetViolationByIDAndUserID :one
+SELECT *
+FROM violation
+WHERE
+    id = $1
+    AND user_id = $2;
+
+-- name: ApplyViolationToUser :one
+UPDATE users
+SET
+    violation_ids = array_append(violation_ids, sqlc.arg('violation_id')::uuid),
+    total_points = total_points - 1,
+    violation = CASE
+        WHEN COALESCE(cardinality(violation_ids), 0) + 1 >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
+        WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 2 THEN 'REBUKE'::violation_enum
+        WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 1 THEN 'REMARK'::violation_enum
+        ELSE 'NONE'::violation_enum
+    END,
+    updated_at = NOW()
+WHERE
+    keycloak_id = sqlc.arg('keycloak_id') RETURNING *;
+
 -- name: CreateRupResource :one
 INSERT INTO
     rup_resources (name, link)

@@ -152,3 +152,23 @@ func (r *UsersPostgres) GetPenaltyByIDAndTeacherID(ctx context.Context, params s
 func (r *UsersPostgres) DeletePenaltyByIDAndTeacherID(ctx context.Context, params storage.DeletePenaltyByIDAndTeacherIDParams) error {
 	return r.queries.DeletePenaltyByIDAndTeacherID(ctx, params)
 }
+
+func (r *UsersPostgres) CreateViolation(ctx context.Context, params storage.CreateViolationParams) (storage.Violation, error) {
+	return r.queries.CreateViolation(ctx, params)
+}
+
+func (r *UsersPostgres) UpdateViolationByIDAndUserID(ctx context.Context, params storage.UpdateViolationByIDAndUserIDParams) (storage.Violation, error) {
+	return r.queries.UpdateViolationByIDAndUserID(ctx, params)
+}
+
+func (r *UsersPostgres) GetViolationByIDAndUserID(ctx context.Context, params storage.GetViolationByIDAndUserIDParams) (storage.Violation, error) {
+	return r.queries.GetViolationByIDAndUserID(ctx, params)
+}
+
+func (r *UsersPostgres) ApplyViolationToUser(ctx context.Context, params storage.ApplyViolationToUserParams) (*storage.User, error) {
+	user, err := r.queries.ApplyViolationToUser(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

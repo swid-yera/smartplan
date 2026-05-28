@@ -592,8 +592,18 @@ type User struct {
 	TotalPoints       int32              `json:"total_points"`
 	Awards            []string           `json:"awards"`
 	Violation         ViolationEnum      `json:"violation"`
+	ViolationIds      []uuid.UUID        `json:"violation_ids"`
 	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
 	LastSeenAt        pgtype.Timestamptz `json:"last_seen_at"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Violation struct {
+	ID        uuid.UUID          `json:"id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	IssuedBy  uuid.UUID          `json:"issued_by"`
+	Note      pgtype.Text        `json:"note"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

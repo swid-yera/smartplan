@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,6 +23,10 @@ type UserHandler struct {
 type CreatePenaltyRequest struct {
 	Points int32  `json:"points"`
 	Note   string `json:"note"`
+}
+
+type IssueViolationRequest struct {
+	Note string `json:"note"`
 }
 
 func NewUserHandler(userService service.UserService) *UserHandler {
@@ -298,6 +303,58 @@ func (h *UserHandler) DeletePenaltyByIDAndTeacherID(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (h *UserHandler) CreateViolation(c *gin.Context) {
+	h.issueViolation(c, http.StatusCreated)
+}
+
+func (h *UserHandler) UpdateViolation(c *gin.Context) {
+	h.issueViolation(c, http.StatusOK)
+}
+
+func (h *UserHandler) issueViolation(c *gin.Context, successStatus int) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	targetUserID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var req IssueViolationRequest
+	if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	result, err := h.userService.IssueViolation(
+		c.Request.Context(),
+		currentUser.KeycloakID,
+		targetUserID,
+		req.Note,
+	)
+	if err != nil {
+		writeUserServiceError(c, err)
+		return
+	}
+
+	c.JSON(successStatus, result)
 }
 
 func writeUserServiceError(c *gin.Context, err error) {

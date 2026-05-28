@@ -98,6 +98,8 @@ func (r *Router) Init() *gin.Engine {
 		protected.GET("/me", r.user.GetMe)
 		protected.GET("/users", r.user.GetUsers)
 		protected.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
+		protected.POST("/users/:id/violation", r.user.CreateViolation)
+		protected.PUT("/users/:id/violation", r.user.UpdateViolation)
 		protected.GET("/users/rating", r.user.GetUsersRating)
 		protected.POST("/user/:teacher_id/penalty", r.user.CreatePenalty)
 		protected.GET("/user/:teacher_id/penalty", r.user.GetPenaltiesByTeacherID)

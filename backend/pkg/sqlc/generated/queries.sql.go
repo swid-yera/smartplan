@@ -33,6 +33,51 @@ func (q *Queries) AddUserToDepartment(ctx context.Context, arg AddUserToDepartme
 	return err
 }
 
+const applyViolationToUser = `-- name: ApplyViolationToUser :one
+UPDATE users
+SET
+    violation_ids = array_append(violation_ids, $1::uuid),
+    total_points = total_points - 1,
+    violation = CASE
+        WHEN COALESCE(cardinality(violation_ids), 0) + 1 >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
+        WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 2 THEN 'REBUKE'::violation_enum
+        WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 1 THEN 'REMARK'::violation_enum
+        ELSE 'NONE'::violation_enum
+    END,
+    updated_at = NOW()
+WHERE
+    keycloak_id = $2 RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
+`
+
+type ApplyViolationToUserParams struct {
+	ViolationID uuid.UUID `json:"violation_id"`
+	KeycloakID  uuid.UUID `json:"keycloak_id"`
+}
+
+func (q *Queries) ApplyViolationToUser(ctx context.Context, arg ApplyViolationToUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, applyViolationToUser, arg.ViolationID, arg.KeycloakID)
+	var i User
+	err := row.Scan(
+		&i.KeycloakID,
+		&i.Email,
+		&i.Username,
+		&i.FirstName,
+		&i.LastName,
+		&i.Phone,
+		&i.Role,
+		&i.Rups,
+		&i.TotalPoints,
+		&i.Awards,
+		&i.Violation,
+		&i.ViolationIds,
+		&i.PasswordChangedAt,
+		&i.LastSeenAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const countAwards = `-- name: CountAwards :one
 SELECT COUNT(*) FROM awards
 `
@@ -968,7 +1013,7 @@ INSERT INTO
         role,
         phone
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -1004,8 +1049,39 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.TotalPoints,
 		&i.Awards,
 		&i.Violation,
+		&i.ViolationIds,
 		&i.PasswordChangedAt,
 		&i.LastSeenAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createViolation = `-- name: CreateViolation :one
+INSERT INTO
+    violation (
+        user_id,
+        issued_by,
+        note
+    )
+VALUES ($1, $2, $3) RETURNING id, user_id, issued_by, note, created_at, updated_at
+`
+
+type CreateViolationParams struct {
+	UserID   uuid.UUID   `json:"user_id"`
+	IssuedBy uuid.UUID   `json:"issued_by"`
+	Note     pgtype.Text `json:"note"`
+}
+
+func (q *Queries) CreateViolation(ctx context.Context, arg CreateViolationParams) (Violation, error) {
+	row := q.db.QueryRow(ctx, createViolation, arg.UserID, arg.IssuedBy, arg.Note)
+	var i Violation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.IssuedBy,
+		&i.Note,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1452,7 +1528,7 @@ func (q *Queries) GetAllRups(ctx context.Context, arg GetAllRupsParams) ([]Rup, 
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type GetAllUsersParams struct {
@@ -1481,6 +1557,7 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 			&i.TotalPoints,
 			&i.Awards,
 			&i.Violation,
+			&i.ViolationIds,
 			&i.PasswordChangedAt,
 			&i.LastSeenAt,
 			&i.CreatedAt,
@@ -2449,7 +2526,7 @@ func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedPara
 }
 
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
 `
 
 func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error) {
@@ -2467,6 +2544,7 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 		&i.TotalPoints,
 		&i.Awards,
 		&i.Violation,
+		&i.ViolationIds,
 		&i.PasswordChangedAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,
@@ -2476,7 +2554,7 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 }
 
 const getUsersPaginated = `-- name: GetUsersPaginated :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 FROM users u
 WHERE
     (
@@ -2544,6 +2622,7 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 			&i.TotalPoints,
 			&i.Awards,
 			&i.Violation,
+			&i.ViolationIds,
 			&i.PasswordChangedAt,
 			&i.LastSeenAt,
 			&i.CreatedAt,
@@ -2560,7 +2639,7 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 }
 
 const getUsersRatingPaginated = `-- name: GetUsersRatingPaginated :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 WHERE
     total_points > 0
@@ -2617,6 +2696,7 @@ func (q *Queries) GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatin
 			&i.TotalPoints,
 			&i.Awards,
 			&i.Violation,
+			&i.ViolationIds,
 			&i.PasswordChangedAt,
 			&i.LastSeenAt,
 			&i.CreatedAt,
@@ -2630,6 +2710,33 @@ func (q *Queries) GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatin
 		return nil, err
 	}
 	return items, nil
+}
+
+const getViolationByIDAndUserID = `-- name: GetViolationByIDAndUserID :one
+SELECT id, user_id, issued_by, note, created_at, updated_at
+FROM violation
+WHERE
+    id = $1
+    AND user_id = $2
+`
+
+type GetViolationByIDAndUserIDParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetViolationByIDAndUserID(ctx context.Context, arg GetViolationByIDAndUserIDParams) (Violation, error) {
+	row := q.db.QueryRow(ctx, getViolationByIDAndUserID, arg.ID, arg.UserID)
+	var i Violation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.IssuedBy,
+		&i.Note,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const linkLessonToDisciplineTopic = `-- name: LinkLessonToDisciplineTopic :exec
@@ -3187,6 +3294,36 @@ type UpdateUserTotalPointsParams struct {
 func (q *Queries) UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error {
 	_, err := q.db.Exec(ctx, updateUserTotalPoints, arg.KeycloakID, arg.TotalPoints)
 	return err
+}
+
+const updateViolationByIDAndUserID = `-- name: UpdateViolationByIDAndUserID :one
+UPDATE violation
+SET
+    note = $3,
+    updated_at = NOW()
+WHERE
+    id = $1
+    AND user_id = $2 RETURNING id, user_id, issued_by, note, created_at, updated_at
+`
+
+type UpdateViolationByIDAndUserIDParams struct {
+	ID     uuid.UUID   `json:"id"`
+	UserID uuid.UUID   `json:"user_id"`
+	Note   pgtype.Text `json:"note"`
+}
+
+func (q *Queries) UpdateViolationByIDAndUserID(ctx context.Context, arg UpdateViolationByIDAndUserIDParams) (Violation, error) {
+	row := q.db.QueryRow(ctx, updateViolationByIDAndUserID, arg.ID, arg.UserID, arg.Note)
+	var i Violation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.IssuedBy,
+		&i.Note,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const upsertDepartment = `-- name: UpsertDepartment :one

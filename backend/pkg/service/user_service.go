@@ -21,15 +21,17 @@ type UserDepartment struct {
 }
 
 type User struct {
-	KeycloakID  uuid.UUID        `json:"keycloakId"`
-	Email       string           `json:"email"`
-	Username    string           `json:"username"`
-	FirstName   string           `json:"firstName"`
-	LastName    string           `json:"lastName"`
-	Role        string           `json:"role"`
-	Phone       string           `json:"phone"`
-	Departments []UserDepartment `json:"departments"`
-	TotalPoints int32            `json:"totalPoints"`
+	KeycloakID   uuid.UUID        `json:"keycloakId"`
+	Email        string           `json:"email"`
+	Username     string           `json:"username"`
+	FirstName    string           `json:"firstName"`
+	LastName     string           `json:"lastName"`
+	Role         string           `json:"role"`
+	Phone        string           `json:"phone"`
+	Departments  []UserDepartment `json:"departments"`
+	TotalPoints  int32            `json:"totalPoints"`
+	Violation    string           `json:"violation"`
+	ViolationIDs []uuid.UUID      `json:"violationIds"`
 }
 
 type Penalty struct {
@@ -40,6 +42,20 @@ type Penalty struct {
 	Note        string    `json:"note"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type ViolationRecord struct {
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"userId"`
+	IssuedBy  uuid.UUID `json:"issuedBy"`
+	Note      string    `json:"note"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type ViolationActionResponse struct {
+	Violation *ViolationRecord `json:"violation"`
+	User      *User            `json:"user"`
 }
 
 type PaginationMeta struct {
@@ -60,6 +76,7 @@ type UserService interface {
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
 	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
 	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string) (*PaginatedUsersResponse, error)
+	IssueViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, note string) (*ViolationActionResponse, error)
 	CreatePenalty(ctx context.Context, methodistID uuid.UUID, teacherID uuid.UUID, points int32, note string) (*Penalty, error)
 	GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]*Penalty, error)
 	GetPenaltyByIDAndTeacherID(ctx context.Context, penaltyID uuid.UUID, teacherID uuid.UUID) (*Penalty, error)
@@ -251,15 +268,17 @@ func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*U
 	}
 
 	return &User{
-		KeycloakID:  user.KeycloakID,
-		Email:       user.Email,
-		Username:    user.Username,
-		FirstName:   firstName,
-		LastName:    lastName,
-		Role:        string(user.Role),
-		Phone:       phone,
-		Departments: mappedDepartments,
-		TotalPoints: user.TotalPoints,
+		KeycloakID:   user.KeycloakID,
+		Email:        user.Email,
+		Username:     user.Username,
+		FirstName:    firstName,
+		LastName:     lastName,
+		Role:         string(user.Role),
+		Phone:        phone,
+		Departments:  mappedDepartments,
+		TotalPoints:  user.TotalPoints,
+		Violation:    string(user.Violation),
+		ViolationIDs: user.ViolationIds,
 	}, nil
 }
 
@@ -390,5 +409,68 @@ func mapPenalty(dbPenalty storage.Penalty) *Penalty {
 		Note:        note,
 		CreatedAt:   dbPenalty.CreatedAt.Time,
 		UpdatedAt:   dbPenalty.UpdatedAt.Time,
+	}
+}
+
+func (s *userService) IssueViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, note string) (*ViolationActionResponse, error) {
+	note = strings.TrimSpace(note)
+
+	issuer, err := s.repo.GetUserByKeycloakID(ctx, issuedByID)
+	if err != nil {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "issuer not found"}
+	}
+	if issuer.Role != storage.UserRoleMETHODIST && issuer.Role != storage.UserRoleADMIN {
+		return nil, &HTTPStatusError{StatusCode: 403, Message: "forbidden"}
+	}
+
+	_, err = s.repo.GetUserByKeycloakID(ctx, userID)
+	if err != nil {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "user not found"}
+	}
+
+	dbViolation, err := s.repo.CreateViolation(ctx, storage.CreateViolationParams{
+		UserID:   userID,
+		IssuedBy: issuedByID,
+		Note: pgtype.Text{
+			String: note,
+			Valid:  note != "",
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	updatedUser, err := s.repo.ApplyViolationToUser(ctx, storage.ApplyViolationToUserParams{
+		ViolationID: dbViolation.ID,
+		KeycloakID:  userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	mappedUser, err := s.toServiceUser(ctx, updatedUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViolationActionResponse{
+		Violation: mapViolationRecord(dbViolation),
+		User:      mappedUser,
+	}, nil
+}
+
+func mapViolationRecord(dbViolation storage.Violation) *ViolationRecord {
+	note := ""
+	if dbViolation.Note.Valid {
+		note = dbViolation.Note.String
+	}
+
+	return &ViolationRecord{
+		ID:        dbViolation.ID,
+		UserID:    dbViolation.UserID,
+		IssuedBy:  dbViolation.IssuedBy,
+		Note:      note,
+		CreatedAt: dbViolation.CreatedAt.Time,
+		UpdatedAt: dbViolation.UpdatedAt.Time,
 	}
 }
