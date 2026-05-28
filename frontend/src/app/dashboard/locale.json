@@ -24,8 +24,12 @@
 			"rupsTitle": "Рабочие учебные программы",
 			"kpiTitle": "KPI преподавателей",
 			"reviewTitle": "Последние обновления",
-			"chartTitle": "Динамика статусов рабочих учебных программ",
-			"chartDescription": "Изменение количества рабочих учебных программ по статусам за последние 7 дней"
+			"reviewCountLabel": "На проверке",
+			"totalCountLabel": "Всего",
+			"viewAllLabel": "Открыть список",
+			"statusOverviewTitle": "Сводка по статусам",
+			"statusOverviewDescription": "Распределение по статусам в последних {count} записях.",
+			"statusOverviewEmpty": "Недостаточно данных для отображения сводки."
 		}
 	},
 	"kk": {
@@ -53,8 +57,12 @@
 			"rupsTitle": "Рабочие Учебные Планы",
 			"kpiTitle": "Мұғалімдер KPI",
 			"reviewTitle": "Соңғы жаңартулар",
-			"chartTitle": "Рабочие Учебные Планы мәртебелерінің динамикасы",
-			"chartDescription": "Соңғы 7 күндегі мәртебелер бойынша жұмыс оқу бағдарламалары санының өзгеруі"
+			"reviewCountLabel": "Тексеруде",
+			"totalCountLabel": "Барлығы",
+			"viewAllLabel": "Тізімді ашу",
+			"statusOverviewTitle": "Мәртебелер бойынша қорытынды",
+			"statusOverviewDescription": "Соңғы {count} жазбадағы мәртебелердің таралуы.",
+			"statusOverviewEmpty": "Қорытындыны көрсету үшін деректер жеткіліксіз."
 		}
 	}
 }

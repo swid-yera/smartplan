@@ -6,7 +6,6 @@ import { Loader, PageTitle } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
-	Button,
 	Card,
 	CardContent,
 	CardDescription,
@@ -21,7 +20,9 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { BarChart3, Building2, Crown, Medal, Users } from 'lucide-react'
+import { Crown, Medal } from 'lucide-react'
+
+import { RatingNav } from './components/rating-nav'
 import localeDictionary from './locale.json'
 
 const placeStyles = (index: number) => {
@@ -56,38 +57,23 @@ export default function RatingPage() {
 	}
 
 	return (
-		<section className='mx-auto w-full max-w-4xl p-6 space-y-6'>
+		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
+			<RatingNav
+				labels={{
+					allTeachers: t.allTeachers,
+					departments: t.departments,
+					stats: t.stats,
+					top20: t.top20,
+				}}
+			/>
 
 			{/* HEADER */}
 			<Card>
-				<CardHeader className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+				<CardHeader>
 					<div>
 						<CardTitle>{t.headerTitle}</CardTitle>
 						<CardDescription>{t.headerDescription}</CardDescription>
-					</div>
-
-					<div className='flex gap-2'>
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/all'>
-								<Users className='mr-2 h-4 w-4' />
-								{t.allTeachers}
-							</Link>
-						</Button>
-
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/departments'>
-								<Building2 className='mr-2 h-4 w-4' />
-								{t.departments}
-							</Link>
-						</Button>
-
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/stats'>
-								<BarChart3 className='mr-2 h-4 w-4' />
-								{t.stats}
-							</Link>
-						</Button>
 					</div>
 				</CardHeader>
 			</Card>

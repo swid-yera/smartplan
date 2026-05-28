@@ -2,17 +2,15 @@
 
 import { useMemo } from 'react'
 
-import Link from 'next/link'
-
 import { Loader, PageTitle } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, BarChart3, Users } from 'lucide-react'
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
+import { RatingDistributionChart } from '../components/rating-distribution-chart'
+import { RatingNav } from '../components/rating-nav'
 import localeDictionary from './locale.json'
 
 const placeStyles = (index: number) => {
@@ -44,6 +42,14 @@ export default function RatingDepartmentsPage() {
 		return (
 			<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
 				<PageTitle description={t.description}>{t.title}</PageTitle>
+				<RatingNav
+					labels={{
+						allTeachers: t.allTeachers,
+						departments: t.departments,
+						stats: t.stats,
+						top20: t.top20,
+					}}
+				/>
 				<Card className='border-dashed'>
 					<CardContent className='py-12 text-center'>
 						<p className='text-base font-medium'>{t.emptyTitle}</p>
@@ -57,42 +63,26 @@ export default function RatingDepartmentsPage() {
 	const topDepartments = sortedDepartments.slice(0, 10)
 	const chartData = sortedDepartments.map((department) => ({
 		name: getLocaleText(department.name, locale),
-		points: department.totalPoints,
-		users: department.userCount,
+		value: department.totalPoints,
 	}))
 
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
+			<RatingNav
+				labels={{
+					allTeachers: t.allTeachers,
+					departments: t.departments,
+					stats: t.stats,
+					top20: t.top20,
+				}}
+			/>
 
 			<Card>
-				<CardHeader className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+				<CardHeader>
 					<div>
 						<CardTitle>{t.headerTitle}</CardTitle>
 						<CardDescription>{t.headerDescription}</CardDescription>
-					</div>
-
-					<div className='flex gap-2'>
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating'>
-								<ArrowLeft className='mr-2 h-4 w-4' />
-								{t.top20}
-							</Link>
-						</Button>
-
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/all'>
-								<Users className='mr-2 h-4 w-4' />
-								{t.allTeachers}
-							</Link>
-						</Button>
-
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/stats'>
-								<BarChart3 className='mr-2 h-4 w-4' />
-								{t.stats}
-							</Link>
-						</Button>
 					</div>
 				</CardHeader>
 			</Card>
@@ -103,7 +93,10 @@ export default function RatingDepartmentsPage() {
 				</CardHeader>
 				<CardContent className='space-y-2'>
 					{topDepartments.map((department, index) => (
-						<div key={department.keycloakId} className={`flex items-center justify-between rounded-lg p-3 ${placeStyles(index)}`}>
+						<div
+							key={department.keycloakId}
+							className={`flex items-center justify-between rounded-lg p-3 ${placeStyles(index)}`}
+						>
 							<div>
 								<p className='font-medium'>
 									{index + 1}. {getLocaleText(department.name, locale)}
@@ -123,14 +116,7 @@ export default function RatingDepartmentsPage() {
 					<CardTitle>{t.distribution}</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<ResponsiveContainer width='100%' height={320}>
-						<BarChart data={chartData}>
-							<XAxis dataKey='name' hide />
-							<YAxis />
-							<Tooltip formatter={(value) => [value, t.points]} />
-							<Bar dataKey='points' fill='#3b82f6' />
-						</BarChart>
-					</ResponsiveContainer>
+					<RatingDistributionChart data={chartData} height={320} valueLabel={t.points} />
 				</CardContent>
 			</Card>
 		</section>
