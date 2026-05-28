@@ -1,9 +1,5 @@
-import { useMemo } from 'react'
-
-import dynamic from 'next/dynamic'
-
-import { CombineCard, Loader, PageTitle } from '@components'
-import { buildReviewItems, getUILocaleSection, isCurrentDay } from '@helpers'
+import { CombineCard, Loader, PageTitle, StatusBadge } from '@components'
+import { buildReviewItems, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -14,69 +10,42 @@ import { CheckCircle, FileText } from 'lucide-react'
 import localeDictionary from './locale.json'
 import { StatCard } from './stat-card'
 
-const StatusChart = dynamic(() => import('./status-chart'), {
-	ssr: false,
-	loading: () => <div className='h-96 w-full bg-muted animate-pulse rounded-lg' />,
-})
-
-const queryParams = { currentPage: 1, pageSize: 10, status: [StatusEnum.IN_REVIEW] }
+const reviewQueryParams = { currentPage: 1, pageSize: 10, status: [StatusEnum.IN_REVIEW], sort: 'desc' as const }
+const allQueryParams = { currentPage: 1, pageSize: 50, sort: 'desc' as const }
 
 export const MethodistDashboard = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).methodist
-	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
-	const [rupsQuery, awardsQuery] = useQueries({
-		queries: [services.rup.getAllOptions(queryParams), services.award.getAllOptions(queryParams)],
+	const [reviewRupsQuery, reviewAwardsQuery, allRupsQuery, allAwardsQuery] = useQueries({
+		queries: [
+			services.rup.getAllOptions(reviewQueryParams),
+			services.award.getAllOptions(reviewQueryParams),
+			services.rup.getAllOptions(allQueryParams),
+			services.award.getAllOptions(allQueryParams),
+		],
 	})
 
-	const isLoading = rupsQuery.isLoading || awardsQuery.isLoading
+	const isLoading =
+		reviewRupsQuery.isLoading || reviewAwardsQuery.isLoading || allRupsQuery.isLoading || allAwardsQuery.isLoading
 
-	const rups = rupsQuery.data?.data ?? []
-	const awards = awardsQuery.data?.data ?? []
-	const totalCount =
-		(rupsQuery?.data?.meta.total || 0) + (awardsQuery?.data?.meta.total || 0) - (rups.length + awards.length)
+	const reviewRups = reviewRupsQuery.data?.data ?? []
+	const reviewAwards = reviewAwardsQuery.data?.data ?? []
+	const allRups = allRupsQuery.data?.data ?? []
+	const allAwards = allAwardsQuery.data?.data ?? []
+	const reviewRupsCount = reviewRupsQuery.data?.meta.total ?? 0
+	const reviewAwardsCount = reviewAwardsQuery.data?.meta.total ?? 0
+	const totalRupsCount = allRupsQuery.data?.meta.total ?? 0
+	const totalAwardsCount = allAwardsQuery.data?.meta.total ?? 0
+	const totalCount = reviewRupsCount + reviewAwardsCount - (reviewRups.length + reviewAwards.length)
 
-	const reviewRups = rups.filter((r) => r.status === StatusEnum.IN_REVIEW) || []
-	const reviewRupsCount = reviewRups?.length || 0
-	const approvedRupsCount =
-		rups.filter((r) => r.status === StatusEnum.APPROVED && isCurrentDay(r.updatedAt)).length || 0
-
-	const reviewAwards = awards.filter((a) => a.status === StatusEnum.IN_REVIEW) || []
-	const reviewAwardsCount = reviewAwards?.length || 0
-	const approvedAwardsCount =
-		awards.filter((a) => a.status === StatusEnum.APPROVED && isCurrentDay(a.updatedAt)).length || 0
-
-	// combine two two data
-	const items = buildReviewItems(rups, awards)
-
-	const chartData = useMemo(() => {
-		const today = new Date()
-		const data = items || []
-
-		return Array.from({ length: 7 }).map((_, i) => {
-			const date = new Date(today)
-
-			date.setDate(today.getDate() - (6 - i))
-
-			const dayRups = data.filter((r) => {
-				const rDate = new Date(r.updatedAt)
-
-				return (
-					rDate.getDate() === date.getDate() &&
-					rDate.getMonth() === date.getMonth() &&
-					rDate.getFullYear() === date.getFullYear()
-				)
-			})
-
-			return {
-				date: date.toLocaleDateString(dateLocale, { day: '2-digit', month: '2-digit' }),
-				approved: dayRups.filter((r) => r.status === StatusEnum.APPROVED).length,
-				review: dayRups.filter((r) => r.status === StatusEnum.IN_REVIEW).length,
-				rejected: dayRups.filter((r) => r.status === StatusEnum.REJECTED).length,
-				in_progress: dayRups.filter((r) => r.status === StatusEnum.DRAFT).length,
-			}
-		})
-	}, [rupsQuery, awardsQuery])
+	const items = buildReviewItems(reviewRups, reviewAwards)
+	const allItems = buildReviewItems(allRups, allAwards)
+	const statusOrder: StatusEnum[] = [StatusEnum.IN_REVIEW, StatusEnum.APPROVED, StatusEnum.REJECTED, StatusEnum.DRAFT]
+	const statusCounts = statusOrder.map((status) => ({
+		status,
+		count: allItems.filter((item) => item.status === status).length,
+	}))
+	const hasStatusData = statusCounts.some((item) => item.count > 0)
 
 	if (isLoading) return <Loader type='data' />
 
@@ -88,21 +57,27 @@ export const MethodistDashboard = () => {
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-2 '>
 					<StatCard
 						accent='warning'
-						approvedCount={approvedRupsCount}
+						ctaLabel={t.viewAllLabel}
 						description={t.rupsDescription}
-						href='/rups/review'
+						href='/rups/review?sort=desc&page=1'
 						icon={FileText}
 						reviewCount={reviewRupsCount}
+						reviewLabel={t.reviewCountLabel}
+						secondaryCount={totalRupsCount}
+						secondaryLabel={t.totalCountLabel}
 						title={t.rupsTitle}
 					/>
 
 					<StatCard
 						accent='success'
-						approvedCount={approvedAwardsCount}
+						ctaLabel={t.viewAllLabel}
 						description={t.kpiDescription}
-						href='/kpi/review'
+						href='/kpi/all?status=IN_REVIEW&sort=desc&page=1'
 						icon={CheckCircle}
 						reviewCount={reviewAwardsCount}
+						reviewLabel={t.reviewCountLabel}
+						secondaryCount={totalAwardsCount}
+						secondaryLabel={t.totalCountLabel}
 						title={t.kpiTitle}
 					/>
 				</div>
@@ -113,11 +88,26 @@ export const MethodistDashboard = () => {
 			<section>
 				<Card className='lg:col-span-4 min-w-0'>
 					<CardHeader>
-						<CardTitle className='lg:text-xl text-lg'>{t.chartTitle}</CardTitle>
-						<CardDescription>{t.chartDescription}</CardDescription>
+						<CardTitle className='lg:text-xl text-lg'>{t.statusOverviewTitle}</CardTitle>
+						<CardDescription>
+							{interpolateUILocaleText(t.statusOverviewDescription, { count: allItems.length })}
+						</CardDescription>
 					</CardHeader>
-					<CardContent className='min-w-0'>
-						<StatusChart data={chartData} />
+					<CardContent className='min-w-0 space-y-3'>
+						{hasStatusData ? (
+							<div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+								{statusCounts.map((item) => (
+									<div key={item.status} className='rounded-md border p-3'>
+										<div className='mb-2'>
+											<StatusBadge status={item.status} />
+										</div>
+										<p className='text-2xl font-semibold leading-none'>{item.count}</p>
+									</div>
+								))}
+							</div>
+						) : (
+							<p className='text-sm text-muted-foreground'>{t.statusOverviewEmpty}</p>
+						)}
 					</CardContent>
 				</Card>
 			</section>

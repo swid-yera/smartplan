@@ -24,7 +24,9 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, BarChart3, Building2, Search, UserIcon } from 'lucide-react'
+import { Search, UserIcon } from 'lucide-react'
+
+import { RatingNav } from '../components/rating-nav'
 import localeDictionary from './locale.json'
 
 export default function RatingAllPage() {
@@ -55,39 +57,22 @@ export default function RatingAllPage() {
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
+			<RatingNav
+				labels={{
+					allTeachers: t.allTeachers,
+					departments: t.departments,
+					stats: t.stats,
+					top20: t.top20,
+				}}
+			/>
 
 			{/* HEADER */}
 			<Card>
 				<CardHeader className='space-y-4'>
-					<div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-						<div>
-							<CardTitle>{t.headerTitle}</CardTitle>
-							<CardDescription>{t.headerDescription}</CardDescription>
-						</div>
-
-						<div className='flex gap-2'>
-							<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating'>
-								<ArrowLeft className='mr-2 h-4 w-4' />
-								{t.top20}
-							</Link>
-							</Button>
-
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/stats'>
-								<BarChart3 className='mr-2 h-4 w-4' />
-								{t.stats}
-							</Link>
-						</Button>
-
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/departments'>
-								<Building2 className='mr-2 h-4 w-4' />
-								{t.departments}
-							</Link>
-						</Button>
+					<div>
+						<CardTitle>{t.headerTitle}</CardTitle>
+						<CardDescription>{t.headerDescription}</CardDescription>
 					</div>
-				</div>
 
 					{/* SEARCH */}
 					<div className='flex gap-2 max-w-xl'>

@@ -2,17 +2,16 @@
 
 import { useMemo } from 'react'
 
-import Link from 'next/link'
-
 import { Loader, PageTitle } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IUser } from '@types'
-import { ArrowLeft, BarChart3, Building2 } from 'lucide-react'
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+
+import { RatingDistributionChart } from '../components/rating-distribution-chart'
+import { RatingNav } from '../components/rating-nav'
 import localeDictionary from './locale.json'
 
 export default function RatingStatsPage() {
@@ -40,42 +39,27 @@ export default function RatingStatsPage() {
 	// данные для графика (распределение)
 	const chartData = sortedUsers.map((u) => ({
 		name: `${u.firstName} ${u.lastName}`,
-		points: u.totalPoints ?? 0,
+		value: u.totalPoints ?? 0,
 	}))
 
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
+			<RatingNav
+				labels={{
+					allTeachers: t.allTeachers,
+					departments: t.departments,
+					stats: t.stats,
+					top20: t.top20,
+				}}
+			/>
 
 			{/* HEADER */}
 			<Card>
-				<CardHeader className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4'>
+				<CardHeader>
 					<div>
 						<CardTitle>{t.headerTitle}</CardTitle>
 						<CardDescription>{t.headerDescription}</CardDescription>
-					</div>
-
-					<div className='flex gap-2'>
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating'>
-								<ArrowLeft className='mr-2 h-4 w-4' />
-								{t.top20}
-							</Link>
-						</Button>
-
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/all'>
-								<BarChart3 className='mr-2 h-4 w-4' />
-								{t.allTeachers}
-							</Link>
-						</Button>
-
-						<Button asChild size='sm' variant='outline'>
-							<Link href='/kpi/rating/departments'>
-								<Building2 className='mr-2 h-4 w-4' />
-								{t.departments}
-							</Link>
-						</Button>
 					</div>
 				</CardHeader>
 			</Card>
@@ -122,14 +106,7 @@ export default function RatingStatsPage() {
 					<CardTitle>{t.distribution}</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<ResponsiveContainer height={300} width='100%'>
-						<BarChart data={chartData}>
-							<XAxis hide dataKey='name' />
-							<YAxis />
-							<Tooltip />
-							<Bar dataKey='points' fill='#3b82f6' />
-						</BarChart>
-					</ResponsiveContainer>
+					<RatingDistributionChart data={chartData} valueLabel={t.points} />
 				</CardContent>
 			</Card>
 		</section>

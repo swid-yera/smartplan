@@ -10,10 +10,13 @@ interface IProps {
 	title: string
 	description?: string
 	reviewCount: number
-	approvedCount: number
+	secondaryCount: number
 	icon: LucideIcon
 	accent?: 'warning' | 'success' | 'info'
 	href?: string
+	reviewLabel?: string
+	secondaryLabel?: string
+	ctaLabel?: string
 }
 
 const accentStyles = {
@@ -26,10 +29,13 @@ export const StatCard: FC<IProps> = ({
 	title,
 	description,
 	reviewCount,
-	approvedCount,
+	secondaryCount,
 	icon: Icon,
 	accent = 'info',
 	href,
+	reviewLabel = 'Ожидают проверки',
+	secondaryLabel = 'За сегодня',
+	ctaLabel = 'Посмотреть все',
 }) => {
 	return (
 		<Card className='transition hover:shadow-md hover:-translate-y-0.5'>
@@ -48,18 +54,18 @@ export const StatCard: FC<IProps> = ({
 				<div className='flex items-end justify-between'>
 					<div>
 						<div className='text-3xl font-bold leading-none'>{reviewCount}</div>
-						<p className='mt-1 text-xs text-muted-foreground'>Ожидают проверки</p>
+						<p className='mt-1 text-xs text-muted-foreground'>{reviewLabel}</p>
 					</div>
 
 					<div className='text-right'>
-						<div className='text-lg font-semibold'>{approvedCount}</div>
-						<p className='text-xs text-muted-foreground'>За сегодня</p>
+						<div className='text-lg font-semibold'>{secondaryCount}</div>
+						<p className='text-xs text-muted-foreground'>{secondaryLabel}</p>
 					</div>
 				</div>
 
 				{href && (
 					<Button asChild className='w-full' size='sm' variant='outline'>
-						<Link href={href}>Посмотреть все</Link>
+						<Link href={href}>{ctaLabel}</Link>
 					</Button>
 				)}
 			</CardContent>
