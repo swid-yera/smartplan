@@ -8,6 +8,7 @@ export interface IPaginationRequest {
 	currentPage?: number
 	pageSize?: number
 	search?: string
+	sort?: 'asc' | 'desc'
 }
 
 // update status

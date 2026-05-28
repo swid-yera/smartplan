@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_95nE47EZpL
 createdAt: 2026-05-28T14:36:09.194604
-updatedAt: 2026-05-28T14:45:49.069118400
+updatedAt: 2026-05-28T15:50:34.059270800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_gPAuJ5SYGd
 authentication: {}
@@ -26,9 +26,9 @@ url: ${[ url ]}/users/:id/violation
 urlParameters:
 - enabled: true
   name: :id
-  value: 46313143-eadb-4798-b7f5-2fa97869e716
+  value: f2546909-a510-49e7-9185-bd576e76784c
   id: 63WTMt8DTv
 - enabled: true
   name: ''
   value: ''
-  id: s75XrKnBVf
+  id: u4GZtuMpfM

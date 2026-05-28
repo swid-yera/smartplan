@@ -37,7 +37,7 @@ const applyViolationToUser = `-- name: ApplyViolationToUser :one
 UPDATE users
 SET
     violation_ids = array_append(violation_ids, $1::uuid),
-    total_points = total_points - 1,
+    total_points = total_points - 10,
     violation = CASE
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 2 THEN 'REBUKE'::violation_enum
@@ -1195,6 +1195,23 @@ DELETE FROM users WHERE keycloak_id = $1
 
 func (q *Queries) DeleteUser(ctx context.Context, keycloakID uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteUser, keycloakID)
+	return err
+}
+
+const deleteViolationByIDAndUserID = `-- name: DeleteViolationByIDAndUserID :exec
+DELETE FROM violation
+WHERE
+    id = $1
+    AND user_id = $2
+`
+
+type DeleteViolationByIDAndUserIDParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) DeleteViolationByIDAndUserID(ctx context.Context, arg DeleteViolationByIDAndUserIDParams) error {
+	_, err := q.db.Exec(ctx, deleteViolationByIDAndUserID, arg.ID, arg.UserID)
 	return err
 }
 
@@ -2803,6 +2820,54 @@ WHERE
 func (q *Queries) RemoveUserFromAllDepartments(ctx context.Context, dollar_1 uuid.UUID) error {
 	_, err := q.db.Exec(ctx, removeUserFromAllDepartments, dollar_1)
 	return err
+}
+
+const removeViolationFromUser = `-- name: RemoveViolationFromUser :one
+UPDATE users
+SET
+    violation_ids = array_remove(violation_ids, $1::uuid),
+    total_points = CASE
+        WHEN $1::uuid = ANY(violation_ids) THEN total_points + 10
+        ELSE total_points
+    END,
+    violation = CASE
+        WHEN COALESCE(cardinality(array_remove(violation_ids, $1::uuid)), 0) >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
+        WHEN COALESCE(cardinality(array_remove(violation_ids, $1::uuid)), 0) = 2 THEN 'REBUKE'::violation_enum
+        WHEN COALESCE(cardinality(array_remove(violation_ids, $1::uuid)), 0) = 1 THEN 'REMARK'::violation_enum
+        ELSE 'NONE'::violation_enum
+    END,
+    updated_at = NOW()
+WHERE
+    keycloak_id = $2 RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
+`
+
+type RemoveViolationFromUserParams struct {
+	ViolationID uuid.UUID `json:"violation_id"`
+	KeycloakID  uuid.UUID `json:"keycloak_id"`
+}
+
+func (q *Queries) RemoveViolationFromUser(ctx context.Context, arg RemoveViolationFromUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, removeViolationFromUser, arg.ViolationID, arg.KeycloakID)
+	var i User
+	err := row.Scan(
+		&i.KeycloakID,
+		&i.Email,
+		&i.Username,
+		&i.FirstName,
+		&i.LastName,
+		&i.Phone,
+		&i.Role,
+		&i.Rups,
+		&i.TotalPoints,
+		&i.Awards,
+		&i.Violation,
+		&i.ViolationIds,
+		&i.PasswordChangedAt,
+		&i.LastSeenAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateAward = `-- name: UpdateAward :one

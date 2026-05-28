@@ -126,13 +126,12 @@ export const navMain: INav[] = [
 				icon: Ribbon,
 				titleKey: 'kpiAll',
 				url: '/kpi/all',
-				role: RoleEnum.METHODIST,
 			},
 			{
 				id: 'kpi-review',
 				icon: ClipboardClock,
 				titleKey: 'kpiReview',
-				url: '/kpi/review',
+				url: '/kpi/all?status=IN_REVIEW&sort=desc&page=1',
 				role: RoleEnum.METHODIST,
 			},
 			{

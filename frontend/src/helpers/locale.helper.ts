@@ -17,7 +17,10 @@ const KZ_SPECIFIC_RE = /[ӘәҒғҚқҢңӨөҰұҮүІі]/
 const RU_CAPITAL_RE = /[А-ЯЁ]/
 
 const normalizeWhitespace = (value: string): string =>
-	value.replace(/\s+/g, ' ').replace(/\s+([,.;:])/g, '$1').trim()
+	value
+		.replace(/\s+/g, ' ')
+		.replace(/\s+([,.;:])/g, '$1')
+		.trim()
 
 const extractBySlash = (value: string, locale: Locale): string => {
 	const parts = value
@@ -31,6 +34,7 @@ const extractBySlash = (value: string, locale: Locale): string => {
 	const ruParts = parts.filter((part) => !KZ_SPECIFIC_RE.test(part))
 
 	if (locale === 'kk') return normalizeWhitespace((kzParts[0] ?? parts[0] ?? value).trim())
+
 	return normalizeWhitespace((ruParts.at(-1) ?? parts.at(-1) ?? value).trim())
 }
 
@@ -38,15 +42,18 @@ const splitGluedBilingualText = (value: string, locale: Locale): string => {
 	if (!KZ_SPECIFIC_RE.test(value)) return value
 
 	const chars = [...value]
+
 	for (let i = 1; i < chars.length; i += 1) {
 		const prev = chars[i - 1]
 		const curr = chars[i]
+
 		if (!RU_CAPITAL_RE.test(curr)) continue
 
-		// "құрастыруРазработка" -> split before "Разработка"
+		// "құрастыру/разработка" -> split before "Разработка"
 		if (/[a-zа-яёәғқңөұүі]/i.test(prev) && prev !== ' ' && prev !== '-' && prev !== '—') {
 			const left = value.slice(0, i).trim()
 			const right = value.slice(i).trim()
+
 			return locale === 'kk' ? normalizeWhitespace(left) : normalizeWhitespace(right)
 		}
 	}
@@ -62,6 +69,7 @@ const normalizeLocalizedText = (value: string, locale: Locale): string => {
 	}
 
 	normalized = splitGluedBilingualText(normalized, locale)
+
 	return normalizeWhitespace(normalized)
 }
 
@@ -73,6 +81,7 @@ export const getLocaleText = (value: LocalizedText, locale: Locale = DEFAULT_SIT
 	const preferredValue = locale === 'kk' ? value.kz : value.ru
 
 	const resolvedValue = preferredValue?.trim() || value.ru?.trim() || value.kz?.trim() || ''
+
 	return normalizeLocalizedText(resolvedValue, locale)
 }
 

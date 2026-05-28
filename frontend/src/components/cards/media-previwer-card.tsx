@@ -6,17 +6,17 @@ import { Button } from '@shadcn'
 import { Download, Eye, EyeOff } from 'lucide-react'
 import Zoom from 'react-medium-image-zoom'
 
-interface IMediaPreviwerLabels {
+interface IMediaPreviewerCardLabels {
 	download: string
 	hidePreview: string
 	preview: string
 }
 
-interface IMediaPreviwerProps {
+interface IMediaPreviewerProps {
 	fileUrl: string
 	fileName?: string
 	fileIndex?: number
-	labels: IMediaPreviwerLabels
+	labels: IMediaPreviewerCardLabels
 }
 
 const IMAGE_REGEX = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i
@@ -34,7 +34,7 @@ const shortenUrl = (url: string, maxLength = 68) => {
 	return `${prefix}...${suffix}`
 }
 
-export const MediaPreviwer = ({ fileUrl, fileName, fileIndex, labels }: IMediaPreviwerProps) => {
+export const MediaPreviewerCard = ({ fileUrl, fileName, fileIndex, labels }: IMediaPreviewerProps) => {
 	const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 	const isImage = IMAGE_REGEX.test(fileUrl)
 	const isPdf = PDF_REGEX.test(fileUrl)

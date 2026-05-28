@@ -51,6 +51,7 @@ type Querier interface {
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	DeleteRupResource(ctx context.Context, id uuid.UUID) error
 	DeleteUser(ctx context.Context, keycloakID uuid.UUID) error
+	DeleteViolationByIDAndUserID(ctx context.Context, arg DeleteViolationByIDAndUserIDParams) error
 	GetAllAwardCategories(ctx context.Context) ([]GetAllAwardCategoriesRow, error)
 	GetAllAwardTypeCriteria(ctx context.Context) ([]AwardTypeCriterium, error)
 	GetAllAwardTypeVariants(ctx context.Context) ([]AwardTypeVariant, error)
@@ -98,6 +99,7 @@ type Querier interface {
 	GetViolationsByIDs(ctx context.Context, ids []uuid.UUID) ([]Violation, error)
 	LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error
 	RemoveUserFromAllDepartments(ctx context.Context, dollar_1 uuid.UUID) error
+	RemoveViolationFromUser(ctx context.Context, arg RemoveViolationFromUserParams) (User, error)
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
 	UpdateAwardCategory(ctx context.Context, arg UpdateAwardCategoryParams) (AwardCategory, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error

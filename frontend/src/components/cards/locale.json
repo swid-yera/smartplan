@@ -63,6 +63,18 @@
 			"page": "Страница {current} из {total}",
 			"untitled": "Без названия",
 			"unknownTeacher": "Неизвестно"
+		},
+		"userCard": {
+			"firstName": "Имя",
+			"lastName": "Фамилия",
+			"username": "Логин",
+			"phone": "Телефон",
+			"totalPoints": "Всего баллов",
+			"violationTitle": "Информация о выговорах",
+			"violationLevel": "Текущий уровень",
+			"violationCount": "Количество выговоров",
+			"violationLastNote": "Последний выговор",
+			"none": "Нет"
 		}
 	},
 	"kk": {
@@ -81,8 +93,8 @@
 			"lessonDescription": "Мұнда сіз жасаған немесе жүйе құрған сабақ жоспарлары көрсетіледі.",
 			"lessonCreate": "Алғашқы жоспарды құру",
 			"rupTitle": "Жұмыс оқу жоспарлары табылмады",
-			"rupDescription": "Мұнда сіздің ЖОБ-тарыңыз көрсетіледі.",
-			"rupCreate": "ЖОБ құру"
+			"rupDescription": "Мұнда сіздің РУП-тарыңыз көрсетіледі.",
+			"rupCreate": "РУП құру"
 		},
 		"groupsCard": {
 			"title": "Топтар тізімі",
@@ -129,6 +141,19 @@
 			"page": "{current}/{total} бет",
 			"untitled": "Атаусыз",
 			"unknownTeacher": "Белгісіз"
+		},
+		"userCard": {
+			"firstName": "Аты",
+			"lastName": "Тегі",
+			"username": "Логин",
+			"phone": "Телефон",
+			"totalPoints": "Жалпы ұпай",
+			"violationTitle": "Сөгіс туралы ақпарат",
+			"violationLevel": "Ағымдағы деңгей",
+			"violationCount": "Сөгіс саны",
+			"violationLastNote": "Соңғы сөгіс",
+			"none": "Жоқ"
 		}
 	}
 }
+

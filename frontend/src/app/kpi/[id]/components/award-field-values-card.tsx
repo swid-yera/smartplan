@@ -1,6 +1,6 @@
 'use client'
 
-import { MediaPreviwer } from '@components'
+import { MediaPreviewerCard } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -116,7 +116,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 		}
 
 		return values.map((value, idx) => (
-			<MediaPreviwer
+			<MediaPreviewerCard
 				key={`${fieldKey}-${value}-${idx}`}
 				fileIndex={idx + 1}
 				fileName={fieldKey}

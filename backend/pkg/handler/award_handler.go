@@ -151,11 +151,16 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		return
 	}
 
+	methodist := pgtype.UUID{Valid: false}
+	if req.Status != storage.AwardsStatusINREVIEW {
+		methodist = parseUUIDPgtype(currentUser.KeycloakID.String())
+	}
+
 	params := storage.UpdateAwardStatusParams{
 		ID:          id,
 		Status:      req.Status,
 		Reason:      req.Reason,
-		Methodist:   parseUUIDPgtype(currentUser.KeycloakID.String()),
+		Methodist:   methodist,
 		TotalPoints: req.TotalPoints,
 	}
 

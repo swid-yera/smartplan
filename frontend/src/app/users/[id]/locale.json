@@ -4,6 +4,9 @@
       "notFound": "Пользователь не найден",
       "back": "Вернуться назад",
       "penalties": "Нарушения",
+      "violations": "Выговоры",
+      "violationAdded": "Выговор добавлен",
+      "violationDeleted": "Выговор удалён",
       "title": "Данные пользователя {firstName} {lastName}",
       "createdTab": "Созданные РУП",
       "assessmentTab": "Проверяемые РУП",
@@ -25,9 +28,12 @@
       "notFound": "Пайдаланушы табылмады",
       "back": "Артқа қайту",
       "penalties": "Бұзушылықтар",
+      "violations": "Сөгістер",
+      "violationAdded": "Сөгіс қосылды",
+      "violationDeleted": "Сөгіс жойылды",
       "title": "{firstName} {lastName} пайдаланушы деректері",
-      "createdTab": "Құрылған ЖОБ",
-      "assessmentTab": "Тексерілетін ЖОБ",
+      "createdTab": "Құрылған РУП",
+      "assessmentTab": "Тексерілетін РУП",
       "kpiTab": "KPI",
       "createdRupsTitle": "Пайдаланушының жұмыс оқу бағдарламалары",
       "assessmentRupsTitle": "Пайдаланушының әдістемелік жұмыстары",
@@ -42,3 +48,4 @@
     }
   }
 }
+

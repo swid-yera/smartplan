@@ -1,12 +1,11 @@
 'use client'
 
-import { CategoryCard, Loader, SectionTitle } from '@components'
+import { CategoryCard, Loader, SectionTitle, UserCard } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 
-import { UserCard } from '../../users/[id]/user-card'
 import localeDictionary from './locale.json'
 
 const MethodistAwardsPage = () => {
@@ -25,7 +24,7 @@ const MethodistAwardsPage = () => {
 		<section className='p-4 max-w-6xl w-full mx-auto space-y-6'>
 			<SectionTitle description={t.profileDescription} title={t.profileTitle} />
 
-			<UserCard user={user} />
+			<UserCard showViolation={false} user={user} />
 
 			<div className='space-y-4'>
 				<div className='flex items-center justify-between gap-4'>

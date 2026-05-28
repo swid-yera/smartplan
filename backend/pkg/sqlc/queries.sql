@@ -234,6 +234,12 @@ WHERE
     id = $1
     AND user_id = $2;
 
+-- name: DeleteViolationByIDAndUserID :exec
+DELETE FROM violation
+WHERE
+    id = $1
+    AND user_id = $2;
+
 -- name: GetViolationsByIDs :many
 SELECT *
 FROM violation
@@ -245,11 +251,29 @@ ORDER BY array_position(sqlc.arg('ids')::uuid[], id);
 UPDATE users
 SET
     violation_ids = array_append(violation_ids, sqlc.arg('violation_id')::uuid),
-    total_points = total_points - 1,
+    total_points = total_points - 10,
     violation = CASE
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 2 THEN 'REBUKE'::violation_enum
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 1 THEN 'REMARK'::violation_enum
+        ELSE 'NONE'::violation_enum
+    END,
+    updated_at = NOW()
+WHERE
+    keycloak_id = sqlc.arg('keycloak_id') RETURNING *;
+
+-- name: RemoveViolationFromUser :one
+UPDATE users
+SET
+    violation_ids = array_remove(violation_ids, sqlc.arg('violation_id')::uuid),
+    total_points = CASE
+        WHEN sqlc.arg('violation_id')::uuid = ANY(violation_ids) THEN total_points + 10
+        ELSE total_points
+    END,
+    violation = CASE
+        WHEN COALESCE(cardinality(array_remove(violation_ids, sqlc.arg('violation_id')::uuid)), 0) >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
+        WHEN COALESCE(cardinality(array_remove(violation_ids, sqlc.arg('violation_id')::uuid)), 0) = 2 THEN 'REBUKE'::violation_enum
+        WHEN COALESCE(cardinality(array_remove(violation_ids, sqlc.arg('violation_id')::uuid)), 0) = 1 THEN 'REMARK'::violation_enum
         ELSE 'NONE'::violation_enum
     END,
     updated_at = NOW()

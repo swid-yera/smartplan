@@ -1,5 +1,5 @@
 import type { badgeVariants } from '@shadcn'
-import { type IUser, type Locale, RoleEnum } from '@types'
+import { type IUser, type Locale, RoleEnum, ViolationEnum } from '@types'
 import type { VariantProps } from 'class-variance-authority'
 
 // has role
@@ -72,6 +72,66 @@ export const getUserRoleLabels = (locale: Locale = 'ru'): Record<RoleEnum, strin
 
 export const normalizeUserRole = (role: RoleEnum, locale: Locale = 'ru'): string => {
 	return getUserRoleLabels(locale)[role]
+}
+
+type ViolationKind = Exclude<ViolationEnum, ViolationEnum.NONE>
+
+const violationLabelsByLocale: Record<Locale, Record<ViolationEnum, string>> = {
+	ru: {
+		NONE: 'Нет нарушений',
+		REMARK: 'Замечание',
+		REBUKE: 'Выговор',
+		SEVERE_REPRIMAND: 'Строгий выговор',
+	},
+	kk: {
+		NONE: 'Бұзушылық жоқ',
+		REMARK: 'Ескерту',
+		REBUKE: 'Сөгіс',
+		SEVERE_REPRIMAND: 'Қатаң сөгіс',
+	},
+}
+
+const violationPenaltyPoints: Record<ViolationKind, number> = {
+	REMARK: 10,
+	REBUKE: 20,
+	SEVERE_REPRIMAND: 30,
+}
+
+export const getViolationLabels = (locale: Locale = 'ru'): Record<ViolationEnum, string> => {
+	return violationLabelsByLocale[locale] || violationLabelsByLocale.ru
+}
+
+export const normalizeViolation = (violation: ViolationEnum, locale: Locale = 'ru'): string => {
+	return getViolationLabels(locale)[violation] || getViolationLabels(locale).NONE
+}
+
+export const getNextViolationStatus = (current: ViolationEnum = ViolationEnum.NONE): ViolationEnum => {
+	switch (current) {
+		case ViolationEnum.NONE:
+			return ViolationEnum.REMARK
+		case ViolationEnum.REMARK:
+			return ViolationEnum.REBUKE
+		case ViolationEnum.REBUKE:
+			return ViolationEnum.SEVERE_REPRIMAND
+		case ViolationEnum.SEVERE_REPRIMAND:
+		default:
+			return ViolationEnum.SEVERE_REPRIMAND
+	}
+}
+
+export const getViolationPenaltyPoints = (violation: ViolationKind): number => {
+	return violationPenaltyPoints[violation]
+}
+
+export const getViolationIssueOptions = (locale: Locale = 'ru') => {
+	const labels = getViolationLabels(locale)
+	const options: ViolationKind[] = [ViolationEnum.REMARK, ViolationEnum.REBUKE, ViolationEnum.SEVERE_REPRIMAND]
+
+	return options.map((type) => ({
+		type,
+		label: labels[type],
+		points: getViolationPenaltyPoints(type),
+	}))
 }
 
 // prettify phone number

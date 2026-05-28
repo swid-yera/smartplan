@@ -1,6 +1,7 @@
 import type { IAward, ViolationEnum } from './award.type'
 import type { LocalizedText } from './locale.type'
 import type { IRup } from './rup.type'
+import type { IViolationRecord } from './violation.type'
 
 export enum StatusEnum {
 	DRAFT = 'DRAFT',
@@ -49,6 +50,7 @@ export interface IUser {
 	totalPoints?: number
 	awards?: IAward[]
 	violation?: ViolationEnum
+	violations?: IViolationRecord[]
 
 	createdAt: string
 	updatedAt: string

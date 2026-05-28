@@ -130,6 +130,7 @@ export class LessonService {
 		type,
 		discipline,
 		group,
+		sort,
 	}: {
 		currentPage?: number
 		pageSize?: number
@@ -138,9 +139,10 @@ export class LessonService {
 		type?: string
 		discipline?: string
 		group?: string
+		sort?: 'asc' | 'desc'
 	}) => {
 		return queryOptions<IPagination<ILesson>>({
-			queryKey: ['lessons', { currentPage, pageSize, search, teacher, type, discipline, group }],
+			queryKey: ['lessons', { currentPage, pageSize, search, teacher, type, discipline, group, sort }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<ILesson>>('/lessons', {
 					params: {
@@ -151,6 +153,7 @@ export class LessonService {
 						type,
 						discipline,
 						group,
+						sort,
 					},
 				})
 
