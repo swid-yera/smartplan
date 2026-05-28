@@ -7,6 +7,7 @@ export * from './ui/pagination'
 export * from './ui/section-title'
 
 // sheet
+export * from './sheets/penalty-sheet'
 export * from './sheets/rup-sheet'
 
 // cards
@@ -15,6 +16,7 @@ export * from './cards/category-card'
 export * from './cards/combine-card'
 export * from './cards/empty-card'
 export * from './cards/groups-card'
+export * from './cards/penalty-card'
 export * from './cards/responsible-users-card'
 export * from './cards/rups-card'
 export * from './cards/status-info-card'

@@ -4,14 +4,14 @@ import { useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { AwardsCard, Loader, PageTitle, RupsCard } from '@components'
+import { AwardsCard, Loader, PageTitle, PenaltyCard, PenaltySheet, RupsCard } from '@components'
 import { getUILocaleSection, hasRole, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ShieldAlert } from 'lucide-react'
 
 import localeDictionary from './locale.json'
 import { UserCard } from './user-card'
@@ -22,6 +22,7 @@ export default function UserPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const [kpiPage, setKpiPage] = useState(1)
+	const [isPenaltySheetOpen, setIsPenaltySheetOpen] = useState(false)
 
 	// queries
 	const {
@@ -44,6 +45,10 @@ export default function UserPage() {
 		...services.award.getAllOptions({ currentPage: kpiPage, teacher: params.id }),
 		enabled: !userLoading && !isError,
 	})
+	const { data: penaltiesData = [], isLoading: penaltiesLoading } = useQuery({
+		...services.user.getAllPenaltiesByTeacherIdOptions(params.id),
+		enabled: !userLoading && !isError && !!params.id,
+	})
 
 	if (userLoading) {
 		return <Loader />
@@ -62,17 +67,16 @@ export default function UserPage() {
 
 	const isTeacher = hasRole(userData.role, RoleEnum.TEACHER, false)
 
-	return (
-		<section className='mx-auto pb-10 pt-5 px-4 space-y-8 w-full'>
+		return (
+			<section className='mx-auto pb-10 pt-5 px-4 space-y-8 w-full'>
 			<PageTitle
 				actions={
-					<div>
-						<Button className='' size='sm' variant='outline' onClick={() => router.push('/users')}>
-							<ArrowLeft className='mr-2 h-4 w-4' />
-							{t.page.toList}
-						</Button>
-					</div>
+					<Button size='sm' variant='outline' onClick={() => setIsPenaltySheetOpen(true)}>
+						<ShieldAlert className='mr-2 h-4 w-4' />
+						{t.page.penalties}
+					</Button>
 				}
+				backHref='/users'
 			>
 				{interpolateUILocaleText(t.page.title, {
 					firstName: userData.firstName,
@@ -80,7 +84,20 @@ export default function UserPage() {
 				})}
 			</PageTitle>
 
-			<UserCard user={userData} />
+			<div className='grid items-stretch gap-6 lg:grid-cols-3'>
+				<div className='lg:col-span-2 h-full'>
+					<UserCard className='h-full' user={userData} />
+				</div>
+				<PenaltyCard className='lg:col-span-1' isLoading={penaltiesLoading} penalties={penaltiesData} />
+			</div>
+
+			<PenaltySheet
+				isLoading={penaltiesLoading}
+				open={isPenaltySheetOpen}
+				penalties={penaltiesData}
+				teacherId={params.id}
+				onOpenChange={setIsPenaltySheetOpen}
+			/>
 
 			<Tabs defaultValue={isTeacher ? 'created' : 'assessment'}>
 				<TabsList>
