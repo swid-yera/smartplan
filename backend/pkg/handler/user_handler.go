@@ -306,14 +306,6 @@ func (h *UserHandler) DeletePenaltyByIDAndTeacherID(c *gin.Context) {
 }
 
 func (h *UserHandler) CreateViolation(c *gin.Context) {
-	h.issueViolation(c, http.StatusCreated)
-}
-
-func (h *UserHandler) UpdateViolation(c *gin.Context) {
-	h.issueViolation(c, http.StatusOK)
-}
-
-func (h *UserHandler) issueViolation(c *gin.Context, successStatus int) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -354,7 +346,58 @@ func (h *UserHandler) issueViolation(c *gin.Context, successStatus int) {
 		return
 	}
 
-	c.JSON(successStatus, result)
+	c.JSON(http.StatusCreated, result)
+}
+
+func (h *UserHandler) UpdateViolation(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	targetUserID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var req IssueViolationRequest
+	if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	violationID, err := uuid.Parse(c.Param("violation_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid violation_id"})
+		return
+	}
+
+	result, err := h.userService.UpdateViolation(
+		c.Request.Context(),
+		currentUser.KeycloakID,
+		targetUserID,
+		violationID,
+		req.Note,
+	)
+	if err != nil {
+		writeUserServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 func writeUserServiceError(c *gin.Context, err error) {

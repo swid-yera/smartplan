@@ -95,6 +95,7 @@ type Querier interface {
 	GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error)
 	GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatingPaginatedParams) ([]User, error)
 	GetViolationByIDAndUserID(ctx context.Context, arg GetViolationByIDAndUserIDParams) (Violation, error)
+	GetViolationsByIDs(ctx context.Context, ids []uuid.UUID) ([]Violation, error)
 	LinkLessonToDisciplineTopic(ctx context.Context, arg LinkLessonToDisciplineTopicParams) error
 	RemoveUserFromAllDepartments(ctx context.Context, dollar_1 uuid.UUID) error
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)

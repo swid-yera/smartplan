@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"math"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 )
@@ -21,17 +23,17 @@ type UserDepartment struct {
 }
 
 type User struct {
-	KeycloakID   uuid.UUID        `json:"keycloakId"`
-	Email        string           `json:"email"`
-	Username     string           `json:"username"`
-	FirstName    string           `json:"firstName"`
-	LastName     string           `json:"lastName"`
-	Role         string           `json:"role"`
-	Phone        string           `json:"phone"`
-	Departments  []UserDepartment `json:"departments"`
-	TotalPoints  int32            `json:"totalPoints"`
-	Violation    string           `json:"violation"`
-	ViolationIDs []uuid.UUID      `json:"violationIds"`
+	KeycloakID  uuid.UUID          `json:"keycloakId"`
+	Email       string             `json:"email"`
+	Username    string             `json:"username"`
+	FirstName   string             `json:"firstName"`
+	LastName    string             `json:"lastName"`
+	Role        string             `json:"role"`
+	Phone       string             `json:"phone"`
+	Departments []UserDepartment   `json:"departments"`
+	TotalPoints int32              `json:"totalPoints"`
+	Violation   string             `json:"violation"`
+	Violations  []*ViolationRecord `json:"violations"`
 }
 
 type Penalty struct {
@@ -77,6 +79,7 @@ type UserService interface {
 	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
 	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string) (*PaginatedUsersResponse, error)
 	IssueViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, note string) (*ViolationActionResponse, error)
+	UpdateViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, violationID uuid.UUID, note string) (*ViolationActionResponse, error)
 	CreatePenalty(ctx context.Context, methodistID uuid.UUID, teacherID uuid.UUID, points int32, note string) (*Penalty, error)
 	GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]*Penalty, error)
 	GetPenaltyByIDAndTeacherID(ctx context.Context, penaltyID uuid.UUID, teacherID uuid.UUID) (*Penalty, error)
@@ -267,18 +270,30 @@ func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*U
 		})
 	}
 
+	violations := make([]*ViolationRecord, 0)
+	if len(user.ViolationIds) > 0 {
+		dbViolations, err := s.repo.GetViolationsByIDs(ctx, user.ViolationIds)
+		if err != nil {
+			return nil, err
+		}
+		violations = make([]*ViolationRecord, 0, len(dbViolations))
+		for _, dbViolation := range dbViolations {
+			violations = append(violations, mapViolationRecord(dbViolation))
+		}
+	}
+
 	return &User{
-		KeycloakID:   user.KeycloakID,
-		Email:        user.Email,
-		Username:     user.Username,
-		FirstName:    firstName,
-		LastName:     lastName,
-		Role:         string(user.Role),
-		Phone:        phone,
-		Departments:  mappedDepartments,
-		TotalPoints:  user.TotalPoints,
-		Violation:    string(user.Violation),
-		ViolationIDs: user.ViolationIds,
+		KeycloakID:  user.KeycloakID,
+		Email:       user.Email,
+		Username:    user.Username,
+		FirstName:   firstName,
+		LastName:    lastName,
+		Role:        string(user.Role),
+		Phone:       phone,
+		Departments: mappedDepartments,
+		TotalPoints: user.TotalPoints,
+		Violation:   string(user.Violation),
+		Violations:  violations,
 	}, nil
 }
 
@@ -415,15 +430,11 @@ func mapPenalty(dbPenalty storage.Penalty) *Penalty {
 func (s *userService) IssueViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, note string) (*ViolationActionResponse, error) {
 	note = strings.TrimSpace(note)
 
-	issuer, err := s.repo.GetUserByKeycloakID(ctx, issuedByID)
-	if err != nil {
-		return nil, &HTTPStatusError{StatusCode: 404, Message: "issuer not found"}
-	}
-	if issuer.Role != storage.UserRoleMETHODIST && issuer.Role != storage.UserRoleADMIN {
-		return nil, &HTTPStatusError{StatusCode: 403, Message: "forbidden"}
+	if err := s.ensureViolationIssuer(ctx, issuedByID); err != nil {
+		return nil, err
 	}
 
-	_, err = s.repo.GetUserByKeycloakID(ctx, userID)
+	_, err := s.repo.GetUserByKeycloakID(ctx, userID)
 	if err != nil {
 		return nil, &HTTPStatusError{StatusCode: 404, Message: "user not found"}
 	}
@@ -457,6 +468,60 @@ func (s *userService) IssueViolation(ctx context.Context, issuedByID uuid.UUID, 
 		Violation: mapViolationRecord(dbViolation),
 		User:      mappedUser,
 	}, nil
+}
+
+func (s *userService) UpdateViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, violationID uuid.UUID, note string) (*ViolationActionResponse, error) {
+	note = strings.TrimSpace(note)
+
+	if err := s.ensureViolationIssuer(ctx, issuedByID); err != nil {
+		return nil, err
+	}
+
+	_, err := s.repo.GetUserByKeycloakID(ctx, userID)
+	if err != nil {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "user not found"}
+	}
+
+	dbViolation, err := s.repo.UpdateViolationByIDAndUserID(ctx, storage.UpdateViolationByIDAndUserIDParams{
+		ID:     violationID,
+		UserID: userID,
+		Note: pgtype.Text{
+			String: note,
+			Valid:  note != "",
+		},
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, &HTTPStatusError{StatusCode: 404, Message: "violation not found"}
+		}
+		return nil, err
+	}
+
+	updatedUser, err := s.repo.GetUserByKeycloakID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	mappedUser, err := s.toServiceUser(ctx, updatedUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViolationActionResponse{
+		Violation: mapViolationRecord(dbViolation),
+		User:      mappedUser,
+	}, nil
+}
+
+func (s *userService) ensureViolationIssuer(ctx context.Context, issuedByID uuid.UUID) error {
+	issuer, err := s.repo.GetUserByKeycloakID(ctx, issuedByID)
+	if err != nil {
+		return &HTTPStatusError{StatusCode: 404, Message: "issuer not found"}
+	}
+	if issuer.Role != storage.UserRoleMETHODIST && issuer.Role != storage.UserRoleADMIN {
+		return &HTTPStatusError{StatusCode: 403, Message: "forbidden"}
+	}
+	return nil
 }
 
 func mapViolationRecord(dbViolation storage.Violation) *ViolationRecord {
