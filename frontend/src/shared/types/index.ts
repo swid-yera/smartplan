@@ -5,6 +5,7 @@ export * from './lesson.type'
 export * from './locale.type'
 export * from './penalty.type'
 export * from './rup.type'
+export * from './violation.type'
 
 // service
 export * from './service/ai.service.type'

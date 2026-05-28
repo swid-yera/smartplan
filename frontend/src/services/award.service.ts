@@ -58,7 +58,10 @@ export class AwardService {
 					.join(',')
 
 		return queryOptions<IPagination<IAward>>({
-			queryKey: ['awards', { currentPage, pageSize, search, methodist, teacher, status, categoryId: categoryIdParam, sort }],
+			queryKey: [
+				'awards',
+				{ currentPage, pageSize, search, methodist, teacher, status, categoryId: categoryIdParam, sort },
+			],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IAward>>('/awards', {
 					params: {
@@ -145,8 +148,7 @@ export class AwardService {
 				filesByField?: Record<string, File[]>
 			}) => {
 				const hasFiles =
-					filesByField &&
-					Object.values(filesByField).some((files) => Array.isArray(files) && files.length > 0)
+					filesByField && Object.values(filesByField).some((files) => Array.isArray(files) && files.length > 0)
 
 				if (!hasFiles) {
 					return api.put<IAward>(`/awards/${id}`, changedAward).then((r) => r.data)

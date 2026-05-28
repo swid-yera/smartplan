@@ -2,13 +2,13 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { CombineCard, PageTitle } from '@components'
+import { CombineCard, PageTitle, PenaltyCard, ViolationBadge } from '@components'
 import { buildReviewItems, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQueries } from '@tanstack/react-query'
-import { CheckCircle, Clock, FileText, Plus } from 'lucide-react'
+import { CheckCircle, FileText, Plus } from 'lucide-react'
 
 import localeDictionary from './locale.json'
 
@@ -19,17 +19,28 @@ interface IProps {
 export const TeacherDashboard: FC<IProps> = ({ keycloakId }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).teacher
-	const queryParams = { currentPage: 1, pageSize: 10, teacher: keycloakId }
+	const queryParams = { currentPage: 1, pageSize: 10, teacher: keycloakId, sort: 'desc' as const }
 
 	// queries
-	const [rupsQuery, awardsQuery] = useQueries({
-		queries: [services.rup.getAllOptions(queryParams), services.award.getAllOptions(queryParams)],
+	const [rupsQuery, awardsQuery, userQuery, penaltiesQuery] = useQueries({
+		queries: [
+			services.rup.getAllOptions(queryParams),
+			services.award.getAllOptions(queryParams),
+			{ ...services.user.getByIdOptions(keycloakId), enabled: !!keycloakId },
+			{
+				...services.user.getAllPenaltiesByTeacherIdOptions(keycloakId, { sort: 'desc' }),
+				enabled: !!keycloakId,
+			},
+		],
 	})
 
 	const isLoading = rupsQuery.isLoading || awardsQuery.isLoading
+	const isPenaltiesLoading = userQuery.isLoading || penaltiesQuery.isLoading
 
 	const rups = rupsQuery.data?.data ?? []
 	const awards = awardsQuery.data?.data ?? []
+	const user = userQuery.data
+	const penalties = penaltiesQuery.data ?? []
 	const totalCount =
 		(rupsQuery?.data?.meta.total || 0) + (awardsQuery?.data?.meta.total || 0) - (rups.length + awards.length)
 
@@ -77,26 +88,19 @@ export const TeacherDashboard: FC<IProps> = ({ keycloakId }) => {
 				</Card>
 			</div>
 
-			<div className='grid gap-6 md:grid-cols-4 grid-cols-1'>
+			<div className='grid grid-cols-1 gap-6 md:h-[calc(100vh-19rem)] md:grid-cols-3'>
 				<CombineCard
-					className='md:col-span-3'
+					className='md:col-span-2'
 					isLoading={isLoading}
 					items={items}
 					more={totalCount}
 					title={t.reviewTitle}
 				/>
 
-				{/* Deadlines & Notifications */}
-				<Card>
-					<CardHeader>
-						<CardTitle>{t.actionsTitle}</CardTitle>
-					</CardHeader>
-					<CardContent className='flex flex-col items-center justify-center py-10 text-muted-foreground'>
-						<Clock className='mb-4 opacity-50' size={40} strokeWidth={1.5} />
-						<p className='text-sm font-medium'>{t.inDevelopment}</p>
-						<p className='text-xs opacity-70'>{t.soon}</p>
-					</CardContent>
-				</Card>
+				<div className='md:col-span-1 flex h-full min-h-0 flex-col gap-4'>
+					{user && <ViolationBadge showSeparator={false} user={user} />}
+					<PenaltyCard className='min-h-0 flex-1' isLoading={isPenaltiesLoading} penalties={penalties} />
+				</div>
 			</div>
 		</section>
 	)

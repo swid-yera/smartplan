@@ -2,8 +2,10 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"eduplan/backend/pkg/middleware"
+	"eduplan/backend/pkg/service"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -100,6 +102,7 @@ func (r *Router) Init() *gin.Engine {
 		protected.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
 		protected.POST("/users/:id/violation", r.user.CreateViolation)
 		protected.PUT("/users/:id/violation/:violation_id", r.user.UpdateViolation)
+		protected.DELETE("/users/:id/violation/:violation_id", r.user.DeleteViolation)
 		protected.GET("/users/rating", r.user.GetUsersRating)
 		protected.POST("/user/:teacher_id/penalty", r.user.CreatePenalty)
 		protected.GET("/user/:teacher_id/penalty", r.user.GetPenaltiesByTeacherID)
@@ -109,7 +112,27 @@ func (r *Router) Init() *gin.Engine {
 		// --- RUPS ---
 		rups := protected.Group("/rups")
 		{
-			rups.GET("", r.rup.GetRupsPaginated)
+			rups.GET("", func(c *gin.Context) {
+				userInterface, exists := c.Get(middleware.ContextUserKey)
+				if !exists {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+					return
+				}
+
+				currentUser, ok := userInterface.(*service.User)
+				if !ok {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+					return
+				}
+
+				if strings.EqualFold(currentUser.Role, "TEACHER") {
+					q := c.Request.URL.Query()
+					q.Set("teacher", currentUser.KeycloakID.String())
+					c.Request.URL.RawQuery = q.Encode()
+				}
+
+				r.rup.GetRupsPaginated(c)
+			})
 			rups.GET("/:id", r.rup.GetRupByID)
 			rups.POST("", r.rup.CreateRup)
 			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
@@ -121,7 +144,27 @@ func (r *Router) Init() *gin.Engine {
 		// --- AWARDS ---
 		awards := protected.Group("/awards")
 		{
-			awards.GET("", r.award.GetAwardsPaginated)
+			awards.GET("", func(c *gin.Context) {
+				userInterface, exists := c.Get(middleware.ContextUserKey)
+				if !exists {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+					return
+				}
+
+				currentUser, ok := userInterface.(*service.User)
+				if !ok {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+					return
+				}
+
+				if strings.EqualFold(currentUser.Role, "TEACHER") {
+					q := c.Request.URL.Query()
+					q.Set("teacher", currentUser.KeycloakID.String())
+					c.Request.URL.RawQuery = q.Encode()
+				}
+
+				r.award.GetAwardsPaginated(c)
+			})
 			awards.GET("/departments", r.award.GetAwardDepartments)
 			awards.GET("/:id", r.award.GetAwardByID)
 
@@ -162,7 +205,27 @@ func (r *Router) Init() *gin.Engine {
 		// --- LESSONS ---
 		lessons := protected.Group("/lessons")
 		{
-			lessons.GET("", r.lesson.GetLessons)
+			lessons.GET("", func(c *gin.Context) {
+				userInterface, exists := c.Get(middleware.ContextUserKey)
+				if !exists {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+					return
+				}
+
+				currentUser, ok := userInterface.(*service.User)
+				if !ok {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+					return
+				}
+
+				if strings.EqualFold(currentUser.Role, "TEACHER") {
+					q := c.Request.URL.Query()
+					q.Set("teacher", currentUser.KeycloakID.String())
+					c.Request.URL.RawQuery = q.Encode()
+				}
+
+				r.lesson.GetLessons(c)
+			})
 			lessons.GET("/:id", r.lesson.GetLessonByID)
 			lessons.POST("", r.lesson.CreateLesson)
 			lessons.POST("/generate-lesson", r.lesson.GenerateLesson)

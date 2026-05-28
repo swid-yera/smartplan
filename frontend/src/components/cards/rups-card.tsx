@@ -145,7 +145,17 @@ const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {
 	const t = getUILocaleSection(localeDictionary, locale).rupsCard
 
 	return (
-		<TableRow className='cursor-pointer hover:bg-muted/50 transition-colors' onClick={() => onSelect(rup)}>
+		<TableRow
+			className='cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70'
+			role='button'
+			tabIndex={0}
+			onClick={() => onSelect(rup)}
+			onKeyDown={(event) => {
+				if (event.key !== 'Enter' && event.key !== ' ') return
+				event.preventDefault()
+				onSelect(rup)
+			}}
+		>
 			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
 				{rup?.name || t.untitled}
 			</TableCell>

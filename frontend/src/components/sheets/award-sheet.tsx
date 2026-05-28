@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import { type FC, useRef } from 'react'
 
 import Link from 'next/link'
 
@@ -30,6 +30,7 @@ interface IAwardSheet {
 export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = localeDictionary[locale] ?? localeDictionary.ru
+	const openPageButtonRef = useRef<HTMLAnchorElement | null>(null)
 	const totalPoints = award?.status !== StatusEnum.APPROVED ? t.award.pointsAfterApprove : award.totalPoints
 	const category = award?.category ?? null
 	const categoryName = category ? getLocaleText(category.name, locale) : ''
@@ -59,10 +60,16 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 
 	return (
 		<Sheet open={!!award} onOpenChange={(open) => !open && onSelect(null)}>
-			<SheetContent className='overflow-y-auto sm:max-w-md w-full'>
+			<SheetContent
+				className='flex w-full flex-col sm:max-w-md'
+				onOpenAutoFocus={(event) => {
+					event.preventDefault()
+					openPageButtonRef.current?.focus()
+				}}
+			>
 				{award && (
 					<>
-						<SheetHeader>
+						<SheetHeader className='px-4'>
 							<SheetTitle className='mt-2'>
 								{`${getLocaleText(award.variant.name, locale)}, ${getLocaleText(award.criteria.name, locale)} `}
 								<StatusBadge status={award.status} />
@@ -70,8 +77,9 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 							<SheetDescription>{t.award.description}</SheetDescription>
 						</SheetHeader>
 
-						<div className='grid flex-1 auto-rows-min gap-6 px-4'>
-							<div className='space-y-3'>
+						<div className='flex-1 overflow-y-auto px-4'>
+							<div className='grid auto-rows-min gap-6 pb-4'>
+								<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
 									<BookOpen className='w-4 h-4 mr-2' /> {t.main}
 								</h4>
@@ -100,9 +108,9 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 								</div>
 							</div>
 
-							<Separator />
+								<Separator />
 
-							<div className='space-y-3'>
+								<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
 									<Users className='w-4 h-4 mr-2' /> {t.responsible}
 								</h4>
@@ -138,9 +146,9 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 								</div>
 							</div>
 
-							<Separator />
+								<Separator />
 
-							<div className='space-y-3'>
+								<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
 									<SearchCode className='w-4 h-4 mr-2' /> {t.award.details}
 								</h4>
@@ -160,9 +168,9 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 								</div>
 							</div>
 
-							<Separator />
+								<Separator />
 
-							<div className='space-y-3'>
+								<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
 									<CategoryIcon className='w-4 h-4 mr-2' /> {t.award.categoryDetails}
 								</h4>
@@ -185,9 +193,9 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 								</div>
 							</div>
 
-							<Separator />
+								<Separator />
 
-							<div className='space-y-3'>
+								<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
 									<Files className='w-4 h-4 mr-2' /> {t.award.documents}
 								</h4>
@@ -257,12 +265,15 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 										<p className='text-sm text-muted-foreground'>{t.empty}</p>
 									)}
 								</div>
+								</div>
 							</div>
 						</div>
 
-						<SheetFooter className='mt-4'>
+						<SheetFooter className='mt-0 shrink-0 border-t bg-background px-4 py-4'>
 							<Button asChild className='w-full'>
-								<Link href={`/kpi/${award.id}`}>{t.openFullPage}</Link>
+								<Link ref={openPageButtonRef} href={`/kpi/${award.id}`}>
+									{t.openFullPage}
+								</Link>
 							</Button>
 							<SheetClose asChild>
 								<Button variant='outline'>{t.close}</Button>

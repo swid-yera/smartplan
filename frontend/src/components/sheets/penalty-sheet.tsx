@@ -4,6 +4,14 @@ import { type FC, useMemo, useState } from 'react'
 
 import { services } from '@services'
 import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
 	Button,
 	Input,
 	Label,
@@ -47,6 +55,10 @@ const dictionary = {
 		validationPoints: 'Укажите баллы больше 0',
 		validationNote: 'Укажите причину нарушения',
 		points: 'баллов',
+		deleteTitle: 'Удалить нарушение?',
+		deleteDescription: 'Это действие удалит запись нарушения и вернет баллы пользователю.',
+		cancel: 'Отмена',
+		confirmDelete: 'Удалить',
 	},
 	kk: {
 		title: 'Бұзушылықтар және айыппұлдар',
@@ -64,6 +76,10 @@ const dictionary = {
 		validationPoints: '0-ден жоғары ұпай енгізіңіз',
 		validationNote: 'Бұзушылық себебін енгізіңіз',
 		points: 'ұпай',
+		deleteTitle: 'Бұзушылықты жою керек пе?',
+		deleteDescription: 'Бұл әрекет бұзушылық жазбасын жояды және пайдаланушыға ұпайды қайтарады.',
+		cancel: 'Болдырмау',
+		confirmDelete: 'Жою',
 	},
 } as const
 
@@ -79,6 +95,8 @@ export const PenaltySheet: FC<IPenaltySheetProps> = ({
 	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
 	const [points, setPoints] = useState('')
 	const [note, setNote] = useState('')
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+	const [selectedPenaltyId, setSelectedPenaltyId] = useState<string | null>(null)
 
 	const createPenaltyMutation = useMutation(services.user.createPenaltyOptions(teacherId))
 	const deletePenaltyMutation = useMutation(services.user.deletePenaltyByIdAndTeacherIdOptions(teacherId))
@@ -87,6 +105,12 @@ export const PenaltySheet: FC<IPenaltySheetProps> = ({
 		() => [...penalties].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
 		[penalties],
 	)
+
+	const onPointsChange = (value: string) => {
+		if (/^\d*$/.test(value)) {
+			setPoints(value)
+		}
+	}
 
 	const onCreatePenalty = () => {
 		const parsedPoints = Number(points)
@@ -118,9 +142,13 @@ export const PenaltySheet: FC<IPenaltySheetProps> = ({
 		)
 	}
 
-	const onDeletePenalty = (penaltyId: string) => {
-		deletePenaltyMutation.mutate(penaltyId, {
+	const onDeletePenalty = () => {
+		if (!selectedPenaltyId) return
+
+		deletePenaltyMutation.mutate(selectedPenaltyId, {
 			onSuccess: () => {
+				setDeleteDialogOpen(false)
+				setSelectedPenaltyId(null)
 				toast.success(t.deleted)
 			},
 			onError: (error) => {
@@ -130,8 +158,9 @@ export const PenaltySheet: FC<IPenaltySheetProps> = ({
 	}
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent className='flex h-full flex-col sm:max-w-lg'>
+		<>
+			<Sheet open={open} onOpenChange={onOpenChange}>
+				<SheetContent className='flex h-full flex-col sm:max-w-lg'>
 				<SheetHeader>
 					<SheetTitle>{t.title}</SheetTitle>
 					<SheetDescription>{t.description}</SheetDescription>
@@ -142,10 +171,35 @@ export const PenaltySheet: FC<IPenaltySheetProps> = ({
 						<Label htmlFor='penalty-points'>{t.pointsLabel}</Label>
 						<Input
 							id='penalty-points'
+							inputMode='numeric'
+							min={1}
 							placeholder={t.pointsPlaceholder}
-							type='number'
+							pattern='[0-9]*'
+							type='text'
 							value={points}
-							onChange={(e) => setPoints(e.target.value)}
+							onChange={(e) => onPointsChange(e.target.value)}
+							onPaste={(e) => {
+								const pasted = e.clipboardData.getData('text')
+								if (!/^\d*$/.test(pasted)) {
+									e.preventDefault()
+								}
+							}}
+							onKeyDown={(e) => {
+								if (
+									![
+										'Backspace',
+										'Delete',
+										'ArrowLeft',
+										'ArrowRight',
+										'Tab',
+										'Home',
+										'End',
+									].includes(e.key) &&
+									!/^\d$/.test(e.key)
+								) {
+									e.preventDefault()
+								}
+							}}
 						/>
 					</div>
 
@@ -191,7 +245,10 @@ export const PenaltySheet: FC<IPenaltySheetProps> = ({
 										disabled={deletePenaltyMutation.isPending}
 										size='icon'
 										variant='ghost'
-										onClick={() => onDeletePenalty(penalty.id)}
+										onClick={() => {
+											setSelectedPenaltyId(penalty.id)
+											setDeleteDialogOpen(true)
+										}}
 									>
 										<Trash2 className='h-4 w-4 text-destructive' />
 									</Button>
@@ -200,7 +257,27 @@ export const PenaltySheet: FC<IPenaltySheetProps> = ({
 						))
 					)}
 				</div>
-			</SheetContent>
-		</Sheet>
+				</SheetContent>
+			</Sheet>
+
+			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{t.deleteTitle}</AlertDialogTitle>
+						<AlertDialogDescription>{t.deleteDescription}</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel onClick={() => setSelectedPenaltyId(null)}>{t.cancel}</AlertDialogCancel>
+						<AlertDialogAction
+							className='bg-destructive hover:bg-destructive/90'
+							disabled={deletePenaltyMutation.isPending}
+							onClick={onDeletePenalty}
+						>
+							{t.confirmDelete}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
 	)
 }

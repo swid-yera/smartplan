@@ -2,8 +2,8 @@ import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
-	IDownloadResponse,
 	IApproveChallengeResponse,
+	IDownloadResponse,
 	IGetAllRequest,
 	IMessageResponse,
 	IPagination,
@@ -14,9 +14,9 @@ import type {
 
 export class RupService {
 	// get all
-	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, teacher, status }: IGetAllRequest) => {
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, teacher, status, sort }: IGetAllRequest) => {
 		return queryOptions<IPagination<IRup>>({
-			queryKey: ['rups', { currentPage, pageSize, search, methodist, teacher, status }],
+			queryKey: ['rups', { currentPage, pageSize, search, methodist, teacher, status, sort }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IRup>>('/rups', {
 					params: {
@@ -26,6 +26,7 @@ export class RupService {
 						methodist,
 						teacher,
 						status: status?.join(','),
+						sort,
 					},
 				})
 

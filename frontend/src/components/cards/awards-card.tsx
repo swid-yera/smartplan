@@ -3,6 +3,8 @@
 import type { FC, ReactNode } from 'react'
 import { useState } from 'react'
 
+import Link from 'next/link'
+
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
 	Button,
@@ -73,11 +75,11 @@ export const AwardsCard: FC<IProps> = ({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead className='font-bold'>{t.createdAt}</TableHead>
-									<TableHead className='font-bold'>{t.teacher}</TableHead>
-									<TableHead className='font-bold'>{t.criteria}</TableHead>
-									<TableHead className='font-bold'>{t.points}</TableHead>
-									<TableHead className='text-right font-bold'>{t.status}</TableHead>
+									<TableHead>{t.createdAt}</TableHead>
+									<TableHead>{t.teacher}</TableHead>
+									<TableHead>{t.criteria}</TableHead>
+									<TableHead>{t.points}</TableHead>
+									<TableHead className='text-right'>{t.status}</TableHead>
 									{/* Убрали колонку "Действия", так как кликаем по строке */}
 								</TableRow>
 							</TableHeader>
@@ -156,7 +158,17 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<TableRow className='cursor-pointer hover:bg-muted/50 transition-colors' onClick={() => onSelect(award)}>
+				<TableRow
+					className='cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70'
+					role='button'
+					tabIndex={0}
+					onClick={() => onSelect(award)}
+					onKeyDown={(event) => {
+						if (event.key !== 'Enter' && event.key !== ' ') return
+						event.preventDefault()
+						onSelect(award)
+					}}
+				>
 					<TableCell className='font-medium whitespace-nowrap w-[84px] min-w-[84px]'>{createdAt}</TableCell>
 					<TableCell className='font-medium whitespace-break-spaces min-w-[100px]'>
 						<div className='flex items-center gap-2'>
@@ -165,10 +177,14 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 						</div>
 					</TableCell>
 					<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-						<div className='flex items-center gap-2'>
+						<Link
+							className='flex items-center gap-2 rounded-sm hover:text-primary hover:underline'
+							href={`/kpi/${award.id}`}
+							onClick={(event) => event.stopPropagation()}
+						>
 							<CategoryIcon className='h-4 w-4 shrink-0 text-primary' />
 							<span>{criteriaSummary}</span>
-						</div>
+						</Link>
 					</TableCell>
 					<TableCell className='py-6'>{award.totalPoints || 0}</TableCell>
 					<TableCell className='text-right'>

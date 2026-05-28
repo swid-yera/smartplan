@@ -1,8 +1,13 @@
-import type { IUser } from '@types'
+import { type IUser, type IViolationRecord, ViolationEnum } from '@types'
 import { create } from 'zustand'
 
+type IAuthUser = IUser & {
+	violation: ViolationEnum
+	violations: IViolationRecord[]
+}
+
 interface AuthState {
-	user: IUser | null
+	user: IAuthUser | null
 	isAuthenticated: boolean
 	authLoading: boolean
 	setUser: (user: IUser | null) => void
@@ -15,14 +20,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 	authLoading: true,
 
 	setUser: (user) => {
-		let isAuthenticated = true
-
-		if (!user) {
-			isAuthenticated = false
-		}
+		const isAuthenticated = Boolean(user)
+		const normalizedUser: IAuthUser | null = user
+			? {
+					...user,
+					violation: user.violation ?? ViolationEnum.NONE,
+					violations: user.violations ?? [],
+				}
+			: null
 
 		set({
-			user,
+			user: normalizedUser,
 			isAuthenticated,
 			authLoading: false,
 		})

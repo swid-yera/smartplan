@@ -80,6 +80,7 @@ type UserService interface {
 	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string) (*PaginatedUsersResponse, error)
 	IssueViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, note string) (*ViolationActionResponse, error)
 	UpdateViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, violationID uuid.UUID, note string) (*ViolationActionResponse, error)
+	DeleteViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, violationID uuid.UUID) error
 	CreatePenalty(ctx context.Context, methodistID uuid.UUID, teacherID uuid.UUID, points int32, note string) (*Penalty, error)
 	GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]*Penalty, error)
 	GetPenaltyByIDAndTeacherID(ctx context.Context, penaltyID uuid.UUID, teacherID uuid.UUID) (*Penalty, error)
@@ -511,6 +512,41 @@ func (s *userService) UpdateViolation(ctx context.Context, issuedByID uuid.UUID,
 		Violation: mapViolationRecord(dbViolation),
 		User:      mappedUser,
 	}, nil
+}
+
+func (s *userService) DeleteViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, violationID uuid.UUID) error {
+	if err := s.ensureViolationIssuer(ctx, issuedByID); err != nil {
+		return err
+	}
+
+	_, err := s.repo.GetUserByKeycloakID(ctx, userID)
+	if err != nil {
+		return &HTTPStatusError{StatusCode: 404, Message: "user not found"}
+	}
+
+	_, err = s.repo.GetViolationByIDAndUserID(ctx, storage.GetViolationByIDAndUserIDParams{
+		ID:     violationID,
+		UserID: userID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &HTTPStatusError{StatusCode: 404, Message: "violation not found"}
+		}
+		return err
+	}
+
+	if err = s.repo.DeleteViolationByIDAndUserID(ctx, storage.DeleteViolationByIDAndUserIDParams{
+		ID:     violationID,
+		UserID: userID,
+	}); err != nil {
+		return err
+	}
+
+	_, err = s.repo.RemoveViolationFromUser(ctx, storage.RemoveViolationFromUserParams{
+		ViolationID: violationID,
+		KeycloakID:  userID,
+	})
+	return err
 }
 
 func (s *userService) ensureViolationIssuer(ctx context.Context, issuedByID uuid.UUID) error {

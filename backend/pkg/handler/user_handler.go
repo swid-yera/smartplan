@@ -400,6 +400,49 @@ func (h *UserHandler) UpdateViolation(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+func (h *UserHandler) DeleteViolation(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	targetUserID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	violationID, err := uuid.Parse(c.Param("violation_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid violation_id"})
+		return
+	}
+
+	if err = h.userService.DeleteViolation(
+		c.Request.Context(),
+		currentUser.KeycloakID,
+		targetUserID,
+		violationID,
+	); err != nil {
+		writeUserServiceError(c, err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func writeUserServiceError(c *gin.Context, err error) {
 	var httpErr *service.HTTPStatusError
 	if errors.As(err, &httpErr) {

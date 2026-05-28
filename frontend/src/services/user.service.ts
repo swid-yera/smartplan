@@ -1,21 +1,31 @@
 import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
-import type { ICreatePenaltyRequest, IMessageResponse, IPagination, IPaginationRequest, IPenalty, IUser } from '@types'
+import type {
+	ICreatePenaltyRequest,
+	IMessageResponse,
+	IPagination,
+	IPaginationRequest,
+	IPenalty,
+	IUpsertViolationRequest,
+	IUser,
+	IViolationActionResponse,
+} from '@types'
 
 export class UserService {
 	// get all
-	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '' }: IPaginationRequest) => {
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '', sort }: IPaginationRequest) => {
 		const text = search.trim()
 
 		return queryOptions<IPagination<IUser>>({
-			queryKey: ['users', { currentPage, pageSize, search: text }],
+			queryKey: ['users', { currentPage, pageSize, search: text, sort }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IUser>>('/users', {
 					params: {
 						currentPage,
 						pageSize,
 						search: text,
+						sort,
 					},
 				})
 
@@ -27,15 +37,16 @@ export class UserService {
 	}
 
 	// get all rating
-	getAllRatingOptions = ({ currentPage = 1, pageSize = 10, search = '' }: IPaginationRequest) => {
+	getAllRatingOptions = ({ currentPage = 1, pageSize = 10, search = '', sort }: IPaginationRequest) => {
 		return queryOptions<IPagination<IUser>>({
-			queryKey: ['users-rating', { currentPage, pageSize, search }],
+			queryKey: ['users-rating', { currentPage, pageSize, search, sort }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IUser>>('/users/rating', {
 					params: {
 						currentPage,
 						pageSize,
 						search,
+						sort,
 					},
 				})
 
@@ -76,11 +87,15 @@ export class UserService {
 	}
 
 	// get all penalties by teacher id
-	getAllPenaltiesByTeacherIdOptions = (teacherId: string) => {
+	getAllPenaltiesByTeacherIdOptions = (teacherId: string, params?: { sort?: 'asc' | 'desc' }) => {
 		return queryOptions<IPenalty[]>({
-			queryKey: ['user-penalties', teacherId],
+			queryKey: ['user-penalties', teacherId, params?.sort],
 			queryFn: async () => {
-				const { data } = await api.get<IPenalty[] | null>(`/user/${teacherId}/penalty`)
+				const { data } = await api.get<IPenalty[] | null>(`/user/${teacherId}/penalty`, {
+					params: {
+						sort: params?.sort,
+					},
+				})
 
 				if (!data) return []
 
@@ -116,6 +131,54 @@ export class UserService {
 				queryClient.removeQueries({ queryKey: ['user-penalty', teacherId, deletedPenaltyId] })
 				queryClient.invalidateQueries({ queryKey: ['user-penalties', teacherId] })
 				queryClient.invalidateQueries({ queryKey: ['user', teacherId] })
+				queryClient.invalidateQueries({ queryKey: ['users'] })
+			},
+		})
+	}
+
+	// create violation by user id
+	createViolationOptions = (userId: string) => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: (payload: IUpsertViolationRequest) =>
+				api.post<IViolationActionResponse>(`/users/${userId}/violation`, payload).then((r) => r.data),
+
+			onSuccess: (result) => {
+				queryClient.setQueryData(['user', userId], result.user)
+				queryClient.invalidateQueries({ queryKey: ['users'] })
+			},
+		})
+	}
+
+	// update violation by user id + violation id
+	updateViolationOptions = (userId: string) => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: ({ violationId, payload }: { violationId: string; payload: IUpsertViolationRequest }) =>
+				api.put<IViolationActionResponse>(`/users/${userId}/violation/${violationId}`, payload).then((r) => r.data),
+
+			onSuccess: (result) => {
+				queryClient.setQueryData(['user', userId], result.user)
+				queryClient.invalidateQueries({ queryKey: ['users'] })
+			},
+		})
+	}
+
+	// delete violation by user id + violation id
+	deleteViolationOptions = (userId: string) => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: async (violationId: string) => {
+				await api.delete<void>(`/users/${userId}/violation/${violationId}`)
+
+				return violationId
+			},
+
+			onSuccess: () => {
+				queryClient.invalidateQueries({ queryKey: ['user', userId] })
 				queryClient.invalidateQueries({ queryKey: ['users'] })
 			},
 		})

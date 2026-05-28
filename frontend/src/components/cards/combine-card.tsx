@@ -1,6 +1,7 @@
 'use client'
 
 import type { FC } from 'react'
+import { useMemo } from 'react'
 import { useState } from 'react'
 
 import { getLocaleText } from '@helpers'
@@ -36,7 +37,17 @@ interface IProps {
 
 export const CombineCard: FC<IProps> = ({ items, title, isLoading, more = 0, className }) => {
 	const [selected, setSelected] = useState<IReviewItem | null>(null)
-	const isExist = items.length > 0 && !isLoading
+	const sortedItems = useMemo(
+		() =>
+			[...items].sort((a, b) => {
+				const bDate = new Date(b.updatedAt).getTime()
+				const aDate = new Date(a.updatedAt).getTime()
+
+				return bDate - aDate
+			}),
+		[items],
+	)
+	const isExist = sortedItems.length > 0 && !isLoading
 
 	return (
 		<>
@@ -59,7 +70,7 @@ export const CombineCard: FC<IProps> = ({ items, title, isLoading, more = 0, cla
 
 						<TableBody>
 							{isExist ? (
-								items.map((item) => <ReviewTableRow key={item.id} item={item} onSelect={setSelected} />)
+								sortedItems.map((item) => <ReviewTableRow key={item.id} item={item} onSelect={setSelected} />)
 							) : (
 								<TableRow>
 									<TableCell className='h-40 text-center' colSpan={6}>
@@ -128,8 +139,15 @@ const ReviewTableRow: FC<IReviewTableRow> = ({ item, onSelect }) => {
 	return (
 		<TableRow
 			key={item.id}
-			className='cursor-pointer hover:bg-muted/50 transition-colors'
+			className='cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70'
+			role='button'
+			tabIndex={0}
 			onClick={() => onSelect(item)}
+			onKeyDown={(event) => {
+				if (event.key !== 'Enter' && event.key !== ' ') return
+				event.preventDefault()
+				onSelect(item)
+			}}
 		>
 			<ReviewTypeCell type={item.type} />
 
