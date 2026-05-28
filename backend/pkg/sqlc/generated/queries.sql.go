@@ -906,7 +906,7 @@ VALUES ($1, $2) RETURNING id, name, link
 `
 
 type CreateRupResourceParams struct {
-	Name string      `json:"name"`
+	Name []byte      `json:"name"`
 	Link pgtype.Text `json:"link"`
 }
 
@@ -3248,7 +3248,7 @@ WHERE
 
 type UpdateRupResourceParams struct {
 	ID   uuid.UUID   `json:"id"`
-	Name string      `json:"name"`
+	Name []byte      `json:"name"`
 	Link pgtype.Text `json:"link"`
 }
 

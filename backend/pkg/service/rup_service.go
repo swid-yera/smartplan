@@ -80,8 +80,8 @@ type ExplorationNoteRequest struct {
 }
 
 type ResourceRequest struct {
-	Name string `json:"name"`
-	Link string `json:"link"`
+	Name localization.LocaleText `json:"name"`
+	Link string                  `json:"link"`
 }
 
 type DisciplineRequest struct {
@@ -126,17 +126,17 @@ type RupResponse struct {
 }
 
 type RupDocumentPayload struct {
-	ID              uuid.UUID               `json:"id"`
-	Name            string                  `json:"name"`
-	Course          int32                   `json:"course"`
-	StudyForm       string                  `json:"studyForm"`
-	StudyYear       string                  `json:"studyYear"`
-	Type            string                  `json:"type"`
-	TotalHours      int32                   `json:"totalHours"`
-	Contacts        []*helpers.UserResponse `json:"contacts"`
-	Group           *GroupResponse          `json:"group"`
-	ExplorationNote ExplorationNoteResponse `json:"explorationNote"`
-	Disciplines     []*DisciplineResponse   `json:"disciplines"`
+	ID              uuid.UUID                  `json:"id"`
+	Name            string                     `json:"name"`
+	Course          int32                      `json:"course"`
+	StudyForm       string                     `json:"studyForm"`
+	StudyYear       string                     `json:"studyYear"`
+	Type            string                     `json:"type"`
+	TotalHours      int32                      `json:"totalHours"`
+	Contacts        []*helpers.UserResponse    `json:"contacts"`
+	Group           *GroupResponse             `json:"group"`
+	ExplorationNote RupDocumentExplorationNote `json:"explorationNote"`
+	Disciplines     []*DisciplineResponse      `json:"disciplines"`
 }
 
 type ListAllRupsResponse struct {
@@ -176,10 +176,26 @@ type ExplorationNoteResponse struct {
 }
 
 type ResourceResponse struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
-	Link string    `json:"link"`
-	Type string    `json:"type"`
+	ID   uuid.UUID               `json:"id"`
+	Name localization.LocaleText `json:"name"`
+	Link string                  `json:"link"`
+	Type string                  `json:"type"`
+}
+
+type RupDocumentExplorationNote struct {
+	Basis              *localization.LocaleText `json:"basis,omitempty"`
+	Goals              *localization.LocaleText `json:"goals,omitempty"`
+	Summary            *localization.LocaleText `json:"summary,omitempty"`
+	Competencies       *localization.LocaleText `json:"competencies,omitempty"`
+	Prerequisites      *localization.LocaleText `json:"prerequisites,omitempty"`
+	Postrequisites     *localization.LocaleText `json:"postrequisites,omitempty"`
+	InternetResources  []*RupDocumentResource   `json:"internetResources"`
+	TechnicalResources []*RupDocumentResource   `json:"technicalResources"`
+}
+
+type RupDocumentResource struct {
+	Name string `json:"name"`
+	Link string `json:"link"`
 }
 
 type DisciplineResponse struct {
@@ -748,7 +764,7 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 	}
 
 	// ---------- EXPLORATION NOTE ----------
-	exploration := ExplorationNoteResponse{}
+	exploration := RupDocumentExplorationNote{}
 	en := rup.ExplorationNote
 
 	exploration.Basis = en.Basis
@@ -757,18 +773,18 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 	exploration.Prerequisites = en.Prerequisites
 	exploration.Postrequisites = en.Postrequisites
 
-	internet := []*ResourceResponse{}
+	internet := []*RupDocumentResource{}
 	for _, r := range en.InternetResources {
-		internet = append(internet, &ResourceResponse{
-			Name: r.Name,
+		internet = append(internet, &RupDocumentResource{
+			Name: localePrimaryText(r.Name),
 			Link: r.Link,
 		})
 	}
 
-	technical := []*ResourceResponse{}
+	technical := []*RupDocumentResource{}
 	for _, r := range en.TechnicalResources {
-		technical = append(technical, &ResourceResponse{
-			Name: r.Name,
+		technical = append(technical, &RupDocumentResource{
+			Name: localePrimaryText(r.Name),
 			Link: r.Link,
 		})
 	}
@@ -1028,7 +1044,7 @@ func (s *rupService) createExplorationNote(ctx context.Context, note *Exploratio
 	var internetResourceIDs []uuid.UUID
 	for _, res := range note.InternetResources {
 		params := storage.CreateRupResourceParams{
-			Name: res.Name,
+			Name: res.Name.ToJSONB(),
 			Link: pgtype.Text{String: res.Link, Valid: res.Link != ""},
 		}
 		resource, err := s.repo.CreateResource(ctx, params)
@@ -1042,7 +1058,7 @@ func (s *rupService) createExplorationNote(ctx context.Context, note *Exploratio
 	var technicalResourceIDs []uuid.UUID
 	for _, res := range note.TechnicalResources {
 		params := storage.CreateRupResourceParams{
-			Name: res.Name,
+			Name: res.Name.ToJSONB(),
 			Link: pgtype.Text{String: res.Link, Valid: res.Link != ""},
 		}
 		resource, err := s.repo.CreateResource(ctx, params)
@@ -1343,7 +1359,7 @@ func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note 
 		}
 		internetResources = append(internetResources, &ResourceResponse{
 			ID:   res.ID,
-			Name: res.Name,
+			Name: localization.LocaleTextFromJSONB(res.Name),
 			Link: res.Link.String,
 			Type: "INTERNET",
 		})
@@ -1357,7 +1373,7 @@ func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note 
 		}
 		technicalResources = append(technicalResources, &ResourceResponse{
 			ID:   res.ID,
-			Name: res.Name,
+			Name: localization.LocaleTextFromJSONB(res.Name),
 			Link: res.Link.String,
 			Type: "TECHNICAL",
 		})
