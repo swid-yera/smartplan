@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -93,6 +94,112 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, rup)
+}
+
+func (h *RupHandler) GetLanguageGenerationStatus(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		h.log.WithError(err).Error("invalid RUP ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		return
+	}
+
+	status, err := h.rupService.GetLanguageGenerationStatus(c.Request.Context(), id)
+	if err != nil {
+		h.log.WithError(err).Error("failed to get language generation status")
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "failed to get language generation status",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, status)
+}
+
+func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		h.log.WithError(err).Error("invalid RUP ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		return
+	}
+
+	var req struct {
+		SourceLanguage string `json:"sourceLanguage"`
+	}
+
+	if c.Request.ContentLength > 0 {
+		if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+			h.log.WithError(err).Error("invalid JSON format")
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "invalid JSON format",
+				"details": err.Error(),
+			})
+			return
+		}
+	}
+
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		h.log.Error("User not authenticated")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		h.log.Error("Invalid user context", currentUser)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	rup, err := h.rupService.GetRupByID(c.Request.Context(), id)
+	if err != nil {
+		h.log.WithError(err).Error("RUP not found")
+		c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+		return
+	}
+
+	canEdit := strings.EqualFold(currentUser.Role, "ADMIN")
+	if !canEdit && rup.Teacher != nil {
+		canEdit = rup.Teacher.KeycloakID == currentUser.KeycloakID
+	}
+	if !canEdit {
+		for _, contact := range rup.Contacts {
+			if contact != nil && contact.KeycloakID == currentUser.KeycloakID {
+				canEdit = true
+				break
+			}
+		}
+	}
+	if !canEdit {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	status, err := h.rupService.RegenerateLanguageGeneration(c.Request.Context(), id, req.SourceLanguage)
+	if err != nil {
+		h.log.WithError(err).Error("failed to regenerate language generation")
+		var httpErr *service.HTTPStatusError
+		if errors.As(err, &httpErr) {
+			c.JSON(httpErr.StatusCode, gin.H{
+				"error":   "failed to regenerate language generation",
+				"details": httpErr.Message,
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to regenerate language generation",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, status)
 }
 
 // UpdateRupStatus обновляет статус RUP

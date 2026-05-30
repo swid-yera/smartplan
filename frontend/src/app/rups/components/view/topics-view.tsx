@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { TopicTypeBadge } from '@components'
-import { formatAsDash, formatHours, getUILocaleSection, normalizeTopicType } from '@helpers'
+import { formatAsDash, formatHours, getLocaleText, getUILocaleSection, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -43,14 +43,16 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
-import { type RupTypeEnum, StatusEnum, TopicTypeEnum } from '@types'
+import { type Locale, type LocaleText, type LocalizedText, type RupTypeEnum, StatusEnum, TopicTypeEnum } from '@types'
 import { BookOpenText, ChevronDown, Info } from 'lucide-react'
 import { toast } from 'sonner'
 import localeDictionary from './locale.json'
 
+type TopicsLocaleText = typeof localeDictionary.ru.topics
+
 type Topic = {
 	id: string
-	name: string
+	name: LocalizedText
 	type: TopicTypeEnum
 	totalHours: number
 	theoryHours: number
@@ -63,7 +65,7 @@ type Topic = {
 
 type Discipline = {
 	id?: string
-	name: string
+	name: LocalizedText
 	totalHours: number
 	topics: Topic[]
 }
@@ -73,11 +75,13 @@ interface IProps {
 	type: RupTypeEnum
 	disciplines: Discipline[]
 	rupStatus: StatusEnum
+	activeLocale: Locale
 }
 
-export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus }: IProps) {
+export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus, activeLocale }: IProps) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
+	const tv = t.topics
 	const total = {
 		totalHours: 0,
 		theoryHours: 0,
@@ -105,26 +109,28 @@ export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus 
 				<CardDescription>{t.topicsDescription}</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>
-				{disciplines.length > 0 ? (
-					disciplines.map((discipline) => (
+					{disciplines.length > 0 ? (
+					disciplines.map((discipline, index) => (
 						<DisciplineBlockView
-							key={discipline.name}
+							key={discipline.id || `${index}`}
+							activeLocale={activeLocale}
 							discipline={discipline}
 							rupId={rupId}
 							rupModuleType={rupModuleType}
 							rupStatus={rupStatus}
+							text={tv}
 						/>
 					))
 				) : (
-					<div className='text-center text-xl text-muted-foreground py-4'>Пусто</div>
+					<div className='text-center text-xl text-muted-foreground py-4'>{tv.empty}</div>
 				)}
 
 				<div className='flex justify-end items-center pt-4 pr-6 space-x-4'>
 					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
-						<p className='font-medium'>Заявлено часов:</p>
+						<p className='font-medium'>{tv.declaredHours}:</p>
 						<p className='font-bold text-2xl'>{disciplines.reduce((sum, d) => sum + d.totalHours, 0)}</p>
 
-						<p className='font-medium'>Текущие общие часы:</p>
+						<p className='font-medium'>{tv.currentHours}:</p>
 						<div
 							className={cn(
 								'font-bold text-right text-2xl',
@@ -134,8 +140,8 @@ export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus 
 						>
 							<p>{total.totalHours}</p>
 							<p className='text-xs font-normal text-muted-foreground'>
-								(Теория: {total.theoryHours} / Практика: {total.practiceHours} / Индивид:{' '}
-								{total.individualHours} / СРСП: {total.srspHours} / СРС: {total.srsHours})
+								({tv.theory}: {total.theoryHours} / {tv.practice}: {total.practiceHours} / {tv.individual}:{' '}
+								{total.individualHours} / {tv.srsp}: {total.srspHours} / {tv.srs}: {total.srsHours})
 							</p>
 						</div>
 					</div>
@@ -146,15 +152,19 @@ export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus 
 }
 
 function DisciplineBlockView({
+	activeLocale,
 	discipline,
 	rupId,
 	rupModuleType,
 	rupStatus,
+	text,
 }: {
+	activeLocale: Locale
 	discipline: Discipline
 	rupId: string
 	rupModuleType: string
 	rupStatus: StatusEnum
+	text: TopicsLocaleText
 }) {
 	const [isCollapsed, setIsCollapsed] = useState(false)
 	const sectionTotal = {
@@ -180,7 +190,7 @@ function DisciplineBlockView({
 	return (
 		<div className='border rounded-xl overflow-hidden'>
 			<div className='flex items-center justify-between p-4 bg-muted z-10 sticky top-0'>
-				<div className='font-semibold pr-4'>{discipline.name}</div>
+				<div className='font-semibold pr-4'>{getLocaleText(discipline.name, activeLocale)}</div>
 				<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed((prev) => !prev)}>
 					<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />
 				</Button>
@@ -201,25 +211,25 @@ function DisciplineBlockView({
 									№
 								</TableHead>
 								<TableHead className='w-full font-semibold align-bottom p-4' rowSpan={2}>
-									Критерии оценки и/или темы занятий
+									{text.tableTopic}
 								</TableHead>
 								<TableHead
 									className='p-4 font-semibold align-bottom wrap-break-words whitespace-normal text-center border-x'
 									rowSpan={2}
 								>
-									Общее количество часов
+									{text.tableTotal}
 								</TableHead>
 								<TableHead className='text-center align-center font-semibold' colSpan={3}>
-									В том числе
+									{text.including}
 								</TableHead>
 								<TableHead className='p-4 border-x align-bottom font-semibold text-center' rowSpan={2}>
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
-												СРСП <Info className='w-3 h-3' />
+												{text.srsp} <Info className='w-3 h-3' />
 											</TooltipTrigger>
 											<TooltipContent>
-												<p>Самостоятельная работа студента с преподавателем</p>
+												<p>{text.srspTooltip}</p>
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
@@ -228,24 +238,24 @@ function DisciplineBlockView({
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
-												СРС <Info className='w-3 h-3' />
+												{text.srs} <Info className='w-3 h-3' />
 											</TooltipTrigger>
 											<TooltipContent>
-												<p>Самостоятельная работа студента</p>
+												<p>{text.srsTooltip}</p>
 											</TooltipContent>
 										</Tooltip>
 									</TooltipProvider>
 								</TableHead>
 								<TableHead className='p-4 font-semibold text-end align-bottom pb-4' rowSpan={2}>
-									Тип занятия
+									{text.type}
 								</TableHead>
 							</TableRow>
 							<TableRow>
 								<TableHead className='p-4 font-semibold border-r text-center' colSpan={1}>
-									Теория
+									{text.theory}
 								</TableHead>
-								<TableHead className='p-4 font-semibold border-r text-center'>Практика</TableHead>
-								<TableHead className='p-4 font-semibold text-center'>Индивидуальная</TableHead>
+								<TableHead className='p-4 font-semibold border-r text-center'>{text.practice}</TableHead>
+								<TableHead className='p-4 font-semibold text-center'>{text.individual}</TableHead>
 							</TableRow>
 						</TableHeader>
 
@@ -253,11 +263,13 @@ function DisciplineBlockView({
 							{discipline.topics.length > 0 ? (
 								discipline.topics.map((topic, topicIndex) => (
 									<TopicRowView
+										activeLocale={activeLocale}
 										key={topicIndex}
 										disciplineId={discipline.id}
 										rupId={rupId}
 										rupModuleType={rupModuleType}
 										rupStatus={rupStatus}
+										text={text}
 										topic={topic}
 										topicIndex={topicIndex}
 									/>
@@ -265,7 +277,7 @@ function DisciplineBlockView({
 							) : (
 								<TableRow>
 									<TableCell className='py-12 text-center text-muted-foreground text-lg' colSpan={9}>
-										Пусто
+										{text.empty}
 									</TableCell>
 								</TableRow>
 							)}
@@ -274,7 +286,7 @@ function DisciplineBlockView({
 						<TableFooter>
 							<TableRow>
 								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')} colSpan={2}>
-									Всего часов:
+									{text.sectionTotal}:
 								</TableCell>
 								<TableCell className={cn('font-bold text-center border-x', hasError && 'text-destructive')}>
 									{formatHours(sectionTotal.totalHours)}
@@ -285,7 +297,7 @@ function DisciplineBlockView({
 								<TableCell className='font-bold text-center border-r'>{sectionTotal.srspHours}</TableCell>
 								<TableCell className='font-bold text-center border-r'>{sectionTotal.srsHours}</TableCell>
 								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')}>
-									Заявлено: {formatHours(discipline.totalHours)}
+									{text.declared}: {formatHours(discipline.totalHours)}
 								</TableCell>
 							</TableRow>
 						</TableFooter>
@@ -297,18 +309,22 @@ function DisciplineBlockView({
 }
 
 const TopicRowView = ({
+	activeLocale,
 	topic,
 	topicIndex,
 	disciplineId,
 	rupId,
 	rupStatus,
+	text,
 }: {
+	activeLocale: Locale
 	topic: Topic
 	topicIndex: number
 	disciplineId?: string
 	rupId: string
 	rupModuleType: string
 	rupStatus: StatusEnum
+	text: TopicsLocaleText
 }) => {
 	const router = useRouter()
 
@@ -342,7 +358,7 @@ const TopicRowView = ({
 
 	const onSubmit = async () => {
 		if (!disciplineId) {
-			toast.error('Не найден disciplineId для генерации урока')
+			toast.error(text.disciplineIdMissing)
 
 			return
 		}
@@ -352,7 +368,13 @@ const TopicRowView = ({
 			disciplineId,
 			topicId: topic.id,
 			updatedTopic: {
-				name: formData.name,
+				name:
+					typeof formData.name === 'string'
+						? ({ ru: formData.name, kz: formData.name } as LocaleText)
+						: ({
+								ru: formData.name?.ru || '',
+								kz: formData.name?.kz || formData.name?.ru || '',
+							} as LocaleText),
 				type: formData.type,
 				total_hours: formData.theoryHours + formData.practiceHours + formData.individualHours,
 				theory_hours: formData.theoryHours,
@@ -365,20 +387,20 @@ const TopicRowView = ({
 
 		const toastId = `generate-lesson-${topic.id}`
 
-		toast.loading('Генерация урока...', { id: toastId })
+		toast.loading(text.lessonLoading, { id: toastId })
 
 		try {
 			const response = await generateLessonMutation.mutateAsync(payload)
 
 			if (response.status && response.lessonId) {
 				console.log('lessonId', response.lessonId)
-				toast.success('Урок успешно сгенерирован', { id: toastId })
+				toast.success(text.lessonSuccess, { id: toastId })
 				router.push(`/lessons/${response.lessonId}`)
 			} else {
-				toast.error('Не удалось сгенерировать урок', { id: toastId })
+				toast.error(text.lessonGenerateError, { id: toastId })
 			}
 		} catch (err) {
-			toast.error('Ошибка при генерации урока', {
+			toast.error(text.lessonGenerateCatch, {
 				description: err instanceof Error ? err.message : 'Unknown error',
 				id: toastId,
 			})
@@ -397,7 +419,7 @@ const TopicRowView = ({
 				</TableCell>
 				<TableCell className='align-middle py-4 px-2 border-r whitespace-break-spaces min-w-[200px]'>
 					<div className='flex justify-between items-center gap-2'>
-						<span>{topic.name}</span>
+						<span>{getLocaleText(topic.name, activeLocale)}</span>
 						{isApproved && (
 							<TooltipProvider>
 								<Tooltip>
@@ -415,7 +437,7 @@ const TopicRowView = ({
 										)}
 									</TooltipTrigger>
 									<TooltipContent>
-										<p>{isLessonGenerated ? 'Открыть урок' : 'Сгенерировать урок'}</p>
+										<p>{isLessonGenerated ? text.openLesson : text.generateLesson}</p>
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
@@ -446,23 +468,33 @@ const TopicRowView = ({
 			<Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Данные темы</DialogTitle>
-						<DialogDescription>Отредактируйте данные перед генерацией урока.</DialogDescription>
+						<DialogTitle>{text.generateDialogTitle}</DialogTitle>
+						<DialogDescription>{text.generateDialogDescription}</DialogDescription>
 					</DialogHeader>
 
 					<div className='grid gap-4'>
 						<div className='grid gap-2'>
-							<Label htmlFor={`topic-name-${topic.id}`}>Название</Label>
+							<Label htmlFor={`topic-name-${topic.id}`}>{text.name}</Label>
 							<Input
 								id={`topic-name-${topic.id}`}
-								value={formData.name}
-								onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+								value={getLocaleText(formData.name, activeLocale)}
+								onChange={(e) =>
+									setFormData((prev) => ({
+										...prev,
+										name: {
+											...(typeof prev.name === 'string' || !prev.name
+												? ({ ru: String(prev.name || ''), kz: String(prev.name || '') } as LocaleText)
+												: (prev.name as LocaleText)),
+											[activeLocale === 'kk' ? 'kz' : 'ru']: e.target.value,
+										},
+									}))
+								}
 							/>
 						</div>
 
 						<div className='grid grid-cols-2 gap-4'>
 							<div className='grid gap-2'>
-								<Label htmlFor={`topic-theory-${topic.id}`}>Теория</Label>
+								<Label htmlFor={`topic-theory-${topic.id}`}>{text.theory}</Label>
 								<Input
 									id={`topic-theory-${topic.id}`}
 									min={0}
@@ -474,7 +506,7 @@ const TopicRowView = ({
 								/>
 							</div>
 							<div className='grid gap-2'>
-								<Label htmlFor={`topic-practice-${topic.id}`}>Практика</Label>
+								<Label htmlFor={`topic-practice-${topic.id}`}>{text.practice}</Label>
 								<Input
 									id={`topic-practice-${topic.id}`}
 									min={0}
@@ -489,7 +521,7 @@ const TopicRowView = ({
 								/>
 							</div>
 							<div className='grid gap-2'>
-								<Label htmlFor={`topic-individual-${topic.id}`}>Индивидуальная</Label>
+								<Label htmlFor={`topic-individual-${topic.id}`}>{text.individual}</Label>
 								<Input
 									id={`topic-individual-${topic.id}`}
 									min={0}
@@ -504,7 +536,7 @@ const TopicRowView = ({
 								/>
 							</div>
 							<div className='grid gap-2'>
-								<Label htmlFor={`topic-srsp-${topic.id}`}>СРСП</Label>
+								<Label htmlFor={`topic-srsp-${topic.id}`}>{text.srsp}</Label>
 								<Input
 									id={`topic-srsp-${topic.id}`}
 									min={0}
@@ -516,7 +548,7 @@ const TopicRowView = ({
 								/>
 							</div>
 							<div className='grid gap-2'>
-								<Label htmlFor={`topic-srs-${topic.id}`}>СРС</Label>
+								<Label htmlFor={`topic-srs-${topic.id}`}>{text.srs}</Label>
 								<Input
 									id={`topic-srs-${topic.id}`}
 									min={0}
@@ -528,13 +560,13 @@ const TopicRowView = ({
 								/>
 							</div>
 							<div className='grid gap-2'>
-								<Label>Тип</Label>
+								<Label>{text.type}</Label>
 								<Select
 									value={formData.type}
 									onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value as TopicTypeEnum }))}
 								>
 									<SelectTrigger className='w-full'>
-										<SelectValue placeholder='Выберите тип' />
+										<SelectValue placeholder={text.selectType} />
 									</SelectTrigger>
 									<SelectContent>
 										{Object.values(TopicTypeEnum).map((type) => (
@@ -550,9 +582,9 @@ const TopicRowView = ({
 
 					<DialogFooter>
 						<Button variant='outline' onClick={() => setIsGenerateDialogOpen(false)}>
-							Отмена
+							{text.cancel}
 						</Button>
-						<Button onClick={onSubmit}>Сгенерировать</Button>
+						<Button onClick={onSubmit}>{text.generate}</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

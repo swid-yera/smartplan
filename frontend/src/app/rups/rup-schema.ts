@@ -1,75 +1,151 @@
-import { RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
+import { type Locale, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
 import { z } from 'zod'
 
-const disciplineSchema = z.object({
-	name: z.string().min(1, 'Название не может быть пустым'),
+const schemaMessages: Record<
+	Locale,
+	{
+		ruRequired: string
+		kkRequired: string
+		semesterPositive: string
+		hoursNonNegative: string
+		semestersRequired: string
+		topicTypeInvalid: string
+		moduleTypeInvalid: string
+		studyFormInvalid: string
+		studyYearRequired: string
+		groupRequired: string
+		teacherRequired: string
+		atLeastOneTeacher: string
+	}
+> = {
+	ru: {
+		ruRequired: 'Заполните поле на русском языке',
+		kkRequired: 'Заполните поле на казахском языке',
+		semesterPositive: 'Номер семестра должен быть положительным',
+		hoursNonNegative: 'Количество часов не может быть отрицательным',
+		semestersRequired: 'Должно быть 8 семестров',
+		topicTypeInvalid: 'Выберите корректный тип занятия',
+		moduleTypeInvalid: 'Выберите корректный тип модуля',
+		studyFormInvalid: 'Выберите корректный тип формы обучения',
+		studyYearRequired: 'Учебный год обязателен',
+		groupRequired: 'Группа обязательна',
+		teacherRequired: 'Выберите педагога',
+		atLeastOneTeacher: 'Добавьте как минимум одного педагога',
+	},
+	kk: {
+		ruRequired: 'Орыс тіліндегі өрісті толтырыңыз',
+		kkRequired: 'Қазақ тіліндегі өрісті толтырыңыз',
+		semesterPositive: 'Семестр нөмірі оң болуы керек',
+		hoursNonNegative: 'Сағат саны теріс болмауы керек',
+		semestersRequired: '8 семестр болуы керек',
+		topicTypeInvalid: 'Сабақтың дұрыс түрін таңдаңыз',
+		moduleTypeInvalid: 'Модульдің дұрыс түрін таңдаңыз',
+		studyFormInvalid: 'Оқу түрінің дұрыс мәнін таңдаңыз',
+		studyYearRequired: 'Оқу жылы міндетті',
+		groupRequired: 'Топ міндетті',
+		teacherRequired: 'Педагогты таңдаңыз',
+		atLeastOneTeacher: 'Кемінде бір педагог қосыңыз',
+	},
+}
 
-	semesters: z
-		.array(
+export const createRupFormSchema = (locale: Locale = 'ru', requiredLocales: Locale[] = ['ru', 'kk']) => {
+	const m = schemaMessages[locale] ?? schemaMessages.ru
+	const localeSet = new Set(requiredLocales)
+	const localeTextSchema = z
+		.object({
+			ru: z.string().trim(),
+			kz: z.string().trim(),
+		})
+		.superRefine((value, ctx) => {
+			if (localeSet.has('ru') && !value.ru) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message: m.ruRequired,
+					path: ['ru'],
+				})
+			}
+
+			if (localeSet.has('kk') && !value.kz) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message: m.kkRequired,
+					path: ['kz'],
+				})
+			}
+		})
+
+	const disciplineSchema = z.object({
+		name: localeTextSchema,
+
+		semesters: z
+			.array(
+				z.object({
+					semester: z.number().positive(m.semesterPositive),
+					totalHours: z.number().nonnegative(m.hoursNonNegative),
+				}),
+			)
+			.min(8, m.semestersRequired)
+			.max(8, m.semestersRequired),
+	})
+
+	const disciplineWithTopicsSchema = disciplineSchema.extend({
+		topics: z.array(
 			z.object({
-				semester: z.number().positive('Номер семестра должен быть положительным'),
-				totalHours: z.number().nonnegative('Количество часов не может быть отрицательным'),
+				name: localeTextSchema,
+				type: z.enum(TopicTypeEnum, {
+					error: () => ({ message: m.topicTypeInvalid }),
+				}),
+				theoryHours: z.number().nonnegative(m.hoursNonNegative),
+				practiceHours: z.number().nonnegative(m.hoursNonNegative),
+				individualHours: z.number().nonnegative(m.hoursNonNegative).optional(),
+				srspHours: z.number().nonnegative(m.hoursNonNegative).optional(),
+				srsHours: z.number().nonnegative(m.hoursNonNegative).optional(),
 			}),
-		)
-		.min(8, 'должно быть 8 семестров')
-		.max(8, 'должно быть 8 семестров'),
-})
+		),
+	})
 
-const disciplineWithTopicsSchema = disciplineSchema.extend({
-	topics: z.array(
-		z.object({
-			name: z.string(),
-			type: z.enum(TopicTypeEnum, {
-				error: () => ({ message: 'Выберите корректный тип занятия' }),
+	return z.object({
+		// Step 1
+		name: localeTextSchema,
+		type: z.enum(RupTypeEnum, {
+			error: () => ({ message: m.moduleTypeInvalid }),
+		}),
+		studyForm: z.enum(StudyFormEnum, {
+			error: () => ({ message: m.studyFormInvalid }),
+		}),
+		studyYear: z.string().min(9, m.studyYearRequired).max(9, m.studyYearRequired),
+		course: z.number().min(1, 'yes').max(4, 'yes'),
+		groupId: z.string().min(1, m.groupRequired),
+
+		prerequisites: localeTextSchema,
+		postrequisites: localeTextSchema,
+
+		// exploration note
+		basis: localeTextSchema,
+		goals: localeTextSchema,
+		competencies: localeTextSchema,
+
+		// Step 2
+		contacts: z.array(z.string().min(1, m.teacherRequired)).min(1, m.atLeastOneTeacher),
+
+		internetResources: z.array(
+			z.object({
+				name: localeTextSchema,
+				link: z.string().optional(),
 			}),
-			theoryHours: z.number().nonnegative('Часы не могут быть отрицательными'),
-			practiceHours: z.number().nonnegative('Часы не могут быть отрицательными'),
-			individualHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
-			srspHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
-			srsHours: z.number().nonnegative('Часы не могут быть отрицательными').optional(),
-		}),
-	),
-})
+		),
+		technicalResources: z.array(
+			z.object({
+				name: localeTextSchema,
+				link: z.string().optional(),
+			}),
+		),
 
-export const rupFormSchema = z.object({
-	// Step 1
-	name: z.string().min(1, 'Наименование модуля обязательно'),
-	type: z.enum(RupTypeEnum, {
-		error: () => ({ message: 'Выберите корректный тип модуля' }),
-	}),
-	studyForm: z.enum(StudyFormEnum, {
-		error: () => ({ message: 'Выберите корректный тип формы обучения' }),
-	}),
-	studyYear: z.string().min(9, 'Учебный год обязателен').max(9, 'Учебный год обязателен'),
-	course: z.number().min(1, 'yes').max(4, 'yes'),
-	groupId: z.string().min(1, 'Группа обязательна'),
+		// Step 3 & 4
+		disciplines: z.array(disciplineWithTopicsSchema),
+	})
+}
 
-	prerequisites: z.string().optional(),
-	postrequisites: z.string().optional(),
+export const rupFormSchema = createRupFormSchema('ru')
 
-	// exploration note
-	basis: z.string().optional(),
-	goals: z.string().optional(),
-	competencies: z.string().optional(),
-
-	// Step 2
-	contacts: z.array(z.string().min(1, 'Выберите педагога')).min(1, 'Добавьте как минимум одного педагога'),
-
-	internetResources: z.array(
-		z.object({
-			name: z.string().min(1, 'Ресурс не может быть пустым'),
-			link: z.string().optional(),
-		}),
-	),
-	technicalResources: z.array(
-		z.object({
-			name: z.string().min(1, 'Материал не может быть пустым'),
-			link: z.string().optional(),
-		}),
-	),
-
-	// Step 3 & 4
-	disciplines: z.array(disciplineWithTopicsSchema),
-})
-
-export type RUPFormData = z.infer<typeof rupFormSchema>
+export type RUPFormData = z.infer<ReturnType<typeof createRupFormSchema>>

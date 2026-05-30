@@ -278,6 +278,54 @@ type GenerateLessonPromptInput struct {
 	LessonMinutes          int32
 }
 
+type TranslateTextPromptInput struct {
+	Text             string
+	SourceLanguage   string
+	TargetLanguage   string
+	Domain           string
+	AdditionalPrompt string
+}
+
+func BuildTranslateTextPrompt(in TranslateTextPromptInput) string {
+	domain := strings.TrimSpace(in.Domain)
+	if domain == "" {
+		domain = "официальные образовательные документы"
+	}
+
+	additionalPrompt := strings.TrimSpace(in.AdditionalPrompt)
+	if additionalPrompt == "" {
+		additionalPrompt = "Сохрани официальный стиль, терминологию и структуру исходного текста."
+	}
+
+	return fmt.Sprintf(`
+Ты — профессиональный переводчик в домене: %s.
+
+Задача:
+- Переведи текст с языка "%s" на язык "%s".
+- Не добавляй пояснений, комментариев, markdown и дополнительных полей.
+- Сохрани смысл, структуру, термины, аббревиатуры и официальный стиль.
+- Если в тексте есть пункты или перечисления, сохрани форматирование.
+- Если входной текст пустой, верни пустую строку.
+
+Дополнительные требования:
+%s
+
+Верни строго JSON:
+{
+  "translatedText": string
+}
+
+Текст для перевода:
+"%s"
+`,
+		escapePromptValue(domain),
+		escapePromptValue(in.SourceLanguage),
+		escapePromptValue(in.TargetLanguage),
+		escapePromptValue(additionalPrompt),
+		escapePromptValue(in.Text),
+	)
+}
+
 func BuildGenerateRupMetaPrompt(in GenerateRupMetaPromptInput) string {
 	return fmt.Sprintf(`
 Ты — методист и эксперт по разработке рабочих учебных программ (РУП)

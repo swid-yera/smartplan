@@ -1,26 +1,48 @@
-import type { IResources, StatusEnum } from '../global.type'
-import type { IDiscipline, IRupExplorationNote, ISemester, ITopics, RupTypeEnum, StudyFormEnum } from '../rup.type'
+import type { StatusEnum } from '../global.type'
+import type { BackendLocale, LocaleText } from '../locale.type'
+import type { RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '../rup.type'
 import type { IPaginationRequest } from './global.service.type'
 
 // create
-export type ICreateResource = Omit<IResources, 'id'>
+export interface ICreateResource {
+	name: LocaleText
+	link?: string
+}
 
-export type ICreateExplorationNote = Omit<IRupExplorationNote, 'id' | 'internetResources' | 'technicalResources'> & {
+export interface ICreateExplorationNote {
+	basis: LocaleText
+	goals: LocaleText
+	summary: LocaleText
+	competencies: LocaleText
+	prerequisites: LocaleText
+	postrequisites: LocaleText
 	internetResources: ICreateResource[]
 	technicalResources: ICreateResource[]
 }
 
-export type ICreateSemester = Omit<ISemester, 'id'>
+export interface ICreateSemester {
+	semester: number
+	totalHours: number
+}
 
-export type ICreateTopic = Omit<ITopics, 'id' | 'totalHours'>
+export interface ICreateTopic {
+	name: LocaleText
+	type: TopicTypeEnum
+	theoryHours: number
+	practiceHours: number
+	individualHours: number
+	srspHours?: number
+	srsHours?: number
+}
 
-export type ICreateDiscipline = Omit<IDiscipline, 'totalHours' | 'semesters' | 'topics'> & {
+export interface ICreateDiscipline {
+	name: LocaleText
 	semesters: ICreateSemester[]
 	topics: ICreateTopic[]
 }
 
 export interface ICreateRupRequest {
-	name: string
+	name: LocaleText
 
 	type: RupTypeEnum
 	course: number
@@ -30,6 +52,7 @@ export interface ICreateRupRequest {
 	contacts: string[] // IUser.id
 	groups: string[] // IGroup.id
 
+	sourceLanguage?: BackendLocale
 	explorationNote: ICreateExplorationNote
 	disciplines: ICreateDiscipline[]
 }
@@ -47,6 +70,24 @@ export interface IDownloadResponse {
 export interface IApproveChallengeResponse {
 	challenge: string
 	expiresAt: string
+}
+
+export interface IRupLanguageGenerationStatus {
+	rupId: string
+	sourceLanguage: BackendLocale | ''
+	targetLanguage: BackendLocale | ''
+	status: 'queued' | 'running' | 'completed' | 'failed'
+	currentStage: string
+	stageIndex: number
+	totalStages: number
+	progressPercent: number
+	error?: string
+	updatedAt: string
+}
+
+export interface IRegenerateLanguageGenerationRequest {
+	id: string
+	sourceLanguage?: BackendLocale
 }
 
 // get all

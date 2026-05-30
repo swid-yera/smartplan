@@ -1,5 +1,6 @@
 import { type ComponentProps, type FC, type PropsWithChildren, type ReactNode, useState } from 'react'
 
+import { getUILocaleSection } from '@helpers'
 import {
 	Button,
 	Card,
@@ -18,7 +19,9 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { Sparkles } from 'lucide-react'
+import localeDictionary from './locale.json'
 
 interface GenerateCardProps {
 	title: string
@@ -53,19 +56,26 @@ interface GenerateConfirmButtonProps {
 
 export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 	onClick,
-	buttonText = 'Сгенерировать',
+	buttonText,
 	disabled = false,
-	disabledReason = 'Заполните обязательные поля',
+	disabledReason,
 	confirmDisabled = false,
-	confirmTitle = 'Сгенерировать описание?',
-	confirmDescription = 'Текущие значения будут перезаписаны. Вы сможете отредактировать текст после генерации.',
+	confirmTitle,
+	confirmDescription,
 	confirmContent,
-	confirmButtonText = 'Сгенерировать',
+	confirmButtonText,
 	triggerClassName,
 	triggerSize,
 	triggerVariant,
 }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).generate
 	const [open, setOpen] = useState(false)
+	const resolvedButtonText = buttonText ?? t.buttonText
+	const resolvedDisabledReason = disabledReason ?? t.disabledReason
+	const resolvedConfirmTitle = confirmTitle ?? t.confirmTitle
+	const resolvedConfirmDescription = confirmDescription ?? t.confirmDescription
+	const resolvedConfirmButtonText = confirmButtonText ?? t.confirmButtonText
 
 	const handleConfirm = () => {
 		if (disabled || confirmDisabled) return
@@ -86,7 +96,7 @@ export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 									size={triggerSize}
 									variant={triggerVariant}
 								>
-									{buttonText}
+									{resolvedButtonText}
 								</Button>
 							</DialogTrigger>
 						</span>
@@ -94,7 +104,7 @@ export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 
 					{disabled && (
 						<TooltipContent>
-							<p>{disabledReason}</p>
+							<p>{resolvedDisabledReason}</p>
 						</TooltipContent>
 					)}
 				</Tooltip>
@@ -102,18 +112,18 @@ export const GenerateConfirmButton: FC<GenerateConfirmButtonProps> = ({
 
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>{confirmTitle}</DialogTitle>
-					{confirmDescription && <DialogDescription>{confirmDescription}</DialogDescription>}
+					<DialogTitle>{resolvedConfirmTitle}</DialogTitle>
+					{resolvedConfirmDescription && <DialogDescription>{resolvedConfirmDescription}</DialogDescription>}
 				</DialogHeader>
 
 				{confirmContent}
 
 				<DialogFooter>
 					<Button type='button' variant='outline' onClick={() => setOpen(false)}>
-						Отмена
+						{t.cancel}
 					</Button>
 					<Button disabled={disabled || confirmDisabled} type='button' onClick={handleConfirm}>
-						{confirmButtonText}
+						{resolvedConfirmButtonText}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
@@ -126,17 +136,20 @@ export const GenerateCard: FC<PropsWithChildren<GenerateCardProps>> = ({
 	description,
 
 	disabled = false,
-	disabledReason = 'Заполните обязательные поля',
+	disabledReason,
 
 	onClick,
 	children,
 
-	buttonText = 'Сгенерировать',
-	confirmTitle = 'Сгенерировать описание?',
-	confirmDescription = 'Текущие значения будут перезаписаны. Вы сможете отредактировать текст после генерации.',
+	buttonText,
+	confirmTitle,
+	confirmDescription,
 	confirmContent,
-	confirmButtonText = 'Сгенерировать',
+	confirmButtonText,
 }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).generate
+
 	return (
 		<Card className='border-dashed'>
 			<CardHeader className='pb-3'>
@@ -149,18 +162,18 @@ export const GenerateCard: FC<PropsWithChildren<GenerateCardProps>> = ({
 			<CardContent className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
 				<div className='max-w-2xl text-sm'>
 					{description && <p className='text-muted-foreground'>{description}</p>}
-					<p className='text-primary font-semibold'>ВСЕ ДАННЫЕ СБРОСЯТСЯ И БУДУТ СГЕНЕРИРОВАНЫ</p>
+					<p className='text-primary font-semibold'>{t.warning}</p>
 				</div>
 
 				<div className='flex flex-col items-end gap-3'>
 					<GenerateConfirmButton
-						buttonText={buttonText}
-						confirmButtonText={confirmButtonText}
+						buttonText={buttonText ?? t.buttonText}
+						confirmButtonText={confirmButtonText ?? t.confirmButtonText}
 						confirmContent={confirmContent}
-						confirmDescription={confirmDescription}
-						confirmTitle={confirmTitle}
+						confirmDescription={confirmDescription ?? t.confirmDescription}
+						confirmTitle={confirmTitle ?? t.confirmTitle}
 						disabled={disabled}
-						disabledReason={disabledReason}
+						disabledReason={disabledReason ?? t.disabledReason}
 						triggerClassName='shrink-0'
 						onClick={onClick}
 					/>

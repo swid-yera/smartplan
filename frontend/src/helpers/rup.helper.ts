@@ -131,7 +131,7 @@ export const generateTemplateDisciplines = (
 
 	for (let i = 0; i < count; i++) {
 		result.push({
-			name: '',
+			name: { ru: '', kz: '' },
 			totalHours: 0,
 			semesters: [],
 			topics: [],

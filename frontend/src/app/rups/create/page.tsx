@@ -1,11 +1,19 @@
 'use client'
 
-import { type JSX, type KeyboardEvent, useEffect, useState } from 'react'
+import { type JSX, type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 
 import type { NextPage } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle } from '@components'
+import {
+	createLocaleText,
+	getLocaleText,
+	getUILocaleSection,
+	interpolateUILocaleText,
+	isSiteLocale,
+	toBackendLocale,
+} from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
 import { services } from '@services'
@@ -20,18 +28,27 @@ import {
 	AlertDialogTitle,
 	Badge,
 	Button,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
 	Tabs,
 	TabsContent,
 	TabsList,
 	TabsTrigger,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
-import { type ICreateRupRequest, RupTypeEnum, StudyFormEnum } from '@types'
+import { type ICreateRupRequest, type Locale, type LocaleText, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { type RUPFormData, rupFormSchema } from '../rup-schema'
+import { toLocaleText } from '../rup-localization'
+import { createRupFormSchema, type RUPFormData } from '../rup-schema'
+import localeDictionary from './locale.json'
 import { Step1 } from './step1'
 import { Step2 } from './step2'
 import { Step3 } from './step3'
@@ -39,20 +56,21 @@ import { Step4 } from './step4'
 
 const LOCAL_STORAGE_KEY = 'rup-create-form-data'
 const HIGHEST_STEP_STORAGE_KEY = 'rup-create-highest-step'
+const CREATE_LANGUAGE_STORAGE_KEY = 'rup-create-language'
 
 const defaultValues: RUPFormData = {
-	name: '',
+	name: { ru: '', kz: '' },
 	type: RupTypeEnum.THEORY,
 	studyForm: StudyFormEnum.FULL_TIME,
 	studyYear: '',
 
-	basis: '',
-	goals: '',
-	competencies: '',
+	basis: { ru: '', kz: '' },
+	goals: { ru: '', kz: '' },
+	competencies: { ru: '', kz: '' },
 	course: 0,
 
-	prerequisites: '',
-	postrequisites: '',
+	prerequisites: { ru: '', kz: '' },
+	postrequisites: { ru: '', kz: '' },
 
 	internetResources: [],
 	technicalResources: [],
@@ -62,25 +80,135 @@ const defaultValues: RUPFormData = {
 	disciplines: [],
 }
 
+const normalizeStoredRupData = (raw: unknown): RUPFormData => {
+	if (!raw || typeof raw !== 'object') return defaultValues
+
+	const draft = raw as Partial<RUPFormData> & Record<string, unknown>
+	const disciplines = Array.isArray(draft.disciplines) ? draft.disciplines : []
+	const internetResources = Array.isArray(draft.internetResources) ? draft.internetResources : []
+	const technicalResources = Array.isArray(draft.technicalResources) ? draft.technicalResources : []
+
+	return {
+		...defaultValues,
+		...draft,
+		name: toLocaleText(draft.name),
+		prerequisites: toLocaleText(draft.prerequisites),
+		postrequisites: toLocaleText(draft.postrequisites),
+		basis: toLocaleText(draft.basis),
+		goals: toLocaleText(draft.goals),
+		competencies: toLocaleText(draft.competencies),
+		internetResources: internetResources.map((resource) => ({
+			...(resource as Record<string, unknown>),
+			name: toLocaleText((resource as { name?: unknown }).name as Parameters<typeof toLocaleText>[0]),
+			link: String((resource as { link?: string }).link ?? ''),
+		})),
+		technicalResources: technicalResources.map((resource) => ({
+			...(resource as Record<string, unknown>),
+			name: toLocaleText((resource as { name?: unknown }).name as Parameters<typeof toLocaleText>[0]),
+			link: String((resource as { link?: string }).link ?? ''),
+		})),
+		disciplines: disciplines.map((discipline) => {
+			const typedDiscipline = discipline as Record<string, unknown>
+			const semesters = Array.isArray(typedDiscipline.semesters) ? typedDiscipline.semesters : []
+			const topics = Array.isArray(typedDiscipline.topics) ? typedDiscipline.topics : []
+
+			return {
+				...typedDiscipline,
+				name: toLocaleText(typedDiscipline.name as Parameters<typeof toLocaleText>[0]),
+				semesters: semesters.map((semester) => ({
+					semester: Number((semester as { semester?: number }).semester) || 0,
+					totalHours: Number((semester as { totalHours?: number }).totalHours) || 0,
+				})),
+				topics: topics.map((topic) => ({
+					...topic,
+					name: toLocaleText((topic as { name?: unknown }).name as Parameters<typeof toLocaleText>[0]),
+					type: (topic as { type?: string }).type ?? TopicTypeEnum.PRACTICAL,
+					theoryHours: Number((topic as { theoryHours?: number }).theoryHours) || 0,
+					practiceHours: Number((topic as { practiceHours?: number }).practiceHours) || 0,
+					individualHours: Number((topic as { individualHours?: number }).individualHours) || 0,
+					srspHours: Number((topic as { srspHours?: number }).srspHours) || 0,
+					srsHours: Number((topic as { srsHours?: number }).srsHours) || 0,
+				})),
+			}
+		}),
+	}
+}
+
+const mapLocaleTextForCreate = (value: LocaleText, sourceLocale: Locale): LocaleText => {
+	const sourceText = sourceLocale === 'ru' ? value.ru.trim() : value.kz.trim()
+
+	if (sourceLocale === 'ru') {
+		return { ru: sourceText, kz: '' }
+	}
+
+	return {
+		ru: '',
+		kz: sourceText,
+	}
+}
+
 const Page: NextPage = () => {
 	const router = useRouter()
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+	const pageT = t.page
 
 	const [currentStep, setCurrentStep] = useState(searchParams.get('step') || '1')
+	const [creationLocale, setCreationLocale] = useState<Locale | null>(null)
 	const [highestStep, setHighestStep] = useState(Number(currentStep))
 	const [stepTransitionDirection, setStepTransitionDirection] = useState<'forward' | 'backward'>('forward')
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [isHydrating, setIsHydrating] = useState(true)
+	const [isLanguageDialogOpen, setIsLanguageDialogOpen] = useState(true)
 
 	const [isValidating, setIsValidating] = useState(false)
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 
+	const activeLocale: Locale = creationLocale ?? 'ru'
+
+	const tabs: ITab[] = [
+		{
+			id: '1',
+			title: pageT.step1Title,
+			fullTitle: pageT.step1FullTitle,
+			description: pageT.step1Description,
+			content: <Step1 activeLocale={activeLocale} />,
+		},
+		{
+			id: '2',
+			title: pageT.step2Title,
+			fullTitle: pageT.step2FullTitle,
+			description: pageT.step2Description,
+			content: <Step2 activeLocale={activeLocale} />,
+		},
+		{
+			id: '3',
+			title: pageT.step3Title,
+			fullTitle: pageT.step3FullTitle,
+			description: pageT.step3Description,
+			content: <Step3 activeLocale={activeLocale} />,
+		},
+		{
+			id: '4',
+			title: pageT.step4Title,
+			fullTitle: pageT.step4FullTitle,
+			description: pageT.step4Description,
+			content: <Step4 activeLocale={activeLocale} />,
+		},
+	]
+
 	const createMutation = useMutation(services.rup.createOptions())
+	const formSchema = useMemo(
+		() => createRupFormSchema(locale, creationLocale ? [creationLocale] : ['ru']),
+		[locale, creationLocale],
+	)
 
 	const methods = useForm<RUPFormData>({
-		resolver: zodResolver(rupFormSchema),
-		mode: 'onChange',
+		resolver: zodResolver(formSchema),
+		mode: 'onSubmit',
+		reValidateMode: 'onSubmit',
 		shouldUnregister: false,
 		defaultValues,
 	})
@@ -94,12 +222,18 @@ const Page: NextPage = () => {
 
 	useEffect(() => {
 		const savedData = window.localStorage.getItem(LOCAL_STORAGE_KEY)
+		const savedLanguage = window.localStorage.getItem(CREATE_LANGUAGE_STORAGE_KEY)
+
+		if (isSiteLocale(savedLanguage)) {
+			setCreationLocale(savedLanguage)
+			setIsLanguageDialogOpen(false)
+		}
 
 		if (savedData) {
 			try {
 				const parsedData = JSON.parse(savedData)
 
-				methods.reset({ ...defaultValues, ...parsedData })
+				methods.reset(normalizeStoredRupData(parsedData))
 			} catch (e) {
 				console.error('Failed to parse or load form data', e)
 				window.localStorage.removeItem(LOCAL_STORAGE_KEY)
@@ -115,7 +249,7 @@ const Page: NextPage = () => {
 		if (isHydrating) return
 		const subscription = methods.watch((value) => {
 			try {
-				if (value.name) window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(value))
+				if (value.name?.ru || value.name?.kz) window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(value))
 			} catch (e) {
 				console.error('Failed to save form data', e)
 			}
@@ -128,7 +262,7 @@ const Page: NextPage = () => {
 		if (!isHydrating) window.localStorage.setItem(HIGHEST_STEP_STORAGE_KEY, String(highestStep))
 	}, [highestStep, isHydrating])
 
-	const currentIndex = tabs.findIndex((t) => t.id === currentStep)
+	const currentIndex = tabs.findIndex((tab) => tab.id === currentStep)
 
 	const getStepTransitionDirection = (fromStep: string, toStep: string) =>
 		Number(toStep) >= Number(fromStep) ? 'forward' : 'backward'
@@ -139,12 +273,18 @@ const Page: NextPage = () => {
 	}
 
 	const onReset = () => {
-		window.localStorage.removeItem('rup-create-form-data')
-		window.localStorage.removeItem('rup-create-highest-step')
+		window.localStorage.removeItem(LOCAL_STORAGE_KEY)
+		window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
 		methods.reset(defaultValues)
 	}
 
-	const goNext = async () => {
+	const selectCreationLanguage = (nextLocale: Locale) => {
+		setCreationLocale(nextLocale)
+		window.localStorage.setItem(CREATE_LANGUAGE_STORAGE_KEY, nextLocale)
+		setIsLanguageDialogOpen(false)
+	}
+
+	const goNext = () => {
 		if (currentIndex < tabs.length - 1) {
 			handleStepChange(tabs[currentIndex + 1].id)
 		}
@@ -155,6 +295,11 @@ const Page: NextPage = () => {
 	}
 
 	const handlePreSave = async () => {
+		if (!creationLocale) {
+			setIsLanguageDialogOpen(true)
+			return
+		}
+
 		setIsValidating(true)
 
 		setTimeout(async () => {
@@ -165,23 +310,26 @@ const Page: NextPage = () => {
 			if (isValid) {
 				setIsConfirmOpen(true)
 			} else {
-				toast.error('Пожалуйста, исправьте ошибки в форме перед сохранением')
+				toast.error(pageT.invalidForm)
 			}
 		}, 0)
 	}
 
 	const onSubmit = async (newData: RUPFormData) => {
-		// TODO: validate data
+		if (!creationLocale) {
+			setIsLanguageDialogOpen(true)
+			return
+		}
 
 		setIsConfirmOpen(false)
 		setIsSubmitting(true)
 
 		const mappedDisciplines = newData.disciplines.map((discipline) => ({
 			...discipline,
-			name: (discipline.name ?? '').trim(),
+			name: mapLocaleTextForCreate(discipline.name, creationLocale),
 			topics: discipline.topics.map((topic) => ({
 				...topic,
-				name: (topic.name ?? '').trim(),
+				name: mapLocaleTextForCreate(topic.name, creationLocale),
 				individualHours: topic.individualHours ?? 0,
 				srspHours: topic.srspHours ?? 0,
 				srsHours: topic.srsHours ?? 0,
@@ -189,41 +337,57 @@ const Page: NextPage = () => {
 		}))
 
 		const mappedExplorationNote = {
-			basis: (newData.basis ?? '').trim(),
-			goals: (newData.goals ?? '').trim(),
-			competencies: (newData.competencies ?? '').trim(),
-			summary: '',
-			prerequisites: (newData.prerequisites ?? '').trim(),
-			postrequisites: (newData.postrequisites ?? '').trim(),
-			internetResources: newData.internetResources,
-			technicalResources: newData.technicalResources,
+			basis: mapLocaleTextForCreate(newData.basis, creationLocale),
+			goals: mapLocaleTextForCreate(newData.goals, creationLocale),
+			competencies: mapLocaleTextForCreate(newData.competencies, creationLocale),
+			summary: createLocaleText('', ''),
+			prerequisites: mapLocaleTextForCreate(newData.prerequisites, creationLocale),
+			postrequisites: mapLocaleTextForCreate(newData.postrequisites, creationLocale),
+			internetResources: newData.internetResources.map((resource) => ({
+				...resource,
+				name: mapLocaleTextForCreate(resource.name, creationLocale),
+				link: resource.link?.trim() || '',
+			})),
+			technicalResources: newData.technicalResources.map((resource) => ({
+				...resource,
+				name: mapLocaleTextForCreate(resource.name, creationLocale),
+				link: resource.link?.trim() || '',
+			})),
 		}
 
 		const mappedData: ICreateRupRequest = {
 			...newData,
-			name: (newData.name ?? '').trim(),
+			name: mapLocaleTextForCreate(newData.name, creationLocale),
+			sourceLanguage: toBackendLocale(creationLocale),
 			groups: [newData.groupId],
 			disciplines: mappedDisciplines,
 			explorationNote: mappedExplorationNote,
 		}
 
-		const toastId = `rup-create`
+		const toastId = 'rup-create'
+		const rupName = getLocaleText(mappedData.name, activeLocale)
 
-		toast.loading(`Создание ${mappedData.name}...`, { id: toastId })
+		toast.loading(interpolateUILocaleText(pageT.createLoading, { name: rupName }), { id: toastId })
 
 		createMutation.mutate(
 			{ newRup: mappedData },
 			{
 				onSuccess: (createdRup) => {
 					setIsSubmitting(false)
-					window.localStorage.removeItem('rup-create-form-data')
-					window.localStorage.removeItem('rup-create-highest-step')
-					toast.success(`${createdRup.name} успешно создан`, { id: toastId })
-					router.push(`/rups/${createdRup.id}`)
+					window.localStorage.removeItem(LOCAL_STORAGE_KEY)
+					window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
+					window.localStorage.removeItem(CREATE_LANGUAGE_STORAGE_KEY)
+					toast.success(
+						interpolateUILocaleText(pageT.createSuccess, {
+							name: getLocaleText(createdRup.name, activeLocale),
+						}),
+						{ id: toastId },
+					)
+					router.push(`/rups/${createdRup.id}/language-generation`)
 				},
 				onError: (err) => {
 					setIsSubmitting(false)
-					toast.error(`Ошибка: ${err.message}`, { id: toastId })
+					toast.error(`${pageT.createErrorPrefix}: ${err.message}`, { id: toastId })
 				},
 			},
 		)
@@ -237,19 +401,42 @@ const Page: NextPage = () => {
 
 	return (
 		<FormProvider {...methods}>
+			<Dialog
+				open={isLanguageDialogOpen}
+				onOpenChange={(open) => {
+					if (!creationLocale) {
+						setIsLanguageDialogOpen(true)
+						return
+					}
+					setIsLanguageDialogOpen(open)
+				}}
+			>
+				<DialogContent showCloseButton={false}>
+					<DialogHeader>
+						<DialogTitle>{pageT.languageDialogTitle}</DialogTitle>
+						<DialogDescription>{pageT.languageDialogDescription}</DialogDescription>
+					</DialogHeader>
+					<DialogFooter className='sm:justify-start gap-2'>
+						<Button type='button' variant='outline' onClick={() => selectCreationLanguage('ru')}>
+							{t.languages.ru}
+						</Button>
+						<Button type='button' variant='outline' onClick={() => selectCreationLanguage('kk')}>
+							{t.languages.kk}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
 			<AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
 				<AlertDialogContent className='duration-200 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95'>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Вы точно хотите сохранить?</AlertDialogTitle>
-						<AlertDialogDescription>
-							После сохранения редактирование с помощью ИИ будет недоступно. Убедитесь, что все данные заполнены
-							корректно.
-						</AlertDialogDescription>
+						<AlertDialogTitle>{pageT.confirmSaveTitle}</AlertDialogTitle>
+						<AlertDialogDescription>{pageT.confirmSaveDescription}</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isSubmitting}>Отмена</AlertDialogCancel>
+						<AlertDialogCancel disabled={isSubmitting}>{pageT.cancel}</AlertDialogCancel>
 						<AlertDialogAction disabled={isSubmitting} onClick={(e) => methods.handleSubmit(onSubmit)(e)}>
-							{isSubmitting ? 'Сохранение...' : 'Сохранить'}
+							{isSubmitting ? pageT.saving : pageT.save}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -273,8 +460,8 @@ const Page: NextPage = () => {
 											disabled={isDisabled}
 											type='button'
 											value={step.id}
-											onClick={(e) => {
-												e.preventDefault()
+											onClick={(event) => {
+												event.preventDefault()
 												setStepTransitionDirection(getStepTransitionDirection(currentStep, step.id))
 												setCurrentStep(step.id)
 											}}
@@ -325,8 +512,21 @@ const Page: NextPage = () => {
 								)}
 								value={tab.id}
 							>
-								<PageTitle sticky className='mb-5' description={tab.description}>
-									{tab.fullTitle} <Badge variant='outline'>Черновик</Badge>
+								<PageTitle
+									sticky
+									actions={
+										creationLocale ? (
+											<Badge variant='secondary'>
+												{interpolateUILocaleText(pageT.selectedLanguage, {
+													language: creationLocale === 'ru' ? t.languages.ru : t.languages.kk,
+												})}
+											</Badge>
+										) : null
+									}
+									className='mb-5'
+									description={tab.description}
+								>
+									{tab.fullTitle} <Badge variant='outline'>{pageT.draft}</Badge>
 								</PageTitle>
 
 								{tab.content}
@@ -334,11 +534,11 @@ const Page: NextPage = () => {
 								<div className='flex justify-between items-center gap-4 mt-4'>
 									{currentIndex === 0 ? (
 										<Button size='lg' type='reset' variant='outline' onClick={onReset}>
-											Сбросить
+											{pageT.reset}
 										</Button>
 									) : (
 										<Button size='lg' type='button' variant='outline' onClick={goBack}>
-											<ChevronLeft /> Назад
+											<ChevronLeft /> {pageT.back}
 										</Button>
 									)}
 
@@ -351,11 +551,11 @@ const Page: NextPage = () => {
 											onClick={handlePreSave}
 										>
 											{(isSubmitting || isValidating) && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-											{isSubmitting ? 'Сохранение...' : isValidating ? 'Проверка...' : 'Сохранить'}
+											{isSubmitting ? pageT.saving : isValidating ? pageT.checking : pageT.save}
 										</Button>
 									) : (
 										<Button size='lg' type='button' onClick={goNext}>
-											Далее <ChevronRight />
+											{pageT.next} <ChevronRight />
 										</Button>
 									)}
 								</div>
@@ -377,34 +577,3 @@ export interface ITab {
 	description: string
 	content: JSX.Element
 }
-
-const tabs: ITab[] = [
-	{
-		id: '1',
-		title: 'Основные данные',
-		fullTitle: 'Создание нового модуля рабочей учебной программы',
-		description: 'Базовые данные, пояснительная записка, цели и задачи',
-		content: <Step1 />,
-	},
-	{
-		id: '2',
-		title: 'Метаданные',
-		fullTitle: 'Метаданные, материалы и ресурсы',
-		description: 'Метаданные, технические материалы и учебно методические ресурсы',
-		content: <Step2 />,
-	},
-	{
-		id: '3',
-		title: 'Распределение часов',
-		fullTitle: 'Распределение часов по семестру',
-		description: 'Добавьте дисциплины и распределите часы по семестрам',
-		content: <Step3 />,
-	},
-	{
-		id: '4',
-		title: 'Содержание',
-		fullTitle: 'Содержание учебной рабочей программы',
-		description: 'Добавьте темы занятий для каждой дисциплины',
-		content: <Step4 />,
-	},
-]

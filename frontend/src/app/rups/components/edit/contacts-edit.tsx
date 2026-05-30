@@ -92,6 +92,7 @@ export function ContactsEdit<T extends IProps>({
 				<TeacherSelector
 					teachersData={teachersData}
 					watchedContacts={watchedContacts}
+					text={t.contacts}
 					onSelect={handleAddTeacher}
 				/>
 			</CardHeader>
@@ -101,9 +102,9 @@ export function ContactsEdit<T extends IProps>({
 					<Table>
 						<TableHeader>
 							<TableRow className='bg-muted/50 hover:bg-muted/50'>
-								<TableHead className='w-[40%] pl-6'>ФИО Преподавателя</TableHead>
-								<TableHead>Контакты</TableHead>
-								<TableHead>Email</TableHead>
+								<TableHead className='w-[40%] pl-6'>{t.contacts.teacherName}</TableHead>
+								<TableHead>{t.contacts.contacts}</TableHead>
+								<TableHead>{t.contacts.email}</TableHead>
 								<TableHead className='w-[50px] pr-6' />
 							</TableRow>
 						</TableHeader>
@@ -123,7 +124,7 @@ export function ContactsEdit<T extends IProps>({
 														{teacher.firstName} {teacher.lastName}
 													</span>
 													{isCreator && (
-														<span className='text-[10px] text-primary font-normal'>(Создатель)</span>
+														<span className='text-[10px] text-primary font-normal'>{t.contacts.creator}</span>
 													)}
 												</div>
 											</div>
@@ -163,10 +164,8 @@ export function ContactsEdit<T extends IProps>({
 						<div className='rounded-full bg-muted p-4 mb-4'>
 							<UserPlus className='h-8 w-8 text-muted-foreground' />
 						</div>
-						<h3 className='font-medium text-lg'>Список пуст</h3>
-						<p className='text-muted-foreground max-w-[300px]'>
-							Выберите педагогов из реестра, чтобы они отобразились в этом блоке.
-						</p>
+						<h3 className='font-medium text-lg'>{t.contacts.emptyTitle}</h3>
+						<p className='text-muted-foreground max-w-[300px]'>{t.contacts.emptyDescription}</p>
 					</div>
 				)}
 			</CardContent>
@@ -179,9 +178,16 @@ interface ITeacherSelector {
 	onSelect: (id: string) => void
 	teachersData: IUser[]
 	watchedContacts: string[]
+	text: {
+		selectTeacher: string
+		searchPlaceholder: string
+		notFound: string
+		availableTeachers: string
+		added: string
+	}
 }
 
-const TeacherSelector: FC<ITeacherSelector> = ({ onSelect, teachersData, watchedContacts }) => {
+const TeacherSelector: FC<ITeacherSelector> = ({ onSelect, teachersData, watchedContacts, text }) => {
 	const [open, setOpen] = useState(false)
 
 	return (
@@ -189,16 +195,16 @@ const TeacherSelector: FC<ITeacherSelector> = ({ onSelect, teachersData, watched
 			<PopoverTrigger asChild>
 				<Button className='w-[220px] justify-between shadow-sm' variant='outline'>
 					<UserPlus className='mr-2 h-4 w-4' />
-					Выбрать педагога
+					{text.selectTeacher}
 					<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent align='end' className='w-[350px] p-0' sideOffset={8}>
 				<Command>
-					<CommandInput placeholder='Поиск по имени или почте...' />
+					<CommandInput placeholder={text.searchPlaceholder} />
 					<CommandList className='max-h-[300px]'>
-						<CommandEmpty>Преподаватель не найден.</CommandEmpty>
-						<CommandGroup heading='Доступные преподаватели'>
+						<CommandEmpty>{text.notFound}</CommandEmpty>
+						<CommandGroup heading={text.availableTeachers}>
 							{teachersData.map((teacher) => {
 								const isAdded = watchedContacts.includes(teacher.keycloakId)
 
@@ -223,7 +229,7 @@ const TeacherSelector: FC<ITeacherSelector> = ({ onSelect, teachersData, watched
 										</div>
 										{isAdded && (
 											<span className='text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full'>
-												Добавлен
+												{text.added}
 											</span>
 										)}
 									</CommandItem>

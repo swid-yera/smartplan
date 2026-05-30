@@ -1,4 +1,3 @@
-import type { IGroup } from '../global.type'
 import type { RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '../rup.type'
 
 export interface IAiResourceInput {
@@ -22,13 +21,19 @@ export interface IAiDisciplineInput {
 	topics?: IAiDisciplineTopicInput[]
 }
 
+export interface IAiRupGroupInput {
+	name: string
+	specialty: string
+	qualification: string
+}
+
 export interface IGenerateRupMeta {
 	name: string
 	type: RupTypeEnum
 	studyForm: StudyFormEnum
 	studyYear: string
 	course: number
-	group: IGroup
+	group: IAiRupGroupInput
 	prerequisites: string
 	postrequisites: string
 	message?: string

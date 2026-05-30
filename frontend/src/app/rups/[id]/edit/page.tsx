@@ -5,25 +5,27 @@ import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Forbidden, Loader, PageTitle } from '@components'
-import { isAuthor } from '@helpers'
+import { createLocaleText, getLocaleText, getUILocaleSection, interpolateUILocaleText, isAuthor } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { services } from '@services'
 import { Badge, Button, ButtonGroup, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateRupRequest, RupTypeEnum, StudyFormEnum } from '@types'
+import { type IUpdateRupRequest, type Locale, RupTypeEnum, StudyFormEnum } from '@types'
 import { RotateCcw, SaveIcon } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
+import { toLocaleText } from '../../rup-localization'
 import { Step1 } from '../../create/step1'
 import { Step2 } from '../../create/step2'
 import { Step3 } from '../../create/step3'
 import { Step4 } from '../../create/step4'
-import { type RUPFormData, rupFormSchema } from '../../rup-schema'
+import { createRupFormSchema, type RUPFormData } from '../../rup-schema'
+import localeDictionary from './locale.json'
 
 const defaultValues: RUPFormData = {
-	name: '',
+	name: { ru: '', kz: '' },
 
 	type: RupTypeEnum.PRACTICE,
 	studyForm: StudyFormEnum.FULL_TIME,
@@ -31,12 +33,12 @@ const defaultValues: RUPFormData = {
 	groupId: '',
 	course: 1,
 
-	basis: '',
-	goals: '',
-	competencies: '',
+	basis: { ru: '', kz: '' },
+	goals: { ru: '', kz: '' },
+	competencies: { ru: '', kz: '' },
 
-	prerequisites: '',
-	postrequisites: '',
+	prerequisites: { ru: '', kz: '' },
+	postrequisites: { ru: '', kz: '' },
 	internetResources: [],
 	technicalResources: [],
 
@@ -44,20 +46,57 @@ const defaultValues: RUPFormData = {
 	disciplines: [],
 }
 
+const LanguageTabs = ({
+	value,
+	onChange,
+	labels,
+}: {
+	value: Locale
+	onChange: (locale: Locale) => void
+	labels: { ru: string; kk: string }
+}) => (
+	<Tabs value={value} onValueChange={(next) => onChange(next as Locale)}>
+		<TabsList>
+			<TabsTrigger value='ru'>{labels.ru}</TabsTrigger>
+			<TabsTrigger value='kk'>{labels.kk}</TabsTrigger>
+		</TabsList>
+	</Tabs>
+)
+
 const EditPage: FC = () => {
 	const { replace } = useRouter()
 	const { id } = useParams<{ id: string }>()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const [currentStep, setCurrentStep] = useState('1')
+	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
 	// auth
 	const { user, authLoading } = useAuthStore()
 	// queries
 	const { data: rupData, isLoading } = useQuery({ ...services.rup.getByIdOptions(id), enabled: !!id })
+	const { data: generationStatus, isLoading: isGenerationStatusLoading } = useQuery({
+		...services.rup.getLanguageGenerationStatusOptions(id),
+		enabled: !!id,
+	})
 	// mutations
 	const updateMutation = useMutation(services.rup.updateOptions())
 
+	useEffect(() => {
+		setActiveLocale(locale)
+	}, [locale])
+
+	const isLanguageGenerationInProgress =
+		generationStatus?.status === 'queued' || generationStatus?.status === 'running'
+
+	useEffect(() => {
+		if (!isLanguageGenerationInProgress) return
+		replace(`/rups/${id}/language-generation`)
+	}, [id, isLanguageGenerationInProgress, replace])
+
 	// form
+	const formSchema = useMemo(() => createRupFormSchema(locale), [locale])
 	const methods = useForm<RUPFormData>({
-		resolver: zodResolver(rupFormSchema),
+		resolver: zodResolver(formSchema),
 		mode: 'onBlur',
 		reValidateMode: 'onChange',
 		shouldUnregister: false,
@@ -69,18 +108,31 @@ const EditPage: FC = () => {
 
 		return {
 			...rupData,
-			...rupData.explorationNote,
+			name: toLocaleText(rupData.name),
+			prerequisites: toLocaleText(rupData.explorationNote?.prerequisites),
+			postrequisites: toLocaleText(rupData.explorationNote?.postrequisites),
+			basis: toLocaleText(rupData.explorationNote?.basis),
+			goals: toLocaleText(rupData.explorationNote?.goals),
+			competencies: toLocaleText(rupData.explorationNote?.competencies),
 			internetResources:
 				rupData.explorationNote?.internetResources?.map((r) => ({
-					name: r.name ?? '',
+					name: toLocaleText(r.name),
 					link: r.link ?? '',
 				})) ?? [],
 			technicalResources:
 				rupData.explorationNote?.technicalResources?.map((r) => ({
-					name: r.name ?? '',
+					name: toLocaleText(r.name),
 					link: r.link ?? '',
 				})) ?? [],
-			disciplines: rupData.disciplines ?? [],
+			disciplines:
+				rupData.disciplines?.map((discipline) => ({
+					...discipline,
+					name: toLocaleText(discipline.name),
+					topics: discipline.topics.map((topic) => ({
+						...topic,
+						name: toLocaleText(topic.name),
+					})),
+				})) ?? [],
 			groupId: rupData.groups[0]?.keycloakId,
 			contacts: rupData.contacts.map((c) => c.keycloakId),
 		}
@@ -115,9 +167,11 @@ const EditPage: FC = () => {
 		// mapped disciplines
 		const mappedDisciplines = newData.disciplines.map((discipline) => ({
 			...discipline,
+			name: createLocaleText(discipline.name.ru.trim(), discipline.name.kz.trim()),
 			topics: discipline.topics.map((topic) => ({
 				...topic,
-				// Заменяем undefined на 0 для всех числовых полей
+				name: createLocaleText(topic.name.ru.trim(), topic.name.kz.trim()),
+				// Normalize optional numeric fields for backend payload.
 				individualHours: topic.individualHours ?? 0,
 				srspHours: topic.srspHours ?? 0,
 				srsHours: topic.srsHours ?? 0,
@@ -127,37 +181,50 @@ const EditPage: FC = () => {
 		// mapped data
 		const mappedData: IUpdateRupRequest = {
 			...newData,
+			name: createLocaleText(newData.name.ru.trim(), newData.name.kz.trim()),
 			groups: [newData.groupId],
 			// @ts-ignore
 			teacher: rupData?.teacher.id ?? user?.keycloakID,
 			explorationNote: {
-				basis: newData.basis ?? '',
-				goals: newData.goals ?? '',
-				competencies: newData.competencies ?? '',
-				summary: '',
+				basis: createLocaleText(newData.basis.ru.trim(), newData.basis.kz.trim()),
+				goals: createLocaleText(newData.goals.ru.trim(), newData.goals.kz.trim()),
+				competencies: createLocaleText(newData.competencies.ru.trim(), newData.competencies.kz.trim()),
+				summary: createLocaleText('', ''),
 
-				prerequisites: newData.prerequisites ?? '',
-				postrequisites: newData.postrequisites ?? '',
+				prerequisites: createLocaleText(newData.prerequisites.ru.trim(), newData.prerequisites.kz.trim()),
+				postrequisites: createLocaleText(newData.postrequisites.ru.trim(), newData.postrequisites.kz.trim()),
 
-				internetResources: newData.internetResources,
-				technicalResources: newData.technicalResources,
+				internetResources: newData.internetResources.map((resource) => ({
+					...resource,
+					name: createLocaleText(resource.name.ru.trim(), resource.name.kz.trim()),
+					link: resource.link?.trim() || '',
+				})),
+				technicalResources: newData.technicalResources.map((resource) => ({
+					...resource,
+					name: createLocaleText(resource.name.ru.trim(), resource.name.kz.trim()),
+					link: resource.link?.trim() || '',
+				})),
 			},
 			disciplines: mappedDisciplines,
 		}
 
 		const toastId = `rup-${rupData.id}-update`
+		const rupName = getLocaleText(mappedData.name, activeLocale)
 
-		toast.loading('Сохранение данных...', { id: toastId })
+		toast.loading(t.loadingSave, { id: toastId })
 
 		updateMutation.mutate(
 			{ id: rupData.id, changedRup: mappedData },
 			{
 				onSuccess: (updatedRup) => {
-					toast.success(`${updatedRup.name} успешно обновлен`, { id: toastId })
+					toast.success(
+						interpolateUILocaleText(t.saveSuccess, { name: getLocaleText(updatedRup.name, activeLocale) }),
+						{ id: toastId },
+					)
 					replace(`/rups/${updatedRup.id}`)
 				},
 				onError: (err) => {
-					toast.error(`Произошла ошибка при обновлений ${mappedData.name}`, {
+					toast.error(interpolateUILocaleText(t.saveError, { name: rupName }), {
 						id: toastId,
 						description: err.message,
 					})
@@ -172,7 +239,7 @@ const EditPage: FC = () => {
 		}
 	}
 
-	if (isLoading || authLoading) return <Loader />
+	if (isLoading || authLoading || isGenerationStatusLoading || isLanguageGenerationInProgress) return <Loader />
 	if (!user) return notFound()
 	if (!rupData) notFound()
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
@@ -190,34 +257,42 @@ const EditPage: FC = () => {
 				<PageTitle
 					sticky
 					actions={
-						<ButtonGroup>
-							<Button
-								className='hover:text-destructive'
-								disabled={!methods.formState.isDirty}
-								size='sm'
-								type='button'
-								variant='outline'
-								onClick={() => methods.reset()}
-							>
-								<RotateCcw className='mr-2 h-4 w-4' />
-								Сбросить изменения
-							</Button>
-							<Button
-								className='hover:text-primary'
-								disabled={!methods.formState.isDirty}
-								size='sm'
-								type='submit'
-								variant='outline'
-							>
-								<SaveIcon className='mr-2 h-4 w-4' />
-								Сохранить
-							</Button>
-						</ButtonGroup>
+						<div className='flex items-center gap-2'>
+							<LanguageTabs
+								labels={{ kk: t.languages.kk, ru: t.languages.ru }}
+								value={activeLocale}
+								onChange={setActiveLocale}
+							/>
+							<ButtonGroup>
+								<Button
+									className='hover:text-destructive'
+									disabled={!methods.formState.isDirty}
+									size='sm'
+									type='button'
+									variant='outline'
+									onClick={() => methods.reset()}
+								>
+									<RotateCcw className='mr-2 h-4 w-4' />
+									{t.resetChanges}
+								</Button>
+								<Button
+									className='hover:text-primary'
+									disabled={!methods.formState.isDirty}
+									size='sm'
+									type='submit'
+									variant='outline'
+								>
+									<SaveIcon className='mr-2 h-4 w-4' />
+									{t.save}
+								</Button>
+							</ButtonGroup>
+						</div>
 					}
 					backHref={`/rups/${rupData.id}`}
-					description='Редактирование рабочей учебной программы'
+					description={t.description}
 				>
-					Редактирование: {rupData.name || 'Рабочая учебная программа'} <Badge variant='outline'>Черновик</Badge>
+					{t.titlePrefix}: {getLocaleText(rupData.name, activeLocale) || t.titleFallback}{' '}
+					<Badge variant='outline'>{t.draft}</Badge>
 				</PageTitle>
 
 				<Tabs value={currentStep} onValueChange={setCurrentStep}>
@@ -226,39 +301,39 @@ const EditPage: FC = () => {
 							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
 							value='1'
 						>
-							Основные данные
+							{t.step1}
 						</TabsTrigger>
 						<TabsTrigger
 							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
 							value='2'
 						>
-							Метаданные
+							{t.step2}
 						</TabsTrigger>
 						<TabsTrigger
 							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
 							value='3'
 						>
-							Часы
+							{t.step3}
 						</TabsTrigger>
 						<TabsTrigger
 							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
 							value='4'
 						>
-							Содержание
+							{t.step4}
 						</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value='1'>
-						<Step1 />
+						<Step1 activeLocale={activeLocale} />
 					</TabsContent>
 					<TabsContent value='2'>
-						<Step2 />
+						<Step2 activeLocale={activeLocale} />
 					</TabsContent>
 					<TabsContent value='3'>
-						<Step3 />
+						<Step3 activeLocale={activeLocale} />
 					</TabsContent>
 					<TabsContent value='4'>
-						<Step4 />
+						<Step4 activeLocale={activeLocale} />
 					</TabsContent>
 				</Tabs>
 			</form>

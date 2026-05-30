@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 
-import { getUILocaleSection } from '@helpers'
 import { EditableHourCell } from '@components'
-import { formatAsDash } from '@helpers'
+import { formatAsDash, getLocaleText, getUILocaleSection } from '@helpers'
+import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -33,6 +33,7 @@ import {
 	TableRow,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
+import type { Locale, LocaleText } from '@types'
 import { Plus, Trash } from 'lucide-react'
 import {
 	type ArrayPath,
@@ -48,7 +49,7 @@ import localeDictionary from './locale.json'
 type Semester = { semester: number; totalHours: number }
 
 type Discipline = {
-	name: string
+	name: LocaleText
 	totalHours: number
 	semesters: Semester[]
 }
@@ -57,7 +58,7 @@ type IProps = FieldValues & {
 	disciplines: Discipline[]
 }
 
-export function DisciplineEdit<T extends IProps>() {
+export function DisciplineEdit<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const form = useFormContext<T>()
@@ -77,12 +78,12 @@ export function DisciplineEdit<T extends IProps>() {
 	const disciplineNamePaths = disciplineFields.map((_, index) => `disciplines.${index}.name` as Path<T>)
 	const disciplineSemesterPaths = disciplineFields.map((_, index) => `disciplines.${index}.semesters` as Path<T>)
 
-	const disciplineNames = (useWatch({ control, name: disciplineNamePaths }) as string[] | undefined) ?? []
+	const disciplineNames = (useWatch({ control, name: disciplineNamePaths }) as LocaleText[] | undefined) ?? []
 	const disciplineSemesters =
 		(useWatch({ control, name: disciplineSemesterPaths }) as Discipline['semesters'][] | undefined) ?? []
 
 	const newDiscipline = {
-		name: '',
+		name: { ru: '', kz: '' },
 		totalHours: 0,
 		semesters: Array.from({ length: 8 }, (_, i) => ({
 			semester: i + 1,
@@ -118,7 +119,7 @@ export function DisciplineEdit<T extends IProps>() {
 				</div>
 
 				<Button type='button' variant='outline' onClick={() => append(newDiscipline as PathValue<T, ArrayPath<T>>)}>
-					<Plus /> Добавить дисциплину
+					<Plus /> {t.discipline.add}
 				</Button>
 			</CardHeader>
 			<CardContent>
@@ -127,19 +128,19 @@ export function DisciplineEdit<T extends IProps>() {
 						<TableHeader>
 							<TableRow>
 								<TableHead className='w-full min-w-[400px]' rowSpan={3}>
-									Код и название дисциплины/модуля:
+									{t.discipline.tableDiscipline}:
 								</TableHead>
 								<TableHead className='text-center wrap-break-words whitespace-normal' rowSpan={3}>
-									Общее количество часов в модуле
+									{t.discipline.tableTotal}
 								</TableHead>
 								<TableHead className='text-center' colSpan={8}>
-									По семестрам
+									{t.discipline.tableBySemesters}
 								</TableHead>
 							</TableRow>
 							<TableRow>
 								{Array.from({ length: 4 }, (_, i) => (
 									<TableHead key={i} className='text-center border-r' colSpan={2}>
-										{i + 1} курс
+										{i + 1} {t.discipline.courseSuffix}
 									</TableHead>
 								))}
 							</TableRow>
@@ -152,13 +153,15 @@ export function DisciplineEdit<T extends IProps>() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							<ModuleRow />
+							<ModuleRow activeLocale={activeLocale} />
 							{disciplineFields.length > 0 ? (
 								<>
 									{disciplineFields.map((field, index) => (
 										<DisciplineRow
 											key={field.id}
+											activeLocale={activeLocale}
 											disciplineIndex={index}
+											namePlaceholder={t.discipline.namePlaceholder}
 											setDisciplineToDelete={setDisciplineToDelete}
 										/>
 									))}
@@ -166,14 +169,14 @@ export function DisciplineEdit<T extends IProps>() {
 							) : (
 								<TableRow>
 									<TableCell className='h-28 text-center text-muted-foreground' colSpan={10}>
-										Дисциплины не добавлены.
+										{t.discipline.empty}
 									</TableCell>
 								</TableRow>
 							)}
 						</TableBody>
 						<TableFooter>
 							<TableRow>
-								<TableCell className='w-full font-bold'>Всего:</TableCell>
+								<TableCell className='w-full font-bold'>{t.discipline.total}:</TableCell>
 								<TableCell className='text-center font-bold'>{totalModuleHours}</TableCell>
 								{semesterTotals.map((total, i) => (
 									<TableCell key={i} className='text-center font-bold'>
@@ -191,13 +194,18 @@ export function DisciplineEdit<T extends IProps>() {
 				>
 					<AlertDialogContent>
 						<AlertDialogHeader>
-							<AlertDialogTitle>Подтверждение</AlertDialogTitle>
+							<AlertDialogTitle>{t.discipline.confirmTitle}</AlertDialogTitle>
 							<AlertDialogDescription>
-								Удалить дисциплину {disciplineToDelete !== null && disciplineNames?.[disciplineToDelete]}?
+								{disciplineToDelete !== null
+									? t.discipline.confirmDescription.replace(
+											'{name}',
+											getLocaleText(disciplineNames?.[disciplineToDelete], activeLocale),
+										)
+									: ''}
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel>Отмена</AlertDialogCancel>
+							<AlertDialogCancel>{t.discipline.cancel}</AlertDialogCancel>
 							<AlertDialogAction
 								className='bg-destructive'
 								onClick={() => {
@@ -207,7 +215,7 @@ export function DisciplineEdit<T extends IProps>() {
 									}
 								}}
 							>
-								Удалить
+								{t.discipline.delete}
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>
@@ -217,14 +225,16 @@ export function DisciplineEdit<T extends IProps>() {
 	)
 }
 
-function ModuleRow<T extends IProps>() {
+function ModuleRow<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
 	const form = useFormContext<T>()
 
-	const watchedRupName = form.watch('name' as Path<T>) as string
+	const watchedRupName = form.watch('name' as Path<T>) as LocaleText
 
 	return (
 		<TableRow className='[&>:not(:last-child)]:border-r h-16'>
-			<TableCell className='w-full wrap-break-words whitespace-normal'>{watchedRupName}</TableCell>
+			<TableCell className='w-full wrap-break-words whitespace-normal'>
+				{getLocaleText(watchedRupName, activeLocale)}
+			</TableCell>
 			<TableCell className='text-center font-medium' />
 			{Array.from({ length: 8 }).map((_, semesterIndex) => (
 				<TableCell key={semesterIndex} className='text-center font-medium' />
@@ -235,9 +245,13 @@ function ModuleRow<T extends IProps>() {
 
 function DisciplineRow<T extends IProps>({
 	disciplineIndex,
+	activeLocale,
+	namePlaceholder,
 	setDisciplineToDelete,
 }: {
 	disciplineIndex: number
+	activeLocale: Locale
+	namePlaceholder: string
 	setDisciplineToDelete: (index: number | null) => void
 }) {
 	const form = useFormContext<T>()
@@ -267,7 +281,19 @@ function DisciplineRow<T extends IProps>({
 							render={({ field }) => (
 								<FormItem className='grow'>
 									<FormControl>
-										<Input placeholder='Название' {...field} />
+										<Input
+											placeholder={namePlaceholder}
+											value={getLocalizedValue(field.value as LocaleText, activeLocale)}
+											onChange={(event) =>
+												field.onChange(
+													updateLocaleText(
+														field.value as LocaleText,
+														activeLocale,
+														event.target.value,
+													),
+												)
+											}
+										/>
 									</FormControl>
 								</FormItem>
 							)}

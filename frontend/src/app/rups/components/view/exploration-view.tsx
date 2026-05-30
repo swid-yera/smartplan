@@ -2,18 +2,19 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { formatAsDash, getUILocaleSection } from '@helpers'
+import { formatAsDash, getLocaleText, getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useLocaleStore } from '@store'
-import type { IRup } from '@types'
+import type { IRup, Locale } from '@types'
 import { ExternalLink } from 'lucide-react'
 import localeDictionary from './locale.json'
 
 interface IProps {
 	data: IRup
+	activeLocale: Locale
 }
 
-export const ExplorationView: FC<IProps> = ({ data }) => {
+export const ExplorationView: FC<IProps> = ({ data, activeLocale }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 
@@ -24,33 +25,33 @@ export const ExplorationView: FC<IProps> = ({ data }) => {
 			</CardHeader>
 
 			<CardContent>
-				<p className='leading-relaxed indent-4'>{formatAsDash(data.explorationNote.basis)}</p>
-				<p className='leading-relaxed indent-4'>{formatAsDash(data.explorationNote.goals)}</p>
+				<p className='leading-relaxed indent-4'>{formatAsDash(getLocaleText(data.explorationNote.basis, activeLocale))}</p>
+				<p className='leading-relaxed indent-4'>{formatAsDash(getLocaleText(data.explorationNote.goals, activeLocale))}</p>
 				<p className='leading-relaxed indent-4'>
-					<span className='font-bold'>Формируемые компетенции: </span>
-					{formatAsDash(data.explorationNote.competencies)}
+					<span className='font-bold'>{t.exploration.competencies}: </span>
+					{formatAsDash(getLocaleText(data.explorationNote.competencies, activeLocale))}
 				</p>
 
 				<Separator className='my-2' />
 
 				<p className='leading-relaxed indent-4'>
-					<span className='font-bold'>Пререквизиты: </span>
-					{formatAsDash(data.explorationNote.prerequisites)}
+					<span className='font-bold'>{t.exploration.prerequisites}: </span>
+					{formatAsDash(getLocaleText(data.explorationNote.prerequisites, activeLocale))}
 				</p>
 				<p className='leading-relaxed indent-4'>
-					<span className='font-bold'>Постреквизиты: </span>
-					{formatAsDash(data.explorationNote.postrequisites)}
+					<span className='font-bold'>{t.exploration.postrequisites}: </span>
+					{formatAsDash(getLocaleText(data.explorationNote.postrequisites, activeLocale))}
 				</p>
 
 				<Separator className='my-2' />
 
-				<p className='font-bold indent-4'>Необходимые средства обучения, оборудование:</p>
-				<p className='font-bold indent-4'>Учебно-методическое оснащение, справочная литература/интернет-ресурсы:</p>
+				<p className='font-bold indent-4'>{t.exploration.requiredEquipment}:</p>
+				<p className='font-bold indent-4'>{t.exploration.internetResources}:</p>
 				<ol className='list-decimal space-y-2 pl-5'>
 					{data.explorationNote.internetResources.map((res, i) => (
 						<li key={i} className='group ml-2'>
 							<div className='flex items-center gap-2'>
-								<span>{res.name}</span>
+								<span>{getLocaleText(res.name, activeLocale)}</span>
 
 								{res.link && (
 									<Link
@@ -67,12 +68,12 @@ export const ExplorationView: FC<IProps> = ({ data }) => {
 					))}
 				</ol>
 
-				<p className='font-bold indent-4 mt-4'>Технические средства и материалы:</p>
+				<p className='font-bold indent-4 mt-4'>{t.exploration.technicalResources}:</p>
 				<ol className='list-decimal space-y-2 pl-5'>
-					{data.explorationNote.internetResources.map((res, i) => (
+					{data.explorationNote.technicalResources.map((res, i) => (
 						<li key={i} className='group ml-2'>
 							<div className='flex items-center gap-2'>
-								<span>{res.name}</span>
+								<span>{getLocaleText(res.name, activeLocale)}</span>
 
 								{res.link && (
 									<Link

@@ -15,8 +15,9 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { formatAsDash, formatHours, getHoursStyle, normalizeTopicType } from '@helpers'
+import { formatAsDash, formatHours, getHoursStyle, getLocaleText, getUILocaleSection, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
+import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -44,7 +45,8 @@ import {
 	TableRow,
 	Textarea,
 } from '@shadcn'
-import { RupTypeEnum, TopicTypeEnum } from '@types'
+import { useLocaleStore } from '@store'
+import { type Locale, type LocaleText, RupTypeEnum, TopicTypeEnum } from '@types'
 import { ChevronDown, GripVertical, Plus } from 'lucide-react'
 import {
 	type ArrayPath,
@@ -57,9 +59,10 @@ import {
 } from 'react-hook-form'
 
 import { GenerateConfirmButton } from '../generate-card'
+import localeDictionary from './locale.json'
 
 type Topic = {
-	name: string
+	name: LocaleText
 	type: TopicTypeEnum
 	theoryHours: number
 	practiceHours: number
@@ -71,7 +74,7 @@ type Topic = {
 type Semester = { semester: number; totalHours: number }
 
 type Discipline = {
-	name: string
+	name: LocaleText
 	semesters: Semester[]
 	topics: Topic[]
 }
@@ -108,7 +111,7 @@ const EMPTY_TOTALS: TopicTotals = {
 }
 
 const newTopic: Topic = {
-	name: '',
+	name: { ru: '', kz: '' },
 	type: TopicTypeEnum.PRACTICAL,
 	theoryHours: 0,
 	practiceHours: 0,
@@ -118,14 +121,18 @@ const newTopic: Topic = {
 }
 
 export function TopicsEdit<T extends IProps>({
+	activeLocale,
 	onGenerateDiscipline,
 	generatingDisciplineIndex = null,
 }: {
+	activeLocale: Locale
 	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
 	isGeneratingAll?: boolean
 	generatingDisciplineIndex?: number | null
 }) {
 	const form = useFormContext<T>()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const rupType = useWatch({ control: form.control, name: 'type' as Path<T> }) ?? ''
 	const { fields: disciplineFields } = useFieldArray({
 		control: form.control,
@@ -137,14 +144,16 @@ export function TopicsEdit<T extends IProps>({
 		<div className='space-y-16'>
 			{disciplineFields.map((field, index) => (
 				<DisciplineBlock
+					activeLocale={activeLocale}
 					key={field.key}
 					disciplineIndex={index}
 					generatingDisciplineIndex={generatingDisciplineIndex}
 					rupType={rupType as RupTypeEnum | ''}
+					text={t.topics}
 					onGenerateDiscipline={onGenerateDiscipline}
 				/>
 			))}
-			<TopicsSummary />
+			<TopicsSummary text={t.topics} />
 		</div>
 	)
 }
@@ -166,7 +175,23 @@ function getTotalsFromTopics(topics: Topic[]): TopicTotals {
 	)
 }
 
-function TopicsSummary<T extends IProps>() {
+function TopicsSummary<T extends IProps>({
+	text,
+}: {
+	text: {
+		summaryTitle: string
+		category: string
+		total: string
+		theory: string
+		practice: string
+		individual: string
+		srsp: string
+		srs: string
+		totalHours: string
+		declaredPlan: string
+		mismatch: string
+	}
+}) {
 	const form = useFormContext<T>()
 	const disciplines = (useWatch({ control: form.control, name: 'disciplines' as Path<T> }) ?? []) as Discipline[]
 
@@ -185,27 +210,25 @@ function TopicsSummary<T extends IProps>() {
 
 	return (
 		<div className='mt-10 rounded-xl border p-1'>
-			<div className='px-4 py-2 font-semibold italic uppercase tracking-wider text-xs'>
-				Сводная информация по всем дисциплинам
-			</div>
+			<div className='px-4 py-2 font-semibold italic uppercase tracking-wider text-xs'>{text.summaryTitle}</div>
 			<Table>
 				<TableHeader>
 					<TableRow>
 						<TableHead className='text-right font-medium text-muted-foreground' colSpan={2}>
-							Категория
+							{text.category}
 						</TableHead>
-						<TableHead className='w-24 text-center font-bold text-foreground'>Всего</TableHead>
-						<TableHead className='w-20 text-center text-xs'>Теор</TableHead>
-						<TableHead className='w-20 text-center text-xs'>Прак</TableHead>
-						<TableHead className='w-20 text-center text-xs'>Инд</TableHead>
-						<TableHead className='w-20 text-center text-xs text-muted-foreground italic'>СРСП</TableHead>
-						<TableHead className='w-20 text-center text-xs text-muted-foreground italic'>СРС</TableHead>
+						<TableHead className='w-24 text-center font-bold text-foreground'>{text.total}</TableHead>
+						<TableHead className='w-20 text-center text-xs'>{text.theory}</TableHead>
+						<TableHead className='w-20 text-center text-xs'>{text.practice}</TableHead>
+						<TableHead className='w-20 text-center text-xs'>{text.individual}</TableHead>
+						<TableHead className='w-20 text-center text-xs text-muted-foreground italic'>{text.srsp}</TableHead>
+						<TableHead className='w-20 text-center text-xs text-muted-foreground italic'>{text.srs}</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>
 					<TableRow className='hover:bg-primary/5 transition-colors'>
 						<TableCell className='text-right font-medium' colSpan={2}>
-							Всего часов:
+							{text.totalHours}:
 						</TableCell>
 						<TableCell className='text-center'>
 							<span
@@ -226,7 +249,7 @@ function TopicsSummary<T extends IProps>() {
 					</TableRow>
 					<TableRow className='border-t border-dashed'>
 						<TableCell className='text-right text-muted-foreground' colSpan={2}>
-							Заявлено в учебном плане:
+							{text.declaredPlan}:
 						</TableCell>
 						<TableCell className='text-center font-bold text-lg text-foreground/70'>
 							{totalDeclaredHours}
@@ -234,7 +257,7 @@ function TopicsSummary<T extends IProps>() {
 						<TableCell className='text-left py-0' colSpan={5}>
 							{total.totalHours !== totalDeclaredHours && (
 								<span className='text-sm font-medium text-destructive animate-pulse duration-1000'>
-									← Несоответствие: {formatHours(Math.abs(totalDeclaredHours - total.totalHours))}
+									← {text.mismatch}: {formatHours(Math.abs(totalDeclaredHours - total.totalHours))}
 								</span>
 							)}
 						</TableCell>
@@ -257,15 +280,54 @@ function mergeTotals(base: TopicTotals, next: TopicTotals): TopicTotals {
 }
 
 function DisciplineBlock<T extends IProps>({
+	activeLocale,
 	disciplineIndex,
 	onGenerateDiscipline,
 	generatingDisciplineIndex,
 	rupType,
+	text,
 }: {
+	activeLocale: Locale
 	disciplineIndex: number
 	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
 	generatingDisciplineIndex: number | null
 	rupType: RupTypeEnum | ''
+	text: {
+		deleteSelected: string
+		addTopic: string
+		tableTopicTitle: string
+		total: string
+		theory: string
+		practice: string
+		individual: string
+		srsp: string
+		srs: string
+		tableType: string
+		empty: string
+		totalHours: string
+		declared: string
+		generateButton: string
+		generatingButton: string
+		additionalMessage: string
+		additionalPlaceholder: string
+		practical: string
+		snz: string
+		combined: string
+		example: string
+		topicsCount: string
+		hourUnit: string
+		includeCurrent: string
+		declaredHours: string
+		selectedHours: string
+		hoursValidation: string
+		generateConfirmDescription: string
+		generateConfirmTitle: string
+		generateDisabledReason: string
+		deleteSelectedTitle: string
+		cancel: string
+		delete: string
+		topicPlaceholder: string
+	}
 }) {
 	const form = useFormContext<T>()
 	const [isCollapsed, setIsCollapsed] = useState(false)
@@ -293,7 +355,7 @@ function DisciplineBlock<T extends IProps>({
 		(useWatch({
 			control: form.control,
 			name: `disciplines.${disciplineIndex}.name` as Path<T>,
-		}) as string) ?? ''
+		}) as LocaleText | undefined) ?? { ru: '', kz: '' }
 	const disciplineTopics =
 		(useWatch({
 			control: form.control,
@@ -523,11 +585,11 @@ function DisciplineBlock<T extends IProps>({
 				)}
 				style={{ top: `${stickyTopPx}px` }}
 			>
-				<div className='ml-2 flex-1 font-medium'>{disciplineName}</div>
+				<div className='ml-2 flex-1 font-medium'>{getLocaleText(disciplineName, activeLocale)}</div>
 				<div className='flex gap-2'>
 					{hasSelectedTopics && (
 						<Button size='sm' type='button' variant='destructive' onClick={() => setIsDeleteSelectedOpen(true)}>
-							Удалить выбранные ({selectedTopicCount})
+							{text.deleteSelected} ({selectedTopicCount})
 						</Button>
 					)}
 					<Button
@@ -539,7 +601,7 @@ function DisciplineBlock<T extends IProps>({
 							setIsCollapsed(false)
 						}}
 					>
-						<Plus className='h-4 w-4 mr-1' /> Добавить тему
+						<Plus className='h-4 w-4 mr-1' /> {text.addTopic}
 					</Button>
 					<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed((prev) => !prev)}>
 						<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />
@@ -576,14 +638,14 @@ function DisciplineBlock<T extends IProps>({
 										/>
 									</TableHead>
 									<TableHead className='w-12 bg-muted/20 text-center'>№</TableHead>
-									<TableHead className='min-w-[450px] w-full bg-muted/20'>Темы занятий</TableHead>
-									<TableHead className='w-20 bg-muted/20 text-center'>Всего</TableHead>
-									<TableHead className='w-20 bg-muted/20 text-center'>Теор</TableHead>
-									<TableHead className='w-20 bg-muted/20 text-center'>Прак</TableHead>
-									<TableHead className='w-20 bg-muted/20 text-center'>Инд</TableHead>
-									<TableHead className='w-20 bg-muted/20 text-center text-xs'>СРСП</TableHead>
-									<TableHead className='w-20 bg-muted/20 text-center text-xs'>СРС</TableHead>
-									<TableHead className='min-w-48 bg-muted/20'>Тип</TableHead>
+									<TableHead className='min-w-[450px] w-full bg-muted/20'>{text.tableTopicTitle}</TableHead>
+									<TableHead className='w-20 bg-muted/20 text-center'>{text.total}</TableHead>
+									<TableHead className='w-20 bg-muted/20 text-center'>{text.theory}</TableHead>
+									<TableHead className='w-20 bg-muted/20 text-center'>{text.practice}</TableHead>
+									<TableHead className='w-20 bg-muted/20 text-center'>{text.individual}</TableHead>
+									<TableHead className='w-20 bg-muted/20 text-center text-xs'>{text.srsp}</TableHead>
+									<TableHead className='w-20 bg-muted/20 text-center text-xs'>{text.srs}</TableHead>
+									<TableHead className='min-w-48 bg-muted/20'>{text.tableType}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
@@ -591,19 +653,21 @@ function DisciplineBlock<T extends IProps>({
 									{topicFields.length > 0 ? (
 										topicFields.map((field, index) => (
 											<TopicRow
-												key={field.key}
-												disciplineIndex={disciplineIndex}
-												id={field.key}
-												isSelected={selectedTopicKeys.includes(field.key)}
-												rupType={rupType}
-												toggleSelectTopic={toggleSelectTopic}
-												topicIndex={index}
-											/>
+												activeLocale={activeLocale}
+											key={field.key}
+											disciplineIndex={disciplineIndex}
+											id={field.key}
+											isSelected={selectedTopicKeys.includes(field.key)}
+											rupType={rupType}
+											text={text}
+											toggleSelectTopic={toggleSelectTopic}
+											topicIndex={index}
+										/>
 										))
 									) : (
 										<TableRow>
 											<TableCell className='h-56 text-center text-muted-foreground' colSpan={10}>
-												Критерии оценки и/или темы занятий не добавлены.
+												{text.empty}
 											</TableCell>
 										</TableRow>
 									)}
@@ -615,7 +679,7 @@ function DisciplineBlock<T extends IProps>({
 										className={cn('py-5 text-right font-bold', hasError && 'text-destructive')}
 										colSpan={2}
 									>
-										Всего часов:
+										{text.totalHours}:
 									</TableCell>
 									<TableCell className='text-center font-bold'>
 										{formatAsDash(sectionTotal.totalHours)}
@@ -628,21 +692,21 @@ function DisciplineBlock<T extends IProps>({
 									<TableCell
 										className={cn('text-right font-medium', hasError && 'text-destructive font-bold')}
 									>
-										Заявлено: {formatHours(declaredForThisDiscipline)}
+										{text.declared}: {formatHours(declaredForThisDiscipline)}
 									</TableCell>
 									<TableCell className='text-right'>
 										<GenerateConfirmButton
-											buttonText={isGeneratingCurrentDiscipline ? 'Генерация…' : 'Сгенерировать'}
-											confirmButtonText='Сгенерировать'
+											buttonText={isGeneratingCurrentDiscipline ? text.generatingButton : text.generateButton}
+											confirmButtonText={text.generateButton}
 											confirmContent={
 												<div className='grid gap-4'>
 													<div className='flex flex-col gap-2'>
 														<Label htmlFor={`discipline-${disciplineIndex}-additional-message`}>
-															Дополнительное сообщение
+															{text.additionalMessage}
 														</Label>
 														<Textarea
 															id={`discipline-${disciplineIndex}-additional-message`}
-															placeholder='Уточните, что нужно учесть при генерации'
+															placeholder={text.additionalPlaceholder}
 															rows={4}
 															value={additionalMessage}
 															onChange={(event) => setAdditionalMessage(event.target.value)}
@@ -654,50 +718,56 @@ function DisciplineBlock<T extends IProps>({
 													>
 														<div className='flex flex-col gap-2'>
 															<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>
-																практических
+																{text.practical}
 															</Label>
 															<NumericInput
 																id={`discipline-${disciplineIndex}-practical-count`}
 																max={practicalMax}
 																min={0}
-																placeholder='например 8'
+																placeholder={`${text.example} 8`}
 																value={preferredPracticalCount}
 																onChange={(value) => setPreferredPracticalCount(value)}
 															/>
 															<p className='text-xs text-muted-foreground'>
-																Тем: {practicalCount} × {hoursPerTopic}ч = {practicalHoursTotal}ч
+																{text.topicsCount}: {practicalCount} × {hoursPerTopic}
+																{text.hourUnit} = {practicalHoursTotal}
+																{text.hourUnit}
 															</p>
 														</div>
 														{!isPracticeModule && (
 															<div className='flex flex-col gap-2'>
-																<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>СНЗ</Label>
+																<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>{text.snz}</Label>
 																<NumericInput
 																	id={`discipline-${disciplineIndex}-snz-count`}
 																	max={snzMax}
 																	min={0}
-																	placeholder='например 2'
+																	placeholder={`${text.example} 2`}
 																	value={preferredSnzCount}
 																	onChange={(value) => setPreferredSnzCount(value)}
 																/>
 																<p className='text-xs text-muted-foreground'>
-																	Тем: {snzCount} × {hoursPerTopic}ч = {snzHoursTotal}ч
+																	{text.topicsCount}: {snzCount} × {hoursPerTopic}
+																	{text.hourUnit} = {snzHoursTotal}
+																	{text.hourUnit}
 																</p>
 															</div>
 														)}
 														<div className='flex flex-col gap-2'>
 															<Label htmlFor={`discipline-${disciplineIndex}-combined-count`}>
-																комбинированных
+																{text.combined}
 															</Label>
 															<NumericInput
 																id={`discipline-${disciplineIndex}-combined-count`}
 																max={combinedMax}
 																min={0}
-																placeholder='например 4'
+																placeholder={`${text.example} 4`}
 																value={preferredCombinedCount}
 																onChange={(value) => setPreferredCombinedCount(value)}
 															/>
 															<p className='text-xs text-muted-foreground'>
-																Тем: {combinedCount} × {hoursPerTopic}ч = {combinedHoursTotal}ч
+																{text.topicsCount}: {combinedCount} × {hoursPerTopic}
+																{text.hourUnit} = {combinedHoursTotal}
+																{text.hourUnit}
 															</p>
 														</div>
 													</div>
@@ -709,34 +779,29 @@ function DisciplineBlock<T extends IProps>({
 															onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
 														/>
 														<Label htmlFor={`discipline-${disciplineIndex}-include-current-content`}>
-															Включить текущий написанный контент
+															{text.includeCurrent}
 														</Label>
 													</div>
 													<div className='space-y-1 text-sm'>
 														<p className='text-muted-foreground'>
-															Заявлено часов:{' '}
+															{text.declaredHours}:{' '}
 															<span className='font-medium text-foreground'>
 																{declaredForThisDiscipline}
 															</span>
 														</p>
 														<p className='text-muted-foreground'>
-															По выбранным темам:{' '}
+															{text.selectedHours}:{' '}
 															<span className='font-medium text-foreground'>{preferredHoursTotal}</span>
 														</p>
-														{!isPreferredHoursValid && (
-															<p className='text-destructive'>
-																Ошибка: сумма часов по выбранным темам должна быть равна заявленным
-																часам.
-															</p>
-														)}
+														{!isPreferredHoursValid && <p className='text-destructive'>{text.hoursValidation}</p>}
 													</div>
 												</div>
 											}
-											confirmDescription='Будут сгенерированы темы только для текущей дисциплины. Текущие темы дисциплины будут перезаписаны.'
+											confirmDescription={text.generateConfirmDescription}
 											confirmDisabled={!isPreferredHoursValid}
-											confirmTitle='Сгенерировать темы для дисциплины?'
+											confirmTitle={text.generateConfirmTitle}
 											disabled={isGenerateButtonDisabled}
-											disabledReason='Дождитесь завершения текущей генерации'
+											disabledReason={text.generateDisabledReason}
 											triggerClassName='h-8'
 											triggerSize='sm'
 											onClick={handleGenerateDiscipline}
@@ -752,11 +817,11 @@ function DisciplineBlock<T extends IProps>({
 			<AlertDialog open={isDeleteSelectedOpen} onOpenChange={setIsDeleteSelectedOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Удалить выбранные темы?</AlertDialogTitle>
+						<AlertDialogTitle>{text.deleteSelectedTitle}</AlertDialogTitle>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Отмена</AlertDialogCancel>
-						<AlertDialogAction onClick={handleDeleteSelectedTopics}>Удалить</AlertDialogAction>
+						<AlertDialogCancel>{text.cancel}</AlertDialogCancel>
+						<AlertDialogAction onClick={handleDeleteSelectedTopics}>{text.delete}</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
@@ -770,7 +835,9 @@ interface ITopicRowProps {
 	disciplineIndex: number
 	topicIndex: number
 	rupType: RupTypeEnum | ''
+	activeLocale: Locale
 	isSelected: boolean
+	text: { topicPlaceholder: string }
 	toggleSelectTopic: (key: string, checked: boolean) => void
 }
 
@@ -779,7 +846,9 @@ const TopicRowComponent = ({
 	disciplineIndex,
 	topicIndex,
 	rupType,
+	activeLocale,
 	isSelected,
+	text,
 	toggleSelectTopic,
 }: ITopicRowProps) => {
 	const form = useFormContext()
@@ -871,13 +940,16 @@ const TopicRowComponent = ({
 					render={({ field }) =>
 						isEditingName ? (
 							<Input
-								{...field}
 								ref={(node) => {
 									nameInputRef.current = node
 									field.ref(node)
 								}}
 								className='h-8'
-								placeholder='Тема...'
+								placeholder={text.topicPlaceholder}
+								value={getLocalizedValue(field.value as LocaleText, activeLocale)}
+								onChange={(event) =>
+									field.onChange(updateLocaleText(field.value as LocaleText, activeLocale, event.target.value))
+								}
 								onBlur={(event) => {
 									field.onBlur()
 									setIsEditingName(false)
@@ -895,7 +967,11 @@ const TopicRowComponent = ({
 								type='button'
 								onClick={() => setIsEditingName(true)}
 							>
-								{field.value ? field.value : <span className='text-muted-foreground'>Тема...</span>}
+								{getLocalizedValue(field.value as LocaleText, activeLocale) ? (
+									getLocalizedValue(field.value as LocaleText, activeLocale)
+								) : (
+									<span className='text-muted-foreground'>{text.topicPlaceholder}</span>
+								)}
 							</button>
 						)
 					}
@@ -940,6 +1016,7 @@ const TopicRow = memo(
 		prev.disciplineIndex === next.disciplineIndex &&
 		prev.topicIndex === next.topicIndex &&
 		prev.rupType === next.rupType &&
+		prev.activeLocale === next.activeLocale &&
 		prev.isSelected === next.isSelected &&
 		prev.toggleSelectTopic === next.toggleSelectTopic,
 )

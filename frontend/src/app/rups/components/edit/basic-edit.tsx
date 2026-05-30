@@ -1,6 +1,7 @@
 'use client'
 
 import { getUILocaleSection, normalizeRupType, normalizeStudyForm } from '@helpers'
+import { toLocaleKey } from '../../rup-localization'
 import {
 	Card,
 	CardContent,
@@ -23,7 +24,7 @@ import {
 	TooltipTrigger,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { RupTypeEnum, StudyFormEnum } from '@types'
+import { type Locale, type LocaleText, RupTypeEnum, StudyFormEnum } from '@types'
 import { Info } from 'lucide-react'
 import type { FieldValues, Path } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'
@@ -32,17 +33,45 @@ import localeDictionary from './locale.json'
 // Define a base shape for the form data that this component needs.
 // Any form passed to this component must have at least these fields.
 type IProps = FieldValues & {
-	name: string
+	name: LocaleText
 	type: RupTypeEnum
 	studyForm: StudyFormEnum
-	prerequisites?: string
-	postrequisites?: string
+	prerequisites: LocaleText
+	postrequisites: LocaleText
 }
 
-export function BasicEdit<T extends IProps>() {
+export function BasicEdit<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const { control } = useFormContext<T>()
+	const rupTypeTips = t.basic.rupTypeTips as Record<RupTypeEnum, string>
+	const localeKey = toLocaleKey(activeLocale)
+
+	const getRawLocaleTextValue = (value: unknown): LocaleText => {
+		if (value && typeof value === 'object' && 'ru' in value && 'kz' in value) {
+			const localized = value as Partial<LocaleText>
+
+			return {
+				ru: typeof localized.ru === 'string' ? localized.ru : '',
+				kz: typeof localized.kz === 'string' ? localized.kz : '',
+			}
+		}
+
+		if (typeof value === 'string') {
+			return { ru: value, kz: value }
+		}
+
+		return { ru: '', kz: '' }
+	}
+
+	const updateRawLocaleText = (value: unknown, nextValue: string): LocaleText => {
+		const localized = getRawLocaleTextValue(value)
+
+		return {
+			...localized,
+			[localeKey]: nextValue,
+		}
+	}
 
 	return (
 		<Card>
@@ -57,9 +86,15 @@ export function BasicEdit<T extends IProps>() {
 					name={'name' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel className='flex items-center'>Наименование модуля</FormLabel>
+							<FormLabel className='flex items-center'>{t.basic.moduleNameLabel}</FormLabel>
 							<FormControl>
-								<Input placeholder='Введите название модуля' {...field} />
+								<Input
+									placeholder={t.basic.moduleNamePlaceholder}
+									value={getRawLocaleTextValue(field.value)[localeKey]}
+									onChange={(event) =>
+										field.onChange(updateRawLocaleText(field.value, event.target.value))
+									}
+								/>
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -73,7 +108,7 @@ export function BasicEdit<T extends IProps>() {
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel className='flex items-center'>
-									Тип модуля
+									{t.basic.moduleTypeLabel}
 									<Tooltip>
 										<TooltipTrigger className='ml-1' type='button'>
 											<Info size='14' />
@@ -92,7 +127,7 @@ export function BasicEdit<T extends IProps>() {
 								<FormControl>
 									<Select key={field.value} value={field.value} onValueChange={field.onChange}>
 										<SelectTrigger className='w-full'>
-											<SelectValue placeholder='Выберите тип модуля' />
+											<SelectValue placeholder={t.basic.moduleTypePlaceholder} />
 										</SelectTrigger>
 										<SelectContent position='popper'>
 											{Object.values(RupTypeEnum).map((val) => (
@@ -113,11 +148,11 @@ export function BasicEdit<T extends IProps>() {
 						name={'studyForm' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className='flex items-center'>Форма обучения</FormLabel>
+								<FormLabel className='flex items-center'>{t.basic.studyFormLabel}</FormLabel>
 								<FormControl>
 									<Select value={field.value ?? ''} onValueChange={field.onChange}>
 										<SelectTrigger className='w-full'>
-											<SelectValue placeholder='Очная или заочная' />
+											<SelectValue placeholder={t.basic.studyFormPlaceholder} />
 										</SelectTrigger>
 										<SelectContent position='popper'>
 											{Object.keys(StudyFormEnum).map((studyForm) => (
@@ -140,9 +175,15 @@ export function BasicEdit<T extends IProps>() {
 					name={'prerequisites' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel className='flex items-center'>Пререквизиты</FormLabel>
+							<FormLabel className='flex items-center'>{t.basic.prerequisitesLabel}</FormLabel>
 							<FormControl>
-								<Input placeholder='Пререквизиты' {...field} />
+								<Input
+									placeholder={t.basic.prerequisitesPlaceholder}
+									value={getRawLocaleTextValue(field.value)[localeKey]}
+									onChange={(event) =>
+										field.onChange(updateRawLocaleText(field.value, event.target.value))
+									}
+								/>
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -154,9 +195,15 @@ export function BasicEdit<T extends IProps>() {
 					name={'postrequisites' as Path<T>}
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel className='flex items-center'>Постреквизиты</FormLabel>
+							<FormLabel className='flex items-center'>{t.basic.postrequisitesLabel}</FormLabel>
 							<FormControl>
-								<Input placeholder='Постреквизиты' {...field} />
+								<Input
+									placeholder={t.basic.postrequisitesPlaceholder}
+									value={getRawLocaleTextValue(field.value)[localeKey]}
+									onChange={(event) =>
+										field.onChange(updateRawLocaleText(field.value, event.target.value))
+									}
+								/>
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -165,9 +212,4 @@ export function BasicEdit<T extends IProps>() {
 			</CardContent>
 		</Card>
 	)
-}
-
-const rupTypeTips: Record<RupTypeEnum, string> = {
-	PRACTICE: 'Для каждой темы будет считаться по 6 часа',
-	THEORY: 'Для каждой темы будет считаться по 2 часа',
 }
