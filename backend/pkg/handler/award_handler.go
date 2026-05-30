@@ -252,9 +252,12 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		bonusCriteriaPg = pgtype.UUID{Bytes: parsed, Valid: true}
 	}
 
+	awardID := uuid.New()
+
 	mergedFieldValues, err := h.service.MergeUploadedFilesIntoFieldValues(
 		c.Request.Context(),
 		currentUser.KeycloakID,
+		awardID,
 		params.CategoryID,
 		params.FieldValues,
 		form.File,
@@ -265,6 +268,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	}
 
 	award, err := h.service.CreateAward(c.Request.Context(), &storage.CreateAwardParams{
+		ID:            awardID,
 		Status:        storage.AwardsStatusDRAFT,
 		Teacher:       parseUUIDPgtype(currentUser.KeycloakID.String()),
 		Type:          parseUUIDPgtype(typeID.String()),
@@ -369,6 +373,7 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		mergedFieldValues, mergeErr := h.service.MergeUploadedFilesIntoFieldValues(
 			c.Request.Context(),
 			currentUser.KeycloakID,
+			id,
 			uploadCategoryID,
 			fieldValuesForMerge,
 			form.File,

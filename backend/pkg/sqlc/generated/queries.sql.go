@@ -304,6 +304,7 @@ func (q *Queries) CountUsersRatingFiltered(ctx context.Context, dollar_1 interfa
 const createAward = `-- name: CreateAward :one
 INSERT INTO
     awards (
+        id,
         status,
         teacher,
         type,
@@ -323,11 +324,13 @@ VALUES (
         $6,
         $7,
         $8,
-        $9
+        $9,
+        $10
     ) RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, created_at, updated_at
 `
 
 type CreateAwardParams struct {
+	ID            uuid.UUID    `json:"id"`
 	Status        AwardsStatus `json:"status"`
 	Teacher       pgtype.UUID  `json:"teacher"`
 	Type          pgtype.UUID  `json:"type"`
@@ -341,6 +344,7 @@ type CreateAwardParams struct {
 
 func (q *Queries) CreateAward(ctx context.Context, arg CreateAwardParams) (Award, error) {
 	row := q.db.QueryRow(ctx, createAward,
+		arg.ID,
 		arg.Status,
 		arg.Teacher,
 		arg.Type,

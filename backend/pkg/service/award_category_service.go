@@ -578,6 +578,7 @@ func validateURLOrURLArray(value any, key string) error {
 func (s *AwardService) MergeUploadedFilesIntoFieldValues(
 	ctx context.Context,
 	userID uuid.UUID,
+	awardID uuid.UUID,
 	categoryID pgtype.UUID,
 	rawFieldValues any,
 	formFiles map[string][]*multipart.FileHeader,
@@ -644,10 +645,9 @@ func (s *AwardService) MergeUploadedFilesIntoFieldValues(
 			}
 
 			objectName := fmt.Sprintf(
-				"awards/%s/%s/%s_%s",
+				"awards/%s/%s/%s",
 				userID.String(),
-				targetKey,
-				uuid.NewString(),
+				awardID.String(),
 				fileHeader.Filename,
 			)
 

@@ -559,6 +559,7 @@ DELETE FROM rups WHERE id = $1;
 -- name: CreateAward :one
 INSERT INTO
     awards (
+        id,
         status,
         teacher,
         type,
@@ -578,7 +579,8 @@ VALUES (
         $6,
         $7,
         $8,
-        $9
+        $9,
+        $10
     ) RETURNING *;
 
 -- name: GetAllAwards :many
