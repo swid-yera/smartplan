@@ -380,22 +380,70 @@ func (s *aiService) TranslateText(ctx context.Context, req TranslateTextRequest)
 }
 
 func (s *aiService) generateContentWithFallback(ctx context.Context, prompt string) (string, error) {
-	responseText, err := s.generateContent(ctx, s.cfg.PrimaryModel, prompt)
-	if err == nil {
-		return responseText, nil
+	apiKeys := s.getGeminiAPIKeys()
+	if len(apiKeys) == 0 {
+		return "", errors.New("GEMINI_API_KEY is not configured")
 	}
 
-	var reqErr *geminiRequestError
-	if errors.As(err, &reqErr) && reqErr.IsRateLimit() && s.cfg.FallbackModel != "" && s.cfg.FallbackModel != s.cfg.PrimaryModel {
-		s.log.WithField("primary_model", s.cfg.PrimaryModel).WithField("fallback_model", s.cfg.FallbackModel).Warn("Gemini limit reached, switching to fallback model")
-		return s.generateContent(ctx, s.cfg.FallbackModel, prompt)
+	models := s.getGeminiModels()
+	if len(models) == 0 {
+		return "", errors.New("gemini model is not configured")
 	}
 
-	return "", err
+	var attempts []string
+	for modelIndex, model := range models {
+		for keyIndex, apiKey := range apiKeys {
+			responseText, err := s.generateContent(ctx, model, prompt, apiKey)
+			if err == nil {
+				if modelIndex > 0 {
+					s.log.WithField("model", model).WithField("key_index", keyIndex+1).Warn("Gemini recovered on fallback model")
+				}
+				return responseText, nil
+			}
+
+			var reqErr *geminiRequestError
+			if errors.As(err, &reqErr) {
+				attempts = append(attempts, fmt.Sprintf("model=%s,key=%d,status=%d", model, keyIndex+1, reqErr.StatusCode))
+				s.log.WithField("model", model).WithField("key_index", keyIndex+1).WithField("status_code", reqErr.StatusCode).Warn("Gemini request failed, rotating API key")
+				continue
+			}
+
+			return "", err
+		}
+	}
+
+	return "", fmt.Errorf("gemini request failed for all configured API keys (%d) and models (%d): %s", len(apiKeys), len(models), strings.Join(attempts, "; "))
 }
 
-func (s *aiService) generateContent(ctx context.Context, model string, prompt string) (string, error) {
+func (s *aiService) getGeminiAPIKeys() []string {
+	if len(s.cfg.APIKeys) > 0 {
+		return s.cfg.APIKeys
+	}
+
 	if strings.TrimSpace(s.cfg.APIKey) == "" {
+		return nil
+	}
+
+	return []string{s.cfg.APIKey}
+}
+
+func (s *aiService) getGeminiModels() []string {
+	primary := strings.TrimSpace(s.cfg.PrimaryModel)
+	fallback := strings.TrimSpace(s.cfg.FallbackModel)
+
+	models := make([]string, 0, 2)
+	if primary != "" {
+		models = append(models, primary)
+	}
+	if fallback != "" && fallback != primary {
+		models = append(models, fallback)
+	}
+
+	return models
+}
+
+func (s *aiService) generateContent(ctx context.Context, model string, prompt string, apiKey string) (string, error) {
+	if strings.TrimSpace(apiKey) == "" {
 		return "", errors.New("GEMINI_API_KEY is not configured")
 	}
 	if strings.TrimSpace(model) == "" {
@@ -414,7 +462,7 @@ func (s *aiService) generateContent(ctx context.Context, model string, prompt st
 		return "", fmt.Errorf("marshal gemini request: %w", err)
 	}
 
-	endpoint, err := buildGeminiEndpoint(s.cfg.BaseURL, model, s.cfg.APIKey)
+	endpoint, err := buildGeminiEndpoint(s.cfg.BaseURL, model, apiKey)
 	if err != nil {
 		return "", err
 	}

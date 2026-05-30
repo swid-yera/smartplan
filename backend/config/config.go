@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -143,9 +144,73 @@ type CryptoConfig struct {
 
 type GeminiConfig struct {
 	APIKey        string
+	APIKeys       []string
 	BaseURL       string
 	PrimaryModel  string
 	FallbackModel string
+}
+
+func loadGeminiAPIKeys() []string {
+	type keyedValue struct {
+		index int
+		value string
+	}
+
+	result := make([]string, 0, 4)
+	seen := make(map[string]struct{}, 4)
+	appendUnique := func(value string) {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			return
+		}
+		if _, exists := seen[trimmed]; exists {
+			return
+		}
+		seen[trimmed] = struct{}{}
+		result = append(result, trimmed)
+	}
+
+	// Backward compatibility: keep support for a single key env var.
+	appendUnique(os.Getenv("GEMINI_API_KEY"))
+
+	indexed := make([]keyedValue, 0, 8)
+	for _, item := range os.Environ() {
+		parts := strings.SplitN(item, "=", 2)
+		if len(parts) == 0 {
+			continue
+		}
+
+		envName := parts[0]
+		if !strings.HasPrefix(envName, "GEMINI_API_KEY_") {
+			continue
+		}
+
+		suffix := strings.TrimPrefix(envName, "GEMINI_API_KEY_")
+		index, err := strconv.Atoi(suffix)
+		if err != nil || index <= 0 {
+			continue
+		}
+
+		value := strings.TrimSpace(os.Getenv(envName))
+		if value == "" {
+			continue
+		}
+
+		indexed = append(indexed, keyedValue{
+			index: index,
+			value: value,
+		})
+	}
+
+	sort.Slice(indexed, func(i, j int) bool {
+		return indexed[i].index < indexed[j].index
+	})
+
+	for _, item := range indexed {
+		appendUnique(item.value)
+	}
+
+	return result
 }
 
 func LoadServerConfig() *ServerConfig {
@@ -183,8 +248,15 @@ func LoadCryptoConfig() *CryptoConfig {
 func LoadGeminiConfig() *GeminiConfig {
 	ensureEnvLoaded()
 
+	apiKeys := loadGeminiAPIKeys()
+	defaultAPIKey := ""
+	if len(apiKeys) > 0 {
+		defaultAPIKey = apiKeys[0]
+	}
+
 	return &GeminiConfig{
-		APIKey:        getEnv("GEMINI_API_KEY", ""),
+		APIKey:        defaultAPIKey,
+		APIKeys:       apiKeys,
 		BaseURL:       getEnv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
 		PrimaryModel:  getEnv("GEMINI_PRIMARY_MODEL", "gemini-2.5-flash-lite"),
 		FallbackModel: getEnv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash"),
