@@ -67,11 +67,6 @@ export interface IDownloadResponse {
 	url: string
 }
 
-export interface IApproveChallengeResponse {
-	challenge: string
-	expiresAt: string
-}
-
 export interface IRupLanguageGenerationStatus {
 	rupId: string
 	sourceLanguage: BackendLocale | ''

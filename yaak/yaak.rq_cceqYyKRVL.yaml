@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_cceqYyKRVL
 createdAt: 2026-01-28T22:55:55.219583700
-updatedAt: 2026-05-28T15:59:09.286796500
+updatedAt: 2026-05-30T13:24:28.059903500
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_YjpbbUVpPX
 authentication: {}
@@ -27,9 +27,9 @@ url: ${[ url ]}/rups/:id/status
 urlParameters:
 - enabled: true
   name: :id
-  value: 34ab286b-0c17-4054-b3e0-a4aa673db941
+  value: 8d00370e-6be1-4911-ad65-01ee7a8dc497
   id: 3Qef6KjUbi
 - enabled: true
   name: ''
   value: ''
-  id: tq2Mmkd8i5
+  id: tI22kb62QZ

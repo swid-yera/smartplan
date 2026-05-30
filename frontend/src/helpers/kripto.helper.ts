@@ -2,15 +2,6 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const HEX_32_BYTES_REGEX = /^[0-9a-f]{64}$/i
 
 type UnknownRecord = Record<string, unknown>
-type BinaryData = Uint8Array<ArrayBuffer>
-
-export interface KriptoApprovalProof {
-	keyId: string
-	userId: string
-	publicKey: string
-	challenge: string
-	signature: string
-}
 
 export interface KriptoApprovalMetadata {
 	keyId: string
@@ -27,13 +18,6 @@ interface KriptoV3Payload {
 	nonce: string
 	iterations: number
 }
-
-const ED25519_PKCS8_PREFIX: BinaryData = new Uint8Array([
-	0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20,
-])
-const ED25519_SPKI_PREFIX: BinaryData = new Uint8Array([
-	0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00,
-])
 
 export const parseKriptoFileText = (rawText: string): UnknownRecord => {
 	const text = rawText.replace(/^\uFEFF/, '').trim()
@@ -64,38 +48,6 @@ export const extractKriptoApprovalMetadata = (payload: UnknownRecord): KriptoApp
 		keyId: kriptoPayload.keyId,
 		userId: kriptoPayload.userId,
 		publicKey: kriptoPayload.publicKey.toLowerCase(),
-	}
-}
-
-export const createKriptoApprovalProof = async (
-	rawText: string,
-	password: string,
-	challenge: string,
-): Promise<KriptoApprovalProof> => {
-	if (!password) throw new Error('Введите пароль от .kripto')
-	if (!challenge) throw new Error('Backend challenge пустой')
-
-	const payload = toKriptoV3Payload(parseKriptoFileText(rawText))
-	const privateKeyBytes = await decryptPrivateKey(payload, password)
-	const privateKey = await importEd25519PrivateKey(privateKeyBytes)
-	const publicKeyBytes = decodeHexPublicKey(payload.publicKey)
-	const publicKey = await importEd25519PublicKey(publicKeyBytes)
-
-	const probe = new TextEncoder().encode('eduplan-kripto-v3-public-private-check')
-	const probeSignature = await crypto.subtle.sign('Ed25519', privateKey, probe)
-	const matched = await crypto.subtle.verify('Ed25519', publicKey, probeSignature, probe)
-
-	if (!matched) throw new Error('Приватный ключ не соответствует публичному ключу')
-
-	const challengeHash = await getChallengePayloadHash(challenge)
-	const signature = new Uint8Array(await crypto.subtle.sign('Ed25519', privateKey, challengeHash))
-
-	return {
-		keyId: payload.keyId,
-		userId: payload.userId,
-		publicKey: encodeHex(publicKeyBytes),
-		challenge,
-		signature: encodeHex(signature),
 	}
 }
 
@@ -148,69 +100,6 @@ const toKriptoV3Payload = (payload: UnknownRecord): KriptoV3Payload => {
 	return { keyId, userId, publicKey, encryptedPrivateKey, salt, nonce, iterations: iterationsRaw }
 }
 
-const decryptPrivateKey = async (payload: KriptoV3Payload, password: string): Promise<BinaryData> => {
-	const passwordKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, [
-		'deriveKey',
-	])
-	const aesKey = await crypto.subtle.deriveKey(
-		{
-			name: 'PBKDF2',
-			hash: 'SHA-256',
-			salt: decodeBase64(payload.salt),
-			iterations: payload.iterations,
-		},
-		passwordKey,
-		{ name: 'AES-GCM', length: 256 },
-		false,
-		['decrypt'],
-	)
-
-	const cipherText = decodeBase64(payload.encryptedPrivateKey)
-
-	try {
-		return new Uint8Array(
-			await crypto.subtle.decrypt(
-				{ name: 'AES-GCM', iv: decodeBase64(payload.nonce), tagLength: 128 },
-				aesKey,
-				cipherText,
-			),
-		)
-	} catch {
-		throw new Error('Не удалось расшифровать приватный ключ: неверный пароль или поврежденный файл')
-	}
-}
-
-const importEd25519PrivateKey = async (keyBytes: BinaryData): Promise<CryptoKey> => {
-	const pkcs8 = keyBytes.length === 32 ? concatBytes(ED25519_PKCS8_PREFIX, keyBytes) : keyBytes
-
-	try {
-		return await crypto.subtle.importKey('pkcs8', pkcs8, 'Ed25519', false, ['sign'])
-	} catch {
-		throw new Error('Расшифрованный приватный ключ не является ED25519 ключом')
-	}
-}
-
-const importEd25519PublicKey = async (keyBytes: BinaryData): Promise<CryptoKey> => {
-	try {
-		return await crypto.subtle.importKey('spki', concatBytes(ED25519_SPKI_PREFIX, keyBytes), 'Ed25519', false, [
-			'verify',
-		])
-	} catch {
-		throw new Error('publicKey не является ED25519 ключом')
-	}
-}
-
-const decodeHexPublicKey = (value: string): BinaryData => {
-	if (!HEX_32_BYTES_REGEX.test(value)) throw new Error('publicKey должен быть hex 64 символа')
-	const out = new Uint8Array(32)
-
-	for (let i = 0; i < out.length; i += 1) {
-		out[i] = Number.parseInt(value.slice(i * 2, i * 2 + 2), 16)
-	}
-
-	return out
-}
-
 const asRecord = (value: unknown): UnknownRecord => {
 	return value && typeof value === 'object' && !Array.isArray(value) ? (value as UnknownRecord) : {}
 }
@@ -236,7 +125,7 @@ const pickNumber = (payload: UnknownRecord, keys: string[]): number => {
 	return 0
 }
 
-const decodeBase64 = (value: string): BinaryData => {
+const decodeBase64 = (value: string): Uint8Array<ArrayBuffer> => {
 	const normalized = value.trim().replace(/-/g, '+').replace(/_/g, '/')
 	const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
 	const binary = atob(padded)
@@ -247,14 +136,6 @@ const decodeBase64 = (value: string): BinaryData => {
 	return out
 }
 
-const getChallengePayloadHash = async (challenge: string): Promise<BinaryData> => {
-	const [payloadPart, macPart] = challenge.split('.')
-
-	if (!payloadPart || !macPart) throw new Error('Backend challenge имеет неверный формат')
-
-	return new Uint8Array(await crypto.subtle.digest('SHA-256', decodeBase64(payloadPart)))
-}
-
 const isValidBase64 = (value: string): boolean => {
 	try {
 		decodeBase64(value)
@@ -263,21 +144,4 @@ const isValidBase64 = (value: string): boolean => {
 	} catch {
 		return false
 	}
-}
-
-const encodeHex = (bytes: BinaryData): string => {
-	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
-const concatBytes = (...chunks: BinaryData[]): BinaryData => {
-	const length = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
-	const out = new Uint8Array(length)
-	let offset = 0
-
-	for (const chunk of chunks) {
-		out.set(chunk, offset)
-		offset += chunk.length
-	}
-
-	return out
 }
