@@ -85,7 +85,7 @@ export function GroupEdit<T extends IProps>() {
 				const foundCourse = formatCourseFromYearAndGroupName(foundGroup.name, watchedYear)
 
 				if (typeof foundCourse !== 'number') {
-					toast.error('Курс не найден, попробуйте с другой группой или обратитесь к администратору')
+					toast.error(t.group.courseNotFound)
 
 					return
 				}
@@ -98,18 +98,15 @@ export function GroupEdit<T extends IProps>() {
 				}
 			}
 		}
-	}, [groupsData, watchedGroupId, watchedYear, form])
+	}, [groupsData, watchedGroupId, watchedYear, form, t.group.courseNotFound])
 
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>{t.groupTitle}</CardTitle>
 				<CardDescription>
-					Выберите группу и проверьте специальность и квалификацию.
-					<span className='text-primary '>
-						Информация о квалификации и специальности автоматически получиться от типа группы. Данные о курсе
-						получится от года обучения.
-					</span>
+					{t.group.description}
+					<span className='text-primary '>{t.group.descriptionAccent}</span>
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4 text-sm'>
@@ -119,7 +116,7 @@ export function GroupEdit<T extends IProps>() {
 						name={'groupId' as Path<T>}
 						render={({ field }) => (
 							<FormItem className='flex flex-col'>
-								<FormLabel>Выберите группу</FormLabel>
+								<FormLabel>{t.group.groupLabel}</FormLabel>
 								<Popover open={open} onOpenChange={setOpen}>
 									<PopoverTrigger asChild>
 										<FormControl>
@@ -130,19 +127,19 @@ export function GroupEdit<T extends IProps>() {
 											>
 												{field.value && groupsData.length > 0
 													? groupsData.find((group) => group.keycloakId === field.value)?.name ||
-														'Группа не найдена'
+														t.group.groupNotFound
 													: isLoading
-														? 'Загрузка...'
-														: 'Выбрать группу...'}
+														? t.group.loading
+														: t.group.selectGroup}
 												<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
 											</Button>
 										</FormControl>
 									</PopoverTrigger>
 									<PopoverContent align='center' className='w-[--radix-popover-trigger-width] p-0'>
 										<Command>
-											<CommandInput placeholder='Поиск группы...' />
+											<CommandInput placeholder={t.group.searchGroup} />
 											<CommandList>
-												<CommandEmpty>Группа не найдена.</CommandEmpty>
+												<CommandEmpty>{t.group.groupNotFoundCommand}</CommandEmpty>
 												<CommandGroup>
 													{groupsData.map((group) => (
 														<CommandItem
@@ -180,7 +177,7 @@ export function GroupEdit<T extends IProps>() {
 						name={'studyYear' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Год обучения</FormLabel>
+								<FormLabel>{t.group.studyYearLabel}</FormLabel>
 
 								<Select
 									key={field.value}
@@ -189,7 +186,7 @@ export function GroupEdit<T extends IProps>() {
 									onValueChange={field.onChange}
 								>
 									<SelectTrigger className='w-full'>
-										<SelectValue placeholder='Выберите год обучения' />
+										<SelectValue placeholder={t.group.studyYearPlaceholder} />
 									</SelectTrigger>
 
 									<SelectContent>
@@ -209,15 +206,15 @@ export function GroupEdit<T extends IProps>() {
 				</div>
 
 				<div>
-					<p>Специальность</p>
+					<p>{t.group.specialty}</p>
 					<p>{getLocaleText(selectedGroup?.specialty, locale)}</p>
 				</div>
 				<div>
-					<p>Квалификация</p>
+					<p>{t.group.qualification}</p>
 					<p>{getLocaleText(selectedGroup?.qualification, locale)}</p>
 				</div>
 				<div>
-					<p>Курс</p>
+					<p>{t.group.course}</p>
 					<p className={cn({ 'text-destructive': typeof formattedCourse != 'number' })}>{formattedCourse}</p>
 				</div>
 			</CardContent>

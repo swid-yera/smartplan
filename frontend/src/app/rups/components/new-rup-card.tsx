@@ -16,14 +16,11 @@ export const NewCard: FC<ComponentProps<'div'>> = ({ ...props }) => {
 		<Card {...props}>
 			<CardHeader>
 				<CardTitle>{t.newRupTitle}</CardTitle>
-				<CardDescription>
-					Создайте новый модуль РУП. После создание она будет в статусе "Черновик" которую можно редактировать.
-					Если статус перейден в "На проверке" его нельзя редактировать.
-				</CardDescription>
+				<CardDescription>{t.newRupDescription}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<Button asChild className='w-full' size='sm' variant='outline'>
-					<Link href='/rups/create'>Создать</Link>
+					<Link href='/rups/create'>{t.newRupButton}</Link>
 				</Button>
 			</CardContent>
 		</Card>

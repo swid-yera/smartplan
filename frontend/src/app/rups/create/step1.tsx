@@ -1,30 +1,35 @@
 import { useState } from 'react'
 
+import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { type IGenerateRupMeta, RupTypeEnum, StudyFormEnum } from '@types'
+import { type IGenerateRupMeta, type Locale, type LocaleText, RupTypeEnum, StudyFormEnum } from '@types'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { BasicEdit, GenerateCard, GroupEdit, NoteEdit } from '../components'
+import localeDictionary from './locale.json'
 
 type IProps = FieldValues & {
-	name: string
+	name: LocaleText
 	type: RupTypeEnum
 	studyForm: StudyFormEnum
-	prerequisites: string
-	postrequisites: string
+	prerequisites: LocaleText
+	postrequisites: LocaleText
 	studyYear: string
 	course: number
 	groupId: string
 
-	basis: string
-	goals: string
-	competencies: string
+	basis: LocaleText
+	goals: LocaleText
+	competencies: LocaleText
 }
 
-export function Step1<T extends IProps>() {
+export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).step1
 	const { getValues, setValue } = useFormContext<T>()
 	// states
 	const [isLoading, setIsLoading] = useState(false)
@@ -35,13 +40,19 @@ export function Step1<T extends IProps>() {
 		...services.group.getAllOptions(),
 		enabled: true,
 	})
+	const mapGeneratedText = (value: string): LocaleText =>
+		activeLocale === 'ru' ? { ru: value.trim(), kz: '' } : { ru: '', kz: value.trim() }
 
 	const handleGenerate = async () => {
 		if (isLoading || groupLoading) return
+		if (activeLocale !== 'ru') {
+			toast.error(t.aiRuOnly)
+			return
+		}
 
 		try {
 			setIsLoading(true)
-			toast.loading('Генерируется метаданные', { id: 'rup-meta-generate' })
+			toast.loading(t.metaLoading, { id: 'rup-meta-generate' })
 
 			const values = getValues()
 			const group = groupsData.find((g) => g.keycloakId === values.groupId)
@@ -49,11 +60,15 @@ export function Step1<T extends IProps>() {
 			if (!group) throw new Error('Group not found')
 
 			const mappedData: IGenerateRupMeta = {
-				name: values.name,
+				name: getLocaleText(values.name, 'ru'),
 				course: values.course,
-				group: group,
-				prerequisites: values.prerequisites,
-				postrequisites: values.postrequisites,
+				group: {
+					name: group.name,
+					specialty: getLocaleText(group.specialty, 'ru'),
+					qualification: getLocaleText(group.qualification, 'ru'),
+				},
+				prerequisites: getLocaleText(values.prerequisites, 'ru'),
+				postrequisites: getLocaleText(values.postrequisites, 'ru'),
 				type: values.type,
 				studyForm: values.studyForm,
 				studyYear: values.studyYear,
@@ -61,11 +76,11 @@ export function Step1<T extends IProps>() {
 				includeCurrentContent,
 				currentValues: includeCurrentContent
 					? {
-							description: values.basis,
-							goals: values.goals,
-							competence: values.competencies,
-							basis: values.basis,
-							competencies: values.competencies,
+							description: getLocaleText(values.basis, 'ru'),
+							goals: getLocaleText(values.goals, 'ru'),
+							competence: getLocaleText(values.competencies, 'ru'),
+							basis: getLocaleText(values.basis, 'ru'),
+							competencies: getLocaleText(values.competencies, 'ru'),
 						}
 					: undefined,
 			}
@@ -73,13 +88,25 @@ export function Step1<T extends IProps>() {
 			const meta = await services.ai.generateRupMeta(mappedData)
 
 			// write
-			setValue('basis' as Path<T>, meta.basis as PathValue<T, Path<T>>, { shouldDirty: true })
-			setValue('goals' as Path<T>, meta.goals as PathValue<T, Path<T>>, { shouldDirty: true })
-			setValue('competencies' as Path<T>, meta.competencies as PathValue<T, Path<T>>, { shouldDirty: true })
+			setValue(
+				'basis' as Path<T>,
+				mapGeneratedText(meta.basis) as PathValue<T, Path<T>>,
+				{ shouldDirty: true },
+			)
+			setValue(
+				'goals' as Path<T>,
+				mapGeneratedText(meta.goals) as PathValue<T, Path<T>>,
+				{ shouldDirty: true },
+			)
+			setValue(
+				'competencies' as Path<T>,
+				mapGeneratedText(meta.competencies) as PathValue<T, Path<T>>,
+				{ shouldDirty: true },
+			)
 
-			toast.success('Успешно сгенерировано метаданные', { id: 'rup-meta-generate' })
+			toast.success(t.metaSuccess, { id: 'rup-meta-generate' })
 		} catch (err) {
-			toast.error(`Ошибка при генерации метаданных ${err}`, { id: 'rup-meta-generate' })
+			toast.error(`${t.metaError}: ${err}`, { id: 'rup-meta-generate' })
 		} finally {
 			setIsLoading(false)
 		}
@@ -88,19 +115,19 @@ export function Step1<T extends IProps>() {
 	return (
 		<div className='w-full space-y-5'>
 			<div className='grid gap-4 xl:grid-cols-2'>
-				<BasicEdit />
+				<BasicEdit activeLocale={activeLocale} />
 				<GroupEdit />
 			</div>
 
 			<GenerateCard
-				buttonText={isLoading ? 'Генерация…' : 'Сгенерировать'}
+				buttonText={isLoading ? t.generatingButton : t.generateButton}
 				confirmContent={
 					<div className='grid gap-4'>
 						<div className='flex flex-col gap-2'>
-							<Label htmlFor='rup-meta-additional-message'>Дополнительное сообщение</Label>
+							<Label htmlFor='rup-meta-additional-message'>{t.additionalMessageLabel}</Label>
 							<Textarea
 								id='rup-meta-additional-message'
-								placeholder='Уточните, что нужно учесть при генерации'
+								placeholder={t.additionalMessagePlaceholder}
 								rows={4}
 								value={additionalMessage}
 								onChange={(event) => setAdditionalMessage(event.target.value)}
@@ -113,40 +140,43 @@ export function Step1<T extends IProps>() {
 								id='rup-meta-include-current-content'
 								onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
 							/>
-							<Label htmlFor='rup-meta-include-current-content'>Включить текущий написанный контент</Label>
+							<Label htmlFor='rup-meta-include-current-content'>{t.includeCurrentContent}</Label>
 						</div>
 					</div>
 				}
-				description='Тексты будут сформированы на основе данных модуля и учебной группы. После генерации вы сможете отредактировать их вручную.'
+				description={t.generateDescription}
 				disabled={isLoading || groupLoading}
-				disabledReason='Заполните данные модуля и учебной группы'
-				title='Автоматическая генерация описаний'
+				disabledReason={t.generateDisabledReason}
+				title={t.generateTitle}
 				onClick={() => handleGenerate()}
 			/>
 
 			<NoteEdit
-				description='Нормативно-правовая и профессиональная база разработки рабочей учебной программы.'
-				label='Описание'
+				activeLocale={activeLocale}
+				description={t.basisDescription}
+				label={t.basisLabel}
 				name='basis'
-				placeholder='Рабочая учебная программа по профессиональному модулю «ПМ6 Обеспечение информационной безопасности локальных вычислительных сетей и Internet» разработана в соответствии с Приказом Министра просвещения Республики Казахстан от 3 августа 2022 года №348 с учетом изменений, внесенных 15.04.2025 года. Программа основана на профессиональном стандарте «Сетевые, системные администраторы и администраторы серверов» (дополнение №5 к приказу заместителя председателя правления Национальной палаты предпринимателей Республики Казахстан «Атамекен» №222 от 05.12.2022), а также на стандартах WorldSkills по направлению «Сетевое и системное администрирование». Рабочая учебная программа предназначена для реализации в рамках специальности 06120100 «Вычислительная техника и информационные сети» (по видам) и квалификации 4S06120102 «Техник сетевого и системного администрирования».'
+				placeholder={t.basisPlaceholder}
 				rows={8}
-				title='Основание разработки рабочей учебной программы'
+				title={t.basisTitle}
 			/>
 
 			<div className='grid gap-4 xl:grid-cols-2'>
 				<NoteEdit
-					description='Цель освоения профессионального модуля.'
-					label='Цели и задачи'
+					activeLocale={activeLocale}
+					description={t.goalsDescription}
+					label={t.goalsLabel}
 					name='goals'
-					placeholder='Целью освоения профессионального модуля является формирование у обучающихся профессиональных знаний, умений и практических навыков в области обеспечения информационной безопасности локальных вычислительных сетей и сети Internet. В процессе освоения модуля обучающиеся изучают архитектуру и основные компоненты локальных вычислительных сетей, принципы их функционирования, методы мониторинга и анализа угроз и уязвимостей информации. Профессиональный модуль направлен на подготовку обучающихся к выполнению работ по настройке, конфигурированию и администрированию средств защиты информации, а также к обеспечению устойчивой и безопасной работы сетевых устройств и программного обеспечения.'
-					title='Образовательная цель профессионального модуля.'
+					placeholder={t.goalsPlaceholder}
+					title={t.goalsTitle}
 				/>
 				<NoteEdit
-					description='Формируемые профессиональные компетенции.'
-					label='Компетенции'
+					activeLocale={activeLocale}
+					description={t.competenciesDescription}
+					label={t.competenciesLabel}
 					name='competencies'
-					placeholder='В результате освоения профессионального модуля у обучающихся формируются следующие профессиональные компетенции:\n– владение методами и средствами обеспечения информационной безопасности локальных вычислительных сетей и подключенных к ним информационных ресурсов с соблюдением требований охраны труда и техники безопасности;\n– выполнение работ по установке, настройке и администрированию операционных систем и программного обеспечения;\n– управление сетевыми и программными ресурсами, обеспечение их защиты, обновления и сопровождения;\n– анализ угроз информационной безопасности, выявление уязвимостей и реализация мер по их предотвращению.'
-					title='Перечень профессиональных компетенций, формируемых в результате освоения модуля.'
+					placeholder={t.competenciesPlaceholder}
+					title={t.competenciesTitle}
 				/>
 			</div>
 		</div>

@@ -1,15 +1,18 @@
 import { useState } from 'react'
 
-import { getTotalDisciplineHours } from '@helpers'
+import { getLocaleText, getTotalDisciplineHours } from '@helpers'
+import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
-import type { IGenerateTopicsForDiscipline, RupTypeEnum, TopicTypeEnum } from '@types'
+import { useLocaleStore } from '@store'
+import type { IGenerateTopicsForDiscipline, Locale, LocaleText, RupTypeEnum, TopicTypeEnum } from '@types'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { type TopicsDisciplineGenerateOptions, TopicsEdit } from '../components'
+import localeDictionary from './locale.json'
 
 type Topic = {
-	name: string
+	name: LocaleText
 	type: TopicTypeEnum
 	theoryHours: number
 	practiceHours: number
@@ -21,24 +24,28 @@ type Topic = {
 type Semester = { semester: number; totalHours: number }
 
 type Discipline = {
-	name: string
+	name: LocaleText
 	semesters: Semester[]
 	topics: Topic[]
 }
 
 type IProps = FieldValues & {
-	name: string
+	name: LocaleText
 	type: RupTypeEnum
-	goals: string
-	competencies: string
+	goals: LocaleText
+	competencies: LocaleText
 
 	disciplines: Discipline[]
 }
 
-export function Step4<T extends IProps>() {
+export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).step4
 	const { getValues, setValue } = useFormContext<T>()
 	// states
 	const [generatingDisciplineIndex, setGeneratingDisciplineIndex] = useState<number | null>(null)
+	const mapGeneratedText = (value: string): LocaleText =>
+		activeLocale === 'ru' ? { ru: value.trim(), kz: '' } : { ru: '', kz: value.trim() }
 
 	const buildMappedData = (
 		discipline: Discipline,
@@ -49,18 +56,30 @@ export function Step4<T extends IProps>() {
 		const additionalMessage = options?.additionalMessage?.trim()
 
 		return {
-			rupName: values.name,
+			rupName: getLocaleText(values.name, 'ru'),
 			rupType: values.type,
-			goals: values.goals,
-			competencies: values.competencies,
+			goals: getLocaleText(values.goals, 'ru'),
+			competencies: getLocaleText(values.competencies, 'ru'),
 
-			disciplineName: discipline.name,
+			disciplineName: getLocaleText(discipline.name, 'ru'),
 			disciplineHours: getTotalDisciplineHours(discipline.semesters),
 
 			additionalMessage: additionalMessage ? additionalMessage : undefined,
 			includeCurrentContent,
-			currentValues: includeCurrentContent ? { topics: discipline.topics } : undefined,
-			currentTopics: includeCurrentContent ? discipline.topics : undefined,
+			currentValues: includeCurrentContent
+				? {
+						topics: discipline.topics.map((topic) => ({
+							...topic,
+							name: getLocaleText(topic.name, 'ru'),
+						})),
+					}
+				: undefined,
+			currentTopics: includeCurrentContent
+				? discipline.topics.map((topic) => ({
+						...topic,
+						name: getLocaleText(topic.name, 'ru'),
+					}))
+				: undefined,
 
 			preferredCombinedCount: options?.preferredCombinedCount,
 			preferredPracticalCount: options?.preferredPracticalCount,
@@ -69,19 +88,27 @@ export function Step4<T extends IProps>() {
 	}
 
 	const generateOneDiscipline = async (disciplineIndex: number, options?: TopicsDisciplineGenerateOptions) => {
+		if (activeLocale !== 'ru') {
+			throw new Error(t.aiRuOnly)
+		}
+
 		const values = getValues()
 		const discipline = values.disciplines?.[disciplineIndex]
 
 		if (!discipline) {
-			throw new Error('Дисциплина не найдена')
+			throw new Error(t.disciplineNotFound)
 		}
 
 		const mappedData = buildMappedData(discipline, options)
 		const result = await services.ai.generateTopicsForDiscipline(mappedData)
+		const localizedTopics = result.map((topic) => ({
+			...topic,
+			name: mapGeneratedText(topic.name),
+		}))
 
-		setValue(`disciplines.${disciplineIndex}.topics` as Path<T>, result as PathValue<T, Path<T>>)
+		setValue(`disciplines.${disciplineIndex}.topics` as Path<T>, localizedTopics as PathValue<T, Path<T>>)
 
-		return discipline.name
+		return getLocaleText(discipline.name, activeLocale)
 	}
 
 	const handleGenerateDiscipline = async (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => {
@@ -90,24 +117,27 @@ export function Step4<T extends IProps>() {
 		const discipline = getValues().disciplines?.[disciplineIndex]
 
 		if (!discipline) {
-			toast.error('Дисциплина не найдена')
+			toast.error(t.disciplineNotFound)
 
 			return
 		}
 
-		const toastId = `rup-topics-generate-${discipline.name}-${disciplineIndex}`
+		const disciplineLabel = getLocaleText(discipline.name, activeLocale)
+		const toastId = `rup-topics-generate-${disciplineLabel}-${disciplineIndex}`
 
 		try {
 			setGeneratingDisciplineIndex(disciplineIndex)
-			toast.loading(`Генерация тем занятий для ${discipline.name}`, { id: toastId })
+			toast.loading(interpolateUILocaleText(t.topicsLoading, { name: disciplineLabel }), { id: toastId })
 
 			const disciplineName = await generateOneDiscipline(disciplineIndex, options)
 
-			toast.success(`Успешно сгенерировано тем занятий для ${disciplineName}`, {
+			toast.success(interpolateUILocaleText(t.topicsSuccess, { name: disciplineName }), {
 				id: toastId,
 			})
 		} catch (err) {
-			toast.error(`Ошибка при генерации тем для ${discipline.name}: ${err}`, { id: toastId })
+			toast.error(interpolateUILocaleText(t.topicsError, { error: String(err), name: disciplineLabel }), {
+				id: toastId,
+			})
 		} finally {
 			setGeneratingDisciplineIndex(null)
 		}
@@ -116,6 +146,7 @@ export function Step4<T extends IProps>() {
 	return (
 		<div className='w-full space-y-5'>
 			<TopicsEdit
+				activeLocale={activeLocale}
 				generatingDisciplineIndex={generatingDisciplineIndex}
 				onGenerateDiscipline={handleGenerateDiscipline}
 			/>

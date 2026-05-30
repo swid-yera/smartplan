@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
-import { hasRole, topicTypeIcons } from '@helpers'
+import { createLocaleText, hasRole, topicTypeIcons } from '@helpers'
 import { services } from '@services'
 import { Button, ButtonGroup } from '@shadcn'
 import { useMutation } from '@tanstack/react-query'
@@ -140,7 +140,7 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 			disciplineId: currentDisciplineId,
 			topicId: currentTopicId,
 			updatedTopic: {
-				name: regenerateFormData.name,
+				name: createLocaleText(regenerateFormData.name.trim(), regenerateFormData.name.trim()),
 				type: regenerateFormData.type,
 				total_hours:
 					regenerateFormData.theoryHours + regenerateFormData.practiceHours + regenerateFormData.individualHours,

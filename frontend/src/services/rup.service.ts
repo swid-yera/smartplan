@@ -3,10 +3,13 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
 	IApproveChallengeResponse,
+	ICreateRupRequest,
 	IDownloadResponse,
 	IGetAllRequest,
 	IMessageResponse,
 	IPagination,
+	IRegenerateLanguageGenerationRequest,
+	IRupLanguageGenerationStatus,
 	IRup,
 	IUpdateRupRequest,
 	IUpdateStatusRequest,
@@ -49,12 +52,40 @@ export class RupService {
 		})
 	}
 
+	getLanguageGenerationStatusOptions = (id: string) => {
+		return queryOptions<IRupLanguageGenerationStatus>({
+			queryKey: ['rup-language-generation', id],
+			queryFn: async () => {
+				const { data } = await api.get<IRupLanguageGenerationStatus>(`/rups/${id}/language-generation`)
+
+				return data
+			},
+		})
+	}
+
+	regenerateLanguageGenerationOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: ({ id, sourceLanguage }: IRegenerateLanguageGenerationRequest) =>
+				api
+					.post<IRupLanguageGenerationStatus>(`/rups/${id}/language-generation/regenerate`, {
+						sourceLanguage,
+					})
+					.then((r) => r.data),
+			onSuccess: (status, { id }) => {
+				queryClient.setQueryData(['rup-language-generation', id], status)
+				queryClient.invalidateQueries({ queryKey: ['rup', id] })
+			},
+		})
+	}
+
 	// create
 	createOptions = () => {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ newRup }: { newRup: IUpdateRupRequest }) => {
+			mutationFn: ({ newRup }: { newRup: ICreateRupRequest }) => {
 				return api.post<IRup>('/rups', newRup).then((r) => r.data)
 			},
 

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"eduplan/backend/config"
@@ -27,6 +28,8 @@ import (
 type RupService interface {
 	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
+	GetLanguageGenerationStatus(ctx context.Context, id uuid.UUID) (*RupLanguageGenerationStatus, error)
+	RegenerateLanguageGeneration(ctx context.Context, id uuid.UUID, sourceLanguage string) (*RupLanguageGenerationStatus, error)
 	UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
@@ -40,6 +43,26 @@ type PaginatedRupsResponse struct {
 	Meta PaginationMeta         `json:"meta"`
 }
 
+const (
+	rupLanguageGenerationStatusQueued    = "queued"
+	rupLanguageGenerationStatusRunning   = "running"
+	rupLanguageGenerationStatusCompleted = "completed"
+	rupLanguageGenerationStatusFailed    = "failed"
+)
+
+type RupLanguageGenerationStatus struct {
+	RupID           uuid.UUID `json:"rupId"`
+	SourceLanguage  string    `json:"sourceLanguage"`
+	TargetLanguage  string    `json:"targetLanguage"`
+	Status          string    `json:"status"`
+	CurrentStage    string    `json:"currentStage"`
+	StageIndex      int       `json:"stageIndex"`
+	TotalStages     int       `json:"totalStages"`
+	ProgressPercent int       `json:"progressPercent"`
+	Error           string    `json:"error,omitempty"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
 type CreateRupRequest struct {
 	Name            localization.LocaleText `json:"name"`
 	Type            string                  `json:"type"`
@@ -50,6 +73,7 @@ type CreateRupRequest struct {
 	Groups          []string                `json:"groups"`
 	Methodist       string                  `json:"methodist"`
 	Teacher         string                  `json:"teacher"`
+	SourceLanguage  string                  `json:"sourceLanguage"`
 	ExplorationNote *ExplorationNoteRequest `json:"explorationNote"`
 	Disciplines     []*DisciplineRequest    `json:"disciplines"`
 }
@@ -228,12 +252,15 @@ type TopicResponse struct {
 }
 
 type rupService struct {
-	repo        repository.RupRepository
-	cfg         *config.DocumentRenderConfig
-	httpClient  *http.Client
-	fileStorage FileStorage
-	crypto      CryptoClient
-	log         *logrus.Logger
+	repo                 repository.RupRepository
+	cfg                  *config.DocumentRenderConfig
+	httpClient           *http.Client
+	aiService            AIService
+	fileStorage          FileStorage
+	crypto               CryptoClient
+	log                  *logrus.Logger
+	languageGenerationMu sync.RWMutex
+	languageGeneration   map[uuid.UUID]RupLanguageGenerationStatus
 }
 
 type UpdateRupStatusRequest struct {
@@ -259,6 +286,7 @@ func NewRupService(
 	repo repository.RupRepository,
 	cfg *config.DocumentRenderConfig,
 	httpClient *http.Client,
+	aiService AIService,
 	fileStorage FileStorage,
 	cryptoClient CryptoClient,
 	log *logrus.Logger,
@@ -268,12 +296,14 @@ func NewRupService(
 	}
 
 	return &rupService{
-		repo:        repo,
-		cfg:         cfg,
-		httpClient:  httpClient,
-		fileStorage: fileStorage,
-		crypto:      cryptoClient,
-		log:         log,
+		repo:               repo,
+		cfg:                cfg,
+		httpClient:         httpClient,
+		aiService:          aiService,
+		fileStorage:        fileStorage,
+		crypto:             cryptoClient,
+		log:                log,
+		languageGeneration: make(map[uuid.UUID]RupLanguageGenerationStatus),
 	}
 }
 
@@ -320,6 +350,13 @@ func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupR
 		return nil, fmt.Errorf("build response failed: %w", err)
 	}
 
+	sourceLanguage := normalizeBackendLanguage(req.SourceLanguage)
+	targetLanguage := oppositeBackendLanguage(sourceLanguage)
+	if sourceLanguage != "" && targetLanguage != "" && s.aiService != nil {
+		s.beginLanguageGeneration(response.ID, sourceLanguage, targetLanguage)
+		go s.generateLanguageForRup(response.ID, sourceLanguage, targetLanguage, false)
+	}
+
 	return response, nil
 }
 
@@ -330,6 +367,78 @@ func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse
 	}
 
 	return s.buildRupResponse(ctx, *rup)
+}
+
+func (s *rupService) GetLanguageGenerationStatus(ctx context.Context, id uuid.UUID) (*RupLanguageGenerationStatus, error) {
+	s.languageGenerationMu.RLock()
+	status, exists := s.languageGeneration[id]
+	s.languageGenerationMu.RUnlock()
+	if exists {
+		statusCopy := status
+		return &statusCopy, nil
+	}
+
+	if _, err := s.GetRupByID(ctx, id); err != nil {
+		return nil, err
+	}
+
+	ready := RupLanguageGenerationStatus{
+		RupID:           id,
+		Status:          rupLanguageGenerationStatusCompleted,
+		CurrentStage:    "ready",
+		StageIndex:      1,
+		TotalStages:     1,
+		ProgressPercent: 100,
+		UpdatedAt:       time.Now().UTC(),
+	}
+
+	return &ready, nil
+}
+
+func (s *rupService) RegenerateLanguageGeneration(
+	ctx context.Context,
+	id uuid.UUID,
+	sourceLanguage string,
+) (*RupLanguageGenerationStatus, error) {
+	if s.aiService == nil {
+		return nil, &HTTPStatusError{
+			StatusCode: http.StatusBadGateway,
+			Message:    "AI service is not configured",
+		}
+	}
+
+	rup, err := s.GetRupByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if !strings.EqualFold(rup.Status, string(storage.RupsStatusDRAFT)) {
+		return nil, &HTTPStatusError{
+			StatusCode: http.StatusConflict,
+			Message:    "regeneration is allowed only for draft RUP",
+		}
+	}
+
+	if s.isLanguageGenerationInProgress(id) {
+		return nil, &HTTPStatusError{
+			StatusCode: http.StatusConflict,
+			Message:    "language generation is already in progress",
+		}
+	}
+
+	normalizedSourceLanguage := s.resolveSourceLanguageForRegeneration(id, sourceLanguage)
+	targetLanguage := oppositeBackendLanguage(normalizedSourceLanguage)
+	if normalizedSourceLanguage == "" || targetLanguage == "" {
+		return nil, &HTTPStatusError{
+			StatusCode: http.StatusBadRequest,
+			Message:    "invalid source language",
+		}
+	}
+
+	s.beginLanguageGeneration(id, normalizedSourceLanguage, targetLanguage)
+	go s.generateLanguageForRup(id, normalizedSourceLanguage, targetLanguage, true)
+
+	return s.GetLanguageGenerationStatus(ctx, id)
 }
 
 func cryptoStatusActive(resp *ValidateKeyOwnershipResponse) bool {
@@ -1509,4 +1618,524 @@ func (s *rupService) GetRupPaginated(
 			PageSize:    pageSize,
 		},
 	}, nil
+}
+
+func normalizeBackendLanguage(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "ru":
+		return "ru"
+	case "kz", "kk":
+		return "kz"
+	default:
+		return ""
+	}
+}
+
+func oppositeBackendLanguage(value string) string {
+	switch normalizeBackendLanguage(value) {
+	case "ru":
+		return "kz"
+	case "kz":
+		return "ru"
+	default:
+		return ""
+	}
+}
+
+func localeValueByLanguage(value localization.LocaleText, language string) string {
+	switch normalizeBackendLanguage(language) {
+	case "ru":
+		return strings.TrimSpace(value.Ru)
+	case "kz":
+		return strings.TrimSpace(value.Kz)
+	default:
+		return ""
+	}
+}
+
+func setLocaleValueByLanguage(value localization.LocaleText, language string, text string) localization.LocaleText {
+	trimmed := strings.TrimSpace(text)
+	switch normalizeBackendLanguage(language) {
+	case "ru":
+		value.Ru = trimmed
+	case "kz":
+		value.Kz = trimmed
+	}
+
+	return value.Normalized()
+}
+
+func localePointerOrEmpty(value *localization.LocaleText) localization.LocaleText {
+	if value == nil {
+		return localization.LocaleText{}
+	}
+
+	return value.Normalized()
+}
+
+func (s *rupService) beginLanguageGeneration(rupID uuid.UUID, sourceLanguage string, targetLanguage string) {
+	totalStages := 6
+	s.updateLanguageGenerationState(RupLanguageGenerationStatus{
+		RupID:           rupID,
+		SourceLanguage:  sourceLanguage,
+		TargetLanguage:  targetLanguage,
+		Status:          rupLanguageGenerationStatusQueued,
+		CurrentStage:    "queued",
+		StageIndex:      0,
+		TotalStages:     totalStages,
+		ProgressPercent: 0,
+		UpdatedAt:       time.Now().UTC(),
+	})
+}
+
+func (s *rupService) updateLanguageGenerationProgress(
+	rupID uuid.UUID,
+	sourceLanguage string,
+	targetLanguage string,
+	stage string,
+	stageIndex int,
+	totalStages int,
+) {
+	progress := 0
+	if totalStages > 0 && stageIndex > 0 {
+		progress = int(math.Round(float64(stageIndex*100) / float64(totalStages)))
+	}
+	if progress > 99 {
+		progress = 99
+	}
+
+	s.updateLanguageGenerationState(RupLanguageGenerationStatus{
+		RupID:           rupID,
+		SourceLanguage:  sourceLanguage,
+		TargetLanguage:  targetLanguage,
+		Status:          rupLanguageGenerationStatusRunning,
+		CurrentStage:    stage,
+		StageIndex:      stageIndex,
+		TotalStages:     totalStages,
+		ProgressPercent: progress,
+		UpdatedAt:       time.Now().UTC(),
+	})
+}
+
+func (s *rupService) markLanguageGenerationCompleted(
+	rupID uuid.UUID,
+	sourceLanguage string,
+	targetLanguage string,
+	totalStages int,
+) {
+	s.updateLanguageGenerationState(RupLanguageGenerationStatus{
+		RupID:           rupID,
+		SourceLanguage:  sourceLanguage,
+		TargetLanguage:  targetLanguage,
+		Status:          rupLanguageGenerationStatusCompleted,
+		CurrentStage:    "completed",
+		StageIndex:      totalStages,
+		TotalStages:     totalStages,
+		ProgressPercent: 100,
+		UpdatedAt:       time.Now().UTC(),
+	})
+}
+
+func (s *rupService) markLanguageGenerationFailed(
+	rupID uuid.UUID,
+	sourceLanguage string,
+	targetLanguage string,
+	stage string,
+	stageIndex int,
+	totalStages int,
+	err error,
+) {
+	divisor := totalStages
+	if divisor <= 0 {
+		divisor = 1
+	}
+
+	s.updateLanguageGenerationState(RupLanguageGenerationStatus{
+		RupID:           rupID,
+		SourceLanguage:  sourceLanguage,
+		TargetLanguage:  targetLanguage,
+		Status:          rupLanguageGenerationStatusFailed,
+		CurrentStage:    stage,
+		StageIndex:      stageIndex,
+		TotalStages:     totalStages,
+		ProgressPercent: int(math.Round(float64(stageIndex*100) / float64(divisor))),
+		Error:           strings.TrimSpace(err.Error()),
+		UpdatedAt:       time.Now().UTC(),
+	})
+}
+
+func (s *rupService) updateLanguageGenerationState(state RupLanguageGenerationStatus) {
+	s.languageGenerationMu.Lock()
+	defer s.languageGenerationMu.Unlock()
+	s.languageGeneration[state.RupID] = state
+}
+
+func (s *rupService) isLanguageGenerationInProgress(rupID uuid.UUID) bool {
+	s.languageGenerationMu.RLock()
+	defer s.languageGenerationMu.RUnlock()
+
+	status, exists := s.languageGeneration[rupID]
+	if !exists {
+		return false
+	}
+
+	return status.Status == rupLanguageGenerationStatusQueued || status.Status == rupLanguageGenerationStatusRunning
+}
+
+func (s *rupService) resolveSourceLanguageForRegeneration(rupID uuid.UUID, sourceLanguage string) string {
+	if normalized := normalizeBackendLanguage(sourceLanguage); normalized != "" {
+		return normalized
+	}
+
+	s.languageGenerationMu.RLock()
+	defer s.languageGenerationMu.RUnlock()
+
+	if status, exists := s.languageGeneration[rupID]; exists {
+		if normalized := normalizeBackendLanguage(status.SourceLanguage); normalized != "" {
+			return normalized
+		}
+	}
+
+	return "ru"
+}
+
+func (s *rupService) translateLocaleText(
+	ctx context.Context,
+	value localization.LocaleText,
+	sourceLanguage string,
+	targetLanguage string,
+	overwriteTarget bool,
+) (localization.LocaleText, error) {
+	sourceText := localeValueByLanguage(value, sourceLanguage)
+	targetText := localeValueByLanguage(value, targetLanguage)
+	if sourceText == "" {
+		sourceText = strings.TrimSpace(value.Ru)
+		if sourceText == "" {
+			sourceText = strings.TrimSpace(value.Kz)
+		}
+	}
+
+	if sourceText == "" || (!overwriteTarget && targetText != "") {
+		return value, nil
+	}
+
+	translatedText, err := s.aiService.TranslateText(ctx, TranslateTextRequest{
+		Text:             sourceText,
+		SourceLanguage:   sourceLanguage,
+		TargetLanguage:   targetLanguage,
+		Domain:           "рабочая учебная программа (РУП) колледжа",
+		AdditionalPrompt: "Сохрани методическую терминологию Республики Казахстан.",
+	})
+	if err != nil {
+		return value, err
+	}
+
+	return setLocaleValueByLanguage(value, targetLanguage, translatedText), nil
+}
+
+func (s *rupService) generateLanguageForRup(
+	rupID uuid.UUID,
+	sourceLanguage string,
+	targetLanguage string,
+	overwriteTarget bool,
+) {
+	totalStages := 6
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Minute)
+	defer cancel()
+
+	fail := func(stage string, stageIndex int, err error) {
+		s.log.WithFields(logrus.Fields{
+			"rup_id":          rupID.String(),
+			"source_language": sourceLanguage,
+			"target_language": targetLanguage,
+			"stage":           stage,
+		}).WithError(err).Error("language generation failed")
+		s.markLanguageGenerationFailed(rupID, sourceLanguage, targetLanguage, stage, stageIndex, totalStages, err)
+	}
+
+	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "load_rup", 1, totalStages)
+	rup, err := s.GetRupByID(ctx, rupID)
+	if err != nil {
+		fail("load_rup", 1, err)
+		return
+	}
+
+	updateReq := mapRupResponseToCreateRequest(rup)
+	updateReq.SourceLanguage = sourceLanguage
+
+	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "translate_core", 2, totalStages)
+	updateReq.Name, err = s.translateLocaleText(ctx, updateReq.Name, sourceLanguage, targetLanguage, overwriteTarget)
+	if err != nil {
+		fail("translate_core", 2, err)
+		return
+	}
+	if updateReq.ExplorationNote != nil {
+		updateReq.ExplorationNote.Prerequisites, err = s.translateLocaleText(
+			ctx,
+			updateReq.ExplorationNote.Prerequisites,
+			sourceLanguage,
+			targetLanguage,
+			overwriteTarget,
+		)
+		if err != nil {
+			fail("translate_core", 2, err)
+			return
+		}
+		updateReq.ExplorationNote.Postrequisites, err = s.translateLocaleText(
+			ctx,
+			updateReq.ExplorationNote.Postrequisites,
+			sourceLanguage,
+			targetLanguage,
+			overwriteTarget,
+		)
+		if err != nil {
+			fail("translate_core", 2, err)
+			return
+		}
+	}
+
+	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "translate_exploration", 3, totalStages)
+	if updateReq.ExplorationNote != nil {
+		updateReq.ExplorationNote.Basis, err = s.translateLocaleText(
+			ctx,
+			updateReq.ExplorationNote.Basis,
+			sourceLanguage,
+			targetLanguage,
+			overwriteTarget,
+		)
+		if err != nil {
+			fail("translate_exploration", 3, err)
+			return
+		}
+		updateReq.ExplorationNote.Goals, err = s.translateLocaleText(
+			ctx,
+			updateReq.ExplorationNote.Goals,
+			sourceLanguage,
+			targetLanguage,
+			overwriteTarget,
+		)
+		if err != nil {
+			fail("translate_exploration", 3, err)
+			return
+		}
+		updateReq.ExplorationNote.Summary, err = s.translateLocaleText(
+			ctx,
+			updateReq.ExplorationNote.Summary,
+			sourceLanguage,
+			targetLanguage,
+			overwriteTarget,
+		)
+		if err != nil {
+			fail("translate_exploration", 3, err)
+			return
+		}
+		updateReq.ExplorationNote.Competencies, err = s.translateLocaleText(
+			ctx,
+			updateReq.ExplorationNote.Competencies,
+			sourceLanguage,
+			targetLanguage,
+			overwriteTarget,
+		)
+		if err != nil {
+			fail("translate_exploration", 3, err)
+			return
+		}
+	}
+
+	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "translate_resources", 4, totalStages)
+	if updateReq.ExplorationNote != nil {
+		for i := range updateReq.ExplorationNote.InternetResources {
+			if updateReq.ExplorationNote.InternetResources[i] == nil {
+				continue
+			}
+
+			updateReq.ExplorationNote.InternetResources[i].Name, err = s.translateLocaleText(
+				ctx,
+				updateReq.ExplorationNote.InternetResources[i].Name,
+				sourceLanguage,
+				targetLanguage,
+				overwriteTarget,
+			)
+			if err != nil {
+				fail("translate_resources", 4, err)
+				return
+			}
+		}
+
+		for i := range updateReq.ExplorationNote.TechnicalResources {
+			if updateReq.ExplorationNote.TechnicalResources[i] == nil {
+				continue
+			}
+
+			updateReq.ExplorationNote.TechnicalResources[i].Name, err = s.translateLocaleText(
+				ctx,
+				updateReq.ExplorationNote.TechnicalResources[i].Name,
+				sourceLanguage,
+				targetLanguage,
+				overwriteTarget,
+			)
+			if err != nil {
+				fail("translate_resources", 4, err)
+				return
+			}
+		}
+	}
+
+	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "translate_disciplines_and_topics", 5, totalStages)
+	for i := range updateReq.Disciplines {
+		if updateReq.Disciplines[i] == nil {
+			continue
+		}
+
+		updateReq.Disciplines[i].Name, err = s.translateLocaleText(
+			ctx,
+			updateReq.Disciplines[i].Name,
+			sourceLanguage,
+			targetLanguage,
+			overwriteTarget,
+		)
+		if err != nil {
+			fail("translate_disciplines_and_topics", 5, err)
+			return
+		}
+
+		for j := range updateReq.Disciplines[i].Topics {
+			if updateReq.Disciplines[i].Topics[j] == nil {
+				continue
+			}
+
+			updateReq.Disciplines[i].Topics[j].Name, err = s.translateLocaleText(
+				ctx,
+				updateReq.Disciplines[i].Topics[j].Name,
+				sourceLanguage,
+				targetLanguage,
+				overwriteTarget,
+			)
+			if err != nil {
+				fail("translate_disciplines_and_topics", 5, err)
+				return
+			}
+		}
+	}
+
+	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "save_translations", 6, totalStages)
+	if _, err := s.UpdateRup(ctx, rupID, updateReq); err != nil {
+		fail("save_translations", 6, err)
+		return
+	}
+
+	s.markLanguageGenerationCompleted(rupID, sourceLanguage, targetLanguage, totalStages)
+}
+
+func mapRupResponseToCreateRequest(rup *RupResponse) CreateRupRequest {
+	contacts := make([]string, 0, len(rup.Contacts))
+	for _, contact := range rup.Contacts {
+		if contact == nil || contact.KeycloakID == uuid.Nil {
+			continue
+		}
+		contacts = append(contacts, contact.KeycloakID.String())
+	}
+
+	groups := make([]string, 0, len(rup.Groups))
+	for _, group := range rup.Groups {
+		if group == nil || group.KeycloakID == uuid.Nil {
+			continue
+		}
+		groups = append(groups, group.KeycloakID.String())
+	}
+
+	var methodist string
+	if rup.Methodist != nil && rup.Methodist.KeycloakID != uuid.Nil {
+		methodist = rup.Methodist.KeycloakID.String()
+	}
+
+	var teacher string
+	if rup.Teacher != nil && rup.Teacher.KeycloakID != uuid.Nil {
+		teacher = rup.Teacher.KeycloakID.String()
+	}
+
+	internetResources := make([]*ResourceRequest, 0, len(rup.ExplorationNote.InternetResources))
+	for _, resource := range rup.ExplorationNote.InternetResources {
+		if resource == nil {
+			continue
+		}
+		internetResources = append(internetResources, &ResourceRequest{
+			Name: resource.Name,
+			Link: resource.Link,
+		})
+	}
+
+	technicalResources := make([]*ResourceRequest, 0, len(rup.ExplorationNote.TechnicalResources))
+	for _, resource := range rup.ExplorationNote.TechnicalResources {
+		if resource == nil {
+			continue
+		}
+		technicalResources = append(technicalResources, &ResourceRequest{
+			Name: resource.Name,
+			Link: resource.Link,
+		})
+	}
+
+	disciplines := make([]*DisciplineRequest, 0, len(rup.Disciplines))
+	for _, discipline := range rup.Disciplines {
+		if discipline == nil {
+			continue
+		}
+
+		semesters := make([]*SemesterRequest, 0, len(discipline.Semesters))
+		for _, semester := range discipline.Semesters {
+			if semester == nil {
+				continue
+			}
+			semesters = append(semesters, &SemesterRequest{
+				Semester:   semester.Semester,
+				TotalHours: semester.TotalHours,
+			})
+		}
+
+		topics := make([]*TopicRequest, 0, len(discipline.Topics))
+		for _, topic := range discipline.Topics {
+			if topic == nil {
+				continue
+			}
+			topics = append(topics, &TopicRequest{
+				Name:            topic.Name,
+				Type:            string(topic.Type),
+				TheoryHours:     topic.TheoryHours,
+				PracticeHours:   topic.PracticeHours,
+				IndividualHours: topic.IndividualHours,
+				SrspHours:       topic.SrspHours,
+				SrsHours:        topic.SrsHours,
+			})
+		}
+
+		disciplines = append(disciplines, &DisciplineRequest{
+			Name:      discipline.Name,
+			Semesters: semesters,
+			Topics:    topics,
+		})
+	}
+
+	return CreateRupRequest{
+		Name:      rup.Name,
+		Type:      rup.Type,
+		StudyYear: rup.StudyYear,
+		Course:    rup.Course,
+		StudyForm: rup.StudyForm,
+		Contacts:  contacts,
+		Groups:    groups,
+		Methodist: methodist,
+		Teacher:   teacher,
+		ExplorationNote: &ExplorationNoteRequest{
+			Basis:              localePointerOrEmpty(rup.ExplorationNote.Basis),
+			Goals:              localePointerOrEmpty(rup.ExplorationNote.Goals),
+			Summary:            localePointerOrEmpty(rup.ExplorationNote.Summary),
+			Competencies:       localePointerOrEmpty(rup.ExplorationNote.Competencies),
+			Prerequisites:      localePointerOrEmpty(rup.ExplorationNote.Prerequisites),
+			Postrequisites:     localePointerOrEmpty(rup.ExplorationNote.Postrequisites),
+			InternetResources:  internetResources,
+			TechnicalResources: technicalResources,
+		},
+		Disciplines: disciplines,
+	}
 }

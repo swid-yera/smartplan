@@ -157,7 +157,7 @@ const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {
 			}}
 		>
 			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-				{rup?.name || t.untitled}
+				{getLocaleText(rup?.name, locale) || t.untitled}
 			</TableCell>
 			<TableCell className='whitespace-break-spaces min-w-[100px]'>
 				{rup?.teacher?.firstName || t.unknownTeacher}

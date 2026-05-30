@@ -1,4 +1,4 @@
-import { type FC, type ReactNode, useState } from 'react'
+import { type FC, type ReactNode, useEffect, useState } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
 import {
@@ -6,6 +6,7 @@ import {
 	extractKriptoApprovalMetadata,
 	formatHours,
 	getLocaleText,
+	getUILocaleSection,
 	hasRole,
 	normalizeStudyForm,
 	parseKriptoFileText,
@@ -23,15 +24,19 @@ import {
 	SheetFooter,
 	SheetHeader,
 	SheetTitle,
+	Tabs,
+	TabsList,
+	TabsTrigger,
 	Textarea,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { type IRup, RoleEnum, StatusEnum } from '@types'
+import { type IRup, type Locale, RoleEnum, StatusEnum } from '@types'
 import { CheckCircle, Search, SendToBack, ShieldAlert, Timer } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { ContactsView, DisciplineView, ExplorationView, TopicsView } from '../components'
 import { BasicView } from '../components/view/basic-view'
+import localeDictionary from './locale.json'
 
 interface IRupViewProps {
 	data: IRup
@@ -45,6 +50,9 @@ interface IRupViewProps {
 
 export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions }) => {
 	const locale = useLocaleStore((state) => state.locale)
+	const localeText = getUILocaleSection(localeDictionary, locale)
+	const t = localeText.view
+	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
 	const [generalComment, setGeneralComment] = useState('')
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
 	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
@@ -56,10 +64,14 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 	const [checked, setChecked] = useState(false)
 	const isMethodistReview = hasRole(role, RoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
 
+	useEffect(() => {
+		setActiveLocale(locale)
+	}, [locale])
+
 	const onApproveFileUpload = async (file?: File) => {
 		if (!file) return
 		if (!file.name.toLowerCase().endsWith('.kripto')) {
-			toast.error('Поддерживаются только .kripto v3')
+			toast.error(localeText.toasts.kriptoOnlyV3)
 			return
 		}
 
@@ -71,7 +83,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 		setUserId(metadata.userId)
 		setKriptoFileText(content)
 		setFileName(file.name)
-		toast.success('Файл ЭЦП успешно разобран')
+		toast.success(localeText.toasts.kriptoParsed)
 	}
 
 	return (
@@ -79,41 +91,47 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 			<PageTitle
 				sticky
 				actions={
-					<ButtonGroup>
-						{actions}
-						{isMethodistReview && (
-							<ButtonGroup>
-								<Button
-									className='hover:text-destructive'
-									size='sm'
-									variant='outline'
-									onClick={() => setIsRejectSheetOpen(true)}
-								>
-									<SendToBack className='mr-2 h-4 w-4' />
-									Отклонить
-								</Button>
+					<div className='flex items-center gap-2'>
+						<Tabs value={activeLocale} onValueChange={(next) => setActiveLocale(next as Locale)}>
+							<TabsList>
+								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
+								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
+							</TabsList>
+						</Tabs>
+						<ButtonGroup>
+							{actions}
+							{isMethodistReview && (
+								<ButtonGroup>
+									<Button
+										className='hover:text-destructive'
+										size='sm'
+										variant='outline'
+										onClick={() => setIsRejectSheetOpen(true)}
+									>
+										<SendToBack className='mr-2 h-4 w-4' />
+										{t.reject}
+									</Button>
 
-								<Button
-									className='hover:text-primary'
-									size='sm'
-									variant='outline'
-									onClick={() => setIsApproveSheetOpen(true)}
-								>
-									<CheckCircle className='mr-2 h-4 w-4' />
-									Утвердить
-								</Button>
-							</ButtonGroup>
-						)}
-					</ButtonGroup>
+									<Button
+										className='hover:text-primary'
+										size='sm'
+										variant='outline'
+										onClick={() => setIsApproveSheetOpen(true)}
+									>
+										<CheckCircle className='mr-2 h-4 w-4' />
+										{t.approve}
+									</Button>
+								</ButtonGroup>
+							)}
+						</ButtonGroup>
+					</div>
 				}
 				backHref='/rups'
 				description={
-					hasRole(role, RoleEnum.METHODIST)
-						? 'Проверка рабочей учебной программы.'
-						: 'Просмотр рабочей учебной программы. Редактирование запрещено.'
+					hasRole(role, RoleEnum.METHODIST) ? t.reviewDescription : t.readOnlyDescription
 				}
 			>
-				{` ${data.name || 'Рабочая учебная программа '} `}
+				{` ${getLocaleText(data.name, activeLocale) || `${t.titleFallback} `} `}
 				<StatusBadge status={data.status} />
 			</PageTitle>
 
@@ -122,16 +140,16 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 					<div className='rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive'>
 						<div className='flex items-center gap-2 font-medium'>
 							<ShieldAlert className='h-5 w-5' />
-							Причина отказа
+							{t.rejectedReasonTitle}
 						</div>
-						<div className='mt-2 text-sm whitespace-pre-wrap'>{data.reason || 'Пусто'}</div>
+						<div className='mt-2 text-sm whitespace-pre-wrap'>{data.reason || t.empty}</div>
 					</div>
 				)}
 				{data.status === StatusEnum.IN_REVIEW && (
 					<div className='rounded-lg border border-secondary/50 bg-secondary/5 p-4 text-secondary'>
 						<div className='flex items-center gap-2 font-semibold'>
 							<Timer className='h-5 w-5' />
-							Ожидайте пока методист проверит ваш документ
+							{t.waitingMessage}
 						</div>
 					</div>
 				)}
@@ -139,7 +157,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 					<div className='rounded-lg border border-primary/50 bg-primary/5 p-4 text-primary'>
 						<div className='flex items-center gap-2 font-semibold'>
 							<Search className='h-5 w-5' />
-							Проверьте документ и отправьте на согласование
+							{t.draftMessage}
 						</div>
 					</div>
 				)}
@@ -147,7 +165,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 					<div className='rounded-lg border border-muted-foreground/50 bg-muted-foreground/5 p-4 text-muted-foreground'>
 						<div className='flex items-center gap-2 font-semibold'>
 							<Search className='h-5 w-5' />
-							Редактирование запрещено, файл сгенерирован.
+							{t.approvedMessage}
 						</div>
 					</div>
 				)}
@@ -157,42 +175,42 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 						className='xl:col-span-3 lg:col-span-2'
 						rows={[
 							{
-								label: 'Наименование модуля',
-								subLabel: '(наименование модуля или дисциплины)',
-								value: data.name,
+								label: t.moduleName,
+								subLabel: t.moduleNameSub,
+								value: getLocaleText(data.name, activeLocale),
 							},
 							{
-								label: 'Специальность',
-								subLabel: '(код и наименование)',
-								value: getLocaleText(data.groups[0]?.specialty, locale),
+								label: t.specialty,
+								subLabel: t.specialtySub,
+								value: getLocaleText(data.groups[0]?.specialty, activeLocale),
 							},
 							{
-								label: 'Квалификация',
-								subLabel: '(код и наименование)',
-								value: getLocaleText(data.groups[0]?.qualification, locale),
+								label: t.qualification,
+								subLabel: t.qualificationSub,
+								value: getLocaleText(data.groups[0]?.qualification, activeLocale),
 							},
 							{
-								label: 'Форма обучения',
-								value: normalizeStudyForm(data.studyForm),
+								label: t.studyForm,
+								value: normalizeStudyForm(data.studyForm, activeLocale),
 							},
 							{
-								label: 'Общее количество часов',
+								label: t.totalHours,
 								value: formatHours(data.totalHours),
 							},
 							{
-								label: 'Кредитов',
+								label: t.credits,
 								value: data.totalHours / 24,
 							},
 							{
-								label: 'Курс',
-								value: `${data.course} курс`,
+								label: t.course,
+								value: `${data.course} ${t.courseSuffix}`,
 							},
 							{
-								label: 'Группа',
+								label: t.group,
 								value: data.groups[0].name,
 							},
 							{
-								label: 'Разработчики',
+								label: t.developers,
 								value: (
 									<ul className='list-decimal ml-3'>
 										{data.contacts.map((c) => (
@@ -202,7 +220,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								),
 							},
 						]}
-						title='Рабочая учебная программа по модулю'
+						title={t.moduleTitle}
 					/>
 
 					<ResponsibleUsersCard
@@ -213,29 +231,33 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 					/>
 				</div>
 
-				<ExplorationView data={data} />
+				<ExplorationView activeLocale={activeLocale} data={data} />
 
 				<ContactsView contacts={data.contacts} creatorId={data.teacher.keycloakId} />
 
-				<DisciplineView disciplines={data.disciplines} rupName={data.name} />
+				<DisciplineView activeLocale={activeLocale} disciplines={data.disciplines} rupName={data.name} />
 
-				<TopicsView disciplines={data.disciplines} rupId={data.id} rupStatus={data.status} type={data.type} />
+				<TopicsView
+					activeLocale={activeLocale}
+					disciplines={data.disciplines}
+					rupId={data.id}
+					rupStatus={data.status}
+					type={data.type}
+				/>
 			</div>
 
 			<Sheet open={isRejectSheetOpen} onOpenChange={setIsRejectSheetOpen}>
 				<SheetContent>
 					<SheetHeader>
-						<SheetTitle>Отклонить РУП</SheetTitle>
-						<SheetDescription>
-							Укажите причину отклонения (проблемы), чтобы преподаватель мог их исправить.
-						</SheetDescription>
+						<SheetTitle>{t.rejectSheetTitle}</SheetTitle>
+						<SheetDescription>{t.rejectSheetDescription}</SheetDescription>
 					</SheetHeader>
 					<div className='px-4 grid gap-4 py-4'>
 						<div className='grid gap-2'>
-							<Label htmlFor='reject-reason'>Причина отказа</Label>
+							<Label htmlFor='reject-reason'>{t.rejectReasonLabel}</Label>
 							<Textarea
 								id='reject-reason'
-								placeholder='Опишите проблемы...'
+								placeholder={t.rejectReasonPlaceholder}
 								rows={12}
 								value={generalComment}
 								onChange={(e) => setGeneralComment(e.target.value)}
@@ -244,21 +266,21 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 					</div>
 					<SheetFooter>
 						<Button variant='outline' onClick={() => setIsRejectSheetOpen(false)}>
-							Отмена
+							{t.cancel}
 						</Button>
 						<Button
 							disabled={!generalComment}
 							variant='destructive'
 							onClick={() => {
 								if (!generalComment.trim()) {
-									toast.error('Пожалуйста, укажите причину отклонения')
+									toast.error(t.rejectReasonRequired)
 									return
 								}
 								onStatusChange(StatusEnum.REJECTED, { reason: generalComment })
 								setIsRejectSheetOpen(false)
 							}}
 						>
-							Отклонить
+							{t.rejectConfirm}
 						</Button>
 					</SheetFooter>
 				</SheetContent>
@@ -267,14 +289,12 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 			<Sheet open={isApproveSheetOpen} onOpenChange={setIsApproveSheetOpen}>
 				<SheetContent>
 					<SheetHeader>
-						<SheetTitle>Подтверждение РУП</SheetTitle>
-						<SheetDescription>
-							Загрузите .kripto v3, введите пароль и подпишите challenge для проверки владения ключом.
-						</SheetDescription>
+						<SheetTitle>{t.approveSheetTitle}</SheetTitle>
+						<SheetDescription>{t.approveSheetDescription}</SheetDescription>
 					</SheetHeader>
 					<div className='px-4 grid gap-4 py-4'>
 						<div className='grid gap-2'>
-							<Label htmlFor='approve-kripto-file'>Файл ЭЦП (.kripto)</Label>
+							<Label htmlFor='approve-kripto-file'>{t.approveFileLabel}</Label>
 							<Input
 								accept='.kripto,application/json'
 								id='approve-kripto-file'
@@ -282,25 +302,29 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 								onChange={(e) => {
 									const file = e.target.files?.[0]
 									onApproveFileUpload(file).catch((err) => {
-										toast.error(err.message || 'Ошибка при чтении файла ЭЦП')
+										toast.error(err.message || localeText.toasts.kriptoReadError)
 									})
 								}}
 							/>
-							{fileName && <p className='text-xs text-muted-foreground'>Файл: {fileName}</p>}
+							{fileName && (
+								<p className='text-xs text-muted-foreground'>
+									{t.fileLabel}: {fileName}
+								</p>
+							)}
 						</div>
 
 						<div className='grid gap-2'>
-							<Label htmlFor='approve-key-id'>Определенный key_id</Label>
+							<Label htmlFor='approve-key-id'>{t.approveKeyIdLabel}</Label>
 							<Input
 								id='approve-key-id'
-								placeholder='UUID ключа'
+								placeholder={t.approveKeyIdPlaceholder}
 								readOnly
 								value={keyId}
 							/>
 						</div>
 
 						<div className='grid gap-2'>
-							<Label htmlFor='approve-kripto-password'>Пароль .kripto</Label>
+							<Label htmlFor='approve-kripto-password'>{t.approvePasswordLabel}</Label>
 							<Input
 								id='approve-kripto-password'
 								type='password'
@@ -311,25 +335,25 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 
 						<label className='flex items-center gap-2 text-sm'>
 							<Checkbox checked={checked} onCheckedChange={(v) => setChecked(Boolean(v))} />
-							<span>Подтверждаю, что ключ должен быть проверен в kripto перед утверждением</span>
+							<span>{t.approveCheckbox}</span>
 						</label>
 					</div>
 					<SheetFooter>
 						<Button variant='outline' onClick={() => setIsApproveSheetOpen(false)}>
-							Отмена
+							{t.cancel}
 						</Button>
 						<Button
 							onClick={async () => {
 								if (!kriptoFileText || !keyId.trim() || !userId.trim()) {
-									toast.error('Загрузите .kripto v3 файл')
+									toast.error(localeText.toasts.kriptoUploadRequired)
 									return
 								}
 								if (!kriptoPassword) {
-									toast.error('Введите пароль от .kripto')
+									toast.error(localeText.toasts.kriptoPasswordRequired)
 									return
 								}
 								if (!checked) {
-									toast.error('Подтвердите галочкой проверку ключа')
+									toast.error(localeText.toasts.kriptoCheckConfirm)
 									return
 								}
 
@@ -354,11 +378,11 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 									setFileName('')
 									setChecked(false)
 								} catch (err) {
-									toast.error(err instanceof Error ? err.message : 'Ошибка проверки .kripto')
+									toast.error(err instanceof Error ? err.message : localeText.toasts.kriptoVerifyError)
 								}
 							}}
 						>
-							Утвердить
+							{t.approveConfirm}
 						</Button>
 					</SheetFooter>
 				</SheetContent>

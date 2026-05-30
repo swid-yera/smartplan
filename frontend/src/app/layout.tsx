@@ -7,6 +7,8 @@ import { ASidebarProvider, AuthProvider, LocaleProvider, QueryProvider, ThemePro
 import { SidebarInset, Toaster } from '@shadcn'
 import 'react-medium-image-zoom/dist/styles.css'
 
+import { RupsLanguageGenerationNotifier } from './rups/components/language-generation-notifier'
+
 import './globals.css'
 
 // metadata
@@ -105,6 +107,7 @@ export default async function RootLayout({
 								<SidebarInset className='flex-1 min-w-0 justify-between items-stretch'>
 									{children}
 
+									<RupsLanguageGenerationNotifier />
 									<Toaster position='top-center' />
 									<Footer />
 								</SidebarInset>

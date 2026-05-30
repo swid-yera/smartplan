@@ -1,12 +1,23 @@
 'use client'
 
-import { type FC, useState } from 'react'
+import { type FC, useEffect, useState } from 'react'
 
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
-import { createKriptoApprovalProof, extractKriptoApprovalMetadata, hasRole, isAuthor, normalizeStatus, parseKriptoFileText } from '@helpers'
+import {
+	createKriptoApprovalProof,
+	extractKriptoApprovalMetadata,
+	getLocaleText,
+	getUILocaleSection,
+	hasRole,
+	interpolateUILocaleText,
+	isAuthor,
+	normalizeStatus,
+	parseKriptoFileText,
+	toBackendLocale,
+} from '@helpers'
 import { services } from '@services'
 import {
 	AlertDialog,
@@ -35,32 +46,50 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
-import { Edit, FileDown, SendIcon, ShieldAlert, Trash } from 'lucide-react'
+import { Edit, FileDown, RotateCcw, SendIcon, ShieldAlert, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
+import localeDictionary from './locale.json'
+import { trackLanguageGeneration } from '../language-generation-tracker'
 import { RupView } from './rup-view'
+
+type IRupIdLocaleText = typeof localeDictionary.ru
 
 const Page: FC = () => {
 	const { replace } = useRouter()
 	const params = useParams<{ id: string }>()
 
 	const { authLoading, user } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
 	// queries
 	const { data: rupData, isLoading } = useQuery({ ...services.rup.getByIdOptions(params.id), enabled: !!params.id })
+	const { data: generationStatus, isLoading: isGenerationStatusLoading } = useQuery({
+		...services.rup.getLanguageGenerationStatusOptions(params.id),
+		enabled: !!params.id,
+	})
 	const { refetch: getDownloadUrl } = useQuery({
 		...services.rup.getDownloadUrlOptions(params.id),
 		enabled: false,
 	})
 	// mutations
 	const updateStatusMutation = useMutation(services.rup.updateStatusOptions())
+	const regenerateLanguageMutation = useMutation(services.rup.regenerateLanguageGenerationOptions())
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
+	const isLanguageGenerationInProgress =
+		generationStatus?.status === 'queued' || generationStatus?.status === 'running'
+
+	useEffect(() => {
+		if (!isLanguageGenerationInProgress) return
+		replace(`/rups/${params.id}/language-generation`)
+	}, [isLanguageGenerationInProgress, params.id, replace])
 
 	// change rup status
 	const handleStatusChange = (
@@ -72,7 +101,7 @@ const Page: FC = () => {
 
 		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
 
-		toast.loading('Изменение статуса...', { id: toastId })
+		toast.loading(t.toasts.statusLoading, { id: toastId })
 		const updateStatusPayload: IUpdateStatusRequest = {
 			id: rupData.id,
 			status: newStatus,
@@ -86,10 +115,10 @@ const Page: FC = () => {
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
-				toast.success('Статус успешно изменен!', { id: toastId })
+				toast.success(t.toasts.statusSuccess, { id: toastId })
 			},
 			onError: (err) => {
-				toast.error('Произошла ошибка при изменении статуса', { id: toastId, description: err.message })
+				toast.error(t.toasts.statusError, { id: toastId, description: err.message })
 			},
 		})
 	}
@@ -100,17 +129,20 @@ const Page: FC = () => {
 		setIsDeleteDialogOpen(false)
 
 		const toastId = `rup-${rupData.id}-delete`
-		const rupName = rupData.name || 'РУП'
+		const rupName = getLocaleText(rupData.name, locale) || t.view.titleFallback
 
-		toast.loading(`Удаление ${rupName}...`, { id: toastId })
+		toast.loading(interpolateUILocaleText(t.toasts.deleteLoading, { name: rupName }), { id: toastId })
 
 		deleteMutation.mutate(rupData.id, {
 			onSuccess: () => {
-				toast.success(`${rupName} успешно удален`, { id: toastId })
+				toast.success(interpolateUILocaleText(t.toasts.deleteSuccess, { name: rupName }), { id: toastId })
 				replace('/rups')
 			},
 			onError: (err) => {
-				toast.error(`Произошла ошибка при удалений ${rupName}`, { id: toastId, description: err.message })
+				toast.error(interpolateUILocaleText(t.toasts.deleteError, { name: rupName }), {
+					id: toastId,
+					description: err.message,
+				})
 			},
 		})
 	}
@@ -120,26 +152,53 @@ const Page: FC = () => {
 			async () => {
 				const { data } = await getDownloadUrl()
 
-				if (!data) throw new Error('Не удалось получить ссылку на файл')
+				if (!data) throw new Error(t.toasts.downloadLinkError)
 
 				const link = document.createElement('a')
 
 				link.href = data.url
-				link.setAttribute('download', `RUP_${rupData?.name || 'file'}.docx`)
+				link.setAttribute('download', `RUP_${getLocaleText(rupData?.name, locale) || 'file'}.docx`)
 				document.body.appendChild(link)
 				link.click()
 				link.remove()
 			},
 			{
-				loading: 'Подготовка файла...',
-				success: 'Файл скачивается',
-				error: 'Ошибка при скачивании',
+				loading: t.toasts.downloadFilePreparing,
+				success: t.toasts.downloadFileSuccess,
+				error: t.toasts.downloadFileError,
+			},
+		)
+	}
+
+	const handleRegenerateLanguage = () => {
+		if (!rupData) return
+
+		const toastId = `rup-${rupData.id}-regenerate-language`
+
+		toast.loading(t.toasts.regenerateLoading, { id: toastId })
+		regenerateLanguageMutation.mutate(
+			{
+				id: rupData.id,
+				sourceLanguage: toBackendLocale(locale),
+			},
+			{
+				onSuccess: () => {
+					trackLanguageGeneration(rupData.id)
+					toast.success(t.toasts.regenerateSuccess, { id: toastId })
+					replace(`/rups/${rupData.id}/language-generation`)
+				},
+				onError: (err) => {
+					toast.error(t.toasts.regenerateError, {
+						id: toastId,
+						description: err.message,
+					})
+				},
 			},
 		)
 	}
 
 	// loading
-	if (authLoading || isLoading) return <Loader />
+	if (authLoading || isLoading || isGenerationStatusLoading || isLanguageGenerationInProgress) return <Loader />
 	if (!user || !rupData) return notFound()
 
 	// bools
@@ -147,6 +206,7 @@ const Page: FC = () => {
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
+	const canRegenerateLanguage = rupData.status === StatusEnum.DRAFT && (isRupDeveloper || isAdmin)
 	// conditions
 	const canDownload = rupData.status === StatusEnum.APPROVED
 
@@ -163,7 +223,7 @@ const Page: FC = () => {
 								onClick={() => setIsSheetOpen(true)}
 							>
 								<ShieldAlert />
-								Поменять статус
+								{t.actions.changeStatus}
 							</Button>
 						)}
 						{isRupCreator && isStatusForEdit && (
@@ -174,20 +234,31 @@ const Page: FC = () => {
 								onClick={() => setIsDeleteDialogOpen(true)}
 							>
 								<Trash />
-								Удалить
+								{t.actions.delete}
 							</Button>
 						)}
 						{isRupDeveloper && isStatusForEdit && (
 							<Button asChild size='sm' variant='outline'>
 								<Link href={`/rups/${params.id}/edit`}>
-									<Edit /> Редактировать
+									<Edit /> {t.actions.edit}
 								</Link>
+							</Button>
+						)}
+						{canRegenerateLanguage && (
+							<Button
+								className='hover:text-primary'
+								size='sm'
+								variant='outline'
+								onClick={handleRegenerateLanguage}
+							>
+								<RotateCcw />
+								{t.actions.regenerate}
 							</Button>
 						)}
 						{canDownload && (
 							<Button className='hover:text-primary' size='sm' variant='outline' onClick={onDownload}>
 								<FileDown className='mr-2 h-4 w-4' />
-								Скачать файл
+								{t.actions.download}
 							</Button>
 						)}
 						{isRupDeveloper && isStatusForEdit && (
@@ -198,7 +269,7 @@ const Page: FC = () => {
 								onClick={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 							>
 								<SendIcon />
-								Отправить на проверку
+								{t.actions.sendToReview}
 							</Button>
 						)}
 					</ButtonGroup>
@@ -213,12 +284,14 @@ const Page: FC = () => {
 				isSheetOpen={isSheetOpen}
 				rupId={params.id}
 				setIsSheetOpen={setIsSheetOpen}
+				text={t}
 			/>
 
 			<DeleteAlert
 				isDeleteDialogOpen={isDeleteDialogOpen}
 				setIsDeleteDialogOpen={setIsDeleteDialogOpen}
 				onDelete={handleDeleteRup}
+				text={t}
 			/>
 		</>
 	)
@@ -234,9 +307,16 @@ interface IStatusChangeSheetProps {
 		newStatus: StatusEnum,
 		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
 	) => void
+	text: IRupIdLocaleText
 }
 
-const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsSheetOpen, rupId, handleStatusChange }) => {
+const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
+	isSheetOpen,
+	setIsSheetOpen,
+	rupId,
+	handleStatusChange,
+	text,
+}) => {
 	const [newStatus, setNewStatus] = useState<StatusEnum | undefined>(undefined)
 	const [reason, setReason] = useState('')
 	const [keyId, setKeyId] = useState('')
@@ -251,7 +331,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 	const onFileUpload = async (file?: File) => {
 		if (!file) return
 		if (!file.name.toLowerCase().endsWith('.kripto')) {
-			toast.error('Поддерживаются только .kripto v3')
+			toast.error(text.toasts.kriptoOnlyV3)
 			return
 		}
 
@@ -263,22 +343,22 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 		setUserId(metadata.userId)
 		setKriptoFileText(content)
 		setFileName(file.name)
-		toast.success('Файл ЭЦП успешно разобран')
+		toast.success(text.toasts.kriptoParsed)
 	}
 
 	const onSheetSubmit = async () => {
 		if (newStatus) {
 			if (isApprove) {
 				if (!keyId || !userId || !kriptoFileText) {
-					toast.error('Загрузите .kripto v3 файл')
+					toast.error(text.toasts.kriptoUploadRequired)
 					return
 				}
 				if (!kriptoPassword) {
-					toast.error('Введите пароль от .kripto')
+					toast.error(text.toasts.kriptoPasswordRequired)
 					return
 				}
 				if (!checked) {
-					toast.error('Подтвердите галочкой проверку ключа')
+					toast.error(text.toasts.kriptoCheckConfirm)
 					return
 				}
 			}
@@ -302,7 +382,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 					handleStatusChange(newStatus, { reason })
 				}
 			} catch (err) {
-				toast.error(err instanceof Error ? err.message : 'Ошибка проверки .kripto')
+				toast.error(err instanceof Error ? err.message : text.toasts.kriptoVerifyError)
 				return
 			}
 
@@ -321,15 +401,15 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 		<Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
 			<SheetContent>
 				<SheetHeader>
-					<SheetTitle>Изменить статус</SheetTitle>
-					<SheetDescription>Выберите новый статус для РУП и укажите причину изменения.</SheetDescription>
+					<SheetTitle>{text.statusSheet.title}</SheetTitle>
+					<SheetDescription>{text.statusSheet.description}</SheetDescription>
 				</SheetHeader>
 				<div className='grid flex-1 auto-rows-min gap-6 p-4'>
 					<div className='grid gap-2'>
-						<Label htmlFor='status'>Статус</Label>
+						<Label htmlFor='status'>{text.statusSheet.statusLabel}</Label>
 						<Select value={newStatus} onValueChange={(val) => setNewStatus(val as StatusEnum)}>
 							<SelectTrigger className='w-full' id='status'>
-								<SelectValue placeholder='Выберите статус' />
+								<SelectValue placeholder={text.statusSheet.statusPlaceholder} />
 							</SelectTrigger>
 							<SelectContent>
 								{Object.values(StatusEnum).map((status) => (
@@ -341,10 +421,10 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 						</Select>
 					</div>
 					<div className='grid gap-2'>
-						<Label htmlFor='reason'>Причина / Комментарий</Label>
+						<Label htmlFor='reason'>{text.statusSheet.reasonLabel}</Label>
 						<Textarea
 							id='reason'
-							placeholder='Укажите причину...'
+							placeholder={text.statusSheet.reasonPlaceholder}
 							rows={7}
 							value={reason}
 							onChange={(e) => setReason(e.target.value)}
@@ -354,7 +434,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 					{isApprove && (
 						<div className='grid gap-4 rounded-md border p-3'>
 							<div className='grid gap-2'>
-								<Label htmlFor='kripto-file'>Файл ЭЦП (.kripto)</Label>
+								<Label htmlFor='kripto-file'>{text.statusSheet.kriptoFileLabel}</Label>
 								<Input
 									accept='.kripto,application/json'
 									id='kripto-file'
@@ -362,25 +442,29 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 									onChange={(e) => {
 										const file = e.target.files?.[0]
 										onFileUpload(file).catch((err) => {
-											toast.error(err.message || 'Ошибка при чтении файла ЭЦП')
+											toast.error(err.message || text.toasts.kriptoReadError)
 										})
 									}}
 								/>
-								{fileName && <p className='text-xs text-muted-foreground'>Файл: {fileName}</p>}
+								{fileName && (
+									<p className='text-xs text-muted-foreground'>
+										{text.statusSheet.fileLabel}: {fileName}
+									</p>
+								)}
 							</div>
 
 							<div className='grid gap-2'>
-								<Label htmlFor='key-id'>Определенный key_id</Label>
+								<Label htmlFor='key-id'>{text.statusSheet.keyIdLabel}</Label>
 								<Input
 									id='key-id'
-									placeholder='UUID ключа'
+									placeholder={text.statusSheet.keyIdPlaceholder}
 									readOnly
 									value={keyId}
 								/>
 							</div>
 
 							<div className='grid gap-2'>
-								<Label htmlFor='kripto-password'>Пароль .kripto</Label>
+								<Label htmlFor='kripto-password'>{text.statusSheet.passwordLabel}</Label>
 								<Input
 									id='kripto-password'
 									type='password'
@@ -391,14 +475,14 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsShee
 
 							<label className='flex items-center gap-2 text-sm'>
 								<Checkbox checked={checked} onCheckedChange={(v) => setChecked(Boolean(v))} />
-								<span>Подтверждаю, что проверка ключа должна быть выполнена перед утверждением</span>
+								<span>{text.statusSheet.confirmCheck}</span>
 							</label>
 						</div>
 					)}
 				</div>
 				<SheetFooter>
 					<Button disabled={!newStatus} onClick={onSheetSubmit}>
-						Сохранить
+						{text.statusSheet.save}
 					</Button>
 				</SheetFooter>
 			</SheetContent>
@@ -411,22 +495,21 @@ interface IDeleteAlert {
 	isDeleteDialogOpen: boolean
 	setIsDeleteDialogOpen: (state: boolean) => void
 	onDelete: () => void
+	text: IRupIdLocaleText
 }
 
-const DeleteAlert: FC<IDeleteAlert> = ({ isDeleteDialogOpen, setIsDeleteDialogOpen, onDelete }) => {
+const DeleteAlert: FC<IDeleteAlert> = ({ isDeleteDialogOpen, setIsDeleteDialogOpen, onDelete, text }) => {
 	return (
 		<AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Вы уверены?</AlertDialogTitle>
-					<AlertDialogDescription>
-						Это действие невозможно отменить. Это приведет к необратимому удалению рабочей учебной программы.
-					</AlertDialogDescription>
+					<AlertDialogTitle>{text.deleteDialog.title}</AlertDialogTitle>
+					<AlertDialogDescription>{text.deleteDialog.description}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Отмена</AlertDialogCancel>
+					<AlertDialogCancel>{text.deleteDialog.cancel}</AlertDialogCancel>
 					<AlertDialogAction variant='destructive' onClick={onDelete}>
-						Удалить
+						{text.deleteDialog.delete}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

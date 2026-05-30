@@ -1,36 +1,41 @@
 import { useState } from 'react'
 
+import { getLocaleText } from '@helpers'
+import { getUILocaleSection } from '@helpers'
 import { Loader } from '@components'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import type { IGenerateResources } from '@types'
+import type { IGenerateResources, Locale, LocaleText } from '@types'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { ContactsEdit, GenerateCard, ResourceEdit } from '../components'
+import localeDictionary from './locale.json'
 
 type ResourcesType = {
-	name: string
+	name: LocaleText
 	link?: string
 }
 
 type IProps = FieldValues & {
-	name: string
-	prerequisites: string
-	postrequisites: string
+	name: LocaleText
+	prerequisites: LocaleText
+	postrequisites: LocaleText
 
-	basis: string
-	goals: string
-	competencies: string
+	basis: LocaleText
+	goals: LocaleText
+	competencies: LocaleText
 
 	internetResources: ResourcesType[]
 	technicalResources: ResourcesType[]
 }
 
-export function Step2<T extends IProps>() {
+export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
 	// store, form
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).step2
 	const { authLoading, user } = useAuthStore()
 	const { getValues, setValue } = useFormContext<T>()
 	// states
@@ -42,46 +47,66 @@ export function Step2<T extends IProps>() {
 		...services.user.getAllOptions({ currentPage: 1, pageSize: 100, search: '' }),
 		enabled: true,
 	})
+	const mapGeneratedText = (value: string): LocaleText =>
+		activeLocale === 'ru' ? { ru: value.trim(), kz: '' } : { ru: '', kz: value.trim() }
 
 	const handleGenerate = async () => {
 		if (isLoading || teacherLoading) return
+		if (activeLocale !== 'ru') {
+			toast.error(t.aiRuOnly)
+			return
+		}
 
 		try {
 			setIsLoading(true)
-			toast.loading('Генерируется ресурсы', { id: 'rup-resource-generate' })
+			toast.loading(t.resourcesLoading, { id: 'rup-resource-generate' })
 
 			const values = getValues()
 
 			const mappedData: IGenerateResources = {
-				name: values.name,
-				prerequisites: values.prerequisites,
-				postrequisites: values.postrequisites,
+				name: getLocaleText(values.name, 'ru'),
+				prerequisites: getLocaleText(values.prerequisites, 'ru'),
+				postrequisites: getLocaleText(values.postrequisites, 'ru'),
 
-				basic: values.basis,
-				goals: values.goals,
-				competencies: values.competencies,
+				basic: getLocaleText(values.basis, 'ru'),
+				goals: getLocaleText(values.goals, 'ru'),
+				competencies: getLocaleText(values.competencies, 'ru'),
 				message: additionalMessage.trim() || undefined,
 				includeCurrentContent,
 				currentValues: includeCurrentContent
 					? {
-							internetResources: values.internetResources,
-							technicalResources: values.technicalResources,
+							internetResources: values.internetResources.map((resource) => ({
+								name: getLocaleText(resource.name, 'ru'),
+								link: resource.link,
+							})),
+							technicalResources: values.technicalResources.map((resource) => ({
+								name: getLocaleText(resource.name, 'ru'),
+								link: resource.link,
+							})),
 						}
 					: undefined,
 			}
 
 			const resources = await services.ai.generateResources(mappedData)
+			const mappedInternetResources = resources.internetResources.map((resource) => ({
+				...resource,
+				name: mapGeneratedText(resource.name),
+			}))
+			const mappedTechnicalResources = resources.technicalResources.map((resource) => ({
+				...resource,
+				name: mapGeneratedText(resource.name),
+			}))
 
 			// write
-			setValue('internetResources' as Path<T>, resources.internetResources as PathValue<T, Path<T>>, {
+			setValue('internetResources' as Path<T>, mappedInternetResources as PathValue<T, Path<T>>, {
 				shouldDirty: true,
 			})
-			setValue('technicalResources' as Path<T>, resources.technicalResources as PathValue<T, Path<T>>, {
+			setValue('technicalResources' as Path<T>, mappedTechnicalResources as PathValue<T, Path<T>>, {
 				shouldDirty: true,
 			})
-			toast.success('Успешно сгенерировано ресурсы', { id: 'rup-resource-generate' })
+			toast.success(t.resourcesSuccess, { id: 'rup-resource-generate' })
 		} catch (err) {
-			toast.error(`Ошибка при генерации ресурсов ${err}`, { id: 'rup-resource-generate' })
+			toast.error(`${t.resourcesError}: ${err}`, { id: 'rup-resource-generate' })
 		} finally {
 			setIsLoading(false)
 		}
@@ -94,14 +119,14 @@ export function Step2<T extends IProps>() {
 			<ContactsEdit creatorId={user.keycloakId} teachersData={teachersData?.data || []} />
 
 			<GenerateCard
-				buttonText={isLoading ? 'Генерация…' : 'Сгенерировать'}
+				buttonText={isLoading ? t.generatingButton : t.generateButton}
 				confirmContent={
 					<div className='grid gap-4'>
 						<div className='flex flex-col gap-2'>
-							<Label htmlFor='rup-meta-additional-message'>Дополнительное сообщение</Label>
+							<Label htmlFor='rup-meta-additional-message'>{t.additionalMessageLabel}</Label>
 							<Textarea
 								id='rup-meta-additional-message'
-								placeholder='Уточните, что нужно учесть при генерации'
+								placeholder={t.additionalMessagePlaceholder}
 								rows={4}
 								value={additionalMessage}
 								onChange={(event) => setAdditionalMessage(event.target.value)}
@@ -114,14 +139,14 @@ export function Step2<T extends IProps>() {
 								id='rup-meta-include-current-content'
 								onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
 							/>
-							<Label htmlFor='rup-meta-include-current-content'>Включить текущий написанный контент</Label>
+							<Label htmlFor='rup-meta-include-current-content'>{t.includeCurrentContent}</Label>
 						</div>
 					</div>
 				}
-				description='Тексты будут сформированы на основе базовых данных модуля и описания модуля. После генерации вы сможете отредактировать их вручную.'
+				description={t.generateDescription}
 				disabled={isLoading || teacherLoading}
-				disabledReason='Заполните данные модуля и описание'
-				title='Автоматическая генерация ресурсов'
+				disabledReason={t.generateDisabledReason}
+				title={t.generateTitle}
 				onClick={() => handleGenerate()}
 			/>
 
@@ -131,26 +156,24 @@ export function Step2<T extends IProps>() {
 				<div className='grid xl:grid-cols-2 gap-4'>
 					{/* internet  */}
 					<ResourceEdit
-						buttonText='Добавить ресурс'
-						description={
-							<>
-								Введите список ресурсов откуда был взят материал, <u>ресурс должен быть не старше 5 лет</u>
-							</>
-						}
-						label='Учебно-методический ресурсы'
+						activeLocale={activeLocale}
+						buttonText={t.internetButton}
+						description={t.internetDescription}
+						label={t.internetLabel}
 						name='internetResources'
-						placeholder='Откуда был взят материал для учебной программы'
-						title='Учебно-методическое оснащение, справочная литература/интернет-ресурсы'
+						placeholder={t.internetPlaceholder}
+						title={t.internetTitle}
 					/>
 
 					{/* technical */}
 					<ResourceEdit
-						buttonText='Добавить материал'
-						description='Введите список технических средств которые обязательны для учебного программы'
-						label='Технические средства и материалы'
+						activeLocale={activeLocale}
+						buttonText={t.technicalButton}
+						description={t.technicalDescription}
+						label={t.technicalLabel}
 						name='technicalResources'
-						placeholder='Что нужно при прохождении учебного программы'
-						title='Технические средства и материалы'
+						placeholder={t.technicalPlaceholder}
+						title={t.technicalTitle}
 					/>
 				</div>
 			)}

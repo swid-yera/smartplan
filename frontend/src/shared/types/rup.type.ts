@@ -1,4 +1,5 @@
-import type { IGroup, IResources, IUser, StatusEnum } from './global.type'
+import type { IGroup, IUser, StatusEnum } from './global.type'
+import type { LocalizedText } from './locale.type'
 
 export enum StudyFormEnum {
 	CORRESPONDENCE = 'CORRESPONDENCE',
@@ -25,7 +26,7 @@ export interface IHours {
 
 export interface IRup {
 	id: string
-	name: string
+	name: LocalizedText
 
 	status: StatusEnum
 	reason?: string
@@ -53,16 +54,23 @@ export interface IRup {
 export interface IRupExplorationNote {
 	id: string
 
-	basis: string
-	goals: string
-	summary: string
-	competencies: string
+	basis: LocalizedText
+	goals: LocalizedText
+	summary: LocalizedText
+	competencies: LocalizedText
 
-	prerequisites: string
-	postrequisites: string
+	prerequisites: LocalizedText
+	postrequisites: LocalizedText
 
-	internetResources: IResources[]
-	technicalResources: IResources[]
+	internetResources: IRupResource[]
+	technicalResources: IRupResource[]
+}
+
+export interface IRupResource {
+	id: string
+	name: LocalizedText
+	link?: string
+	type?: string
 }
 
 // discipline
@@ -73,7 +81,7 @@ export interface ISemester {
 }
 
 export interface IDiscipline {
-	name: string
+	name: LocalizedText
 	totalHours: number
 	semesters: ISemester[]
 	topics: ITopics[]
@@ -83,7 +91,7 @@ export interface IDiscipline {
 export interface ITopics {
 	id: string
 
-	name: string
+	name: LocalizedText
 	type: TopicTypeEnum
 
 	totalHours: number

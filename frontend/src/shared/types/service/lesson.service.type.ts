@@ -1,8 +1,9 @@
 import type { LessonResourceTypeEnum, LessonTypeEnum } from '../lesson.type'
+import type { LocaleText } from '../locale.type'
 import type { TopicTypeEnum } from '../rup.type'
 
 export interface IGenerateLessonUpdatedTopic {
-	name: string
+	name: LocaleText
 	type: TopicTypeEnum
 	total_hours: number
 	theory_hours: number

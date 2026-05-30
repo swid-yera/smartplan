@@ -134,6 +134,8 @@ func (r *Router) Init() *gin.Engine {
 				r.rup.GetRupsPaginated(c)
 			})
 			rups.GET("/:id", r.rup.GetRupByID)
+			rups.GET("/:id/language-generation", r.rup.GetLanguageGenerationStatus)
+			rups.POST("/:id/language-generation/regenerate", r.rup.RegenerateLanguageGeneration)
 			rups.POST("", r.rup.CreateRup)
 			rups.PUT("/:id/status", r.rup.UpdateRupStatus)
 			rups.PUT("/:id", r.rup.UpdateRup)

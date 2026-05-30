@@ -46,7 +46,7 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 					<>
 						<SheetHeader className='px-4'>
 							<SheetTitle className='mt-2'>
-								{rup.name + ' '}
+								{getLocaleText(rup.name, currentLocale) + ' '}
 								<StatusBadge status={rup.status} />
 							</SheetTitle>
 							<SheetDescription>{t.description}</SheetDescription>
@@ -71,7 +71,7 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 									)}
 
 									<p className='font-medium'>{t.name}:</p>
-									<p>{rup.name}</p>
+									<p>{getLocaleText(rup.name, currentLocale)}</p>
 
 									<p className='font-medium'>{t.studyForm}:</p>
 									<p>{normalizeStudyForm(rup.studyForm, currentLocale)}</p>

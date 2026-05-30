@@ -44,9 +44,9 @@ export const ContactsView: FC<IProps> = ({ creatorId, contacts }) => {
 					<Table>
 						<TableHeader>
 							<TableRow className='bg-muted/50 hover:bg-muted/50'>
-								<TableHead className='w-[40%] pl-6'>ФИО Преподавателя</TableHead>
-								<TableHead>Контакты</TableHead>
-								<TableHead>Email</TableHead>
+								<TableHead className='w-[40%] pl-6'>{t.contacts.teacherName}</TableHead>
+								<TableHead>{t.contacts.contacts}</TableHead>
+								<TableHead>{t.contacts.email}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -65,7 +65,7 @@ export const ContactsView: FC<IProps> = ({ creatorId, contacts }) => {
 														{teacher.firstName} {teacher.lastName}
 													</span>
 													{isCreator && (
-														<span className='text-[10px] text-primary font-normal'>(Создатель)</span>
+														<span className='text-[10px] text-primary font-normal'>{t.contacts.creator}</span>
 													)}
 												</div>
 											</div>
@@ -92,10 +92,8 @@ export const ContactsView: FC<IProps> = ({ creatorId, contacts }) => {
 						<div className='rounded-full bg-muted p-4 mb-4'>
 							<UserPlus className='h-8 w-8 text-muted-foreground' />
 						</div>
-						<h3 className='font-medium text-lg'>Список пуст</h3>
-						<p className='text-muted-foreground max-w-[300px]'>
-							Выберите педагогов из реестра, чтобы они отобразились в этом блоке.
-						</p>
+						<h3 className='font-medium text-lg'>{t.contacts.emptyTitle}</h3>
+						<p className='text-muted-foreground max-w-[300px]'>{t.contacts.emptyDescription}</p>
 					</div>
 				)}
 			</CardContent>
