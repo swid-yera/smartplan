@@ -271,6 +271,8 @@ type UpdateRupStatusRequest struct {
 	CorrelationID string    `json:"correlationId"`
 	KeyID         string    `json:"keyId"`
 	UserID        string    `json:"userId"`
+	Password      string    `json:"password"`
+	Confirmed     bool      `json:"confirmed"`
 }
 
 type GetRupsInput struct {
@@ -487,8 +489,9 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 		if rupStatus == storage.RupsStatusAPPROVED {
 			startedAt := time.Now()
 			validationResp, err = s.crypto.ValidateKeyOwnership(ctx, ValidateKeyOwnershipRequest{
-				KeyID:  req.KeyID,
-				UserID: req.UserID,
+				KeyID:   req.KeyID,
+				UserID:  req.UserID,
+				Password: req.Password,
 			}, req.CorrelationID)
 			latency := time.Since(startedAt)
 			if err != nil {

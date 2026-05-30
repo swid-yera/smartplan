@@ -30,6 +30,7 @@ type cryptoClient struct {
 type ValidateKeyOwnershipRequest struct {
 	KeyID  string `json:"key_id"`
 	UserID string `json:"user_id"`
+	Password string `json:"password,omitempty"`
 }
 
 type ValidateKeyOwnershipResponse struct {

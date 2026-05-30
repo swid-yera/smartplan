@@ -7,7 +7,6 @@ import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Loader } from '@components'
 import {
-	createKriptoApprovalProof,
 	extractKriptoApprovalMetadata,
 	getLocaleText,
 	getUILocaleSection,
@@ -91,27 +90,26 @@ const Page: FC = () => {
 		replace(`/rups/${params.id}/language-generation`)
 	}, [isLanguageGenerationInProgress, params.id, replace])
 
-	// change rup status
-	const handleStatusChange = (
-		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
-	) => {
-		if (!rupData) return
-		setIsSheetOpen(false)
+// change rup status
+  const handleStatusChange = (
+    newStatus: StatusEnum,
+    options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
+  ) => {
+    if (!rupData) return
+    setIsSheetOpen(false)
 
-		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
+    const toastId = `rup-${rupData.id}-status-update-${newStatus}`
 
-		toast.loading(t.toasts.statusLoading, { id: toastId })
-		const updateStatusPayload: IUpdateStatusRequest = {
-			id: rupData.id,
-			status: newStatus,
-			reason: options?.reason,
-			key_id: options?.keyId,
-			user_id: options?.userId,
-			public_key: options?.publicKey,
-			challenge: options?.challenge,
-			signature: options?.signature,
-		}
+    toast.loading(t.toasts.statusLoading, { id: toastId })
+    const updateStatusPayload: IUpdateStatusRequest = {
+      id: rupData.id,
+      status: newStatus,
+      reason: options?.reason,
+      key_id: options?.keyId,
+      user_id: options?.userId,
+      password: options?.password,
+      confirmed: options?.confirmed,
+    }
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
@@ -282,7 +280,6 @@ const Page: FC = () => {
 			<StatusChangeSheet
 				handleStatusChange={handleStatusChange}
 				isSheetOpen={isSheetOpen}
-				rupId={params.id}
 				setIsSheetOpen={setIsSheetOpen}
 				text={t}
 			/>
@@ -302,10 +299,9 @@ export default Page
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean
 	setIsSheetOpen: (state: boolean) => void
-	rupId: string
 	handleStatusChange: (
 		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
+		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
 	) => void
 	text: IRupIdLocaleText
 }
@@ -313,7 +309,6 @@ interface IStatusChangeSheetProps {
 const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 	isSheetOpen,
 	setIsSheetOpen,
-	rupId,
 	handleStatusChange,
 	text,
 }) => {
@@ -321,10 +316,9 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 	const [reason, setReason] = useState('')
 	const [keyId, setKeyId] = useState('')
 	const [userId, setUserId] = useState('')
-	const [kriptoFileText, setKriptoFileText] = useState('')
-	const [kriptoPassword, setKriptoPassword] = useState('')
 	const [fileName, setFileName] = useState('')
-	const [checked, setChecked] = useState(false)
+	const [password, setPassword] = useState('')
+	const [confirmed, setConfirmed] = useState(false)
 
 	const isApprove = newStatus === StatusEnum.APPROVED
 
@@ -341,59 +335,39 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 
 		setKeyId(metadata.keyId)
 		setUserId(metadata.userId)
-		setKriptoFileText(content)
 		setFileName(file.name)
 		toast.success(text.toasts.kriptoParsed)
 	}
 
-	const onSheetSubmit = async () => {
+	const onSheetSubmit = () => {
 		if (newStatus) {
 			if (isApprove) {
-				if (!keyId || !userId || !kriptoFileText) {
+				if (!fileName || !keyId || !userId) {
 					toast.error(text.toasts.kriptoUploadRequired)
 					return
 				}
-				if (!kriptoPassword) {
+				if (!password) {
 					toast.error(text.toasts.kriptoPasswordRequired)
 					return
 				}
-				if (!checked) {
-					toast.error(text.toasts.kriptoCheckConfirm)
-					return
-				}
-			}
-
-			try {
-				if (isApprove) {
-					const { challenge } = await services.rup.createApproveChallenge(rupId, {
-						key_id: keyId,
-						user_id: userId,
-					})
-					const proof = await createKriptoApprovalProof(kriptoFileText, kriptoPassword, challenge)
-					handleStatusChange(newStatus, {
-						reason,
-						keyId: proof.keyId,
-						userId: proof.userId,
-						publicKey: proof.publicKey,
-						challenge: proof.challenge,
-						signature: proof.signature,
-					})
-				} else {
-					handleStatusChange(newStatus, { reason })
-				}
-			} catch (err) {
-				toast.error(err instanceof Error ? err.message : text.toasts.kriptoVerifyError)
-				return
+				handleStatusChange(newStatus, {
+					reason,
+					keyId,
+					userId,
+					password,
+					confirmed,
+				})
+			} else {
+				handleStatusChange(newStatus, { reason })
 			}
 
 			setNewStatus(undefined)
 			setReason('')
 			setKeyId('')
 			setUserId('')
-			setKriptoFileText('')
-			setKriptoPassword('')
 			setFileName('')
-			setChecked(false)
+			setPassword('')
+			setConfirmed(false)
 		}
 	}
 
@@ -464,24 +438,36 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 							</div>
 
 							<div className='grid gap-2'>
-								<Label htmlFor='kripto-password'>{text.statusSheet.passwordLabel}</Label>
+								<Label htmlFor='password'>{text.statusSheet.passwordLabel}</Label>
 								<Input
-									id='kripto-password'
+									id='password'
 									type='password'
-									value={kriptoPassword}
-									onChange={(e) => setKriptoPassword(e.target.value)}
+									placeholder={text.statusSheet.passwordLabel}
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
 								/>
 							</div>
 
-							<label className='flex items-center gap-2 text-sm'>
-								<Checkbox checked={checked} onCheckedChange={(v) => setChecked(Boolean(v))} />
-								<span>{text.statusSheet.confirmCheck}</span>
-							</label>
+							<div className='grid gap-2'>
+								<div className='flex items-center space-x-2'>
+									<Checkbox
+										id='confirm'
+										checked={confirmed}
+										onCheckedChange={(checked) => setConfirmed(!!checked)}
+									/>
+									<Label htmlFor='confirm' className='cursor-pointer'>
+										{text.statusSheet.confirmCheck}
+									</Label>
+								</div>
+							</div>
 						</div>
 					)}
 				</div>
 				<SheetFooter>
-					<Button disabled={!newStatus} onClick={onSheetSubmit}>
+					<Button 
+						disabled={!newStatus || (isApprove && (!confirmed || !password))} 
+						onClick={onSheetSubmit}
+					>
 						{text.statusSheet.save}
 					</Button>
 				</SheetFooter>

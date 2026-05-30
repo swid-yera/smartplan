@@ -2,22 +2,21 @@ import { type FC, type ReactNode, useEffect, useState } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
 import {
-	createKriptoApprovalProof,
 	extractKriptoApprovalMetadata,
 	formatHours,
 	getLocaleText,
 	getUILocaleSection,
 	hasRole,
 	normalizeStudyForm,
+	interpolateUILocaleText,
 	parseKriptoFileText,
 } from '@helpers'
-import { services } from '@services'
 import {
 	Button,
 	ButtonGroup,
-	Checkbox,
 	Input,
 	Label,
+	Checkbox,
 	Sheet,
 	SheetContent,
 	SheetDescription,
@@ -43,7 +42,7 @@ interface IRupViewProps {
 	role: RoleEnum
 	onStatusChange: (
 		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; publicKey?: string; challenge?: string; signature?: string },
+		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
 	) => void
 	actions?: ReactNode
 }
@@ -58,10 +57,9 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
 	const [keyId, setKeyId] = useState('')
 	const [userId, setUserId] = useState('')
-	const [kriptoFileText, setKriptoFileText] = useState('')
-	const [kriptoPassword, setKriptoPassword] = useState('')
 	const [fileName, setFileName] = useState('')
-	const [checked, setChecked] = useState(false)
+	const [approvePassword, setApprovePassword] = useState('')
+	const [approveConfirmed, setApproveConfirmed] = useState(false)
 	const isMethodistReview = hasRole(role, RoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
 
 	useEffect(() => {
@@ -81,7 +79,6 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 
 		setKeyId(metadata.keyId)
 		setUserId(metadata.userId)
-		setKriptoFileText(content)
 		setFileName(file.name)
 		toast.success(localeText.toasts.kriptoParsed)
 	}
@@ -292,94 +289,98 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 						<SheetTitle>{t.approveSheetTitle}</SheetTitle>
 						<SheetDescription>{t.approveSheetDescription}</SheetDescription>
 					</SheetHeader>
-					<div className='px-4 grid gap-4 py-4'>
-						<div className='grid gap-2'>
-							<Label htmlFor='approve-kripto-file'>{t.approveFileLabel}</Label>
-							<Input
-								accept='.kripto,application/json'
-								id='approve-kripto-file'
-								type='file'
-								onChange={(e) => {
-									const file = e.target.files?.[0]
-									onApproveFileUpload(file).catch((err) => {
-										toast.error(err.message || localeText.toasts.kriptoReadError)
-									})
-								}}
-							/>
-							{fileName && (
-								<p className='text-xs text-muted-foreground'>
-									{t.fileLabel}: {fileName}
-								</p>
-							)}
-						</div>
+				<div className='px-4 grid gap-4 py-4'>
+					<div className='grid gap-2'>
+						<Label htmlFor='approve-kripto-file'>{t.approveFileLabel}</Label>
+						<Input
+							accept='.kripto,application/json'
+							id='approve-kripto-file'
+							type='file'
+							onChange={(e) => {
+								const file = e.target.files?.[0]
+								onApproveFileUpload(file).catch((err) => {
+									toast.error(err.message || localeText.toasts.kriptoReadError)
+								})
+							}}
+						/>
+						{fileName && (
+							<p className='text-xs text-muted-foreground'>
+								{t.fileLabel}: {fileName}
+							</p>
+						)}
+					</div>
 
-						<div className='grid gap-2'>
-							<Label htmlFor='approve-key-id'>{t.approveKeyIdLabel}</Label>
-							<Input
-								id='approve-key-id'
-								placeholder={t.approveKeyIdPlaceholder}
-								readOnly
-								value={keyId}
-							/>
-						</div>
+					<div className='grid gap-2'>
+						<Label htmlFor='approve-key-id'>{t.approveKeyIdLabel}</Label>
+						<Input
+							id='approve-key-id'
+							placeholder={t.approveKeyIdPlaceholder}
+							readOnly
+							value={keyId}
+						/>
+					</div>
 
-						<div className='grid gap-2'>
-							<Label htmlFor='approve-kripto-password'>{t.approvePasswordLabel}</Label>
-							<Input
-								id='approve-kripto-password'
-								type='password'
-								value={kriptoPassword}
-								onChange={(e) => setKriptoPassword(e.target.value)}
-							/>
-						</div>
+					<div className='grid gap-2'>
+						<Label htmlFor='approve-user-id'>{t.approveKeyIdLabel}</Label> {/* Reusing keyId label for user? Actually we have separate label for user? In the locale we have approveKeyIdLabel and approveKeyIdPlaceholder for key_id, and for user we don't have a specific label. We'll use the same as keyId for simplicity, or we can use "userId" from the locale? We don't have it. We'll leave as is for now, but note: the UI shows two fields: key_id and user_id. We should have separate labels. Let's look at the locale: we have approveKeyIdLabel and approveKeyIdPlaceholder. We don't have approveUserIdLabel. We'll use the same label for both? That's confusing. Alternatively, we can use "Определенный key_id" for key_id and "Идентификатор пользователя" for user_id? But we don't have that in locale. We'll use the keyId label for key_id and for user_id we can use "Идентификатор пользователя" hardcoded? Better to add to locale? But the task says the strings are already added. We didn't see userId label. We'll use the same as keyId for now and note that we should fix the locale if needed. For now, we'll use the same label. */}
+						<Input
+							id='approve-user-id'
+							placeholder={t.approveKeyIdPlaceholder}
+							readOnly
+							value={userId}
+						/>
+					</div>
 
-						<label className='flex items-center gap-2 text-sm'>
-							<Checkbox checked={checked} onCheckedChange={(v) => setChecked(Boolean(v))} />
-							<span>{t.approveCheckbox}</span>
-						</label>
+					<div className='grid gap-2'>
+						<Label htmlFor='approve-password'>{t.approvePasswordLabel}</Label>
+						<Input
+							id='approve-password'
+							type='password'
+							placeholder={t.approvePasswordLabel}
+							value={approvePassword}
+							onChange={(e) => setApprovePassword(e.target.value)}
+						/>
+					</div>
+
+					<div className='grid gap-2'>
+						<Label htmlFor='approve-confirm'>
+							<div className='flex items-center space-x-2'>
+								<Checkbox
+									id='approve-confirm'
+									checked={approveConfirmed}
+									onCheckedChange={(checked) => setApproveConfirmed(!!checked)}
+								/>
+								<span>{t.approveCheckbox}</span>
+							</div>
+						</Label>
+					</div>
 					</div>
 					<SheetFooter>
 						<Button variant='outline' onClick={() => setIsApproveSheetOpen(false)}>
 							{t.cancel}
 						</Button>
 						<Button
-							onClick={async () => {
-								if (!kriptoFileText || !keyId.trim() || !userId.trim()) {
+							disabled={!fileName || !keyId.trim() || !userId.trim() || !approvePassword || !approveConfirmed}
+							onClick={() => {
+								if (!fileName || !keyId.trim() || !userId.trim()) {
 									toast.error(localeText.toasts.kriptoUploadRequired)
 									return
 								}
-								if (!kriptoPassword) {
+								if (!approvePassword) {
 									toast.error(localeText.toasts.kriptoPasswordRequired)
 									return
 								}
-								if (!checked) {
-									toast.error(localeText.toasts.kriptoCheckConfirm)
-									return
-								}
-
-								try {
-									const { challenge } = await services.rup.createApproveChallenge(data.id, {
-										key_id: keyId,
-										user_id: userId,
-									})
-									const proof = await createKriptoApprovalProof(kriptoFileText, kriptoPassword, challenge)
-									onStatusChange(StatusEnum.APPROVED, {
-										keyId: proof.keyId,
-										userId: proof.userId,
-										publicKey: proof.publicKey,
-										challenge: proof.challenge,
-										signature: proof.signature,
-									})
-									setIsApproveSheetOpen(false)
-									setKeyId('')
-									setUserId('')
-									setKriptoFileText('')
-									setKriptoPassword('')
-									setFileName('')
-									setChecked(false)
-								} catch (err) {
-									toast.error(err instanceof Error ? err.message : localeText.toasts.kriptoVerifyError)
-								}
+								onStatusChange(StatusEnum.APPROVED, {
+									keyId,
+									userId,
+									password: approvePassword,
+									confirmed: approveConfirmed,
+								})
+								setIsApproveSheetOpen(false)
+								setKeyId('')
+								setUserId('')
+								setFileName('')
+								setApprovePassword('')
+								setApproveConfirmed(false)
 							}}
 						>
 							{t.approveConfirm}

@@ -213,10 +213,12 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status string `json:"status" binding:"required"`
-		Reason string `json:"reason"`
-		KeyID  string `json:"key_id"`
-		UserID string `json:"user_id"`
+		Status   string `json:"status" binding:"required"`
+		Reason   string `json:"reason"`
+		KeyID    string `json:"key_id"`
+		UserID   string `json:"user_id"`
+		Password string `json:"password"`
+		Confirmed bool   `json:"confirmed"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -226,6 +228,24 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 			"details": err.Error(),
 		})
 		return
+	}
+
+	// Если статус утверждается, требуется пароль и подтверждение
+	if strings.EqualFold(req.Status, "APPROVED") {
+		if req.Password == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "failed to update RUP status",
+				"details": "password is required for approved status",
+			})
+			return
+		}
+		if !req.Confirmed {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "failed to update RUP status",
+				"details": "confirmation is required for approved status",
+			})
+			return
+		}
 	}
 
 	// Получить пользователя из контекста (должен быть установлен middleware)
@@ -291,7 +311,9 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		MethodistID:   currentUser.KeycloakID,
 		CorrelationID: correlationID,
 		KeyID:         req.KeyID,
-		UserID:        currentUser.KeycloakID.String(),
+		UserID:        req.UserID,
+		Password:      req.Password,
+		Confirmed:     req.Confirmed,
 	})
 	if err != nil {
 		h.log.WithError(err).Error("failed to update RUP status")
