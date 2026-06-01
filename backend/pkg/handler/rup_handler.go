@@ -213,11 +213,11 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status   string `json:"status" binding:"required"`
-		Reason   string `json:"reason"`
-		KeyID    string `json:"key_id"`
-		UserID   string `json:"user_id"`
-		Password string `json:"password"`
+		Status    string `json:"status" binding:"required"`
+		Reason    string `json:"reason"`
+		KeyID     string `json:"key_id"`
+		UserID    string `json:"user_id"`
+		Password  string `json:"password"`
 		Confirmed bool   `json:"confirmed"`
 	}
 
@@ -413,9 +413,15 @@ func (h *RupHandler) DownloadRup(c *gin.Context) {
 		return
 	}
 
+	language := strings.TrimSpace(c.Query("locale"))
+	if language == "" {
+		language = strings.TrimSpace(c.Query("language"))
+	}
+
 	url, err := h.rupService.GetRupDownloadURL(
 		c.Request.Context(),
 		id,
+		language,
 	)
 	if err != nil {
 		c.JSON(404, gin.H{"error": "file not found"})

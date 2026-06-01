@@ -33,7 +33,7 @@ type RupService interface {
 	UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) error
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
-	GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error)
+	GetRupDownloadURL(ctx context.Context, id uuid.UUID, language string) (string, error)
 	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (*PaginatedRupsResponse, error)
 	CountRups(ctx context.Context) (int64, error)
 }
@@ -152,15 +152,16 @@ type RupResponse struct {
 type RupDocumentPayload struct {
 	ID              uuid.UUID                  `json:"id"`
 	Name            string                     `json:"name"`
+	Language        string                     `json:"language,omitempty"`
 	Course          int32                      `json:"course"`
 	StudyForm       string                     `json:"studyForm"`
 	StudyYear       string                     `json:"studyYear"`
 	Type            string                     `json:"type"`
 	TotalHours      int32                      `json:"totalHours"`
 	Contacts        []*helpers.UserResponse    `json:"contacts"`
-	Group           *GroupResponse             `json:"group"`
+	Group           *RupDocumentGroup          `json:"group"`
 	ExplorationNote RupDocumentExplorationNote `json:"explorationNote"`
-	Disciplines     []*DisciplineResponse      `json:"disciplines"`
+	Disciplines     []*RupDocumentDiscipline   `json:"disciplines"`
 }
 
 type ListAllRupsResponse struct {
@@ -207,19 +208,44 @@ type ResourceResponse struct {
 }
 
 type RupDocumentExplorationNote struct {
-	Basis              *localization.LocaleText `json:"basis,omitempty"`
-	Goals              *localization.LocaleText `json:"goals,omitempty"`
-	Summary            *localization.LocaleText `json:"summary,omitempty"`
-	Competencies       *localization.LocaleText `json:"competencies,omitempty"`
-	Prerequisites      *localization.LocaleText `json:"prerequisites,omitempty"`
-	Postrequisites     *localization.LocaleText `json:"postrequisites,omitempty"`
-	InternetResources  []*RupDocumentResource   `json:"internetResources"`
-	TechnicalResources []*RupDocumentResource   `json:"technicalResources"`
+	Basis              string                 `json:"basis,omitempty"`
+	Goals              string                 `json:"goals,omitempty"`
+	Summary            string                 `json:"summary,omitempty"`
+	Competencies       string                 `json:"competencies,omitempty"`
+	Prerequisites      string                 `json:"prerequisites,omitempty"`
+	Postrequisites     string                 `json:"postrequisites,omitempty"`
+	InternetResources  []*RupDocumentResource `json:"internetResources"`
+	TechnicalResources []*RupDocumentResource `json:"technicalResources"`
 }
 
 type RupDocumentResource struct {
 	Name string `json:"name"`
 	Link string `json:"link"`
+}
+
+type RupDocumentGroup struct {
+	KeycloakID    uuid.UUID `json:"keycloakId"`
+	Name          string    `json:"name"`
+	Qualification string    `json:"qualification"`
+	Specialty     string    `json:"specialty"`
+}
+
+type RupDocumentDiscipline struct {
+	Name      string              `json:"name"`
+	Semesters []*SemesterResponse `json:"semesters"`
+	Topics    []*RupDocumentTopic `json:"topics"`
+}
+
+type RupDocumentTopic struct {
+	ID              uuid.UUID `json:"id"`
+	Name            string    `json:"name"`
+	Type            string    `json:"type"`
+	TotalHours      int32     `json:"totalHours"`
+	TheoryHours     int32     `json:"theoryHours"`
+	PracticeHours   int32     `json:"practiceHours"`
+	IndividualHours int32     `json:"individualHours"`
+	SrspHours       int32     `json:"srspHours"`
+	SrsHours        int32     `json:"srsHours"`
 }
 
 type DisciplineResponse struct {
@@ -489,8 +515,8 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 		if rupStatus == storage.RupsStatusAPPROVED {
 			startedAt := time.Now()
 			validationResp, err = s.crypto.ValidateKeyOwnership(ctx, ValidateKeyOwnershipRequest{
-				KeyID:   req.KeyID,
-				UserID:  req.UserID,
+				KeyID:    req.KeyID,
+				UserID:   req.UserID,
 				Password: req.Password,
 			}, req.CorrelationID)
 			latency := time.Since(startedAt)
@@ -586,7 +612,7 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 					continue
 				}
 
-				fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group)
+				fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group, "ru")
 				if err != nil {
 					return err
 				}
@@ -596,7 +622,7 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 				objectName := fmt.Sprintf(
 					"rups/%s/%s_%s.docx",
 					req.ID.String(),
-					localePrimaryText(rup.Name),
+					localeTextByLanguage(rup.Name, "ru"),
 					creationTime,
 				)
 
@@ -677,7 +703,7 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 	return s.buildRupResponse(ctx, *updatedRup)
 }
 
-func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResponse, group *GroupResponse) ([]byte, error) {
+func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResponse, group *GroupResponse, language string) ([]byte, error) {
 	if rup == nil {
 		return nil, fmt.Errorf("rup is nil")
 	}
@@ -686,7 +712,7 @@ func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResp
 	}
 
 	// 1. строим payload для конкретной группы
-	payload := buildPayload(rup, group)
+	payload := buildPayload(rup, group, language)
 
 	// 2. JSON
 	body, err := json.Marshal(payload)
@@ -814,15 +840,19 @@ func resolveRedirectURL(currentURL string, location string) (string, error) {
 	return baseURL.ResolveReference(locURL).String(), nil
 }
 
-func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
+func buildPayload(rup *RupResponse, group *GroupResponse, language string) RupDocumentPayload {
+	selectedLanguage := normalizeBackendLanguage(language)
+	if selectedLanguage == "" {
+		selectedLanguage = "ru"
+	}
 
 	// ---------- GROUP ----------
-	selectedGroup := GroupResponse{}
+	selectedGroup := RupDocumentGroup{}
 	if group != nil {
-		selectedGroup = GroupResponse{
+		selectedGroup = RupDocumentGroup{
 			Name:          group.Name,
-			Specialty:     group.Specialty,
-			Qualification: group.Qualification,
+			Specialty:     localeTextByLanguage(group.Specialty, selectedLanguage),
+			Qualification: localeTextByLanguage(group.Qualification, selectedLanguage),
 			KeycloakID:    group.KeycloakID,
 		}
 	}
@@ -842,7 +872,7 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 	}
 
 	// ---------- DISCIPLINES ----------
-	disciplines := make([]*DisciplineResponse, 0, len(rup.Disciplines))
+	disciplines := make([]*RupDocumentDiscipline, 0, len(rup.Disciplines))
 	for _, d := range rup.Disciplines {
 
 		semesters := []*SemesterResponse{}
@@ -853,12 +883,12 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 			})
 		}
 
-		topics := []*TopicResponse{}
+		topics := []*RupDocumentTopic{}
 		for _, t := range d.Topics {
-			topics = append(topics, &TopicResponse{
+			topics = append(topics, &RupDocumentTopic{
 				ID:              t.ID,
-				Name:            t.Name,
-				Type:            t.Type,
+				Name:            localeTextByLanguage(t.Name, selectedLanguage),
+				Type:            string(t.Type),
 				TotalHours:      t.TotalHours,
 				TheoryHours:     t.TheoryHours,
 				PracticeHours:   t.PracticeHours,
@@ -868,8 +898,8 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 			})
 		}
 
-		disciplines = append(disciplines, &DisciplineResponse{
-			Name:      d.Name,
+		disciplines = append(disciplines, &RupDocumentDiscipline{
+			Name:      localeTextByLanguage(d.Name, selectedLanguage),
 			Semesters: semesters,
 			Topics:    topics,
 		})
@@ -879,16 +909,17 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 	exploration := RupDocumentExplorationNote{}
 	en := rup.ExplorationNote
 
-	exploration.Basis = en.Basis
-	exploration.Goals = en.Goals
-	exploration.Competencies = en.Competencies
-	exploration.Prerequisites = en.Prerequisites
-	exploration.Postrequisites = en.Postrequisites
+	exploration.Basis = localePointerTextByLanguage(en.Basis, selectedLanguage)
+	exploration.Goals = localePointerTextByLanguage(en.Goals, selectedLanguage)
+	exploration.Summary = localePointerTextByLanguage(en.Summary, selectedLanguage)
+	exploration.Competencies = localePointerTextByLanguage(en.Competencies, selectedLanguage)
+	exploration.Prerequisites = localePointerTextByLanguage(en.Prerequisites, selectedLanguage)
+	exploration.Postrequisites = localePointerTextByLanguage(en.Postrequisites, selectedLanguage)
 
 	internet := []*RupDocumentResource{}
 	for _, r := range en.InternetResources {
 		internet = append(internet, &RupDocumentResource{
-			Name: localePrimaryText(r.Name),
+			Name: localeTextByLanguage(r.Name, selectedLanguage),
 			Link: r.Link,
 		})
 	}
@@ -896,7 +927,7 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 	technical := []*RupDocumentResource{}
 	for _, r := range en.TechnicalResources {
 		technical = append(technical, &RupDocumentResource{
-			Name: localePrimaryText(r.Name),
+			Name: localeTextByLanguage(r.Name, selectedLanguage),
 			Link: r.Link,
 		})
 	}
@@ -906,7 +937,8 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 
 	return RupDocumentPayload{
 		ID:              rup.ID,
-		Name:            localePrimaryText(rup.Name),
+		Name:            localeTextByLanguage(rup.Name, selectedLanguage),
+		Language:        selectedLanguage,
 		Type:            rup.Type,
 		StudyForm:       rup.StudyForm,
 		StudyYear:       rup.StudyYear,
@@ -919,30 +951,81 @@ func buildPayload(rup *RupResponse, group *GroupResponse) RupDocumentPayload {
 	}
 }
 
-func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID) (string, error) {
-	prefix := fmt.Sprintf("rups/%s/", id.String())
-	objects, err := s.fileStorage.ListFiles(ctx, prefix)
+func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID, language string) (string, error) {
+	selectedLanguage := normalizeBackendLanguage(language)
+	if selectedLanguage == "" {
+		selectedLanguage = "ru"
+	}
+
+	rup, err := s.GetRupByID(ctx, id)
 	if err != nil {
 		return "", err
 	}
-
-	var latest string
-	var latestTime time.Time
-	for _, obj := range objects {
-		if !strings.HasSuffix(obj.Key, ".docx") {
-			continue
-		}
-		if obj.LastModified.After(latestTime) {
-			latestTime = obj.LastModified
-			latest = obj.Key
-		}
+	if len(rup.Groups) == 0 {
+		return "", fmt.Errorf("rup has no groups")
 	}
 
-	if latest == "" {
+	var latestObjectKey string
+	for _, group := range rup.Groups {
+		if group == nil {
+			continue
+		}
+
+		fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group, selectedLanguage)
+		if err != nil {
+			return "", err
+		}
+
+		creationTime := time.Now().UTC().Format("20060102_150405")
+		objectName := fmt.Sprintf(
+			"rups/%s/%s_%s_%s.docx",
+			id.String(),
+			localeTextByLanguage(rup.Name, selectedLanguage),
+			selectedLanguage,
+			creationTime,
+		)
+
+		if err := s.fileStorage.UploadFile(
+			ctx,
+			objectName,
+			bytes.NewReader(fileBytes),
+			int64(len(fileBytes)),
+		); err != nil {
+			return "", err
+		}
+
+		latestObjectKey = objectName
+	}
+
+	if latestObjectKey == "" {
 		return "", fmt.Errorf("rup document not found for id %s", id.String())
 	}
 
-	return s.fileStorage.GetDownloadFileURL(ctx, latest, 10*time.Minute)
+	return s.fileStorage.GetDownloadFileURL(ctx, latestObjectKey, 10*time.Minute)
+}
+
+func localeTextByLanguage(value localization.LocaleText, language string) string {
+	if selected := localeValueByLanguage(value, language); selected != "" {
+		return selected
+	}
+
+	if fallback := localeValueByLanguage(value, oppositeBackendLanguage(language)); fallback != "" {
+		return fallback
+	}
+
+	if ru := strings.TrimSpace(value.Ru); ru != "" {
+		return ru
+	}
+
+	return strings.TrimSpace(value.Kz)
+}
+
+func localePointerTextByLanguage(value *localization.LocaleText, language string) string {
+	if value == nil {
+		return ""
+	}
+
+	return localeTextByLanguage(*value, language)
 }
 
 func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {

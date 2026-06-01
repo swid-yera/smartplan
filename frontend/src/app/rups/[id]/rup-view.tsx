@@ -1,4 +1,4 @@
-import { type FC, type ReactNode, useEffect, useState } from 'react'
+import { type FC, type ReactNode, useState } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, StatusBadge } from '@components'
 import {
@@ -40,6 +40,8 @@ import localeDictionary from './locale.json'
 interface IRupViewProps {
 	data: IRup
 	role: RoleEnum
+	activeLocale: Locale
+	onActiveLocaleChange: (nextLocale: Locale) => void
 	onStatusChange: (
 		newStatus: StatusEnum,
 		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
@@ -47,11 +49,17 @@ interface IRupViewProps {
 	actions?: ReactNode
 }
 
-export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions }) => {
+export const RupView: FC<IRupViewProps> = ({
+	data,
+	role,
+	activeLocale,
+	onActiveLocaleChange,
+	onStatusChange,
+	actions,
+}) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const localeText = getUILocaleSection(localeDictionary, locale)
 	const t = localeText.view
-	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
 	const [generalComment, setGeneralComment] = useState('')
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
 	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
@@ -61,10 +69,6 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 	const [approvePassword, setApprovePassword] = useState('')
 	const [approveConfirmed, setApproveConfirmed] = useState(false)
 	const isMethodistReview = hasRole(role, RoleEnum.METHODIST, true) && data.status === StatusEnum.IN_REVIEW
-
-	useEffect(() => {
-		setActiveLocale(locale)
-	}, [locale])
 
 	const onApproveFileUpload = async (file?: File) => {
 		if (!file) return
@@ -89,7 +93,7 @@ export const RupView: FC<IRupViewProps> = ({ data, role, onStatusChange, actions
 				sticky
 				actions={
 					<div className='flex items-center gap-2'>
-						<Tabs value={activeLocale} onValueChange={(next) => setActiveLocale(next as Locale)}>
+						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
 							<TabsList>
 								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
 								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
