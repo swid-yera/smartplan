@@ -34,3 +34,28 @@ LESSON_TYPE_MAP = {
 # decode lesson type from enum to text
 def decode_lesson_type(value: str) -> str:
     return LESSON_TYPE_MAP.get(value, value)
+
+
+def normalize_language(value: str | None) -> str:
+    normalized = (value or "").strip().lower()
+    if normalized == "ru":
+        return "ru"
+    if normalized in {"kz", "kk"}:
+        return "kz"
+    return "ru"
+
+
+def locale_text(value, language: str = "ru") -> str:
+    if isinstance(value, str):
+        return value.strip()
+
+    if not isinstance(value, dict):
+        return ""
+
+    lang = normalize_language(language)
+    ru = str(value.get("ru", "") or "").strip()
+    kz = str(value.get("kz", "") or "").strip()
+
+    if lang == "kz":
+        return kz or ru
+    return ru or kz

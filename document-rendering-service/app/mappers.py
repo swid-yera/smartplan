@@ -1,9 +1,14 @@
 from docxtpl import RichText
 
-from app.helpers.rup_helpers import decode_lesson_type, short_name, zero_to_empty
+from app.helpers.rup_helpers import (
+    decode_lesson_type,
+    locale_text,
+    short_name,
+    zero_to_empty,
+)
 
 
-def build_disciplines_table(disciplines_data: dict) -> tuple[list, list]:
+def build_disciplines_table(disciplines_data: dict, language: str = "ru") -> tuple[list, list]:
     """
     returns:
     - disciplines: string list for table
@@ -16,7 +21,7 @@ def build_disciplines_table(disciplines_data: dict) -> tuple[list, list]:
     for discipline in disciplines_data:
 
         row = {
-            "name": discipline.get("name", ""),
+            "name": locale_text(discipline.get("name", ""), language),
             "total": zero_to_empty(discipline.get("totalHours", 0)),
         }
 
@@ -81,17 +86,17 @@ def build_contacts(contacts: list) -> list:
 
 
 # build resources list
-def build_resources(resources: dict) -> list:
+def build_resources(resources: dict, language: str = "ru") -> list:
     result = []
 
-    for item in resources:
-        result.append(item.get("name", ""))
+    for item in resources or []:
+        result.append(locale_text(item.get("name", ""), language))
 
     return result
 
 
 # build content table
-def build_content_table(disciplineData: dict) -> list:
+def build_content_table(disciplineData: dict, language: str = "ru") -> list:
     """
     creates a flat list of rows for the table.
     logic:
@@ -140,14 +145,14 @@ def build_content_table(disciplineData: dict) -> list:
             d_stats["srs"] += t_srs
 
             # name and type
-            t_name = topic.get("name")
+            t_name = locale_text(topic.get("name"), language)
             t_type = topic.get("type")
 
             # display logic:
             # if this is the first topic (i == 0), show the course code and name
             # otherwise show an empty string
             if i == 0:
-                disc_name = discipline.get("name", "")
+                disc_name = locale_text(discipline.get("name", ""), language)
             else:
                 disc_name = ""
 

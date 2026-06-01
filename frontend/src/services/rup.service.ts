@@ -2,6 +2,7 @@ import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
+	BackendLocale,
 	ICreateRupRequest,
 	IDownloadResponse,
 	IGetAllRequest,
@@ -153,11 +154,13 @@ export class RupService {
 	}
 
 	// get by id
-	getDownloadUrlOptions = (id: string) => {
+	getDownloadUrlOptions = (id: string, locale: BackendLocale) => {
 		return queryOptions<IDownloadResponse>({
-			queryKey: [],
+			queryKey: ['rup-download', id, locale],
 			queryFn: async () => {
-				const { data, status, statusText } = await api.get<IDownloadResponse>(`/rups/${id}/download`)
+				const { data, status, statusText } = await api.get<IDownloadResponse>(`/rups/${id}/download`, {
+					params: { locale },
+				})
 
 				if (status !== 200) throw new Error(statusText)
 

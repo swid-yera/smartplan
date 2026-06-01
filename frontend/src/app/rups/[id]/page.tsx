@@ -47,7 +47,7 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
+import { type IUpdateStatusRequest, type Locale, RoleEnum, StatusEnum } from '@types'
 import { Edit, FileDown, RotateCcw, SendIcon, ShieldAlert, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -65,6 +65,7 @@ const Page: FC = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 
+	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
@@ -75,7 +76,7 @@ const Page: FC = () => {
 		enabled: !!params.id,
 	})
 	const { refetch: getDownloadUrl } = useQuery({
-		...services.rup.getDownloadUrlOptions(params.id),
+		...services.rup.getDownloadUrlOptions(params.id, toBackendLocale(activeLocale)),
 		enabled: false,
 	})
 	// mutations
@@ -89,6 +90,10 @@ const Page: FC = () => {
 		if (!isLanguageGenerationInProgress) return
 		replace(`/rups/${params.id}/language-generation`)
 	}, [isLanguageGenerationInProgress, params.id, replace])
+
+	useEffect(() => {
+		setActiveLocale(locale)
+	}, [locale])
 
 // change rup status
   const handleStatusChange = (
@@ -155,7 +160,7 @@ const Page: FC = () => {
 				const link = document.createElement('a')
 
 				link.href = data.url
-				link.setAttribute('download', `RUP_${getLocaleText(rupData?.name, locale) || 'file'}.docx`)
+				link.setAttribute('download', `RUP_${getLocaleText(rupData?.name, activeLocale) || 'file'}.docx`)
 				document.body.appendChild(link)
 				link.click()
 				link.remove()
@@ -177,7 +182,7 @@ const Page: FC = () => {
 		regenerateLanguageMutation.mutate(
 			{
 				id: rupData.id,
-				sourceLanguage: toBackendLocale(locale),
+				sourceLanguage: toBackendLocale(activeLocale),
 			},
 			{
 				onSuccess: () => {
@@ -211,6 +216,7 @@ const Page: FC = () => {
 	return (
 		<>
 			<RupView
+				activeLocale={activeLocale}
 				actions={
 					<ButtonGroup>
 						{isAdmin && (
@@ -273,6 +279,7 @@ const Page: FC = () => {
 					</ButtonGroup>
 				}
 				data={rupData}
+				onActiveLocaleChange={setActiveLocale}
 				role={user.role}
 				onStatusChange={handleStatusChange}
 			/>
