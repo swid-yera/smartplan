@@ -28,6 +28,7 @@ export interface IAiRupGroupInput {
 }
 
 export interface IGenerateRupMeta {
+	sourceLanguage?: 'ru' | 'kk'
 	name: string
 	type: RupTypeEnum
 	studyForm: StudyFormEnum
@@ -54,6 +55,7 @@ export interface IGenerateRupMetaResponse {
 }
 
 export interface IGenerateResources {
+	sourceLanguage?: 'ru' | 'kk'
 	name: string
 	prerequisites: string
 	postrequisites: string
@@ -74,6 +76,7 @@ export interface IGenerateResourcesResponse {
 }
 
 export interface IGenerateDisciplines {
+	sourceLanguage?: 'ru' | 'kk'
 	name: string
 	course: number
 	goals: string
@@ -94,6 +97,7 @@ export interface IGenerateDisciplinesResponse {
 }
 
 export interface IGenerateTopicsForDiscipline {
+	sourceLanguage?: 'ru' | 'kk'
 	rupName: string
 	rupType: RupTypeEnum
 	goals: string

@@ -76,6 +76,7 @@ func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequ
 	)
 
 	prompt := helpers.BuildGenerateRupMetaPrompt(helpers.GenerateRupMetaPromptInput{
+		SourceLanguage:       req.SourceLanguage,
 		Name:                 req.Name,
 		Type:                 req.Type,
 		StudyForm:            req.StudyForm,
@@ -111,6 +112,7 @@ func (s *aiService) GenerateResources(ctx context.Context, req GenerateResources
 	)
 
 	prompt := helpers.BuildGenerateResourcesPrompt(helpers.GenerateResourcesPromptInput{
+		SourceLanguage:       req.SourceLanguage,
 		Name:                 req.Name,
 		Prerequisites:        req.Prerequisites,
 		Postrequisites:       req.Postrequisites,
@@ -142,6 +144,7 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 	)
 
 	prompt := helpers.BuildGenerateDisciplinesPrompt(helpers.GenerateDisciplinesPromptInput{
+		SourceLanguage:       req.SourceLanguage,
 		WantsHours:           req.WantsHours,
 		DisciplineCount:      req.DisciplineCount,
 		Course:               req.Course,
@@ -211,7 +214,46 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 		"СТАРЫЕ ДАННЫЕ (currentValues) ПО ДИСЦИПЛИНЕ ДЛЯ ПЕРЕГЕНЕРАЦИИ",
 	)
 
+	chunks := splitTopicCountInHalf(topicCount)
+	result := make([]GeneratedTopic, 0, topicCount)
+	for idx, chunkCount := range chunks {
+		if chunkCount <= 0 {
+			continue
+		}
+
+		partReq := req
+		partReq.DisciplineHours = chunkCount * topicHours
+		partReq.PreferredPracticalCount = splitPreferredCountForChunk(req.PreferredPracticalCount, idx, chunkCount, topicCount)
+		partReq.PreferredSnzCount = splitPreferredCountForChunk(req.PreferredSnzCount, idx, chunkCount, topicCount)
+		partReq.PreferredCombinedCount = splitPreferredCountForChunk(req.PreferredCombinedCount, idx, chunkCount, topicCount)
+
+		batchContext := fmt.Sprintf(
+			"Сейчас генерируется часть %d из %d. Верни ровно %d тем только для этой части.",
+			idx+1,
+			len(chunks),
+			chunkCount,
+		)
+
+		partTopics, err := s.generateTopicsChunk(ctx, partReq, chunkCount, currentValuesContext, batchContext)
+		if err != nil {
+			return nil, fmt.Errorf("generate topics for discipline (part %d/%d): %w", idx+1, len(chunks), err)
+		}
+
+		result = append(result, partTopics...)
+	}
+
+	return normalizeGeneratedTopics(result, req, topicHours), nil
+}
+
+func (s *aiService) generateTopicsChunk(
+	ctx context.Context,
+	req GenerateTopicsForDisciplineRequest,
+	topicCount int,
+	currentValuesContext string,
+	batchContext string,
+) ([]GeneratedTopic, error) {
 	prompt := helpers.BuildGenerateTopicsForDisciplinePrompt(helpers.GenerateTopicsForDisciplinePromptInput{
+		SourceLanguage:          req.SourceLanguage,
 		DisciplineName:          req.DisciplineName,
 		RupName:                 req.RupName,
 		DisciplineHours:         req.DisciplineHours,
@@ -220,6 +262,7 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 		Competencies:            req.Competencies,
 		Message:                 req.Message,
 		TopicCount:              topicCount,
+		BatchContext:            batchContext,
 		PreferredPracticalCount: req.PreferredPracticalCount,
 		PreferredSnzCount:       req.PreferredSnzCount,
 		PreferredCombinedCount:  req.PreferredCombinedCount,
@@ -266,7 +309,36 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 		})
 	}
 
-	return normalizeGeneratedTopics(result, req, topicHours), nil
+	return result, nil
+}
+
+func splitTopicCountInHalf(topicCount int) []int {
+	if topicCount <= 0 {
+		return nil
+	}
+	if topicCount == 1 {
+		return []int{1}
+	}
+
+	first := topicCount / 2
+	second := topicCount - first
+	return []int{first, second}
+}
+
+func splitPreferredCountForChunk(total int, chunkIndex int, chunkTopicCount int, totalTopicCount int) int {
+	if total <= 0 || totalTopicCount <= 0 || chunkTopicCount <= 0 {
+		return 0
+	}
+
+	firstChunkTopicCount := totalTopicCount / 2
+	firstPart := (total * firstChunkTopicCount) / totalTopicCount
+	secondPart := total - firstPart
+
+	if chunkIndex == 0 {
+		return firstPart
+	}
+
+	return secondPart
 }
 
 func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonRequest) (*GenerateLessonResponse, error) {
@@ -580,8 +652,12 @@ func normalizeGeneratedTopics(rawTopics []GeneratedTopic, req GenerateTopicsForD
 
 	types := buildNormalizedTopicTypes(rawTopics, req, targetTopicCount, isPracticeRup)
 	result := make([]GeneratedTopic, 0, targetTopicCount)
+	namePrefix := "Тема"
+	if strings.EqualFold(req.SourceLanguage, "kk") {
+		namePrefix = "Тақырып"
+	}
 	for i := 0; i < targetTopicCount; i++ {
-		name := fmt.Sprintf("Тема %d", i+1)
+		name := fmt.Sprintf("%s %d", namePrefix, i+1)
 		if i < len(names) {
 			name = names[i]
 		}

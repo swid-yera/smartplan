@@ -275,6 +275,9 @@ const Page: NextPage = () => {
 	const onReset = () => {
 		window.localStorage.removeItem(LOCAL_STORAGE_KEY)
 		window.localStorage.removeItem(HIGHEST_STEP_STORAGE_KEY)
+		window.localStorage.removeItem(CREATE_LANGUAGE_STORAGE_KEY)
+		setCreationLocale(null)
+		setIsLanguageDialogOpen(true)
 		methods.reset(defaultValues)
 	}
 
@@ -515,13 +518,23 @@ const Page: NextPage = () => {
 								<PageTitle
 									sticky
 									actions={
-										creationLocale ? (
-											<Badge variant='secondary'>
-												{interpolateUILocaleText(pageT.selectedLanguage, {
-													language: creationLocale === 'ru' ? t.languages.ru : t.languages.kk,
-												})}
-											</Badge>
-										) : null
+										<div className='flex items-center gap-2'>
+											{creationLocale ? (
+												<Badge variant='secondary'>
+													{interpolateUILocaleText(pageT.selectedLanguage, {
+														language: creationLocale === 'ru' ? t.languages.ru : t.languages.kk,
+													})}
+												</Badge>
+											) : null}
+											<Button
+												size='sm'
+												type='button'
+												variant='outline'
+												onClick={() => setIsLanguageDialogOpen(true)}
+											>
+												{pageT.changeLanguage}
+											</Button>
+										</div>
 									}
 									className='mb-5'
 									description={tab.description}

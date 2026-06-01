@@ -52,10 +52,6 @@ export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale
 
 	const handleGenerate = async () => {
 		if (isLoading || teacherLoading) return
-		if (activeLocale !== 'ru') {
-			toast.error(t.aiRuOnly)
-			return
-		}
 
 		try {
 			setIsLoading(true)
@@ -64,23 +60,24 @@ export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			const values = getValues()
 
 			const mappedData: IGenerateResources = {
-				name: getLocaleText(values.name, 'ru'),
-				prerequisites: getLocaleText(values.prerequisites, 'ru'),
-				postrequisites: getLocaleText(values.postrequisites, 'ru'),
+				sourceLanguage: activeLocale,
+				name: getLocaleText(values.name, activeLocale),
+				prerequisites: getLocaleText(values.prerequisites, activeLocale),
+				postrequisites: getLocaleText(values.postrequisites, activeLocale),
 
-				basic: getLocaleText(values.basis, 'ru'),
-				goals: getLocaleText(values.goals, 'ru'),
-				competencies: getLocaleText(values.competencies, 'ru'),
+				basic: getLocaleText(values.basis, activeLocale),
+				goals: getLocaleText(values.goals, activeLocale),
+				competencies: getLocaleText(values.competencies, activeLocale),
 				message: additionalMessage.trim() || undefined,
 				includeCurrentContent,
 				currentValues: includeCurrentContent
 					? {
 							internetResources: values.internetResources.map((resource) => ({
-								name: getLocaleText(resource.name, 'ru'),
+								name: getLocaleText(resource.name, activeLocale),
 								link: resource.link,
 							})),
 							technicalResources: values.technicalResources.map((resource) => ({
-								name: getLocaleText(resource.name, 'ru'),
+								name: getLocaleText(resource.name, activeLocale),
 								link: resource.link,
 							})),
 						}

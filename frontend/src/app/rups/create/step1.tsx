@@ -45,10 +45,6 @@ export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale
 
 	const handleGenerate = async () => {
 		if (isLoading || groupLoading) return
-		if (activeLocale !== 'ru') {
-			toast.error(t.aiRuOnly)
-			return
-		}
 
 		try {
 			setIsLoading(true)
@@ -60,15 +56,16 @@ export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			if (!group) throw new Error('Group not found')
 
 			const mappedData: IGenerateRupMeta = {
-				name: getLocaleText(values.name, 'ru'),
+				sourceLanguage: activeLocale,
+				name: getLocaleText(values.name, activeLocale),
 				course: values.course,
 				group: {
 					name: group.name,
-					specialty: getLocaleText(group.specialty, 'ru'),
-					qualification: getLocaleText(group.qualification, 'ru'),
+					specialty: getLocaleText(group.specialty, activeLocale),
+					qualification: getLocaleText(group.qualification, activeLocale),
 				},
-				prerequisites: getLocaleText(values.prerequisites, 'ru'),
-				postrequisites: getLocaleText(values.postrequisites, 'ru'),
+				prerequisites: getLocaleText(values.prerequisites, activeLocale),
+				postrequisites: getLocaleText(values.postrequisites, activeLocale),
 				type: values.type,
 				studyForm: values.studyForm,
 				studyYear: values.studyYear,
@@ -76,11 +73,11 @@ export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale
 				includeCurrentContent,
 				currentValues: includeCurrentContent
 					? {
-							description: getLocaleText(values.basis, 'ru'),
-							goals: getLocaleText(values.goals, 'ru'),
-							competence: getLocaleText(values.competencies, 'ru'),
-							basis: getLocaleText(values.basis, 'ru'),
-							competencies: getLocaleText(values.competencies, 'ru'),
+							description: getLocaleText(values.basis, activeLocale),
+							goals: getLocaleText(values.goals, activeLocale),
+							competence: getLocaleText(values.competencies, activeLocale),
+							basis: getLocaleText(values.basis, activeLocale),
+							competencies: getLocaleText(values.competencies, activeLocale),
 						}
 					: undefined,
 			}

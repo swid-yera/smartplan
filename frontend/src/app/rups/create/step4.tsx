@@ -56,12 +56,13 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 		const additionalMessage = options?.additionalMessage?.trim()
 
 		return {
-			rupName: getLocaleText(values.name, 'ru'),
+			sourceLanguage: activeLocale,
+			rupName: getLocaleText(values.name, activeLocale),
 			rupType: values.type,
-			goals: getLocaleText(values.goals, 'ru'),
-			competencies: getLocaleText(values.competencies, 'ru'),
+			goals: getLocaleText(values.goals, activeLocale),
+			competencies: getLocaleText(values.competencies, activeLocale),
 
-			disciplineName: getLocaleText(discipline.name, 'ru'),
+			disciplineName: getLocaleText(discipline.name, activeLocale),
 			disciplineHours: getTotalDisciplineHours(discipline.semesters),
 
 			additionalMessage: additionalMessage ? additionalMessage : undefined,
@@ -70,14 +71,14 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 				? {
 						topics: discipline.topics.map((topic) => ({
 							...topic,
-							name: getLocaleText(topic.name, 'ru'),
+							name: getLocaleText(topic.name, activeLocale),
 						})),
 					}
 				: undefined,
 			currentTopics: includeCurrentContent
 				? discipline.topics.map((topic) => ({
 						...topic,
-						name: getLocaleText(topic.name, 'ru'),
+						name: getLocaleText(topic.name, activeLocale),
 					}))
 				: undefined,
 
@@ -88,10 +89,6 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 	}
 
 	const generateOneDiscipline = async (disciplineIndex: number, options?: TopicsDisciplineGenerateOptions) => {
-		if (activeLocale !== 'ru') {
-			throw new Error(t.aiRuOnly)
-		}
-
 		const values = getValues()
 		const discipline = values.disciplines?.[disciplineIndex]
 

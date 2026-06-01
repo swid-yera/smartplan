@@ -66,6 +66,7 @@ export class AiService {
 			rupType: baseData.rupType,
 			goals: baseData.goals,
 			competencies: baseData.competencies,
+			sourceLanguage: baseData.sourceLanguage,
 			disciplineName: baseData.disciplineName,
 			disciplineHours: baseData.disciplineHours,
 			message: baseData.additionalMessage ?? '',

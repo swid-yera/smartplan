@@ -48,10 +48,6 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 
 	const handleGenerate = async () => {
 		if (isLoading) return
-		if (activeLocale !== 'ru') {
-			toast.error(t.aiRuOnly)
-			return
-		}
 		if (!disciplineCount || !wantsHours) {
 			return toast.error(t.validationError)
 		}
@@ -63,10 +59,11 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			const values = getValues()
 
 			const mappedData: IGenerateDisciplines = {
-				name: getLocaleText(values.name, 'ru'),
+				sourceLanguage: activeLocale,
+				name: getLocaleText(values.name, activeLocale),
 				course: values.course,
-				goals: getLocaleText(values.goals, 'ru'),
-				competencies: getLocaleText(values.competencies, 'ru'),
+				goals: getLocaleText(values.goals, activeLocale),
+				competencies: getLocaleText(values.competencies, activeLocale),
 
 				wantsHours: wantsHours,
 				disciplineCount: disciplineCount,
@@ -75,11 +72,11 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 				currentValues: includeCurrentContent
 					? {
 							disciplines: values.disciplines.map((discipline) => ({
-								name: getLocaleText(discipline.name, 'ru'),
+								name: getLocaleText(discipline.name, activeLocale),
 								semesters: discipline.semesters,
 								topics: discipline.topics.map((topic) => ({
 									...topic,
-									name: getLocaleText(topic.name, 'ru'),
+									name: getLocaleText(topic.name, activeLocale),
 								})),
 							})),
 						}
