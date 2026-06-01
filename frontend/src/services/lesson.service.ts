@@ -207,9 +207,9 @@ export class LessonService {
 
 		return mutationOptions({
 			mutationFn: async (id: string) => {
-				const { data } = await api.delete<{ status: boolean; message?: string }>(`/lessons/${id}`)
+				const { status } = await api.delete(`/lessons/${id}`)
 
-				if (!data.status) throw new Error(data.message || 'Не удалось удалить урок')
+				if (status !== 204) throw new Error('Не удалось удалить урок')
 
 				return id
 			},

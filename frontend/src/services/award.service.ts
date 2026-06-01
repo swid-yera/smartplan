@@ -196,9 +196,9 @@ export class AwardService {
 
 		return mutationOptions({
 			mutationFn: async (id: string) => {
-				const { data, statusText } = await api.delete<IMessageResponse>(`/awards/${id}`)
+				const { status } = await api.delete(`/awards/${id}`)
 
-				if (statusText !== 'OK') throw new Error(data.message)
+				if (status !== 204) throw new Error('Не удалось удалить KPI')
 
 				return id
 			},
@@ -288,9 +288,9 @@ export class AwardService {
 
 		return mutationOptions({
 			mutationFn: async (id: string) => {
-				const { data, statusText } = await api.delete<IMessageResponse>(`/awards/types/${id}`)
+				const { status } = await api.delete(`/awards/types/${id}`)
 
-				if (statusText !== 'OK') throw new Error(data.message)
+				if (status !== 204) throw new Error('Не удалось удалить тип KPI')
 
 				return id
 			},

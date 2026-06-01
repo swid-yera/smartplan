@@ -1,6 +1,6 @@
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
-import type { ICategoryListItemResponse, ICategoryRequest, ICategoryResponse, IMessageResponse } from '@types'
+import type { ICategoryListItemResponse, ICategoryRequest, ICategoryResponse } from '@types'
 
 import { getCurrentBackendLocale } from './service-locale'
 
@@ -75,9 +75,9 @@ export class CategoriesService {
 
 		return mutationOptions({
 			mutationFn: async (id: string) => {
-				const { data, statusText } = await api.delete<IMessageResponse>(`/categories/${id}`)
+				const { status } = await api.delete(`/categories/${id}`)
 
-				if (statusText !== 'OK') throw new Error(data.message)
+				if (status !== 204) throw new Error('Не удалось удалить категорию')
 
 				return id
 			},
