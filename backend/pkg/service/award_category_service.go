@@ -712,37 +712,55 @@ func mergeUploadedFileKeys(existing any, uploaded []string) any {
 	}
 
 	merged := make([]string, 0)
+	seen := make(map[string]struct{})
+	appendUnique := func(value string) {
+		key := strings.TrimSpace(value)
+		if key == "" {
+			return
+		}
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		merged = append(merged, key)
+	}
 
 	switch v := existing.(type) {
 	case string:
-		if strings.TrimSpace(v) != "" {
-			merged = append(merged, v)
+		if normalized, ok := normalizeStoredFileReference(v); ok {
+			appendUnique(normalized)
 		}
 	case []string:
 		for _, item := range v {
-			if strings.TrimSpace(item) != "" {
-				merged = append(merged, item)
+			if normalized, ok := normalizeStoredFileReference(item); ok {
+				appendUnique(normalized)
 			}
 		}
 	case []any:
 		for _, item := range v {
 			str, ok := item.(string)
-			if ok && strings.TrimSpace(str) != "" {
-				merged = append(merged, str)
+			if !ok {
+				continue
+			}
+			if normalized, ok := normalizeStoredFileReference(str); ok {
+				appendUnique(normalized)
 			}
 		}
 	}
 
-	merged = append(merged, uploaded...)
+	for _, item := range uploaded {
+		appendUnique(item)
+	}
 	return merged
 }
 
 func (s *AwardService) resolveFileFieldValueURLs(ctx context.Context, value any) any {
 	resolve := func(key string) string {
-		if strings.TrimSpace(key) == "" {
+		normalizedKey, ok := normalizeStoredFileReference(key)
+		if !ok {
 			return key
 		}
-		urlValue, err := s.GetFileDownloadURL(ctx, key)
+		urlValue, err := s.GetFileDownloadURL(ctx, normalizedKey)
 		if err != nil {
 			return key
 		}
@@ -771,6 +789,32 @@ func (s *AwardService) resolveFileFieldValueURLs(ctx context.Context, value any)
 	default:
 		return value
 	}
+}
+
+func normalizeStoredFileReference(raw string) (string, bool) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", false
+	}
+
+	if parsed, err := url.Parse(trimmed); err == nil && parsed.Scheme != "" && parsed.Host != "" {
+		path := strings.Trim(parsed.Path, "/")
+		if path == "" {
+			return "", false
+		}
+
+		parts := strings.SplitN(path, "/", 2)
+		if len(parts) == 2 && strings.TrimSpace(parts[1]) != "" {
+			return parts[1], true
+		}
+		return "", false
+	}
+
+	if !strings.Contains(trimmed, "/") {
+		return "", false
+	}
+
+	return trimmed, true
 }
 
 func parseUUIDStrings(values []string) ([]uuid.UUID, error) {
