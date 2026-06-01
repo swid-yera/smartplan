@@ -132,9 +132,9 @@ export class RupService {
 
 		return mutationOptions({
 			mutationFn: async (id: string) => {
-				const { data, statusText } = await api.delete<IMessageResponse>(`/rups/${id}`)
+				const { status } = await api.delete(`/rups/${id}`)
 
-				if (statusText !== 'OK') throw new Error(data.message)
+				if (status !== 204) throw new Error('Не удалось удалить РУП')
 
 				return id
 			},
