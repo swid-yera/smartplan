@@ -8,6 +8,7 @@ import (
 )
 
 type GenerateRupMetaRequest struct {
+	SourceLanguage        string           `json:"sourceLanguage"`
 	Name                  string           `json:"name"`
 	Type                  string           `json:"type"`
 	StudyForm             string           `json:"studyForm"`
@@ -34,6 +35,7 @@ type GenerateRupMetaResponse struct {
 }
 
 type GenerateResourcesRequest struct {
+	SourceLanguage        string          `json:"sourceLanguage"`
 	Name                  string          `json:"name"`
 	Prerequisites         string          `json:"prerequisites"`
 	Postrequisites        string          `json:"postrequisites"`
@@ -56,6 +58,7 @@ type GeneratedResource struct {
 }
 
 type GenerateDisciplinesRequest struct {
+	SourceLanguage        string          `json:"sourceLanguage"`
 	Name                  string          `json:"name"`
 	Course                int             `json:"course"`
 	Goals                 string          `json:"goals"`
@@ -68,6 +71,7 @@ type GenerateDisciplinesRequest struct {
 }
 
 type GenerateTopicsForDisciplineRequest struct {
+	SourceLanguage          string          `json:"sourceLanguage"`
 	RupName                 string          `json:"rupName"`
 	RupType                 string          `json:"rupType"`
 	Goals                   string          `json:"goals"`
@@ -202,6 +206,7 @@ func (e *GeminiRequestError) IsRateLimit() bool {
 }
 
 type GenerateRupMetaPromptInput struct {
+	SourceLanguage       string
 	Name                 string
 	Type                 string
 	StudyForm            string
@@ -217,6 +222,7 @@ type GenerateRupMetaPromptInput struct {
 }
 
 type GenerateResourcesPromptInput struct {
+	SourceLanguage       string
 	Name                 string
 	Prerequisites        string
 	Postrequisites       string
@@ -228,6 +234,7 @@ type GenerateResourcesPromptInput struct {
 }
 
 type GenerateDisciplinesPromptInput struct {
+	SourceLanguage       string
 	WantsHours           int
 	DisciplineCount      int
 	Course               int
@@ -239,6 +246,7 @@ type GenerateDisciplinesPromptInput struct {
 }
 
 type GenerateTopicsForDisciplinePromptInput struct {
+	SourceLanguage          string
 	DisciplineName          string
 	RupName                 string
 	DisciplineHours         int
@@ -247,6 +255,7 @@ type GenerateTopicsForDisciplinePromptInput struct {
 	Competencies            string
 	Message                 string
 	TopicCount              int
+	BatchContext            string
 	PreferredPracticalCount int
 	PreferredSnzCount       int
 	PreferredCombinedCount  int
@@ -327,6 +336,8 @@ func BuildTranslateTextPrompt(in TranslateTextPromptInput) string {
 }
 
 func BuildGenerateRupMetaPrompt(in GenerateRupMetaPromptInput) string {
+	responseLanguage := resolveRupAIGenerationLanguage(in.SourceLanguage)
+
 	return fmt.Sprintf(`
 Ты — методист и эксперт по разработке рабочих учебных программ (РУП)
 для организаций технического и профессионального образования
@@ -365,7 +376,7 @@ func BuildGenerateRupMetaPrompt(in GenerateRupMetaPromptInput) string {
 
 ОБЯЗАТЕЛЬНО:
 - стиль официально-деловой, методический
-- язык ответа: РУССКИЙ
+- язык ответа: %s
 - текст должен быть пригоден для прямой вставки в РУП
 - ответ должен соответствовать тому, что преподаватель хочет по его комментарию
 
@@ -447,10 +458,13 @@ func BuildGenerateRupMetaPrompt(in GenerateRupMetaPromptInput) string {
 		in.Course,
 		escapePromptValue(in.Message),
 		in.CurrentValuesContext,
+		responseLanguage,
 	)
 }
 
 func BuildGenerateResourcesPrompt(in GenerateResourcesPromptInput) string {
+	responseLanguage := resolveRupAIGenerationLanguage(in.SourceLanguage)
+
 	return fmt.Sprintf(`
 Ты — эксперт по разработке учебных программ и образовательных ресурсов для колледжей и техникумов Республики Казахстан.
 Нужно сгенерировать учебные и технические ресурсы для курса, соответствующие профессиональному модулю.
@@ -488,6 +502,7 @@ func BuildGenerateResourcesPrompt(in GenerateResourcesPromptInput) string {
 Требования к содержимому:
 - internetResources: учебные материалы, книги, электронные комплексы, стандарты, пособия, статьи по теме курса. Можно без ссылок, но текст должен быть информативным и конкретным.
 - technicalResources: оборудование, программное обеспечение, операционные системы, инструменты, лабораторные стенды, цифровые ресурсы, комплексы тестов — всё, что нужно для практической части курса.
+- Язык всех полей name: %s.
 
 - Каждое поле name должно быть связным текстом, максимально информативным, без списков или маркеров внутри.
 - Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по основным требованиям выше.
@@ -516,11 +531,14 @@ func BuildGenerateResourcesPrompt(in GenerateResourcesPromptInput) string {
 		escapePromptValue(in.Competencies),
 		escapePromptValue(in.Message),
 		in.CurrentValuesContext,
+		responseLanguage,
 		escapePromptValue(in.Name),
 	)
 }
 
 func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
+	responseLanguage := resolveRupAIGenerationLanguage(in.SourceLanguage)
+
 	return fmt.Sprintf(`
 Ты — методист по разработке учебных программ для колледжей и техникумов РК.
 
@@ -564,6 +582,7 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
 - количество = %d
 - name: связное информативное название дисциплины
 - code: уникальный код РО7.1, РО7.2 и т.д.
+- Язык поля name: %s.
 
 4. Не использовать markdown, комментарии или текст вне JSON
 5. Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по правилам выше.
@@ -598,12 +617,15 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
 		escapePromptValue(in.Message),
 		in.CurrentValuesContext,
 		in.DisciplineCount,
+		responseLanguage,
 		in.DisciplineCount,
 		in.Course,
 	)
 }
 
 func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePromptInput) string {
+	responseLanguage := resolveRupAIGenerationLanguage(in.SourceLanguage)
+
 	return fmt.Sprintf(`
 Ты — методист по разработке учебных программ для колледжей и техникумов Республики Казахстан.
 
@@ -618,6 +640,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 - Название дисциплины: "%s"
 - Дополнительный комментарий преподавателя: "%s"
 - Данные вписанные в поля прямо сейчас: %s
+- Контекст пакетной генерации: "%s"
 - Предпочтения по количеству тем:
   - PRACTICAL: %d
   - SNZ: %d
@@ -643,6 +666,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
   - НЕ содержать в начале слов:
     "Практическое занятие", "Практическая работа", "Теоретическое занятие", "Лекция"
 - Использовать глаголы, соответствующие таксономии Блума, от уровня знаний и понимания до уровня анализа и синтеза, по возрастающей уровня понимания (уровень СПО/ТиПО):
+- Язык названий и всех текстов: %s.
 
 Допустимые глаголы:
 - Понимание:
@@ -703,12 +727,22 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 		escapePromptValue(in.DisciplineName),
 		escapePromptValue(in.Message),
 		in.CurrentValuesContext,
+		escapePromptValue(in.BatchContext),
 		in.PreferredPracticalCount,
 		in.PreferredSnzCount,
 		in.PreferredCombinedCount,
+		responseLanguage,
 		in.DisciplineHours,
 		in.TopicCount,
 	)
+}
+
+func resolveRupAIGenerationLanguage(sourceLanguage string) string {
+	if strings.EqualFold(strings.TrimSpace(sourceLanguage), "kk") {
+		return "ҚАЗАҚ"
+	}
+
+	return "РУССКИЙ"
 }
 
 func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
