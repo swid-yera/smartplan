@@ -325,16 +325,6 @@ export const RupView: FC<IRupViewProps> = ({
 					</div>
 
 					<div className='grid gap-2'>
-						<Label htmlFor='approve-user-id'>{t.approveKeyIdLabel}</Label> {/* Reusing keyId label for user? Actually we have separate label for user? In the locale we have approveKeyIdLabel and approveKeyIdPlaceholder for key_id, and for user we don't have a specific label. We'll use the same as keyId for simplicity, or we can use "userId" from the locale? We don't have it. We'll leave as is for now, but note: the UI shows two fields: key_id and user_id. We should have separate labels. Let's look at the locale: we have approveKeyIdLabel and approveKeyIdPlaceholder. We don't have approveUserIdLabel. We'll use the same label for both? That's confusing. Alternatively, we can use "Определенный key_id" for key_id and "Идентификатор пользователя" for user_id? But we don't have that in locale. We'll use the keyId label for key_id and for user_id we can use "Идентификатор пользователя" hardcoded? Better to add to locale? But the task says the strings are already added. We didn't see userId label. We'll use the same as keyId for now and note that we should fix the locale if needed. For now, we'll use the same label. */}
-						<Input
-							id='approve-user-id'
-							placeholder={t.approveKeyIdPlaceholder}
-							readOnly
-							value={userId}
-						/>
-					</div>
-
-					<div className='grid gap-2'>
 						<Label htmlFor='approve-password'>{t.approvePasswordLabel}</Label>
 						<Input
 							id='approve-password'
@@ -363,9 +353,9 @@ export const RupView: FC<IRupViewProps> = ({
 							{t.cancel}
 						</Button>
 						<Button
-							disabled={!fileName || !keyId.trim() || !userId.trim() || !approvePassword || !approveConfirmed}
+							disabled={!fileName || !keyId.trim() || !approvePassword || !approveConfirmed}
 							onClick={() => {
-								if (!fileName || !keyId.trim() || !userId.trim()) {
+								if (!fileName || !keyId.trim()) {
 									toast.error(localeText.toasts.kriptoUploadRequired)
 									return
 								}
