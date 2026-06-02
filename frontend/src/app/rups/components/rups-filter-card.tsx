@@ -19,15 +19,10 @@ import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { StatusEnum } from '@types'
-import { Filter } from 'lucide-react'
+import { ChevronsUpDown, Filter } from 'lucide-react'
 
 import localeDictionary from './locale.json'
 
@@ -43,30 +38,26 @@ export const RupsFilterCard: FC<IProps> = ({ className }) => {
 	const router = useRouter()
 	const pathname = usePathname()
 
-	const q = (searchParams.get('q') ?? '').toLowerCase().trim()
 	const currentStatusParam = searchParams.get('status')
 	const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
 		currentStatusParam ? currentStatusParam.split(',') : [],
 	)
-
-	const yearFilter = (searchParams.get('year') ?? 'ALL').trim()
-	const specialtyFilter = (searchParams.get('specialty') ?? 'ALL').trim()
-	const distinctYears = ['2025-2026', '2026-2027', '2024-2025', '2023-2024']
-	const distinctSpecialties = ['a', 'b']
+	const selectedStatusesText = t.rupsFilter.statusesSelected.replace('{count}', String(selectedStatuses.length))
 
 	const toggleStatus = (status: string) => {
-		setSelectedStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]))
+		setSelectedStatuses((prev) =>
+			prev.includes(status) ? prev.filter((item) => item !== status) : [...prev, status],
+		)
 	}
 
-	const handleSubmit = (e: FormEvent) => {
-		e.preventDefault()
+	const handleSubmit = (event: FormEvent) => {
+		event.preventDefault()
 
-		const formData = new FormData(e.target as HTMLFormElement)
+		const formData = new FormData(event.target as HTMLFormElement)
 		const params = new URLSearchParams(searchParams.toString())
+		const searchValue = (formData.get('q') as string | null)?.trim() ?? ''
 
-		const qValue = formData.get('q') as string
-
-		if (qValue) params.set('q', qValue)
+		if (searchValue) params.set('q', searchValue)
 		else params.delete('q')
 
 		if (selectedStatuses.length > 0) params.set('status', selectedStatuses.join(','))
@@ -84,90 +75,72 @@ export const RupsFilterCard: FC<IProps> = ({ className }) => {
 				<CardDescription>{t.rupsFilter.description}</CardDescription>
 			</CardHeader>
 			<CardContent className='h-full'>
-				<form className='h-full flex flex-col justify-between gap-3' onSubmit={(e) => handleSubmit(e)}>
-					<div className='grid gap-3 lg:grid-cols-2'>
-						{/* search */}
-						<div className='space-y-1 col-span-2'>
-							<Label>{t.rupsFilter.search}</Label>
-							<Input defaultValue={q} name='q' placeholder={t.rupsFilter.searchPlaceholder} />
+				<form className='flex h-full flex-col gap-4' onSubmit={handleSubmit}>
+					<div className='flex flex-col gap-3 xl:flex-row xl:items-end'>
+						<div className='grid w-full gap-3 md:grid-cols-2'>
+							<div className='space-y-1'>
+								<Label>{t.rupsFilter.search}</Label>
+								<Input
+									defaultValue={searchParams.get('q') ?? ''}
+									name='q'
+									placeholder={t.rupsFilter.searchPlaceholder}
+								/>
+							</div>
+
+							<div className='space-y-1'>
+								<Label>{t.rupsFilter.status}</Label>
+								<Popover>
+									<PopoverTrigger asChild>
+										<Button className='w-full justify-between font-normal' role='combobox' variant='outline'>
+											{selectedStatuses.length > 0 ? (
+												<span className='truncate'>{selectedStatusesText}</span>
+											) : (
+												<span className='text-muted-foreground'>{t.rupsFilter.selectStatuses}</span>
+											)}
+											<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-2'>
+										<div className='space-y-2'>
+											{Object.entries(labels).map(([status]) => (
+												<div key={status} className='flex items-center gap-2'>
+													<Checkbox
+														checked={selectedStatuses.includes(status)}
+														id={status}
+														onCheckedChange={() => toggleStatus(status)}
+													/>
+													<label className='cursor-pointer select-none' htmlFor={status}>
+														<StatusBadge status={status as StatusEnum} />
+													</label>
+												</div>
+											))}
+										</div>
+									</PopoverContent>
+								</Popover>
+							</div>
 						</div>
 
-						<div className='space-y-1 col-span-2'>
-							<Label>{t.rupsFilter.status}</Label>
-							<Popover>
-								<PopoverTrigger asChild>
-									<Button className='w-full justify-start font-normal' variant='outline'>
-										{selectedStatuses.length > 0 ? (
-											<div className='flex gap-1 flex-wrap'>
-												{selectedStatuses.map((s) => (
-													<StatusBadge key={s} status={s as StatusEnum} />
-												))}
-											</div>
-										) : (
-											<span className='text-muted-foreground'>{t.rupsFilter.selectStatuses}</span>
-										)}
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-2'>
-									<div className='space-y-2'>
-										{Object.entries(labels).map((option) => (
-											<div key={option[0]} className='flex items-center space-x-2'>
-												<Checkbox
-													checked={selectedStatuses.includes(option[0])}
-													id={option[0]}
-													onCheckedChange={() => toggleStatus(option[0])}
-												/>
-												<label
-													className='text-sm font-medium leading-none cursor-pointer select-none'
-													htmlFor={option[0]}
-												>
-													{option[1]}
-												</label>
-											</div>
-										))}
-									</div>
-								</PopoverContent>
-							</Popover>
-						</div>
-
-						<div className='space-y-1'>
-							<Label>{t.rupsFilter.studyYear}</Label>
-							<Select disabled defaultValue={yearFilter} name='year'>
-								<SelectTrigger className='w-full'>
-									<SelectValue placeholder={t.rupsFilter.selectYear} />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value='ALL'>{t.rupsFilter.allYears}</SelectItem>
-									{distinctYears.map((y) => (
-										<SelectItem key={y as string} value={y as string}>
-											{y}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div className='space-y-1'>
-							<Label>{t.rupsFilter.specialty}</Label>
-							<Select disabled defaultValue={specialtyFilter} name='specialty'>
-								<SelectTrigger className='w-full'>
-									<SelectValue placeholder={t.rupsFilter.selectSpecialty} />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value='ALL'>{t.rupsFilter.allSpecialties}</SelectItem>
-									{distinctSpecialties.map((s) => (
-										<SelectItem key={s as string} value={s as string}>
-											{s}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+						<div className='flex w-full justify-end xl:w-auto'>
+							<Button className='w-full px-8 xl:w-auto' type='submit'>
+								{t.rupsFilter.apply} <Filter />
+							</Button>
 						</div>
 					</div>
 
-					<Button className='w-full' type='submit'>
-						{t.rupsFilter.apply} <Filter />
-					</Button>
+					<div className='rounded-lg border bg-muted/20 p-3'>
+						<div className='space-y-2'>
+							<p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+								{t.rupsFilter.selectedStatusesTitle}
+							</p>
+							<div className='flex flex-wrap gap-1.5'>
+								{selectedStatuses.length > 0 ? (
+									selectedStatuses.map((status) => <StatusBadge key={status} status={status as StatusEnum} />)
+								) : (
+									<span className='text-sm text-muted-foreground'>{t.rupsFilter.nothingSelected}</span>
+								)}
+							</div>
+						</div>
+					</div>
 				</form>
 			</CardContent>
 		</Card>

@@ -5,7 +5,7 @@ import type { ComponentProps, FC, PropsWithChildren, ReactNode } from 'react'
 import Link from 'next/link'
 
 import { cn } from '@lib'
-import { Button, SidebarTrigger } from '@shadcn'
+import { Button, SidebarTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { ArrowLeft } from 'lucide-react'
 
@@ -34,6 +34,8 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 	const t = uiLocale[locale] ?? uiLocale.ru
 	const stickyClassNames =
 		'sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'
+	const descriptionText = typeof description === 'string' ? description.trim() : null
+	const shouldShowDescriptionTooltip = !!descriptionText && descriptionText.length > 90
 
 	return (
 		<div
@@ -45,13 +47,23 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 			{...props}
 		>
 			<div className='flex items-center justify-between w-full space-x-4'>
-				<h1 className='md:text-3xl text-xl w-full font-bold tracking-tight'>
-					<SidebarTrigger className='inline-flex' type='button' /> {children}
-				</h1>
+				<TooltipProvider delayDuration={200}>
+					<h1 className='md:text-3xl text-xl flex min-w-0 flex-1 items-center gap-2 font-bold tracking-tight'>
+						<SidebarTrigger className='shrink-0' type='button' />
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span className='min-w-0 flex-1 truncate'>{children}</span>
+							</TooltipTrigger>
+							<TooltipContent side='bottom' sideOffset={8}>
+								<p className='max-w-[min(90vw,48rem)] text-balance'>{children}</p>
+							</TooltipContent>
+						</Tooltip>
+					</h1>
+				</TooltipProvider>
 
-				{actions}
+				<div className='shrink-0'>{actions}</div>
 			</div>
-			<div className='flex justify-start items-center space-x-2'>
+			<div className='flex w-full min-w-0 items-center gap-2'>
 				{backHref && (
 					<Button asChild size='sm' type='button' variant='outline'>
 						<Link href={backHref}>
@@ -61,7 +73,20 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 					</Button>
 				)}
 
-				<p className='text-muted-foreground md:text-base text-sm w-full'>{description}</p>
+				{shouldShowDescriptionTooltip ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<p className='text-muted-foreground md:text-base text-sm min-w-0 flex-1 truncate'>
+								{descriptionText}
+							</p>
+						</TooltipTrigger>
+						<TooltipContent side='bottom' sideOffset={8}>
+							<p className='max-w-[min(90vw,48rem)] text-balance'>{descriptionText}</p>
+						</TooltipContent>
+					</Tooltip>
+				) : (
+					<p className='text-muted-foreground md:text-base text-sm min-w-0 flex-1'>{description}</p>
+				)}
 			</div>
 		</div>
 	)

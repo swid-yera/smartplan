@@ -85,21 +85,11 @@ export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			const meta = await services.ai.generateRupMeta(mappedData)
 
 			// write
-			setValue(
-				'basis' as Path<T>,
-				mapGeneratedText(meta.basis) as PathValue<T, Path<T>>,
-				{ shouldDirty: true },
-			)
-			setValue(
-				'goals' as Path<T>,
-				mapGeneratedText(meta.goals) as PathValue<T, Path<T>>,
-				{ shouldDirty: true },
-			)
-			setValue(
-				'competencies' as Path<T>,
-				mapGeneratedText(meta.competencies) as PathValue<T, Path<T>>,
-				{ shouldDirty: true },
-			)
+			setValue('basis' as Path<T>, mapGeneratedText(meta.basis) as PathValue<T, Path<T>>, { shouldDirty: true })
+			setValue('goals' as Path<T>, mapGeneratedText(meta.goals) as PathValue<T, Path<T>>, { shouldDirty: true })
+			setValue('competencies' as Path<T>, mapGeneratedText(meta.competencies) as PathValue<T, Path<T>>, {
+				shouldDirty: true,
+			})
 
 			toast.success(t.metaSuccess, { id: 'rup-meta-generate' })
 		} catch (err) {

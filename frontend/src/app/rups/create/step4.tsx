@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
-import { getLocaleText, getTotalDisciplineHours } from '@helpers'
-import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import { getLocaleText, getTotalDisciplineHours, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { useLocaleStore } from '@store'
 import type { IGenerateTopicsForDiscipline, Locale, LocaleText, RupTypeEnum, TopicTypeEnum } from '@types'

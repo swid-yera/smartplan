@@ -60,7 +60,7 @@ const Page = () => {
 		<section className='p-4 w-full space-y-4'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 
-			<RupsFilterCard />
+			<RupsFilterCard className='mb-4' />
 
 			<RupsCard
 				currentPage={rupsData?.meta.currentPage || 1}

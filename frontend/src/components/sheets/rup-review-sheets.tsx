@@ -1,0 +1,267 @@
+'use client'
+
+import { memo, useState } from 'react'
+
+import { extractKriptoApprovalMetadata, parseKriptoFileText } from '@helpers'
+import {
+	Button,
+	Checkbox,
+	Input,
+	Label,
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+	Textarea,
+} from '@shadcn'
+import { type IRup, RoleEnum, StatusEnum } from '@types'
+import { CheckCircle, SendToBack } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface IRupReviewSheetsProps {
+	data: IRup
+	role: RoleEnum
+	text: {
+		view: {
+			reject: string
+			approve: string
+			rejectSheetTitle: string
+			rejectSheetDescription: string
+			rejectReasonLabel: string
+			rejectReasonPlaceholder: string
+			cancel: string
+			rejectReasonRequired: string
+			rejectConfirm: string
+			approveSheetTitle: string
+			approveSheetDescription: string
+			approveFileLabel: string
+			fileLabel: string
+			approveKeyIdLabel: string
+			approveKeyIdPlaceholder: string
+			approvePasswordLabel: string
+			approveCheckbox: string
+			approveConfirm: string
+		}
+		toasts: {
+			kriptoOnlyV3: string
+			kriptoParsed: string
+			kriptoReadError: string
+			kriptoUploadRequired: string
+			kriptoPasswordRequired: string
+		}
+	}
+	onStatusChange: (
+		newStatus: StatusEnum,
+		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
+	) => void
+}
+
+export const RupReviewSheets = memo(function RupReviewSheets({
+	data,
+	role,
+	text,
+	onStatusChange,
+}: IRupReviewSheetsProps) {
+	const t = text.view
+	const [generalComment, setGeneralComment] = useState('')
+	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
+	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
+	const [keyId, setKeyId] = useState('')
+	const [userId, setUserId] = useState('')
+	const [fileName, setFileName] = useState('')
+	const [approvePassword, setApprovePassword] = useState('')
+	const [approveConfirmed, setApproveConfirmed] = useState(false)
+	const isMethodistReview = role === RoleEnum.METHODIST && data.status === StatusEnum.IN_REVIEW
+
+	const onApproveFileUpload = async (file?: File) => {
+		if (!file) return
+		if (!file.name.toLowerCase().endsWith('.kripto')) {
+			toast.error(text.toasts.kriptoOnlyV3)
+
+			return
+		}
+
+		const content = await file.text()
+		const parsed = parseKriptoFileText(content)
+		const metadata = extractKriptoApprovalMetadata(parsed)
+
+		setKeyId(metadata.keyId)
+		setUserId(metadata.userId)
+		setFileName(file.name)
+		toast.success(text.toasts.kriptoParsed)
+	}
+
+	if (!isMethodistReview) return null
+
+	return (
+		<>
+			<div className='flex items-center gap-2'>
+				<Button
+					className='hover:text-destructive'
+					size='sm'
+					variant='outline'
+					onClick={() => setIsRejectSheetOpen(true)}
+				>
+					<SendToBack className='mr-2 h-4 w-4' />
+					{t.reject}
+				</Button>
+
+				<Button
+					className='hover:text-primary'
+					size='sm'
+					variant='outline'
+					onClick={() => setIsApproveSheetOpen(true)}
+				>
+					<CheckCircle className='mr-2 h-4 w-4' />
+					{t.approve}
+				</Button>
+			</div>
+
+			{isRejectSheetOpen && (
+				<Sheet open={isRejectSheetOpen} onOpenChange={setIsRejectSheetOpen}>
+					<SheetContent>
+						<SheetHeader>
+							<SheetTitle>{t.rejectSheetTitle}</SheetTitle>
+							<SheetDescription>{t.rejectSheetDescription}</SheetDescription>
+						</SheetHeader>
+						<div className='grid gap-4 px-4 py-4'>
+							<div className='grid gap-2'>
+								<Label htmlFor='reject-reason'>{t.rejectReasonLabel}</Label>
+								<Textarea
+									id='reject-reason'
+									placeholder={t.rejectReasonPlaceholder}
+									rows={12}
+									value={generalComment}
+									onChange={(e) => setGeneralComment(e.target.value)}
+								/>
+							</div>
+						</div>
+						<SheetFooter>
+							<Button variant='outline' onClick={() => setIsRejectSheetOpen(false)}>
+								{t.cancel}
+							</Button>
+							<Button
+								disabled={!generalComment}
+								variant='destructive'
+								onClick={() => {
+									if (!generalComment.trim()) {
+										toast.error(t.rejectReasonRequired)
+
+										return
+									}
+
+									onStatusChange(StatusEnum.REJECTED, { reason: generalComment })
+									setIsRejectSheetOpen(false)
+									setGeneralComment('')
+								}}
+							>
+								{t.rejectConfirm}
+							</Button>
+						</SheetFooter>
+					</SheetContent>
+				</Sheet>
+			)}
+
+			{isApproveSheetOpen && (
+				<Sheet open={isApproveSheetOpen} onOpenChange={setIsApproveSheetOpen}>
+					<SheetContent>
+						<SheetHeader>
+							<SheetTitle>{t.approveSheetTitle}</SheetTitle>
+							<SheetDescription>{t.approveSheetDescription}</SheetDescription>
+						</SheetHeader>
+						<div className='grid gap-4 px-4 py-4'>
+							<div className='grid gap-2'>
+								<Label htmlFor='approve-kripto-file'>{t.approveFileLabel}</Label>
+								<Input
+									accept='.kripto,application/json'
+									id='approve-kripto-file'
+									type='file'
+									onChange={(e) => {
+										const file = e.target.files?.[0]
+
+										onApproveFileUpload(file).catch((err) => {
+											toast.error(err.message || text.toasts.kriptoReadError)
+										})
+									}}
+								/>
+								{fileName && (
+									<p className='text-xs text-muted-foreground'>
+										{t.fileLabel}: {fileName}
+									</p>
+								)}
+							</div>
+
+							<div className='grid gap-2'>
+								<Label htmlFor='approve-key-id'>{t.approveKeyIdLabel}</Label>
+								<Input readOnly id='approve-key-id' placeholder={t.approveKeyIdPlaceholder} value={keyId} />
+							</div>
+
+							<div className='grid gap-2'>
+								<Label htmlFor='approve-password'>{t.approvePasswordLabel}</Label>
+								<Input
+									id='approve-password'
+									placeholder={t.approvePasswordLabel}
+									type='password'
+									value={approvePassword}
+									onChange={(e) => setApprovePassword(e.target.value)}
+								/>
+							</div>
+
+							<div className='grid gap-2'>
+								<div className='flex items-center space-x-2'>
+									<Checkbox
+										checked={approveConfirmed}
+										id='approve-confirm'
+										onCheckedChange={(checked) => setApproveConfirmed(!!checked)}
+									/>
+									<Label className='cursor-pointer' htmlFor='approve-confirm'>
+										{t.approveCheckbox}
+									</Label>
+								</div>
+							</div>
+						</div>
+						<SheetFooter>
+							<Button variant='outline' onClick={() => setIsApproveSheetOpen(false)}>
+								{t.cancel}
+							</Button>
+							<Button
+								disabled={!fileName || !keyId.trim() || !approvePassword || !approveConfirmed}
+								onClick={() => {
+									if (!fileName || !keyId.trim()) {
+										toast.error(text.toasts.kriptoUploadRequired)
+
+										return
+									}
+									if (!approvePassword) {
+										toast.error(text.toasts.kriptoPasswordRequired)
+
+										return
+									}
+
+									onStatusChange(StatusEnum.APPROVED, {
+										keyId,
+										userId,
+										password: approvePassword,
+										confirmed: approveConfirmed,
+									})
+									setIsApproveSheetOpen(false)
+									setKeyId('')
+									setUserId('')
+									setFileName('')
+									setApprovePassword('')
+									setApproveConfirmed(false)
+								}}
+							>
+								{t.approveConfirm}
+							</Button>
+						</SheetFooter>
+					</SheetContent>
+				</Sheet>
+			)}
+		</>
+	)
+})
+
+RupReviewSheets.displayName = 'RupReviewSheets'

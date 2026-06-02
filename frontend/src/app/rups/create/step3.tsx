@@ -1,8 +1,7 @@
 import { useState } from 'react'
 
-import { getLocaleText } from '@helpers'
-import { getUILocaleSection } from '@helpers'
 import { NumericInput } from '@components'
+import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -147,9 +146,7 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 								id='rup-disciplines-include-current-content'
 								onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
 							/>
-							<Label htmlFor='rup-disciplines-include-current-content'>
-								{t.includeCurrentContent}
-							</Label>
+							<Label htmlFor='rup-disciplines-include-current-content'>{t.includeCurrentContent}</Label>
 						</div>
 					</div>
 				}

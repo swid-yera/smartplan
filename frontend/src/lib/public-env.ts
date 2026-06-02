@@ -6,6 +6,7 @@ const normalizePublicEnv = (value?: string): string | undefined => {
 	}
 
 	const loweredValue = normalizedValue.toLowerCase()
+
 	if (loweredValue === 'undefined' || loweredValue === 'null') {
 		return undefined
 	}
@@ -21,6 +22,7 @@ const normalizeEnv = (value?: string): string | undefined => {
 	}
 
 	const loweredValue = normalizedValue.toLowerCase()
+
 	if (loweredValue === 'undefined' || loweredValue === 'null') {
 		return undefined
 	}
@@ -48,6 +50,7 @@ const normalizeBrowserBaseUrl = (baseUrl: string, fallback: string): string => {
 	try {
 		const configuredUrl = new URL(baseUrl)
 		const currentHost = window.location.hostname
+
 		if (isLocalHost(configuredUrl.hostname) && !isLocalHost(currentHost)) {
 			return fallback
 		}

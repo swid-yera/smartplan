@@ -12,8 +12,8 @@ import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitl
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 
-import localeDictionary from './locale.json'
 import { trackLanguageGeneration, untrackLanguageGeneration } from '../../language-generation-tracker'
+import localeDictionary from './locale.json'
 
 const inProgressStatuses = new Set(['queued', 'running'])
 
@@ -33,7 +33,9 @@ const LanguageGenerationPage = () => {
 		enabled: Boolean(params.id),
 		refetchInterval: (query) => {
 			const status = query.state.data?.status
+
 			if (!status) return 2000
+
 			return inProgressStatuses.has(status) ? 2000 : false
 		},
 	})
@@ -69,13 +71,11 @@ const LanguageGenerationPage = () => {
 	const isFailed = generationStatus.status === 'failed'
 
 	return (
-		<div className='mx-auto max-w-3xl px-4 py-8'>
-			<Card>
+		<div className='mx-auto max-w-3xl w-full px-4 py-8'>
+			<Card className='w-full'>
 				<CardHeader>
 					<CardTitle>{t.title}</CardTitle>
-					<CardDescription>
-						{rupName ? `${rupName}. ${t.description}` : t.description}
-					</CardDescription>
+					<CardDescription>{rupName ? `${rupName}. ${t.description}` : t.description}</CardDescription>
 				</CardHeader>
 				<CardContent className='space-y-6'>
 					<div className='flex items-center justify-between gap-4'>

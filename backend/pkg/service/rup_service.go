@@ -378,6 +378,7 @@ func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupR
 		return nil, fmt.Errorf("build response failed: %w", err)
 	}
 
+	// generate to second lang
 	sourceLanguage := normalizeBackendLanguage(req.SourceLanguage)
 	targetLanguage := oppositeBackendLanguage(sourceLanguage)
 	if sourceLanguage != "" && targetLanguage != "" && s.aiService != nil {

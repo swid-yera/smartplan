@@ -5,8 +5,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { TopicTypeBadge } from '@components'
-import { formatAsDash, formatHours, getLocaleText, getUILocaleSection, normalizeTopicType } from '@helpers'
+import { RegenerateDescriptionDialog, TopicTypeBadge } from '@components'
+import { createLocaleText, formatAsDash, formatHours, getLocaleText, getUILocaleSection } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -16,19 +16,6 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	Input,
-	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
 	Table,
 	TableBody,
 	TableCell,
@@ -43,9 +30,10 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
-import { type Locale, type LocaleText, type LocalizedText, type RupTypeEnum, StatusEnum, TopicTypeEnum } from '@types'
+import { type Locale, type LocalizedText, type RupTypeEnum, StatusEnum, TopicTypeEnum } from '@types'
 import { BookOpenText, ChevronDown, Info } from 'lucide-react'
 import { toast } from 'sonner'
+
 import localeDictionary from './locale.json'
 
 type TopicsLocaleText = typeof localeDictionary.ru.topics
@@ -109,7 +97,7 @@ export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus,
 				<CardDescription>{t.topicsDescription}</CardDescription>
 			</CardHeader>
 			<CardContent className='space-y-4'>
-					{disciplines.length > 0 ? (
+				{disciplines.length > 0 ? (
 					disciplines.map((discipline, index) => (
 						<DisciplineBlockView
 							key={discipline.id || `${index}`}
@@ -263,8 +251,8 @@ function DisciplineBlockView({
 							{discipline.topics.length > 0 ? (
 								discipline.topics.map((topic, topicIndex) => (
 									<TopicRowView
-										activeLocale={activeLocale}
 										key={topicIndex}
+										activeLocale={activeLocale}
 										disciplineId={discipline.id}
 										rupId={rupId}
 										rupModuleType={rupModuleType}
@@ -333,26 +321,10 @@ const TopicRowView = ({
 	const lessonUrl = `/lessons/${topic.lessonId || topic.id}`
 	const generateLessonMutation = useMutation(services.lesson.generateLessonOptions())
 	const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
-	const [formData, setFormData] = useState({
-		name: topic.name,
-		theoryHours: topic.theoryHours,
-		practiceHours: topic.practiceHours,
-		individualHours: topic.individualHours,
-		srsHours: topic.srsHours ?? 0,
-		srspHours: topic.srspHours ?? 0,
-		type: topic.type,
-	})
+	const [regenerateDescription, setRegenerateDescription] = useState('')
 
 	const handleGenerateClick = () => {
-		setFormData({
-			name: topic.name,
-			theoryHours: topic.theoryHours,
-			practiceHours: topic.practiceHours,
-			individualHours: topic.individualHours,
-			srsHours: topic.srsHours ?? 0,
-			srspHours: topic.srspHours ?? 0,
-			type: topic.type,
-		})
+		setRegenerateDescription('')
 		setIsGenerateDialogOpen(true)
 	}
 
@@ -368,20 +340,15 @@ const TopicRowView = ({
 			disciplineId,
 			topicId: topic.id,
 			updatedTopic: {
-				name:
-					typeof formData.name === 'string'
-						? ({ ru: formData.name, kz: formData.name } as LocaleText)
-						: ({
-								ru: formData.name?.ru || '',
-								kz: formData.name?.kz || formData.name?.ru || '',
-							} as LocaleText),
-				type: formData.type,
-				total_hours: formData.theoryHours + formData.practiceHours + formData.individualHours,
-				theory_hours: formData.theoryHours,
-				practice_hours: formData.practiceHours,
-				individual_hours: formData.individualHours,
-				srsp_hours: formData.srspHours,
-				srs_hours: formData.srsHours,
+				name: createLocaleText(getLocaleText(topic.name, 'ru'), getLocaleText(topic.name, 'kk')),
+				description: regenerateDescription.trim(),
+				type: topic.type,
+				total_hours: topic.theoryHours + topic.practiceHours + topic.individualHours,
+				theory_hours: topic.theoryHours,
+				practice_hours: topic.practiceHours,
+				individual_hours: topic.individualHours,
+				srsp_hours: topic.srspHours ?? 0,
+				srs_hours: topic.srsHours ?? 0,
 			},
 		}
 
@@ -408,8 +375,6 @@ const TopicRowView = ({
 			setIsGenerateDialogOpen(false)
 		}
 	}
-
-	const getNonNegativeNumber = (value: string) => Math.max(0, Number(value) || 0)
 
 	return (
 		<>
@@ -465,129 +430,22 @@ const TopicRowView = ({
 				</TableCell>
 			</TableRow>
 
-			<Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>{text.generateDialogTitle}</DialogTitle>
-						<DialogDescription>{text.generateDialogDescription}</DialogDescription>
-					</DialogHeader>
-
-					<div className='grid gap-4'>
-						<div className='grid gap-2'>
-							<Label htmlFor={`topic-name-${topic.id}`}>{text.name}</Label>
-							<Input
-								id={`topic-name-${topic.id}`}
-								value={getLocaleText(formData.name, activeLocale)}
-								onChange={(e) =>
-									setFormData((prev) => ({
-										...prev,
-										name: {
-											...(typeof prev.name === 'string' || !prev.name
-												? ({ ru: String(prev.name || ''), kz: String(prev.name || '') } as LocaleText)
-												: (prev.name as LocaleText)),
-											[activeLocale === 'kk' ? 'kz' : 'ru']: e.target.value,
-										},
-									}))
-								}
-							/>
-						</div>
-
-						<div className='grid grid-cols-2 gap-4'>
-							<div className='grid gap-2'>
-								<Label htmlFor={`topic-theory-${topic.id}`}>{text.theory}</Label>
-								<Input
-									id={`topic-theory-${topic.id}`}
-									min={0}
-									type='number'
-									value={formData.theoryHours}
-									onChange={(e) =>
-										setFormData((prev) => ({ ...prev, theoryHours: getNonNegativeNumber(e.target.value) }))
-									}
-								/>
-							</div>
-							<div className='grid gap-2'>
-								<Label htmlFor={`topic-practice-${topic.id}`}>{text.practice}</Label>
-								<Input
-									id={`topic-practice-${topic.id}`}
-									min={0}
-									type='number'
-									value={formData.practiceHours}
-									onChange={(e) =>
-										setFormData((prev) => ({
-											...prev,
-											practiceHours: getNonNegativeNumber(e.target.value),
-										}))
-									}
-								/>
-							</div>
-							<div className='grid gap-2'>
-								<Label htmlFor={`topic-individual-${topic.id}`}>{text.individual}</Label>
-								<Input
-									id={`topic-individual-${topic.id}`}
-									min={0}
-									type='number'
-									value={formData.individualHours}
-									onChange={(e) =>
-										setFormData((prev) => ({
-											...prev,
-											individualHours: getNonNegativeNumber(e.target.value),
-										}))
-									}
-								/>
-							</div>
-							<div className='grid gap-2'>
-								<Label htmlFor={`topic-srsp-${topic.id}`}>{text.srsp}</Label>
-								<Input
-									id={`topic-srsp-${topic.id}`}
-									min={0}
-									type='number'
-									value={formData.srspHours}
-									onChange={(e) =>
-										setFormData((prev) => ({ ...prev, srspHours: getNonNegativeNumber(e.target.value) }))
-									}
-								/>
-							</div>
-							<div className='grid gap-2'>
-								<Label htmlFor={`topic-srs-${topic.id}`}>{text.srs}</Label>
-								<Input
-									id={`topic-srs-${topic.id}`}
-									min={0}
-									type='number'
-									value={formData.srsHours}
-									onChange={(e) =>
-										setFormData((prev) => ({ ...prev, srsHours: getNonNegativeNumber(e.target.value) }))
-									}
-								/>
-							</div>
-							<div className='grid gap-2'>
-								<Label>{text.type}</Label>
-								<Select
-									value={formData.type}
-									onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value as TopicTypeEnum }))}
-								>
-									<SelectTrigger className='w-full'>
-										<SelectValue placeholder={text.selectType} />
-									</SelectTrigger>
-									<SelectContent>
-										{Object.values(TopicTypeEnum).map((type) => (
-											<SelectItem key={type} value={type}>
-												{normalizeTopicType(type)}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-					</div>
-
-					<DialogFooter>
-						<Button variant='outline' onClick={() => setIsGenerateDialogOpen(false)}>
-							{text.cancel}
-						</Button>
-						<Button onClick={onSubmit}>{text.generate}</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<RegenerateDescriptionDialog
+				cancelLabel={text.cancel}
+				confirmLabel={text.generate}
+				description={regenerateDescription}
+				descriptionId={`topic-regenerate-description-${topic.id}`}
+				descriptionLabel={text.descriptionLabel}
+				descriptionPlaceholder={text.descriptionPlaceholder}
+				dialogDescription={text.generateDialogDescription}
+				isConfirmDisabled={regenerateDescription.trim().length === 0}
+				isOpen={isGenerateDialogOpen}
+				isPending={generateLessonMutation.isPending}
+				title={text.generateDialogTitle}
+				onConfirm={onSubmit}
+				onDescriptionChange={setRegenerateDescription}
+				onOpenChange={setIsGenerateDialogOpen}
+			/>
 		</>
 	)
 }

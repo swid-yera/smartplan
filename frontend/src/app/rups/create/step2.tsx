@@ -1,8 +1,7 @@
 import { useState } from 'react'
 
-import { getLocaleText } from '@helpers'
-import { getUILocaleSection } from '@helpers'
 import { Loader } from '@components'
+import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
