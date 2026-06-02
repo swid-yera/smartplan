@@ -1,11 +1,11 @@
 'use client'
 
-import { type JSX, type KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { type JSX, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { NextPage } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, RupLanguageDialog } from '@components'
 import {
 	createLocaleText,
 	getLocaleText,
@@ -28,12 +28,6 @@ import {
 	AlertDialogTitle,
 	Badge,
 	Button,
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -47,7 +41,7 @@ import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { toLocaleText } from '../rup-localization'
-import { createRupFormSchema, type RUPFormData } from '../rup-schema'
+import { type RUPFormData, createRupFormSchema } from '../rup-schema'
 import localeDictionary from './locale.json'
 import { Step1 } from './step1'
 import { Step2 } from './step2'
@@ -165,7 +159,7 @@ const Page: NextPage = () => {
 
 	const [isValidating, setIsValidating] = useState(false)
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false)
-
+	const currentStepRef = useRef(currentStep)
 	const activeLocale: Locale = creationLocale ?? 'ru'
 
 	const tabs: ITab[] = [
@@ -214,11 +208,25 @@ const Page: NextPage = () => {
 	})
 
 	useEffect(() => {
-		const stepFromUrl = searchParams.get('step') || '1'
+		currentStepRef.current = currentStep
+	}, [currentStep])
 
-		if (stepFromUrl !== currentStep) setCurrentStep(stepFromUrl)
-		if (Number(stepFromUrl) > highestStep) setHighestStep(Number(stepFromUrl))
-	}, [searchParams, currentStep, highestStep])
+	useEffect(() => {
+		const syncStepFromUrl = () => {
+			const stepFromUrl = new URLSearchParams(window.location.search).get('step') || '1'
+
+			if (stepFromUrl !== currentStepRef.current) {
+				setStepTransitionDirection(getStepTransitionDirection(currentStepRef.current, stepFromUrl))
+				setCurrentStep(stepFromUrl)
+			}
+
+			if (Number(stepFromUrl) > highestStep) setHighestStep(Number(stepFromUrl))
+		}
+
+		window.addEventListener('popstate', syncStepFromUrl)
+
+		return () => window.removeEventListener('popstate', syncStepFromUrl)
+	}, [highestStep])
 
 	useEffect(() => {
 		const savedData = window.localStorage.getItem(LOCAL_STORAGE_KEY)
@@ -242,6 +250,7 @@ const Page: NextPage = () => {
 		const savedHighestStep = window.localStorage.getItem(HIGHEST_STEP_STORAGE_KEY)
 
 		if (savedHighestStep) setHighestStep(Number(savedHighestStep))
+
 		setIsHydrating(false)
 	}, [methods])
 
@@ -268,8 +277,13 @@ const Page: NextPage = () => {
 		Number(toStep) >= Number(fromStep) ? 'forward' : 'backward'
 
 	const handleStepChange = (newStep: string) => {
-		setStepTransitionDirection(getStepTransitionDirection(currentStep, newStep))
-		router.push(`${pathname}?step=${newStep}`, { scroll: false })
+		if (newStep === currentStep) return
+
+		const direction = getStepTransitionDirection(currentStep, newStep)
+
+		setStepTransitionDirection(direction)
+		setCurrentStep(newStep)
+		window.history.pushState(null, '', `${pathname}?step=${newStep}`)
 	}
 
 	const onReset = () => {
@@ -281,7 +295,7 @@ const Page: NextPage = () => {
 		methods.reset(defaultValues)
 	}
 
-	const selectCreationLanguage = (nextLocale: Locale) => {
+	const confirmCreationLanguage = (nextLocale: Locale) => {
 		setCreationLocale(nextLocale)
 		window.localStorage.setItem(CREATE_LANGUAGE_STORAGE_KEY, nextLocale)
 		setIsLanguageDialogOpen(false)
@@ -300,6 +314,7 @@ const Page: NextPage = () => {
 	const handlePreSave = async () => {
 		if (!creationLocale) {
 			setIsLanguageDialogOpen(true)
+
 			return
 		}
 
@@ -321,6 +336,7 @@ const Page: NextPage = () => {
 	const onSubmit = async (newData: RUPFormData) => {
 		if (!creationLocale) {
 			setIsLanguageDialogOpen(true)
+
 			return
 		}
 
@@ -404,31 +420,19 @@ const Page: NextPage = () => {
 
 	return (
 		<FormProvider {...methods}>
-			<Dialog
+			<RupLanguageDialog
+				currentLanguage={creationLocale}
+				description={pageT.languageDialogDescription}
+				languageLabels={t.languages}
 				open={isLanguageDialogOpen}
+				required={!creationLocale}
+				title={pageT.languageDialogTitle}
+				onConfirm={confirmCreationLanguage}
 				onOpenChange={(open) => {
-					if (!creationLocale) {
-						setIsLanguageDialogOpen(true)
-						return
-					}
+					if (!creationLocale && !open) return
 					setIsLanguageDialogOpen(open)
 				}}
-			>
-				<DialogContent showCloseButton={false}>
-					<DialogHeader>
-						<DialogTitle>{pageT.languageDialogTitle}</DialogTitle>
-						<DialogDescription>{pageT.languageDialogDescription}</DialogDescription>
-					</DialogHeader>
-					<DialogFooter className='sm:justify-start gap-2'>
-						<Button type='button' variant='outline' onClick={() => selectCreationLanguage('ru')}>
-							{t.languages.ru}
-						</Button>
-						<Button type='button' variant='outline' onClick={() => selectCreationLanguage('kk')}>
-							{t.languages.kk}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			/>
 
 			<AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
 				<AlertDialogContent className='duration-200 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95'>
@@ -463,11 +467,6 @@ const Page: NextPage = () => {
 											disabled={isDisabled}
 											type='button'
 											value={step.id}
-											onClick={(event) => {
-												event.preventDefault()
-												setStepTransitionDirection(getStepTransitionDirection(currentStep, step.id))
-												setCurrentStep(step.id)
-											}}
 										>
 											<div
 												className={cn(
@@ -510,8 +509,8 @@ const Page: NextPage = () => {
 									isHydrating && 'invisible',
 									'data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-300 motion-reduce:data-[state=active]:animate-none',
 									stepTransitionDirection === 'forward'
-										? 'data-[state=active]:slide-in-from-right-2'
-										: 'data-[state=active]:slide-in-from-left-2',
+										? 'data-[state=active]:slide-in-from-right-4'
+										: 'data-[state=active]:slide-in-from-left-4',
 								)}
 								value={tab.id}
 							>
@@ -544,7 +543,7 @@ const Page: NextPage = () => {
 
 								{tab.content}
 
-								<div className='flex justify-between items-center gap-4 mt-4'>
+								<div className='flex items-center justify-between gap-4 mt-4'>
 									{currentIndex === 0 ? (
 										<Button size='lg' type='reset' variant='outline' onClick={onReset}>
 											{pageT.reset}

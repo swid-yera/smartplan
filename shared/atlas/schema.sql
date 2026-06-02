@@ -22,8 +22,6 @@ CREATE TYPE enum_lesson_type AS ENUM ('PRACTICE', 'THEORY');
 -- =====================
 -- USERS
 -- =====================
-
-
 CREATE TABLE users (
     keycloak_id UUID PRIMARY KEY,
 
@@ -47,6 +45,9 @@ CREATE TABLE users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- =====================
+-- VIOLATIONS
+-- =====================
 CREATE TABLE violation (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
@@ -117,8 +118,6 @@ CREATE TABLE rup_resources (
 -- =====================
 -- RUP EXPLORATION NOTES
 -- =====================
-
-
 CREATE TABLE rup_exploration_notes (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     basis JSONB,
@@ -183,8 +182,6 @@ CREATE TABLE discipline_topics (
 -- =====================
 -- RUP DISCIPLINES
 -- =====================
-
-
 CREATE TABLE rup_disciplines (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
@@ -200,8 +197,6 @@ CREATE TABLE rup_disciplines (
 -- =====================
 -- RUPS
 -- =====================
-
-
 CREATE TABLE rups (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
@@ -324,8 +319,6 @@ CREATE TABLE award_category_fields (
 -- =====================
 -- AWARDS
 -- =====================
-
-
 CREATE TABLE awards (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
 	status awards_status NOT NULL,
@@ -352,7 +345,6 @@ CREATE TABLE awards (
 -- =====================
 -- LESSON
 -- =====================
-
 CREATE SEQUENCE lessons_plan_number_seq
     AS INTEGER
     START WITH 1
@@ -404,7 +396,6 @@ CREATE TABLE lessons (
 -- =====================
 -- LESSON PRACTICE
 -- =====================
-
 CREATE TABLE lesson_progress(
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     lesson_id UUID NOT NULL,

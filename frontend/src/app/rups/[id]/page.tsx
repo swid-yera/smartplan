@@ -5,7 +5,7 @@ import { type FC, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Loader } from '@components'
+import { Loader, RupLanguageDialog } from '@components'
 import {
 	extractKriptoApprovalMetadata,
 	getLocaleText,
@@ -30,6 +30,10 @@ import {
 	Button,
 	ButtonGroup,
 	Checkbox,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
 	Input,
 	Label,
 	Select,
@@ -48,11 +52,11 @@ import {
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type IUpdateStatusRequest, type Locale, RoleEnum, StatusEnum } from '@types'
-import { Edit, FileDown, RotateCcw, SendIcon, ShieldAlert, Trash } from 'lucide-react'
+import { Edit, FileDown, type LucideIcon, MoreVertical, RotateCcw, SendIcon, ShieldAlert, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
-import localeDictionary from './locale.json'
 import { trackLanguageGeneration } from '../language-generation-tracker'
+import localeDictionary from './locale.json'
 import { RupView } from './rup-view'
 
 type IRupIdLocaleText = typeof localeDictionary.ru
@@ -60,6 +64,7 @@ type IRupIdLocaleText = typeof localeDictionary.ru
 const Page: FC = () => {
 	const { replace } = useRouter()
 	const params = useParams<{ id: string }>()
+	const rupId = params.id ?? ''
 
 	const { authLoading, user } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
@@ -68,15 +73,16 @@ const Page: FC = () => {
 	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
 
 	// queries
-	const { data: rupData, isLoading } = useQuery({ ...services.rup.getByIdOptions(params.id), enabled: !!params.id })
+	const { data: rupData, isLoading } = useQuery({ ...services.rup.getByIdOptions(rupId), enabled: !!rupId })
 	const { data: generationStatus, isLoading: isGenerationStatusLoading } = useQuery({
-		...services.rup.getLanguageGenerationStatusOptions(params.id),
-		enabled: !!params.id,
+		...services.rup.getLanguageGenerationStatusOptions(rupId),
+		enabled: !!rupId,
 	})
 	const { refetch: getDownloadUrl } = useQuery({
-		...services.rup.getDownloadUrlOptions(params.id, toBackendLocale(activeLocale)),
+		...services.rup.getDownloadUrlOptions(rupId, toBackendLocale(activeLocale)),
 		enabled: false,
 	})
 	// mutations
@@ -88,33 +94,33 @@ const Page: FC = () => {
 
 	useEffect(() => {
 		if (!isLanguageGenerationInProgress) return
-		replace(`/rups/${params.id}/language-generation`)
-	}, [isLanguageGenerationInProgress, params.id, replace])
+		replace(`/rups/${rupId}/language-generation`)
+	}, [isLanguageGenerationInProgress, replace, rupId])
 
 	useEffect(() => {
 		setActiveLocale(locale)
 	}, [locale])
 
-// change rup status
-  const handleStatusChange = (
-    newStatus: StatusEnum,
-    options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
-  ) => {
-    if (!rupData) return
-    setIsSheetOpen(false)
+	// change rup status
+	const handleStatusChange = (
+		newStatus: StatusEnum,
+		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
+	) => {
+		if (!rupData) return
+		setIsSheetOpen(false)
 
-    const toastId = `rup-${rupData.id}-status-update-${newStatus}`
+		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
 
-    toast.loading(t.toasts.statusLoading, { id: toastId })
-    const updateStatusPayload: IUpdateStatusRequest = {
-      id: rupData.id,
-      status: newStatus,
-      reason: options?.reason,
-      key_id: options?.keyId,
-      user_id: options?.userId,
-      password: options?.password,
-      confirmed: options?.confirmed,
-    }
+		toast.loading(t.toasts.statusLoading, { id: toastId })
+		const updateStatusPayload: IUpdateStatusRequest = {
+			id: rupData.id,
+			status: newStatus,
+			reason: options?.reason,
+			key_id: options?.keyId,
+			user_id: options?.userId,
+			password: options?.password,
+			confirmed: options?.confirmed,
+		}
 
 		updateStatusMutation.mutate(updateStatusPayload, {
 			onSuccess: () => {
@@ -173,8 +179,9 @@ const Page: FC = () => {
 		)
 	}
 
-	const handleRegenerateLanguage = () => {
+	const handleRegenerateLanguage = (sourceLanguage: Locale) => {
 		if (!rupData) return
+		setIsRegenerateDialogOpen(false)
 
 		const toastId = `rup-${rupData.id}-regenerate-language`
 
@@ -182,7 +189,7 @@ const Page: FC = () => {
 		regenerateLanguageMutation.mutate(
 			{
 				id: rupData.id,
-				sourceLanguage: toBackendLocale(activeLocale),
+				sourceLanguage: toBackendLocale(sourceLanguage),
 			},
 			{
 				onSuccess: () => {
@@ -206,81 +213,150 @@ const Page: FC = () => {
 
 	// bools
 	const isAdmin = hasRole(user.role, RoleEnum.ADMIN)
+	const isTeacher = hasRole(user.role, RoleEnum.TEACHER)
+	const isMethodist = hasRole(user.role, RoleEnum.METHODIST)
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
 	const canRegenerateLanguage = rupData.status === StatusEnum.DRAFT && (isRupDeveloper || isAdmin)
-	// conditions
 	const canDownload = rupData.status === StatusEnum.APPROVED
+	const canEdit = isRupDeveloper && isStatusForEdit
+	const canDelete = isRupCreator && isStatusForEdit
+	const canSendToReview = isRupDeveloper && isStatusForEdit
+
+	type IActionBase = {
+		id: string
+		label: string
+		icon: LucideIcon
+		variant?: 'default' | 'destructive'
+	}
+
+	type ILinkAction = IActionBase & {
+		href: string
+		onClick?: never
+	}
+
+	type IClickAction = IActionBase & {
+		href?: never
+		onClick: () => void
+	}
+
+	const availableActions: Array<ILinkAction | IClickAction> = [
+		isAdmin && {
+			id: 'change-status',
+			label: t.actions.changeStatus,
+			icon: ShieldAlert,
+			onClick: () => setIsSheetOpen(true),
+		},
+		canEdit && {
+			id: 'edit',
+			label: t.actions.edit,
+			icon: Edit,
+			href: `/rups/${rupId}/edit`,
+		},
+		canSendToReview && {
+			id: 'send-to-review',
+			label: t.actions.sendToReview,
+			icon: SendIcon,
+			onClick: () => handleStatusChange(StatusEnum.IN_REVIEW),
+		},
+		canDownload && {
+			id: 'download',
+			label: t.actions.download,
+			icon: FileDown,
+			onClick: onDownload,
+		},
+		canRegenerateLanguage && {
+			id: 'regenerate',
+			label: t.actions.regenerate,
+			icon: RotateCcw,
+			onClick: () => setIsRegenerateDialogOpen(true),
+		},
+		canDelete && {
+			id: 'delete',
+			label: t.actions.delete,
+			icon: Trash,
+			onClick: () => setIsDeleteDialogOpen(true),
+			variant: 'destructive',
+		},
+	].filter(Boolean) as Array<ILinkAction | IClickAction>
+
+	const primaryActionPriority = isAdmin
+		? ['change-status', 'edit', 'send-to-review', 'download', 'regenerate']
+		: isTeacher
+			? ['edit', 'send-to-review', 'download', 'regenerate']
+			: isMethodist
+				? ['download', 'regenerate', 'edit', 'send-to-review']
+				: ['download', 'regenerate', 'edit', 'send-to-review']
+
+	const primaryAction =
+		primaryActionPriority
+			.map((actionId) => availableActions.find((action) => action.id === actionId))
+			.find(Boolean) ?? null
+	const overflowActions = availableActions.filter((action) => action.id !== primaryAction?.id)
+	const actionButtonClassName = 'h-9'
 
 	return (
 		<>
 			<RupView
-				activeLocale={activeLocale}
 				actions={
 					<ButtonGroup>
-						{isAdmin && (
-							<Button
-								className='hover:text-primary'
-								size='sm'
-								variant='outline'
-								onClick={() => setIsSheetOpen(true)}
-							>
-								<ShieldAlert />
-								{t.actions.changeStatus}
-							</Button>
-						)}
-						{isRupCreator && isStatusForEdit && (
-							<Button
-								className='hover:text-destructive'
-								size='sm'
-								variant='outline'
-								onClick={() => setIsDeleteDialogOpen(true)}
-							>
-								<Trash />
-								{t.actions.delete}
-							</Button>
-						)}
-						{isRupDeveloper && isStatusForEdit && (
-							<Button asChild size='sm' variant='outline'>
-								<Link href={`/rups/${params.id}/edit`}>
-									<Edit /> {t.actions.edit}
-								</Link>
-							</Button>
-						)}
-						{canRegenerateLanguage && (
-							<Button
-								className='hover:text-primary'
-								size='sm'
-								variant='outline'
-								onClick={handleRegenerateLanguage}
-							>
-								<RotateCcw />
-								{t.actions.regenerate}
-							</Button>
-						)}
-						{canDownload && (
-							<Button className='hover:text-primary' size='sm' variant='outline' onClick={onDownload}>
-								<FileDown className='mr-2 h-4 w-4' />
-								{t.actions.download}
-							</Button>
-						)}
-						{isRupDeveloper && isStatusForEdit && (
-							<Button
-								className='hover:text-primary'
-								size='sm'
-								variant='outline'
-								onClick={() => handleStatusChange(StatusEnum.IN_REVIEW)}
-							>
-								<SendIcon />
-								{t.actions.sendToReview}
-							</Button>
+						{primaryAction &&
+							(primaryAction.href ? (
+								<Button asChild className={actionButtonClassName} variant='outline'>
+									<Link href={primaryAction.href}>
+										<primaryAction.icon className='mr-2 h-4 w-4' />
+										{primaryAction.label}
+									</Link>
+								</Button>
+							) : (
+								<Button
+									className={`${actionButtonClassName} hover:text-primary`}
+									variant='outline'
+									onClick={primaryAction.onClick}
+								>
+									<primaryAction.icon className='mr-2 h-4 w-4' />
+									{primaryAction.label}
+								</Button>
+							))}
+
+						{overflowActions.length > 0 && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										aria-label={t.actions.moreActions}
+										className={`${actionButtonClassName} px-3`}
+										type='button'
+										variant='outline'
+									>
+										<MoreVertical className='h-4 w-4' />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align='end' className='w-56'>
+									{overflowActions.map((action) =>
+										action.href ? (
+											<DropdownMenuItem key={action.id} asChild>
+												<Link href={action.href}>
+													<action.icon className='mr-2 h-4 w-4' />
+													{action.label}
+												</Link>
+											</DropdownMenuItem>
+										) : (
+											<DropdownMenuItem key={action.id} variant={action.variant} onClick={action.onClick}>
+												<action.icon className='mr-2 h-4 w-4' />
+												{action.label}
+											</DropdownMenuItem>
+										),
+									)}
+								</DropdownMenuContent>
+							</DropdownMenu>
 						)}
 					</ButtonGroup>
 				}
+				activeLocale={activeLocale}
 				data={rupData}
-				onActiveLocaleChange={setActiveLocale}
 				role={user.role}
+				onActiveLocaleChange={setActiveLocale}
 				onStatusChange={handleStatusChange}
 			/>
 
@@ -294,8 +370,19 @@ const Page: FC = () => {
 			<DeleteAlert
 				isDeleteDialogOpen={isDeleteDialogOpen}
 				setIsDeleteDialogOpen={setIsDeleteDialogOpen}
-				onDelete={handleDeleteRup}
 				text={t}
+				onDelete={handleDeleteRup}
+			/>
+
+			<RupLanguageDialog
+				confirmLabel={t.languageDialog.confirm}
+				currentLanguage={activeLocale}
+				description={t.languageDialog.description}
+				languageLabels={{ kk: t.view.languageKk, ru: t.view.languageRu }}
+				open={isRegenerateDialogOpen}
+				title={t.languageDialog.title}
+				onConfirm={handleRegenerateLanguage}
+				onOpenChange={setIsRegenerateDialogOpen}
 			/>
 		</>
 	)
@@ -313,12 +400,7 @@ interface IStatusChangeSheetProps {
 	text: IRupIdLocaleText
 }
 
-const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
-	isSheetOpen,
-	setIsSheetOpen,
-	handleStatusChange,
-	text,
-}) => {
+const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({ isSheetOpen, setIsSheetOpen, handleStatusChange, text }) => {
 	const [newStatus, setNewStatus] = useState<StatusEnum | undefined>(undefined)
 	const [reason, setReason] = useState('')
 	const [keyId, setKeyId] = useState('')
@@ -333,6 +415,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 		if (!file) return
 		if (!file.name.toLowerCase().endsWith('.kripto')) {
 			toast.error(text.toasts.kriptoOnlyV3)
+
 			return
 		}
 
@@ -351,10 +434,12 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 			if (isApprove) {
 				if (!fileName || !keyId || !userId) {
 					toast.error(text.toasts.kriptoUploadRequired)
+
 					return
 				}
 				if (!password) {
 					toast.error(text.toasts.kriptoPasswordRequired)
+
 					return
 				}
 				handleStatusChange(newStatus, {
@@ -422,6 +507,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 									type='file'
 									onChange={(e) => {
 										const file = e.target.files?.[0]
+
 										onFileUpload(file).catch((err) => {
 											toast.error(err.message || text.toasts.kriptoReadError)
 										})
@@ -436,20 +522,15 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 
 							<div className='grid gap-2'>
 								<Label htmlFor='key-id'>{text.statusSheet.keyIdLabel}</Label>
-								<Input
-									id='key-id'
-									placeholder={text.statusSheet.keyIdPlaceholder}
-									readOnly
-									value={keyId}
-								/>
+								<Input readOnly id='key-id' placeholder={text.statusSheet.keyIdPlaceholder} value={keyId} />
 							</div>
 
 							<div className='grid gap-2'>
 								<Label htmlFor='password'>{text.statusSheet.passwordLabel}</Label>
 								<Input
 									id='password'
-									type='password'
 									placeholder={text.statusSheet.passwordLabel}
+									type='password'
 									value={password}
 									onChange={(e) => setPassword(e.target.value)}
 								/>
@@ -458,11 +539,11 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 							<div className='grid gap-2'>
 								<div className='flex items-center space-x-2'>
 									<Checkbox
-										id='confirm'
 										checked={confirmed}
+										id='confirm'
 										onCheckedChange={(checked) => setConfirmed(!!checked)}
 									/>
-									<Label htmlFor='confirm' className='cursor-pointer'>
+									<Label className='cursor-pointer' htmlFor='confirm'>
 										{text.statusSheet.confirmCheck}
 									</Label>
 								</div>
@@ -471,10 +552,7 @@ const StatusChangeSheet: FC<IStatusChangeSheetProps> = ({
 					)}
 				</div>
 				<SheetFooter>
-					<Button 
-						disabled={!newStatus || (isApprove && (!confirmed || !password))} 
-						onClick={onSheetSubmit}
-					>
+					<Button disabled={!newStatus || (isApprove && (!confirmed || !password))} onClick={onSheetSubmit}>
 						{text.statusSheet.save}
 					</Button>
 				</SheetFooter>

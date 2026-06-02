@@ -2,26 +2,40 @@
 
 import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 
+import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Forbidden, Loader, PageTitle } from '@components'
 import { createLocaleText, getLocaleText, getUILocaleSection, interpolateUILocaleText, isAuthor } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { cn } from '@lib'
 import { services } from '@services'
-import { Badge, Button, ButtonGroup, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
+import {
+	Badge,
+	Button,
+	ButtonGroup,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateRupRequest, type Locale, RupTypeEnum, StudyFormEnum } from '@types'
-import { RotateCcw, SaveIcon } from 'lucide-react'
+import { type IUpdateRupRequest, type Locale, RoleEnum, RupTypeEnum, StudyFormEnum } from '@types'
+import { MoreVertical, RotateCcw, SaveIcon } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { toLocaleText } from '../../rup-localization'
 import { Step1 } from '../../create/step1'
 import { Step2 } from '../../create/step2'
 import { Step3 } from '../../create/step3'
 import { Step4 } from '../../create/step4'
-import { createRupFormSchema, type RUPFormData } from '../../rup-schema'
+import { toLocaleText } from '../../rup-localization'
+import { type RUPFormData, createRupFormSchema } from '../../rup-schema'
 import localeDictionary from './locale.json'
 
 const defaultValues: RUPFormData = {
@@ -69,6 +83,7 @@ const EditPage: FC = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const [currentStep, setCurrentStep] = useState('1')
+	const [stepTransitionDirection, setStepTransitionDirection] = useState<'forward' | 'backward'>('forward')
 	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
 	// auth
 	const { user, authLoading } = useAuthStore()
@@ -245,7 +260,21 @@ const EditPage: FC = () => {
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
 	// Redirect if not allowed to edit
+
 	if (!isRupDeveloper) return <Forbidden />
+	const isAdmin = user.role === RoleEnum.ADMIN
+	const isTeacher = user.role === RoleEnum.TEACHER
+	const isMethodist = user.role === RoleEnum.METHODIST
+
+	const getStepTransitionDirection = (fromStep: string, toStep: string) =>
+		Number(toStep) >= Number(fromStep) ? 'forward' : 'backward'
+
+	const handleStepChange = (newStep: string) => {
+		if (newStep === currentStep) return
+
+		setStepTransitionDirection(getStepTransitionDirection(currentStep, newStep))
+		setCurrentStep(newStep)
+	}
 
 	return (
 		<FormProvider {...methods}>
@@ -257,28 +286,28 @@ const EditPage: FC = () => {
 				<PageTitle
 					sticky
 					actions={
-						<div className='flex items-center gap-2'>
+						<div className='flex flex-wrap items-center justify-end gap-2'>
 							<LanguageTabs
 								labels={{ kk: t.languages.kk, ru: t.languages.ru }}
 								value={activeLocale}
 								onChange={setActiveLocale}
 							/>
 							<ButtonGroup>
-								<Button
-									className='hover:text-destructive'
-									disabled={!methods.formState.isDirty}
-									size='sm'
-									type='button'
-									variant='outline'
-									onClick={() => methods.reset()}
-								>
-									<RotateCcw className='mr-2 h-4 w-4' />
-									{t.resetChanges}
-								</Button>
+								{isAdmin && (
+									<Button
+										className='hover:text-destructive'
+										disabled={!methods.formState.isDirty}
+										type='button'
+										variant='outline'
+										onClick={() => methods.reset()}
+									>
+										<RotateCcw className='mr-2 h-4 w-4' />
+										{t.resetChanges}
+									</Button>
+								)}
 								<Button
 									className='hover:text-primary'
 									disabled={!methods.formState.isDirty}
-									size='sm'
 									type='submit'
 									variant='outline'
 								>
@@ -286,6 +315,25 @@ const EditPage: FC = () => {
 									{t.save}
 								</Button>
 							</ButtonGroup>
+
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button aria-label={t.moreActions} className='size-9 px-0' type='button' variant='outline'>
+										<MoreVertical className='h-4 w-4' />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align='end' className='w-56'>
+									<DropdownMenuItem asChild>
+										<Link href={`/rups/${rupData.id}`}>{t.openView}</Link>
+									</DropdownMenuItem>
+									{!isAdmin && (isTeacher || isMethodist) && (
+										<DropdownMenuItem className='cursor-pointer' onClick={() => methods.reset()}>
+											<RotateCcw className='mr-2 h-4 w-4' />
+											{t.resetChanges}
+										</DropdownMenuItem>
+									)}
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
 					}
 					backHref={`/rups/${rupData.id}`}
@@ -295,44 +343,56 @@ const EditPage: FC = () => {
 					<Badge variant='outline'>{t.draft}</Badge>
 				</PageTitle>
 
-				<Tabs value={currentStep} onValueChange={setCurrentStep}>
+				<Tabs value={currentStep} onValueChange={handleStepChange}>
 					<TabsList className='grid grid-cols-4 w-full'>
-						<TabsTrigger
-							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-							value='1'
-						>
-							{t.step1}
-						</TabsTrigger>
-						<TabsTrigger
-							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-							value='2'
-						>
-							{t.step2}
-						</TabsTrigger>
-						<TabsTrigger
-							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-							value='3'
-						>
-							{t.step3}
-						</TabsTrigger>
-						<TabsTrigger
-							className='data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-							value='4'
-						>
-							{t.step4}
-						</TabsTrigger>
+						<TabsTrigger value='1'>{t.step1}</TabsTrigger>
+						<TabsTrigger value='2'>{t.step2}</TabsTrigger>
+						<TabsTrigger value='3'>{t.step3}</TabsTrigger>
+						<TabsTrigger value='4'>{t.step4}</TabsTrigger>
 					</TabsList>
 
-					<TabsContent value='1'>
+					<TabsContent
+						className={cn(
+							'data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-300 motion-reduce:data-[state=active]:animate-none',
+							stepTransitionDirection === 'forward'
+								? 'data-[state=active]:slide-in-from-right-4'
+								: 'data-[state=active]:slide-in-from-left-4',
+						)}
+						value='1'
+					>
 						<Step1 activeLocale={activeLocale} />
 					</TabsContent>
-					<TabsContent value='2'>
+					<TabsContent
+						className={cn(
+							'data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-300 motion-reduce:data-[state=active]:animate-none',
+							stepTransitionDirection === 'forward'
+								? 'data-[state=active]:slide-in-from-right-4'
+								: 'data-[state=active]:slide-in-from-left-4',
+						)}
+						value='2'
+					>
 						<Step2 activeLocale={activeLocale} />
 					</TabsContent>
-					<TabsContent value='3'>
+					<TabsContent
+						className={cn(
+							'data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-300 motion-reduce:data-[state=active]:animate-none',
+							stepTransitionDirection === 'forward'
+								? 'data-[state=active]:slide-in-from-right-4'
+								: 'data-[state=active]:slide-in-from-left-4',
+						)}
+						value='3'
+					>
 						<Step3 activeLocale={activeLocale} />
 					</TabsContent>
-					<TabsContent value='4'>
+					<TabsContent
+						className={cn(
+							'data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:duration-300 motion-reduce:data-[state=active]:animate-none',
+							stepTransitionDirection === 'forward'
+								? 'data-[state=active]:slide-in-from-right-4'
+								: 'data-[state=active]:slide-in-from-left-4',
+						)}
+						value='4'
+					>
 						<Step4 activeLocale={activeLocale} />
 					</TabsContent>
 				</Tabs>

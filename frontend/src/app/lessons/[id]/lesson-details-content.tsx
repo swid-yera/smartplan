@@ -10,7 +10,7 @@ import { createLocaleText, hasRole, topicTypeIcons } from '@helpers'
 import { services } from '@services'
 import { Button, ButtonGroup } from '@shadcn'
 import { useMutation } from '@tanstack/react-query'
-import type { IGenerateLessonRequest, ILesson } from '@types'
+import type { ILesson } from '@types'
 import { RoleEnum, TopicTypeEnum } from '@types'
 import { Edit, FileDown, RefreshCw, Trash } from 'lucide-react'
 import { toast } from 'sonner'
@@ -34,6 +34,7 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 	const { push, replace } = useRouter()
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
+	const [regenerateDescription, setRegenerateDescription] = useState('')
 	const [regenerateFormData, setRegenerateFormData] = useState<IRegenerateFormData>({
 		name: '',
 		theoryHours: 0,
@@ -67,8 +68,6 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 
 		return 0
 	}
-
-	const getNonNegativeNumber = (value: string) => Math.max(0, Number(value) || 0)
 
 	const teacherName =
 		[lesson.teacher?.lastName, lesson.teacher?.firstName].filter(Boolean).join(' ') ||
@@ -117,6 +116,7 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 
 	const handleRegenerateClick = () => {
 		resetRegenerateForm()
+		setRegenerateDescription('')
 		setIsRegenerateDialogOpen(true)
 	}
 
@@ -135,12 +135,13 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 			return
 		}
 
-		const payload: IGenerateLessonRequest = {
+		const payload = {
 			rupId: currentRupId,
 			disciplineId: currentDisciplineId,
 			topicId: currentTopicId,
 			updatedTopic: {
 				name: createLocaleText(regenerateFormData.name.trim(), regenerateFormData.name.trim()),
+				description: regenerateDescription.trim(),
 				type: regenerateFormData.type,
 				total_hours:
 					regenerateFormData.theoryHours + regenerateFormData.practiceHours + regenerateFormData.individualHours,
@@ -266,13 +267,12 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 
 			<LessonRegenerateDialog
 				canRegenerate={canRegenerate}
-				formData={regenerateFormData}
+				description={regenerateDescription}
 				isOpen={isRegenerateDialogOpen}
 				isPending={regenerateLessonMutation.isPending}
 				onConfirm={handleRegenerate}
-				onNumberChange={getNonNegativeNumber}
+				onDescriptionChange={setRegenerateDescription}
 				onOpenChange={setIsRegenerateDialogOpen}
-				onUpdate={setRegenerateFormData}
 			/>
 		</section>
 	)
