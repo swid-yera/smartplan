@@ -2,7 +2,7 @@
 
 import { memo, useState } from 'react'
 
-import { extractKriptoApprovalMetadata, parseKriptoFileText } from '@helpers'
+import { extractKriptoApprovalMetadata, hasRole, parseKriptoFileText } from '@helpers'
 import {
 	Button,
 	Checkbox,
@@ -73,7 +73,7 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 	const [fileName, setFileName] = useState('')
 	const [approvePassword, setApprovePassword] = useState('')
 	const [approveConfirmed, setApproveConfirmed] = useState(false)
-	const isMethodistReview = role === RoleEnum.METHODIST && data.status === StatusEnum.IN_REVIEW
+	const isMethodistReview = hasRole(role, RoleEnum.METHODIST) && data.status === StatusEnum.IN_REVIEW
 
 	const onApproveFileUpload = async (file?: File) => {
 		if (!file) return

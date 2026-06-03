@@ -225,9 +225,9 @@ const Page: FC = () => {
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
 	const canRegenerateLanguage = rupData.status === StatusEnum.DRAFT && (isRupDeveloper || isAdmin)
 	const canDownload = rupData.status === StatusEnum.APPROVED
-	const canEdit = isRupDeveloper && isStatusForEdit
-	const canDelete = isRupCreator && isStatusForEdit
-	const canSendToReview = isRupDeveloper && isStatusForEdit
+	const canEdit = (isRupDeveloper || isAdmin) && isStatusForEdit
+	const canDelete = (isRupCreator || isAdmin) && isStatusForEdit
+	const canSendToReview = (isRupDeveloper || isAdmin) && isStatusForEdit
 
 	type IActionBase = {
 		id: string
