@@ -57,6 +57,7 @@ import {
 	CategoryFieldsEditor,
 	type ICategoryFieldFormState,
 	mapCategoryToFormFields,
+	isValidMultiFieldDefinition,
 	normalizeSortOrder,
 	sanitizeFieldOptions,
 	sanitizeFieldValidation,
@@ -165,6 +166,17 @@ const Page = () => {
 
 		if (invalidSelectField) {
 			toast.error(interpolateUILocaleText(t.validationSelectOption, { key: invalidSelectField.key || 'select' }))
+
+			return
+		}
+
+		const invalidMultiField = fields.find((field) => field.type === 'multi_fields' && !isValidMultiFieldDefinition(field))
+
+		if (invalidMultiField) {
+			const invalidMultiFieldLabel =
+				invalidMultiField.label[activeLocale]?.trim() || invalidMultiField.label.ru.trim() || invalidMultiField.label.kk.trim()
+
+			toast.error(`Настройте подполя для «${invalidMultiFieldLabel || invalidMultiField.key}»`)
 
 			return
 		}

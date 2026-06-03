@@ -35,6 +35,9 @@
 			"categoryIcon": "Иконка категории",
 			"categoryId": "ID категории",
 			"categoryAwardTypes": "Типы оценивания категории",
+			"multiFields": "Группы полей",
+			"multiFieldsRowTitle": "Строка #{index}",
+			"multiFieldsEmpty": "Нет заполненных строк",
 			"documents": "Документы",
 			"download": "Скачать"
 		}
@@ -75,6 +78,9 @@
 			"categoryIcon": "Санат белгішесі",
 			"categoryId": "Санат ID",
 			"categoryAwardTypes": "Санат бағалау түрлері",
+			"multiFields": "Өріс топтары",
+			"multiFieldsRowTitle": "Жол #{index}",
+			"multiFieldsEmpty": "Толтырылған жолдар жоқ",
 			"documents": "Құжаттар",
 			"download": "Жүктеп алу"
 		}

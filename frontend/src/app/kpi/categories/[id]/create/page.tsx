@@ -15,6 +15,8 @@ import {
 	findInvalidCategoryFieldByValidation,
 	findMissingRequiredCategoryField,
 	getCategoryFieldValidationError,
+	isFileFieldValueArray,
+	serializeCategoryFieldValue,
 } from '@components'
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
@@ -289,40 +291,24 @@ export default function CreateAwardPage() {
 			criteria: selectedCriteria.id,
 			bonusCriteria: selectedBonusCriteria?.id,
 			categoryId: category.id,
-			fieldValues: category.fieldsExpanded.reduce<Record<string, string | string[] | number>>((acc, field) => {
+			fieldValues: category.fieldsExpanded.reduce<
+				Record<string, string | string[] | number | Array<Record<string, string | number>>>
+			>((acc, field) => {
 				const value = categoryFieldValues[field.key]
 
 				if (field.type === 'file') {
-					const hasFile = Array.isArray(value) && value.length > 0
+					const hasFile = isFileFieldValueArray(value) && value.length > 0
 
 					acc[field.key] = hasFile ? [''] : ''
 
 					return acc
 				}
 
-				if (field.type === 'number') {
-					const rawValue = typeof value === 'string' ? value.trim() : ''
+				const serializedValue = serializeCategoryFieldValue(field, value)
 
-					if (!rawValue) {
-						acc[field.key] = ''
-
-						return acc
-					}
-
-					const parsedValue = Number(rawValue)
-
-					acc[field.key] = Number.isFinite(parsedValue) ? parsedValue : ''
-
-					return acc
+				if (serializedValue !== undefined) {
+					acc[field.key] = serializedValue
 				}
-
-				if (field.type === 'url') {
-					acc[field.key] = typeof value === 'string' ? withHttpsProtocol(value) : ''
-
-					return acc
-				}
-
-				acc[field.key] = typeof value === 'string' ? value : ''
 
 				return acc
 			}, {}),
@@ -332,7 +318,7 @@ export default function CreateAwardPage() {
 
 			const value = categoryFieldValues[field.key]
 
-			if (!Array.isArray(value) || value.length === 0) return acc
+			if (!isFileFieldValueArray(value) || value.length === 0) return acc
 
 			acc[field.key] = value
 

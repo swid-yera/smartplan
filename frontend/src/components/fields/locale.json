@@ -6,6 +6,10 @@
 		"fileSelected": "Выбрано файлов",
 		"fileRemove": "Убрать",
 		"fileDropHint": "Перетащите новые файлы или нажмите для добавления",
+		"multiFieldsAddRow": "Добавить строку",
+		"multiFieldsRowTitle": "Строка #{index}",
+		"multiFieldsEmpty": "Добавьте хотя бы одну строку",
+		"multiFieldsNoSubFields": "В группе не настроены подполя",
 		"errors": {
 			"minLength": "Минимальная длина: {value}",
 			"maxLength": "Максимальная длина: {value}",
@@ -13,7 +17,12 @@
 			"minValue": "Минимальное значение: {value}",
 			"maxValue": "Максимальное значение: {value}",
 			"maxFileSize": "Максимальный размер файла: {value}MB",
-			"invalidFileExtension": "Недопустимое расширение файла: {name}"
+			"invalidFileExtension": "Недопустимое расширение файла: {name}",
+			"invalidMultiFieldValue": "Заполните строки группы",
+			"requiredMultiFieldGroup": "Добавьте хотя бы одну строку",
+			"invalidMultiFieldRow": "Строка #{index} заполнена некорректно",
+			"unknownMultiFieldField": "Неизвестное поле группы: {field}",
+			"requiredMultiFieldField": "Заполните поле: {field}"
 		}
 	},
 	"kk": {
@@ -23,6 +32,10 @@
 		"fileSelected": "Таңдалған файлдар",
 		"fileRemove": "Өшіру",
 		"fileDropHint": "Жаңа файлдарды сүйреп апарыңыз немесе қосу үшін басыңыз",
+		"multiFieldsAddRow": "Жол қосу",
+		"multiFieldsRowTitle": "Жол #{index}",
+		"multiFieldsEmpty": "Кемінде бір жол қосыңыз",
+		"multiFieldsNoSubFields": "Топта ішкі өрістер бапталмаған",
 		"errors": {
 			"minLength": "Ең аз ұзындық: {value}",
 			"maxLength": "Ең көп ұзындық: {value}",
@@ -30,7 +43,12 @@
 			"minValue": "Ең аз мән: {value}",
 			"maxValue": "Ең көп мән: {value}",
 			"maxFileSize": "Файлдың ең үлкен өлшемі: {value}MB",
-			"invalidFileExtension": "Рұқсат етілмеген файл кеңейтімі: {name}"
+			"invalidFileExtension": "Рұқсат етілмеген файл кеңейтімі: {name}",
+			"invalidMultiFieldValue": "Топ жолдарын толтырыңыз",
+			"requiredMultiFieldGroup": "Кемінде бір жол қосыңыз",
+			"invalidMultiFieldRow": "#{index} жолы дұрыс толтырылмаған",
+			"unknownMultiFieldField": "Топтағы белгісіз өріс: {field}",
+			"requiredMultiFieldField": "Өрісті толтырыңыз: {field}"
 		}
 	}
 }

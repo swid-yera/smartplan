@@ -1,10 +1,10 @@
 import { interpolateUILocaleText } from '@helpers'
-import type { ICategoryFieldResponse, Locale } from '@types'
+import type { ICategoryFieldResponse, ICategoryMultiFieldOptionResponse, ICategoryMultiFieldRowValue, Locale } from '@types'
 import { isAfter, isValid as isValidDate, parseISO, startOfDay } from 'date-fns'
 
 import locale from './locale.json'
 
-export type ICategoryFieldValue = string | File[]
+export type ICategoryFieldValue = string | number | File[] | ICategoryMultiFieldRowValue[]
 export type ICategoryFieldValues = Record<string, ICategoryFieldValue>
 
 const URL_WITHOUT_PROTOCOL_REGEX =
@@ -18,6 +18,41 @@ export const buildInitialCategoryFieldValues = (fields: ICategoryFieldResponse[]
 			return acc
 		}
 
+		if (field.type === 'multi_fields') {
+			acc[field.key] = []
+
+			return acc
+		}
+
+		acc[field.key] = ''
+
+		return acc
+	}, {})
+}
+
+const isBrowserFile = (value: unknown): value is File => {
+	return typeof File !== 'undefined' && value instanceof File
+}
+
+export const isFileFieldValueArray = (value: ICategoryFieldValue | undefined): value is File[] => {
+	return Array.isArray(value) && value.every(isBrowserFile)
+}
+
+export const isMultiFieldRowArray = (value: ICategoryFieldValue | undefined): value is ICategoryMultiFieldRowValue[] => {
+	return (
+		Array.isArray(value) &&
+		value.every(
+			(item) =>
+				typeof item === 'object' &&
+				item !== null &&
+				!Array.isArray(item) &&
+				!isBrowserFile(item),
+		)
+	)
+}
+
+export const createEmptyMultiFieldRow = (fields: Array<Pick<ICategoryFieldResponse, 'key' | 'type'>>) => {
+	return fields.reduce<ICategoryMultiFieldRowValue>((acc, field) => {
 		acc[field.key] = ''
 
 		return acc
@@ -91,9 +126,7 @@ export const collectCategoryFieldFiles = (fields: ICategoryFieldResponse[], valu
 
 		const value = values[field.key]
 
-		if (!Array.isArray(value)) return []
-
-		return value
+		return isFileFieldValueArray(value) ? value : []
 	})
 }
 
@@ -169,7 +202,8 @@ export const getCategoryFieldValidationError = (
 	}
 
 	if (field.type === 'file') {
-		if (!Array.isArray(value) || !value.length) return null
+		const files = isFileFieldValueArray(value) ? value : []
+		if (!files.length) return null
 
 		const maxSizeMb = getValidationNumber(field.validation, 'maxSizeMb')
 		const allowedExtensions = getValidationStringArray(field.validation, 'extensions').map((item) =>
@@ -177,7 +211,7 @@ export const getCategoryFieldValidationError = (
 		)
 		const maxSizeBytes = maxSizeMb !== null ? maxSizeMb * 1024 * 1024 : null
 
-		for (const file of value) {
+		for (const file of files) {
 			if (maxSizeBytes !== null && file.size > maxSizeBytes) {
 				return interpolateUILocaleText(t.errors.maxFileSize, { value: maxSizeMb || 0 })
 			}
@@ -192,7 +226,103 @@ export const getCategoryFieldValidationError = (
 		}
 	}
 
+	if (field.type === 'multi_fields') {
+		return getMultiFieldValidationError(field, value, currentLocale)
+	}
+
 	return null
+}
+
+const getMultiFieldValidationError = (
+	field: ICategoryFieldResponse,
+	value: ICategoryFieldValue | undefined,
+	currentLocale: Locale,
+) => {
+	const t = locale[currentLocale] ?? locale.ru
+	const options = Array.isArray(field.options)
+		? field.options.filter(
+				(option): option is ICategoryMultiFieldOptionResponse =>
+					typeof option === 'object' && option !== null && 'key' in option && 'type' in option,
+			)
+		: []
+
+	if (!isMultiFieldRowArray(value)) {
+		return t.errors.invalidMultiFieldValue
+	}
+
+	if (field.required && value.length === 0) {
+		return t.errors.requiredMultiFieldGroup
+	}
+
+	const childByKey = new Map(options.map((option) => [option.key, option]))
+
+	for (let rowIndex = 0; rowIndex < value.length; rowIndex += 1) {
+		const row = value[rowIndex]
+
+		if (!row || typeof row !== 'object' || Array.isArray(row)) {
+			return interpolateUILocaleText(t.errors.invalidMultiFieldRow, { index: rowIndex + 1 })
+		}
+
+		for (const key of Object.keys(row)) {
+			if (!childByKey.has(key)) {
+				return interpolateUILocaleText(t.errors.unknownMultiFieldField, { field: key })
+			}
+		}
+
+		for (const childField of options) {
+			const rawValue = row[childField.key]
+
+			if (childField.required && !hasProvidedMultiFieldValue(rawValue)) {
+				return interpolateUILocaleText(t.errors.requiredMultiFieldField, {
+					field: getMultiFieldFieldLabel(childField, currentLocale),
+				})
+			}
+
+			const childError = getCategoryFieldValidationError(
+				childField as unknown as ICategoryFieldResponse,
+				normalizeMultiFieldValue(rawValue),
+				currentLocale,
+			)
+			if (childError) {
+				return childError
+			}
+		}
+	}
+
+	return null
+}
+
+const getMultiFieldFieldLabel = (field: ICategoryMultiFieldOptionResponse, currentLocale: Locale) => {
+	const localized = field.label
+
+	if (typeof localized === 'string') {
+		return localized
+	}
+
+	if (!localized) {
+		return field.key
+	}
+
+	return currentLocale === 'ru' ? localized.ru || localized.kz || field.key : localized.kz || localized.ru || field.key
+}
+
+const normalizeMultiFieldValue = (value: unknown) => {
+	if (typeof value === 'number' || typeof value === 'string') return value
+	return undefined
+}
+
+const hasProvidedMultiFieldValue = (value: unknown) => {
+	if (value === null || value === undefined) return false
+
+	if (typeof value === 'string') {
+		return value.trim().length > 0
+	}
+
+	if (typeof value === 'number') {
+		return Number.isFinite(value)
+	}
+
+	return false
 }
 
 export const findInvalidCategoryFieldByValidation = (
@@ -205,4 +335,99 @@ export const findInvalidCategoryFieldByValidation = (
 
 		return Boolean(error)
 	})
+}
+
+const isFieldLike = (value: unknown): value is ICategoryFieldResponse => {
+	return typeof value === 'object' && value !== null && 'key' in value && 'type' in value && 'label' in value
+}
+
+export const serializeCategoryFieldValue = (
+	field: ICategoryFieldResponse,
+	value: ICategoryFieldValue | undefined,
+): string | string[] | number | ICategoryMultiFieldRowValue[] | undefined => {
+	if (field.type === 'file') {
+		return undefined
+	}
+
+	if (field.type === 'multi_fields') {
+		if (!isMultiFieldRowArray(value)) return []
+
+		const subFields = Array.isArray(field.options) ? field.options.filter(isFieldLike) : []
+
+		return value
+			.map((row) => {
+				if (!row || typeof row !== 'object' || Array.isArray(row)) {
+					return null
+				}
+
+				const normalizedRow: ICategoryMultiFieldRowValue = {}
+				for (const subField of subFields) {
+					const rawRowValue = row[subField.key]
+					const serializedValue = serializeMultiFieldChildValue(subField, rawRowValue)
+
+					if (serializedValue === undefined) continue
+
+					normalizedRow[subField.key] = serializedValue
+				}
+
+				return Object.keys(normalizedRow).length > 0 ? normalizedRow : null
+			})
+			.filter((row): row is ICategoryMultiFieldRowValue => !!row)
+	}
+
+	if (field.type === 'number') {
+		if (typeof value === 'string') {
+			const trimmedValue = value.trim()
+
+			if (!trimmedValue) return undefined
+
+			const parsedValue = Number(trimmedValue)
+
+			return Number.isFinite(parsedValue) ? parsedValue : undefined
+		}
+
+		if (typeof value === 'number' && Number.isFinite(value)) {
+			return value
+		}
+
+		return undefined
+	}
+
+	if (field.type === 'url') {
+		if (typeof value !== 'string') return ''
+
+		return normalizeUrlWithoutProtocol(value)
+	}
+
+	if (typeof value === 'string') {
+		return value
+	}
+
+	if (Array.isArray(value)) {
+		const firstValue = value.find((item) => typeof item === 'string')
+
+		return typeof firstValue === 'string' ? firstValue : ''
+	}
+
+	return ''
+}
+
+const serializeMultiFieldChildValue = (
+	field: ICategoryFieldResponse,
+	value: unknown,
+): string | number | undefined => {
+	if (field.type === 'number') {
+		if (typeof value === 'number' && Number.isFinite(value)) return value
+		if (typeof value !== 'string') return undefined
+
+		const trimmedValue = value.trim()
+		if (!trimmedValue) return undefined
+
+		const parsedValue = Number(trimmedValue)
+		return Number.isFinite(parsedValue) ? parsedValue : undefined
+	}
+
+	if (typeof value !== 'string') return undefined
+
+	return value
 }

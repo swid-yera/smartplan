@@ -5,7 +5,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
-import { CATEGORY_ICON_OPTIONS, createLocaleText, getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import {
+	CATEGORY_ICON_OPTIONS,
+	createLocaleText,
+	getLocaleText,
+	getUILocaleSection,
+	interpolateUILocaleText,
+} from '@helpers'
 import { services } from '@services'
 import {
 	Button,
@@ -38,6 +44,7 @@ import {
 	AwardTypesSelector,
 	CategoryFieldsEditor,
 	type ICategoryFieldFormState,
+	isValidMultiFieldDefinition,
 	normalizeSortOrder,
 	sanitizeFieldOptions,
 	sanitizeFieldValidation,
@@ -86,6 +93,21 @@ const Page = () => {
 
 		if (invalidSelectField) {
 			toast.error(interpolateUILocaleText(t.validationSelectOption, { key: invalidSelectField.key || 'select' }))
+
+			return
+		}
+
+		const invalidMultiField = fields.find(
+			(field) => field.type === 'multi_fields' && !isValidMultiFieldDefinition(field),
+		)
+
+		if (invalidMultiField) {
+			const invalidMultiFieldLabel =
+				invalidMultiField.label[activeLocale]?.trim() ||
+				invalidMultiField.label.ru.trim() ||
+				invalidMultiField.label.kk.trim()
+
+			toast.error(`Настройте подполя для «${invalidMultiFieldLabel || invalidMultiField.key}»`)
 
 			return
 		}
