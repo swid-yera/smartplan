@@ -108,6 +108,7 @@ type GeneratedTopic struct {
 }
 
 type GenerateLessonRequest struct {
+	SourceLanguage     string   `json:"sourceLanguage"`
 	RupName            string   `json:"rupName"`
 	DisciplineName     string   `json:"disciplineName"`
 	TopicName          string   `json:"topicName"`
@@ -262,6 +263,7 @@ type GenerateTopicsForDisciplinePromptInput struct {
 }
 
 type GenerateLessonPromptInput struct {
+	SourceLanguage         string
 	RupName                string
 	DisciplineName         string
 	TopicName              string
@@ -743,7 +745,17 @@ func resolveRupAIGenerationLanguage(sourceLanguage string) string {
 	return "РУССКИЙ"
 }
 
+func resolveLessonAIGenerationLanguage(sourceLanguage string) string {
+	if strings.EqualFold(strings.TrimSpace(sourceLanguage), "kk") || strings.EqualFold(strings.TrimSpace(sourceLanguage), "kz") {
+		return "казахском"
+	}
+
+	return "русском"
+}
+
 func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
+	responseLanguage := resolveLessonAIGenerationLanguage(in.SourceLanguage)
+
 	return fmt.Sprintf(`
 Ты — методист колледжа Республики Казахстан. Подготовь поурочный план по теме дисциплины.
 
@@ -767,7 +779,7 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 ТРЕБОВАНИЯ:
 1) Верни СТРОГО один JSON-объект без markdown и комментариев.
 2) Поле "type" только "PRACTICE" или "THEORY".
-3) "goals", "tasks", "expected" — связный методический текст на русском языке.
+3) "goals", "tasks", "expected" — связный методический текст на %s языке.
 4) "lessonProgress" — массив этапов занятия.
 5) Каждый этап должен содержать:
    - name: название этапа
@@ -788,6 +800,7 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
    - link должен быть корректным URL (https://...), если ссылка известна
    - запрещены заглушки и мусорные значения (например: "asdf", "test", "qwerty")
    - если точной ссылки нет, укажи "link": ""
+12) Все текстовые поля ответа, включая названия этапов и содержимое "content", должны быть на %s языке.
 
 ФОРМАТ ОТВЕТА:
 {
@@ -832,10 +845,12 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 		in.TechnicalResourcesJSON,
 		in.PreviousLessonsJSON,
 		escapePromptValue(in.Message),
+		responseLanguage,
 		in.LessonMinutes,
 		in.LessonMinutes,
 		in.LessonMinutes,
 		in.LessonMinutes,
+		responseLanguage,
 	)
 }
 

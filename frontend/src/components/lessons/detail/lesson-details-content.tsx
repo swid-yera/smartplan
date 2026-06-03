@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { createLocaleText, getLocaleText, getUILocaleSection, hasRole, toBackendLocale, topicTypeIcons } from '@helpers'
+import { getLocaleText, getUILocaleSection, hasRole, toBackendLocale, topicTypeIcons } from '@helpers'
 import { services } from '@services'
 import { Button, ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -164,8 +164,12 @@ export function LessonDetailsContent({
 			rupId: currentRupId,
 			disciplineId: currentDisciplineId,
 			topicId: currentTopicId,
+			sourceLanguage: toBackendLocale(activeLocale),
 			updatedTopic: {
-				name: createLocaleText(regenerateFormData.name.trim(), regenerateFormData.name.trim()),
+				name: {
+					ru: activeLocale === 'ru' ? regenerateFormData.name.trim() : getLocaleText(lesson.topic_name, 'ru'),
+					kz: activeLocale === 'kk' ? regenerateFormData.name.trim() : getLocaleText(lesson.topic_name, 'kk'),
+				},
 				description: regenerateDescription.trim(),
 				type: regenerateFormData.type,
 				total_hours:

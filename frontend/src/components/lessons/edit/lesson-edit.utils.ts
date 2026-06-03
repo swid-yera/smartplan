@@ -28,11 +28,38 @@ export function createEmptyResource(): IResourceRow {
 
 export function createEmptyLessonProgress(): ILessonProgressRow {
 	return {
-		contentText: '',
+		contentText: { ru: '', kk: '' },
 		name: { ru: '', kk: '' },
 		firstTime: 0,
 		secondTime: 0,
 		thirdTime: 0,
+	}
+}
+
+function normalizeProgressContentLine(value: LocalizedText, locale: Locale): string {
+	if (!value) return ''
+
+	if (typeof value === 'string') {
+		return value.trim()
+	}
+
+	return (locale === 'kk' ? value.kz : value.ru)?.trim() || ''
+}
+
+function mapProgressContentToDraft(content: LocalizedText[] | undefined): Record<Locale, string> {
+	if (!content?.length) {
+		return { ru: '', kk: '' }
+	}
+
+	return {
+		ru: content
+			.map((line) => normalizeProgressContentLine(line, 'ru'))
+			.filter(Boolean)
+			.join('\n'),
+		kk: content
+			.map((line) => normalizeProgressContentLine(line, 'kk'))
+			.filter(Boolean)
+			.join('\n'),
 	}
 }
 
@@ -64,7 +91,7 @@ export function mapLessonProgressForForm(lesson: ILesson): ILessonProgressRow[] 
 
 	return source.map((item, index) => ({
 		id: 'id' in item && typeof item.id === 'string' && item.id.trim() ? item.id : `template-${lesson.type}-${index}`,
-		contentText: (item.content || []).join('\n'),
+		contentText: mapProgressContentToDraft(item.content),
 		firstTime: resolveProgressValue(item, 'firstTime', 'first_time'),
 		name: createLocaleDraft(item.name),
 		secondTime: resolveProgressValue(item, 'secondTime', 'second_time'),
@@ -86,10 +113,17 @@ export function normalizeResources(items: IResourceRow[], type: LessonResourceTy
 export function normalizeLessonProgressForRequest(items: ILessonProgressRow[]) {
 	return items
 		.map((item) => {
-			const content = item.contentText
+			const ruLines = item.contentText.ru
 				.split('\n')
 				.map((line) => line.trim())
-				.filter(Boolean)
+			const kkLines = item.contentText.kk
+				.split('\n')
+				.map((line) => line.trim())
+			const contentLength = Math.max(ruLines.length, kkLines.length)
+			const content = Array.from({ length: contentLength }, (_, index) => ({
+				ru: ruLines[index] || '',
+				kz: kkLines[index] || '',
+			})).filter((line) => line.ru.trim() || line.kz.trim())
 
 			return {
 				content,

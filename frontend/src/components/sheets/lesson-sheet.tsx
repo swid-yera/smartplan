@@ -204,7 +204,9 @@ export const LessonSheet: FC<ILessonSheet> = ({ lesson, onSelect }) => {
 													{item.content?.length ? (
 														<div className='mt-2 space-y-1 text-sm'>
 															{item.content.map((line, lineIndex) => (
-																<p key={`${item.id || lesson.id}-content-${lineIndex}`}>{line}</p>
+																<p key={`${item.id || lesson.id}-content-${lineIndex}`}>
+																	{getLocaleText(line, locale) || t.empty}
+																</p>
 															))}
 														</div>
 													) : (

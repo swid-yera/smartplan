@@ -140,7 +140,7 @@ export function LessonProgressEditor({ activeLocale, items, onAdd, onChange, onR
 									className='min-h-48'
 									id={`lesson-progress-content-${index}`}
 									placeholder={t.progressContentPlaceholder}
-									value={item.contentText}
+									value={item.contentText[activeLocale]}
 									onChange={(e) => onChange(index, 'contentText', e.target.value)}
 								/>
 							</div>

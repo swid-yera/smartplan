@@ -15,6 +15,7 @@ interface IRupViewProps {
 	data: IRup
 	role: RoleEnum
 	activeLocale: Locale
+	localeNotice?: ReactNode
 	onActiveLocaleChange: (nextLocale: Locale) => void
 	onStatusChange: (
 		newStatus: StatusEnum,
@@ -27,6 +28,7 @@ export const RupView: FC<IRupViewProps> = ({
 	data,
 	role,
 	activeLocale,
+	localeNotice,
 	onActiveLocaleChange,
 	onStatusChange,
 	actions,
@@ -94,6 +96,7 @@ export const RupView: FC<IRupViewProps> = ({
 						</div>
 					</div>
 				)}
+				{localeNotice}
 
 				<div className='mt-6 grid gap-6 xl:grid-cols-4 lg:grid-cols-3'>
 					<BasicView

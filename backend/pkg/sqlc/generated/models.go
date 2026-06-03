@@ -521,7 +521,7 @@ type LessonProgress struct {
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`
 	ThirdTime  []int32   `json:"third_time"`
-	Content    []string  `json:"content"`
+	Content    []byte    `json:"content"`
 }
 
 type Penalty struct {
