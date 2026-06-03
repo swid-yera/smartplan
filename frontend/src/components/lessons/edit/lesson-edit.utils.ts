@@ -1,5 +1,5 @@
 import { PRACTICE_PROGRESS, THEORY_PROGRESS } from '@constants'
-import { createLocaleText, getLocaleText } from '@helpers'
+import { createLocaleText } from '@helpers'
 import type { ILesson, Locale, LocalizedText } from '@types'
 import { LessonResourceTypeEnum, LessonTypeEnum } from '@types'
 import { isAxiosError } from 'axios'

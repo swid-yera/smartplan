@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { createLocaleText, getLocaleText, getUILocaleSection } from '@helpers'
+import { createLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button, ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -173,7 +173,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 
 		setEventTimeError(nextEventTimeError)
 
-		if (!formData.topicName.trim()) {
+		if (!formData.topicName.ru.trim() && !formData.topicName.kk.trim()) {
 			toast.error(t.enterLessonTopic)
 
 			return
@@ -192,12 +192,12 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 		}
 
 		const payload: IUpdateLessonRequest = {
-			topic_name: createLocaleText(formData.topicName.trim()),
+			topic_name: createLocaleText(formData.topicName.ru.trim(), formData.topicName.kk.trim()),
 			type: formData.type,
 			event_date: toIsoFromDateAndTimeInput(formData.eventDate, normalizedEventTime, lesson.event_date),
-			goals: createLocaleText(formData.goals.trim()),
-			tasks: createLocaleText(formData.tasks.trim()),
-			expected: createLocaleText(formData.expected.trim()),
+			goals: createLocaleText(formData.goals.ru.trim(), formData.goals.kk.trim()),
+			tasks: createLocaleText(formData.tasks.ru.trim(), formData.tasks.kk.trim()),
+			expected: createLocaleText(formData.expected.ru.trim(), formData.expected.kk.trim()),
 			file_url: formData.fileUrl.trim() || null,
 			lesson_progress: normalizeLessonProgressForRequest(formData.lessonProgress),
 			internet_resources: normalizeResources(formData.internetResources, LessonResourceTypeEnum.INTERNET),
@@ -256,16 +256,24 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 		<section className='mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8'>
 			<PageTitle
 				actions={
-					<ButtonGroup className='col-start-2'>
-						<Button form='lesson-edit-form' type='submit'>
-							<Save className='mr-2 h-4 w-4' />
-							{t.save}
-						</Button>
-						<Button variant='outline' onClick={() => replace(`/lessons/${lesson.id}`)}>
-							<X className='mr-2 h-4 w-4' />
-							{t.cancel}
-						</Button>
-					</ButtonGroup>
+					<div className='flex flex-col items-end gap-3'>
+						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
+							<TabsList>
+								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
+								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
+							</TabsList>
+						</Tabs>
+						<ButtonGroup>
+							<Button form='lesson-edit-form' type='submit'>
+								<Save className='mr-2 h-4 w-4' />
+								{t.save}
+							</Button>
+							<Button variant='outline' onClick={() => replace(`/lessons/${lesson.id}`)}>
+								<X className='mr-2 h-4 w-4' />
+								{t.cancel}
+							</Button>
+						</ButtonGroup>
+					</div>
 				}
 				backHref={`/lessons/${lesson.id}`}
 				description={t.editDescription}
@@ -275,6 +283,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 
 			<form className='space-y-6' id='lesson-edit-form' onSubmit={handleSubmit}>
 				<LessonMainInfoCard
+					activeLocale={activeLocale}
 					eventTimeError={eventTimeError}
 					formData={formData}
 					isDatePickerOpen={isDatePickerOpen}
@@ -283,9 +292,10 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 					onFormDataChange={setFormData}
 				/>
 
-				<LessonTextSections formData={formData} onFormDataChange={setFormData} />
+				<LessonTextSections activeLocale={activeLocale} formData={formData} onFormDataChange={setFormData} />
 
 				<LessonProgressEditor
+					activeLocale={activeLocale}
 					items={formData.lessonProgress}
 					onAdd={handleAddLessonProgress}
 					onChange={handleLessonProgressChange}
@@ -294,6 +304,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 
 				<div className='grid gap-6 xl:grid-cols-2'>
 					<ResourceEditor
+						activeLocale={activeLocale}
 						description={t.internetResourcesDescription}
 						icon={<Link2 className='h-4 w-4 text-primary' />}
 						items={formData.internetResources}
@@ -303,6 +314,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 						onRemove={(index) => handleRemoveResource('internetResources', index)}
 					/>
 					<ResourceEditor
+						activeLocale={activeLocale}
 						description={t.technicalResourcesDescription}
 						icon={<Grid2X2 className='h-4 w-4 text-primary' />}
 						items={formData.technicalResources}

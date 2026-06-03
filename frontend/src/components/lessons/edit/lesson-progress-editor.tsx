@@ -113,7 +113,7 @@ export function LessonProgressEditor({ activeLocale, items, onAdd, onChange, onR
 										<AlertDialogContent>
 											<AlertDialogHeader>
 												<AlertDialogTitle>{t.deleteProgressTitle}</AlertDialogTitle>
-											<AlertDialogDescription>
+												<AlertDialogDescription>
 													{t.deleteProgressDescription}
 													<strong className='ml-1 text-foreground'>
 														{item.name[activeLocale] || `№${index + 1}`}

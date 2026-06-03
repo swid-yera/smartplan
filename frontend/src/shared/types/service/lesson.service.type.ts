@@ -27,7 +27,7 @@ export interface IGenerateLessonResponse {
 
 export interface IUpdateLessonResourceRequest {
 	id?: string
-	name: string
+	name: LocaleText
 	link: string
 	type: LessonResourceTypeEnum
 }

@@ -44,16 +44,7 @@ type IProps = {
 	title: string
 }
 
-export function ResourceEditor({
-	activeLocale,
-	description,
-	icon,
-	items,
-	onAdd,
-	onChange,
-	onRemove,
-	title,
-}: IProps) {
+export function ResourceEditor({ activeLocale, description, icon, items, onAdd, onChange, onRemove, title }: IProps) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 
