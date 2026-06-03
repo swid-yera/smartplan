@@ -230,6 +230,12 @@ func (s *AwardService) createCategoryFields(ctx context.Context, categoryID uuid
 			return err
 		}
 
+		fieldType := strings.ToLower(strings.TrimSpace(field.Type))
+		required := field.Required
+		if fieldType == "file" || fieldType == "url" {
+			required = false
+		}
+
 		optionsJSON, err := json.Marshal(normalizedOptions)
 		if err != nil || len(optionsJSON) == 0 || string(optionsJSON) == "null" {
 			optionsJSON = []byte("[]")
@@ -244,8 +250,8 @@ func (s *AwardService) createCategoryFields(ctx context.Context, categoryID uuid
 			CategoryID:  categoryID,
 			Key:         strings.TrimSpace(field.Key),
 			Label:       field.Label.ToJSONB(),
-			Type:        strings.ToLower(strings.TrimSpace(field.Type)),
-			Required:    field.Required,
+			Type:        fieldType,
+			Required:    required,
 			Placeholder: localePtrToJSONB(field.Placeholder),
 			HelpText:    localePtrToJSONB(field.HelpText),
 			Options:     optionsJSON,
@@ -387,7 +393,7 @@ func (s *AwardService) mapCategoryFieldResponse(field storage.AwardCategoryField
 		Key:         field.Key,
 		Label:       localization.LocaleTextFromJSONB(field.Label),
 		Type:        field.Type,
-		Required:    field.Required,
+		Required:    !strings.EqualFold(strings.TrimSpace(field.Type), "file") && !strings.EqualFold(strings.TrimSpace(field.Type), "url") && field.Required,
 		Placeholder: localization.LocaleTextPtrFromJSONB(field.Placeholder),
 		HelpText:    localization.LocaleTextPtrFromJSONB(field.HelpText),
 		Options:     options,
@@ -694,7 +700,7 @@ func (s *AwardService) validateAndMarshalFieldValues(ctx context.Context, catego
 			continue
 		}
 
-		if fieldType != "multi_fields" && field.Required && !hasProvidedValue(value) {
+		if fieldType != "multi_fields" && fieldType != "file" && fieldType != "url" && field.Required && !hasProvidedValue(value) {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("required field is empty: %s", field.Key)}
 		}
 
@@ -930,10 +936,18 @@ func validateURLOrURLArray(value any, key string) error {
 		if trimmed == "" {
 			return nil
 		}
-		if _, err := url.ParseRequestURI(trimmed); err != nil {
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a valid URL", key)}
+		if parsed, err := url.ParseRequestURI(trimmed); err == nil && parsed.Scheme != "" && parsed.Host != "" {
+			return nil
 		}
-		return nil
+
+		withScheme := "https://" + trimmed
+		if parsed, err := url.ParseRequestURI(withScheme); err == nil && parsed.Host != "" {
+			if host := parsed.Hostname(); strings.Contains(host, ".") {
+				return nil
+			}
+		}
+
+		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a valid URL", key)}
 	}
 
 	switch v := value.(type) {
