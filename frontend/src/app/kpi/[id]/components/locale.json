@@ -42,6 +42,8 @@
 		"approveSheet": {
 			"title": "Утвердить",
 			"description": "Проверка и утверждение баллов",
+			"criteriaSelectLabel": "Выберите критерий",
+			"criteriaSelectPlaceholder": "Критерий",
 			"criteriaLabel": "Критерий",
 			"methodLabel": "Метод",
 			"methodFixed": "Фиксированный",
@@ -122,6 +124,8 @@
 		"approveSheet": {
 			"title": "Бекіту",
 			"description": "Ұпайларды тексеру және бекіту",
+			"criteriaSelectLabel": "Критерийді таңдаңыз",
+			"criteriaSelectPlaceholder": "Критерий",
 			"criteriaLabel": "Критерий",
 			"methodLabel": "Әдіс",
 			"methodFixed": "Тұрақты",

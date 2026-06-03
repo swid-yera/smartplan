@@ -45,6 +45,11 @@ const Page = () => {
 		enabled: !!id && !authLoading,
 	})
 
+	const { data: awardType } = useQuery({
+		...services.award.getTypeByIdOptions(award?.type.id || ''),
+		enabled: !!award?.type?.id,
+	})
+
 	const updateStatusMutation = useMutation(services.award.updateStatusOptions())
 	const deleteMutation = useMutation(services.award.deleteMutationOptions())
 	const backHref = '/kpi/entry'
@@ -60,7 +65,7 @@ const Page = () => {
 		)
 	}
 
-	const handleStatusChange = (newStatus: StatusEnum, reason?: string, totalPoints?: number) => {
+	const handleStatusChange = (newStatus: StatusEnum, reason?: string, criteriaId?: string, totalPoints?: number) => {
 		setIsStatusSheetOpen(false)
 
 		const toastId = `award-${award.id}-status-update-${newStatus}`
@@ -73,6 +78,7 @@ const Page = () => {
 			id: award.id,
 			status: newStatus,
 			reason: payloadReason,
+			criteria: criteriaId,
 			totalPoints: payloadTotalPoints,
 		}
 
@@ -111,6 +117,8 @@ const Page = () => {
 	const isAwardCreator = isAuthor(user, award.teacher.keycloakId)
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
 	const isMethodistReview = hasRole(user.role, RoleEnum.METHODIST, true) && award.status === StatusEnum.IN_REVIEW
+	const selectedVariant = awardType?.variants.find((variant) => variant.id === award.variant.id) || null
+	const criteriaOptions = selectedVariant?.criteria?.length ? selectedVariant.criteria : [award.criteria]
 
 	return (
 		<div className='space-y-6 p-6 w-full'>
@@ -177,10 +185,13 @@ const Page = () => {
 			<DeleteAlert isOpen={isDeleteDialogOpen} onDelete={handleDeleteAward} onOpenChange={setIsDeleteDialogOpen} />
 
 			<ApproveSheet
-				criteria={award.criteria}
+				criteriaOptions={criteriaOptions}
 				isOpen={isApproveSheetOpen}
+				selectedCriteria={award.criteria}
 				onOpenChange={setIsApproveSheetOpen}
-				onStatusChange={(totalPoints) => handleStatusChange(StatusEnum.APPROVED, '', totalPoints)}
+				onStatusChange={(criteriaId, totalPoints) =>
+					handleStatusChange(StatusEnum.APPROVED, '', criteriaId, totalPoints)
+				}
 			/>
 		</div>
 	)

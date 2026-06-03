@@ -663,7 +663,8 @@ SET
     status = $2,
     reason = $3,
     methodist = $4,
-    total_points = $5,
+    criteria = $5,
+    total_points = $6,
     updated_at = NOW()
 WHERE
     id = $1;

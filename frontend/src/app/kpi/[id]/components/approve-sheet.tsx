@@ -1,12 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import {
 	Button,
 	Input,
 	Label,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 	Sheet,
 	SheetContent,
 	SheetDescription,
@@ -16,32 +21,53 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { CriteriaMethodEnum, type ICriteria } from '@types'
+
 import localeDictionary from './locale.json'
 
 interface IApproveSheetProps {
 	isOpen: boolean
 	onOpenChange: (state: boolean) => void
-	onStatusChange: (awardPoints: number) => void
-	criteria: ICriteria
+	onStatusChange: (criteriaId: string, awardPoints: number) => void
+	criteriaOptions: ICriteria[]
+	selectedCriteria?: ICriteria | null
 }
 
-export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }: IApproveSheetProps) => {
+export const ApproveSheet = ({
+	isOpen,
+	onOpenChange,
+	onStatusChange,
+	criteriaOptions = [],
+	selectedCriteria = null,
+}: IApproveSheetProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).approveSheet
-	const isMeasuring = criteria.method === CriteriaMethodEnum.MEASURING
-
-	const min = criteria.points[0]
-	const max = criteria.points[1] ?? criteria.points[0]
-	const criteriaName = getLocaleText(criteria.name, locale)
-
+	const [currentCriteriaId, setCurrentCriteriaId] = useState(selectedCriteria?.id ?? criteriaOptions[0]?.id ?? '')
+	const selectedCriteriaFallback = selectedCriteria ?? criteriaOptions[0] ?? null
+	const currentCriteria = useMemo(
+		() => criteriaOptions.find((criteria) => criteria.id === currentCriteriaId) || selectedCriteriaFallback || null,
+		[currentCriteriaId, criteriaOptions, selectedCriteriaFallback],
+	)
+	const currentPoints = currentCriteria?.points ?? []
+	const isMeasuring = currentCriteria?.method === CriteriaMethodEnum.MEASURING
+	const min = currentPoints[0] ?? 0
+	const max = currentPoints[currentPoints.length - 1] ?? min
+	const criteriaName = currentCriteria ? getLocaleText(currentCriteria.name, locale) : ''
 	const [awardPoints, setAwardPoints] = useState<number>(min)
 
 	useEffect(() => {
+		const nextCriteriaId = selectedCriteria?.id ?? criteriaOptions[0]?.id ?? ''
+
+		setCurrentCriteriaId(nextCriteriaId)
+	}, [criteriaOptions, isOpen, selectedCriteria])
+
+	useEffect(() => {
 		setAwardPoints(min)
-	}, [criteria.id, min])
+	}, [currentCriteria?.id, min])
 
 	const handleApprove = () => {
-		onStatusChange(awardPoints)
+		if (!currentCriteria) return
+
+		onStatusChange(currentCriteria.id, awardPoints)
 		onOpenChange(false)
 	}
 
@@ -53,7 +79,30 @@ export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }:
 					<SheetDescription>{t.description}</SheetDescription>
 				</SheetHeader>
 
-				<div className='px-3 space-y-3 text-sm'>
+				<div className='space-y-3 px-3 text-sm'>
+					{criteriaOptions.length > 1 && (
+						<div className='space-y-2'>
+							<Label htmlFor='criteria-select'>{t.criteriaSelectLabel}</Label>
+							<Select
+								value={currentCriteriaId}
+								onValueChange={(value) => {
+									setCurrentCriteriaId(value)
+								}}
+							>
+								<SelectTrigger className='w-full' id='criteria-select'>
+									<SelectValue placeholder={t.criteriaSelectPlaceholder} />
+								</SelectTrigger>
+								<SelectContent>
+									{criteriaOptions.map((criteria) => (
+										<SelectItem key={criteria.id} value={criteria.id}>
+											{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} баллов)
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					)}
+
 					<p>
 						<span className='text-muted-foreground'>{t.criteriaLabel}:</span>{' '}
 						<span className='font-medium'>{criteriaName}</span>
@@ -62,14 +111,14 @@ export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }:
 					<p>
 						<span className='text-muted-foreground'>{t.methodLabel}:</span>{' '}
 						<span className='font-medium'>
-							{criteria.method === CriteriaMethodEnum.NORMAL ? t.methodFixed : t.methodMeasuring}
+							{currentCriteria?.method === CriteriaMethodEnum.NORMAL ? t.methodFixed : t.methodMeasuring}
 						</span>
 					</p>
 
-					{criteria.method === CriteriaMethodEnum.NORMAL && (
-						<div className='rounded-md border px-3 py-2 bg-muted'>
+					{currentCriteria?.method === CriteriaMethodEnum.NORMAL && (
+						<div className='rounded-md border bg-muted px-3 py-2'>
 							<p>
-								{t.pointsLabel}: <span className='font-semibold'>{criteria.points[0]}</span>
+								{t.pointsLabel}: <span className='font-semibold'>{currentCriteria.points[0]}</span>
 							</p>
 						</div>
 					)}
@@ -101,7 +150,7 @@ export const ApproveSheet = ({ isOpen, onOpenChange, onStatusChange, criteria }:
 					<Button variant='outline' onClick={() => onOpenChange(false)}>
 						{t.cancel}
 					</Button>
-					<Button variant='default' onClick={handleApprove}>
+					<Button disabled={!currentCriteria} variant='default' onClick={handleApprove}>
 						{t.approve}
 					</Button>
 				</SheetFooter>

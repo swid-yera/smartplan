@@ -337,12 +337,21 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 		return AwardResponse{}, err
 	}
 
+	resolvedCriteria, resolvedTotalPoints, err := s.resolveAwardStatusPoints(ctx, award, params)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	params.Criteria = resolvedCriteria
+	params.TotalPoints = resolvedTotalPoints
+
 	// 2. Обновляем статус
 	updatedAward, err := s.repo.UpdateAwardStatus(ctx, storage.UpdateAwardStatusParams{
 		ID:          params.ID,
 		Status:      params.Status,
 		Reason:      params.Reason,
 		Methodist:   params.Methodist,
+		Criteria:    params.Criteria,
 		TotalPoints: params.TotalPoints,
 	})
 	if err != nil {
@@ -383,6 +392,66 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 	}
 
 	return res, nil
+}
+
+func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award storage.Award, params storage.UpdateAwardStatusParams) (pgtype.UUID, int32, error) {
+	resolvedCriteria := award.Criteria
+	if params.Criteria.Valid {
+		resolvedCriteria = params.Criteria
+	}
+
+	if params.Status != storage.AwardsStatusAPPROVED {
+		return award.Criteria, 0, nil
+	}
+
+	dbVariant, err := s.repo.GetAwardTypeVariantByID(ctx, award.Variant.Bytes)
+	if err != nil {
+		return pgtype.UUID{}, 0, fmt.Errorf("failed to get award variant: %w", err)
+	}
+
+	if !resolvedCriteria.Valid {
+		return pgtype.UUID{}, 0, fmt.Errorf("criteria is required for approved award")
+	}
+
+	isValidCriteria := false
+	for _, criteriaID := range dbVariant.Criteria {
+		if criteriaID == resolvedCriteria.Bytes {
+			isValidCriteria = true
+			break
+		}
+	}
+	if !isValidCriteria {
+		return pgtype.UUID{}, 0, fmt.Errorf("selected criteria does not belong to award variant")
+	}
+
+	dbCriteria, err := s.repo.GetAwardTypeCriteriaByID(ctx, resolvedCriteria.Bytes)
+	if err != nil {
+		return pgtype.UUID{}, 0, fmt.Errorf("failed to get award criteria: %w", err)
+	}
+
+	if len(dbCriteria.Points) == 0 {
+		return pgtype.UUID{}, 0, fmt.Errorf("award criteria points are required")
+	}
+
+	switch dbCriteria.Method {
+	case storage.EnumCriteriaMethodNORMAL:
+		return resolvedCriteria, dbCriteria.Points[0], nil
+	case storage.EnumCriteriaMethodMEASURING:
+		minPoints := dbCriteria.Points[0]
+		maxPoints := dbCriteria.Points[len(dbCriteria.Points)-1]
+		resolvedPoints := params.TotalPoints
+
+		if resolvedPoints < minPoints {
+			resolvedPoints = minPoints
+		}
+		if resolvedPoints > maxPoints {
+			resolvedPoints = maxPoints
+		}
+
+		return resolvedCriteria, resolvedPoints, nil
+	default:
+		return pgtype.UUID{}, 0, fmt.Errorf("unsupported criteria method")
+	}
 }
 
 func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {

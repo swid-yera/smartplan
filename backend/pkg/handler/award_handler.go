@@ -143,6 +143,7 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	var req struct {
 		Status      storage.AwardsStatus `json:"status"`
 		Reason      pgtype.Text          `json:"reason"`
+		Criteria    pgtype.UUID          `json:"criteria"`
 		TotalPoints int32                `json:"totalPoints"`
 	}
 
@@ -161,6 +162,7 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		Status:      req.Status,
 		Reason:      req.Reason,
 		Methodist:   methodist,
+		Criteria:    req.Criteria,
 		TotalPoints: req.TotalPoints,
 	}
 
