@@ -33,7 +33,7 @@ services:
       - ../../backend/.env
     environment:
       SERVER_PORT: "8080"
-      DB_HOST: postgres
+      DB_HOST: db 
       REDIS_ADDR: redis:6379
       DOCUMENT_RENDER_URL: http://render:8000
       DB_SSLMODE: disable
