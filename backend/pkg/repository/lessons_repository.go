@@ -91,6 +91,20 @@ func (r *LessonRepository) GetLessonByID(ctx context.Context, id uuid.UUID) (sto
 	return r.queries.GetLessonsByID(ctx, id)
 }
 
+func (r *LessonRepository) GetPreviousLessonByCreatedAt(ctx context.Context, createdAt pgtype.Timestamptz, id uuid.UUID) (storage.Lesson, error) {
+	return r.queries.GetPreviousLessonByCreatedAt(ctx, storage.GetPreviousLessonByCreatedAtParams{
+		CreatedAt: createdAt,
+		ID:        id,
+	})
+}
+
+func (r *LessonRepository) GetNextLessonByCreatedAt(ctx context.Context, createdAt pgtype.Timestamptz, id uuid.UUID) (storage.Lesson, error) {
+	return r.queries.GetNextLessonByCreatedAt(ctx, storage.GetNextLessonByCreatedAtParams{
+		CreatedAt: createdAt,
+		ID:        id,
+	})
+}
+
 func (r *LessonRepository) GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName string, limit int32) ([]storage.Lesson, error) {
 	return r.queries.GetRecentLessonsByDiscipline(ctx, storage.GetRecentLessonsByDisciplineParams{
 		Column1: rupName,

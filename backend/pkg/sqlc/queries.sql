@@ -977,6 +977,30 @@ DELETE FROM lesson_progress WHERE id = $1;
 -- name: GetLessonsByID :one
 SELECT * FROM lessons WHERE id = $1;
 
+-- name: GetPreviousLessonByCreatedAt :one
+SELECT *
+FROM lessons
+WHERE
+    created_at < $1
+    OR (
+        created_at = $1
+        AND id < $2
+    )
+ORDER BY created_at DESC, id DESC
+LIMIT 1;
+
+-- name: GetNextLessonByCreatedAt :one
+SELECT *
+FROM lessons
+WHERE
+    created_at > $1
+    OR (
+        created_at = $1
+        AND id > $2
+    )
+ORDER BY created_at ASC, id ASC
+LIMIT 1;
+
 -- name: GetLessons :many
 SELECT
     l.id,
