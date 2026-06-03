@@ -150,6 +150,28 @@ func (h *LessonHandler) GetLessonByID(c *gin.Context) {
 	c.JSON(http.StatusOK, lesson)
 }
 
+func (h *LessonHandler) DownloadLesson(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		return
+	}
+
+	language := strings.TrimSpace(c.Query("locale"))
+	if language == "" {
+		language = strings.TrimSpace(c.Query("language"))
+	}
+
+	url, err := h.lessonService.GetLessonDownloadURL(c.Request.Context(), id, language)
+	if err != nil {
+		h.log.WithError(err).Error("failed to build lesson download url")
+		c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"url": url})
+}
+
 func (h *LessonHandler) UpdateLesson(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {

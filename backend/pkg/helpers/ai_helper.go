@@ -122,7 +122,6 @@ type GenerateLessonRequest struct {
 	GroupSpecialty     string   `json:"groupSpecialty"`
 	GroupQualification string   `json:"groupQualification"`
 	ExplorationGoals   string   `json:"explorationGoals"`
-	ExplorationSummary string   `json:"explorationSummary"`
 	Prerequisites      string   `json:"prerequisites"`
 	Postrequisites     string   `json:"postrequisites"`
 	InternetResources  []string `json:"internetResources"`
@@ -277,7 +276,6 @@ type GenerateLessonPromptInput struct {
 	GroupSpecialty         string
 	GroupQualification     string
 	ExplorationGoals       string
-	ExplorationSummary     string
 	Prerequisites          string
 	Postrequisites         string
 	InternetResourcesJSON  string
@@ -759,7 +757,6 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 - Специальность: "%s"
 - Квалификация: "%s"
 - Цели РУП: "%s"
-- Краткое содержание (summary): "%s"
 - Пререквизиты: "%s"
 - Постреквизиты: "%s"
 - Интернет-ресурсы: %s
@@ -829,7 +826,6 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 		escapePromptValue(in.GroupSpecialty),
 		escapePromptValue(in.GroupQualification),
 		escapePromptValue(in.ExplorationGoals),
-		escapePromptValue(in.ExplorationSummary),
 		escapePromptValue(in.Prerequisites),
 		escapePromptValue(in.Postrequisites),
 		in.InternetResourcesJSON,

@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_DIR="${COMPOSE_DIR:-$SCRIPT_DIR}"
 BACKUP_DIR_DEFAULT="$COMPOSE_DIR/backups"
 
-SERVICE_NAME="postgres"
+SERVICE_NAME="db"
 DB_USER="admin"
 DB_NAME="eduplan"
 BACKUP_FILE=""

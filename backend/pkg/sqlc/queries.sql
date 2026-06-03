@@ -308,7 +308,6 @@ INSERT INTO
     rup_exploration_notes (
         basis,
         goals,
-        summary,
         competencies,
         prerequisites,
         postrequisites,
@@ -322,8 +321,7 @@ VALUES (
         $4,
         $5,
         $6,
-        $7,
-        $8
+        $7
     ) RETURNING *;
 
 -- name: GetRupExplorationNoteByID :one
@@ -331,7 +329,6 @@ SELECT
     id,
     basis,
     goals,
-    summary,
     competencies,
     prerequisites,
     postrequisites,

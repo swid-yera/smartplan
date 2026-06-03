@@ -229,6 +229,7 @@ func (r *Router) Init() *gin.Engine {
 				r.lesson.GetLessons(c)
 			})
 			lessons.GET("/:id", r.lesson.GetLessonByID)
+			lessons.GET("/:id/download", r.lesson.DownloadLesson)
 			lessons.POST("", r.lesson.CreateLesson)
 			lessons.POST("/generate-lesson", r.lesson.GenerateLesson)
 			lessons.PUT("/:id", r.lesson.UpdateLesson)

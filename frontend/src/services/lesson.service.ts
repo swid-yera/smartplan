@@ -2,6 +2,8 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import { LessonResourceTypeEnum } from '@types'
 import type {
+	BackendLocale,
+	IDownloadResponse,
 	IGenerateLessonRequest,
 	IGenerateLessonResponse,
 	ILesson,
@@ -212,6 +214,21 @@ export class LessonService {
 				const { data } = await api.get<ILesson>(`/lessons/${id}`)
 
 				return this.normalizeLesson(data)
+			},
+		})
+	}
+
+	getDownloadUrlOptions = (id: string, locale: BackendLocale) => {
+		return queryOptions<IDownloadResponse>({
+			queryKey: ['lesson-download', id, locale],
+			queryFn: async () => {
+				const { data, status, statusText } = await api.get<IDownloadResponse>(`/lessons/${id}/download`, {
+					params: { locale },
+				})
+
+				if (status !== 200) throw new Error(statusText)
+
+				return data
 			},
 		})
 	}
