@@ -104,3 +104,47 @@ func LocaleTextPtrFromJSONB(raw []byte) *LocaleText {
 	value := LocaleTextFromJSONB(raw)
 	return &value
 }
+
+func LocaleTextSliceToJSONB(values []LocaleText) []byte {
+	if len(values) == 0 {
+		return []byte("[]")
+	}
+
+	normalized := make([]LocaleText, 0, len(values))
+	for _, value := range values {
+		normalized = append(normalized, value.Normalized())
+	}
+
+	payload, _ := json.Marshal(normalized)
+	return payload
+}
+
+func LocaleTextSliceFromJSONB(raw []byte) []LocaleText {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
+		return nil
+	}
+
+	var values []LocaleText
+	if err := json.Unmarshal(trimmed, &values); err == nil {
+		for i := range values {
+			values[i].Normalize()
+		}
+		return values
+	}
+
+	var legacy []string
+	if err := json.Unmarshal(trimmed, &legacy); err == nil {
+		values = make([]LocaleText, 0, len(legacy))
+		for _, value := range legacy {
+			normalized := NewLocaleText(value, "")
+			if normalized.Ru == "" && normalized.Kz == "" {
+				continue
+			}
+			values = append(values, normalized)
+		}
+		return values
+	}
+
+	return nil
+}

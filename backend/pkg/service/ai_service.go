@@ -358,6 +358,7 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 	lessonMinutes := int32(90)
 
 	prompt := helpers.BuildGenerateLessonPrompt(helpers.GenerateLessonPromptInput{
+		SourceLanguage:         req.SourceLanguage,
 		RupName:                req.RupName,
 		DisciplineName:         req.DisciplineName,
 		TopicName:              req.TopicName,

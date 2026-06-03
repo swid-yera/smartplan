@@ -10,6 +10,7 @@ import {
 	extractKriptoApprovalMetadata,
 	getLocaleText,
 	getUILocaleSection,
+	hasLocaleTextForLocale,
 	hasRole,
 	interpolateUILocaleText,
 	isAuthor,
@@ -51,8 +52,8 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type IUpdateStatusRequest, type Locale, RoleEnum, StatusEnum } from '@types'
-import { Edit, FileDown, type LucideIcon, MoreVertical, RotateCcw, SendIcon, ShieldAlert, Trash } from 'lucide-react'
+import { type IRup, type IUpdateStatusRequest, type Locale, RoleEnum, StatusEnum } from '@types'
+import { Edit, FileDown, Loader2, type LucideIcon, MoreVertical, RotateCcw, SendIcon, ShieldAlert, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { trackLanguageGeneration } from '../language-generation-tracker'
@@ -60,6 +61,49 @@ import localeDictionary from './locale.json'
 import { RupView } from './rup-view'
 
 type IRupIdLocaleText = typeof localeDictionary.ru
+
+const getOppositeLocale = (locale: Locale): Locale => (locale === 'kk' ? 'ru' : 'kk')
+
+const hasRupContentForLocale = (rup: IRup, locale: Locale): boolean => {
+	const coreFields = [
+		rup.name,
+		rup.explorationNote.basis,
+		rup.explorationNote.goals,
+		rup.explorationNote.competencies,
+		rup.explorationNote.prerequisites,
+		rup.explorationNote.postrequisites,
+	]
+
+	if (coreFields.some((field) => hasLocaleTextForLocale(field, locale))) {
+		return true
+	}
+
+	for (const resource of rup.explorationNote.internetResources) {
+		if (hasLocaleTextForLocale(resource.name, locale)) {
+			return true
+		}
+	}
+
+	for (const resource of rup.explorationNote.technicalResources) {
+		if (hasLocaleTextForLocale(resource.name, locale)) {
+			return true
+		}
+	}
+
+	for (const discipline of rup.disciplines) {
+		if (hasLocaleTextForLocale(discipline.name, locale)) {
+			return true
+		}
+
+		for (const topic of discipline.topics) {
+			if (hasLocaleTextForLocale(topic.name, locale)) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
 
 const Page: FC = () => {
 	const { push, replace } = useRouter()
@@ -228,6 +272,10 @@ const Page: FC = () => {
 	const canEdit = (isRupDeveloper || isAdmin) && isStatusForEdit
 	const canDelete = (isRupCreator || isAdmin) && isStatusForEdit
 	const canSendToReview = (isRupDeveloper || isAdmin) && isStatusForEdit
+	const isActiveLocaleMissing = !hasRupContentForLocale(rupData, activeLocale)
+	const retrySourceLocale = getOppositeLocale(activeLocale)
+	const selectedLanguageLabel = activeLocale === 'kk' ? t.view.languageKk : t.view.languageRu
+	const sourceLanguageLabel = retrySourceLocale === 'kk' ? t.view.languageKk : t.view.languageRu
 
 	type IActionBase = {
 		id: string
@@ -360,6 +408,42 @@ const Page: FC = () => {
 				}
 				activeLocale={activeLocale}
 				data={rupData}
+				localeNotice={
+					isActiveLocaleMissing ? (
+						<div className='rounded-lg border border-amber-500/40 bg-amber-50 p-4 text-amber-950'>
+							<div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+								<div className='space-y-1'>
+									<div className='font-semibold'>{t.view.missingLocaleTitle}</div>
+									<div className='text-sm text-amber-900/90'>
+										{interpolateUILocaleText(t.view.missingLocaleDescription, {
+											language: selectedLanguageLabel,
+											sourceLanguage: sourceLanguageLabel,
+										})}
+									</div>
+								</div>
+								{canRegenerateLanguage && (
+									<Button
+										className='shrink-0'
+										disabled={regenerateLanguageMutation.isPending}
+										onClick={() => handleRegenerateLanguage(retrySourceLocale)}
+									>
+										{regenerateLanguageMutation.isPending ? (
+											<>
+												<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+												{t.view.retryingMissingLocale}
+											</>
+										) : (
+											<>
+												<RotateCcw className='mr-2 h-4 w-4' />
+												{t.view.retryMissingLocale}
+											</>
+										)}
+									</Button>
+								)}
+							</div>
+						</div>
+					) : null
+				}
 				role={user.role}
 				onActiveLocaleChange={setActiveLocale}
 				onStatusChange={handleStatusChange}

@@ -125,6 +125,14 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 					...current,
 					[field]: Math.max(0, Number.parseInt(value, 10) || 0),
 				}
+			} else if (field === 'name' || field === 'contentText') {
+				nextLessonProgress[index] = {
+					...current,
+					[field]: {
+						...current[field],
+						[activeLocale]: value,
+					},
+				}
 			} else {
 				nextLessonProgress[index] = {
 					...current,

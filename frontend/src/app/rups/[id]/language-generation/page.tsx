@@ -54,7 +54,8 @@ const LanguageGenerationPage = () => {
 	useEffect(() => {
 		if (!generationStatus || generationStatus.status !== 'failed') return
 		untrackLanguageGeneration(params.id)
-	}, [generationStatus, params.id])
+		replace(`/rups/${params.id}`)
+	}, [generationStatus, params.id, replace])
 
 	if (isLoading || !generationStatus) {
 		return <Loader type='data' />

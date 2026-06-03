@@ -12,7 +12,7 @@ export type ILessonProgressRow = {
 	firstTime: number
 	secondTime: number
 	thirdTime: number
-	contentText: string
+	contentText: Record<Locale, string>
 }
 
 export type ILessonFormState = {

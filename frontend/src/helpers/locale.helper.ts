@@ -85,6 +85,19 @@ export const getLocaleText = (value: LocalizedText, locale: Locale = DEFAULT_SIT
 	return normalizeLocalizedText(resolvedValue, locale)
 }
 
+export const getLocaleTextStrict = (value: LocalizedText, locale: Locale = DEFAULT_SITE_LOCALE): string => {
+	if (!value) return ''
+	if (typeof value === 'string') return normalizeLocalizedText(value, locale)
+	if (!isLocaleText(value)) return ''
+
+	const localizedValue = locale === 'kk' ? value.kz : value.ru
+
+	return normalizeLocalizedText(localizedValue?.trim() || '', locale)
+}
+
+export const hasLocaleTextForLocale = (value: LocalizedText, locale: Locale = DEFAULT_SITE_LOCALE): boolean =>
+	getLocaleTextStrict(value, locale).length > 0
+
 export const createLocaleText = (ruValue: string, kkValue?: string): LocaleText => {
 	const trimmedRuValue = ruValue.trim()
 	const trimmedKkValue = kkValue?.trim() || trimmedRuValue
