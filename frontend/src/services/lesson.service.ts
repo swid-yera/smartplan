@@ -186,6 +186,18 @@ export class LessonService {
 					},
 				})
 
+				if (!data || !Array.isArray(data.data)) {
+					return {
+						data: [],
+						meta: data?.meta ?? {
+							currentPage,
+							pageSize,
+							pages: 0,
+							total: 0,
+						},
+					}
+				}
+
 				return {
 					...data,
 					data: data.data.map((lesson) => this.normalizeLesson(lesson)),

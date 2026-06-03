@@ -12,7 +12,7 @@ import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { ILesson, Locale } from '@types'
 import { RoleEnum, TopicTypeEnum } from '@types'
-import { Edit, FileDown, RefreshCw, Trash } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Edit, FileDown, RefreshCw, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageTitle } from '../../ui/page-title'
@@ -74,6 +74,13 @@ export function LessonDetailsContent({
 	const resolvedTopicType = inferredTopicType || fallbackTopicType
 	const LessonTypeIcon = topicTypeIcons[resolvedTopicType]
 	const canRegenerate = Boolean(currentRupId && currentDisciplineId && currentTopicId)
+	const previousLesson = lesson.previous_lesson || lesson.previousLesson
+	const nextLesson = lesson.next_lesson || lesson.nextLesson
+	const hasLessonNavigation = Boolean(previousLesson || nextLesson)
+	const previousLessonTitle = previousLesson
+		? getLocaleText(previousLesson.topic_name, activeLocale) || t.lessonUntitled
+		: ''
+	const nextLessonTitle = nextLesson ? getLocaleText(nextLesson.topic_name, activeLocale) || t.lessonUntitled : ''
 	const lessonProgress = useMemo(
 		() => normalizeLessonProgress(lessonContext.lesson_progress, activeLocale),
 		[activeLocale, lessonContext.lesson_progress],
@@ -232,6 +239,47 @@ export function LessonDetailsContent({
 				sticky
 				actions={
 					<div className='flex flex-col items-end justify-end gap-3'>
+						{hasLessonNavigation ? (
+							<ButtonGroup>
+								{previousLesson ? (
+									<Button
+										asChild
+										className='h-9 max-w-[14rem] rounded-full px-3 text-xs sm:max-w-[18rem] sm:px-4'
+										size='sm'
+										title={`${t.previousLesson}: ${previousLessonTitle}`}
+										variant='outline'
+									>
+										<Link
+											className='flex min-w-0 items-center gap-1.5'
+											href={`/lessons/${previousLesson.id}`}
+										>
+											<ChevronLeft className='h-4 w-4 shrink-0' />
+											<span className='min-w-0 truncate'>
+												<span className='hidden sm:inline'>{t.previousLesson}: </span>
+												{previousLessonTitle}
+											</span>
+										</Link>
+									</Button>
+								) : null}
+								{nextLesson ? (
+									<Button
+										asChild
+										className='h-9 max-w-[14rem] rounded-full px-3 text-xs sm:max-w-[18rem] sm:px-4'
+										size='sm'
+										title={`${t.nextLesson}: ${nextLessonTitle}`}
+										variant='outline'
+									>
+										<Link className='flex min-w-0 items-center gap-1.5' href={`/lessons/${nextLesson.id}`}>
+											<span className='min-w-0 truncate'>
+												<span className='hidden sm:inline'>{t.nextLesson}: </span>
+												{nextLessonTitle}
+											</span>
+											<ChevronRight className='h-4 w-4 shrink-0' />
+										</Link>
+									</Button>
+								) : null}
+							</ButtonGroup>
+						) : null}
 						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
 							<TabsList>
 								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>

@@ -2,9 +2,9 @@
 
 import type { ICategoryFieldResponse } from '@types'
 
-import { CategoryMultiFieldsInput } from './category-multi-fields-input'
 import { CategoryFieldInput } from './category-field-input'
 import type { ICategoryFieldValue, ICategoryFieldValues } from './category-fields.utils'
+import { CategoryMultiFieldsInput } from './category-multi-fields-input'
 
 type CategoryFieldsSectionProps = {
 	fields: ICategoryFieldResponse[]

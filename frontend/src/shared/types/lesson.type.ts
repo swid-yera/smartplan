@@ -28,6 +28,11 @@ export interface ILessonResource {
 	type: LessonResourceTypeEnum
 }
 
+export interface ILessonNavigation {
+	id: string
+	topic_name: LocalizedText
+}
+
 export interface ILessonProgress {
 	id: string
 	name: LocalizedText
@@ -67,6 +72,10 @@ export interface ILesson {
 	internet_resources: ILessonResource[]
 	technical_resources: ILessonResource[]
 	file_url: string | null
+	previous_lesson?: ILessonNavigation
+	next_lesson?: ILessonNavigation
+	previousLesson?: ILessonNavigation
+	nextLesson?: ILessonNavigation
 	created_at: string
 	updated_at: string
 }

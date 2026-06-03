@@ -82,6 +82,8 @@ type Lessons interface {
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
 	GetLessons(ctx context.Context, search string, teacher pgtype.UUID, id pgtype.UUID, lessonType string, discipline string, groupName string, sort string, limit int32, offset int32) ([]storage.Lesson, error)
 	GetLessonByID(ctx context.Context, id uuid.UUID) (storage.Lesson, error)
+	GetPreviousLessonByCreatedAt(ctx context.Context, createdAt pgtype.Timestamptz, id uuid.UUID) (storage.Lesson, error)
+	GetNextLessonByCreatedAt(ctx context.Context, createdAt pgtype.Timestamptz, id uuid.UUID) (storage.Lesson, error)
 	GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName string, limit int32) ([]storage.Lesson, error)
 	CountLessonsFiltered(ctx context.Context, search string, teacher pgtype.UUID, id pgtype.UUID, lessonType string, discipline string, groupName string) (int64, error)
 

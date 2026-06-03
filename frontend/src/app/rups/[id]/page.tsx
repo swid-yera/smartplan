@@ -50,7 +50,7 @@ import {
 	Textarea,
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type IUpdateStatusRequest, type Locale, RoleEnum, StatusEnum } from '@types'
 import { Edit, FileDown, type LucideIcon, MoreVertical, RotateCcw, SendIcon, ShieldAlert, Trash } from 'lucide-react'
 import { toast } from 'sonner'
@@ -69,8 +69,10 @@ const Page: FC = () => {
 	const { authLoading, user } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
+	const queryClient = useQueryClient()
 
 	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
+	const [isDownloadLanguageDialogOpen, setIsDownloadLanguageDialogOpen] = useState(false)
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
@@ -80,10 +82,6 @@ const Page: FC = () => {
 	const { data: generationStatus, isLoading: isGenerationStatusLoading } = useQuery({
 		...services.rup.getLanguageGenerationStatusOptions(rupId),
 		enabled: !!rupId,
-	})
-	const { refetch: getDownloadUrl } = useQuery({
-		...services.rup.getDownloadUrlOptions(rupId, toBackendLocale(activeLocale)),
-		enabled: false,
 	})
 	// mutations
 	const updateStatusMutation = useMutation(services.rup.updateStatusOptions())
@@ -157,17 +155,23 @@ const Page: FC = () => {
 		})
 	}
 
-	const onDownload = () => {
+	const onDownload = (downloadLanguage: Locale) => {
+		if (!rupData) return
+
+		setIsDownloadLanguageDialogOpen(false)
+
 		toast.promise(
 			async () => {
-				const { data } = await getDownloadUrl()
+				const data = await queryClient.fetchQuery(
+					services.rup.getDownloadUrlOptions(rupId, toBackendLocale(downloadLanguage)),
+				)
 
 				if (!data) throw new Error(t.toasts.downloadLinkError)
 
 				const link = document.createElement('a')
 
 				link.href = data.url
-				link.setAttribute('download', `RUP_${getLocaleText(rupData?.name, activeLocale) || 'file'}.docx`)
+				link.setAttribute('download', `RUP_${getLocaleText(rupData.name, downloadLanguage) || 'file'}.docx`)
 				document.body.appendChild(link)
 				link.click()
 				link.remove()
@@ -265,7 +269,7 @@ const Page: FC = () => {
 			id: 'download',
 			label: t.actions.download,
 			icon: FileDown,
-			onClick: onDownload,
+			onClick: () => setIsDownloadLanguageDialogOpen(true),
 		},
 		canRegenerateLanguage && {
 			id: 'regenerate',
@@ -373,6 +377,17 @@ const Page: FC = () => {
 				setIsDeleteDialogOpen={setIsDeleteDialogOpen}
 				text={t}
 				onDelete={handleDeleteRup}
+			/>
+
+			<RupLanguageDialog
+				confirmLabel={t.actions.download}
+				currentLanguage={activeLocale}
+				description={t.downloadLanguageDialog.description}
+				languageLabels={{ kk: t.view.languageKk, ru: t.view.languageRu }}
+				open={isDownloadLanguageDialogOpen}
+				title={t.downloadLanguageDialog.title}
+				onConfirm={onDownload}
+				onOpenChange={setIsDownloadLanguageDialogOpen}
 			/>
 
 			<RupLanguageDialog

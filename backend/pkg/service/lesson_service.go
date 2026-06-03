@@ -44,28 +44,35 @@ type LessonParams struct {
 }
 
 type LessonResponse struct {
-	ID                 uuid.UUID                `json:"id"`
-	RupID              *uuid.UUID               `json:"rupId,omitempty"`
-	DisciplineID       *uuid.UUID               `json:"disciplineId,omitempty"`
-	TopicID            *uuid.UUID               `json:"topicId,omitempty"`
-	RupName            localization.LocaleText  `json:"rup_name"`
-	DisciplineName     *localization.LocaleText `json:"discipline_name"`
-	TopicName          *localization.LocaleText `json:"topic_name"`
-	PlanNumber         int32                    `json:"plan_number"`
-	Topic              *TopicResponse           `json:"topic,omitempty"`
-	Teacher            *helpers.UserResponse    `json:"teacher"`
-	EventDate          string                   `json:"event_date"`
-	Group              *GroupResponse           `json:"group"`
-	Type               string                   `json:"type"`
-	Goals              *localization.LocaleText `json:"goals"`
-	Tasks              *localization.LocaleText `json:"tasks"`
-	Expected           *localization.LocaleText `json:"expected"`
-	InternetResources  []*ResourceResponse      `json:"internet_resources"`
-	TechnicalResources []*ResourceResponse      `json:"technical_resources"`
-	LessonProgress     []LessonProgressData     `json:"lesson_progress"`
-	FileURL            *string                  `json:"file_url"`
-	CreatedAt          string                   `json:"created_at"`
-	UpdatedAt          string                   `json:"updated_at"`
+	ID                 uuid.UUID                 `json:"id"`
+	RupID              *uuid.UUID                `json:"rupId,omitempty"`
+	DisciplineID       *uuid.UUID                `json:"disciplineId,omitempty"`
+	TopicID            *uuid.UUID                `json:"topicId,omitempty"`
+	RupName            localization.LocaleText   `json:"rup_name"`
+	DisciplineName     *localization.LocaleText  `json:"discipline_name"`
+	TopicName          *localization.LocaleText  `json:"topic_name"`
+	PlanNumber         int32                     `json:"plan_number"`
+	Topic              *TopicResponse            `json:"topic,omitempty"`
+	Teacher            *helpers.UserResponse     `json:"teacher"`
+	EventDate          string                    `json:"event_date"`
+	Group              *GroupResponse            `json:"group"`
+	Type               string                    `json:"type"`
+	Goals              *localization.LocaleText  `json:"goals"`
+	Tasks              *localization.LocaleText  `json:"tasks"`
+	Expected           *localization.LocaleText  `json:"expected"`
+	InternetResources  []*ResourceResponse       `json:"internet_resources"`
+	TechnicalResources []*ResourceResponse       `json:"technical_resources"`
+	LessonProgress     []LessonProgressData      `json:"lesson_progress"`
+	FileURL            *string                   `json:"file_url"`
+	CreatedAt          string                    `json:"created_at"`
+	UpdatedAt          string                    `json:"updated_at"`
+	PreviousLesson     *LessonNavigationResponse `json:"previous_lesson,omitempty"`
+	NextLesson         *LessonNavigationResponse `json:"next_lesson,omitempty"`
+}
+
+type LessonNavigationResponse struct {
+	ID        uuid.UUID               `json:"id"`
+	TopicName localization.LocaleText `json:"topic_name"`
 }
 
 type LessonProgressData struct {
@@ -703,7 +710,24 @@ func (s *LessonService) GetLessonByID(ctx context.Context, id uuid.UUID) (*Lesso
 		return nil, err
 	}
 
-	return s.buildLessonResponse(ctx, lesson)
+	response, err := s.buildLessonResponse(ctx, lesson)
+	if err != nil {
+		return nil, err
+	}
+
+	if previousLesson, err := s.repo.GetPreviousLessonByCreatedAt(ctx, lesson.CreatedAt, lesson.ID); err == nil {
+		response.PreviousLesson = buildLessonNavigationResponse(previousLesson)
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("get previous lesson: %w", err)
+	}
+
+	if nextLesson, err := s.repo.GetNextLessonByCreatedAt(ctx, lesson.CreatedAt, lesson.ID); err == nil {
+		response.NextLesson = buildLessonNavigationResponse(nextLesson)
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("get next lesson: %w", err)
+	}
+
+	return response, nil
 }
 
 func (s *LessonService) GetLessonDownloadURL(ctx context.Context, id uuid.UUID, language string) (string, error) {
@@ -1714,6 +1738,13 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 		CreatedAt:          helpers.PgTimeToString(lesson.CreatedAt),
 		UpdatedAt:          helpers.PgTimeToString(lesson.UpdatedAt),
 	}, nil
+}
+
+func buildLessonNavigationResponse(lesson storage.Lesson) *LessonNavigationResponse {
+	return &LessonNavigationResponse{
+		ID:        lesson.ID,
+		TopicName: localization.LocaleTextFromJSONB(lesson.TopicName),
+	}
 }
 
 func (s *LessonService) resolveLessonLinks(

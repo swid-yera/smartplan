@@ -2212,6 +2212,49 @@ func (q *Queries) GetLessonsByID(ctx context.Context, id uuid.UUID) (Lesson, err
 	return i, err
 }
 
+const getNextLessonByCreatedAt = `-- name: GetNextLessonByCreatedAt :one
+SELECT id, rup_name, discipline_name, topic_name, plan_number, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at
+FROM lessons
+WHERE
+    created_at > $1
+    OR (
+        created_at = $1
+        AND id > $2
+    )
+ORDER BY created_at ASC, id ASC
+LIMIT 1
+`
+
+type GetNextLessonByCreatedAtParams struct {
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID        uuid.UUID          `json:"id"`
+}
+
+func (q *Queries) GetNextLessonByCreatedAt(ctx context.Context, arg GetNextLessonByCreatedAtParams) (Lesson, error) {
+	row := q.db.QueryRow(ctx, getNextLessonByCreatedAt, arg.CreatedAt, arg.ID)
+	var i Lesson
+	err := row.Scan(
+		&i.ID,
+		&i.RupName,
+		&i.DisciplineName,
+		&i.TopicName,
+		&i.PlanNumber,
+		&i.Teacher,
+		&i.EventDate,
+		&i.GroupID,
+		&i.Type,
+		&i.Goals,
+		&i.Tasks,
+		&i.Expected,
+		&i.InternetResources,
+		&i.TechnicalResources,
+		&i.FileUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getPenaltiesByTeacherID = `-- name: GetPenaltiesByTeacherID :many
 SELECT id, points, teacher, methodist, note, created_at, updated_at
 FROM penalty
@@ -2270,6 +2313,49 @@ func (q *Queries) GetPenaltyByIDAndTeacherID(ctx context.Context, arg GetPenalty
 		&i.Teacher,
 		&i.Methodist,
 		&i.Note,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPreviousLessonByCreatedAt = `-- name: GetPreviousLessonByCreatedAt :one
+SELECT id, rup_name, discipline_name, topic_name, plan_number, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at
+FROM lessons
+WHERE
+    created_at < $1
+    OR (
+        created_at = $1
+        AND id < $2
+    )
+ORDER BY created_at DESC, id DESC
+LIMIT 1
+`
+
+type GetPreviousLessonByCreatedAtParams struct {
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID        uuid.UUID          `json:"id"`
+}
+
+func (q *Queries) GetPreviousLessonByCreatedAt(ctx context.Context, arg GetPreviousLessonByCreatedAtParams) (Lesson, error) {
+	row := q.db.QueryRow(ctx, getPreviousLessonByCreatedAt, arg.CreatedAt, arg.ID)
+	var i Lesson
+	err := row.Scan(
+		&i.ID,
+		&i.RupName,
+		&i.DisciplineName,
+		&i.TopicName,
+		&i.PlanNumber,
+		&i.Teacher,
+		&i.EventDate,
+		&i.GroupID,
+		&i.Type,
+		&i.Goals,
+		&i.Tasks,
+		&i.Expected,
+		&i.InternetResources,
+		&i.TechnicalResources,
+		&i.FileUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

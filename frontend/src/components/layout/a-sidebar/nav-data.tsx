@@ -150,6 +150,13 @@ export const navMain: INav[] = [
 		icon: Group,
 	},
 	{
+		id: 'users',
+		titleKey: 'users',
+		url: '/users',
+		icon: Users,
+		role: RoleEnum.METHODIST,
+	},
+	{
 		id: 'admin',
 		icon: ShieldUser,
 		titleKey: 'admin',
@@ -157,12 +164,6 @@ export const navMain: INav[] = [
 		defaultOpen: true,
 		role: RoleEnum.ADMIN,
 		items: [
-			{
-				id: 'users',
-				titleKey: 'users',
-				url: '/users',
-				icon: Users,
-			},
 			{
 				id: 'settings',
 				titleKey: 'settings',
