@@ -360,7 +360,6 @@ const TopicRowView = ({
 			const response = await generateLessonMutation.mutateAsync(payload)
 
 			if (response.status && response.lessonId) {
-				console.log('lessonId', response.lessonId)
 				toast.success(text.lessonSuccess, { id: toastId })
 				router.push(`/lessons/${response.lessonId}`)
 			} else {

@@ -39,10 +39,11 @@ interface IProps {
 }
 
 export const TypeView = ({ type }: IProps) => {
-	const { replace } = useRouter()
+	const { push } = useRouter()
 	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
 	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+	const backHref = '/kpi/types'
 
 	// query
 	const { mutate: deleteMutate } = useMutation(services.award.deleteTypeMutationOptions())
@@ -60,7 +61,7 @@ export const TypeView = ({ type }: IProps) => {
 		deleteMutate(type.id, {
 			onSuccess: () => {
 				toast.success(interpolateUILocaleText(t.toastDeleted, { name: typeName }), { id: toastId })
-				replace('/kpi/types')
+				push(backHref)
 			},
 			onError: (err) => {
 				toast.error(interpolateUILocaleText(t.toastError, { name: typeName }), {
@@ -103,7 +104,7 @@ export const TypeView = ({ type }: IProps) => {
 						</Tabs>
 					</div>
 				}
-				backHref='/kpi/types'
+				backHref={backHref}
 				description={t.description}
 			>
 				{interpolateUILocaleText(t.title, { name: getLocaleText(type.name, activeLocale) })}

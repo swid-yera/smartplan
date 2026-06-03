@@ -2,13 +2,11 @@
 
 import { notFound, useParams } from 'next/navigation'
 
-import { Loader } from '@components'
+import { LessonEditForm, Loader } from '@components'
 import { isAuthor } from '@helpers'
 import { services } from '@services'
 import { useAuthStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-
-import { LessonEditForm } from './lesson-edit-form'
 
 export default function LessonEditPage() {
 	const params = useParams<{ id: string }>()

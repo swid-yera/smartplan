@@ -9,7 +9,10 @@ import type {
 	ILessonResource,
 	IPagination,
 	IUpdateLessonRequest,
+	LocalizedText,
 } from '@types'
+
+import { cleanupDeleteCache } from './query-cache'
 
 export class LessonService {
 	private normalizeProgressMinute = (value: unknown): number => {
@@ -22,6 +25,18 @@ export class LessonService {
 		if (!Number.isFinite(parsed) || parsed < 0) return 0
 
 		return parsed
+	}
+
+	private resolveProgressSource = (source: Record<string, unknown>, camelKey: string, snakeKey: string): unknown => {
+		if (camelKey in source && source[camelKey] !== undefined) {
+			return source[camelKey]
+		}
+
+		if (snakeKey in source && source[snakeKey] !== undefined) {
+			return source[snakeKey]
+		}
+
+		return undefined
 	}
 
 	private normalizeMinuteArray = (primary: unknown, fallback?: unknown): number[] => {
@@ -58,14 +73,17 @@ export class LessonService {
 			const content = contentItems
 				.map((contentItem) => (typeof contentItem === 'string' ? contentItem.trim() : ''))
 				.filter(Boolean)
+			const firstTime = this.resolveProgressSource(source, 'firstTime', 'first_time')
+			const secondTime = this.resolveProgressSource(source, 'secondTime', 'second_time')
+			const thirdTime = this.resolveProgressSource(source, 'thirdTime', 'third_time')
 
 			return {
 				id: typeof source.id === 'string' && source.id.trim() ? source.id : `lesson-progress-${index}`,
-				name: typeof source.name === 'string' ? source.name : '',
+				name: (source.name as LocalizedText) ?? '',
 				content,
-				firstTime: this.normalizeMinuteArray(source.firstTime),
-				secondTime: this.normalizeMinuteArray(source.secondTime),
-				thirdTime: this.normalizeMinuteArray(source.thirdTime),
+				firstTime: this.normalizeMinuteArray(firstTime),
+				secondTime: this.normalizeMinuteArray(secondTime),
+				thirdTime: this.normalizeMinuteArray(thirdTime),
 			}
 		})
 	}
@@ -108,6 +126,8 @@ export class LessonService {
 
 	// generate lesson
 	generateLessonOptions = () => {
+		const queryClient = useQueryClient()
+
 		return mutationOptions({
 			mutationFn: async (payload: IGenerateLessonRequest) => {
 				const { data } = await api.post<IGenerateLessonResponse>('/lessons/generate-lesson', payload)
@@ -117,6 +137,13 @@ export class LessonService {
 				}
 
 				return data
+			},
+			onSuccess: (response) => {
+				queryClient.invalidateQueries({ queryKey: ['lessons'] })
+
+				if (response.lessonId) {
+					queryClient.invalidateQueries({ queryKey: ['lesson', response.lessonId] })
+				}
 			},
 		})
 	}
@@ -209,13 +236,15 @@ export class LessonService {
 			mutationFn: async (id: string) => {
 				const { status } = await api.delete(`/lessons/${id}`)
 
-				if (status !== 204) throw new Error('Не удалось удалить урок')
+				if (status < 200 || status >= 300) throw new Error('Не удалось удалить урок')
 
 				return id
 			},
 			onSuccess: (deletedId) => {
-				queryClient.invalidateQueries({ queryKey: ['lessons'] })
-				queryClient.removeQueries({ queryKey: ['lesson', deletedId] })
+				cleanupDeleteCache(queryClient, deletedId, {
+					invalidateQueryKeys: [['lessons']],
+					removeQueryKeys: [['lesson', deletedId]],
+				})
 			},
 		})
 	}

@@ -2,6 +2,7 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type { ICategoryListItemResponse, ICategoryRequest, ICategoryResponse } from '@types'
 
+import { cleanupDeleteCache } from './query-cache'
 import { getCurrentBackendLocale } from './service-locale'
 
 export class CategoriesService {
@@ -83,12 +84,9 @@ export class CategoriesService {
 			},
 
 			onSuccess: (deletedId: string) => {
-				queryClient.setQueryData<ICategoryListItemResponse[] | null>(['categories'], (old) =>
-					old ? old.filter((category) => category.id !== deletedId) : null,
-				)
-
-				queryClient.removeQueries({
-					queryKey: ['category', deletedId],
+				cleanupDeleteCache(queryClient, deletedId, {
+					invalidateQueryKeys: [['categories']],
+					removeQueryKeys: [['category', deletedId]],
 				})
 			},
 		})

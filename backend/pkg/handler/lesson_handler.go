@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -76,6 +77,20 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 		return
 	}
 
+	search := strings.TrimSpace(c.Query("search"))
+	lessonType := strings.TrimSpace(c.Query("type"))
+	discipline := strings.TrimSpace(c.Query("discipline"))
+	groupName := strings.TrimSpace(c.Query("group"))
+	sort := strings.ToLower(strings.TrimSpace(c.Query("sort")))
+	if sort != "asc" && sort != "desc" {
+		sort = "desc"
+	}
+
+	if lessonType != "" && lessonType != "PRACTICE" && lessonType != "THEORY" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson type"})
+		return
+	}
+
 	// Опциональные фильтры: teacher и lesson_id
 	var teacher pgtype.UUID
 	if teacherIDStr := c.Query("teacher"); teacherIDStr != "" {
@@ -104,7 +119,7 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 	}
 
 	// Вызов сервиса
-	resp, err := h.lessonService.GetAllLessons(c.Request.Context(), currentPage, pageSize, teacher, lessonID)
+	resp, err := h.lessonService.GetAllLessons(c.Request.Context(), currentPage, pageSize, teacher, lessonID, search, lessonType, discipline, groupName, sort)
 	if err != nil {
 		h.log.Error(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

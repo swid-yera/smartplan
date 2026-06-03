@@ -5,16 +5,17 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { PageTitle } from '@components'
-import { createLocaleText, hasRole, topicTypeIcons } from '@helpers'
+import { createLocaleText, getLocaleText, getUILocaleSection, hasRole, topicTypeIcons } from '@helpers'
 import { services } from '@services'
-import { Button, ButtonGroup } from '@shadcn'
+import { Button, ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
-import type { ILesson } from '@types'
+import type { ILesson, Locale } from '@types'
 import { RoleEnum, TopicTypeEnum } from '@types'
 import { Edit, FileDown, RefreshCw, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { PageTitle } from '../../ui/page-title'
 import { LessonDeleteDialog, LessonRegenerateDialog } from './lesson-action-dialogs'
 import { LessonGoalsGrid } from './lesson-goals-grid'
 import { LessonOverviewGrid } from './lesson-overview-grid'
@@ -22,16 +23,28 @@ import { type ILessonContext, type IRegenerateFormData } from './lesson-page.typ
 import { normalizeLessonProgress } from './lesson-page.utils'
 import { LessonProgressCard } from './lesson-progress-card'
 import { LessonResourcesGrid } from './lesson-resources-grid'
+import localeDictionary from './locale.json'
 
 type IProps = {
+	activeLocale: Locale
 	canManageLesson: boolean
 	lesson: ILesson
+	onActiveLocaleChange: (locale: Locale) => void
 	userRole: RoleEnum
 	userKeycloakId: string
 }
 
-export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, userRole }: IProps) {
-	const { push, replace } = useRouter()
+export function LessonDetailsContent({
+	activeLocale,
+	canManageLesson,
+	lesson,
+	onActiveLocaleChange,
+	userKeycloakId,
+	userRole,
+}: IProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+	const { push } = useRouter()
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
 	const [regenerateDescription, setRegenerateDescription] = useState('')
@@ -46,6 +59,7 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 	})
 	const deleteLessonMutation = useMutation(services.lesson.deleteMutationOptions())
 	const regenerateLessonMutation = useMutation(services.lesson.generateLessonOptions())
+	const backHref = '/lessons/my'
 
 	const lessonContext = lesson as ILessonContext
 	const currentRupId = lessonContext.rup_id || lessonContext.rupId || ''
@@ -57,8 +71,8 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 	const LessonTypeIcon = topicTypeIcons[resolvedTopicType]
 	const canRegenerate = Boolean(currentRupId && currentDisciplineId && currentTopicId)
 	const lessonProgress = useMemo(
-		() => normalizeLessonProgress(lessonContext.lesson_progress),
-		[lessonContext.lesson_progress],
+		() => normalizeLessonProgress(lessonContext.lesson_progress, activeLocale),
+		[activeLocale, lessonContext.lesson_progress],
 	)
 
 	const resolveNonNegative = (...values: Array<number | undefined>) => {
@@ -73,17 +87,17 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 		[lesson.teacher?.lastName, lesson.teacher?.firstName].filter(Boolean).join(' ') ||
 		lesson.teacher?.username ||
 		lesson.teacher_id ||
-		'Пусто'
+		t.empty
 	const teacherId = lesson.teacher?.keycloakId || lesson.teacher_id || ''
 	const isAdmin = hasRole(userRole, RoleEnum.ADMIN)
 	const isTeacherOwner = hasRole(userRole, RoleEnum.TEACHER, false) && userKeycloakId === teacherId
 	const canManageLessonResolved = canManageLesson || isAdmin || isTeacherOwner
 	const cardClassName = 'border-border/70 bg-card/90 shadow-sm shadow-black/5'
-	const groupName = lesson.group?.name || lesson.group_id || 'Пусто'
+	const groupName = lesson.group?.name || lesson.group_id || t.empty
 
 	const resetRegenerateForm = () => {
 		setRegenerateFormData({
-			name: lesson.topic_name,
+			name: getLocaleText(lesson.topic_name, activeLocale),
 			theoryHours: resolveNonNegative(lessonContext.theory_hours, lessonContext.theoryHours),
 			practiceHours: resolveNonNegative(lessonContext.practice_hours, lessonContext.practiceHours),
 			individualHours: resolveNonNegative(lessonContext.individual_hours, lessonContext.individualHours),
@@ -98,15 +112,15 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 
 		const toastId = `lesson-${lesson.id}-delete`
 
-		toast.loading('Удаление урока...', { id: toastId })
+		toast.loading(t.deletingLesson, { id: toastId })
 
 		deleteLessonMutation.mutate(lesson.id, {
 			onSuccess: () => {
-				toast.success('Урок удален', { id: toastId })
-				replace('/lessons/my')
+				toast.success(t.lessonDeleted, { id: toastId })
+				push(backHref)
 			},
 			onError: (err) => {
-				toast.error('Ошибка при удалении урока', {
+				toast.error(t.deleteLessonError, {
 					description: err.message,
 					id: toastId,
 				})
@@ -122,15 +136,15 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 
 	const handleRegenerate = async () => {
 		if (!currentRupId || !currentDisciplineId || !currentTopicId) {
-			toast.error('Недостаточно данных для перегенерации урока', {
-				description: 'Требуются rupId, disciplineId и topicId из backend ответа.',
+			toast.error(t.notEnoughLessonData, {
+				description: t.notEnoughLessonDataDescription,
 			})
 
 			return
 		}
 
 		if (!regenerateFormData.name.trim()) {
-			toast.error('Введите название темы')
+			toast.error(t.enterLessonTopic)
 
 			return
 		}
@@ -155,25 +169,25 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 
 		const toastId = `lesson-${lesson.id}-regenerate`
 
-		toast.loading('Перегенерация урока...', { id: toastId })
+		toast.loading(t.regeneratingLesson, { id: toastId })
 
 		try {
 			const response = await regenerateLessonMutation.mutateAsync(payload)
 
 			if (!response.status) {
-				toast.error('Не удалось перегенерировать урок', { id: toastId })
+				toast.error(t.regenerateLessonError, { id: toastId })
 
 				return
 			}
 
-			toast.success('Урок успешно перегенерирован', { id: toastId })
+			toast.success(t.lessonRegenerated, { id: toastId })
 			setIsRegenerateDialogOpen(false)
 
 			if (response.lessonId) {
 				push(`/lessons/${response.lessonId}`)
 			}
 		} catch (err) {
-			toast.error('Ошибка при перегенерации урока', {
+			toast.error(t.regenerateLessonError, {
 				description: err instanceof Error ? err.message : 'Unknown error',
 				id: toastId,
 			})
@@ -190,7 +204,13 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 			<PageTitle
 				sticky
 				actions={
-					<div className='flex flex-col justify-end items-end gap-3'>
+					<div className='flex flex-col items-end justify-end gap-3'>
+						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
+							<TabsList>
+								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
+								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
+							</TabsList>
+						</Tabs>
 						<ButtonGroup>
 							{canManageLessonResolved && (
 								<Button
@@ -201,14 +221,14 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 									onClick={handleRegenerateClick}
 								>
 									<RefreshCw className='mr-2 h-4 w-4' />
-									Перегенерировать
+									{t.regenerate}
 								</Button>
 							)}
 							{lesson.file_url && (
 								<Button asChild size='sm' variant='outline'>
 									<Link href={lesson.file_url} rel='noopener noreferrer' target='_blank'>
 										<FileDown className='mr-2 h-4 w-4' />
-										Открыть файл
+										{t.openFile}
 									</Link>
 								</Button>
 							)}
@@ -218,7 +238,7 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 								<Button asChild size='sm' variant='outline'>
 									<Link href={`/lessons/${lesson.id}/edit`}>
 										<Edit className='mr-2 h-4 w-4' />
-										Редактировать
+										{t.edit}
 									</Link>
 								</Button>
 							)}
@@ -231,33 +251,34 @@ export function LessonDetailsContent({ canManageLesson, lesson, userKeycloakId, 
 									onClick={() => setIsDeleteDialogOpen(true)}
 								>
 									<Trash className='mr-2 h-4 w-4' />
-									Удалить
+									{t.delete}
 								</Button>
 							)}
 						</ButtonGroup>
 					</div>
 				}
-				backHref='/lessons/my'
-				description='Детальная информация по уроку'
+				backHref={backHref}
+				description={t.pageDescription}
 			>
-				{lesson.topic_name}
+				{getLocaleText(lesson.topic_name, activeLocale) || t.lessonUntitled}
 			</PageTitle>
 
 			<LessonOverviewGrid
 				cardClassName={cardClassName}
 				groupName={groupName}
 				lesson={lesson}
+				lessonLocale={activeLocale}
 				lessonTypeIcon={LessonTypeIcon}
 				resolvedTopicTypeLabel={resolvedTopicType}
 				teacherId={teacherId}
 				teacherName={teacherName}
 			/>
 
-			<LessonGoalsGrid cardClassName={cardClassName} lesson={lesson} />
+			<LessonGoalsGrid cardClassName={cardClassName} lesson={lesson} lessonLocale={activeLocale} />
 
 			<LessonProgressCard cardClassName={cardClassName} lessonProgress={lessonProgress} />
 
-			<LessonResourcesGrid cardClassName={cardClassName} lesson={lesson} />
+			<LessonResourcesGrid cardClassName={cardClassName} lesson={lesson} lessonLocale={activeLocale} />
 
 			<LessonDeleteDialog
 				isOpen={isDeleteDialogOpen}

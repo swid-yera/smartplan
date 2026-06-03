@@ -144,25 +144,66 @@ func (q *Queries) CountAwardsFiltered(ctx context.Context, arg CountAwardsFilter
 
 const countLessonsFiltered = `-- name: CountLessonsFiltered :one
 SELECT COUNT(*)
-FROM lessons
+FROM lessons l
+LEFT JOIN groups g ON g.keycloak_id = l.group_id
 WHERE
     (
-        $1::uuid IS NULL
-        OR teacher = $1::uuid
+        $1 = ''
+        OR COALESCE(l.rup_name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.rup_name->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.discipline_name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.discipline_name->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.topic_name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.topic_name->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.goals->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.goals->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.tasks->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.tasks->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.expected->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.expected->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(g.name, '') ILIKE '%' || $1 || '%'
     )
     AND (
         $2::uuid IS NULL
-        OR id = $2
+        OR l.teacher = $2::uuid
+    )
+    AND (
+        $3::uuid IS NULL
+        OR l.id = $3::uuid
+    )
+    AND (
+        $4 = ''
+        OR l.type = $4::enum_lesson_type
+    )
+    AND (
+        $5 = ''
+        OR COALESCE(l.discipline_name->>'ru', '') = $5
+        OR COALESCE(l.discipline_name->>'kz', '') = $5
+    )
+    AND (
+        $6 = ''
+        OR COALESCE(g.name, '') = $6
     )
 `
 
 type CountLessonsFilteredParams struct {
-	Teacher pgtype.UUID `json:"teacher"`
-	ID      pgtype.UUID `json:"id"`
+	Search     interface{} `json:"search"`
+	Teacher    pgtype.UUID `json:"teacher"`
+	ID         pgtype.UUID `json:"id"`
+	LessonType interface{} `json:"lesson_type"`
+	Discipline interface{} `json:"discipline"`
+	GroupName  interface{} `json:"group_name"`
 }
 
 func (q *Queries) CountLessonsFiltered(ctx context.Context, arg CountLessonsFilteredParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countLessonsFiltered, arg.Teacher, arg.ID)
+	row := q.db.QueryRow(ctx, countLessonsFiltered,
+		arg.Search,
+		arg.Teacher,
+		arg.ID,
+		arg.LessonType,
+		arg.Discipline,
+		arg.GroupName,
+	)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -2022,33 +2063,94 @@ func (q *Queries) GetLessonProgressByLessonID(ctx context.Context, lessonID uuid
 }
 
 const getLessons = `-- name: GetLessons :many
-SELECT id, rup_name, discipline_name, topic_name, plan_number, teacher, event_date, group_id, type, goals, tasks, expected, internet_resources, technical_resources, file_url, created_at, updated_at FROM lessons
+SELECT
+    l.id,
+    l.rup_name,
+    l.discipline_name,
+    l.topic_name,
+    l.plan_number,
+    l.teacher,
+    l.event_date,
+    l.group_id,
+    l.type,
+    l.goals,
+    l.tasks,
+    l.expected,
+    l.internet_resources,
+    l.technical_resources,
+    l.file_url,
+    l.created_at,
+    l.updated_at
+FROM lessons l
+LEFT JOIN groups g ON g.keycloak_id = l.group_id
 WHERE
     (
-        $3::uuid IS NULL
-        OR teacher = $3::uuid
+        $1 = ''
+        OR COALESCE(l.rup_name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.rup_name->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.discipline_name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.discipline_name->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.topic_name->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.topic_name->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.goals->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.goals->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.tasks->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.tasks->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.expected->>'ru', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(l.expected->>'kz', '') ILIKE '%' || $1 || '%'
+        OR COALESCE(g.name, '') ILIKE '%' || $1 || '%'
     ) AND
     (
-        $4::uuid IS NULL
-        OR id = $4::uuid
+        $2::uuid IS NULL
+        OR l.teacher = $2::uuid
+    ) AND
+    (
+        $3::uuid IS NULL
+        OR l.id = $3::uuid
+    ) AND
+    (
+        $4 = ''
+        OR l.type = $4::enum_lesson_type
+    ) AND
+    (
+        $5 = ''
+        OR COALESCE(l.discipline_name->>'ru', '') = $5
+        OR COALESCE(l.discipline_name->>'kz', '') = $5
+    ) AND
+    (
+        $6 = ''
+        OR COALESCE(g.name, '') = $6
     )
-ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
+ORDER BY
+    CASE WHEN LOWER($7::text) = 'asc' THEN l.created_at END ASC,
+    CASE WHEN LOWER($7::text) = 'desc' THEN l.created_at END DESC,
+    l.created_at DESC
+LIMIT $9 OFFSET $8
 `
 
 type GetLessonsParams struct {
-	Limit   int32       `json:"limit"`
-	Offset  int32       `json:"offset"`
-	Teacher pgtype.UUID `json:"teacher"`
-	ID      pgtype.UUID `json:"id"`
+	Search     interface{} `json:"search"`
+	Teacher    pgtype.UUID `json:"teacher"`
+	ID         pgtype.UUID `json:"id"`
+	LessonType interface{} `json:"lesson_type"`
+	Discipline interface{} `json:"discipline"`
+	GroupName  interface{} `json:"group_name"`
+	Sort       string      `json:"sort"`
+	Offset     int32       `json:"offset"`
+	Limit      int32       `json:"limit"`
 }
 
 func (q *Queries) GetLessons(ctx context.Context, arg GetLessonsParams) ([]Lesson, error) {
 	rows, err := q.db.Query(ctx, getLessons,
-		arg.Limit,
-		arg.Offset,
+		arg.Search,
 		arg.Teacher,
 		arg.ID,
+		arg.LessonType,
+		arg.Discipline,
+		arg.GroupName,
+		arg.Sort,
+		arg.Offset,
+		arg.Limit,
 	)
 	if err != nil {
 		return nil, err

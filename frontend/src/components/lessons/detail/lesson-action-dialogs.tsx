@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from 'react'
 
-import { RegenerateDescriptionDialog } from '@components'
+import { getUILocaleSection } from '@helpers'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -13,6 +13,10 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
+
+import { RegenerateDescriptionDialog } from '../../dialogs/regenerate-description-dialog'
+import localeDictionary from './locale.json'
 
 type IDeleteDialogProps = {
 	isOpen: boolean
@@ -31,19 +35,20 @@ type IRegenerateDialogProps = {
 }
 
 export function LessonDeleteDialog({ isOpen, onConfirm, onOpenChange }: IDeleteDialogProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<AlertDialog open={isOpen} onOpenChange={onOpenChange}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Удалить урок?</AlertDialogTitle>
-					<AlertDialogDescription>
-						Это действие нельзя отменить. Урок будет удален без возможности восстановления.
-					</AlertDialogDescription>
+					<AlertDialogTitle>{t.deleteLessonTitle}</AlertDialogTitle>
+					<AlertDialogDescription>{t.deleteLessonDescription}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Отмена</AlertDialogCancel>
+					<AlertDialogCancel>{t.cancel}</AlertDialogCancel>
 					<AlertDialogAction variant='destructive' onClick={onConfirm}>
-						Удалить
+						{t.delete}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
@@ -60,19 +65,22 @@ export function LessonRegenerateDialog({
 	onDescriptionChange,
 	onOpenChange,
 }: IRegenerateDialogProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<RegenerateDescriptionDialog
-			cancelLabel='Отмена'
-			confirmLabel='Перегенерировать'
+			cancelLabel={t.cancel}
+			confirmLabel={t.regenerate}
 			description={description}
 			descriptionId='lesson-regenerate-description'
-			descriptionLabel='Описание'
-			descriptionPlaceholder='Опишите, что нужно учесть при перегенерации урока'
-			dialogDescription='Укажите описание для перегенерации урока.'
+			descriptionLabel={t.description}
+			descriptionPlaceholder={t.regeneratePlaceholder}
+			dialogDescription={t.regenerateDialogDescription}
 			isConfirmDisabled={!canRegenerate || description.trim().length === 0}
 			isOpen={isOpen}
 			isPending={isPending}
-			title='Перегенерация урока'
+			title={t.regenerateLessonTitle}
 			onConfirm={onConfirm}
 			onDescriptionChange={onDescriptionChange}
 			onOpenChange={onOpenChange}

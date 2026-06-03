@@ -1,4 +1,5 @@
 import type { IGroup, RoleEnum } from './global.type'
+import type { LocalizedText } from './locale.type'
 
 export enum LessonTypeEnum {
 	PRACTICE = 'PRACTICE',
@@ -22,25 +23,34 @@ export interface ILessonTeacher {
 
 export interface ILessonResource {
 	id: string
-	name: string
+	name: LocalizedText
 	link: string
 	type: LessonResourceTypeEnum
 }
 
 export interface ILessonProgress {
 	id: string
-	name: string
+	name: LocalizedText
 	content: string[]
 	firstTime: number[]
 	secondTime: number[]
 	thirdTime: number[]
+	first_time?: number[]
+	second_time?: number[]
+	third_time?: number[]
 }
 
 export interface ILesson {
 	id: string
-	rup_name: string
-	discipline_name: string
-	topic_name: string
+	rup_id?: string
+	rupId?: string
+	discipline_id?: string
+	disciplineId?: string
+	topic_id?: string
+	topicId?: string
+	rup_name: LocalizedText
+	discipline_name: LocalizedText
+	topic_name: LocalizedText
 	plan_number: number
 	teacher: ILessonTeacher
 	group: IGroup
@@ -49,9 +59,9 @@ export interface ILesson {
 	event_date: string
 	type: LessonTypeEnum
 
-	goals: string
-	tasks: string
-	expected: string
+	goals: LocalizedText
+	tasks: LocalizedText
+	expected: LocalizedText
 
 	lesson_progress: ILessonProgress[]
 	internet_resources: ILessonResource[]

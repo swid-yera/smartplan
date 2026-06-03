@@ -3,6 +3,8 @@
 import type { FC, ReactNode } from 'react'
 import { useState } from 'react'
 
+import Link from 'next/link'
+
 import { formatAsDash, getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
 	Button,
@@ -157,7 +159,14 @@ const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {
 			}}
 		>
 			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-				{getLocaleText(rup?.name, locale) || t.untitled}
+				<Link
+					className='inline-flex max-w-full items-center rounded-sm hover:text-primary hover:underline'
+					href={`/rups/${rup.id}`}
+					title={getLocaleText(rup?.name, locale) || t.untitled}
+					onClick={(event) => event.stopPropagation()}
+				>
+					<span className='truncate'>{getLocaleText(rup?.name, locale) || t.untitled}</span>
+				</Link>
 			</TableCell>
 			<TableCell className='whitespace-break-spaces min-w-[100px]'>
 				{rup?.teacher?.firstName || t.unknownTeacher}

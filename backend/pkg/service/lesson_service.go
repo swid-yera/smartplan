@@ -639,6 +639,11 @@ func (s *LessonService) GetAllLessons(
 	pageSize int,
 	teacher pgtype.UUID,
 	id pgtype.UUID,
+	search string,
+	lessonType string,
+	discipline string,
+	groupName string,
+	sort string,
 ) (*PaginatedLessonsResponse, error) {
 	if currentPage < 1 {
 		currentPage = 1
@@ -648,13 +653,21 @@ func (s *LessonService) GetAllLessons(
 	}
 
 	offset := (currentPage - 1) * pageSize
+	search = strings.TrimSpace(search)
+	lessonType = strings.TrimSpace(lessonType)
+	discipline = strings.TrimSpace(discipline)
+	groupName = strings.TrimSpace(groupName)
+	sort = strings.ToLower(strings.TrimSpace(sort))
+	if sort != "asc" && sort != "desc" {
+		sort = "desc"
+	}
 
-	total, err := s.repo.CountLessonsFiltered(ctx, teacher, id)
+	total, err := s.repo.CountLessonsFiltered(ctx, search, teacher, id, lessonType, discipline, groupName)
 	if err != nil {
 		return nil, err
 	}
 
-	dbLessons, err := s.repo.GetLessons(ctx, teacher, id, int32(pageSize), int32(offset))
+	dbLessons, err := s.repo.GetLessons(ctx, search, teacher, id, lessonType, discipline, groupName, sort, int32(pageSize), int32(offset))
 	if err != nil {
 		return nil, err
 	}

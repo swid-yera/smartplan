@@ -9,6 +9,7 @@ import { cn } from '@lib'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import type { ILesson, TopicTypeEnum } from '@types'
+import type { Locale } from '@types'
 import { FileText, Folder, GraduationCap, Grid2X2, type LucideIcon, Phone, Timer, UserRound } from 'lucide-react'
 
 import { formatDate } from './lesson-page.utils'
@@ -18,6 +19,7 @@ type IProps = {
 	cardClassName: string
 	groupName: string
 	lesson: ILesson
+	lessonLocale: Locale
 	lessonTypeIcon: LucideIcon
 	resolvedTopicTypeLabel: TopicTypeEnum
 	teacherId: string
@@ -28,6 +30,7 @@ export function LessonOverviewGrid({
 	cardClassName,
 	groupName,
 	lesson,
+	lessonLocale,
 	lessonTypeIcon: LessonTypeIcon,
 	resolvedTopicTypeLabel,
 	teacherId,
@@ -44,24 +47,36 @@ export function LessonOverviewGrid({
 						<span className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary'>
 							<FileText className='h-4 w-4' />
 						</span>
-						Основная информация
+						{t.overviewTitle}
 					</CardTitle>
 					<CardDescription>{t.overviewDescription}</CardDescription>
 				</CardHeader>
 				<CardContent className='space-y-5'>
-					<InfoRow icon={<Folder className='h-4 w-4' />} label='РУП' value={lesson.rup_name} />
-					<InfoRow icon={<Grid2X2 className='h-4 w-4' />} label='Дисциплина' value={lesson.discipline_name} />
-					<InfoRow icon={<FileText className='h-4 w-4' />} label='Тема урока' value={lesson.topic_name} />
-					<div className='grid md:grid-cols-2 gap-5'>
+					<InfoRow
+						icon={<Folder className='h-4 w-4' />}
+						label={t.rup}
+						value={getLocaleText(lesson.rup_name, lessonLocale)}
+					/>
+					<InfoRow
+						icon={<Grid2X2 className='h-4 w-4' />}
+						label={t.discipline}
+						value={getLocaleText(lesson.discipline_name, lessonLocale)}
+					/>
+					<InfoRow
+						icon={<FileText className='h-4 w-4' />}
+						label={t.topic}
+						value={getLocaleText(lesson.topic_name, lessonLocale)}
+					/>
+					<div className='grid gap-5 md:grid-cols-2'>
 						<InfoRow
 							icon={<LessonTypeIcon className='h-4 w-4' />}
-							label='Тип занятия'
+							label={t.lessonType}
 							value={normalizeTopicType(resolvedTopicTypeLabel)}
 						/>
 						<InfoRow
 							icon={<Timer className='h-4 w-4' />}
-							label='Дата проведения'
-							value={formatDate(lesson.event_date)}
+							label={t.date}
+							value={formatDate(lesson.event_date, lessonLocale)}
 						/>
 					</div>
 				</CardContent>
@@ -73,15 +88,15 @@ export function LessonOverviewGrid({
 						<span className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary'>
 							<UserRound className='h-4 w-4' />
 						</span>
-						Преподаватель
+						{t.teacher}
 					</CardTitle>
 					<CardDescription>{t.responsibleDescription}</CardDescription>
 				</CardHeader>
-				<CardContent className='w-full h-full flex flex-col gap-8 justify-between'>
+				<CardContent className='flex h-full w-full flex-col justify-between gap-8'>
 					<div className='grid gap-5'>
 						<InfoRow
 							icon={<UserRound className='h-4 w-4' />}
-							label='ФИО'
+							label={t.teacherName}
 							value={
 								teacherId ? (
 									<Link
@@ -97,17 +112,20 @@ export function LessonOverviewGrid({
 						/>
 						<InfoRow
 							icon={<Phone className='h-4 w-4' />}
-							label='Телефон'
-							value={lesson.teacher?.phone || 'Пусто'}
+							label={t.phone}
+							value={lesson.teacher?.phone || t.empty}
 						/>
-						<InfoRow icon={<GraduationCap className='h-4 w-4' />} label='Группа' value={groupName} />
-						<Row label='Квалификация' value={getLocaleText(lesson.group?.qualification, locale) || 'Пусто'} />
-						<Row label='Специальность' value={getLocaleText(lesson.group?.specialty, locale) || 'Пусто'} />
+						<InfoRow icon={<GraduationCap className='h-4 w-4' />} label={t.group} value={groupName || t.empty} />
+						<Row
+							label={t.qualification}
+							value={getLocaleText(lesson.group?.qualification, lessonLocale) || t.empty}
+						/>
+						<Row label={t.specialty} value={getLocaleText(lesson.group?.specialty, lessonLocale) || t.empty} />
 					</div>
 
 					<div className='grid gap-5'>
-						<Row label='Создано' value={formatDate(lesson.created_at)} />
-						<Row label='Обновлено' value={formatDate(lesson.updated_at)} />
+						<Row label={t.createdAt} value={formatDate(lesson.created_at, locale)} />
+						<Row label={t.updatedAt} value={formatDate(lesson.updated_at, locale)} />
 					</div>
 				</CardContent>
 			</Card>

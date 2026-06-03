@@ -33,6 +33,7 @@ import { getEventTimeError, normalizeTimeInputOnBlur, sanitizeTimeInput } from '
 import localeDictionary from './locale.json'
 
 type IProps = {
+	activeLocale: 'ru' | 'kk'
 	eventTimeError: string | null
 	formData: ILessonFormState
 	isDatePickerOpen: boolean
@@ -42,6 +43,7 @@ type IProps = {
 }
 
 export function LessonMainInfoCard({
+	activeLocale,
 	eventTimeError,
 	formData,
 	isDatePickerOpen,
@@ -58,7 +60,7 @@ export function LessonMainInfoCard({
 			<CardHeader>
 				<CardTitle className='inline-flex items-center gap-2'>
 					<FileText className='h-4 w-4 text-primary' />
-					Основные данные
+					{t.mainInfoTitle}
 				</CardTitle>
 				<CardDescription>{t.mainInfoDescription}</CardDescription>
 			</CardHeader>
@@ -66,25 +68,30 @@ export function LessonMainInfoCard({
 				<div className='grid gap-2 sm:col-span-2'>
 					<Label className='inline-flex items-center gap-2' htmlFor='topic-name'>
 						<SquareMenu className='h-4 w-4 text-primary' />
-						Тема урока
+						{t.lessonTopic}
 					</Label>
 					<Input
 						id='topic-name'
-						value={formData.topicName}
-						onChange={(e) => onFormDataChange((prev) => ({ ...prev, topicName: e.target.value }))}
+						value={formData.topicName[activeLocale]}
+						onChange={(e) =>
+							onFormDataChange((prev) => ({
+								...prev,
+								topicName: { ...prev.topicName, [activeLocale]: e.target.value },
+							}))
+						}
 					/>
 				</div>
 				<div className='grid gap-2'>
 					<Label className='inline-flex items-center gap-2'>
 						<Grid2X2 className='h-4 w-4 text-primary' />
-						Тип занятия
+						{t.lessonType}
 					</Label>
 					<Select
 						value={formData.type}
 						onValueChange={(value) => onFormDataChange((prev) => ({ ...prev, type: value as LessonTypeEnum }))}
 					>
 						<SelectTrigger className='w-full'>
-							<SelectValue placeholder='Выберите тип' />
+							<SelectValue placeholder={t.chooseType} />
 						</SelectTrigger>
 						<SelectContent>
 							{Object.values(LessonTypeEnum).map((type) => (
@@ -98,13 +105,13 @@ export function LessonMainInfoCard({
 				<div className='grid gap-2'>
 					<Label className='inline-flex items-center gap-2' htmlFor='event-date'>
 						<CalendarDays className='h-4 w-4 text-primary' />
-						Дата и время проведения
+						{t.lessonDate}
 					</Label>
 					<div className='grid grid-cols-2 gap-2'>
 						<Popover open={isDatePickerOpen} onOpenChange={onDatePickerOpenChange}>
 							<PopoverTrigger asChild>
 								<Button className='w-full justify-between font-normal' id='event-date' variant='outline'>
-									{formData.eventDate ? format(formData.eventDate, 'dd.MM.yyyy') : 'Выберите дату'}
+									{formData.eventDate ? format(formData.eventDate, 'dd.MM.yyyy') : t.chooseDate}
 									<ChevronDown />
 								</Button>
 							</PopoverTrigger>
@@ -128,7 +135,7 @@ export function LessonMainInfoCard({
 							id='event-time'
 							inputMode='numeric'
 							maxLength={5}
-							placeholder='ЧЧ:мм'
+							placeholder={t.chooseTime}
 							type='text'
 							value={formData.eventTime}
 							onBlur={() => {

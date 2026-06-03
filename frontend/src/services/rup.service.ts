@@ -9,11 +9,13 @@ import type {
 	IMessageResponse,
 	IPagination,
 	IRegenerateLanguageGenerationRequest,
-	IRupLanguageGenerationStatus,
 	IRup,
+	IRupLanguageGenerationStatus,
 	IUpdateRupRequest,
 	IUpdateStatusRequest,
 } from '@types'
+
+import { cleanupDeleteCache } from './query-cache'
 
 export class RupService {
 	// get all
@@ -140,14 +142,9 @@ export class RupService {
 			},
 
 			onSuccess: (deletedId: string) => {
-				// delete from cache getAllRups if exists
-				queryClient.setQueryData<IRup[] | null>(['rups'], (old) =>
-					old ? old.filter((rup) => rup.id !== deletedId) : null,
-				)
-
-				// delete from getRupById cache if exists
-				queryClient.removeQueries({
-					queryKey: ['rup', deletedId],
+				cleanupDeleteCache(queryClient, deletedId, {
+					invalidateQueryKeys: [['rups']],
+					removeQueryKeys: [['rup', deletedId]],
 				})
 			},
 		})

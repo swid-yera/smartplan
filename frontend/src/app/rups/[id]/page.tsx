@@ -62,7 +62,7 @@ import { RupView } from './rup-view'
 type IRupIdLocaleText = typeof localeDictionary.ru
 
 const Page: FC = () => {
-	const { replace } = useRouter()
+	const { push, replace } = useRouter()
 	const params = useParams<{ id: string }>()
 	const rupId = params.id ?? ''
 
@@ -89,6 +89,7 @@ const Page: FC = () => {
 	const updateStatusMutation = useMutation(services.rup.updateStatusOptions())
 	const regenerateLanguageMutation = useMutation(services.rup.regenerateLanguageGenerationOptions())
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
+	const backHref = '/rups'
 	const isLanguageGenerationInProgress =
 		generationStatus?.status === 'queued' || generationStatus?.status === 'running'
 
@@ -145,7 +146,7 @@ const Page: FC = () => {
 		deleteMutation.mutate(rupData.id, {
 			onSuccess: () => {
 				toast.success(interpolateUILocaleText(t.toasts.deleteSuccess, { name: rupName }), { id: toastId })
-				replace('/rups')
+				push(backHref)
 			},
 			onError: (err) => {
 				toast.error(interpolateUILocaleText(t.toasts.deleteError, { name: rupName }), {

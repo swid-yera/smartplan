@@ -47,6 +47,7 @@ const Page = () => {
 
 	const updateStatusMutation = useMutation(services.award.updateStatusOptions())
 	const deleteMutation = useMutation(services.award.deleteMutationOptions())
+	const backHref = '/kpi/my'
 
 	if (isLoading || authLoading || !user) return <Loader />
 
@@ -96,7 +97,7 @@ const Page = () => {
 		deleteMutation.mutate(award.id, {
 			onSuccess: () => {
 				toast.success(t.toastDeleteSuccess, { id: toastId })
-				router.replace('/kpi')
+				router.push(backHref)
 			},
 			onError: (err) => {
 				toast.error(t.toastDeleteError, { id: toastId, description: err.message })
@@ -129,7 +130,7 @@ const Page = () => {
 						onSendToReview={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 					/>
 				}
-				backHref='/kpi/my'
+				backHref={backHref}
 				backLabel={t.back}
 				description={t.pageDescription}
 			>

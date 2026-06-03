@@ -1,21 +1,35 @@
 import { PRACTICE_PROGRESS, THEORY_PROGRESS } from '@constants'
-import type { ILesson } from '@types'
+import { createLocaleText, getLocaleText } from '@helpers'
+import type { ILesson, Locale, LocalizedText } from '@types'
 import { LessonResourceTypeEnum, LessonTypeEnum } from '@types'
 import { isAxiosError } from 'axios'
 
 import type { ILessonFormState, ILessonProgressRow, IResourceRow } from './lesson-edit.types'
 
+export function createLocaleDraft(value?: LocalizedText): Record<Locale, string> {
+	if (!value) return { ru: '', kk: '' }
+
+	if (typeof value === 'string') {
+		return { ru: value, kk: value }
+	}
+
+	return {
+		ru: value.ru || '',
+		kk: value.kz || '',
+	}
+}
+
 export function createEmptyResource(): IResourceRow {
 	return {
 		link: '',
-		name: '',
+		name: { ru: '', kk: '' },
 	}
 }
 
 export function createEmptyLessonProgress(): ILessonProgressRow {
 	return {
 		contentText: '',
-		name: '',
+		name: { ru: '', kk: '' },
 		firstTime: 0,
 		secondTime: 0,
 		thirdTime: 0,
@@ -28,21 +42,33 @@ export function mapResourcesForForm(items: ILesson['internet_resources']): IReso
 	return items.map((item) => ({
 		id: item.id,
 		link: item.link || '',
-		name: item.name || '',
+		name: createLocaleDraft(item.name),
 	}))
 }
 
 export function mapLessonProgressForForm(lesson: ILesson): ILessonProgressRow[] {
 	const templateByType = lesson.type === LessonTypeEnum.PRACTICE ? PRACTICE_PROGRESS : THEORY_PROGRESS
 	const source = lesson.lesson_progress.length ? lesson.lesson_progress : templateByType
+	const resolveProgressValue = (
+		item: {
+			firstTime?: number[] | string[]
+			secondTime?: number[] | string[]
+			thirdTime?: number[] | string[]
+			first_time?: number[] | string[]
+			second_time?: number[] | string[]
+			third_time?: number[] | string[]
+		},
+		key: 'firstTime' | 'secondTime' | 'thirdTime',
+		snakeKey: 'first_time' | 'second_time' | 'third_time',
+	): number => Math.max(0, Number(item[key]?.[0] ?? item[snakeKey]?.[0] ?? 0) || 0)
 
 	return source.map((item, index) => ({
 		id: 'id' in item && typeof item.id === 'string' && item.id.trim() ? item.id : `template-${lesson.type}-${index}`,
 		contentText: (item.content || []).join('\n'),
-		firstTime: Math.max(0, Number(item.firstTime?.[0]) || 0),
-		name: item.name || '',
-		secondTime: Math.max(0, Number(item.secondTime?.[0]) || 0),
-		thirdTime: Math.max(0, Number(item.thirdTime?.[0]) || 0),
+		firstTime: resolveProgressValue(item, 'firstTime', 'first_time'),
+		name: createLocaleDraft(item.name),
+		secondTime: resolveProgressValue(item, 'secondTime', 'second_time'),
+		thirdTime: resolveProgressValue(item, 'thirdTime', 'third_time'),
 	}))
 }
 
@@ -51,26 +77,30 @@ export function normalizeResources(items: IResourceRow[], type: LessonResourceTy
 		.map((item) => ({
 			id: item.id,
 			link: item.link.trim(),
-			name: item.name.trim(),
+			name: createLocaleText(item.name.ru.trim(), item.name.kk.trim()),
 			type,
 		}))
-		.filter((item) => item.name)
+		.filter((item) => item.name.ru.trim() || item.name.kz.trim())
 }
 
 export function normalizeLessonProgressForRequest(items: ILessonProgressRow[]) {
 	return items
-		.map((item) => ({
-			content: item.contentText
+		.map((item) => {
+			const content = item.contentText
 				.split('\n')
 				.map((line) => line.trim())
-				.filter(Boolean),
-			third_time: [Math.max(0, Number(item.thirdTime) || 0)],
-			id: item.id,
-			name: item.name.trim(),
-			second_time: [Math.max(0, Number(item.secondTime) || 0)],
-			first_time: [Math.max(0, Number(item.firstTime) || 0)],
-		}))
-		.filter((item) => item.name || item.content.length)
+				.filter(Boolean)
+
+			return {
+				content,
+				third_time: [Math.max(0, Number(item.thirdTime) || 0)],
+				id: item.id,
+				name: createLocaleText(item.name.ru.trim(), item.name.kk.trim()),
+				second_time: [Math.max(0, Number(item.secondTime) || 0)],
+				first_time: [Math.max(0, Number(item.firstTime) || 0)],
+			}
+		})
+		.filter((item) => Boolean(item.name.ru.trim() || item.name.kz.trim() || item.content.length))
 }
 
 export function toEventDateFormState(value?: string | null): Pick<ILessonFormState, 'eventDate' | 'eventTime'> {

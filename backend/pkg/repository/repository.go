@@ -80,10 +80,10 @@ type Lessons interface {
 	UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error
 	UpdateLessonFileURL(ctx context.Context, id uuid.UUID, fileURL string) error
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
-	GetLessons(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID, limit int32, offset int32) ([]storage.Lesson, error)
+	GetLessons(ctx context.Context, search string, teacher pgtype.UUID, id pgtype.UUID, lessonType string, discipline string, groupName string, sort string, limit int32, offset int32) ([]storage.Lesson, error)
 	GetLessonByID(ctx context.Context, id uuid.UUID) (storage.Lesson, error)
 	GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName string, limit int32) ([]storage.Lesson, error)
-	CountLessonsFiltered(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID) (int64, error)
+	CountLessonsFiltered(ctx context.Context, search string, teacher pgtype.UUID, id pgtype.UUID, lessonType string, discipline string, groupName string) (int64, error)
 
 	CreateLessonProgress(ctx context.Context, params storage.CreateLessonProgressParams) error
 	UpdateLessonProgress(ctx context.Context, params storage.UpdateLessonProgressParams) error

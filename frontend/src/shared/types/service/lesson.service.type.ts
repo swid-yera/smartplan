@@ -34,7 +34,7 @@ export interface IUpdateLessonResourceRequest {
 
 export interface IUpdateLessonProgressRequest {
 	id?: string
-	name: string
+	name: LocaleText
 	content: string[]
 	first_time: number[]
 	second_time: number[]
@@ -42,12 +42,12 @@ export interface IUpdateLessonProgressRequest {
 }
 
 export interface IUpdateLessonRequest {
-	topic_name: string
+	topic_name: LocaleText
 	event_date: string
 	type: LessonTypeEnum
-	goals: string
-	tasks: string
-	expected: string
+	goals: LocaleText
+	tasks: LocaleText
+	expected: LocaleText
 	file_url?: string | null
 	lesson_progress: IUpdateLessonProgressRequest[]
 	internet_resources: IUpdateLessonResourceRequest[]
