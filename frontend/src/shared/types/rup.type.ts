@@ -56,7 +56,6 @@ export interface IRupExplorationNote {
 
 	basis: LocalizedText
 	goals: LocalizedText
-	summary: LocalizedText
 	competencies: LocalizedText
 
 	prerequisites: LocalizedText

@@ -225,7 +225,6 @@ CREATE TABLE "public"."rup_exploration_notes" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
   "basis" jsonb NULL,
   "goals" jsonb NULL,
-  "summary" jsonb NULL,
   "competencies" jsonb NULL,
   "prerequisites" jsonb NULL,
   "postrequisites" jsonb NULL,
@@ -236,8 +235,7 @@ CREATE TABLE "public"."rup_exploration_notes" (
   CONSTRAINT "rup_exploration_notes_competencies_locale_check" CHECK ((competencies IS NULL) OR ((competencies ? 'ru'::text) AND (competencies ? 'kz'::text))),
   CONSTRAINT "rup_exploration_notes_goals_locale_check" CHECK ((goals IS NULL) OR ((goals ? 'ru'::text) AND (goals ? 'kz'::text))),
   CONSTRAINT "rup_exploration_notes_postrequisites_locale_check" CHECK ((postrequisites IS NULL) OR ((postrequisites ? 'ru'::text) AND (postrequisites ? 'kz'::text))),
-  CONSTRAINT "rup_exploration_notes_prerequisites_locale_check" CHECK ((prerequisites IS NULL) OR ((prerequisites ? 'ru'::text) AND (prerequisites ? 'kz'::text))),
-  CONSTRAINT "rup_exploration_notes_summary_locale_check" CHECK ((summary IS NULL) OR ((summary ? 'ru'::text) AND (summary ? 'kz'::text)))
+  CONSTRAINT "rup_exploration_notes_prerequisites_locale_check" CHECK ((prerequisites IS NULL) OR ((prerequisites ? 'ru'::text) AND (prerequisites ? 'kz'::text)))
 );
 -- Create "rups" table
 CREATE TABLE "public"."rups" (

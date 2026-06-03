@@ -95,7 +95,6 @@ type Rup struct {
 type ExplorationNoteRequest struct {
 	Basis              localization.LocaleText `json:"basis"`
 	Goals              localization.LocaleText `json:"goals"`
-	Summary            localization.LocaleText `json:"summary"`
 	Competencies       localization.LocaleText `json:"competencies"`
 	Prerequisites      localization.LocaleText `json:"prerequisites"`
 	Postrequisites     localization.LocaleText `json:"postrequisites"`
@@ -192,7 +191,6 @@ type ExplorationNoteResponse struct {
 	ID                 uuid.UUID                `json:"id"`
 	Basis              *localization.LocaleText `json:"basis,omitempty"`
 	Goals              *localization.LocaleText `json:"goals,omitempty"`
-	Summary            *localization.LocaleText `json:"summary,omitempty"`
 	Competencies       *localization.LocaleText `json:"competencies,omitempty"`
 	Prerequisites      *localization.LocaleText `json:"prerequisites,omitempty"`
 	Postrequisites     *localization.LocaleText `json:"postrequisites,omitempty"`
@@ -210,7 +208,6 @@ type ResourceResponse struct {
 type RupDocumentExplorationNote struct {
 	Basis              string                 `json:"basis,omitempty"`
 	Goals              string                 `json:"goals,omitempty"`
-	Summary            string                 `json:"summary,omitempty"`
 	Competencies       string                 `json:"competencies,omitempty"`
 	Prerequisites      string                 `json:"prerequisites,omitempty"`
 	Postrequisites     string                 `json:"postrequisites,omitempty"`
@@ -912,7 +909,6 @@ func buildPayload(rup *RupResponse, group *GroupResponse, language string) RupDo
 
 	exploration.Basis = localePointerTextByLanguage(en.Basis, selectedLanguage)
 	exploration.Goals = localePointerTextByLanguage(en.Goals, selectedLanguage)
-	exploration.Summary = localePointerTextByLanguage(en.Summary, selectedLanguage)
 	exploration.Competencies = localePointerTextByLanguage(en.Competencies, selectedLanguage)
 	exploration.Prerequisites = localePointerTextByLanguage(en.Prerequisites, selectedLanguage)
 	exploration.Postrequisites = localePointerTextByLanguage(en.Postrequisites, selectedLanguage)
@@ -1267,7 +1263,6 @@ func (s *rupService) createExplorationNote(ctx context.Context, note *Exploratio
 	params := storage.CreateRupExplorationNoteParams{
 		Basis:              note.Basis.ToJSONB(),
 		Goals:              note.Goals.ToJSONB(),
-		Summary:            note.Summary.ToJSONB(),
 		Competencies:       note.Competencies.ToJSONB(),
 		Prerequisites:      note.Prerequisites.ToJSONB(),
 		Postrequisites:     note.Postrequisites.ToJSONB(),
@@ -1488,7 +1483,6 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 		ID:                 uuid.Nil,
 		Basis:              nil,
 		Goals:              nil,
-		Summary:            nil,
 		Competencies:       nil,
 		Prerequisites:      nil,
 		Postrequisites:     nil,
@@ -1579,7 +1573,6 @@ func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note 
 		ID:                 note.ID,
 		Basis:              localization.LocaleTextPtrFromJSONB(note.Basis),
 		Goals:              localization.LocaleTextPtrFromJSONB(note.Goals),
-		Summary:            localization.LocaleTextPtrFromJSONB(note.Summary),
 		Competencies:       localization.LocaleTextPtrFromJSONB(note.Competencies),
 		Prerequisites:      localization.LocaleTextPtrFromJSONB(note.Prerequisites),
 		Postrequisites:     localization.LocaleTextPtrFromJSONB(note.Postrequisites),
@@ -2005,13 +1998,6 @@ func (s *rupService) generateLanguageForRup(
 			fail("translate_exploration", 3, err)
 			return
 		}
-		updateReq.ExplorationNote.Summary, err = s.translateLocaleText(
-			ctx,
-			updateReq.ExplorationNote.Summary,
-			sourceLanguage,
-			targetLanguage,
-			overwriteTarget,
-		)
 		if err != nil {
 			fail("translate_exploration", 3, err)
 			return
@@ -2216,7 +2202,6 @@ func mapRupResponseToCreateRequest(rup *RupResponse) CreateRupRequest {
 		ExplorationNote: &ExplorationNoteRequest{
 			Basis:              localePointerOrEmpty(rup.ExplorationNote.Basis),
 			Goals:              localePointerOrEmpty(rup.ExplorationNote.Goals),
-			Summary:            localePointerOrEmpty(rup.ExplorationNote.Summary),
 			Competencies:       localePointerOrEmpty(rup.ExplorationNote.Competencies),
 			Prerequisites:      localePointerOrEmpty(rup.ExplorationNote.Prerequisites),
 			Postrequisites:     localePointerOrEmpty(rup.ExplorationNote.Postrequisites),

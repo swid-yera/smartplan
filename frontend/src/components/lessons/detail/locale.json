@@ -53,7 +53,11 @@
 		"enterLessonTopic": "Введите название темы",
 		"regeneratingLesson": "Перегенерация урока...",
 		"regenerateLessonError": "Ошибка при перегенерации урока",
-		"lessonRegenerated": "Урок успешно перегенерирован"
+		"lessonRegenerated": "Урок успешно перегенерирован",
+		"downloadingLessonFile": "Подготовка файла урока...",
+		"lessonFileDownloaded": "Файл урока готов",
+		"lessonFileDownloadError": "Ошибка при скачивании файла урока",
+		"lessonFileLinkError": "Не удалось получить ссылку на файл урока"
 	},
 	"kk": {
 		"pageDescription": "Сабақ бойынша толық ақпарат",
@@ -89,7 +93,7 @@
 		"languageRu": "RU",
 		"languageKk": "KZ",
 		"regenerate": "Қайта генерациялау",
-		"openFile": "Файлды ашу",
+		"openFile": "Файлды жүктеу",
 		"edit": "Өңдеу",
 		"delete": "Жою",
 		"cancel": "Болдырмау",
@@ -109,6 +113,10 @@
 		"enterLessonTopic": "Тақырып атауын енгізіңіз",
 		"regeneratingLesson": "Сабақ қайта генерациялануда...",
 		"regenerateLessonError": "Сабақты қайта генерациялау кезінде қате",
-		"lessonRegenerated": "Сабақ сәтті қайта генерацияланды"
+		"lessonRegenerated": "Сабақ сәтті қайта генерацияланды",
+		"downloadingLessonFile": "Сабақ файлы дайындалуда...",
+		"lessonFileDownloaded": "Сабақ файлы дайын",
+		"lessonFileDownloadError": "Сабақ файлын жүктеу кезінде қате",
+		"lessonFileLinkError": "Сабақ файлына сілтемені алу мүмкін болмады"
 	}
 }

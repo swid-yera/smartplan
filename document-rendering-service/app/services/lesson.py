@@ -53,15 +53,28 @@ def extract_step_times(row: dict, fallback: tuple[int, int, int]) -> tuple[int, 
 
 
 def map_progress_rows(rows: list[dict]) -> list[dict]:
-    fixed_names = [
-        "Организационно-\nмотивационный момент",
-        "Актуализация знаний",
-        "Формирование новых\nзнаний и навыков",
-        "Закрепление новой темы",
-        "Рефлексия",
-        "Оценивание",
-        "Домашнее задание",
-    ]
+    language = str(rows[0].get("_language", "ru")).strip().lower() if rows else "ru"
+    fixed_names_map = {
+        "ru": [
+            "Организационно-\nмотивационный момент",
+            "Актуализация знаний",
+            "Формирование новых\nзнаний и навыков",
+            "Закрепление новой темы",
+            "Рефлексия",
+            "Оценивание",
+            "Домашнее задание",
+        ],
+        "kz": [
+            "Ұйымдастыру-\nынталандыру кезеңі",
+            "Білімді өзектендіру",
+            "Жаңа білім мен\nдағдыларды қалыптастыру",
+            "Жаңа тақырыпты бекіту",
+            "Рефлексия",
+            "Бағалау",
+            "Үй тапсырмасы",
+        ],
+    }
+    fixed_names = fixed_names_map.get(language, fixed_names_map["ru"])
     fixed_times = [
         [5, 10, 15],
         [15, 10, 10],
@@ -91,6 +104,7 @@ def generate_lesson_docx(data: dict) -> Path:
     OUT_DIR.mkdir(exist_ok=True)
 
     logger.info("generating lesson document, mapping data from json")
+    language = str(data.get("language", "ru")).strip().lower()
 
     discipline_name = str(data.get("discipline_name", "")).strip()
     if discipline_name:
@@ -110,7 +124,9 @@ def generate_lesson_docx(data: dict) -> Path:
         "expected": str(data.get("expected", "")).strip(),
         "internet_resources": to_multiline_text(data.get("internet_resources")),
         "technical_resources": to_multiline_text(data.get("technical_resources")),
-        "lesson_progress": map_progress_rows(data.get("lesson_progress", [])),
+        "lesson_progress": map_progress_rows(
+            [{**row, "_language": language} for row in data.get("lesson_progress", [])]
+        ),
     }
 
     logger.info("generating lesson document, rendering template")

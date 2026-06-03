@@ -5,11 +5,11 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { createLocaleText, getLocaleText, getUILocaleSection, hasRole, topicTypeIcons } from '@helpers'
+import { createLocaleText, getLocaleText, getUILocaleSection, hasRole, toBackendLocale, topicTypeIcons } from '@helpers'
 import { services } from '@services'
 import { Button, ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import type { ILesson, Locale } from '@types'
 import { RoleEnum, TopicTypeEnum } from '@types'
 import { Edit, FileDown, RefreshCw, Trash } from 'lucide-react'
@@ -48,6 +48,10 @@ export function LessonDetailsContent({
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
 	const [regenerateDescription, setRegenerateDescription] = useState('')
+	const { refetch: getDownloadUrl } = useQuery({
+		...services.lesson.getDownloadUrlOptions(lesson.id, toBackendLocale(activeLocale)),
+		enabled: false,
+	})
 	const [regenerateFormData, setRegenerateFormData] = useState<IRegenerateFormData>({
 		name: '',
 		theoryHours: 0,
@@ -194,6 +198,29 @@ export function LessonDetailsContent({
 		}
 	}
 
+	const handleDownload = () => {
+		toast.promise(
+			async () => {
+				const { data } = await getDownloadUrl()
+
+				if (!data) throw new Error(t.lessonFileLinkError)
+
+				const link = document.createElement('a')
+
+				link.href = data.url
+				link.setAttribute('download', `${getLocaleText(lesson.topic_name, activeLocale) || 'lesson_plan'}.docx`)
+				document.body.appendChild(link)
+				link.click()
+				link.remove()
+			},
+			{
+				loading: t.downloadingLessonFile,
+				success: t.lessonFileDownloaded,
+				error: t.lessonFileDownloadError,
+			},
+		)
+	}
+
 	return (
 		<section className='relative mx-auto w-full max-w-7xl space-y-6 p-4 sm:space-y-7 sm:p-6 lg:p-8'>
 			<div aria-hidden className='pointer-events-none absolute inset-0 -z-10 overflow-hidden'>
@@ -224,14 +251,10 @@ export function LessonDetailsContent({
 									{t.regenerate}
 								</Button>
 							)}
-							{lesson.file_url && (
-								<Button asChild size='sm' variant='outline'>
-									<Link href={lesson.file_url} rel='noopener noreferrer' target='_blank'>
-										<FileDown className='mr-2 h-4 w-4' />
-										{t.openFile}
-									</Link>
-								</Button>
-							)}
+							<Button size='sm' variant='outline' onClick={handleDownload}>
+								<FileDown className='mr-2 h-4 w-4' />
+								{t.openFile}
+							</Button>
 						</ButtonGroup>
 						<ButtonGroup>
 							{canManageLessonResolved && (

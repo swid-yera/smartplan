@@ -204,7 +204,6 @@ const EditPage: FC = () => {
 				basis: createLocaleText(newData.basis.ru.trim(), newData.basis.kz.trim()),
 				goals: createLocaleText(newData.goals.ru.trim(), newData.goals.kz.trim()),
 				competencies: createLocaleText(newData.competencies.ru.trim(), newData.competencies.kz.trim()),
-				summary: createLocaleText('', ''),
 
 				prerequisites: createLocaleText(newData.prerequisites.ru.trim(), newData.prerequisites.kz.trim()),
 				postrequisites: createLocaleText(newData.postrequisites.ru.trim(), newData.postrequisites.kz.trim()),

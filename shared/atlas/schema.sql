@@ -122,7 +122,6 @@ CREATE TABLE rup_exploration_notes (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     basis JSONB,
     goals JSONB,
-    summary JSONB,
     competencies JSONB,
 
     prerequisites JSONB,
@@ -136,9 +135,6 @@ CREATE TABLE rup_exploration_notes (
     ),
     CONSTRAINT rup_exploration_notes_goals_locale_check CHECK (
         goals IS NULL OR (goals ? 'ru' AND goals ? 'kz')
-    ),
-    CONSTRAINT rup_exploration_notes_summary_locale_check CHECK (
-        summary IS NULL OR (summary ? 'ru' AND summary ? 'kz')
     ),
     CONSTRAINT rup_exploration_notes_competencies_locale_check CHECK (
         competencies IS NULL OR (competencies ? 'ru' AND competencies ? 'kz')

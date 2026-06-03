@@ -1033,7 +1033,6 @@ update rup by id, only admin can update
 			"id": "20251212",
 			"basis": "lorem",
 			"goals": "lorem",
-			"summary": "",
 			"competencies": "",
 
 			"prerequisites": "",
@@ -1182,7 +1181,6 @@ update rup by id, only admin can update
 			"id": "20251212",
 			"basis": "lorem",
 			"goals": "lorem",
-			"summary": "",
 			"competencies": "",
 
 			"prerequisites": "",
@@ -1375,7 +1373,6 @@ create rup exploration note
 	"data": {
 		"basis": "lorem",
 		"goals": "lorem",
-		"summary": "",
 		"competencies": "",
 
 		"prerequisites": "",
@@ -1405,7 +1402,6 @@ create rup exploration note
 	"data": {
 		"basis": "lorem",
 		"goals": "lorem",
-		"summary": "",
 		"competencies": "",
 
 		"prerequisites": "",
@@ -1453,7 +1449,6 @@ get rup exploration note
 {
 	"basis": "lorem",
 	"goals": "lorem",
-	"summary": "",
 	"competencies": "",
 
 	"prerequisites": "",
@@ -1503,7 +1498,6 @@ update rup exploration note
 	"data": {
 		"basis": "lorem",
 		"goals": "lorem",
-		"summary": "",
 		"competencies": "",
 
 		"prerequisites": "",
@@ -1535,7 +1529,6 @@ update rup exploration note
 {
 	"basis": "lorem",
 	"goals": "lorem",
-	"summary": "",
 	"competencies": "",
 
 	"prerequisites": "",

@@ -372,7 +372,6 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 		GroupSpecialty:         req.GroupSpecialty,
 		GroupQualification:     req.GroupQualification,
 		ExplorationGoals:       req.ExplorationGoals,
-		ExplorationSummary:     req.ExplorationSummary,
 		Prerequisites:          req.Prerequisites,
 		Postrequisites:         req.Postrequisites,
 		InternetResourcesJSON:  string(internetResourcesJSON),

@@ -68,7 +68,6 @@ entities
 -  id: uuid, not null, primary key
 -  basis: text
 -  goals: text
--  summary: text
 -  competencies: text
 
 -  prerequisites: text

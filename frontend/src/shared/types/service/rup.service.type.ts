@@ -12,7 +12,6 @@ export interface ICreateResource {
 export interface ICreateExplorationNote {
 	basis: LocaleText
 	goals: LocaleText
-	summary: LocaleText
 	competencies: LocaleText
 	prerequisites: LocaleText
 	postrequisites: LocaleText
