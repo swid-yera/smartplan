@@ -12,6 +12,8 @@ import type {
 	IViolationActionResponse,
 } from '@types'
 
+import { cleanupDeleteCache } from './query-cache'
+
 export class UserService {
 	// get all
 	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '', sort }: IPaginationRequest) => {
@@ -128,10 +130,10 @@ export class UserService {
 			},
 
 			onSuccess: (deletedPenaltyId) => {
-				queryClient.removeQueries({ queryKey: ['user-penalty', teacherId, deletedPenaltyId] })
-				queryClient.invalidateQueries({ queryKey: ['user-penalties', teacherId] })
-				queryClient.invalidateQueries({ queryKey: ['user', teacherId] })
-				queryClient.invalidateQueries({ queryKey: ['users'] })
+				cleanupDeleteCache(queryClient, deletedPenaltyId, {
+					invalidateQueryKeys: [['user-penalties', teacherId], ['user', teacherId], ['users']],
+					removeQueryKeys: [['user-penalty', teacherId, deletedPenaltyId]],
+				})
 			},
 		})
 	}
@@ -178,8 +180,9 @@ export class UserService {
 			},
 
 			onSuccess: () => {
-				queryClient.invalidateQueries({ queryKey: ['user', userId] })
-				queryClient.invalidateQueries({ queryKey: ['users'] })
+				cleanupDeleteCache(queryClient, userId, {
+					invalidateQueryKeys: [['user', userId], ['users']],
+				})
 			},
 		})
 	}

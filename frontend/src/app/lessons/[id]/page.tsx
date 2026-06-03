@@ -1,19 +1,26 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 import { notFound, useParams } from 'next/navigation'
 
 import { Loader } from '@components'
+import { LessonDetailsContent } from '@components'
 import { hasRole } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
-
-import { LessonDetailsContent } from './lesson-details-content'
+import { type Locale, RoleEnum } from '@types'
 
 export default function LessonPage() {
 	const params = useParams<{ id: string }>()
 	const { authLoading, user } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
+	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
+
+	useEffect(() => {
+		setActiveLocale(locale)
+	}, [locale])
 
 	const { data: lesson, isLoading } = useQuery({
 		...services.lesson.getByIdOptions(params.id),
@@ -29,10 +36,12 @@ export default function LessonPage() {
 
 	return (
 		<LessonDetailsContent
+			activeLocale={activeLocale}
 			canManageLesson={isAdmin || isTeacherOwner}
 			lesson={lesson}
 			userKeycloakId={user.keycloakId}
 			userRole={user.role}
+			onActiveLocaleChange={setActiveLocale}
 		/>
 	)
 }

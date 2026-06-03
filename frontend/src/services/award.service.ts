@@ -14,6 +14,7 @@ import type {
 	IUpdateStatusRequest,
 } from '@types'
 
+import { cleanupDeleteCache } from './query-cache'
 import { getCurrentBackendLocale } from './service-locale'
 
 export class AwardService {
@@ -204,14 +205,9 @@ export class AwardService {
 			},
 
 			onSuccess: (deletedId: string) => {
-				// delete from cache getAllRups if exists
-				queryClient.setQueryData<IAward[] | null>(['awards'], (old) =>
-					old ? old.filter((award) => award.id !== deletedId) : null,
-				)
-
-				// delete from getRupById cache if exists
-				queryClient.removeQueries({
-					queryKey: ['awards', deletedId],
+				cleanupDeleteCache(queryClient, deletedId, {
+					invalidateQueryKeys: [['awards']],
+					removeQueryKeys: [['awards', deletedId]],
 				})
 			},
 		})
@@ -296,14 +292,9 @@ export class AwardService {
 			},
 
 			onSuccess: (deletedId: string) => {
-				// delete from cache getAllRups if exists
-				queryClient.setQueryData<ITypeResponse[] | null>(['types'], (old) =>
-					old ? old.filter((type) => type.id !== deletedId) : null,
-				)
-
-				// delete from getRupById cache if exists
-				queryClient.removeQueries({
-					queryKey: ['type', deletedId],
+				cleanupDeleteCache(queryClient, deletedId, {
+					invalidateQueryKeys: [['types']],
+					removeQueryKeys: [['type', deletedId]],
 				})
 			},
 		})

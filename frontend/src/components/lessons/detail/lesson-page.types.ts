@@ -1,4 +1,4 @@
-import type { ILesson, TopicTypeEnum } from '@types'
+import type { ILesson, LocalizedText, TopicTypeEnum } from '@types'
 
 export type ILessonContext = ILesson & {
 	rup_id?: string
@@ -24,11 +24,14 @@ export type ILessonContext = ILesson & {
 
 export type ILessonProgressContext = {
 	id?: string
-	name?: string
+	name?: LocalizedText
 	content?: string[] | string
 	firstTime?: number[] | string[]
 	secondTime?: number[] | string[]
 	thirdTime?: number[] | string[]
+	first_time?: number[] | string[]
+	second_time?: number[] | string[]
+	third_time?: number[] | string[]
 }
 
 export type INormalizedLessonProgress = {

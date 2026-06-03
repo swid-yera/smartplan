@@ -13,6 +13,8 @@ import {
 	buildInitialCategoryFieldValues,
 	findFutureDateCategoryField,
 	findInvalidUrlCategoryField,
+	isFileFieldValueArray,
+	serializeCategoryFieldValue,
 } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
@@ -134,6 +136,38 @@ const Page = () => {
 		const mappedValues = category.fieldsExpanded.reduce<ICategoryFieldValues>((acc, field) => {
 			const rawValue = award.fieldValues?.[field.key]
 
+			if (field.type === 'multi_fields') {
+				const subFields = Array.isArray(field.options)
+					? field.options.filter(
+							(option): option is { key: string; type: string } =>
+								typeof option === 'object' && option !== null && 'key' in option && 'type' in option,
+						)
+					: []
+
+				acc[field.key] = Array.isArray(rawValue)
+					? rawValue
+							.map((row) => {
+								if (!row || typeof row !== 'object' || Array.isArray(row)) return null
+
+								const normalizedRow: Record<string, string> = {}
+								for (const subField of subFields) {
+									const rowValue = row[subField.key]
+									if (typeof rowValue === 'number' && Number.isFinite(rowValue)) {
+										normalizedRow[subField.key] = String(rowValue)
+										continue
+									}
+
+									normalizedRow[subField.key] = typeof rowValue === 'string' ? rowValue : ''
+								}
+
+								return normalizedRow
+							})
+							.filter((row): row is Record<string, string> => !!row)
+					: []
+
+				return acc
+			}
+
 			if (field.type === 'file') {
 				acc[field.key] = []
 
@@ -141,7 +175,8 @@ const Page = () => {
 			}
 
 			if (Array.isArray(rawValue)) {
-				acc[field.key] = rawValue[0] || ''
+				const firstValue = rawValue.find((item) => typeof item === 'string')
+				acc[field.key] = typeof firstValue === 'string' ? firstValue : ''
 
 				return acc
 			}
@@ -227,7 +262,9 @@ const Page = () => {
 			return
 		}
 
-		const fieldValues = category.fieldsExpanded.reduce<Record<string, string | string[] | number>>((acc, field) => {
+		const fieldValues = category.fieldsExpanded.reduce<
+			Record<string, string | string[] | number | Array<Record<string, string | number>>>
+		>((acc, field) => {
 			const value = categoryFieldValues[field.key]
 
 			if (field.type === 'file') {
@@ -243,29 +280,11 @@ const Page = () => {
 				return acc
 			}
 
-			if (field.type === 'url') {
-				acc[field.key] = typeof value === 'string' ? withHttpsProtocol(value) : ''
+			const serializedValue = serializeCategoryFieldValue(field, value)
 
-				return acc
+			if (serializedValue !== undefined) {
+				acc[field.key] = serializedValue
 			}
-
-			if (field.type === 'number') {
-				const rawValue = typeof value === 'string' ? value.trim() : ''
-
-				if (!rawValue) {
-					acc[field.key] = ''
-
-					return acc
-				}
-
-				const parsedValue = Number(rawValue)
-
-				acc[field.key] = Number.isFinite(parsedValue) ? parsedValue : ''
-
-				return acc
-			}
-
-			acc[field.key] = typeof value === 'string' ? value : ''
 
 			return acc
 		}, {})
@@ -275,7 +294,7 @@ const Page = () => {
 
 			const value = categoryFieldValues[field.key]
 
-			if (!Array.isArray(value) || value.length === 0) return acc
+			if (!isFileFieldValueArray(value) || value.length === 0) return acc
 
 			acc[field.key] = value
 

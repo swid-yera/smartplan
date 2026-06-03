@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 
+import { getUILocaleSection } from '@helpers'
 import { cn } from '@lib'
 import {
 	AlertDialog,
@@ -25,11 +26,15 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
+import type { Locale } from '@types'
 import { LinkIcon, Plus, Trash } from 'lucide-react'
 
 import type { IResourceRow } from './lesson-edit.types'
+import localeDictionary from './locale.json'
 
 type IProps = {
+	activeLocale: Locale
 	description: string
 	icon?: ReactNode
 	items: IResourceRow[]
@@ -39,7 +44,10 @@ type IProps = {
 	title: string
 }
 
-export function ResourceEditor({ description, icon, items, onAdd, onChange, onRemove, title }: IProps) {
+export function ResourceEditor({ activeLocale, description, icon, items, onAdd, onChange, onRemove, title }: IProps) {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+
 	return (
 		<Card>
 			<CardHeader>
@@ -49,11 +57,11 @@ export function ResourceEditor({ description, icon, items, onAdd, onChange, onRe
 				</CardTitle>
 				<CardDescription>{description}</CardDescription>
 			</CardHeader>
-			<CardContent className='h-full justify-between flex flex-col gap-4 text-sm'>
+			<CardContent className='flex h-full flex-col justify-between gap-4 text-sm'>
 				<div className='flex flex-col gap-2'>
 					<Label className='inline-flex items-center gap-2'>
 						<LinkIcon className='h-4 w-4 text-primary' />
-						Ресурсы
+						{t.resources}
 					</Label>
 					<ol className='flex list-none flex-col gap-2'>
 						{items.map((item, index) => {
@@ -64,8 +72,8 @@ export function ResourceEditor({ description, icon, items, onAdd, onChange, onRe
 									<div className='w-4 pt-2 text-xs text-muted-foreground'>{index + 1}.</div>
 									<Input
 										className='flex-1'
-										placeholder='Название ресурса'
-										value={item.name}
+										placeholder={t.resourceNamePlaceholder}
+										value={item.name[activeLocale]}
 										onChange={(e) => onChange(index, 'name', e.target.value)}
 									/>
 									<Popover>
@@ -82,8 +90,8 @@ export function ResourceEditor({ description, icon, items, onAdd, onChange, onRe
 										<PopoverContent className='w-80'>
 											<div className='flex flex-col gap-4'>
 												<div className='flex flex-col gap-2'>
-													<h4 className='font-medium leading-none'>Добавить ссылку</h4>
-													<p className='text-sm text-muted-foreground'>Вставьте URL-адрес ресурса</p>
+													<h4 className='font-medium leading-none'>{t.addLink}</h4>
+													<p className='text-sm text-muted-foreground'>{t.addLinkDescription}</p>
 												</div>
 												<Input
 													placeholder='https://example.com'
@@ -106,20 +114,22 @@ export function ResourceEditor({ description, icon, items, onAdd, onChange, onRe
 										</AlertDialogTrigger>
 										<AlertDialogContent>
 											<AlertDialogHeader>
-												<AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+												<AlertDialogTitle>{t.confirmDelete}</AlertDialogTitle>
 												<AlertDialogDescription>
-													Это действие удалит ресурс
-													<strong className='ml-1 text-foreground'>{item.name || `№${index + 1}`}</strong>.
-													Отменить это действие будет невозможно.
+													{t.deleteResourceDescription}
+													<strong className='ml-1 text-foreground'>
+														{item.name[activeLocale] || `№${index + 1}`}
+													</strong>
+													.
 												</AlertDialogDescription>
 											</AlertDialogHeader>
 											<AlertDialogFooter>
-												<AlertDialogCancel>Отмена</AlertDialogCancel>
+												<AlertDialogCancel>{t.cancel}</AlertDialogCancel>
 												<AlertDialogAction
 													className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
 													onClick={() => onRemove(index)}
 												>
-													Удалить
+													{t.delete}
 												</AlertDialogAction>
 											</AlertDialogFooter>
 										</AlertDialogContent>
@@ -131,7 +141,7 @@ export function ResourceEditor({ description, icon, items, onAdd, onChange, onRe
 				</div>
 				<Button size='sm' type='button' variant='outline' onClick={onAdd}>
 					<Plus className='mr-2 h-4 w-4' />
-					Добавить ресурс
+					{t.addResource}
 				</Button>
 			</CardContent>
 		</Card>

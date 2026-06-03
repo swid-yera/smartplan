@@ -1,6 +1,6 @@
 import type { CriteriaMethodEnum } from '../award.type'
 import type { LocaleText, LocalizedText } from '../locale.type'
-import type { ICategoryResponse } from './categories.service.type'
+import type { ICategoryMultiFieldRowValue, ICategoryResponse } from './categories.service.type'
 
 // create award
 export interface ICreateAwardRequest {
@@ -12,7 +12,7 @@ export interface ICreateAwardRequest {
 	criteria: string
 	bonusCriteria?: string
 	categoryId?: string
-	fieldValues?: Record<string, string | string[] | number>
+	fieldValues?: Record<string, string | string[] | number | ICategoryMultiFieldRowValue[]>
 }
 
 export type IUpdateAwardRequest = ICreateAwardRequest

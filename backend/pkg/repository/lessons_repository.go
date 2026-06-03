@@ -39,12 +39,28 @@ func (r *LessonRepository) DeleteLesson(ctx context.Context, id uuid.UUID) error
 	}
 }
 
-func (r *LessonRepository) GetLessons(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID, limit int32, offset int32) ([]storage.Lesson, error) {
+func (r *LessonRepository) GetLessons(
+	ctx context.Context,
+	search string,
+	teacher pgtype.UUID,
+	id pgtype.UUID,
+	lessonType string,
+	discipline string,
+	groupName string,
+	sort string,
+	limit int32,
+	offset int32,
+) ([]storage.Lesson, error) {
 	lessons, err := r.queries.GetLessons(ctx, storage.GetLessonsParams{
-		Teacher: teacher,
-		ID:      id,
-		Limit:   limit,
-		Offset:  offset,
+		Search:     search,
+		Teacher:    teacher,
+		ID:         id,
+		LessonType: lessonType,
+		Discipline: discipline,
+		GroupName:  groupName,
+		Sort:       sort,
+		Limit:      limit,
+		Offset:     offset,
 	})
 	if err != nil {
 		return nil, err
@@ -52,10 +68,22 @@ func (r *LessonRepository) GetLessons(ctx context.Context, teacher pgtype.UUID, 
 	return lessons, nil
 }
 
-func (r *LessonRepository) CountLessonsFiltered(ctx context.Context, teacher pgtype.UUID, id pgtype.UUID) (int64, error) {
+func (r *LessonRepository) CountLessonsFiltered(
+	ctx context.Context,
+	search string,
+	teacher pgtype.UUID,
+	id pgtype.UUID,
+	lessonType string,
+	discipline string,
+	groupName string,
+) (int64, error) {
 	return r.queries.CountLessonsFiltered(ctx, storage.CountLessonsFilteredParams{
-		Teacher: teacher,
-		ID:      id,
+		Search:     search,
+		Teacher:    teacher,
+		ID:         id,
+		LessonType: lessonType,
+		Discipline: discipline,
+		GroupName:  groupName,
 	})
 }
 

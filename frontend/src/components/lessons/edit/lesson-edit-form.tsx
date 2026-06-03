@@ -5,19 +5,22 @@ import { useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { PageTitle } from '@components'
+import { createLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { Button, ButtonGroup } from '@shadcn'
+import { Button, ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
-import type { ILesson, IUpdateLessonRequest } from '@types'
+import type { ILesson, IUpdateLessonRequest, Locale } from '@types'
 import { LessonResourceTypeEnum } from '@types'
 import { Grid2X2, Link2, Save, X } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { PageTitle } from '../../ui/page-title'
 import type { ILessonFormState } from './lesson-edit.types'
 import {
 	createEmptyLessonProgress,
 	createEmptyResource,
+	createLocaleDraft,
 	extractSaveErrorMessage,
 	getEventTimeError,
 	mapLessonProgressForForm,
@@ -32,25 +35,30 @@ import {
 import { LessonMainInfoCard } from './lesson-main-info-card'
 import { LessonProgressEditor } from './lesson-progress-editor'
 import { LessonTextSections } from './lesson-text-sections'
+import localeDictionary from './locale.json'
 import { ResourceEditor } from './resource-editor'
 
 type IProps = {
 	lesson: ILesson
+	activeLocale: Locale
+	onActiveLocaleChange: (locale: Locale) => void
 }
 
-export function LessonEditForm({ lesson }: IProps) {
+export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: IProps) {
 	const { replace } = useRouter()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 	const updateLessonMutation = useMutation(services.lesson.updateMutationOptions())
 	const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
 	const [eventTimeError, setEventTimeError] = useState<string | null>(null)
 
 	const [formData, setFormData] = useState<ILessonFormState>(() => ({
 		...toEventDateFormState(lesson.event_date),
-		topicName: lesson.topic_name,
+		topicName: createLocaleDraft(lesson.topic_name),
 		type: lesson.type,
-		goals: lesson.goals || '',
-		tasks: lesson.tasks || '',
-		expected: lesson.expected || '',
+		goals: createLocaleDraft(lesson.goals),
+		tasks: createLocaleDraft(lesson.tasks),
+		expected: createLocaleDraft(lesson.expected),
 		fileUrl: lesson.file_url || '',
 		lessonProgress: mapLessonProgressForForm(lesson),
 		internetResources: mapResourcesForForm(lesson.internet_resources),
@@ -165,31 +173,31 @@ export function LessonEditForm({ lesson }: IProps) {
 
 		setEventTimeError(nextEventTimeError)
 
-		if (!formData.topicName.trim()) {
-			toast.error('Введите тему урока')
+		if (!formData.topicName.ru.trim() && !formData.topicName.kk.trim()) {
+			toast.error(t.enterLessonTopic)
 
 			return
 		}
 
 		if (!formData.eventDate) {
-			toast.error('Укажите дату проведения')
+			toast.error(t.enterLessonDate)
 
 			return
 		}
 
 		if (nextEventTimeError) {
-			toast.error(nextEventTimeError)
+			toast.error(t.enterLessonTime, { description: nextEventTimeError })
 
 			return
 		}
 
 		const payload: IUpdateLessonRequest = {
-			topic_name: formData.topicName.trim(),
+			topic_name: createLocaleText(formData.topicName.ru.trim(), formData.topicName.kk.trim()),
 			type: formData.type,
 			event_date: toIsoFromDateAndTimeInput(formData.eventDate, normalizedEventTime, lesson.event_date),
-			goals: formData.goals.trim(),
-			tasks: formData.tasks.trim(),
-			expected: formData.expected.trim(),
+			goals: createLocaleText(formData.goals.ru.trim(), formData.goals.kk.trim()),
+			tasks: createLocaleText(formData.tasks.ru.trim(), formData.tasks.kk.trim()),
+			expected: createLocaleText(formData.expected.ru.trim(), formData.expected.kk.trim()),
 			file_url: formData.fileUrl.trim() || null,
 			lesson_progress: normalizeLessonProgressForRequest(formData.lessonProgress),
 			internet_resources: normalizeResources(formData.internetResources, LessonResourceTypeEnum.INTERNET),
@@ -201,26 +209,29 @@ export function LessonEditForm({ lesson }: IProps) {
 				acc.first += Number(item.first_time?.[0] || 0)
 				acc.second += Number(item.second_time?.[0] || 0)
 				acc.third += Number(item.third_time?.[0] || 0)
+
 				return acc
 			},
 			{ first: 0, second: 0, third: 0 },
 		)
+
 		if (progressTotals.first !== 90 || progressTotals.second !== 90 || progressTotals.third !== 90) {
-			toast.error('Сумма минут по каждому варианту должна быть 90', {
+			toast.error(t.lessonProgressTotalError, {
 				description: `Сейчас: ${progressTotals.first}/${progressTotals.second}/${progressTotals.third}`,
 			})
+
 			return
 		}
 
 		const toastId = `lesson-${lesson.id}-update`
 
-		toast.loading('Сохранение урока...', { id: toastId })
+		toast.loading(t.savingLesson, { id: toastId })
 
 		updateLessonMutation.mutate(
 			{ changedLesson: payload, id: lesson.id },
 			{
 				onSuccess: () => {
-					toast.success('Урок успешно обновлен', { id: toastId })
+					toast.success(t.lessonSaved, { id: toastId })
 					replace(`/lessons/${lesson.id}`)
 				},
 				onError: (err) => {
@@ -232,7 +243,7 @@ export function LessonEditForm({ lesson }: IProps) {
 						payload,
 					})
 
-					toast.error('Ошибка при сохранении урока', {
+					toast.error(t.saveLessonError, {
 						description: saveErrorDescription,
 						id: toastId,
 					})
@@ -245,25 +256,34 @@ export function LessonEditForm({ lesson }: IProps) {
 		<section className='mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8'>
 			<PageTitle
 				actions={
-					<ButtonGroup className='col-start-2'>
-						<Button form='lesson-edit-form' type='submit'>
-							<Save className='mr-2 h-4 w-4' />
-							Сохранить
-						</Button>
-						<Button variant='outline' onClick={() => replace(`/lessons/${lesson.id}`)}>
-							<X className='mr-2 h-4 w-4' />
-							Отмена
-						</Button>
-					</ButtonGroup>
+					<div className='flex flex-col items-end gap-3'>
+						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
+							<TabsList>
+								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
+								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
+							</TabsList>
+						</Tabs>
+						<ButtonGroup>
+							<Button form='lesson-edit-form' type='submit'>
+								<Save className='mr-2 h-4 w-4' />
+								{t.save}
+							</Button>
+							<Button variant='outline' onClick={() => replace(`/lessons/${lesson.id}`)}>
+								<X className='mr-2 h-4 w-4' />
+								{t.cancel}
+							</Button>
+						</ButtonGroup>
+					</div>
 				}
 				backHref={`/lessons/${lesson.id}`}
-				description='Редактирование плана учебного занятия'
+				description={t.editDescription}
 			>
-				Редактировать урок
+				{t.editTitle}
 			</PageTitle>
 
 			<form className='space-y-6' id='lesson-edit-form' onSubmit={handleSubmit}>
 				<LessonMainInfoCard
+					activeLocale={activeLocale}
 					eventTimeError={eventTimeError}
 					formData={formData}
 					isDatePickerOpen={isDatePickerOpen}
@@ -272,9 +292,10 @@ export function LessonEditForm({ lesson }: IProps) {
 					onFormDataChange={setFormData}
 				/>
 
-				<LessonTextSections formData={formData} onFormDataChange={setFormData} />
+				<LessonTextSections activeLocale={activeLocale} formData={formData} onFormDataChange={setFormData} />
 
 				<LessonProgressEditor
+					activeLocale={activeLocale}
 					items={formData.lessonProgress}
 					onAdd={handleAddLessonProgress}
 					onChange={handleLessonProgressChange}
@@ -283,19 +304,21 @@ export function LessonEditForm({ lesson }: IProps) {
 
 				<div className='grid gap-6 xl:grid-cols-2'>
 					<ResourceEditor
-						description='Ссылки и онлайн-материалы'
+						activeLocale={activeLocale}
+						description={t.internetResourcesDescription}
 						icon={<Link2 className='h-4 w-4 text-primary' />}
 						items={formData.internetResources}
-						title='Интернет-ресурсы'
+						title={t.internetResourcesTitle}
 						onAdd={() => handleAddResource('internetResources')}
 						onChange={(index, field, value) => handleResourceChange('internetResources', index, field, value)}
 						onRemove={(index) => handleRemoveResource('internetResources', index)}
 					/>
 					<ResourceEditor
-						description='Оборудование и локальные материалы'
+						activeLocale={activeLocale}
+						description={t.technicalResourcesDescription}
 						icon={<Grid2X2 className='h-4 w-4 text-primary' />}
 						items={formData.technicalResources}
-						title='Технические ресурсы'
+						title={t.technicalResourcesTitle}
 						onAdd={() => handleAddResource('technicalResources')}
 						onChange={(index, field, value) => handleResourceChange('technicalResources', index, field, value)}
 						onRemove={(index) => handleRemoveResource('technicalResources', index)}

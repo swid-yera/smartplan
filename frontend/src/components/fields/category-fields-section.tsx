@@ -2,6 +2,7 @@
 
 import type { ICategoryFieldResponse } from '@types'
 
+import { CategoryMultiFieldsInput } from './category-multi-fields-input'
 import { CategoryFieldInput } from './category-field-input'
 import type { ICategoryFieldValue, ICategoryFieldValues } from './category-fields.utils'
 
@@ -29,8 +30,12 @@ export const CategoryFieldsSection = ({
 			{fields.length ? (
 				<div className={`grid gap-4 ${columns === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
 					{fields.map((field) => (
-						<div key={field.id}>
-							<CategoryFieldInput field={field} value={values[field.key]} onChange={onChange} />
+						<div key={field.id} className={field.type === 'multi_fields' ? 'col-span-full' : ''}>
+							{field.type === 'multi_fields' ? (
+								<CategoryMultiFieldsInput field={field} value={values[field.key]} onChange={onChange} />
+							) : (
+								<CategoryFieldInput field={field} value={values[field.key]} onChange={onChange} />
+							)}
 						</div>
 					))}
 				</div>

@@ -8,6 +8,7 @@ export * from './ui/section-title'
 
 // sheet
 export * from './sheets/penalty-sheet'
+export * from './sheets/lesson-sheet'
 export * from './sheets/rup-review-sheets'
 export * from './sheets/rup-sheet'
 
@@ -41,3 +42,6 @@ export * from './fields'
 
 // media
 export * from './cards/media-previwer-card'
+
+// lessons
+export * from './lessons'

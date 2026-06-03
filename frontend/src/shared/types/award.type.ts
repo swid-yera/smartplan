@@ -1,5 +1,6 @@
 import type { IUser, StatusEnum } from './global.type'
 import type { LocalizedText } from './locale.type'
+import type { ICategoryMultiFieldRowValue } from './service/categories.service.type'
 import type { IAwardCategoryResponse } from './service/award.service.type'
 
 export enum ViolationEnum {
@@ -30,7 +31,7 @@ export interface IAward {
 	bonus_criteria?: ICriteria | null
 	categoryId?: string
 	category?: IAwardCategoryResponse | null
-	fieldValues?: Record<string, string | string[]>
+	fieldValues?: Record<string, string | string[] | number | ICategoryMultiFieldRowValue[]>
 
 	totalPoints: number
 	text: string

@@ -56,6 +56,7 @@ import {
 	AwardTypesSelector,
 	CategoryFieldsEditor,
 	type ICategoryFieldFormState,
+	isValidMultiFieldDefinition,
 	mapCategoryToFormFields,
 	normalizeSortOrder,
 	sanitizeFieldOptions,
@@ -66,7 +67,7 @@ import localeDictionary from './locale.json'
 
 const Page = () => {
 	const { id } = useParams<{ id: string }>()
-	const { replace } = useRouter()
+	const { push, replace } = useRouter()
 	const { user, authLoading } = useAuthStore()
 	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
 	const t = getUILocaleSection(localeDictionary, activeLocale)
@@ -78,6 +79,8 @@ const Page = () => {
 	const [fields, setFields] = useState<ICategoryFieldFormState[]>([])
 	const [isInitialized, setIsInitialized] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+	const backHref = `/kpi/categories/${id}`
+	const deleteBackHref = '/kpi/categories'
 
 	const { data: category, isLoading: isCategoryLoading } = useQuery({
 		...services.categories.getByIdOptions(id),
@@ -169,12 +172,29 @@ const Page = () => {
 			return
 		}
 
+		const invalidMultiField = fields.find(
+			(field) => field.type === 'multi_fields' && !isValidMultiFieldDefinition(field),
+		)
+
+		if (invalidMultiField) {
+			const invalidMultiFieldLabel =
+				invalidMultiField.label[activeLocale]?.trim() ||
+				invalidMultiField.label.ru.trim() ||
+				invalidMultiField.label.kk.trim()
+
+			toast.error(`Настройте подполя для «${invalidMultiFieldLabel || invalidMultiField.key}»`)
+
+			return
+		}
+
 		const toastId = `update-category-${category.id}`
 
 		toast.loading(
-			interpolateUILocaleText(t.toastSaving, { name: name[activeLocale].trim() || name.ru.trim() || name.kk.trim() }),
+			interpolateUILocaleText(t.toastSaving, {
+				name: name[activeLocale].trim() || name.ru.trim() || name.kk.trim(),
+			}),
 			{
-			id: toastId,
+				id: toastId,
 			},
 		)
 
@@ -216,7 +236,7 @@ const Page = () => {
 		deleteMutation.mutate(category.id, {
 			onSuccess: () => {
 				toast.success(interpolateUILocaleText(t.toastDeleted, { name: categoryName }), { id: toastId })
-				replace('/kpi/categories')
+				push(deleteBackHref)
 			},
 			onError: (error) => {
 				let errorMessage = t.toastDeleteError
@@ -273,7 +293,7 @@ const Page = () => {
 						</Tabs>
 					</div>
 				}
-				backHref={`/kpi/categories/${category.id}`}
+				backHref={backHref}
 				description={t.pageDescription}
 			>
 				{t.pageTitle}
@@ -379,7 +399,7 @@ const Page = () => {
 					</Button>
 
 					<div className='flex gap-2'>
-						<Button variant='outline' onClick={() => replace(`/kpi/categories/${category.id}`)}>
+						<Button variant='outline' onClick={() => replace(backHref)}>
 							{t.cancel}
 						</Button>
 						<Button disabled={updateMutation.isPending} onClick={handleSubmit}>

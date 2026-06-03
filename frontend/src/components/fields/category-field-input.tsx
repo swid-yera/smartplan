@@ -25,6 +25,7 @@ import {
 	type ICategoryFieldValue,
 	getCategoryFieldValidationError,
 	isFutureDate,
+	isFileFieldValueArray,
 	normalizeUrlWithoutProtocol,
 	parseDateFromFieldValue,
 } from './category-fields.utils'
@@ -69,6 +70,10 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const commonLabel = `${labelText}${field.required ? ' *' : ''}`
 	const validationError = getCategoryFieldValidationError(field, value, locale)
+
+	if (field.type === 'multi_fields') {
+		return null
+	}
 
 	if (field.type === 'textarea') {
 		return (
@@ -177,13 +182,13 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 		return (
 			<CategoryFileFieldInput
 				field={field}
-				value={Array.isArray(value) ? value : []}
+				value={isFileFieldValueArray(value) ? value : []}
 				onChange={(fieldKey, files) => onChange(fieldKey, files)}
 			/>
 		)
 	}
 
-	const inputTypeByFieldType: Record<CategoryFieldType, string> = {
+	const inputTypeByFieldType: Record<Exclude<CategoryFieldType, 'multi_fields'>, string> = {
 		text: 'text',
 		textarea: 'text',
 		number: 'number',

@@ -1,6 +1,56 @@
-import type { CategoryFieldType, ICategoryResponse, Locale, LocalizedText } from '@types'
+import type {
+	CategoryFieldChildType,
+	CategoryFieldType,
+	ICategoryFieldResponse,
+	ICategoryMultiFieldOptionResponse,
+	ICategoryResponse,
+	Locale,
+	LocalizedText,
+} from '@types'
 
-export const FIELD_TYPE_OPTIONS: CategoryFieldType[] = ['text', 'textarea', 'number', 'select', 'date', 'file', 'url']
+export const FIELD_TYPE_OPTIONS: CategoryFieldType[] = [
+	'text',
+	'textarea',
+	'number',
+	'select',
+	'date',
+	'file',
+	'url',
+	'multi_fields',
+]
+
+export const FIELD_TYPE_LABELS: Record<CategoryFieldType, string> = {
+	text: 'text',
+	textarea: 'textarea',
+	number: 'number',
+	select: 'select',
+	date: 'date',
+	file: 'file',
+	url: 'url',
+	multi_fields: 'multi fields',
+}
+
+export const MULTI_FIELD_CHILD_TYPE_OPTIONS: CategoryFieldChildType[] = ['text', 'textarea', 'number', 'select', 'date']
+
+export const MULTI_FIELD_CHILD_TYPE_LABELS: Record<CategoryFieldChildType, string> = {
+	text: 'text',
+	textarea: 'textarea',
+	number: 'number',
+	select: 'select',
+	date: 'date',
+}
+
+export interface ICategoryMultiFieldOptionFormState {
+	key: string
+	label: Record<Locale, string>
+	type: CategoryFieldChildType
+	required: boolean
+	placeholder: Record<Locale, string>
+	helpText: Record<Locale, string>
+	options: unknown[]
+	validation: Record<string, unknown>
+	sortOrder: number
+}
 
 export interface ICategoryFieldFormState {
 	key: string
@@ -74,6 +124,18 @@ export const createEmptyField = (sortOrder: number): ICategoryFieldFormState => 
 	sortOrder,
 })
 
+export const createEmptyMultiFieldOption = (sortOrder: number): ICategoryMultiFieldOptionFormState => ({
+	key: '',
+	label: { ru: '', kk: '' },
+	type: 'text',
+	required: false,
+	placeholder: { ru: '', kk: '' },
+	helpText: { ru: '', kk: '' },
+	options: [],
+	validation: {},
+	sortOrder,
+})
+
 export const toLocaleDraft = (value: LocalizedText): Record<Locale, string> => {
 	if (!value) return { ru: '', kk: '' }
 
@@ -88,19 +150,53 @@ export const toLocaleDraft = (value: LocalizedText): Record<Locale, string> => {
 }
 
 export const mapCategoryToFormFields = (category: ICategoryResponse): ICategoryFieldFormState[] => {
-	return (category.fieldsExpanded || []).map((field, index) => ({
-		key: field.key,
-		label: toLocaleDraft(field.label),
-		type: field.type,
-		required: field.required,
-		placeholder: toLocaleDraft(field.placeholder),
-		helpText: toLocaleDraft(field.helpText),
-		options: Array.isArray(field.options)
-			? field.options.filter((option): option is string => typeof option === 'string')
-			: [],
-		validation: field.validation || {},
-		sortOrder: normalizeSortOrder(field.sortOrder, index + 1),
-	}))
+	return (category.fieldsExpanded || []).map((field, index) => mapCategoryFieldToFormState(field, index))
+}
+
+export const mapCategoryFieldToFormState = (
+	field: ICategoryFieldResponse,
+	index: number,
+): ICategoryFieldFormState => ({
+	key: field.key,
+	label: toLocaleDraft(field.label),
+	type: field.type,
+	required: field.required,
+	placeholder: toLocaleDraft(field.placeholder),
+	helpText: toLocaleDraft(field.helpText),
+	options: mapFieldOptionsToFormState(field.type, field.options),
+	validation: field.validation || {},
+	sortOrder: normalizeSortOrder(field.sortOrder, index + 1),
+})
+
+export const mapMultiFieldOptionToFormState = (
+	option: ICategoryMultiFieldOptionResponse,
+	index: number,
+): ICategoryMultiFieldOptionFormState => ({
+	key: option.key,
+	label: toLocaleDraft(option.label),
+	type: option.type,
+	required: option.required,
+	placeholder: toLocaleDraft(option.placeholder),
+	helpText: toLocaleDraft(option.helpText),
+	options: mapFieldOptionsToFormState(option.type, option.options),
+	validation: option.validation || {},
+	sortOrder: normalizeSortOrder(option.sortOrder, index + 1),
+})
+
+export const mapFieldOptionsToFormState = (type: CategoryFieldType, options: unknown): unknown[] => {
+	if (!Array.isArray(options)) return []
+
+	if (type === 'select') {
+		return options.filter((option): option is string => typeof option === 'string')
+	}
+
+	if (type === 'multi_fields') {
+		return options
+			.filter((option): option is ICategoryMultiFieldOptionResponse => typeof option === 'object' && option !== null)
+			.map((option, index) => mapMultiFieldOptionToFormState(option, index))
+	}
+
+	return []
 }
 
 export const getValidationNumberValue = (validation: Record<string, unknown>, key: string) => {
@@ -124,15 +220,25 @@ export const getValidationStringArray = (validation: Record<string, unknown>, ke
 }
 
 export const sanitizeFieldOptions = (type: CategoryFieldType, options: unknown[]) => {
-	if (type !== 'select') return []
+	if (type === 'select') {
+		return options
+			.filter((option): option is string => typeof option === 'string')
+			.map((option) => option.trim())
+			.filter((option) => option.length > 0)
+	}
 
-	return options
-		.filter((option): option is string => typeof option === 'string')
-		.map((option) => option.trim())
-		.filter((option) => option.length > 0)
+	if (type === 'multi_fields') {
+		return sanitizeMultiFieldOptions(options)
+	}
+
+	return []
 }
 
 export const sanitizeFieldValidation = (type: CategoryFieldType, validation: Record<string, unknown>) => {
+	if (type === 'multi_fields') {
+		return {}
+	}
+
 	const numericValidationKeysByType: Partial<Record<CategoryFieldType, string[]>> = {
 		text: ['minLength', 'maxLength'],
 		textarea: ['minLength', 'maxLength'],
@@ -170,4 +276,98 @@ export const sanitizeFieldValidation = (type: CategoryFieldType, validation: Rec
 		extensions: normalizedExtensions,
 		mimeTypes: normalizedExtensions.map((extension) => FILE_EXTENSION_TO_MIME[extension]),
 	}
+}
+
+export const sanitizeMultiFieldOptions = (options: unknown[]) => {
+	return options
+		.filter(
+			(option): option is ICategoryMultiFieldOptionFormState =>
+				typeof option === 'object' && option !== null && 'key' in option && 'type' in option,
+		)
+		.map((option, index) => {
+			const key = option.key.trim()
+			const type = MULTI_FIELD_CHILD_TYPE_OPTIONS.includes(option.type) ? option.type : 'text'
+			const labelRu = option.label.ru.trim()
+			const labelKk = option.label.kk.trim()
+
+			return {
+				...option,
+				key,
+				type,
+				label: {
+					ru: labelRu,
+					kk: labelKk,
+				},
+				placeholder: {
+					ru: option.placeholder.ru.trim(),
+					kk: option.placeholder.kk.trim(),
+				},
+				helpText: {
+					ru: option.helpText.ru.trim(),
+					kk: option.helpText.kk.trim(),
+				},
+				options: sanitizeMultiFieldChildOptions(type, option.options),
+				validation: sanitizeMultiFieldChildValidation(type, option.validation),
+				sortOrder: normalizeSortOrder(option.sortOrder, index + 1),
+			}
+		})
+}
+
+export const sanitizeMultiFieldChildOptions = (type: CategoryFieldChildType, options: unknown[]) => {
+	if (type !== 'select') return []
+
+	return options
+		.filter((option): option is string => typeof option === 'string')
+		.map((option) => option.trim())
+		.filter((option) => option.length > 0)
+}
+
+export const sanitizeMultiFieldChildValidation = (type: CategoryFieldChildType, validation: Record<string, unknown>) => {
+	const allowedKeysByType: Partial<Record<CategoryFieldChildType, string[]>> = {
+		text: ['minLength', 'maxLength'],
+		textarea: ['minLength', 'maxLength'],
+		number: ['min', 'max'],
+	}
+
+	const allowedKeys = allowedKeysByType[type] || []
+
+	return allowedKeys.reduce<Record<string, number>>((acc, key) => {
+		const value = validation[key]
+		const normalizedValue = typeof value === 'number' ? value : Number(value)
+
+		if (Number.isFinite(normalizedValue)) {
+			acc[key] = normalizedValue
+		}
+
+		return acc
+	}, {})
+}
+
+export const isValidMultiFieldDefinition = (field: ICategoryFieldFormState) => {
+	if (field.type !== 'multi_fields') return true
+
+	const rawSubFields = Array.isArray(field.options) ? field.options : []
+
+	if (rawSubFields.length === 0) {
+		return false
+	}
+
+	const seen = new Set<string>()
+	for (const subField of rawSubFields) {
+		if (typeof subField !== 'object' || subField === null) return false
+		const typedSubField = subField as ICategoryMultiFieldOptionFormState
+		const normalizedKey = typedSubField.key.trim().toLowerCase()
+		const isAllowedType = MULTI_FIELD_CHILD_TYPE_OPTIONS.includes(typedSubField.type)
+
+		if (!normalizedKey) return false
+		if (!typedSubField.label.ru.trim() && !typedSubField.label.kk.trim()) return false
+		if (!isAllowedType) return false
+		if (seen.has(normalizedKey)) return false
+		seen.add(normalizedKey)
+		if (typedSubField.type === 'select' && sanitizeMultiFieldChildOptions(typedSubField.type, typedSubField.options).length === 0) {
+			return false
+		}
+	}
+
+	return true
 }

@@ -23,18 +23,23 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { Plus, Trash, Waypoints } from 'lucide-react'
-import localeDictionary from './locale.json'
 
 import type { ILessonProgressRow } from './lesson-edit.types'
+import localeDictionary from './locale.json'
 
 type IProps = {
+	activeLocale: 'ru' | 'kk'
 	items: ILessonProgressRow[]
 	onAdd: () => void
-	onChange: (index: number, field: 'name' | 'firstTime' | 'secondTime' | 'thirdTime' | 'contentText', value: string) => void
+	onChange: (
+		index: number,
+		field: 'name' | 'firstTime' | 'secondTime' | 'thirdTime' | 'contentText',
+		value: string,
+	) => void
 	onRemove: (index: number) => void
 }
 
-export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProps) {
+export function LessonProgressEditor({ activeLocale, items, onAdd, onChange, onRemove }: IProps) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 
@@ -43,7 +48,7 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 			<CardHeader>
 				<CardTitle className='inline-flex items-center gap-2'>
 					<Waypoints className='h-4 w-4 text-primary' />
-					Ход занятия
+					{t.progressTitle}
 				</CardTitle>
 				<CardDescription>{t.progressDescription}</CardDescription>
 			</CardHeader>
@@ -53,16 +58,18 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 						<div key={item.id || `lesson-progress-row-${index}`} className='rounded-lg border p-3'>
 							<div className='grid gap-3 md:grid-cols-[1fr_110px_110px_110px_auto] md:items-end'>
 								<div className='grid gap-2'>
-									<Label htmlFor={`lesson-progress-name-${index}`}>Этап {index + 1}</Label>
+									<Label htmlFor={`lesson-progress-name-${index}`}>
+										{t.progressStage} {index + 1}
+									</Label>
 									<Input
 										id={`lesson-progress-name-${index}`}
-										placeholder='Название этапа'
-										value={item.name}
+										placeholder={t.progressStagePlaceholder}
+										value={item.name[activeLocale]}
 										onChange={(e) => onChange(index, 'name', e.target.value)}
 									/>
 								</div>
 								<div className='grid gap-2'>
-									<Label htmlFor={`lesson-progress-start-${index}`}>Вариант 1, мин.</Label>
+									<Label htmlFor={`lesson-progress-start-${index}`}>{t.progressVariant1}</Label>
 									<Input
 										id={`lesson-progress-start-${index}`}
 										min={0}
@@ -72,7 +79,7 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 									/>
 								</div>
 								<div className='grid gap-2'>
-									<Label htmlFor={`lesson-progress-end-${index}`}>Вариант 2, мин.</Label>
+									<Label htmlFor={`lesson-progress-end-${index}`}>{t.progressVariant2}</Label>
 									<Input
 										id={`lesson-progress-end-${index}`}
 										min={0}
@@ -82,7 +89,7 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 									/>
 								</div>
 								<div className='grid gap-2'>
-									<Label htmlFor={`lesson-progress-third-${index}`}>Вариант 3, мин.</Label>
+									<Label htmlFor={`lesson-progress-third-${index}`}>{t.progressVariant3}</Label>
 									<Input
 										id={`lesson-progress-third-${index}`}
 										min={0}
@@ -105,20 +112,21 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 										</AlertDialogTrigger>
 										<AlertDialogContent>
 											<AlertDialogHeader>
-												<AlertDialogTitle>Удалить этап?</AlertDialogTitle>
+												<AlertDialogTitle>{t.deleteProgressTitle}</AlertDialogTitle>
 												<AlertDialogDescription>
-													Этап
-													<strong className='ml-1 text-foreground'>{item.name || `№${index + 1}`}</strong>
-													будет удален без возможности восстановления.
+													{t.deleteProgressDescription}
+													<strong className='ml-1 text-foreground'>
+														{item.name[activeLocale] || `№${index + 1}`}
+													</strong>
 												</AlertDialogDescription>
 											</AlertDialogHeader>
 											<AlertDialogFooter>
-												<AlertDialogCancel>Отмена</AlertDialogCancel>
+												<AlertDialogCancel>{t.cancel}</AlertDialogCancel>
 												<AlertDialogAction
 													className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
 													onClick={() => onRemove(index)}
 												>
-													Удалить
+													{t.delete}
 												</AlertDialogAction>
 											</AlertDialogFooter>
 										</AlertDialogContent>
@@ -127,11 +135,11 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 							</div>
 
 							<div className='mt-3 grid gap-2'>
-								<Label htmlFor={`lesson-progress-content-${index}`}>Содержание этапа</Label>
+								<Label htmlFor={`lesson-progress-content-${index}`}>{t.progressContent}</Label>
 								<Textarea
 									className='min-h-48'
 									id={`lesson-progress-content-${index}`}
-									placeholder='Каждый пункт с новой строки'
+									placeholder={t.progressContentPlaceholder}
 									value={item.contentText}
 									onChange={(e) => onChange(index, 'contentText', e.target.value)}
 								/>
@@ -141,7 +149,7 @@ export function LessonProgressEditor({ items, onAdd, onChange, onRemove }: IProp
 				</div>
 				<Button size='sm' type='button' variant='outline' onClick={onAdd}>
 					<Plus className='mr-2 h-4 w-4' />
-					Добавить этап
+					{t.addProgress}
 				</Button>
 			</CardContent>
 		</Card>

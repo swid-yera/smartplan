@@ -32,8 +32,13 @@ import { Plus, Trash2, X } from 'lucide-react'
 import {
 	FIELD_TYPE_OPTIONS,
 	FILE_EXTENSION_OPTIONS,
+	FIELD_TYPE_LABELS,
+	MULTI_FIELD_CHILD_TYPE_LABELS,
+	MULTI_FIELD_CHILD_TYPE_OPTIONS,
 	type ICategoryFieldFormState,
+	type ICategoryMultiFieldOptionFormState,
 	createEmptyField,
+	createEmptyMultiFieldOption,
 	getValidationNumberValue,
 	getValidationStringArray,
 	normalizeSortOrder,
@@ -125,6 +130,80 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 		return FILE_EXTENSION_OPTIONS.filter((option) => !selectedExtensions.includes(option.extension))
 	}
 
+	const isMultiFieldOption = (value: unknown): value is ICategoryMultiFieldOptionFormState => {
+		return typeof value === 'object' && value !== null && 'key' in value && 'type' in value && 'label' in value
+	}
+
+	const getMultiFieldOptions = (fieldOptions: unknown[]) => {
+		return fieldOptions.filter(isMultiFieldOption)
+	}
+
+	const addMultiFieldOption = (fieldIndex: number) => {
+		const currentOptions = getMultiFieldOptions(Array.isArray(fields[fieldIndex]?.options) ? fields[fieldIndex].options : [])
+		updateField(fieldIndex, { options: [...currentOptions, createEmptyMultiFieldOption(currentOptions.length + 1)] })
+	}
+
+	const removeMultiFieldOption = (fieldIndex: number, optionIndex: number) => {
+		const currentOptions = getMultiFieldOptions(Array.isArray(fields[fieldIndex]?.options) ? fields[fieldIndex].options : [])
+		updateField(
+			fieldIndex,
+			{
+				options: currentOptions
+					.filter((_, currentIndex) => currentIndex !== optionIndex)
+					.map((option, currentIndex) => ({ ...option, sortOrder: currentIndex + 1 })),
+			},
+		)
+	}
+
+	const updateMultiFieldOption = (
+		fieldIndex: number,
+		optionIndex: number,
+		patch: Partial<ICategoryMultiFieldOptionFormState>,
+	) => {
+		const currentOptions = getMultiFieldOptions(Array.isArray(fields[fieldIndex]?.options) ? fields[fieldIndex].options : [])
+
+		updateField(
+			fieldIndex,
+			{
+				options: currentOptions.map((option, currentIndex) => (currentIndex === optionIndex ? { ...option, ...patch } : option)),
+			},
+		)
+	}
+
+	const updateMultiFieldOptionValidation = (fieldIndex: number, optionIndex: number, key: string, value: string) => {
+		const currentOption = getMultiFieldOptions(Array.isArray(fields[fieldIndex]?.options) ? fields[fieldIndex].options : [])[optionIndex]
+		const currentValidation = currentOption?.validation || {}
+		const nextValidation = { ...currentValidation }
+		const normalizedValue = value.trim()
+
+		if (!normalizedValue) {
+			delete nextValidation[key]
+		} else {
+			const numericValue = Number(normalizedValue)
+
+			if (Number.isFinite(numericValue)) {
+				nextValidation[key] = numericValue
+			}
+		}
+
+		updateMultiFieldOption(fieldIndex, optionIndex, { validation: nextValidation })
+	}
+
+	const removeMultiFieldSelectOption = (fieldIndex: number, optionIndex: number, optionValue: string) => {
+		const currentOption = getMultiFieldOptions(Array.isArray(fields[fieldIndex]?.options) ? fields[fieldIndex].options : [])[optionIndex]
+		const currentOptions = Array.isArray(currentOption?.options)
+			? currentOption.options.filter((item): item is string => typeof item === 'string')
+			: []
+
+		updateMultiFieldOption(fieldIndex, optionIndex, {
+			options: currentOptions.filter((item) => item !== optionValue),
+		})
+	}
+
+	const getMultiFieldSubFieldTypeOptions = () => {
+		return MULTI_FIELD_CHILD_TYPE_OPTIONS.map((type) => ({ value: type, label: MULTI_FIELD_CHILD_TYPE_LABELS[type] }))
+	}
+
 	return (
 		<div className='space-y-4'>
 			<div className='flex items-center justify-between'>
@@ -179,12 +258,24 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 										<Label htmlFor={`field-type-${index}`}>{t.type}</Label>
 										<Select
 											value={field.type}
-											onValueChange={(value: CategoryFieldType) =>
+											onValueChange={(value: CategoryFieldType) => {
+												const nextType = value
+												const existingMultiOptions = getMultiFieldOptions(Array.isArray(field.options) ? field.options : [])
+
 												updateField(index, {
-													type: value,
-													required: value === 'url' || value === 'file' ? false : field.required,
+													type: nextType,
+													required: nextType === 'url' || nextType === 'file' ? false : field.required,
+													options:
+														nextType === 'multi_fields'
+															? existingMultiOptions.length > 0
+																? existingMultiOptions
+																: [createEmptyMultiFieldOption(1)]
+															: field.type === 'multi_fields'
+																? []
+																: field.options,
+													validation: nextType === 'multi_fields' || field.type === 'multi_fields' ? {} : field.validation,
 												})
-											}
+											}}
 										>
 											<SelectTrigger className='w-full' id={`field-type-${index}`}>
 												<SelectValue placeholder={t.type} />
@@ -192,7 +283,7 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 											<SelectContent>
 												{FIELD_TYPE_OPTIONS.map((type) => (
 													<SelectItem key={type} value={type}>
-														{type}
+														{FIELD_TYPE_LABELS[type]}
 													</SelectItem>
 												))}
 											</SelectContent>
@@ -316,14 +407,301 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 													</div>
 												))}
 											</div>
-										) : (
-											<p className='text-sm text-muted-foreground'>{t.selectNeedOption}</p>
-										)}
-									</div>
-								) : null}
+								) : (
+									<p className='text-sm text-muted-foreground'>{t.selectNeedOption}</p>
+								)}
+							</div>
+						) : null}
 
-								{field.type === 'text' ||
-								field.type === 'textarea' ||
+						{field.type === 'multi_fields' ? (
+							<div className='space-y-3 rounded-md border p-3'>
+								<div className='flex items-center justify-between gap-2'>
+									<p className='text-sm font-medium'>{t.multiFieldsSubFields}</p>
+									<Button size='sm' type='button' variant='outline' onClick={() => addMultiFieldOption(index)}>
+										<Plus className='mr-2 h-4 w-4' />
+										{t.addSubField}
+									</Button>
+								</div>
+
+								{getMultiFieldOptions(Array.isArray(field.options) ? field.options : []).length ? (
+									<div className='space-y-4'>
+										{getMultiFieldOptions(Array.isArray(field.options) ? field.options : []).map((option, optionIndex) => (
+											<div key={`field-multi-${index}-${optionIndex}`} className='space-y-4 rounded-md border p-3'>
+												<div className='flex items-center justify-between gap-2'>
+													<p className='text-sm font-medium'>
+														{interpolateUILocaleText(t.fieldTitle, { index: optionIndex + 1 })}
+													</p>
+													<Button
+														size='icon'
+														type='button'
+														variant='ghost'
+														onClick={() => removeMultiFieldOption(index, optionIndex)}
+													>
+														<Trash2 className='h-4 w-4' />
+													</Button>
+												</div>
+
+												<div className='grid gap-4 md:grid-cols-2'>
+													<div className='space-y-2'>
+														<Label htmlFor={`field-multi-key-${index}-${optionIndex}`}>Key *</Label>
+														<Input
+															id={`field-multi-key-${index}-${optionIndex}`}
+															placeholder='schoolName'
+															value={option.key}
+															onChange={(event) =>
+																updateMultiFieldOption(index, optionIndex, { key: event.target.value })
+															}
+														/>
+													</div>
+
+													<div className='space-y-2'>
+														<Label htmlFor={`field-multi-label-${index}-${optionIndex}`}>Label *</Label>
+														<Input
+															id={`field-multi-label-${index}-${optionIndex}`}
+															placeholder='Название школы'
+															value={option.label[activeLocale]}
+															onChange={(event) =>
+																updateMultiFieldOption(index, optionIndex, {
+																	label: {
+																		...option.label,
+																		[activeLocale]: event.target.value,
+																	},
+																})
+															}
+														/>
+													</div>
+												</div>
+
+												<div className='grid gap-4 md:grid-cols-3'>
+													<div className='space-y-2'>
+														<Label htmlFor={`field-multi-type-${index}-${optionIndex}`}>{t.type}</Label>
+														<Select
+															value={option.type}
+															onValueChange={(value: ICategoryMultiFieldOptionFormState['type']) =>
+																updateMultiFieldOption(index, optionIndex, {
+																	type: value,
+																	options: value === 'select' ? option.options : [],
+																	validation: {},
+																})
+															}
+														>
+															<SelectTrigger className='w-full' id={`field-multi-type-${index}-${optionIndex}`}>
+																<SelectValue placeholder={t.type} />
+															</SelectTrigger>
+															<SelectContent>
+																{getMultiFieldSubFieldTypeOptions().map((typeOption) => (
+																	<SelectItem key={typeOption.value} value={typeOption.value}>
+																		{typeOption.label}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+													</div>
+
+													<div className='space-y-2'>
+														<Label htmlFor={`field-multi-placeholder-${index}-${optionIndex}`}>{t.placeholder}</Label>
+														<Input
+															id={`field-multi-placeholder-${index}-${optionIndex}`}
+															placeholder='https://...'
+															value={option.placeholder[activeLocale] || ''}
+															onChange={(event) =>
+																updateMultiFieldOption(index, optionIndex, {
+																	placeholder: {
+																		...option.placeholder,
+																		[activeLocale]: event.target.value,
+																	},
+																})
+															}
+														/>
+													</div>
+
+													<div className='space-y-2'>
+														<Label htmlFor={`field-multi-sort-${index}-${optionIndex}`}>{t.sortOrder}</Label>
+														<Input
+															id={`field-multi-sort-${index}-${optionIndex}`}
+															min={1}
+															step={1}
+															type='number'
+															value={option.sortOrder}
+															onChange={(event) =>
+																updateMultiFieldOption(index, optionIndex, {
+																	sortOrder: normalizeSortOrder(event.target.value, optionIndex + 1),
+																})
+															}
+														/>
+													</div>
+												</div>
+
+												<div className='space-y-2'>
+													<Label htmlFor={`field-multi-help-${index}-${optionIndex}`}>{t.helpText}</Label>
+													<Input
+														id={`field-multi-help-${index}-${optionIndex}`}
+														placeholder='Подсказка для пользователя'
+														value={option.helpText[activeLocale] || ''}
+														onChange={(event) =>
+															updateMultiFieldOption(index, optionIndex, {
+																helpText: {
+																	...option.helpText,
+																	[activeLocale]: event.target.value,
+																},
+															})
+														}
+													/>
+												</div>
+
+												<div className='flex items-center justify-between rounded-md border p-3'>
+													<div>
+														<p className='text-sm font-medium'>{t.required}</p>
+														<p className='text-xs text-muted-foreground'>{t.requiredDescription}</p>
+													</div>
+													<Checkbox
+														checked={option.required}
+														onCheckedChange={(checked) =>
+															updateMultiFieldOption(index, optionIndex, { required: checked === true })
+														}
+													/>
+												</div>
+
+												{option.type === 'select' ? (
+													<div className='space-y-3 rounded-md border p-3'>
+														<div className='flex items-center justify-between'>
+															<p className='text-sm font-medium'>{t.selectOptions}</p>
+															<Button
+																size='sm'
+																type='button'
+																variant='outline'
+																onClick={() =>
+																	updateMultiFieldOption(index, optionIndex, {
+																		options: [
+																			...(Array.isArray(option.options)
+																				? option.options.filter((item): item is string => typeof item === 'string')
+																				: []),
+																			'',
+																		],
+																	})
+																}
+															>
+																<Plus className='mr-2 h-4 w-4' />
+																{t.addOption}
+															</Button>
+														</div>
+
+														{(Array.isArray(option.options)
+															? option.options.filter((item): item is string => typeof item === 'string')
+															: []
+														).length ? (
+															<div className='space-y-2'>
+																{(Array.isArray(option.options)
+																	? option.options.filter((item): item is string => typeof item === 'string')
+																	: []
+																).map((selectOption, selectOptionIndex) => (
+																	<div
+																		key={`field-multi-option-${index}-${optionIndex}-${selectOptionIndex}`}
+																		className='flex items-center gap-2'
+																	>
+																		<Input
+																			placeholder={`Опция #${selectOptionIndex + 1}`}
+																			value={selectOption}
+																			onChange={(event) => {
+																				const nextOptions = Array.isArray(option.options)
+																					? option.options.filter((item): item is string => typeof item === 'string')
+																					: []
+
+																				nextOptions[selectOptionIndex] = event.target.value
+																				updateMultiFieldOption(index, optionIndex, { options: nextOptions })
+																			}}
+																		/>
+																		<Button
+																			size='icon'
+																			type='button'
+																			variant='ghost'
+																			onClick={() => removeMultiFieldSelectOption(index, optionIndex, selectOption)}
+																		>
+																			<Trash2 className='h-4 w-4' />
+																		</Button>
+																	</div>
+																))}
+															</div>
+														) : (
+															<p className='text-sm text-muted-foreground'>{t.selectNeedOption}</p>
+														)}
+													</div>
+												) : null}
+
+												{option.type === 'text' || option.type === 'textarea' || option.type === 'number' ? (
+													<div className='space-y-3 rounded-md border p-3'>
+														<p className='text-sm font-medium'>{t.validation}</p>
+
+														{option.type === 'text' || option.type === 'textarea' ? (
+															<div className='grid gap-3 md:grid-cols-2'>
+																<div className='space-y-2'>
+																	<Label htmlFor={`field-multi-min-length-${index}-${optionIndex}`}>Min length</Label>
+																	<Input
+																		id={`field-multi-min-length-${index}-${optionIndex}`}
+																		min={0}
+																		type='number'
+																		value={getValidationNumberValue(option.validation, 'minLength')}
+																		onChange={(event) =>
+																			updateMultiFieldOptionValidation(index, optionIndex, 'minLength', event.target.value)
+																		}
+																	/>
+																</div>
+
+																<div className='space-y-2'>
+																	<Label htmlFor={`field-multi-max-length-${index}-${optionIndex}`}>Max length</Label>
+																	<Input
+																		id={`field-multi-max-length-${index}-${optionIndex}`}
+																		min={0}
+																		type='number'
+																		value={getValidationNumberValue(option.validation, 'maxLength')}
+																		onChange={(event) =>
+																			updateMultiFieldOptionValidation(index, optionIndex, 'maxLength', event.target.value)
+																		}
+																	/>
+																</div>
+															</div>
+														) : null}
+
+														{option.type === 'number' ? (
+															<div className='grid gap-3 md:grid-cols-2'>
+																<div className='space-y-2'>
+																	<Label htmlFor={`field-multi-min-${index}-${optionIndex}`}>Min</Label>
+																	<Input
+																		id={`field-multi-min-${index}-${optionIndex}`}
+																		type='number'
+																		value={getValidationNumberValue(option.validation, 'min')}
+																		onChange={(event) =>
+																			updateMultiFieldOptionValidation(index, optionIndex, 'min', event.target.value)
+																		}
+																	/>
+																</div>
+
+																<div className='space-y-2'>
+																	<Label htmlFor={`field-multi-max-${index}-${optionIndex}`}>Max</Label>
+																	<Input
+																		id={`field-multi-max-${index}-${optionIndex}`}
+																		type='number'
+																		value={getValidationNumberValue(option.validation, 'max')}
+																		onChange={(event) =>
+																			updateMultiFieldOptionValidation(index, optionIndex, 'max', event.target.value)
+																		}
+																	/>
+																</div>
+															</div>
+														) : null}
+													</div>
+												) : null}
+											</div>
+										))}
+									</div>
+								) : (
+									<p className='text-sm text-muted-foreground'>{t.multiFieldsNoSubFields}</p>
+								)}
+							</div>
+						) : null}
+
+						{field.type === 'text' ||
+						field.type === 'textarea' ||
 								field.type === 'number' ||
 								field.type === 'file' ? (
 									<div className='space-y-3 rounded-md border p-3'>

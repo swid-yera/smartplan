@@ -46,17 +46,67 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 			: t.empty
 	const categoryIconOption = getCategoryIconOptionByName(category?.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
+	const categoryFields = category?.fieldsExpanded || []
+	const categoryFieldByKey = new Map(categoryFields.map((field) => [field.key, field]))
 	const awardFields = Object.entries(award?.fieldValues || {}).flatMap(([fieldKey, rawValue]) => {
-		const values = Array.isArray(rawValue) ? rawValue : [rawValue]
+		if (categoryFieldByKey.get(fieldKey)?.type === 'multi_fields') return []
+
+		const values: unknown[] = Array.isArray(rawValue) ? rawValue : [rawValue]
 
 		return values
-			.filter((value) => typeof value === 'string' && value.trim().length > 0)
+			.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
 			.map((value, index) => ({
 				id: `${fieldKey}-${index}`,
 				key: fieldKey,
 				value: value.trim(),
 			}))
 	})
+	const multiFieldSections = categoryFields
+		.filter((field) => field.type === 'multi_fields')
+		.map((field) => {
+			const rawValue = award?.fieldValues?.[field.key]
+			const subFields = Array.isArray(field.options)
+				? field.options.filter(
+						(option): option is { key: string; label: unknown; type: string } =>
+							typeof option === 'object' && option !== null && 'key' in option && 'label' in option,
+					)
+				: []
+
+			const rows = Array.isArray(rawValue)
+				? rawValue
+						.map((row) => {
+							if (!row || typeof row !== 'object' || Array.isArray(row)) return null
+
+							const normalizedRow: Record<string, string> = {}
+							for (const subField of subFields) {
+								const rowValue = row[subField.key]
+								normalizedRow[subField.key] =
+									typeof rowValue === 'number'
+										? String(rowValue)
+										: typeof rowValue === 'string'
+											? rowValue.trim()
+											: ''
+							}
+
+							return normalizedRow
+						})
+						.filter((row): row is Record<string, string> => !!row)
+				: []
+
+			return {
+				fieldKey: field.key,
+				fieldLabel: getLocaleText(field.label, locale) || field.key,
+				rows,
+				subFields,
+			}
+		})
+
+	const renderMultiFieldValue = (value: unknown) => {
+		if (typeof value === 'number') return String(value)
+		if (typeof value === 'string') return value.trim()
+
+		return t.empty
+	}
 
 	return (
 		<Sheet open={!!award} onOpenChange={(open) => !open && onSelect(null)}>
@@ -193,12 +243,55 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 								</div>
 							</div>
 
-								<Separator />
+						<Separator />
 
-								<div className='space-y-3'>
+						{multiFieldSections.length > 0 ? (
+							<div className='space-y-3'>
 								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-									<Files className='w-4 h-4 mr-2' /> {t.award.documents}
+									<Files className='w-4 h-4 mr-2' /> {t.award.multiFields}
 								</h4>
+
+								<div className='space-y-4'>
+									{multiFieldSections.map(({ fieldKey, fieldLabel, rows, subFields }) => (
+										<div key={fieldKey} className='space-y-3 rounded-md border p-3'>
+											<p className='text-sm font-medium text-muted-foreground'>{fieldLabel}</p>
+
+											{rows.length > 0 ? (
+												<div className='space-y-3'>
+													{rows.map((row, rowIndex) => (
+														<div key={`${fieldKey}-${rowIndex}`} className='space-y-3 rounded-md bg-muted/30 p-3'>
+															<p className='text-xs font-medium text-muted-foreground'>
+																{t.award.multiFieldsRowTitle.replace('{index}', String(rowIndex + 1))}
+															</p>
+															<div className='grid gap-3 md:grid-cols-2'>
+																{subFields.map((subField) => (
+																	<div key={`${fieldKey}-${rowIndex}-${subField.key}`} className='space-y-1'>
+																		<p className='text-xs font-medium text-muted-foreground'>
+																			{getLocaleText(subField.label as Parameters<typeof getLocaleText>[0], locale) ||
+																				subField.key}
+																		</p>
+																		<p className='text-sm break-all'>{renderMultiFieldValue(row[subField.key])}</p>
+																	</div>
+																))}
+															</div>
+														</div>
+													))}
+												</div>
+											) : (
+												<p className='text-sm text-muted-foreground'>{t.award.multiFieldsEmpty}</p>
+											)}
+										</div>
+									))}
+								</div>
+							</div>
+						) : null}
+
+						<Separator />
+
+						<div className='space-y-3'>
+							<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+								<Files className='w-4 h-4 mr-2' /> {t.award.documents}
+							</h4>
 
 								<div className='space-y-4'>
 									{awardFields.length ? (

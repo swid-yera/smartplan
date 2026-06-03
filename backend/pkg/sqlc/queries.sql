@@ -978,18 +978,69 @@ DELETE FROM lesson_progress WHERE id = $1;
 SELECT * FROM lessons WHERE id = $1;
 
 -- name: GetLessons :many
-SELECT * FROM lessons
+SELECT
+    l.id,
+    l.rup_name,
+    l.discipline_name,
+    l.topic_name,
+    l.plan_number,
+    l.teacher,
+    l.event_date,
+    l.group_id,
+    l.type,
+    l.goals,
+    l.tasks,
+    l.expected,
+    l.internet_resources,
+    l.technical_resources,
+    l.file_url,
+    l.created_at,
+    l.updated_at
+FROM lessons l
+LEFT JOIN groups g ON g.keycloak_id = l.group_id
 WHERE
     (
+        sqlc.arg('search') = ''
+        OR COALESCE(l.rup_name->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.rup_name->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.discipline_name->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.discipline_name->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.topic_name->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.topic_name->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.goals->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.goals->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.tasks->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.tasks->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.expected->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.expected->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(g.name, '') ILIKE '%' || sqlc.arg('search') || '%'
+    ) AND
+    (
         sqlc.narg('teacher')::uuid IS NULL
-        OR teacher = sqlc.narg('teacher')::uuid
+        OR l.teacher = sqlc.narg('teacher')::uuid
     ) AND
     (
         sqlc.narg('id')::uuid IS NULL
-        OR id = sqlc.narg('id')::uuid
+        OR l.id = sqlc.narg('id')::uuid
+    ) AND
+    (
+        sqlc.arg('lesson_type') = ''
+        OR l.type = sqlc.arg('lesson_type')::enum_lesson_type
+    ) AND
+    (
+        sqlc.arg('discipline') = ''
+        OR COALESCE(l.discipline_name->>'ru', '') = sqlc.arg('discipline')
+        OR COALESCE(l.discipline_name->>'kz', '') = sqlc.arg('discipline')
+    ) AND
+    (
+        sqlc.arg('group_name') = ''
+        OR COALESCE(g.name, '') = sqlc.arg('group_name')
     )
-ORDER BY created_at DESC
-LIMIT $1 OFFSET $2;
+ORDER BY
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN l.created_at END ASC,
+    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN l.created_at END DESC,
+    l.created_at DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: GetRecentLessonsByDiscipline :many
 SELECT *
@@ -1008,13 +1059,43 @@ LIMIT $3;
 
 -- name: CountLessonsFiltered :one
 SELECT COUNT(*)
-FROM lessons
+FROM lessons l
+LEFT JOIN groups g ON g.keycloak_id = l.group_id
 WHERE
     (
+        sqlc.arg('search') = ''
+        OR COALESCE(l.rup_name->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.rup_name->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.discipline_name->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.discipline_name->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.topic_name->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.topic_name->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.goals->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.goals->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.tasks->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.tasks->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.expected->>'ru', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(l.expected->>'kz', '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(g.name, '') ILIKE '%' || sqlc.arg('search') || '%'
+    )
+    AND (
         sqlc.narg('teacher')::uuid IS NULL
-        OR teacher = sqlc.narg('teacher')::uuid
+        OR l.teacher = sqlc.narg('teacher')::uuid
     )
     AND (
         sqlc.narg('id')::uuid IS NULL
-        OR id = sqlc.narg('id')
+        OR l.id = sqlc.narg('id')::uuid
+    )
+    AND (
+        sqlc.arg('lesson_type') = ''
+        OR l.type = sqlc.arg('lesson_type')::enum_lesson_type
+    )
+    AND (
+        sqlc.arg('discipline') = ''
+        OR COALESCE(l.discipline_name->>'ru', '') = sqlc.arg('discipline')
+        OR COALESCE(l.discipline_name->>'kz', '') = sqlc.arg('discipline')
+    )
+    AND (
+        sqlc.arg('group_name') = ''
+        OR COALESCE(g.name, '') = sqlc.arg('group_name')
     );

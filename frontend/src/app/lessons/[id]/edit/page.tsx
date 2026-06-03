@@ -1,18 +1,25 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 import { notFound, useParams } from 'next/navigation'
 
-import { Loader } from '@components'
+import { LessonEditForm, Loader } from '@components'
 import { isAuthor } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-
-import { LessonEditForm } from './lesson-edit-form'
+import type { Locale } from '@types'
 
 export default function LessonEditPage() {
 	const params = useParams<{ id: string }>()
 	const { authLoading, user } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
+	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
+
+	useEffect(() => {
+		setActiveLocale(locale)
+	}, [locale])
 
 	const { data: lesson, isLoading } = useQuery({
 		...services.lesson.getByIdOptions(params.id),
@@ -27,5 +34,5 @@ export default function LessonEditPage() {
 
 	if (!canManageLesson) return notFound()
 
-	return <LessonEditForm lesson={lesson} />
+	return <LessonEditForm activeLocale={activeLocale} lesson={lesson} onActiveLocaleChange={setActiveLocale} />
 }
