@@ -14,20 +14,21 @@ import { useAuthStore, useLocaleStore } from '@store'
 import { type IUser, RoleEnum } from '@types'
 import { Mail, Phone, UserIcon } from 'lucide-react'
 
-import localeDictionary from './locale.json'
 import { ViolationBadge } from '../badges/violation-badge'
+import localeDictionary from './locale.json'
 
 interface IUserMainProps {
 	user: IUser
 	className?: string
 	showViolation?: boolean
+	showTotalPoints?: boolean
 }
 
-export const UserCard: FC<IUserMainProps> = ({ user, className, showViolation = true }) => {
+export const UserCard: FC<IUserMainProps> = ({ user, className, showViolation = true, showTotalPoints = false }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const me = useAuthStore((state) => state.user)
 	const t = getUILocaleSection(localeDictionary, locale).userCard
-	const isTeacher = me?.role !== RoleEnum.TEACHER
+	const shouldShowTotalPoints = showTotalPoints || me?.role !== RoleEnum.TEACHER
 	const departmentNames = (user.departments ?? user.deparments ?? [])
 		.map((department) => getLocaleText(department.name, locale))
 		.filter(Boolean)
@@ -98,7 +99,7 @@ export const UserCard: FC<IUserMainProps> = ({ user, className, showViolation = 
 						</p>
 					</div>
 
-					{isTeacher && (
+					{shouldShowTotalPoints && (
 						<div className='space-y-1'>
 							<p className='text-sm font-medium text-muted-foreground'>{t.totalPoints}</p>
 							<p className='text-primary'>{normalizeTotalPoints(user.totalPoints ?? 0, locale)}</p>

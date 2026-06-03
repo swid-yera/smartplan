@@ -3,14 +3,14 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination } from '@components'
-import { getUILocaleSection } from '@helpers'
+import { getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
-import { useLocaleStore } from '@store'
 import { useAuthStore } from '@store'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import type { StatusEnum } from '@types'
+import { RoleEnum, type StatusEnum } from '@types'
 
-import { AwardFilterCard } from '../components'
+import { AwardFilterCard, KpiUserSearchCard } from '../components'
 import localeDictionary from './locale.json'
 
 const Page = () => {
@@ -38,6 +38,7 @@ const Page = () => {
 
 	// store
 	const { user, authLoading } = useAuthStore()
+	const canSearchUsers = !!user && hasRole(user.role, RoleEnum.METHODIST, true)
 
 	// query
 	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
@@ -72,8 +73,10 @@ const Page = () => {
 		<section className='p-4 w-full space-y-4'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 
+			{canSearchUsers && <KpiUserSearchCard className='mb-4' />}
+
 			{/* фильтр и поиск */}
-			<AwardFilterCard className='mb-4' />
+			<AwardFilterCard compact className='mb-4' />
 
 			{/* список наград */}
 			<AwardsCard

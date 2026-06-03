@@ -82,7 +82,7 @@ export const TeacherDashboard: FC<IProps> = ({ keycloakId }) => {
 					</CardHeader>
 					<CardContent>
 						<Button asChild className='w-full' variant='secondary'>
-							<Link href='/kpi/my'>{t.allKpi}</Link>
+							<Link href='/kpi/entry'>{t.allKpi}</Link>
 						</Button>
 					</CardContent>
 				</Card>

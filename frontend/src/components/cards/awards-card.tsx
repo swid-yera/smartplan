@@ -43,6 +43,7 @@ interface IProps {
 	description?: ReactNode
 	isLoading: boolean
 	showCreateOnEmpty?: boolean
+	showPointsColumn?: boolean
 }
 
 export const AwardsCard: FC<IProps> = ({
@@ -54,10 +55,10 @@ export const AwardsCard: FC<IProps> = ({
 	description,
 	isLoading,
 	showCreateOnEmpty = false,
+	showPointsColumn = true,
 }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).awardsCard
-	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
 	const [selectedAward, setSelectedAward] = useState<IAward | null>(null)
 	const isExist = awards.length > 0 && !isLoading
 
@@ -78,7 +79,7 @@ export const AwardsCard: FC<IProps> = ({
 									<TableHead>{t.createdAt}</TableHead>
 									<TableHead>{t.teacher}</TableHead>
 									<TableHead>{t.criteria}</TableHead>
-									<TableHead>{t.points}</TableHead>
+									{showPointsColumn && <TableHead>{t.points}</TableHead>}
 									<TableHead className='text-right'>{t.status}</TableHead>
 									{/* Убрали колонку "Действия", так как кликаем по строке */}
 								</TableRow>
@@ -86,10 +87,17 @@ export const AwardsCard: FC<IProps> = ({
 
 							<TableBody>
 								{isExist ? (
-									awards.map((item) => <AwardRow key={item.id} award={item} onSelect={setSelectedAward} />)
+									awards.map((item) => (
+										<AwardRow
+											key={item.id}
+											award={item}
+											showPointsColumn={showPointsColumn}
+											onSelect={setSelectedAward}
+										/>
+									))
 								) : (
 									<TableRow>
-										<TableCell className='h-44 text-center' colSpan={6}>
+										<TableCell className='h-44 text-center' colSpan={showPointsColumn ? 5 : 4}>
 											{isLoading ? (
 												<Loader
 													className='flex flex-col justify-center items-center'
@@ -142,9 +150,10 @@ export const AwardsCard: FC<IProps> = ({
 interface IAwardRow {
 	award: IAward
 	onSelect: (award: IAward) => void
+	showPointsColumn: boolean
 }
 
-const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
+const AwardRow: FC<IAwardRow> = ({ award, onSelect, showPointsColumn }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).awardsCard
 	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
@@ -186,7 +195,7 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect }) => {
 							<span>{criteriaSummary}</span>
 						</Link>
 					</TableCell>
-					<TableCell className='py-6'>{award.totalPoints || 0}</TableCell>
+					{showPointsColumn && <TableCell className='py-6'>{award.totalPoints || 0}</TableCell>}
 					<TableCell className='text-right'>
 						<StatusBadge status={award.status} />
 					</TableCell>

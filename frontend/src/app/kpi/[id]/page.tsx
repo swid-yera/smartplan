@@ -47,7 +47,7 @@ const Page = () => {
 
 	const updateStatusMutation = useMutation(services.award.updateStatusOptions())
 	const deleteMutation = useMutation(services.award.deleteMutationOptions())
-	const backHref = '/kpi/my'
+	const backHref = '/kpi/entry'
 
 	if (isLoading || authLoading || !user) return <Loader />
 
