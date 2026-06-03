@@ -7,9 +7,8 @@ import { ASidebarProvider, AuthProvider, LocaleProvider, QueryProvider, ThemePro
 import { SidebarInset, Toaster } from '@shadcn'
 import 'react-medium-image-zoom/dist/styles.css'
 
-import { RupsLanguageGenerationNotifier } from './rups/components/language-generation-notifier'
-
 import './globals.css'
+import { RupsLanguageGenerationNotifier } from './rups/components/language-generation-notifier'
 
 // metadata
 export const metadata: Metadata = {
@@ -94,7 +93,14 @@ export default async function RootLayout({
 
 	return (
 		<html suppressHydrationWarning lang={locale}>
-			<head />
+			<head>
+				{/* umami */}
+				<script
+					defer
+					data-website-id='9d32889e-9600-4b30-ad06-5239117d1438'
+					src='https://metrics.aspc.kz/script.js'
+				/>
+			</head>
 
 			<body className='min-h-screen antialiased flex flex-col'>
 				<ThemeProvider>
