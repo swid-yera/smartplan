@@ -1,12 +1,9 @@
-# syntax=docker/dockerfile:1
-
-FROM node:22-bookworm-slim AS deps
+FROM oven/bun:1.2.19-debian AS deps
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci --include=optional \
-    && npm i --no-save lightningcss-linux-x64-gnu@1.30.2 @tailwindcss/oxide-linux-x64-gnu@4.1.17
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 FROM node:22-bookworm-slim AS builder
 
