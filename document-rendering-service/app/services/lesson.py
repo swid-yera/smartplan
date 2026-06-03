@@ -4,6 +4,7 @@ from pathlib import Path
 from docxtpl import DocxTemplate
 
 from app.config import LESSON_TEMPLATE_PATH, OUT_DIR
+from app.helpers.rup_helpers import normalize_language
 from app.helpers.slugify import slugify_ru
 from app.logger import logger
 
@@ -104,7 +105,7 @@ def generate_lesson_docx(data: dict) -> Path:
     OUT_DIR.mkdir(exist_ok=True)
 
     logger.info("generating lesson document, mapping data from json")
-    language = str(data.get("language", "ru")).strip().lower()
+    language = normalize_language(data.get("language"))
 
     discipline_name = str(data.get("discipline_name", "")).strip()
     if discipline_name:

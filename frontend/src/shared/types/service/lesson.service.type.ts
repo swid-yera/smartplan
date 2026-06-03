@@ -1,5 +1,5 @@
 import type { LessonResourceTypeEnum, LessonTypeEnum } from '../lesson.type'
-import type { LocaleText } from '../locale.type'
+import type { BackendLocale, LocaleText } from '../locale.type'
 import type { TopicTypeEnum } from '../rup.type'
 
 export interface IGenerateLessonUpdatedTopic {
@@ -17,6 +17,7 @@ export interface IGenerateLessonRequest {
 	rupId: string
 	disciplineId: string
 	topicId: string
+	sourceLanguage?: BackendLocale
 	updatedTopic: IGenerateLessonUpdatedTopic
 }
 
@@ -35,7 +36,7 @@ export interface IUpdateLessonResourceRequest {
 export interface IUpdateLessonProgressRequest {
 	id?: string
 	name: LocaleText
-	content: string[]
+	content: LocaleText[]
 	first_time: number[]
 	second_time: number[]
 	third_time: number[]

@@ -46,7 +46,7 @@ def generate_rup_docx(data: dict) -> Path:
         "name": rup_name,
         "specialty": locale_text(group.get("specialty"), language),
         "qualification": locale_text(group.get("qualification"), language),
-        "form": decode_study_form(data.get("studyForm", "")),
+        "form": decode_study_form(data.get("studyForm", ""), language),
         "totalHours": totalHours,
         "credits": totalCredits,
         "course": data.get("course", 0),

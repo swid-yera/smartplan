@@ -726,7 +726,7 @@ type CreateLessonProgressParams struct {
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`
 	ThirdTime  []int32   `json:"third_time"`
-	Content    []string  `json:"content"`
+	Content    []byte    `json:"content"`
 }
 
 func (q *Queries) CreateLessonProgress(ctx context.Context, arg CreateLessonProgressParams) (uuid.UUID, error) {
@@ -3357,7 +3357,7 @@ type UpdateLessonProgressParams struct {
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`
 	ThirdTime  []int32   `json:"third_time"`
-	Content    []string  `json:"content"`
+	Content    []byte    `json:"content"`
 }
 
 func (q *Queries) UpdateLessonProgress(ctx context.Context, arg UpdateLessonProgressParams) error {

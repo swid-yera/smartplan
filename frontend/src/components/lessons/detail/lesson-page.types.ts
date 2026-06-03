@@ -25,7 +25,7 @@ export type ILessonContext = ILesson & {
 export type ILessonProgressContext = {
 	id?: string
 	name?: LocalizedText
-	content?: string[] | string
+	content?: LocalizedText[] | string
 	firstTime?: number[] | string[]
 	secondTime?: number[] | string[]
 	thirdTime?: number[] | string[]

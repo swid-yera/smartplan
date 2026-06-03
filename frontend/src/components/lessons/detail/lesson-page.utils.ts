@@ -39,7 +39,9 @@ export function normalizeLessonProgress(
 			: typeof item.content === 'string'
 				? item.content.split('\n')
 				: []
-		const content = contentItems.map((line) => line.trim()).filter(Boolean)
+		const content = contentItems
+			.map((line) => getLocaleText(line, locale).trim())
+			.filter(Boolean)
 
 		return {
 			id: item.id || `lesson-progress-${index}`,

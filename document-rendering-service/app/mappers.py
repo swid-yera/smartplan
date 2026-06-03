@@ -2,6 +2,7 @@ from docxtpl import RichText
 
 from app.helpers.rup_helpers import (
     decode_lesson_type,
+    get_summary_label,
     locale_text,
     short_name,
     zero_to_empty,
@@ -167,7 +168,7 @@ def build_content_table(disciplineData: dict, language: str = "ru") -> list:
                     "individual": zero_to_empty(t_ind),
                     "srsp": zero_to_empty(t_srsp),
                     "srs": zero_to_empty(t_srs),
-                    "type": decode_lesson_type(t_type),
+                    "type": decode_lesson_type(t_type, language),
                 }
             )
 
@@ -177,7 +178,7 @@ def build_content_table(disciplineData: dict, language: str = "ru") -> list:
         rows.append(
             {
                 "num": "",
-                "discipline": RichText("Всего часов:", bold=True),
+                "discipline": RichText(get_summary_label("discipline_total", language), bold=True),
                 "topic": "",
                 "total": RichText(str(zero_to_empty(d_stats["total"])), bold=True),
                 "theory": RichText(str(zero_to_empty(d_stats["theory"])), bold=True),
@@ -201,7 +202,7 @@ def build_content_table(disciplineData: dict, language: str = "ru") -> list:
     rows.append(
         {
             "num": "",
-            "discipline": RichText("Итого часов:", bold=True),
+            "discipline": RichText(get_summary_label("overall_total", language), bold=True),
             "topic": "",
             "total": RichText(str(zero_to_empty(globalTotal["total"])), bold=True),
             "theory": RichText(str(zero_to_empty(globalTotal["theory"])), bold=True),

@@ -352,16 +352,16 @@ CREATE SEQUENCE lessons_plan_number_seq
 CREATE TABLE lessons (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     rup_name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
-    discipline_name JSONB,
-    topic_name JSONB,
+    discipline_name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    topic_name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     plan_number INT NOT NULL DEFAULT nextval('lessons_plan_number_seq'::regclass),
     teacher UUID NOT NULL,
     event_date TIMESTAMPTZ,
     group_id UUID NOT NULL,
     type enum_lesson_type NOT NULL,
-    goals JSONB,
-    tasks JSONB,
-    expected JSONB,
+    goals JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    tasks JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    expected JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     internet_resources UUID[],
     technical_resources UUID[],
     file_url TEXT,
@@ -371,19 +371,19 @@ CREATE TABLE lessons (
         rup_name ? 'ru' AND rup_name ? 'kz'
     ),
     CONSTRAINT lessons_discipline_name_locale_check CHECK (
-        discipline_name IS NULL OR (discipline_name ? 'ru' AND discipline_name ? 'kz')
+        discipline_name ? 'ru' AND discipline_name ? 'kz'
     ),
     CONSTRAINT lessons_topic_name_locale_check CHECK (
-        topic_name IS NULL OR (topic_name ? 'ru' AND topic_name ? 'kz')
+        topic_name ? 'ru' AND topic_name ? 'kz'
     ),
     CONSTRAINT lessons_goals_locale_check CHECK (
-        goals IS NULL OR (goals ? 'ru' AND goals ? 'kz')
+        goals ? 'ru' AND goals ? 'kz'
     ),
     CONSTRAINT lessons_tasks_locale_check CHECK (
-        tasks IS NULL OR (tasks ? 'ru' AND tasks ? 'kz')
+        tasks ? 'ru' AND tasks ? 'kz'
     ),
     CONSTRAINT lessons_expected_locale_check CHECK (
-        expected IS NULL OR (expected ? 'ru' AND expected ? 'kz')
+        expected ? 'ru' AND expected ? 'kz'
     ),
     CONSTRAINT fk_lesson_teacher FOREIGN KEY (teacher) REFERENCES users(keycloak_id),
     CONSTRAINT fk_lesson_groups FOREIGN KEY (group_id) REFERENCES groups(keycloak_id)
@@ -399,9 +399,12 @@ CREATE TABLE lesson_progress(
     first_time INT[] NOT NULL,
     second_time INT[] NOT NULL,
     third_time INT[] NOT NULL,
-    content TEXT[],
+    content JSONB NOT NULL DEFAULT '[]'::jsonb,
     CONSTRAINT lesson_progress_name_locale_check CHECK (
         name ? 'ru' AND name ? 'kz'
+    ),
+    CONSTRAINT lesson_progress_content_array_check CHECK (
+        jsonb_typeof(content) = 'array'
     ),
     CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id)
 );

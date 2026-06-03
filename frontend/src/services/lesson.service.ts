@@ -17,6 +17,9 @@ import type {
 import { cleanupDeleteCache } from './query-cache'
 
 export class LessonService {
+	private isLocalizedTextObject = (value: unknown): value is { ru?: unknown; kz?: unknown } =>
+		Boolean(value) && typeof value === 'object' && ('ru' in (value as Record<string, unknown>) || 'kz' in (value as Record<string, unknown>))
+
 	private normalizeProgressMinute = (value: unknown): number => {
 		if (Array.isArray(value)) {
 			return this.normalizeProgressMinute(value[0])
@@ -69,12 +72,34 @@ export class LessonService {
 			const rawContent = source.content
 			const contentItems = Array.isArray(rawContent)
 				? rawContent
-				: typeof rawContent === 'string'
-					? rawContent.split('\n')
-					: []
+					: typeof rawContent === 'string'
+						? rawContent.split('\n')
+						: []
 			const content = contentItems
-				.map((contentItem) => (typeof contentItem === 'string' ? contentItem.trim() : ''))
-				.filter(Boolean)
+				.map((contentItem) => {
+					if (typeof contentItem === 'string') {
+						return contentItem.trim()
+					}
+
+					if (this.isLocalizedTextObject(contentItem)) {
+						const ru = typeof contentItem.ru === 'string' ? contentItem.ru.trim() : ''
+						const kz = typeof contentItem.kz === 'string' ? contentItem.kz.trim() : ''
+
+						if (!ru && !kz) {
+							return null
+						}
+
+						return { ru, kz }
+					}
+
+					return null
+				})
+				.filter((contentItem): contentItem is string | { ru: string; kz: string } => {
+					if (!contentItem) return false
+					if (typeof contentItem === 'string') return Boolean(contentItem)
+
+					return Boolean(contentItem.ru || contentItem.kz)
+				})
 			const firstTime = this.resolveProgressSource(source, 'firstTime', 'first_time')
 			const secondTime = this.resolveProgressSource(source, 'secondTime', 'second_time')
 			const thirdTime = this.resolveProgressSource(source, 'thirdTime', 'third_time')
