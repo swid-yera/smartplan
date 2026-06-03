@@ -1,7 +1,7 @@
 name: eduplan
 
 services:
-  frontend:
+  ui:
     container_name: ui
     build:
       context: ../../frontend
@@ -14,16 +14,16 @@ services:
     env_file:
       - ../../frontend/.env.local
     depends_on:
-      backend:
+      api:
         condition: service_started
-      document-rendering-service:
+      render:
         condition: service_started
     ports:
       - "3000:3000"
     networks:
       - app-network
 
-  backend:
+  api:
     container_name: api
     build:
       context: ../../backend
@@ -35,22 +35,22 @@ services:
       SERVER_PORT: "8080"
       DB_HOST: postgres
       REDIS_ADDR: redis:6379
-      DOCUMENT_RENDER_URL: http://document-rendering-service:8000
+      DOCUMENT_RENDER_URL: http://render:8000
       DB_SSLMODE: disable
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
       redis:
         condition: service_healthy
-      document-rendering-service:
+      render:
         condition: service_started
     ports:
       - "8080:8080"
     networks:
       - app-network
 
-  document-rendering-service:
-    container_name: document-rendering-service
+  render:
+    container_name: render 
     build:
       context: ../../document-rendering-service
       dockerfile: Dockerfile
@@ -78,7 +78,7 @@ services:
       timeout: 5s
       retries: 5
 
-  postgres:
+  db:
     container_name: db
     image: postgres:16
     restart: unless-stopped
@@ -89,7 +89,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_eduplan_data:/var/lib/postgresql/data
+      - db_eduplan_data:/var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
@@ -103,5 +103,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_eduplan_data:
+  db_eduplan_data:
   redis_eduplan_data:
