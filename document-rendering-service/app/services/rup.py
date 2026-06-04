@@ -14,7 +14,7 @@ from app.mappers import (
     build_disciplines_table,
     build_resources,
 )
-from app.post_process import apply_vertical_merge
+from app.post_process import apply_kazakh_template_localization, apply_vertical_merge
 
 
 def generate_rup_docx(data: dict) -> Path:
@@ -99,5 +99,6 @@ def generate_rup_docx(data: dict) -> Path:
     # merge columns
     logger.info("generating rup document, applying vertical merge: %s", rup_name)
     apply_vertical_merge(output_path)
+    apply_kazakh_template_localization(output_path, language)
 
     return output_path

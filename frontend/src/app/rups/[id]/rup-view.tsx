@@ -35,7 +35,7 @@ export const RupView: FC<IRupViewProps> = ({
 }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const localeText = getUILocaleSection(localeDictionary, locale)
-	const t = localeText.view
+	const t = getUILocaleSection(localeDictionary, activeLocale).view
 
 	return (
 		<div className='w-full mx-auto relative'>
@@ -59,7 +59,7 @@ export const RupView: FC<IRupViewProps> = ({
 				description={hasRole(role, RoleEnum.METHODIST) ? t.reviewDescription : t.readOnlyDescription}
 			>
 				{` ${getLocaleText(data.name, activeLocale) || `${t.titleFallback} `} `}
-				<StatusBadge status={data.status} />
+				<StatusBadge locale={activeLocale} status={data.status} />
 			</PageTitle>
 
 			<div className='space-y-6 px-4 py-6'>
@@ -123,7 +123,7 @@ export const RupView: FC<IRupViewProps> = ({
 							},
 							{
 								label: t.totalHours,
-								value: formatHours(data.totalHours),
+								value: formatHours(data.totalHours, activeLocale),
 							},
 							{
 								label: t.credits,
@@ -153,6 +153,7 @@ export const RupView: FC<IRupViewProps> = ({
 
 					<ResponsibleUsersCard
 						createdAt={data.createdAt}
+						localeCode={activeLocale}
 						methodist={data.methodist}
 						teacher={data.teacher}
 						updatedAt={data.updatedAt}
@@ -161,7 +162,7 @@ export const RupView: FC<IRupViewProps> = ({
 
 				<ExplorationView activeLocale={activeLocale} data={data} />
 
-				<ContactsView contacts={data.contacts} creatorId={data.teacher.keycloakId} />
+				<ContactsView activeLocale={activeLocale} contacts={data.contacts} creatorId={data.teacher.keycloakId} />
 
 				<DisciplineView activeLocale={activeLocale} disciplines={data.disciplines} rupName={data.name} />
 

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"eduplan/backend/config"
@@ -91,7 +92,7 @@ func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequ
 		CurrentValuesContext: currentValuesContext,
 	})
 
-	responseText, err := s.generateContentWithFallback(ctx, prompt)
+	responseText, err := s.generateContentWithFallback(ctx, prompt, "application/json")
 	if err != nil {
 		return nil, fmt.Errorf("generate rup meta: %w", err)
 	}
@@ -123,7 +124,7 @@ func (s *aiService) GenerateResources(ctx context.Context, req GenerateResources
 		CurrentValuesContext: currentValuesContext,
 	})
 
-	responseText, err := s.generateContentWithFallback(ctx, prompt)
+	responseText, err := s.generateContentWithFallback(ctx, prompt, "application/json")
 	if err != nil {
 		return nil, fmt.Errorf("generate resources: %w", err)
 	}
@@ -155,7 +156,7 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 		CurrentValuesContext: currentValuesContext,
 	})
 
-	responseText, err := s.generateContentWithFallback(ctx, prompt)
+	responseText, err := s.generateContentWithFallback(ctx, prompt, "application/json")
 	if err != nil {
 		return nil, fmt.Errorf("generate disciplines: %w", err)
 	}
@@ -269,7 +270,7 @@ func (s *aiService) generateTopicsChunk(
 		CurrentValuesContext:    currentValuesContext,
 	})
 
-	responseText, err := s.generateContentWithFallback(ctx, prompt)
+	responseText, err := s.generateContentWithFallback(ctx, prompt, "application/json")
 	if err != nil {
 		return nil, fmt.Errorf("generate topics for discipline: %w", err)
 	}
@@ -382,7 +383,7 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 		LessonMinutes:          lessonMinutes,
 	})
 
-	responseText, err := s.generateContentWithFallback(ctx, prompt)
+	responseText, err := s.generateContentWithFallback(ctx, prompt, "application/json")
 	if err != nil {
 		return nil, fmt.Errorf("generate lesson: %w", err)
 	}
@@ -431,27 +432,20 @@ func (s *aiService) TranslateText(ctx context.Context, req TranslateTextRequest)
 		AdditionalPrompt: req.AdditionalPrompt,
 	})
 
-	responseText, err := s.generateContentWithFallback(ctx, prompt)
+	responseText, err := s.generateContentWithFallback(ctx, prompt, "text/plain")
 	if err != nil {
 		return "", fmt.Errorf("translate text: %w", err)
 	}
 
-	var out struct {
-		TranslatedText string `json:"translatedText"`
-	}
-	if err := decodeJSONObject(responseText, &out); err != nil {
-		trimmed := strings.TrimSpace(responseText)
-		if trimmed != "" {
-			return trimmed, nil
-		}
-
-		return "", fmt.Errorf("decode translation response: %w", err)
+	translatedText := extractTranslationTextResponse(responseText)
+	if translatedText == "" {
+		return "", errors.New("empty translation response")
 	}
 
-	return strings.TrimSpace(out.TranslatedText), nil
+	return translatedText, nil
 }
 
-func (s *aiService) generateContentWithFallback(ctx context.Context, prompt string) (string, error) {
+func (s *aiService) generateContentWithFallback(ctx context.Context, prompt string, responseMimeType string) (string, error) {
 	apiKeys := s.getGeminiAPIKeys()
 	if len(apiKeys) == 0 {
 		return "", errors.New("GEMINI_API_KEY is not configured")
@@ -465,7 +459,7 @@ func (s *aiService) generateContentWithFallback(ctx context.Context, prompt stri
 	var attempts []string
 	for modelIndex, model := range models {
 		for keyIndex, apiKey := range apiKeys {
-			responseText, err := s.generateContent(ctx, model, prompt, apiKey)
+			responseText, err := s.generateContent(ctx, model, prompt, apiKey, responseMimeType)
 			if err == nil {
 				if modelIndex > 0 {
 					s.log.WithField("model", model).WithField("key_index", keyIndex+1).Warn("Gemini recovered on fallback model")
@@ -514,7 +508,13 @@ func (s *aiService) getGeminiModels() []string {
 	return models
 }
 
-func (s *aiService) generateContent(ctx context.Context, model string, prompt string, apiKey string) (string, error) {
+func (s *aiService) generateContent(
+	ctx context.Context,
+	model string,
+	prompt string,
+	apiKey string,
+	responseMimeType string,
+) (string, error) {
 	if strings.TrimSpace(apiKey) == "" {
 		return "", errors.New("GEMINI_API_KEY is not configured")
 	}
@@ -527,7 +527,10 @@ func (s *aiService) generateContent(ctx context.Context, model string, prompt st
 			Parts: []geminiPart{{Text: prompt}},
 		}},
 	}
-	requestPayload.GenerationConfig.ResponseMimeType = "application/json"
+	requestPayload.GenerationConfig.ResponseMimeType = strings.TrimSpace(responseMimeType)
+	if requestPayload.GenerationConfig.ResponseMimeType == "" {
+		requestPayload.GenerationConfig.ResponseMimeType = "application/json"
+	}
 
 	body, err := json.Marshal(requestPayload)
 	if err != nil {
@@ -587,6 +590,80 @@ func (s *aiService) generateContent(ctx context.Context, model string, prompt st
 	}
 
 	return text, nil
+}
+
+func extractTranslationTextResponse(responseText string) string {
+	trimmed := strings.TrimSpace(responseText)
+	if trimmed == "" {
+		return ""
+	}
+
+	for range 3 {
+		normalized := normalizeJSONText(trimmed)
+		if normalized == "" {
+			return ""
+		}
+
+		var wrapped struct {
+			TranslatedText string `json:"translatedText"`
+			Text           string `json:"text"`
+			Result         string `json:"result"`
+			Translation    string `json:"translation"`
+		}
+		if err := json.Unmarshal([]byte(normalized), &wrapped); err == nil {
+			if candidate := firstNonEmptyString(
+				wrapped.TranslatedText,
+				wrapped.Text,
+				wrapped.Result,
+				wrapped.Translation,
+			); candidate != "" {
+				trimmed = candidate
+				continue
+			}
+		}
+
+		var plainString string
+		if err := json.Unmarshal([]byte(normalized), &plainString); err == nil {
+			trimmed = plainString
+			continue
+		}
+
+		if unquoted, err := strconv.Unquote(normalized); err == nil {
+			trimmed = unquoted
+			continue
+		}
+
+		return strings.TrimSpace(stripWrappingQuotes(normalized))
+	}
+
+	return strings.TrimSpace(stripWrappingQuotes(trimmed))
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+
+	return ""
+}
+
+func stripWrappingQuotes(value string) string {
+	trimmed := strings.TrimSpace(value)
+	for len(trimmed) >= 2 {
+		if strings.HasPrefix(trimmed, `"`) && strings.HasSuffix(trimmed, `"`) {
+			trimmed = strings.TrimSpace(trimmed[1 : len(trimmed)-1])
+			continue
+		}
+		if strings.HasPrefix(trimmed, `'`) && strings.HasSuffix(trimmed, `'`) {
+			trimmed = strings.TrimSpace(trimmed[1 : len(trimmed)-1])
+			continue
+		}
+		break
+	}
+
+	return trimmed
 }
 
 func decodeJSONObject(responseText string, out interface{}) error {

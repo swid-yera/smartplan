@@ -59,7 +59,7 @@ export function formatMinuteRange(firstTime: number, secondTime: number, thirdTi
 }
 
 export function formatDate(value?: string | null, locale: Locale = 'ru') {
-	if (!value) return 'Пусто'
+	if (!value) return locale === 'kk' ? 'Бос' : 'Пусто'
 
 	const parsed = new Date(value)
 

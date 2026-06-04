@@ -43,7 +43,7 @@ export function LessonDetailsContent({
 	userRole,
 }: IProps) {
 	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const { push } = useRouter()
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
@@ -351,7 +351,7 @@ export function LessonDetailsContent({
 
 			<LessonGoalsGrid cardClassName={cardClassName} lesson={lesson} lessonLocale={activeLocale} />
 
-			<LessonProgressCard cardClassName={cardClassName} lessonProgress={lessonProgress} />
+			<LessonProgressCard cardClassName={cardClassName} lessonLocale={activeLocale} lessonProgress={lessonProgress} />
 
 			<LessonResourcesGrid cardClassName={cardClassName} lesson={lesson} lessonLocale={activeLocale} />
 
