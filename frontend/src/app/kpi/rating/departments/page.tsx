@@ -1,6 +1,9 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
+
+import Link from 'next/link'
 
 import { Loader, PageTitle } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
@@ -13,12 +16,24 @@ import { RatingDistributionChart } from '../components/rating-distribution-chart
 import { RatingNav } from '../components/rating-nav'
 import localeDictionary from './locale.json'
 
-const placeStyles = (index: number) => {
-	if (index === 0) return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300'
-	if (index === 1) return 'bg-gray-50 text-gray-700 dark:bg-zinc-900 dark:text-zinc-300'
-	if (index === 2) return 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+const DEPARTMENT_COLORS = [
+	'var(--chart-1)',
+	'var(--chart-2)',
+	'var(--chart-3)',
+	'var(--chart-4)',
+	'var(--chart-5)',
+] as const
 
-	return 'border'
+const getDepartmentColor = (index: number) => DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]
+
+const getDepartmentStyle = (index: number): CSSProperties => {
+	const color = getDepartmentColor(index)
+
+	return {
+		backgroundColor: `color-mix(in oklch, ${color} 10%, var(--background))`,
+		borderLeftColor: color,
+		color,
+	}
 }
 
 export default function RatingDepartmentsPage() {
@@ -40,11 +55,10 @@ export default function RatingDepartmentsPage() {
 
 	if (sortedDepartments.length === 0) {
 		return (
-			<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
+			<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
 				<PageTitle description={t.description}>{t.title}</PageTitle>
 				<RatingNav
 					labels={{
-						allTeachers: t.allTeachers,
 						departments: t.departments,
 						stats: t.stats,
 						top20: t.top20,
@@ -67,11 +81,10 @@ export default function RatingDepartmentsPage() {
 	}))
 
 	return (
-		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
+		<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 			<RatingNav
 				labels={{
-					allTeachers: t.allTeachers,
 					departments: t.departments,
 					stats: t.stats,
 					top20: t.top20,
@@ -95,12 +108,16 @@ export default function RatingDepartmentsPage() {
 					{topDepartments.map((department, index) => (
 						<div
 							key={department.keycloakId}
-							className={`flex items-center justify-between rounded-lg p-3 ${placeStyles(index)}`}
+							className='flex items-center justify-between rounded-lg border border-border border-l-4 p-3 transition-colors'
+							style={getDepartmentStyle(index)}
 						>
 							<div>
-								<p className='font-medium'>
+								<Link
+									className='font-medium text-foreground hover:underline'
+									href={`/kpi/rating/departments/${department.keycloakId}`}
+								>
 									{index + 1}. {getLocaleText(department.name, locale)}
-								</p>
+								</Link>
 								<p className='text-xs text-muted-foreground'>
 									{department.userCount} {t.usersCount}
 								</p>
@@ -116,7 +133,12 @@ export default function RatingDepartmentsPage() {
 					<CardTitle>{t.distribution}</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<RatingDistributionChart data={chartData} height={320} valueLabel={t.points} />
+					<RatingDistributionChart
+						barColors={DEPARTMENT_COLORS}
+						data={chartData}
+						height={320}
+						valueLabel={t.points}
+					/>
 				</CardContent>
 			</Card>
 		</section>

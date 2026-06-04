@@ -36,6 +36,24 @@ export class AwardService {
 		})
 	}
 
+	// get top departments rating for statistics
+	getTopDepartmentsOptions = () => {
+		return queryOptions<IDepartmentRatingResponse[]>({
+			queryKey: ['statistics-top-departments'],
+			queryFn: async () => {
+				const { data } = await api.get<IDepartmentRatingResponse[]>('/statistics/departments/top', {
+					params: {
+						locale: getCurrentBackendLocale(),
+					},
+				})
+
+				if (!data) return []
+
+				return data
+			},
+		})
+	}
+
 	// get all awards
 	getAllOptions = ({
 		currentPage = 1,

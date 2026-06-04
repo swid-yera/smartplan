@@ -5,11 +5,10 @@ import { usePathname } from 'next/navigation'
 
 import { cn } from '@lib'
 import { Button } from '@shadcn'
-import { BarChart3, Building2, Crown, Users } from 'lucide-react'
+import { BarChart3, Building2, Crown } from 'lucide-react'
 
 interface IRatingNavLabels {
 	top20: string
-	allTeachers: string
 	departments: string
 	stats: string
 }
@@ -21,7 +20,6 @@ interface IRatingNavProps {
 
 const navItems = [
 	{ href: '/kpi/rating', key: 'top20', icon: Crown },
-	{ href: '/kpi/rating/all', key: 'allTeachers', icon: Users },
 	{ href: '/kpi/rating/departments', key: 'departments', icon: Building2 },
 	{ href: '/kpi/rating/stats', key: 'stats', icon: BarChart3 },
 ] as const

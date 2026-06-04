@@ -59,6 +59,20 @@ export class UserService {
 		})
 	}
 
+	// get teachers rating with departments for statistics
+	getTeachersRatingOptions = () => {
+		return queryOptions<IUser[]>({
+			queryKey: ['teachers-rating'],
+			queryFn: async () => {
+				const { data } = await api.get<IUser[]>('/statistics/teachers/rating')
+
+				if (!data) return []
+
+				return data
+			},
+		})
+	}
+
 	// get by id
 	getByIdOptions = (id: string) => {
 		return queryOptions<IUser>({

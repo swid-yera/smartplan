@@ -136,13 +136,6 @@ export const navMain: INav[] = [
 				role: RoleEnum.METHODIST,
 			},
 			{
-				id: 'kpi-review',
-				icon: ClipboardClock,
-				titleKey: 'kpiReview',
-				url: '/kpi/all?status=IN_REVIEW&sort=desc&page=1',
-				role: RoleEnum.METHODIST,
-			},
-			{
 				id: 'kpi-rating',
 				icon: ChartBar,
 				titleKey: 'kpiRating',

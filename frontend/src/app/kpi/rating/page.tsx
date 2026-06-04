@@ -1,9 +1,11 @@
 'use client'
 
+import type { CSSProperties } from 'react'
+
 import Link from 'next/link'
 
 import { Loader, PageTitle } from '@components'
-import { getUILocaleSection } from '@helpers'
+import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
 	Card,
@@ -20,55 +22,77 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { Crown, Medal } from 'lucide-react'
 
 import { RatingNav } from './components/rating-nav'
 import localeDictionary from './locale.json'
 
-const placeStyles = (index: number) => {
-	if (index === 0) return 'bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400'
-	if (index === 1) return 'bg-gray-50 text-gray-600 dark:bg-zinc-900 dark:text-zinc-300'
-	if (index === 2) return 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400'
+const RATING_COLORS = [
+	'var(--chart-1)',
+	'var(--chart-2)',
+	'var(--chart-3)',
+	'var(--chart-4)',
+	'var(--chart-5)',
+] as const
 
-	return ''
+const getDepartmentColor = (index: number) => RATING_COLORS[index % RATING_COLORS.length]
+
+const getDepartmentStyle = (index: number): CSSProperties => {
+	const color = getDepartmentColor(index)
+
+	return {
+		backgroundColor: `color-mix(in oklch, ${color} 10%, var(--background))`,
+		borderLeftColor: color,
+	}
 }
 
-const placeIcon = (index: number) => {
-	if (index === 0) return <Crown className='h-4 w-4 text-yellow-500' />
-	if (index === 1) return <Medal className='h-4 w-4 text-gray-500' />
-	if (index === 2) return <Medal className='h-4 w-4 text-orange-500' />
-
-	return null
-}
+const getTeacherRowStyle = (color: string): CSSProperties => ({
+	backgroundColor: `color-mix(in oklch, ${color} 9%, var(--background))`,
+	borderLeftColor: color,
+})
 
 export default function RatingPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
-	const { data: usersData, isLoading } = useQuery({
-		...services.user.getAllRatingOptions({
-			currentPage: 1,
-			pageSize: 20,
-			search: '',
-		}),
+	const { data: departments = [], isLoading } = useQuery({
+		...services.statistics.getTopTeachersByDepartmentOptions(),
 	})
 
-	if (isLoading || !usersData) {
+	if (isLoading) {
 		return <Loader fullScreen type='default' />
 	}
 
+	if (departments.length === 0) {
+		return (
+			<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
+				<PageTitle description={t.description}>{t.title}</PageTitle>
+				<RatingNav
+					labels={{
+						departments: t.departments,
+						stats: t.stats,
+						top20: t.top20,
+					}}
+				/>
+				<Card className='border-dashed'>
+					<CardContent className='py-12 text-center'>
+						<p className='text-base font-medium'>{t.emptyTitle}</p>
+						<p className='mt-2 text-sm text-muted-foreground'>{t.emptyDescription}</p>
+					</CardContent>
+				</Card>
+			</section>
+		)
+	}
+
 	return (
-		<section className='mx-auto w-full max-w-5xl p-6 space-y-6'>
+		<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 			<RatingNav
 				labels={{
-					allTeachers: t.allTeachers,
 					departments: t.departments,
 					stats: t.stats,
 					top20: t.top20,
 				}}
 			/>
 
-			{/* HEADER */}
 			<Card>
 				<CardHeader>
 					<div>
@@ -78,37 +102,75 @@ export default function RatingPage() {
 				</CardHeader>
 			</Card>
 
-			{/* TABLE */}
-			<Card>
-				<CardContent className='p-0'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className='w-16 text-center'>#</TableHead>
-								<TableHead>{t.teacher}</TableHead>
-								<TableHead className='text-right pr-10'>{t.points}</TableHead>
-							</TableRow>
-						</TableHeader>
+			<div className='space-y-4'>
+				{departments.map((department, departmentIndex) => {
+					const color = getDepartmentColor(departmentIndex)
+					const topTeachersCount = department.teachers.length
+					const style = getDepartmentStyle(departmentIndex)
 
-						<TableBody>
-							{usersData.data.map((u, index) => (
-								<TableRow key={u.keycloakId} className={placeStyles(index)}>
-									<TableCell className='py-4 text-center font-semibold'>{index + 1}</TableCell>
-
-									<TableCell>
-										<Link className='flex items-center gap-2 text-base' href={`/users/${u.keycloakId}`}>
-											{placeIcon(index)}
-											{u.firstName} {u.lastName}
-										</Link>
-									</TableCell>
-
-									<TableCell className='text-right text-base font-semibold pr-10'>{u.totalPoints}</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</CardContent>
-			</Card>
+					return (
+						<Card key={department.keycloakId} className='overflow-hidden border-l-4' style={style}>
+							<CardHeader className='space-y-3'>
+								<div className='flex flex-wrap items-start justify-between gap-3'>
+									<div className='space-y-1'>
+										<div className='flex items-center gap-2'>
+											<span className='h-2.5 w-2.5 rounded-full' style={{ backgroundColor: color }} />
+											<Link
+												className='text-xl font-semibold text-foreground hover:underline'
+												href={`/kpi/rating/departments/${department.keycloakId}`}
+											>
+												{getLocaleText(department.name, locale)}
+											</Link>
+										</div>
+										<CardDescription>
+											{department.teachersCount} {t.teachersCount}
+										</CardDescription>
+									</div>
+									<div
+										className='rounded-full border px-3 py-1 text-xs font-medium'
+										style={{ borderColor: color, color }}
+									>
+										{topTeachersCount}/{department.teachersCount}
+									</div>
+								</div>
+							</CardHeader>
+							<CardContent className='p-0'>
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead className='w-12 text-center'>#</TableHead>
+											<TableHead className='w-16 text-right'>{t.points}</TableHead>
+											<TableHead>{t.teacher}</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{department.teachers.map((teacher, teacherIndex) => (
+											<TableRow
+												key={teacher.keycloakId}
+												className='border-l-4 transition-colors hover:bg-muted/40'
+												style={getTeacherRowStyle(color)}
+											>
+												<TableCell className='w-12 text-center font-semibold'>{teacherIndex + 1}</TableCell>
+												<TableCell className='w-16 whitespace-nowrap text-right font-semibold'>
+													{teacher.totalPoints ?? 0}
+												</TableCell>
+												<TableCell className='py-4'>
+													<Link
+														className='block text-base font-medium hover:underline'
+														href={`/users/${teacher.keycloakId}?tab=kpi`}
+													>
+														{teacher.firstName} {teacher.lastName}
+													</Link>
+												</TableCell>
+											</TableRow>
+										))}
+									</TableBody>
+								</Table>
+							</CardContent>
+						</Card>
+					)
+				})}
+			</div>
 		</section>
 	)
 }

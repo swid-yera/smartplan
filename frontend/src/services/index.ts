@@ -6,6 +6,7 @@ import { GroupService } from './group.service'
 import { HikService } from './hik.service'
 import { LessonService } from './lesson.service'
 import { RupService } from './rup.service'
+import { StatisticsService } from './statistics.service'
 import { UserService } from './user.service'
 
 // exporting services
@@ -18,5 +19,6 @@ export const services = {
 	award: new AwardService(),
 	categories: new CategoriesService(),
 	lesson: new LessonService(),
+	statistics: new StatisticsService(),
 	hik: new HikService(),
 }
