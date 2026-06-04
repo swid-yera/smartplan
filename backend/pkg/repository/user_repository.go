@@ -101,6 +101,14 @@ func (r *UsersPostgres) GetUsersRatingPaginated(ctx context.Context, limit int32
 	})
 }
 
+func (r *UsersPostgres) GetTeachersRatingWithDepartments(ctx context.Context) ([]storage.User, error) {
+	return r.queries.GetTeachersRatingWithDepartments(ctx)
+}
+
+func (r *UsersPostgres) GetTopAwardDepartmentsStats(ctx context.Context) ([]storage.GetTopAwardDepartmentsStatsRow, error) {
+	return r.queries.GetTopAwardDepartmentsStats(ctx)
+}
+
 func (r *UsersPostgres) GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, departmentID pgtype.UUID) ([]storage.User, error) {
 	return r.queries.GetUsersPaginated(ctx, storage.GetUsersPaginatedParams{
 		Search:       search,

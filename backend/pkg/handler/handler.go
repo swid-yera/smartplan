@@ -17,6 +17,7 @@ type Router struct {
 	rup                   *RupHandler
 	award                 *AwardHandler
 	category              *CategoryHandler
+	statistics            *StatisticsHandler
 	groups                *GroupsHandler
 	lesson                *LessonHandler
 	ai                    *AIHandler
@@ -31,6 +32,7 @@ func NewRouter(
 	rup *RupHandler,
 	award *AwardHandler,
 	category *CategoryHandler,
+	statistics *StatisticsHandler,
 	groups *GroupsHandler,
 	lesson *LessonHandler,
 	ai *AIHandler,
@@ -44,6 +46,7 @@ func NewRouter(
 		rup:                   rup,
 		award:                 award,
 		category:              category,
+		statistics:            statistics,
 		webhooks:              webhooks,
 		groups:                groups,
 		lesson:                lesson,
@@ -195,6 +198,17 @@ func (r *Router) Init() *gin.Engine {
 			categories.GET("/:id", r.category.GetCategoryByID)
 			categories.PUT("/:id", r.category.UpdateCategory)
 			categories.DELETE("/:id", r.category.DeleteCategory)
+		}
+
+		// --- STATISTICS ---
+		if r.statistics != nil {
+			statistics := protected.Group("/statistics")
+			{
+				statistics.GET("/teachers/rating", r.statistics.GetTeachersRating)
+				statistics.GET("/departments/top", r.statistics.GetTopDepartments)
+				statistics.GET("/departments/top-teachers", r.statistics.GetTopTeachersByDepartment)
+				statistics.GET("/departments/:id/teachers", r.statistics.GetTeachersByDepartment)
+			}
 		}
 
 		// --- GROUPS ---

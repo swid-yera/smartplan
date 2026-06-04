@@ -113,6 +113,21 @@ ORDER BY
     created_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
+-- name: GetTeachersRatingWithDepartments :many
+SELECT *
+FROM users u
+WHERE
+    u.role = 'TEACHER'::user_role
+    AND EXISTS (
+        SELECT 1
+        FROM departments d
+        WHERE u.keycloak_id = ANY(d.users)
+    )
+ORDER BY
+    u.total_points DESC,
+    u.created_at DESC,
+    u.keycloak_id DESC;
+
 -- name: CountUsersRatingFiltered :one
 SELECT COUNT(*)
 FROM users
@@ -198,6 +213,21 @@ GROUP BY
     d.keycloak_id,
     d.name
 ORDER BY d.keycloak_id;
+
+-- name: GetTopAwardDepartmentsStats :many
+SELECT
+    d.keycloak_id,
+    d.name,
+    COALESCE(SUM(u.total_points), 0)::INT AS total_points,
+    COALESCE(COUNT(u.keycloak_id), 0)::INT AS user_count
+FROM departments d
+LEFT JOIN LATERAL unnest(d.users) AS du(user_id) ON TRUE
+LEFT JOIN users u ON u.keycloak_id = du.user_id
+GROUP BY
+    d.keycloak_id,
+    d.name
+ORDER BY total_points DESC, d.keycloak_id
+LIMIT 3;
 
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
@@ -663,8 +693,9 @@ SET
     status = $2,
     reason = $3,
     methodist = $4,
-    criteria = $5,
-    total_points = $6,
+    variant = $5,
+    criteria = $6,
+    total_points = $7,
     updated_at = NOW()
 WHERE
     id = $1;

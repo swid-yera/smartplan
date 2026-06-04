@@ -20,54 +20,124 @@ import {
 	SheetTitle,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { CriteriaMethodEnum, type ICriteria } from '@types'
+import { CriteriaMethodEnum, type ICriteria, type IVariant } from '@types'
 
 import localeDictionary from './locale.json'
 
 interface IApproveSheetProps {
 	isOpen: boolean
 	onOpenChange: (state: boolean) => void
-	onStatusChange: (criteriaId: string, awardPoints: number) => void
-	criteriaOptions: ICriteria[]
+	onStatusChange: (variantId: string, criteriaId: string, awardPoints: number) => void
+	variantOptions: IVariant[]
+	selectedVariant?: IVariant | null
 	selectedCriteria?: ICriteria | null
+}
+
+const resolveInitialSelection = (
+	variantOptions: IVariant[],
+	selectedVariant: IVariant | null,
+	selectedCriteria: ICriteria | null,
+) => {
+	const initialVariant =
+		(selectedVariant && variantOptions.some((variant) => variant.id === selectedVariant.id)
+			? selectedVariant
+			: null) ??
+		variantOptions[0] ??
+		selectedVariant ??
+		null
+
+	const criteriaOptions = initialVariant?.criteria ?? []
+	const initialCriteria =
+		(selectedCriteria && criteriaOptions.some((criteria) => criteria.id === selectedCriteria.id)
+			? selectedCriteria
+			: null) ??
+		criteriaOptions[0] ??
+		selectedCriteria ??
+		null
+
+	return {
+		variantId: initialVariant?.id ?? '',
+		criteriaId: initialCriteria?.id ?? '',
+	}
 }
 
 export const ApproveSheet = ({
 	isOpen,
 	onOpenChange,
 	onStatusChange,
-	criteriaOptions = [],
+	variantOptions = [],
+	selectedVariant = null,
 	selectedCriteria = null,
 }: IApproveSheetProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).approveSheet
-	const [currentCriteriaId, setCurrentCriteriaId] = useState(selectedCriteria?.id ?? criteriaOptions[0]?.id ?? '')
-	const selectedCriteriaFallback = selectedCriteria ?? criteriaOptions[0] ?? null
-	const currentCriteria = useMemo(
-		() => criteriaOptions.find((criteria) => criteria.id === currentCriteriaId) || selectedCriteriaFallback || null,
-		[currentCriteriaId, criteriaOptions, selectedCriteriaFallback],
+
+	const [isEditing, setIsEditing] = useState(false)
+	const initialSelection = resolveInitialSelection(variantOptions, selectedVariant, selectedCriteria)
+	const [currentVariantId, setCurrentVariantId] = useState(initialSelection.variantId)
+	const [currentCriteriaId, setCurrentCriteriaId] = useState(initialSelection.criteriaId)
+
+	const currentVariant = useMemo(
+		() => variantOptions.find((variant) => variant.id === currentVariantId) || selectedVariant || null,
+		[currentVariantId, selectedVariant, variantOptions],
 	)
+	const currentCriteriaOptions = currentVariant?.criteria ?? []
+	const currentCriteria = useMemo(
+		() =>
+			currentCriteriaOptions.find((criteria) => criteria.id === currentCriteriaId) ||
+			currentCriteriaOptions[0] ||
+			null,
+		[currentCriteriaId, currentCriteriaOptions],
+	)
+
 	const currentPoints = currentCriteria?.points ?? []
 	const isMeasuring = currentCriteria?.method === CriteriaMethodEnum.MEASURING
 	const min = currentPoints[0] ?? 0
 	const max = currentPoints[currentPoints.length - 1] ?? min
+	const variantName = currentVariant ? getLocaleText(currentVariant.name, locale) : ''
 	const criteriaName = currentCriteria ? getLocaleText(currentCriteria.name, locale) : ''
 	const [awardPoints, setAwardPoints] = useState<number>(min)
 
 	useEffect(() => {
-		const nextCriteriaId = selectedCriteria?.id ?? criteriaOptions[0]?.id ?? ''
+		const nextSelection = resolveInitialSelection(variantOptions, selectedVariant, selectedCriteria)
 
-		setCurrentCriteriaId(nextCriteriaId)
-	}, [criteriaOptions, isOpen, selectedCriteria])
+		setIsEditing(false)
+		setCurrentVariantId(nextSelection.variantId)
+		setCurrentCriteriaId(nextSelection.criteriaId)
+	}, [isOpen, selectedCriteria?.id, selectedVariant?.id, variantOptions])
 
 	useEffect(() => {
 		setAwardPoints(min)
 	}, [currentCriteria?.id, min])
 
-	const handleApprove = () => {
-		if (!currentCriteria) return
+	const handleVariantChange = (variantId: string) => {
+		setCurrentVariantId(variantId)
 
-		onStatusChange(currentCriteria.id, awardPoints)
+		const nextVariant = variantOptions.find((variant) => variant.id === variantId) || null
+
+		setCurrentCriteriaId(nextVariant?.criteria[0]?.id ?? '')
+	}
+
+	const handleEditStart = () => {
+		setIsEditing(true)
+	}
+
+	const handleEditCancel = () => {
+		const nextSelection = resolveInitialSelection(variantOptions, selectedVariant, selectedCriteria)
+
+		setIsEditing(false)
+		setCurrentVariantId(nextSelection.variantId)
+		setCurrentCriteriaId(nextSelection.criteriaId)
+	}
+
+	const handleEditSave = () => {
+		setIsEditing(false)
+	}
+
+	const handleApprove = () => {
+		if (!currentVariant || !currentCriteria) return
+
+		onStatusChange(currentVariant.id, currentCriteria.id, awardPoints)
 		onOpenChange(false)
 	}
 
@@ -79,41 +149,88 @@ export const ApproveSheet = ({
 					<SheetDescription>{t.description}</SheetDescription>
 				</SheetHeader>
 
-				<div className='space-y-3 px-3 text-sm'>
-					{criteriaOptions.length > 1 && (
-						<div className='space-y-2'>
-							<Label htmlFor='criteria-select'>{t.criteriaSelectLabel}</Label>
-							<Select
-								value={currentCriteriaId}
-								onValueChange={(value) => {
-									setCurrentCriteriaId(value)
-								}}
-							>
-								<SelectTrigger className='w-full' id='criteria-select'>
-									<SelectValue placeholder={t.criteriaSelectPlaceholder} />
-								</SelectTrigger>
-								<SelectContent>
-									{criteriaOptions.map((criteria) => (
-										<SelectItem key={criteria.id} value={criteria.id}>
-											{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} баллов)
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+				<div className='space-y-4 px-3 text-sm'>
+					<div className='rounded-lg border bg-muted/40 p-3 space-y-3'>
+						<div className='flex items-center justify-between gap-2'>
+							<p className='text-sm font-medium'>{t.selectionTitle}</p>
+							{!isEditing ? (
+								<Button size='sm' type='button' variant='outline' onClick={handleEditStart}>
+									{t.edit}
+								</Button>
+							) : (
+								<div className='flex items-center gap-2'>
+									<Button size='sm' type='button' variant='outline' onClick={handleEditCancel}>
+										{t.cancelEdit}
+									</Button>
+									<Button size='sm' type='button' variant='secondary' onClick={handleEditSave}>
+										{t.saveSelection}
+									</Button>
+								</div>
+							)}
+						</div>
+
+						<div className='space-y-2 text-sm'>
+							<p>
+								<span className='text-muted-foreground'>{t.variantLabel}:</span>{' '}
+								<span className='font-medium'>{variantName || t.empty}</span>
+							</p>
+							<p>
+								<span className='text-muted-foreground'>{t.criteriaLabel}:</span>{' '}
+								<span className='font-medium'>{criteriaName || t.empty}</span>
+							</p>
+							<p>
+								<span className='text-muted-foreground'>{t.methodLabel}:</span>{' '}
+								<span className='font-medium'>
+									{currentCriteria?.method === CriteriaMethodEnum.NORMAL ? t.methodFixed : t.methodMeasuring}
+								</span>
+							</p>
+						</div>
+					</div>
+
+					{isEditing && (
+						<div className='space-y-3'>
+							{variantOptions.length > 1 && (
+								<div className='space-y-2'>
+									<Label htmlFor='variant-select'>{t.variantSelectLabel}</Label>
+									<Select value={currentVariantId} onValueChange={handleVariantChange}>
+										<SelectTrigger className='w-full' id='variant-select'>
+											<SelectValue placeholder={t.variantSelectPlaceholder} />
+										</SelectTrigger>
+										<SelectContent>
+											{variantOptions.map((variant) => (
+												<SelectItem key={variant.id} value={variant.id}>
+													{getLocaleText(variant.name, locale)}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							)}
+
+							{currentCriteriaOptions.length > 1 && (
+								<div className='space-y-2'>
+									<Label htmlFor='criteria-select'>{t.criteriaSelectLabel}</Label>
+									<Select
+										value={currentCriteriaId}
+										onValueChange={(value) => {
+											setCurrentCriteriaId(value)
+										}}
+									>
+										<SelectTrigger className='w-full' id='criteria-select'>
+											<SelectValue placeholder={t.criteriaSelectPlaceholder} />
+										</SelectTrigger>
+										<SelectContent>
+											{currentCriteriaOptions.map((criteria) => (
+												<SelectItem key={criteria.id} value={criteria.id}>
+													{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} баллов)
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							)}
 						</div>
 					)}
-
-					<p>
-						<span className='text-muted-foreground'>{t.criteriaLabel}:</span>{' '}
-						<span className='font-medium'>{criteriaName}</span>
-					</p>
-
-					<p>
-						<span className='text-muted-foreground'>{t.methodLabel}:</span>{' '}
-						<span className='font-medium'>
-							{currentCriteria?.method === CriteriaMethodEnum.NORMAL ? t.methodFixed : t.methodMeasuring}
-						</span>
-					</p>
 
 					{currentCriteria?.method === CriteriaMethodEnum.NORMAL && (
 						<div className='rounded-md border bg-muted px-3 py-2'>
@@ -150,7 +267,7 @@ export const ApproveSheet = ({
 					<Button variant='outline' onClick={() => onOpenChange(false)}>
 						{t.cancel}
 					</Button>
-					<Button disabled={!currentCriteria} variant='default' onClick={handleApprove}>
+					<Button disabled={!currentVariant || !currentCriteria} variant='default' onClick={handleApprove}>
 						{t.approve}
 					</Button>
 				</SheetFooter>

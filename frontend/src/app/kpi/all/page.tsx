@@ -5,8 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { AwardsCard, Loader, PageTitle, Pagination } from '@components'
 import { getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
-import { useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { RoleEnum, type StatusEnum } from '@types'
 
@@ -73,7 +72,7 @@ const Page = () => {
 		<section className='p-4 w-full space-y-4'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 
-			{canSearchUsers && <KpiUserSearchCard className='mb-4' />}
+			{canSearchUsers && <KpiUserSearchCard />}
 
 			{/* фильтр и поиск */}
 			<AwardFilterCard compact className='mb-4' />

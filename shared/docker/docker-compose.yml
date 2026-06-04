@@ -2,7 +2,7 @@ name: eduplan
 
 services:
    ui:
-      container_name: ui
+      container_name: eduplan-ui
       build:
          context: ../../frontend
          dockerfile: Dockerfile
@@ -24,7 +24,7 @@ services:
          - app-network
 
    api:
-      container_name: api
+      container_name: eduplan-api
       build:
          context: ../../backend
          dockerfile: Dockerfile
@@ -50,7 +50,7 @@ services:
          - app-network
 
    render:
-      container_name: render
+      container_name: eduplan-render
       build:
          context: ../../document-rendering-service
          dockerfile: Dockerfile
@@ -63,7 +63,7 @@ services:
          - app-network
 
    redis:
-      container_name: redis
+      container_name: eduplan-redis
       image: redis:7-alpine
       restart: unless-stopped
       ports:
@@ -79,7 +79,7 @@ services:
          retries: 5
 
    db:
-      container_name: db
+      container_name: eduplan-db
       image: postgres:16
       restart: unless-stopped
       environment:

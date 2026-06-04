@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -72,12 +73,28 @@ type PaginatedUsersResponse struct {
 	Meta PaginationMeta `json:"meta"`
 }
 
+type DepartmentTopTeachersResponse struct {
+	KeycloakID    uuid.UUID               `json:"keycloakId"`
+	Name          localization.LocaleText `json:"name"`
+	TeachersCount int                    `json:"teachersCount"`
+	Teachers      []*User                 `json:"teachers"`
+}
+
+type departmentTeachersGroup struct {
+	response DepartmentTopTeachersResponse
+	score    int32
+}
+
 type UserService interface {
 	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error)
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
 	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
 	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string) (*PaginatedUsersResponse, error)
+	GetTeachersRatingWithDepartments(ctx context.Context) ([]*User, error)
+	GetTopTeachersByDepartment(ctx context.Context) ([]DepartmentTopTeachersResponse, error)
+	GetTeachersByDepartment(ctx context.Context, departmentID uuid.UUID) (*DepartmentTopTeachersResponse, error)
+	GetTopAwardDepartmentsStats(ctx context.Context) ([]AwardDepartmentResponse, error)
 	IssueViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, note string) (*ViolationActionResponse, error)
 	UpdateViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, violationID uuid.UUID, note string) (*ViolationActionResponse, error)
 	DeleteViolation(ctx context.Context, issuedByID uuid.UUID, userID uuid.UUID, violationID uuid.UUID) error
@@ -241,6 +258,193 @@ func (s *userService) GetUsersRatingPaginated(
 			PageSize:    pageSize,
 		},
 	}, nil
+}
+
+func (s *userService) GetTeachersRatingWithDepartments(ctx context.Context) ([]*User, error) {
+	dbUsers, err := s.repo.GetTeachersRatingWithDepartments(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]*User, 0, len(dbUsers))
+	for _, dbUser := range dbUsers {
+		mapped, mapErr := s.toServiceUser(ctx, &dbUser)
+		if mapErr != nil {
+			return nil, mapErr
+		}
+		users = append(users, mapped)
+	}
+
+	return users, nil
+}
+
+func (s *userService) GetTopTeachersByDepartment(ctx context.Context) ([]DepartmentTopTeachersResponse, error) {
+	users, err := s.GetTeachersRatingWithDepartments(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	groups := s.groupTeachersByDepartment(users, 3)
+	result := make([]DepartmentTopTeachersResponse, 0, len(groups))
+	for _, group := range groups {
+		result = append(result, group.response)
+	}
+
+	return result, nil
+}
+
+func (s *userService) GetTeachersByDepartment(ctx context.Context, departmentID uuid.UUID) (*DepartmentTopTeachersResponse, error) {
+	users, err := s.GetTeachersRatingWithDepartments(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		if user == nil {
+			continue
+		}
+
+		for _, department := range user.Departments {
+			if department.KeycloakID != departmentID {
+				continue
+			}
+
+			teachers := make([]*User, 0)
+			for _, candidate := range users {
+				if candidate == nil {
+					continue
+				}
+
+				for _, candidateDepartment := range candidate.Departments {
+					if candidateDepartment.KeycloakID == departmentID {
+						teachers = append(teachers, candidate)
+						break
+					}
+				}
+			}
+
+			sortTeachersByScoreAndName(teachers)
+
+			return &DepartmentTopTeachersResponse{
+				KeycloakID:    department.KeycloakID,
+				Name:          department.Name,
+				TeachersCount: len(teachers),
+				Teachers:      teachers,
+			}, nil
+		}
+	}
+
+	return nil, &HTTPStatusError{StatusCode: 404, Message: "department not found"}
+}
+
+func (s *userService) groupTeachersByDepartment(users []*User, limit int) []departmentTeachersGroup {
+	groups := make(map[string]*departmentTeachersGroup)
+
+	for _, user := range users {
+		if user == nil {
+			continue
+		}
+
+		for _, department := range user.Departments {
+			key := department.KeycloakID.String()
+			group, ok := groups[key]
+			if !ok {
+				group = &departmentTeachersGroup{
+					response: DepartmentTopTeachersResponse{
+						KeycloakID:    department.KeycloakID,
+						Name:          department.Name,
+						Teachers:      []*User{},
+						TeachersCount: 0,
+					},
+				}
+				groups[key] = group
+			}
+
+			group.response.Teachers = append(group.response.Teachers, user)
+			group.response.TeachersCount++
+		}
+	}
+
+	result := make([]departmentTeachersGroup, 0, len(groups))
+	for _, group := range groups {
+		sortTeachersByScoreAndName(group.response.Teachers)
+
+		if limit > 0 && len(group.response.Teachers) > limit {
+			group.response.Teachers = group.response.Teachers[:limit]
+		}
+
+		for _, teacher := range group.response.Teachers {
+			if teacher != nil {
+				group.score += teacher.TotalPoints
+			}
+		}
+
+		result = append(result, *group)
+	}
+
+	sort.SliceStable(result, func(i, j int) bool {
+		if result[i].score != result[j].score {
+			return result[i].score > result[j].score
+		}
+
+		left := localization.LocaleTextFromJSONB(result[i].response.Name.ToJSONB())
+		right := localization.LocaleTextFromJSONB(result[j].response.Name.ToJSONB())
+		return strings.TrimSpace(left.Ru+left.Kz) < strings.TrimSpace(right.Ru+right.Kz)
+	})
+
+	return result
+}
+
+func sortTeachersByScoreAndName(teachers []*User) {
+	sort.SliceStable(teachers, func(i, j int) bool {
+		left := teachers[i]
+		right := teachers[j]
+
+		leftPoints := int32(0)
+		rightPoints := int32(0)
+		leftName := ""
+		rightName := ""
+		leftID := ""
+		rightID := ""
+
+		if left != nil {
+			leftPoints = left.TotalPoints
+			leftName = strings.TrimSpace(left.FirstName + " " + left.LastName)
+			leftID = left.KeycloakID.String()
+		}
+		if right != nil {
+			rightPoints = right.TotalPoints
+			rightName = strings.TrimSpace(right.FirstName + " " + right.LastName)
+			rightID = right.KeycloakID.String()
+		}
+
+		if leftPoints != rightPoints {
+			return leftPoints > rightPoints
+		}
+		if leftName != rightName {
+			return leftName < rightName
+		}
+		return leftID < rightID
+	})
+}
+
+func (s *userService) GetTopAwardDepartmentsStats(ctx context.Context) ([]AwardDepartmentResponse, error) {
+	rows, err := s.repo.GetTopAwardDepartmentsStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]AwardDepartmentResponse, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, AwardDepartmentResponse{
+			KeycloakID:  row.KeycloakID,
+			Name:        localization.LocaleTextFromJSONB(row.Name),
+			TotalPoints: row.TotalPoints,
+			UserCount:   row.UserCount,
+		})
+	}
+
+	return result, nil
 }
 
 func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*User, error) {

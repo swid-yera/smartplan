@@ -78,7 +78,7 @@ export const KpiUserSearchCard: FC<IProps> = ({ className }) => {
 			<Link
 				key={user.keycloakId}
 				className='flex items-center justify-between gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/60'
-				href={`/kpi/users/${user.keycloakId}`}
+				href={`/users/${user.keycloakId}?tab=kpi`}
 			>
 				<div className='min-w-0 flex-1'>
 					<p className='truncate font-medium hover:underline'>{fullName}</p>
@@ -105,7 +105,7 @@ export const KpiUserSearchCard: FC<IProps> = ({ className }) => {
 			</CardHeader>
 
 			<CardContent className='space-y-3'>
-				<div className='relative w-full max-w-xs space-y-2 sm:max-w-sm'>
+				<div className='relative w-full max-w-xs sm:max-w-sm'>
 					<label className='text-xs font-medium text-muted-foreground'>{t.label}</label>
 					<Input
 						autoComplete='off'
@@ -121,7 +121,7 @@ export const KpiUserSearchCard: FC<IProps> = ({ className }) => {
 								className={cn(
 									'transform-gpu overflow-hidden rounded-lg border bg-background shadow-lg transition-[max-height,opacity,transform] duration-200 ease-out motion-reduce:transition-none',
 									panelVisible
-										? 'pointer-events-auto max-h-[420px] translate-y-0 scale-100 opacity-100'
+										? 'pointer-events-auto max-h-105 translate-y-0 scale-100 opacity-100'
 										: 'pointer-events-none max-h-0 -translate-y-2 scale-95 opacity-0',
 								)}
 							>

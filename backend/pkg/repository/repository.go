@@ -20,6 +20,8 @@ type UsersRepository interface {
 	CountUsers(ctx context.Context) (int64, error)
 	GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, departmentID pgtype.UUID) ([]storage.User, error)
 	GetUsersRatingPaginated(ctx context.Context, limit int32, offset int32, search string, sort string) ([]storage.User, error)
+	GetTeachersRatingWithDepartments(ctx context.Context) ([]storage.User, error)
+	GetTopAwardDepartmentsStats(ctx context.Context) ([]storage.GetTopAwardDepartmentsStatsRow, error)
 
 	CountUsersFiltered(ctx context.Context, search string, departmentID pgtype.UUID) (int64, error)
 	CountUsersRatingFiltered(ctx context.Context, search string) (int64, error)

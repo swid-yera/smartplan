@@ -1,51 +1,58 @@
 {
-  "ru": {
-    "page": {
-      "notFound": "Пользователь не найден",
-      "back": "Вернуться назад",
-      "penalties": "Нарушения",
-      "violations": "Выговоры",
-      "violationAdded": "Выговор добавлен",
-      "violationDeleted": "Выговор удалён",
-      "title": "Данные пользователя {firstName} {lastName}",
-      "createdTab": "Созданные РУП",
-      "assessmentTab": "Проверяемые РУП",
-      "kpiTab": "KPI",
-      "createdRupsTitle": "Рабочие учебные программы пользователя",
-      "assessmentRupsTitle": "Методические работы пользователя",
-      "kpiTitle": "KPI достижения пользователя"
-    },
-    "card": {
-      "firstName": "Имя",
-      "lastName": "Фамилия",
-      "username": "Логин",
-      "phone": "Телефон",
-      "totalPoints": "Всего баллов"
-    }
-  },
-  "kk": {
-    "page": {
-      "notFound": "Пайдаланушы табылмады",
-      "back": "Артқа қайту",
-      "penalties": "Бұзушылықтар",
-      "violations": "Сөгістер",
-      "violationAdded": "Сөгіс қосылды",
-      "violationDeleted": "Сөгіс жойылды",
-      "title": "{firstName} {lastName} пайдаланушы деректері",
-      "createdTab": "Құрылған РУП",
-      "assessmentTab": "Тексерілетін РУП",
-      "kpiTab": "KPI",
-      "createdRupsTitle": "Пайдаланушының жұмыс оқу бағдарламалары",
-      "assessmentRupsTitle": "Пайдаланушының әдістемелік жұмыстары",
-      "kpiTitle": "Пайдаланушының KPI жетістіктері"
-    },
-    "card": {
-      "firstName": "Аты",
-      "lastName": "Тегі",
-      "username": "Логин",
-      "phone": "Телефон",
-      "totalPoints": "Жалпы ұпай"
-    }
-  }
+	"ru": {
+		"page": {
+			"notFound": "Пользователь не найден",
+			"back": "Вернуться назад",
+			"penalties": "Нарушения",
+			"violations": "Выговоры",
+			"violationAdded": "Выговор добавлен",
+			"violationDeleted": "Выговор удалён",
+			"title": "Данные пользователя {firstName} {lastName}",
+			"createdTab": "Созданные РУП",
+			"assessmentTab": "Проверяемые РУП",
+			"kpiTab": "KPI",
+			"createdRupsTitle": "Рабочие учебные программы пользователя",
+			"assessmentRupsTitle": "Методические работы пользователя",
+			"kpiTitle": "KPI достижения пользователя",
+			"kpiProfileTitle": "KPI пользователя",
+			"kpiProfileDescription": "Сводка по KPI выбранного преподавателя.",
+			"kpiListTitle": "Достижения преподавателя",
+			"kpiListDescription": "Ниже показаны KPI-записи выбранного пользователя."
+		},
+		"card": {
+			"firstName": "Имя",
+			"lastName": "Фамилия",
+			"username": "Логин",
+			"phone": "Телефон",
+			"totalPoints": "Всего баллов"
+		}
+	},
+	"kk": {
+		"page": {
+			"notFound": "Пайдаланушы табылмады",
+			"back": "Артқа қайту",
+			"penalties": "Бұзушылықтар",
+			"violations": "Сөгістер",
+			"violationAdded": "Сөгіс қосылды",
+			"violationDeleted": "Сөгіс жойылды",
+			"title": "{firstName} {lastName} пайдаланушы деректері",
+			"createdTab": "Құрылған РУП",
+			"assessmentTab": "Тексерілетін РУП",
+			"kpiTab": "KPI",
+			"createdRupsTitle": "Пайдаланушының жұмыс оқу бағдарламалары",
+			"assessmentRupsTitle": "Пайдаланушының әдістемелік жұмыстары",
+			"kpiTitle": "Пайдаланушының KPI жетістіктері",
+			"kpiProfileTitle": "Пайдаланушы KPI",
+			"kpiProfileDescription": "Таңдалған мұғалімнің KPI қорытындысы.",
+			"kpiListTitle": "Мұғалімнің жетістіктері",
+			"kpiListDescription": "Төменде таңдалған пайдаланушының KPI жазбалары көрсетілген."
+		},
+		"card": {
+			"firstName": "Аты",
+			"lastName": "Тегі",
+			"username": "Логин",
+			"phone": "Телефон",
+			"totalPoints": "Жалпы ұпай"
+		}
+	}
 }
-

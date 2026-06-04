@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
@@ -10,7 +10,7 @@ import { services } from '@services'
 import { Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateStatusRequest, RoleEnum, StatusEnum } from '@types'
+import { type IUpdateStatusRequest, type IVariant, RoleEnum, StatusEnum } from '@types'
 import { toast } from 'sonner'
 
 import { ApproveSheet } from './components/approve-sheet'
@@ -54,6 +54,36 @@ const Page = () => {
 	const deleteMutation = useMutation(services.award.deleteMutationOptions())
 	const backHref = '/kpi/entry'
 
+	const fallbackVariant = useMemo(
+		() =>
+			award
+				? ({
+						...award.variant,
+						criteria: [award.criteria],
+					} as IVariant)
+				: null,
+		[award?.criteria, award?.variant],
+	)
+	const variantOptions = useMemo(() => {
+		if (awardType?.variants?.length) return awardType.variants
+
+		return fallbackVariant ? [fallbackVariant] : []
+	}, [awardType?.variants, fallbackVariant])
+	const selectedVariant = useMemo(
+		() =>
+			award
+				? variantOptions.find((variant) => variant.id === award.variant.id) || variantOptions[0] || fallbackVariant
+				: null,
+		[award, award?.variant.id, fallbackVariant, variantOptions],
+	)
+	const selectedCriteria = useMemo(
+		() =>
+			award
+				? selectedVariant?.criteria?.find((criteria) => criteria.id === award.criteria.id) || award.criteria
+				: null,
+		[award, award?.criteria, selectedVariant],
+	)
+
 	if (isLoading || authLoading || !user) return <Loader />
 
 	if (!award) {
@@ -65,7 +95,13 @@ const Page = () => {
 		)
 	}
 
-	const handleStatusChange = (newStatus: StatusEnum, reason?: string, criteriaId?: string, totalPoints?: number) => {
+	const handleStatusChange = (
+		newStatus: StatusEnum,
+		reason?: string,
+		variantId?: string,
+		criteriaId?: string,
+		totalPoints?: number,
+	) => {
 		setIsStatusSheetOpen(false)
 
 		const toastId = `award-${award.id}-status-update-${newStatus}`
@@ -78,6 +114,7 @@ const Page = () => {
 			id: award.id,
 			status: newStatus,
 			reason: payloadReason,
+			variant: variantId,
 			criteria: criteriaId,
 			totalPoints: payloadTotalPoints,
 		}
@@ -117,8 +154,6 @@ const Page = () => {
 	const isAwardCreator = isAuthor(user, award.teacher.keycloakId)
 	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
 	const isMethodistReview = hasRole(user.role, RoleEnum.METHODIST, true) && award.status === StatusEnum.IN_REVIEW
-	const selectedVariant = awardType?.variants.find((variant) => variant.id === award.variant.id) || null
-	const criteriaOptions = selectedVariant?.criteria?.length ? selectedVariant.criteria : [award.criteria]
 
 	return (
 		<div className='space-y-6 p-6 w-full'>
@@ -185,12 +220,13 @@ const Page = () => {
 			<DeleteAlert isOpen={isDeleteDialogOpen} onDelete={handleDeleteAward} onOpenChange={setIsDeleteDialogOpen} />
 
 			<ApproveSheet
-				criteriaOptions={criteriaOptions}
 				isOpen={isApproveSheetOpen}
-				selectedCriteria={award.criteria}
+				selectedCriteria={selectedCriteria}
+				selectedVariant={selectedVariant}
+				variantOptions={variantOptions}
 				onOpenChange={setIsApproveSheetOpen}
-				onStatusChange={(criteriaId, totalPoints) =>
-					handleStatusChange(StatusEnum.APPROVED, '', criteriaId, totalPoints)
+				onStatusChange={(variantId, criteriaId, totalPoints) =>
+					handleStatusChange(StatusEnum.APPROVED, '', variantId, criteriaId, totalPoints)
 				}
 			/>
 		</div>

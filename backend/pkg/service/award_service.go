@@ -337,11 +337,12 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 		return AwardResponse{}, err
 	}
 
-	resolvedCriteria, resolvedTotalPoints, err := s.resolveAwardStatusPoints(ctx, award, params)
+	resolvedVariant, resolvedCriteria, resolvedTotalPoints, err := s.resolveAwardStatusPoints(ctx, award, params)
 	if err != nil {
 		return AwardResponse{}, err
 	}
 
+	params.Variant = resolvedVariant
 	params.Criteria = resolvedCriteria
 	params.TotalPoints = resolvedTotalPoints
 
@@ -351,6 +352,7 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 		Status:      params.Status,
 		Reason:      params.Reason,
 		Methodist:   params.Methodist,
+		Variant:     params.Variant,
 		Criteria:    params.Criteria,
 		TotalPoints: params.TotalPoints,
 	})
@@ -394,23 +396,47 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 	return res, nil
 }
 
-func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award storage.Award, params storage.UpdateAwardStatusParams) (pgtype.UUID, int32, error) {
+func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award storage.Award, params storage.UpdateAwardStatusParams) (pgtype.UUID, pgtype.UUID, int32, error) {
+	resolvedVariant := award.Variant
+	if params.Variant.Valid {
+		resolvedVariant = params.Variant
+	}
+
 	resolvedCriteria := award.Criteria
 	if params.Criteria.Valid {
 		resolvedCriteria = params.Criteria
 	}
 
 	if params.Status != storage.AwardsStatusAPPROVED {
-		return award.Criteria, 0, nil
+		return award.Variant, award.Criteria, 0, nil
 	}
 
-	dbVariant, err := s.repo.GetAwardTypeVariantByID(ctx, award.Variant.Bytes)
+	dbType, err := s.repo.GetAwardTypeByID(ctx, award.Type.Bytes)
 	if err != nil {
-		return pgtype.UUID{}, 0, fmt.Errorf("failed to get award variant: %w", err)
+		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("failed to get award type: %w", err)
+	}
+
+	variantAllowed := false
+	for _, variantID := range dbType.Variants {
+		if variantID == resolvedVariant.Bytes {
+			variantAllowed = true
+			break
+		}
+	}
+	if !variantAllowed {
+		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("selected variant does not belong to award type")
+	}
+
+	dbVariant, err := s.repo.GetAwardTypeVariantByID(ctx, resolvedVariant.Bytes)
+	if err != nil {
+		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("failed to get award variant: %w", err)
 	}
 
 	if !resolvedCriteria.Valid {
-		return pgtype.UUID{}, 0, fmt.Errorf("criteria is required for approved award")
+		if len(dbVariant.Criteria) == 0 {
+			return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("criteria is required for approved award")
+		}
+		resolvedCriteria = pgtype.UUID{Bytes: dbVariant.Criteria[0], Valid: true}
 	}
 
 	isValidCriteria := false
@@ -421,21 +447,21 @@ func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award stora
 		}
 	}
 	if !isValidCriteria {
-		return pgtype.UUID{}, 0, fmt.Errorf("selected criteria does not belong to award variant")
+		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("selected criteria does not belong to award variant")
 	}
 
 	dbCriteria, err := s.repo.GetAwardTypeCriteriaByID(ctx, resolvedCriteria.Bytes)
 	if err != nil {
-		return pgtype.UUID{}, 0, fmt.Errorf("failed to get award criteria: %w", err)
+		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("failed to get award criteria: %w", err)
 	}
 
 	if len(dbCriteria.Points) == 0 {
-		return pgtype.UUID{}, 0, fmt.Errorf("award criteria points are required")
+		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("award criteria points are required")
 	}
 
 	switch dbCriteria.Method {
 	case storage.EnumCriteriaMethodNORMAL:
-		return resolvedCriteria, dbCriteria.Points[0], nil
+		return resolvedVariant, resolvedCriteria, dbCriteria.Points[0], nil
 	case storage.EnumCriteriaMethodMEASURING:
 		minPoints := dbCriteria.Points[0]
 		maxPoints := dbCriteria.Points[len(dbCriteria.Points)-1]
@@ -448,9 +474,9 @@ func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award stora
 			resolvedPoints = maxPoints
 		}
 
-		return resolvedCriteria, resolvedPoints, nil
+		return resolvedVariant, resolvedCriteria, resolvedPoints, nil
 	default:
-		return pgtype.UUID{}, 0, fmt.Errorf("unsupported criteria method")
+		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("unsupported criteria method")
 	}
 }
 
