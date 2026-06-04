@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { createLocaleText, getUILocaleSection } from '@helpers'
+import { createLocaleText, getUILocaleSection, toBackendLocale } from '@helpers'
 import { services } from '@services'
 import { Button, ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -203,6 +203,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 			topic_name: createLocaleText(formData.topicName.ru.trim(), formData.topicName.kk.trim()),
 			type: formData.type,
 			event_date: toIsoFromDateAndTimeInput(formData.eventDate, normalizedEventTime, lesson.event_date),
+			sourceLanguage: toBackendLocale(activeLocale),
 			goals: createLocaleText(formData.goals.ru.trim(), formData.goals.kk.trim()),
 			tasks: createLocaleText(formData.tasks.ru.trim(), formData.tasks.kk.trim()),
 			expected: createLocaleText(formData.expected.ru.trim(), formData.expected.kk.trim()),

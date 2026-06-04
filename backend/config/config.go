@@ -150,6 +150,18 @@ type GeminiConfig struct {
 	FallbackModel string
 }
 
+type OpenAIConfig struct {
+	APIKey  string
+	BaseURL string
+	Model   string
+}
+
+type AIConfig struct {
+	Provider string
+	Gemini   *GeminiConfig
+	OpenAI   *OpenAIConfig
+}
+
 func loadGeminiAPIKeys() []string {
 	type keyedValue struct {
 		index int
@@ -260,6 +272,28 @@ func LoadGeminiConfig() *GeminiConfig {
 		BaseURL:       getEnv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
 		PrimaryModel:  getEnv("GEMINI_PRIMARY_MODEL", "gemini-2.5-flash-lite"),
 		FallbackModel: getEnv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash"),
+	}
+}
+
+func LoadOpenAIConfig() *OpenAIConfig {
+	ensureEnvLoaded()
+
+	return &OpenAIConfig{
+		APIKey:  getEnv("OPENAI_API_KEY", ""),
+		BaseURL: getEnv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+		Model:   getEnv("OPENAI_MODEL", "gpt-4"),
+	}
+}
+
+func LoadAIConfig() *AIConfig {
+	ensureEnvLoaded()
+
+	provider := strings.ToLower(strings.TrimSpace(getEnv("AI_PROVIDER", "gemini")))
+
+	return &AIConfig{
+		Provider: provider,
+		Gemini:   LoadGeminiConfig(),
+		OpenAI:   LoadOpenAIConfig(),
 	}
 }
 
