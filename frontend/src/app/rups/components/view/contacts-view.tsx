@@ -16,19 +16,18 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
-import { useLocaleStore } from '@store'
-import type { IUser } from '@types'
+import type { IUser, Locale } from '@types'
 import { Mail, Phone, User, UserPlus } from 'lucide-react'
 import localeDictionary from './locale.json'
 
 type IProps = {
 	contacts: IUser[]
 	creatorId: string
+	activeLocale: Locale
 }
 
-export const ContactsView: FC<IProps> = ({ creatorId, contacts }) => {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+export const ContactsView: FC<IProps> = ({ creatorId, contacts, activeLocale }) => {
+	const t = getUILocaleSection(localeDictionary, activeLocale)
 
 	return (
 		<Card className='overflow-hidden'>

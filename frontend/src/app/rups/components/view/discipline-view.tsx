@@ -17,7 +17,6 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
-import { useLocaleStore } from '@store'
 import type { IDiscipline, Locale, LocalizedText } from '@types'
 import localeDictionary from './locale.json'
 
@@ -28,8 +27,7 @@ interface IProps {
 }
 
 export const DisciplineView: FC<IProps> = ({ disciplines = [], rupName, activeLocale }) => {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const totalModuleHours = disciplines.reduce((acc, d) => acc + d.totalHours, 0)
 
 	const semesterTotals = Array(8).fill(0)

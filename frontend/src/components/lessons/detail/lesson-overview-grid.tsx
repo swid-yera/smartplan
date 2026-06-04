@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { getLocaleText, getUILocaleSection, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import { useLocaleStore } from '@store'
 import type { ILesson, TopicTypeEnum } from '@types'
 import type { Locale } from '@types'
 import { FileText, Folder, GraduationCap, Grid2X2, type LucideIcon, Phone, Timer, UserRound } from 'lucide-react'
@@ -36,8 +35,7 @@ export function LessonOverviewGrid({
 	teacherId,
 	teacherName,
 }: IProps) {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+	const t = getUILocaleSection(localeDictionary, lessonLocale)
 
 	return (
 		<div className='grid gap-6 xl:grid-cols-3'>
@@ -56,27 +54,32 @@ export function LessonOverviewGrid({
 						icon={<Folder className='h-4 w-4' />}
 						label={t.rup}
 						value={getLocaleText(lesson.rup_name, lessonLocale)}
+						empty={t.empty}
 					/>
 					<InfoRow
 						icon={<Grid2X2 className='h-4 w-4' />}
 						label={t.discipline}
 						value={getLocaleText(lesson.discipline_name, lessonLocale)}
+						empty={t.empty}
 					/>
 					<InfoRow
 						icon={<FileText className='h-4 w-4' />}
 						label={t.topic}
 						value={getLocaleText(lesson.topic_name, lessonLocale)}
+						empty={t.empty}
 					/>
 					<div className='grid gap-5 md:grid-cols-2'>
 						<InfoRow
 							icon={<LessonTypeIcon className='h-4 w-4' />}
 							label={t.lessonType}
-							value={normalizeTopicType(resolvedTopicTypeLabel)}
+							value={normalizeTopicType(resolvedTopicTypeLabel, lessonLocale)}
+							empty={t.empty}
 						/>
 						<InfoRow
 							icon={<Timer className='h-4 w-4' />}
 							label={t.date}
 							value={formatDate(lesson.event_date, lessonLocale)}
+							empty={t.empty}
 						/>
 					</div>
 				</CardContent>
@@ -109,23 +112,35 @@ export function LessonOverviewGrid({
 									teacherName
 								)
 							}
+							empty={t.empty}
 						/>
 						<InfoRow
 							icon={<Phone className='h-4 w-4' />}
 							label={t.phone}
 							value={lesson.teacher?.phone || t.empty}
+							empty={t.empty}
 						/>
-						<InfoRow icon={<GraduationCap className='h-4 w-4' />} label={t.group} value={groupName || t.empty} />
+						<InfoRow
+							icon={<GraduationCap className='h-4 w-4' />}
+							label={t.group}
+							value={groupName || t.empty}
+							empty={t.empty}
+						/>
 						<Row
 							label={t.qualification}
 							value={getLocaleText(lesson.group?.qualification, lessonLocale) || t.empty}
+							empty={t.empty}
 						/>
-						<Row label={t.specialty} value={getLocaleText(lesson.group?.specialty, lessonLocale) || t.empty} />
+						<Row
+							label={t.specialty}
+							value={getLocaleText(lesson.group?.specialty, lessonLocale) || t.empty}
+							empty={t.empty}
+						/>
 					</div>
 
 					<div className='grid gap-5'>
-						<Row label={t.createdAt} value={formatDate(lesson.created_at, locale)} />
-						<Row label={t.updatedAt} value={formatDate(lesson.updated_at, locale)} />
+						<Row label={t.createdAt} value={formatDate(lesson.created_at, lessonLocale)} empty={t.empty} />
+						<Row label={t.updatedAt} value={formatDate(lesson.updated_at, lessonLocale)} empty={t.empty} />
 					</div>
 				</CardContent>
 			</Card>
@@ -133,22 +148,32 @@ export function LessonOverviewGrid({
 	)
 }
 
-function Row({ label, value }: { label: string; value: string | number }) {
+function Row({ label, value, empty }: { label: string; value: string | number; empty: string }) {
 	return (
 		<div className='grid gap-1'>
 			<p className='text-[11px] uppercase tracking-wide text-muted-foreground'>{label}</p>
-			<p className='text-sm font-medium leading-snug text-foreground'>{value || 'Пусто'}</p>
+			<p className='text-sm font-medium leading-snug text-foreground'>{value || empty}</p>
 		</div>
 	)
 }
 
-function InfoRow({ label, value, icon }: { label: string; value: ReactNode; icon: ReactNode }) {
+function InfoRow({
+	label,
+	value,
+	icon,
+	empty,
+}: {
+	label: string
+	value: ReactNode
+	icon: ReactNode
+	empty: string
+}) {
 	return (
 		<div className='grid gap-1'>
 			<p className='text-[11px] uppercase tracking-wide text-muted-foreground'>{label}</p>
 			<p className='inline-flex items-start gap-2 text-sm font-medium leading-snug text-foreground'>
 				<span className='mt-0.5 text-primary'>{icon}</span>
-				<span>{value || 'Пусто'}</span>
+				<span>{value || empty}</span>
 			</p>
 		</div>
 	)

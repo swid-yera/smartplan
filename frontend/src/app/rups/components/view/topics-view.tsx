@@ -28,7 +28,6 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@shadcn'
-import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
 import { type Locale, type LocalizedText, type RupTypeEnum, StatusEnum, TopicTypeEnum } from '@types'
 import { BookOpenText, ChevronDown, Info } from 'lucide-react'
@@ -67,8 +66,7 @@ interface IProps {
 }
 
 export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus, activeLocale }: IProps) {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const tv = t.topics
 	const total = {
 		totalHours: 0,
@@ -277,7 +275,7 @@ function DisciplineBlockView({
 									{text.sectionTotal}:
 								</TableCell>
 								<TableCell className={cn('font-bold text-center border-x', hasError && 'text-destructive')}>
-									{formatHours(sectionTotal.totalHours)}
+									{formatHours(sectionTotal.totalHours, activeLocale)}
 								</TableCell>
 								<TableCell className='font-bold text-center border-r'>{sectionTotal.theoryHours}</TableCell>
 								<TableCell className='font-bold text-center border-r'>{sectionTotal.practiceHours}</TableCell>
@@ -285,7 +283,7 @@ function DisciplineBlockView({
 								<TableCell className='font-bold text-center border-r'>{sectionTotal.srspHours}</TableCell>
 								<TableCell className='font-bold text-center border-r'>{sectionTotal.srsHours}</TableCell>
 								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')}>
-									{text.declared}: {formatHours(discipline.totalHours)}
+									{text.declared}: {formatHours(discipline.totalHours, activeLocale)}
 								</TableCell>
 							</TableRow>
 						</TableFooter>
@@ -426,7 +424,7 @@ const TopicRowView = ({
 					{formatAsDash(topic.srsHours)}
 				</TableCell>
 				<TableCell className='align-middle text-end p-4'>
-					<TopicTypeBadge type={topic.type} />
+					<TopicTypeBadge locale={activeLocale} type={topic.type} />
 				</TableCell>
 			</TableRow>
 

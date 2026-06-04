@@ -1,3 +1,4 @@
+import type { Locale } from '@types'
 import { isToday, parseISO } from 'date-fns'
 
 // pluralize
@@ -20,7 +21,11 @@ const pluralize = (number: number, one: string, two: string, five: string): stri
 }
 
 // format hours
-export const formatHours = (count: number): string => {
+export const formatHours = (count: number, locale: Locale = 'ru'): string => {
+	if (locale === 'kk') {
+		return `${count} сағат`
+	}
+
 	const word = pluralize(count, 'час', 'часа', 'часов')
 
 	return `${count} ${word}`

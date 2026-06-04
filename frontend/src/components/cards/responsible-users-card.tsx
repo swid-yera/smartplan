@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useLocaleStore } from '@store'
-import type { IUser } from '@types'
+import type { IUser, Locale } from '@types'
 import { Calendar, User, UserSearch } from 'lucide-react'
 
 import locale from './locale.json'
@@ -15,10 +15,12 @@ interface IProps {
 	methodist?: IUser
 	createdAt: string
 	updatedAt: string
+	localeCode?: Locale
 }
 
-export const ResponsibleUsersCard: FC<IProps> = ({ teacher, methodist, createdAt, updatedAt }) => {
-	const currentLocale = useLocaleStore((state) => state.locale)
+export const ResponsibleUsersCard: FC<IProps> = ({ teacher, methodist, createdAt, updatedAt, localeCode }) => {
+	const uiLocale = useLocaleStore((state) => state.locale)
+	const currentLocale = localeCode ?? uiLocale
 	const t = locale[currentLocale] ?? locale.ru
 	const dateLocale = currentLocale === 'kk' ? 'kk-KZ' : 'ru-RU'
 

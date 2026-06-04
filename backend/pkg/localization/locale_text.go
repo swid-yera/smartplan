@@ -13,8 +13,8 @@ type LocaleText struct {
 
 func NewLocaleText(ru string, kz string) LocaleText {
 	return LocaleText{
-		Ru: strings.TrimSpace(ru),
-		Kz: strings.TrimSpace(kz),
+		Ru: normalizeLocalizedString(ru),
+		Kz: normalizeLocalizedString(kz),
 	}
 }
 
@@ -22,8 +22,8 @@ func (l *LocaleText) Normalize() {
 	if l == nil {
 		return
 	}
-	l.Ru = strings.TrimSpace(l.Ru)
-	l.Kz = strings.TrimSpace(l.Kz)
+	l.Ru = normalizeLocalizedString(l.Ru)
+	l.Kz = normalizeLocalizedString(l.Kz)
 }
 
 func (l LocaleText) Normalized() LocaleText {
@@ -147,4 +147,101 @@ func LocaleTextSliceFromJSONB(raw []byte) []LocaleText {
 	}
 
 	return nil
+}
+
+func normalizeLocalizedString(value string) string {
+	normalized := strings.TrimSpace(value)
+	if normalized == "" {
+		return ""
+	}
+
+	for range 3 {
+		next, changed := unwrapStructuredLocalizedString(normalized)
+		if !changed {
+			break
+		}
+		normalized = next
+	}
+
+	return stripWrappingQuotes(strings.TrimSpace(normalized))
+}
+
+func unwrapStructuredLocalizedString(value string) (string, bool) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "", false
+	}
+
+	if !(strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") || strings.HasPrefix(trimmed, "\"")) {
+		return trimmed, false
+	}
+
+	var payload any
+	if err := json.Unmarshal([]byte(trimmed), &payload); err != nil {
+		return trimmed, false
+	}
+
+	extracted := extractStructuredLocalizedString(payload)
+	if extracted == "" {
+		return trimmed, false
+	}
+
+	return strings.TrimSpace(extracted), true
+}
+
+func extractStructuredLocalizedString(payload any) string {
+	switch value := payload.(type) {
+	case string:
+		return strings.TrimSpace(value)
+	case []any:
+		for _, item := range value {
+			if candidate := extractStructuredLocalizedString(item); candidate != "" {
+				return candidate
+			}
+		}
+	case map[string]any:
+		for _, key := range []string{
+			"translatedText",
+			"text",
+			"name",
+			"title",
+			"value",
+			"label",
+			"content",
+			"result",
+			"ru",
+			"kz",
+			"kk",
+		} {
+			if raw, ok := value[key]; ok {
+				if candidate := extractStructuredLocalizedString(raw); candidate != "" {
+					return candidate
+				}
+			}
+		}
+
+		for _, raw := range value {
+			if candidate := extractStructuredLocalizedString(raw); candidate != "" {
+				return candidate
+			}
+		}
+	}
+
+	return ""
+}
+
+func stripWrappingQuotes(value string) string {
+	trimmed := strings.TrimSpace(value)
+	for len(trimmed) >= 2 {
+		if strings.HasPrefix(trimmed, "\"") && strings.HasSuffix(trimmed, "\"") {
+			trimmed = strings.TrimSpace(trimmed[1 : len(trimmed)-1])
+			continue
+		}
+		if strings.HasPrefix(trimmed, "'") && strings.HasSuffix(trimmed, "'") {
+			trimmed = strings.TrimSpace(trimmed[1 : len(trimmed)-1])
+			continue
+		}
+		break
+	}
+	return trimmed
 }
