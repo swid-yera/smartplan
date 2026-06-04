@@ -266,7 +266,7 @@ export class LessonService {
 			mutationFn: ({ id, changedLesson }: { id: string; changedLesson: IUpdateLessonRequest }) =>
 				api.put<IGenerateLessonResponse>(`/lessons/${id}`, changedLesson).then((r) => {
 					if (!r.data?.status) {
-						throw new Error('Не удалось перегенерировать урок')
+						throw new Error('Не удалось сохранить урок')
 					}
 
 					return {

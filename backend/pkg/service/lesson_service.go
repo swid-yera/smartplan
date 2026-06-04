@@ -98,6 +98,35 @@ type LessonProgressParams struct {
 	Content    []localization.LocaleText `json:"content"`
 }
 
+type UpdateLessonResourceRequest struct {
+	ID   string                  `json:"id"`
+	Name localization.LocaleText `json:"name"`
+	Link string                  `json:"link"`
+	Type string                  `json:"type"`
+}
+
+type UpdateLessonProgressRequest struct {
+	ID         string                    `json:"id"`
+	Name       localization.LocaleText   `json:"name"`
+	FirstTime  []int32                   `json:"first_time"`
+	SecondTime []int32                   `json:"second_time"`
+	ThirdTime  []int32                   `json:"third_time"`
+	Content    []localization.LocaleText `json:"content"`
+}
+
+type UpdateLessonRequest struct {
+	TopicName          localization.LocaleText       `json:"topic_name"`
+	EventDate          string                        `json:"event_date"`
+	Type               string                        `json:"type"`
+	Goals              localization.LocaleText       `json:"goals"`
+	Tasks              localization.LocaleText       `json:"tasks"`
+	Expected           localization.LocaleText       `json:"expected"`
+	InternetResources  []UpdateLessonResourceRequest `json:"internet_resources"`
+	TechnicalResources []UpdateLessonResourceRequest `json:"technical_resources"`
+	LessonProgress     []UpdateLessonProgressRequest `json:"lesson_progress"`
+	SourceLanguage     string                        `json:"sourceLanguage"`
+}
+
 type GenerateLessonInput struct {
 	RupID          uuid.UUID                `json:"rupId"`
 	DisciplineID   uuid.UUID                `json:"disciplineId"`
@@ -562,55 +591,200 @@ func (s *LessonService) replaceLessonProgress(
 	return nil
 }
 
-func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, params LessonParams, progress []LessonProgressParams) error {
-	eventDate, eventDateValid, err := helpers.ParseTimeOptional(params.EventDate)
+func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, req UpdateLessonRequest) error {
+	existingLesson, err := s.repo.GetLessonByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	if params.PlanNumber == nil {
-		if existingLesson, getErr := s.repo.GetLessonByID(ctx, id); getErr == nil {
-			if params.PlanNumber == nil {
-				resolved := existingLesson.PlanNumber
-				params.PlanNumber = &resolved
-			}
+
+	eventDate, eventDateValid, err := helpers.ParseTimeOptional(req.EventDate)
+	if err != nil {
+		return err
+	}
+	if !eventDateValid {
+		eventDate = existingLesson.EventDate.Time
+		eventDateValid = existingLesson.EventDate.Valid
+	}
+
+	lessonType := existingLesson.Type
+	if candidate := strings.ToUpper(strings.TrimSpace(req.Type)); candidate != "" {
+		switch candidate {
+		case string(storage.EnumLessonTypePRACTICE), string(storage.EnumLessonTypeTHEORY):
+			lessonType = storage.EnumLessonType(candidate)
+		default:
+			return fmt.Errorf("unsupported lesson type: %s", req.Type)
 		}
 	}
-	planNumber := normalizeLessonPlanNumber(params.PlanNumber)
-	updateParams := storage.UpdateLessonParams{
-		ID:                 id,
-		RupName:            params.RupName.ToJSONB(),
-		DisciplineName:     lessonLocalePtrToJSONB(params.DisciplineName),
-		TopicName:          lessonLocalePtrToJSONB(params.TopicName),
-		PlanNumber:         planNumber,
-		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
-		GroupID:            params.GroupID,
-		Type:               storage.EnumLessonType(params.Type),
-		Goals:              lessonLocalePtrToJSONB(params.Goals),
-		Tasks:              lessonLocalePtrToJSONB(params.Tasks),
-		Expected:           lessonLocalePtrToJSONB(params.Expected),
-		InternetResources:  params.InternetResources,
-		TechnicalResources: params.TechnicalResources,
+
+	internetResourceIDs, err := s.resolveManualLessonResources(ctx, req.InternetResources)
+	if err != nil {
+		return err
 	}
+	technicalResourceIDs, err := s.resolveManualLessonResources(ctx, req.TechnicalResources)
+	if err != nil {
+		return err
+	}
+
+	progress := manualProgressToLessonProgressParams(req.LessonProgress)
 	if len(progress) > 0 && !isValidLessonProgressOptions(progress, lessonVariantTotalMins) {
 		return fmt.Errorf("invalid lesson progress durations: each variant must sum to %d minutes", lessonVariantTotalMins)
+	}
+
+	topicName := req.TopicName.Normalized()
+	if topicName.Ru == "" && topicName.Kz == "" {
+		topicName = localization.LocaleTextFromJSONB(existingLesson.TopicName)
+	}
+
+	updateParams := storage.UpdateLessonParams{
+		ID:                 id,
+		RupName:            existingLesson.RupName,
+		DisciplineName:     existingLesson.DisciplineName,
+		TopicName:          topicName.ToJSONB(),
+		PlanNumber:         existingLesson.PlanNumber,
+		EventDate:          pgtype.Timestamptz{Time: eventDate, Valid: eventDateValid},
+		GroupID:            existingLesson.GroupID,
+		Type:               lessonType,
+		Goals:              req.Goals.ToJSONB(),
+		Tasks:              req.Tasks.ToJSONB(),
+		Expected:           req.Expected.ToJSONB(),
+		InternetResources:  internetResourceIDs,
+		TechnicalResources: technicalResourceIDs,
 	}
 	if err := s.repo.UpdateLesson(ctx, updateParams); err != nil {
 		return err
 	}
+
+	if len(progress) > 0 {
+		if err := s.replaceManualLessonProgress(ctx, id, progress); err != nil {
+			return err
+		}
+	}
+
+	if err := s.regenerateStoredLessonDocument(ctx, id, req.SourceLanguage); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *LessonService) resolveManualLessonResources(
+	ctx context.Context,
+	resources []UpdateLessonResourceRequest,
+) ([]uuid.UUID, error) {
+	resourceIDs := make([]uuid.UUID, 0, len(resources))
+	seen := make(map[uuid.UUID]struct{}, len(resources))
+
+	for _, resource := range resources {
+		name := resource.Name.Normalized()
+		if name.Ru == "" && name.Kz == "" {
+			continue
+		}
+
+		link := strings.TrimSpace(resource.Link)
+		if parsedID, err := uuid.Parse(strings.TrimSpace(resource.ID)); err == nil && parsedID != uuid.Nil {
+			existingResource, getErr := s.rupRepo.GetResourceByID(ctx, parsedID)
+			if getErr == nil && manualResourceMatches(existingResource, name, link) {
+				if _, exists := seen[parsedID]; !exists {
+					seen[parsedID] = struct{}{}
+					resourceIDs = append(resourceIDs, parsedID)
+				}
+				continue
+			}
+		}
+
+		created, err := s.rupRepo.CreateResource(ctx, storage.CreateRupResourceParams{
+			Name: name.ToJSONB(),
+			Link: pgtype.Text{String: link, Valid: link != ""},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("create lesson resource: %w", err)
+		}
+		if _, exists := seen[created.ID]; !exists {
+			seen[created.ID] = struct{}{}
+			resourceIDs = append(resourceIDs, created.ID)
+		}
+	}
+
+	return resourceIDs, nil
+}
+
+func manualResourceMatches(resource *storage.RupResource, name localization.LocaleText, link string) bool {
+	if resource == nil {
+		return false
+	}
+
+	existingName := localization.LocaleTextFromJSONB(resource.Name).Normalized()
+	existingLink := strings.TrimSpace(resource.Link.String)
+	if !resource.Link.Valid {
+		existingLink = ""
+	}
+
+	return existingName == name.Normalized() && existingLink == strings.TrimSpace(link)
+}
+
+func manualProgressToLessonProgressParams(progress []UpdateLessonProgressRequest) []LessonProgressParams {
+	result := make([]LessonProgressParams, 0, len(progress))
+	for _, item := range progress {
+		var id uuid.UUID
+		if parsedID, err := uuid.Parse(strings.TrimSpace(item.ID)); err == nil {
+			id = parsedID
+		}
+
+		result = append(result, LessonProgressParams{
+			ID:         id,
+			Name:       item.Name.Normalized(),
+			FirstTime:  item.FirstTime,
+			SecondTime: item.SecondTime,
+			ThirdTime:  item.ThirdTime,
+			Content:    normalizeLocaleTextSlice(item.Content),
+		})
+	}
+
+	return result
+}
+
+func normalizeLocaleTextSlice(values []localization.LocaleText) []localization.LocaleText {
+	result := make([]localization.LocaleText, 0, len(values))
+	for _, value := range values {
+		normalized := value.Normalized()
+		if normalized.Ru == "" && normalized.Kz == "" {
+			continue
+		}
+		result = append(result, normalized)
+	}
+	return result
+}
+
+func (s *LessonService) replaceManualLessonProgress(
+	ctx context.Context,
+	lessonID uuid.UUID,
+	progress []LessonProgressParams,
+) error {
+	existingProgress, err := s.repo.GetLessonProgressByLessonID(ctx, lessonID)
+	if err != nil {
+		return fmt.Errorf("get lesson progress: %w", err)
+	}
+
+	for _, item := range existingProgress {
+		if err := s.repo.DeleteLessonProgress(ctx, item.ID); err != nil {
+			return fmt.Errorf("delete lesson progress: %w", err)
+		}
+	}
+
 	for _, item := range progress {
 		firstTime, secondTime, thirdTime := normalizeProgressTriples(item)
-		updateProgress := storage.UpdateLessonProgressParams{
-			ID:         item.ID,
+		if err := s.repo.CreateLessonProgress(ctx, storage.CreateLessonProgressParams{
+			LessonID:   lessonID,
 			Name:       item.Name.ToJSONB(),
 			FirstTime:  firstTime,
 			SecondTime: secondTime,
 			ThirdTime:  thirdTime,
 			Content:    localization.LocaleTextSliceToJSONB(item.Content),
-		}
-		if err := s.repo.UpdateLessonProgress(ctx, updateProgress); err != nil {
-			return err
+		}); err != nil {
+			return fmt.Errorf("create lesson progress: %w", err)
 		}
 	}
+
 	return nil
 }
 
@@ -932,6 +1106,165 @@ func (s *LessonService) GetLessonDownloadURL(ctx context.Context, id uuid.UUID, 
 	}
 
 	return s.fileStorage.GetDownloadFileURL(ctx, objectName, 10*time.Minute)
+}
+
+func (s *LessonService) regenerateStoredLessonDocument(
+	ctx context.Context,
+	id uuid.UUID,
+	language string,
+) error {
+	selectedLanguage := normalizeBackendLanguage(language)
+	if selectedLanguage == "" {
+		selectedLanguage = "ru"
+	}
+	sourceLanguage := oppositeBackendLanguage(selectedLanguage)
+	if sourceLanguage == "" {
+		sourceLanguage = "ru"
+	}
+
+	lesson, err := s.repo.GetLessonByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("get lesson: %w", err)
+	}
+
+	rupID, _, topicID, _ := s.resolveLessonLinks(ctx, id)
+
+	planNumber := lesson.PlanNumber
+	var course int32
+	if rupID != nil {
+		if rup, getErr := s.rupRepo.GetRupByID(ctx, *rupID); getErr == nil {
+			course = rup.Course
+			if topicID != nil {
+				if resolvedPlanNumber, planErr := s.resolveLessonPlanNumber(ctx, rup, *topicID); planErr == nil {
+					planNumber = resolvedPlanNumber
+				}
+			}
+		}
+	}
+
+	teacherName := localizedTeacherFallback(selectedLanguage)
+	if teacher, teacherErr := s.rupRepo.GetUserByID(ctx, lesson.Teacher); teacherErr == nil {
+		resolvedTeacherName := strings.TrimSpace(strings.TrimSpace(teacher.FirstName.String + " " + teacher.LastName.String))
+		if resolvedTeacherName != "" {
+			teacherName = resolvedTeacherName
+		}
+	}
+
+	groupName := ""
+	if group, groupErr := s.rupRepo.GetGroupByKeycloakID(ctx, lesson.GroupID); groupErr == nil {
+		groupName = strings.TrimSpace(group.Name)
+	}
+
+	progress, err := s.buildStoredLessonProgressForDocument(ctx, id, selectedLanguage, sourceLanguage, lesson.Type)
+	if err != nil {
+		return err
+	}
+
+	documentPayload := buildLessonDocumentPayload(
+		selectedLanguage,
+		localeTextByLanguage(localization.LocaleTextFromJSONB(lesson.RupName), selectedLanguage),
+		localeTextByLanguage(localization.LocaleTextFromJSONB(lesson.DisciplineName), selectedLanguage),
+		localeTextByLanguage(localization.LocaleTextFromJSONB(lesson.TopicName), selectedLanguage),
+		planNumber,
+		teacherName,
+		resolveLessonEventDate(lesson.EventDate),
+		course,
+		groupName,
+		&generatedLessonPlan{
+			LessonType: lesson.Type,
+			Goals:      localeTextByLanguage(localization.LocaleTextFromJSONB(lesson.Goals), selectedLanguage),
+			Tasks:      localeTextByLanguage(localization.LocaleTextFromJSONB(lesson.Tasks), selectedLanguage),
+			Expected:   localeTextByLanguage(localization.LocaleTextFromJSONB(lesson.Expected), selectedLanguage),
+			Progress:   progress,
+		},
+		s.resourceStringsFromIDs(ctx, lesson.InternetResources, selectedLanguage),
+		s.resourceStringsFromIDs(ctx, lesson.TechnicalResources, selectedLanguage),
+	)
+
+	document, err := s.generateLessonViaPython(ctx, documentPayload)
+	if err != nil {
+		return fmt.Errorf("generate lesson document: %w", err)
+	}
+
+	objectName := buildLessonObjectName(
+		id,
+		localeTextByLanguage(localization.LocaleTextFromJSONB(lesson.TopicName), selectedLanguage),
+	)
+	if err := s.fileStorage.UploadFile(ctx, objectName, bytes.NewReader(document.Content), int64(len(document.Content))); err != nil {
+		return fmt.Errorf("upload lesson to minio: %w", err)
+	}
+
+	if err := s.repo.UpdateLessonFileURL(ctx, id, objectName); err != nil {
+		return fmt.Errorf("update lesson file_url: %w", err)
+	}
+
+	return nil
+}
+
+func (s *LessonService) buildStoredLessonProgressForDocument(
+	ctx context.Context,
+	lessonID uuid.UUID,
+	selectedLanguage string,
+	sourceLanguage string,
+	lessonType storage.EnumLessonType,
+) ([]GeneratedLessonProgressStep, error) {
+	lessonProgressRows, err := s.repo.GetLessonProgressByLessonID(ctx, lessonID)
+	if err != nil {
+		return nil, fmt.Errorf("get lesson progress: %w", err)
+	}
+
+	progress := make([]GeneratedLessonProgressStep, 0, len(lessonProgressRows))
+	for _, row := range lessonProgressRows {
+		nameValue := localization.LocaleTextFromJSONB(row.Name)
+		contentValue := localization.LocaleTextSliceFromJSONB(row.Content)
+
+		stepName := localeTextByLanguage(nameValue, selectedLanguage)
+		content := localizedLessonContentToStrings(contentValue, selectedLanguage)
+		if len(content) == 0 {
+			content = localizedLessonContentToStrings(contentValue, sourceLanguage)
+		}
+
+		progress = append(progress, GeneratedLessonProgressStep{
+			Name:       stepName,
+			FirstTime:  firstProgressMinute(row.FirstTime),
+			SecondTime: firstProgressMinute(row.SecondTime),
+			ThirdTime:  firstProgressMinute(row.ThirdTime),
+			Content:    content,
+		})
+	}
+	if len(progress) == 0 {
+		progress = defaultLessonProgress(lessonType, selectedLanguage)
+	}
+
+	return progress, nil
+}
+
+func (s *LessonService) resourceStringsFromIDs(
+	ctx context.Context,
+	ids []uuid.UUID,
+	language string,
+) []string {
+	resources := make([]string, 0, len(ids))
+	for _, id := range ids {
+		resource, err := s.rupRepo.GetResourceByID(ctx, id)
+		if err != nil {
+			continue
+		}
+
+		name := strings.TrimSpace(localeTextByLanguage(localization.LocaleTextFromJSONB(resource.Name), language))
+		if name == "" {
+			continue
+		}
+
+		link := strings.TrimSpace(resource.Link.String)
+		if link != "" {
+			resources = append(resources, fmt.Sprintf("%s — %s", name, link))
+			continue
+		}
+		resources = append(resources, name)
+	}
+
+	return resources
 }
 
 func (s *LessonService) CreateLessonProgress(ctx context.Context, params LessonProgressParams, lessonID uuid.UUID) error {

@@ -31,7 +31,7 @@ func main() {
 
 	cryptoCfg := config.LoadCryptoConfig()
 
-	geminiCfg := config.LoadGeminiConfig()
+	aiCfg := config.LoadAIConfig()
 
 	// ---------- DB ----------
 	// Note: Ensure repository.NewPostgresDB exists and accepts *config.DBConfig
@@ -58,7 +58,7 @@ func main() {
 	}
 
 	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
+		Timeout: 300 * time.Second, // 5 minutes for AI generation requests
 	}
 
 	// ---------- REDIS ----------
@@ -86,7 +86,15 @@ func main() {
 	authService := service.NewAuthService(rdb, authRepo, kcSyncClient, kcCfg, log)
 	userService := service.NewUserService(usersRepo, rdb)
 
-	aiService := service.NewAIService(httpClient, geminiCfg, log)
+	// ---------- AI SERVICE ----------
+	var aiService service.AIService
+	if aiCfg.Provider == "openai" {
+		log.Infof("Using OpenAI-compatible API provider at %s with model %s", aiCfg.OpenAI.BaseURL, aiCfg.OpenAI.Model)
+		aiService = service.NewOpenAIService(httpClient, aiCfg.OpenAI, log)
+	} else {
+		log.Infof("Using Gemini API provider with model %s", aiCfg.Gemini.PrimaryModel)
+		aiService = service.NewAIService(httpClient, aiCfg.Gemini, log)
+	}
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, aiService, minioRepo, cryptoClient, log)
 	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, docCfg, httpClient, minioRepo, log)
 

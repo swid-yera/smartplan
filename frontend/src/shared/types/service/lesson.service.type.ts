@@ -18,6 +18,7 @@ export interface IGenerateLessonRequest {
 	disciplineId: string
 	topicId: string
 	sourceLanguage?: BackendLocale
+	message?: string
 	updatedTopic: IGenerateLessonUpdatedTopic
 }
 
@@ -45,6 +46,7 @@ export interface IUpdateLessonProgressRequest {
 export interface IUpdateLessonRequest {
 	topic_name: LocaleText
 	event_date: string
+	sourceLanguage?: BackendLocale
 	type: LessonTypeEnum
 	goals: LocaleText
 	tasks: LocaleText

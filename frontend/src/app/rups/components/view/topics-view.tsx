@@ -338,9 +338,9 @@ const TopicRowView = ({
 			disciplineId,
 			topicId: topic.id,
 			sourceLanguage: toBackendLocale(activeLocale),
+			message: regenerateDescription.trim(),
 			updatedTopic: {
 				name: createLocaleText(getLocaleText(topic.name, 'ru'), getLocaleText(topic.name, 'kk')),
-				description: regenerateDescription.trim(),
 				type: topic.type,
 				total_hours: topic.theoryHours + topic.practiceHours + topic.individualHours,
 				theory_hours: topic.theoryHours,

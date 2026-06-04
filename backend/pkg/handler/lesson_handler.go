@@ -179,8 +179,7 @@ func (h *LessonHandler) UpdateLesson(c *gin.Context) {
 		return
 	}
 
-	currentUser, ok := userInterface.(*service.User)
-	if !ok {
+	if _, ok := userInterface.(*service.User); !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
 		return
 	}
@@ -191,22 +190,25 @@ func (h *LessonHandler) UpdateLesson(c *gin.Context) {
 		return
 	}
 
-	var req service.RegenerateLessonByIDInput
+	var req service.UpdateLessonRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	lessonID, err := h.lessonService.RegenerateLessonByID(c.Request.Context(), id, currentUser.KeycloakID, req)
-	if err != nil {
+	if err := h.lessonService.UpdateLesson(c.Request.Context(), id, req); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "lesson not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":   true,
-		"lessonId": lessonID.String(),
+		"lessonId": id.String(),
 	})
 }
 
