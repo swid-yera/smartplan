@@ -114,6 +114,7 @@ func main() {
 	rupHandler := handler.NewRupHandler(rupService, log)
 	awardHandler := handler.NewAwardHandler(awardService)
 	categoryHandler := handler.NewCategoryHandler(awardService)
+	statisticsHandler := handler.NewStatisticsHandler(userService)
 	groupsHandler := handler.NewGroupsHandler(groupsSyncService, syncGuard)
 	lessonHandler := handler.NewLessonHandler(lessonService, log)
 	aiHandler := handler.NewAIHandler(aiService, log)
@@ -128,6 +129,7 @@ func main() {
 		rupHandler,
 		awardHandler,
 		categoryHandler,
+		statisticsHandler,
 		groupsHandler,
 		lessonHandler,
 		aiHandler,
