@@ -2,7 +2,6 @@
 
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn'
-import { useLocaleStore } from '@store'
 import type { ILesson } from '@types'
 import type { Locale } from '@types'
 import { ListChecks, Target, Trophy } from 'lucide-react'
@@ -16,8 +15,7 @@ type IProps = {
 }
 
 export function LessonGoalsGrid({ cardClassName, lesson, lessonLocale }: IProps) {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+	const t = getUILocaleSection(localeDictionary, lessonLocale)
 
 	return (
 		<div className='grid gap-6 xl:grid-cols-3'>

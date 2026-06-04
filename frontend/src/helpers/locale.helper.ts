@@ -15,12 +15,100 @@ export const toBackendLocale = (locale: Locale): BackendLocale => (locale === 'k
 
 const KZ_SPECIFIC_RE = /[ӘәҒғҚқҢңӨөҰұҮүІі]/
 const RU_CAPITAL_RE = /[А-ЯЁ]/
+const LETTER_RE = /[A-Za-zА-Яа-яЁёӘәҒғҚқҢңӨөҰұҮүІі]/
+const SHORT_CODE_RE = /^[A-Za-zА-Яа-яЁё0-9._-]{1,8}$/
 
 const normalizeWhitespace = (value: string): string =>
 	value
 		.replace(/\s+/g, ' ')
 		.replace(/\s+([,.;:])/g, '$1')
 		.trim()
+
+const stripWrappingQuotes = (value: string): string => {
+	let result = value.trim()
+
+	while (
+		result.length >= 2 &&
+		((result.startsWith('"') && result.endsWith('"')) || (result.startsWith("'") && result.endsWith("'")))
+	) {
+		result = result.slice(1, -1).trim()
+	}
+
+	return result
+}
+
+const extractTextFromStructuredValue = (value: string): string => {
+	let current = value.trim()
+
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		const normalized = stripWrappingQuotes(current)
+		const looksLikeJson =
+			(normalized.startsWith('{') && normalized.endsWith('}')) ||
+			(normalized.startsWith('[') && normalized.endsWith(']')) ||
+			(normalized.startsWith('"') && normalized.endsWith('"'))
+
+		if (!looksLikeJson) return normalized
+
+		try {
+			const parsed = JSON.parse(normalized) as
+				| string
+				| { translatedText?: unknown; text?: unknown; name?: unknown; value?: unknown }
+
+			if (typeof parsed === 'string') {
+				current = parsed
+				continue
+			}
+
+			const candidate = [parsed.translatedText, parsed.text, parsed.name, parsed.value].find(
+				(item) => typeof item === 'string' && item.trim().length > 0,
+			)
+
+			if (typeof candidate === 'string') {
+				current = candidate
+				continue
+			}
+		} catch {
+			return normalized
+		}
+
+		return normalized
+	}
+
+	return stripWrappingQuotes(current)
+}
+
+const looksLikeTextChunk = (value: string): boolean => {
+	const letters = stripWrappingQuotes(value).match(LETTER_RE)
+
+	return Boolean(letters) && stripWrappingQuotes(value).replace(/[^A-Za-zА-Яа-яЁёӘәҒғҚқҢңӨөҰұҮүІі]/g, '').length >= 3
+}
+
+const isShortCodeChunk = (value: string): boolean => {
+	const normalized = stripWrappingQuotes(value)
+
+	return normalized.length > 0 && SHORT_CODE_RE.test(normalized)
+}
+
+const extractTitleAfterCodeSlash = (value: string): string => {
+	const parts = value
+		.split('/')
+		.map((part) => part.trim())
+		.filter(Boolean)
+
+	if (parts.length !== 2) return value
+
+	const [left, right] = parts
+
+	if (isShortCodeChunk(left) && looksLikeTextChunk(right)) {
+		return normalizeWhitespace(stripWrappingQuotes(right))
+	}
+
+	if (isShortCodeChunk(right) && looksLikeTextChunk(left)) {
+		return normalizeWhitespace(stripWrappingQuotes(left))
+	}
+
+	return value
+}
 
 const extractBySlash = (value: string, locale: Locale): string => {
 	const parts = value
@@ -62,15 +150,19 @@ const splitGluedBilingualText = (value: string, locale: Locale): string => {
 }
 
 const normalizeLocalizedText = (value: string, locale: Locale): string => {
-	let normalized = normalizeWhitespace(value)
+	let normalized = normalizeWhitespace(extractTextFromStructuredValue(value))
 
 	if (normalized.includes('/')) {
+		normalized = extractTitleAfterCodeSlash(normalized)
+	}
+
+	if (normalized.includes('/') && KZ_SPECIFIC_RE.test(normalized)) {
 		normalized = extractBySlash(normalized, locale)
 	}
 
 	normalized = splitGluedBilingualText(normalized, locale)
 
-	return normalizeWhitespace(normalized)
+	return normalizeWhitespace(stripWrappingQuotes(normalized))
 }
 
 export const getLocaleText = (value: LocalizedText, locale: Locale = DEFAULT_SITE_LOCALE): string => {

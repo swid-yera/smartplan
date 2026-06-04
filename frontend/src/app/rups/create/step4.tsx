@@ -44,7 +44,7 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 	// states
 	const [generatingDisciplineIndex, setGeneratingDisciplineIndex] = useState<number | null>(null)
 	const mapGeneratedText = (value: string): LocaleText =>
-		activeLocale === 'ru' ? { ru: value.trim(), kz: '' } : { ru: '', kz: value.trim() }
+		activeLocale === 'ru' ? { ru: getLocaleText(value, 'ru'), kz: '' } : { ru: '', kz: getLocaleText(value, 'kk') }
 
 	const buildMappedData = (
 		discipline: Discipline,

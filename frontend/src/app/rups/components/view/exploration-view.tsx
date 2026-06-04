@@ -4,7 +4,6 @@ import Link from 'next/link'
 
 import { formatAsDash, getLocaleText, getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
-import { useLocaleStore } from '@store'
 import type { IRup, Locale } from '@types'
 import { ExternalLink } from 'lucide-react'
 import localeDictionary from './locale.json'
@@ -15,8 +14,7 @@ interface IProps {
 }
 
 export const ExplorationView: FC<IProps> = ({ data, activeLocale }) => {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+	const t = getUILocaleSection(localeDictionary, activeLocale)
 
 	return (
 		<Card>

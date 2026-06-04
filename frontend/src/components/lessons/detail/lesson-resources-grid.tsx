@@ -4,7 +4,6 @@ import Link from 'next/link'
 
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import { useLocaleStore } from '@store'
 import type { ILesson, ILessonResource } from '@types'
 import type { Locale } from '@types'
 import { Grid2X2, Link2 } from 'lucide-react'
@@ -18,8 +17,7 @@ type IProps = {
 }
 
 export function LessonResourcesGrid({ cardClassName, lesson, lessonLocale }: IProps) {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+	const t = getUILocaleSection(localeDictionary, lessonLocale)
 
 	return (
 		<div className='grid gap-6 xl:grid-cols-2'>

@@ -2,7 +2,7 @@
 
 import { getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import { useLocaleStore } from '@store'
+import type { Locale } from '@types'
 import { ListChecks } from 'lucide-react'
 
 import type { INormalizedLessonProgress } from './lesson-page.types'
@@ -12,11 +12,11 @@ import localeDictionary from './locale.json'
 type IProps = {
 	cardClassName: string
 	lessonProgress: INormalizedLessonProgress[]
+	lessonLocale: Locale
 }
 
-export function LessonProgressCard({ cardClassName, lessonProgress }: IProps) {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+export function LessonProgressCard({ cardClassName, lessonLocale, lessonProgress }: IProps) {
+	const t = getUILocaleSection(localeDictionary, lessonLocale)
 
 	return (
 		<Card className={cardClassName}>

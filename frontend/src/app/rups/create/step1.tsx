@@ -41,7 +41,7 @@ export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale
 		enabled: true,
 	})
 	const mapGeneratedText = (value: string): LocaleText =>
-		activeLocale === 'ru' ? { ru: value.trim(), kz: '' } : { ru: '', kz: value.trim() }
+		activeLocale === 'ru' ? { ru: getLocaleText(value, 'ru'), kz: '' } : { ru: '', kz: getLocaleText(value, 'kk') }
 
 	const handleGenerate = async () => {
 		if (isLoading || groupLoading) return
