@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
 	"errors"
@@ -306,7 +307,7 @@ func (h *LessonHandler) GenerateLesson(c *gin.Context) {
 		return
 	}
 
-	lesson_id, err := h.lessonService.GenerateLesson(c.Request.Context(), currentUser.KeycloakID, req)
+	lesson_id, err := h.lessonService.GenerateLesson(context.WithoutCancel(c.Request.Context()), currentUser.KeycloakID, req)
 	if err != nil {
 		h.log.WithError(err).Error("generate lesson failed")
 		c.JSON(http.StatusOK, gin.H{

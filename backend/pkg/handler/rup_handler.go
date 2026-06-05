@@ -271,15 +271,18 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		return
 	}
 
-	// Для отправки на проверку разрешаем creator + developers из contacts (+ admin)
-	if strings.EqualFold(req.Status, "IN_REVIEW") {
+	// Проверка прав по статусу:
+	// IN_REVIEW  — teacher (свой РУП / контакт) или admin
+	// APPROVED / REJECTED — только methodist или admin
+	// DRAFT (возврат) — methodist или admin
+	switch strings.ToUpper(req.Status) {
+	case "IN_REVIEW":
 		rup, getErr := h.rupService.GetRupByID(c.Request.Context(), id)
 		if getErr != nil {
 			h.log.WithError(getErr).Error("RUP not found")
 			c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
 			return
 		}
-
 		canSendToReview := strings.EqualFold(currentUser.Role, "ADMIN")
 		if !canSendToReview && rup.Teacher != nil {
 			canSendToReview = rup.Teacher.KeycloakID == currentUser.KeycloakID
@@ -293,6 +296,12 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 			}
 		}
 		if !canSendToReview {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+	case "APPROVED", "REJECTED", "DRAFT":
+		role := strings.ToUpper(currentUser.Role)
+		if role != "METHODIST" && role != "ADMIN" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 			return
 		}
@@ -442,6 +451,32 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("invalid RUP ID")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		return
+	}
+
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		return
+	}
+
+	rup, err := h.rupService.GetRupByID(c.Request.Context(), id)
+	if err != nil {
+		h.log.WithError(err).Error("RUP not found")
+		c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+		return
+	}
+
+	// Только создатель (teacher) или admin могут удалять
+	isAdmin := strings.EqualFold(currentUser.Role, "ADMIN")
+	isCreator := rup.Teacher != nil && rup.Teacher.KeycloakID == currentUser.KeycloakID
+	if !isAdmin && !isCreator {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 

@@ -8,13 +8,13 @@ import { getCurrentBackendLocale } from './service-locale'
 export class CategoriesService {
 	// get all categories
 	getAllOptions = () => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<ICategoryListItemResponse[]>({
-			queryKey: ['categories'],
+			queryKey: ['categories', locale],
 			queryFn: async () => {
 				const { data } = await api.get<ICategoryListItemResponse[] | null>('/categories', {
-					params: {
-						locale: getCurrentBackendLocale(),
-					},
+					params: { locale },
 				})
 
 				if (!data) return []
@@ -26,13 +26,13 @@ export class CategoriesService {
 
 	// get category by id
 	getByIdOptions = (id: string) => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<ICategoryResponse>({
-			queryKey: ['category', id],
+			queryKey: ['category', id, locale],
 			queryFn: async () => {
 				const { data } = await api.get<ICategoryResponse>(`/categories/${id}`, {
-					params: {
-						locale: getCurrentBackendLocale(),
-					},
+					params: { locale },
 				})
 
 				return data
@@ -49,7 +49,8 @@ export class CategoriesService {
 				api.post<ICategoryResponse>('/categories', newCategory).then((r) => r.data),
 
 			onSuccess: (createdCategory) => {
-				queryClient.setQueryData(['category', createdCategory.id], createdCategory)
+				const locale = getCurrentBackendLocale()
+				queryClient.setQueryData(['category', createdCategory.id, locale], createdCategory)
 				queryClient.invalidateQueries({ queryKey: ['categories'] })
 			},
 		})
@@ -64,7 +65,8 @@ export class CategoriesService {
 				api.put<ICategoryResponse>(`/categories/${id}`, changedCategory).then((r) => r.data),
 
 			onSuccess: (updatedCategory, { id }) => {
-				queryClient.setQueryData(['category', id], updatedCategory)
+				const locale = getCurrentBackendLocale()
+				queryClient.setQueryData(['category', id, locale], updatedCategory)
 				queryClient.invalidateQueries({ queryKey: ['categories'] })
 			},
 		})

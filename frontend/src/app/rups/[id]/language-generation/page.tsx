@@ -10,7 +10,7 @@ import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@hel
 import { services } from '@services'
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { trackLanguageGeneration, untrackLanguageGeneration } from '../../language-generation-tracker'
 import localeDictionary from './locale.json'
@@ -22,6 +22,7 @@ const LanguageGenerationPage = () => {
 	const params = useParams<{ id: string }>()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
+	const queryClient = useQueryClient()
 
 	const { data: rupData } = useQuery({
 		...services.rup.getByIdOptions(params.id),
@@ -48,14 +49,16 @@ const LanguageGenerationPage = () => {
 	useEffect(() => {
 		if (!generationStatus || generationStatus.status !== 'completed') return
 		untrackLanguageGeneration(params.id)
+		queryClient.invalidateQueries({ queryKey: ['rup', params.id] })
 		replace(`/rups/${params.id}`)
-	}, [generationStatus, params.id, replace])
+	}, [generationStatus, params.id, queryClient, replace])
 
 	useEffect(() => {
 		if (!generationStatus || generationStatus.status !== 'failed') return
 		untrackLanguageGeneration(params.id)
+		queryClient.invalidateQueries({ queryKey: ['rup', params.id] })
 		replace(`/rups/${params.id}`)
-	}, [generationStatus, params.id, replace])
+	}, [generationStatus, params.id, queryClient, replace])
 
 	if (isLoading || !generationStatus) {
 		return <Loader type='data' />

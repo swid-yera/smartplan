@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 
 	"eduplan/backend/pkg/service"
@@ -31,7 +32,7 @@ func (h *AIHandler) GenerateRupMeta(c *gin.Context) {
 		return
 	}
 
-	result, err := h.aiService.GenerateRupMeta(c.Request.Context(), req)
+	result, err := h.aiService.GenerateRupMeta(context.WithoutCancel(c.Request.Context()), req)
 	if err != nil {
 		h.log.WithError(err).Error("failed to generate rup meta")
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -54,7 +55,7 @@ func (h *AIHandler) GenerateResources(c *gin.Context) {
 		return
 	}
 
-	result, err := h.aiService.GenerateResources(c.Request.Context(), req)
+	result, err := h.aiService.GenerateResources(context.WithoutCancel(c.Request.Context()), req)
 	if err != nil {
 		h.log.WithError(err).Error("failed to generate resources")
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -77,7 +78,7 @@ func (h *AIHandler) GenerateDisciplines(c *gin.Context) {
 		return
 	}
 
-	result, err := h.aiService.GenerateDisciplines(c.Request.Context(), req)
+	result, err := h.aiService.GenerateDisciplines(context.WithoutCancel(c.Request.Context()), req)
 	if err != nil {
 		h.log.WithError(err).Error("failed to generate disciplines")
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -100,7 +101,7 @@ func (h *AIHandler) GenerateTopicsForDiscipline(c *gin.Context) {
 		return
 	}
 
-	result, err := h.aiService.GenerateTopicsForDiscipline(c.Request.Context(), req)
+	result, err := h.aiService.GenerateTopicsForDiscipline(context.WithoutCancel(c.Request.Context()), req)
 	if err != nil {
 		h.log.WithError(err).Error("failed to generate topics for discipline")
 		c.JSON(http.StatusInternalServerError, gin.H{
