@@ -138,7 +138,7 @@ const splitGluedBilingualText = (value: string, locale: Locale): string => {
 		if (!RU_CAPITAL_RE.test(curr)) continue
 
 		// "құрастыру/разработка" -> split before "Разработка"
-		if (/[a-zа-яёәғқңөұүі]/i.test(prev) && prev !== ' ' && prev !== '-' && prev !== '—') {
+		if (/[a-zа-яёәғқңөұүі]/.test(prev) && prev !== ' ' && prev !== '-' && prev !== '—') {
 			const left = value.slice(0, i).trim()
 			const right = value.slice(i).trim()
 
