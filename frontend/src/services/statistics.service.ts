@@ -6,13 +6,13 @@ import { getCurrentBackendLocale } from './service-locale'
 
 export class StatisticsService {
 	getTopTeachersByDepartmentOptions = () => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<IDepartmentTopTeachersResponse[]>({
-			queryKey: ['statistics-top-teachers-by-department'],
+			queryKey: ['statistics-top-teachers-by-department', locale],
 			queryFn: async () => {
 				const { data } = await api.get<IDepartmentTopTeachersResponse[]>('/statistics/departments/top-teachers', {
-					params: {
-						locale: getCurrentBackendLocale(),
-					},
+					params: { locale },
 				})
 
 				if (!data) return []
@@ -23,16 +23,16 @@ export class StatisticsService {
 	}
 
 	getTeachersByDepartmentOptions = (departmentId: string) => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<IDepartmentTopTeachersResponse | null>({
-			queryKey: ['statistics-teachers-by-department', departmentId],
+			queryKey: ['statistics-teachers-by-department', departmentId, locale],
 			queryFn: async () => {
 				try {
 					const { data } = await api.get<IDepartmentTopTeachersResponse>(
 						`/statistics/departments/${departmentId}/teachers`,
 						{
-							params: {
-								locale: getCurrentBackendLocale(),
-							},
+							params: { locale },
 						},
 					)
 

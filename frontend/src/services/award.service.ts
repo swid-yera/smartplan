@@ -20,13 +20,13 @@ import { getCurrentBackendLocale } from './service-locale'
 export class AwardService {
 	// get departments rating
 	getAllDepartmentsOptions = () => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<IDepartmentRatingResponse[]>({
-			queryKey: ['awards-departments'],
+			queryKey: ['awards-departments', locale],
 			queryFn: async () => {
 				const { data } = await api.get<IDepartmentRatingResponse[]>('/awards/departments', {
-					params: {
-						locale: getCurrentBackendLocale(),
-					},
+					params: { locale },
 				})
 
 				if (!data) return []
@@ -38,13 +38,13 @@ export class AwardService {
 
 	// get top departments rating for statistics
 	getTopDepartmentsOptions = () => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<IDepartmentRatingResponse[]>({
-			queryKey: ['statistics-top-departments'],
+			queryKey: ['statistics-top-departments', locale],
 			queryFn: async () => {
 				const { data } = await api.get<IDepartmentRatingResponse[]>('/statistics/departments/top', {
-					params: {
-						locale: getCurrentBackendLocale(),
-					},
+					params: { locale },
 				})
 
 				if (!data) return []
@@ -76,15 +76,17 @@ export class AwardService {
 					.filter(Boolean)
 					.join(',')
 
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<IPagination<IAward>>({
 			queryKey: [
 				'awards',
-				{ currentPage, pageSize, search, methodist, teacher, status, categoryId: categoryIdParam, sort },
+				{ currentPage, pageSize, search, methodist, teacher, status, categoryId: categoryIdParam, sort, locale },
 			],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IAward>>('/awards', {
 					params: {
-						locale: getCurrentBackendLocale(),
+						locale,
 						currentPage,
 						pageSize,
 						search,
@@ -105,13 +107,13 @@ export class AwardService {
 
 	// get award by id
 	getByIdOptions = (id: string) => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<IAward>({
-			queryKey: ['award', id],
+			queryKey: ['award', id, locale],
 			queryFn: async () => {
 				const { data } = await api.get<IAward>(`/awards/${id}`, {
-					params: {
-						locale: getCurrentBackendLocale(),
-					},
+					params: { locale },
 				})
 
 				return data
@@ -146,7 +148,8 @@ export class AwardService {
 			},
 
 			onSuccess: (createdAward) => {
-				queryClient.setQueryData(['award', createdAward.id], createdAward)
+				const locale = getCurrentBackendLocale()
+				queryClient.setQueryData(['award', createdAward.id, locale], createdAward)
 				queryClient.invalidateQueries({ queryKey: ['awards'] })
 			},
 		})
@@ -188,7 +191,8 @@ export class AwardService {
 			},
 
 			onSuccess: (updatedAward, { id }) => {
-				queryClient.setQueryData(['award', id], updatedAward)
+				const locale = getCurrentBackendLocale()
+				queryClient.setQueryData(['award', id, locale], updatedAward)
 				queryClient.invalidateQueries({ queryKey: ['awards'] })
 			},
 		})
@@ -234,13 +238,13 @@ export class AwardService {
 	// --- types
 	// get all types
 	getAllTypesOptions = () => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<ITypeResponse[]>({
-			queryKey: ['types'],
+			queryKey: ['types', locale],
 			queryFn: async () => {
 				const { data } = await api.get<ITypeResponse[]>('/awards/types', {
-					params: {
-						locale: getCurrentBackendLocale(),
-					},
+					params: { locale },
 				})
 
 				if (!data) return []
@@ -252,13 +256,13 @@ export class AwardService {
 
 	// get type by id
 	getTypeByIdOptions = (id: string) => {
+		const locale = getCurrentBackendLocale()
+
 		return queryOptions<ITypeResponse>({
-			queryKey: ['type', id],
+			queryKey: ['type', id, locale],
 			queryFn: async () => {
 				const { data } = await api.get<ITypeResponse>(`/awards/types/${id}`, {
-					params: {
-						locale: getCurrentBackendLocale(),
-					},
+					params: { locale },
 				})
 
 				return data
@@ -275,7 +279,8 @@ export class AwardService {
 				api.post<ITypeResponse>('/awards/types', newType).then((r) => r.data),
 
 			onSuccess: (createdType) => {
-				queryClient.setQueryData(['type', createdType.id], createdType)
+				const locale = getCurrentBackendLocale()
+				queryClient.setQueryData(['type', createdType.id, locale], createdType)
 				queryClient.invalidateQueries({ queryKey: ['types'] })
 			},
 		})
@@ -290,7 +295,8 @@ export class AwardService {
 				api.put<ITypeResponse>(`/awards/types/${id}`, changedType).then((r) => r.data),
 
 			onSuccess: (updatedType, { id }) => {
-				queryClient.setQueryData(['type', id], updatedType)
+				const locale = getCurrentBackendLocale()
+				queryClient.setQueryData(['type', id, locale], updatedType)
 				queryClient.invalidateQueries({ queryKey: ['types'] })
 			},
 		})
