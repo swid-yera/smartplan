@@ -102,7 +102,7 @@ export default async function RootLayout({
 				/>
 			</head>
 
-			<body className='min-h-screen antialiased flex flex-col'>
+			<body className='flex min-h-screen flex-col antialiased'>
 				<ThemeProvider>
 					<QueryProvider>
 						<LocaleProvider>
@@ -110,12 +110,14 @@ export default async function RootLayout({
 								<AuthProvider hasSid={hasSid} />
 
 								<ASidebar hasSid={hasSid} />
-								<SidebarInset className='flex-1 min-w-0 justify-between items-stretch'>
-									{children}
+								<SidebarInset className='flex min-h-svh flex-1 min-w-0 flex-col'>
+									<div className='flex min-h-0 flex-1 flex-col'>
+										{children}
 
-									<RupsLanguageGenerationNotifier />
-									<Toaster position='top-center' />
-									<Footer />
+										<RupsLanguageGenerationNotifier />
+										<Toaster position='top-center' />
+										<Footer />
+									</div>
 								</SidebarInset>
 							</ASidebarProvider>
 						</LocaleProvider>

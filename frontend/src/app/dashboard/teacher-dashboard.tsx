@@ -88,7 +88,7 @@ export const TeacherDashboard: FC<IProps> = ({ keycloakId }) => {
 				</Card>
 			</div>
 
-			<div className='grid grid-cols-1 gap-6 md:h-[calc(100vh-19rem)] md:grid-cols-3'>
+			<div className='grid grid-cols-1 gap-6 md:min-h-[calc(100svh-19rem)] md:grid-cols-3'>
 				<CombineCard
 					className='md:col-span-2'
 					isLoading={isLoading}

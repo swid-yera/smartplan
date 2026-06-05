@@ -16,7 +16,7 @@ export const Footer: FC<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDi
 	const currentYear = new Date().getFullYear()
 
 	return (
-		<footer className={cn('text-center text-sm text-gray-500 py-8 border-t mt-10', className)} {...props}>
+		<footer className={cn('mt-auto border-t py-8 text-center text-sm text-gray-500', className)} {...props}>
 			<p>
 				© {currentYear} {t.text} <u>"Almaty Polytech College"</u>.
 			</p>

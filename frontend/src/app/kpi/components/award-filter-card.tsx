@@ -76,6 +76,8 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 		String(selectedCategoryIds.length),
 	)
 	const didMountRef = useRef(false)
+	const compactFiltersSignature = `${selectedStatuses.join('|')}::${selectedCategoryIds.join('|')}::${selectedSort}`
+	const lastAppliedCompactFiltersRef = useRef(compactFiltersSignature)
 
 	const { data: categories = [] } = useQuery({
 		...services.categories.getAllOptions(),
@@ -122,12 +124,16 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 		if (!compact) return
 		if (!didMountRef.current) {
 			didMountRef.current = true
+			lastAppliedCompactFiltersRef.current = compactFiltersSignature
 
 			return
 		}
 
+		if (lastAppliedCompactFiltersRef.current === compactFiltersSignature) return
+		lastAppliedCompactFiltersRef.current = compactFiltersSignature
+
 		applyFilters()
-	}, [applyFilters, compact])
+	}, [applyFilters, compact, compactFiltersSignature])
 
 	if (compact) {
 		return (
