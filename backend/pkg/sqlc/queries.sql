@@ -1110,6 +1110,63 @@ WHERE
 ORDER BY created_at DESC
 LIMIT $3;
 
+-- =====================
+-- PERMISSIONS
+-- =====================
+
+-- name: UpsertUserPermissions :one
+INSERT INTO permissions (user_id, permissions)
+VALUES ($1, $2)
+ON CONFLICT (user_id) DO UPDATE
+    SET permissions = EXCLUDED.permissions,
+        updated_at  = NOW()
+RETURNING *;
+
+-- name: GetUserPermissions :one
+SELECT * FROM permissions WHERE user_id = $1;
+
+-- name: DeleteUserPermissions :exec
+DELETE FROM permissions WHERE user_id = $1;
+
+-- name: GetUsersWithPermissions :many
+SELECT
+    u.keycloak_id,
+    u.email,
+    u.username,
+    u.first_name,
+    u.last_name,
+    u.role,
+    COALESCE(p.permissions, '{}'::permission_code[]) AS permissions
+FROM users u
+LEFT JOIN permissions p ON p.user_id = u.keycloak_id
+WHERE u.role = 'SPECIAL'::user_role
+ORDER BY u.created_at DESC;
+
+-- name: GetUsersByIDs :many
+SELECT * FROM users WHERE keycloak_id = ANY($1::uuid[]);
+
+-- name: GetResourcesByIDs :many
+SELECT * FROM rup_resources WHERE id = ANY($1::uuid[]);
+
+-- name: GetDisciplinesByIDs :many
+SELECT * FROM rup_disciplines WHERE id = ANY($1::uuid[]);
+
+-- name: GetSemestersByIDs :many
+SELECT * FROM discipline_semesters WHERE id = ANY($1::uuid[]);
+
+-- name: GetTopicsByIDs :many
+SELECT * FROM discipline_topics WHERE id = ANY($1::uuid[]);
+
+-- name: GetGroupsByIDs :many
+SELECT * FROM groups WHERE keycloak_id = ANY($1::uuid[]);
+
+-- name: GetDepartmentsForUsers :many
+-- Возвращает все departments, которые содержат хотя бы одного из указанных пользователей.
+-- Используется для batch-загрузки departments вместо N отдельных запросов.
+SELECT d.*, unnest(d.users) AS member_id
+FROM departments d
+WHERE d.users && $1::uuid[];
+
 -- name: CountLessonsFiltered :one
 SELECT COUNT(*)
 FROM lessons l

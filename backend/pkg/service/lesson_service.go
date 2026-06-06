@@ -201,6 +201,7 @@ type LessonService struct {
 	aiService   AIService
 	cfg         *config.DocumentRenderConfig
 	httpClient  *http.Client
+	docRender   *DocumentRenderClient
 	fileStorage FileStorage
 	log         *logrus.Logger
 }
@@ -225,6 +226,7 @@ func NewLessonService(
 		aiService:   aiService,
 		cfg:         cfg,
 		httpClient:  httpClient,
+		docRender:   NewDocumentRenderClient(httpClient, cfg.ApiKey),
 		fileStorage: fileStorage,
 		log:         logger,
 	}
@@ -1666,7 +1668,7 @@ func (s *LessonService) generateLessonViaPython(ctx context.Context, payload les
 	}
 
 	endpoint := strings.TrimRight(s.cfg.Url, "/") + "/generate-lesson"
-	resp, err := s.postDocumentRenderJSON(ctx, endpoint, body)
+	resp, err := s.docRender.PostJSON(ctx, endpoint, body)
 	if err != nil {
 		return nil, fmt.Errorf("send lesson to document rendering: %w", err)
 	}
@@ -1699,60 +1701,6 @@ func (s *LessonService) generateLessonViaPython(ctx context.Context, payload les
 		FileName: extractFileNameFromDisposition(resp.Header.Get("Content-Disposition")),
 		Content:  fileBytes,
 	}, nil
-}
-
-func (s *LessonService) postDocumentRenderJSON(ctx context.Context, endpoint string, body []byte) (*http.Response, error) {
-	const maxRedirects = 5
-	currentURL := endpoint
-
-	for i := 0; i <= maxRedirects; i++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, currentURL, bytes.NewReader(body))
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-Request-ID", uuid.NewString())
-		if s.cfg.ApiKey != "" {
-			req.Header.Set("X-API-Key", s.cfg.ApiKey)
-		}
-
-		resp, err := s.doWithoutAutoRedirect(req)
-		if err != nil {
-			return nil, err
-		}
-
-		if !isRedirectStatus(resp.StatusCode) {
-			return resp, nil
-		}
-
-		nextLocation := strings.TrimSpace(resp.Header.Get("Location"))
-		if nextLocation == "" {
-			return resp, nil
-		}
-
-		nextURL, err := resolveRedirectURL(currentURL, nextLocation)
-		resp.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-		currentURL = nextURL
-	}
-
-	return nil, fmt.Errorf("document rendering redirect limit exceeded for %s", endpoint)
-}
-
-func (s *LessonService) doWithoutAutoRedirect(req *http.Request) (*http.Response, error) {
-	if s.httpClient == nil {
-		return nil, fmt.Errorf("http client is not configured")
-	}
-
-	clientCopy := *s.httpClient
-	clientCopy.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
-		return http.ErrUseLastResponse
-	}
-
-	return clientCopy.Do(req)
 }
 
 func parseDisciplineTopicType(value string) (storage.DisciplineTopicType, error) {

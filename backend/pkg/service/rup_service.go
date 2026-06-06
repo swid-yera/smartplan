@@ -9,9 +9,7 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"eduplan/backend/config"
@@ -22,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
@@ -251,8 +250,6 @@ type DisciplineResponse struct {
 	TotalHours int32                   `json:"totalHours"`
 	Semesters  []*SemesterResponse     `json:"semesters"`
 	Topics     []*TopicResponse        `json:"topics"`
-	CreatedAt  time.Time               `json:"createdAt"`
-	UpdatedAt  time.Time               `json:"updatedAt"`
 }
 
 type SemesterResponse struct {
@@ -275,15 +272,15 @@ type TopicResponse struct {
 }
 
 type rupService struct {
-	repo                 repository.RupRepository
-	cfg                  *config.DocumentRenderConfig
-	httpClient           *http.Client
-	aiService            AIService
-	fileStorage          FileStorage
-	crypto               CryptoClient
-	log                  *logrus.Logger
-	languageGenerationMu sync.RWMutex
-	languageGeneration   map[uuid.UUID]RupLanguageGenerationStatus
+	repo        repository.RupRepository
+	cfg         *config.DocumentRenderConfig
+	httpClient  *http.Client
+	docRender   *DocumentRenderClient
+	aiService   AIService
+	fileStorage FileStorage
+	crypto      CryptoClient
+	log         *logrus.Logger
+	langGen     langGenStore
 }
 
 type UpdateRupStatusRequest struct {
@@ -314,6 +311,7 @@ func NewRupService(
 	aiService AIService,
 	fileStorage FileStorage,
 	cryptoClient CryptoClient,
+	rdb *redis.Client,
 	log *logrus.Logger,
 ) RupService {
 	if log == nil {
@@ -321,61 +319,62 @@ func NewRupService(
 	}
 
 	return &rupService{
-		repo:               repo,
-		cfg:                cfg,
-		httpClient:         httpClient,
-		aiService:          aiService,
-		fileStorage:        fileStorage,
-		crypto:             cryptoClient,
-		log:                log,
-		languageGeneration: make(map[uuid.UUID]RupLanguageGenerationStatus),
+		repo:        repo,
+		cfg:         cfg,
+		httpClient:  httpClient,
+		docRender:   NewDocumentRenderClient(httpClient, cfg.ApiKey),
+		aiService:   aiService,
+		fileStorage: fileStorage,
+		crypto:      cryptoClient,
+		log:         log,
+		langGen:     newRedisLangGenStore(rdb),
 	}
 }
 
 func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error) {
-	fmt.Printf("CreateRup called with contacts: %v\n", req.Contacts)
-	// Валидация
+	// Валидация (вне транзакции — только чтение)
 	if err := s.validateCreateRupRequest(ctx, req); err != nil {
-		fmt.Printf("Validation failed: %v\n", err)
 		return nil, fmt.Errorf("validation failed: %w", err)
-	}
-	fmt.Printf("Validation passed\n")
-
-	// Создание связанных сущностей
-	explorationNoteID, err := s.createExplorationNote(ctx, req.ExplorationNote)
-	if err != nil {
-		return nil, fmt.Errorf("create exploration note failed: %w", err)
 	}
 
 	// Calculate total hours
 	var totalHours int32
 	for _, d := range req.Disciplines {
-		for _, s := range d.Semesters {
-			totalHours += s.TotalHours
+		for _, sem := range d.Semesters {
+			totalHours += sem.TotalHours
 		}
 	}
 
-	disciplineIDs, err := s.createDisciplines(ctx, req.Disciplines)
-	if err != nil {
-		return nil, fmt.Errorf("create disciplines failed: %w", err)
+	// Все мутирующие операции — внутри одной транзакции
+	var rup *storage.Rup
+	if err := s.repo.WithTransaction(ctx, func(txRepo repository.RupRepository) error {
+		explorationNoteID, err := s.createExplorationNoteInRepo(ctx, txRepo, req.ExplorationNote)
+		if err != nil {
+			return fmt.Errorf("create exploration note: %w", err)
+		}
+
+		disciplineIDs, err := s.createDisciplinesInRepo(ctx, txRepo, req.Disciplines)
+		if err != nil {
+			return fmt.Errorf("create disciplines: %w", err)
+		}
+
+		params := s.convertToCreateParams(req, explorationNoteID, disciplineIDs, totalHours)
+		rup, err = txRepo.CreateRup(ctx, params)
+		if err != nil {
+			return fmt.Errorf("create rup: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
-	// Преобразование в параметры для repository
-	params := s.convertToCreateParams(req, explorationNoteID, disciplineIDs, totalHours)
-
-	// Создание RUP
-	rup, err := s.repo.CreateRup(ctx, params)
-	if err != nil {
-		return nil, fmt.Errorf("create rup failed: %w", err)
-	}
-
-	// Сборка полного ответа
+	// Сборка полного ответа (вне транзакции — только чтение)
 	response, err := s.buildRupResponse(ctx, *rup)
 	if err != nil {
-		return nil, fmt.Errorf("build response failed: %w", err)
+		return nil, fmt.Errorf("build response: %w", err)
 	}
 
-	// generate to second lang
+	// Запуск фоновой генерации второго языка
 	sourceLanguage := normalizeBackendLanguage(req.SourceLanguage)
 	targetLanguage := oppositeBackendLanguage(sourceLanguage)
 	if sourceLanguage != "" && targetLanguage != "" && s.aiService != nil {
@@ -396,12 +395,12 @@ func (s *rupService) GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse
 }
 
 func (s *rupService) GetLanguageGenerationStatus(ctx context.Context, id uuid.UUID) (*RupLanguageGenerationStatus, error) {
-	s.languageGenerationMu.RLock()
-	status, exists := s.languageGeneration[id]
-	s.languageGenerationMu.RUnlock()
+	status, exists, err := s.langGen.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 	if exists {
-		statusCopy := status
-		return &statusCopy, nil
+		return &status, nil
 	}
 
 	if _, err := s.GetRupByID(ctx, id); err != nil {
@@ -657,45 +656,46 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 }
 
 func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error) {
-	// 1. Check if RUP exists and get current status
+	// 1. Проверяем что RUP существует (вне транзакции — только чтение)
 	existingRup, err := s.repo.GetRupByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("rup not found: %w", err)
 	}
 
-	// 2. Validate request
+	// 2. Валидация (вне транзакции — только чтение)
 	if err := s.validateCreateRupRequest(ctx, req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
-	}
-
-	// 3. Create new related entities (ExplorationNote, Disciplines)
-	// We create new ones to replace the old ones.
-	explorationNoteID, err := s.createExplorationNote(ctx, req.ExplorationNote)
-	if err != nil {
-		return nil, fmt.Errorf("create exploration note failed: %w", err)
 	}
 
 	// Calculate total hours
 	var totalHours int32
 	for _, d := range req.Disciplines {
-		for _, s := range d.Semesters {
-			totalHours += s.TotalHours
+		for _, sem := range d.Semesters {
+			totalHours += sem.TotalHours
 		}
 	}
 
-	disciplineIDs, err := s.createDisciplines(ctx, req.Disciplines)
-	if err != nil {
-		return nil, fmt.Errorf("create disciplines failed: %w", err)
-	}
+	// 3. Все мутирующие операции — внутри одной транзакции
+	var updatedRup *storage.Rup
+	if err := s.repo.WithTransaction(ctx, func(txRepo repository.RupRepository) error {
+		explorationNoteID, err := s.createExplorationNoteInRepo(ctx, txRepo, req.ExplorationNote)
+		if err != nil {
+			return fmt.Errorf("create exploration note: %w", err)
+		}
 
-	// 4. Prepare update params
-	// We preserve the existing status
-	params := s.convertToUpdateParams(id, req, existingRup.Status, existingRup.Teacher, explorationNoteID, disciplineIDs, totalHours)
+		disciplineIDs, err := s.createDisciplinesInRepo(ctx, txRepo, req.Disciplines)
+		if err != nil {
+			return fmt.Errorf("create disciplines: %w", err)
+		}
 
-	// 5. Update RUP
-	updatedRup, err := s.repo.UpdateRup(ctx, params)
-	if err != nil {
-		return nil, fmt.Errorf("update rup failed: %w", err)
+		params := s.convertToUpdateParams(id, req, existingRup.Status, existingRup.Teacher, explorationNoteID, disciplineIDs, totalHours)
+		updatedRup, err = txRepo.UpdateRup(ctx, params)
+		if err != nil {
+			return fmt.Errorf("update rup: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	return s.buildRupResponse(ctx, *updatedRup)
@@ -720,7 +720,7 @@ func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResp
 
 	// 3. HTTP -> Python (with redirect-safe POST retry)
 	endpoint := strings.TrimRight(s.cfg.Url, "/") + "/generate-rup"
-	resp, err := s.postDocumentRenderJSON(ctx, endpoint, body)
+	resp, err := s.docRender.PostJSON(ctx, endpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -747,95 +747,6 @@ func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResp
 	}
 
 	return fileBytes, nil
-}
-
-func (s *rupService) postDocumentRenderJSON(ctx context.Context, endpoint string, body []byte) (*http.Response, error) {
-	const maxRedirects = 5
-	currentURL := endpoint
-
-	for i := 0; i <= maxRedirects; i++ {
-		req, err := http.NewRequestWithContext(
-			ctx,
-			http.MethodPost,
-			currentURL,
-			bytes.NewReader(body),
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-Request-ID", uuid.NewString())
-		if s.cfg.ApiKey != "" {
-			req.Header.Set("X-API-Key", s.cfg.ApiKey)
-		}
-
-		resp, err := s.doWithoutAutoRedirect(req)
-		if err != nil {
-			return nil, err
-		}
-
-		if !isRedirectStatus(resp.StatusCode) {
-			return resp, nil
-		}
-
-		nextLocation := strings.TrimSpace(resp.Header.Get("Location"))
-		if nextLocation == "" {
-			return resp, nil
-		}
-
-		nextURL, err := resolveRedirectURL(currentURL, nextLocation)
-		resp.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-		currentURL = nextURL
-	}
-
-	return nil, fmt.Errorf("document rendering redirect limit exceeded for %s", endpoint)
-}
-
-func (s *rupService) doWithoutAutoRedirect(req *http.Request) (*http.Response, error) {
-	if s.httpClient == nil {
-		return nil, fmt.Errorf("http client is not configured")
-	}
-
-	clientCopy := *s.httpClient
-	clientCopy.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
-		return http.ErrUseLastResponse
-	}
-
-	return clientCopy.Do(req)
-}
-
-func isRedirectStatus(statusCode int) bool {
-	switch statusCode {
-	case http.StatusMovedPermanently,
-		http.StatusFound,
-		http.StatusSeeOther,
-		http.StatusTemporaryRedirect,
-		http.StatusPermanentRedirect:
-		return true
-	default:
-		return false
-	}
-}
-
-func resolveRedirectURL(currentURL string, location string) (string, error) {
-	locURL, err := url.Parse(location)
-	if err != nil {
-		return "", fmt.Errorf("invalid redirect location %q: %w", location, err)
-	}
-	if locURL.IsAbs() {
-		return locURL.String(), nil
-	}
-
-	baseURL, err := url.Parse(currentURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid base url %q: %w", currentURL, err)
-	}
-
-	return baseURL.ResolveReference(locURL).String(), nil
 }
 
 func buildPayload(rup *RupResponse, group *GroupResponse, language string) RupDocumentPayload {
@@ -1030,7 +941,6 @@ func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRupRequest) error {
-	fmt.Printf("Validating request: contacts=%v, groups=%v\n", req.Contacts, req.Groups)
 	if req.Name.Ru == "" && req.Name.Kz == "" {
 		return fmt.Errorf("name is required")
 	}
@@ -1048,18 +958,14 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 	}
 	// Validate contacts exist
 	for _, contactIDStr := range req.Contacts {
-		fmt.Printf("Validating contact: %s\n", contactIDStr)
 		contactID, err := uuid.Parse(contactIDStr)
 		if err != nil {
-			fmt.Printf("Invalid UUID format: %s\n", contactIDStr)
 			return fmt.Errorf("invalid contact ID format: %s", contactIDStr)
 		}
 		_, err = s.repo.GetUserByID(ctx, contactID)
 		if err != nil {
-			fmt.Printf("Contact not found: %s, error: %v\n", contactIDStr, err)
 			return fmt.Errorf("contact with ID %s does not exist", contactIDStr)
 		}
-		fmt.Printf("Contact validated: %s\n", contactIDStr)
 	}
 
 	// Validate groups exist
@@ -1102,6 +1008,134 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 	}
 
 	return nil
+}
+
+// createExplorationNoteInRepo — tx-safe версия createExplorationNote, использует переданный repo
+func (s *rupService) createExplorationNoteInRepo(ctx context.Context, repo repository.RupRepository, note *ExplorationNoteRequest) (*uuid.UUID, error) {
+	if note == nil {
+		return nil, nil
+	}
+
+	var internetResourceIDs []uuid.UUID
+	for _, res := range note.InternetResources {
+		params := storage.CreateRupResourceParams{
+			Name: res.Name.ToJSONB(),
+			Link: pgtype.Text{String: res.Link, Valid: res.Link != ""},
+		}
+		resource, err := repo.CreateResource(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+		internetResourceIDs = append(internetResourceIDs, resource.ID)
+	}
+
+	var technicalResourceIDs []uuid.UUID
+	for _, res := range note.TechnicalResources {
+		params := storage.CreateRupResourceParams{
+			Name: res.Name.ToJSONB(),
+			Link: pgtype.Text{String: res.Link, Valid: res.Link != ""},
+		}
+		resource, err := repo.CreateResource(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+		technicalResourceIDs = append(technicalResourceIDs, resource.ID)
+	}
+
+	enParams := storage.CreateRupExplorationNoteParams{
+		Basis:              note.Basis.ToJSONB(),
+		Goals:              note.Goals.ToJSONB(),
+		Competencies:       note.Competencies.ToJSONB(),
+		Prerequisites:      note.Prerequisites.ToJSONB(),
+		Postrequisites:     note.Postrequisites.ToJSONB(),
+		InternetResources:  internetResourceIDs,
+		TechnicalResources: technicalResourceIDs,
+	}
+	explorationNote, err := repo.CreateExplorationNote(ctx, enParams)
+	if err != nil {
+		return nil, err
+	}
+	return &explorationNote.ID, nil
+}
+
+// createDisciplinesInRepo — tx-safe версия createDisciplines, использует переданный repo
+func (s *rupService) createDisciplinesInRepo(ctx context.Context, repo repository.RupRepository, disciplines []*DisciplineRequest) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+
+	for _, disc := range disciplines {
+		semesterIDs, err := s.createSemestersInRepo(ctx, repo, disc.Semesters)
+		if err != nil {
+			return nil, err
+		}
+		topicIDs, err := s.createTopicsInRepo(ctx, repo, disc.Topics)
+		if err != nil {
+			return nil, err
+		}
+
+		var discTotalHours int32
+		for _, sem := range disc.Semesters {
+			discTotalHours += sem.TotalHours
+		}
+
+		params := storage.CreateRupDisciplineParams{
+			Name:       disc.Name.ToJSONB(),
+			TotalHours: discTotalHours,
+			Semesters:  semesterIDs,
+			Topics:     topicIDs,
+		}
+		discipline, err := repo.CreateDiscipline(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, discipline.ID)
+	}
+	return ids, nil
+}
+
+func (s *rupService) createSemestersInRepo(ctx context.Context, repo repository.RupRepository, semesters []*SemesterRequest) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+	for _, sem := range semesters {
+		semester, err := repo.CreateSemester(ctx, storage.CreateDisciplineSemesterParams{
+			Semester:   sem.Semester,
+			TotalHours: sem.TotalHours,
+		})
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, semester.ID)
+	}
+	return ids, nil
+}
+
+func (s *rupService) createTopicsInRepo(ctx context.Context, repo repository.RupRepository, topics []*TopicRequest) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+	for _, topic := range topics {
+		var topicType storage.DisciplineTopicType
+		switch topic.Type {
+		case "SNZ":
+			topicType = storage.DisciplineTopicTypeSNZ
+		case "PRACTICAL":
+			topicType = storage.DisciplineTopicTypePRACTICAL
+		case "COMBINED":
+			topicType = storage.DisciplineTopicTypeCOMBINED
+		}
+		totalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
+		t, err := repo.CreateTopic(ctx, storage.CreateDisciplineTopicParams{
+			Name:            topic.Name.ToJSONB(),
+			Type:            topicType,
+			TotalHours:      totalHours,
+			TheoryHours:     topic.TheoryHours,
+			PracticeHours:   topic.PracticeHours,
+			IndividualHours: topic.IndividualHours,
+			SrspHours:       topic.SrspHours,
+			SrsHours:        topic.SrsHours,
+		})
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, t.ID)
+	}
+	return ids, nil
 }
 
 func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID, totalHours int32) storage.CreateRupsParams {
@@ -1436,49 +1470,54 @@ func (s *rupService) buildListAllRupsResponse(ctx context.Context, rup storage.R
 }
 
 func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*RupResponse, error) {
-	// Get contacts
+	// --- batch: contacts ---
 	contacts := []*helpers.UserResponse{}
-	for _, contactID := range rup.Contacts {
-		user, err := s.repo.GetUserByID(ctx, contactID)
-		if err != nil {
-			continue // Skip if not found
+	if len(rup.Contacts) > 0 {
+		users, err := s.repo.GetUsersByIDs(ctx, rup.Contacts)
+		if err == nil {
+			for _, u := range users {
+				u := u
+				contacts = append(contacts, helpers.ConvertToUserResponse(u))
+			}
 		}
-		contacts = append(contacts, helpers.ConvertToUserResponse(*user))
 	}
 
-	// Get groups
+	// --- batch: groups ---
 	groups := []*GroupResponse{}
-	for _, groupIDStr := range rup.GroupIds {
-		groupID, err := uuid.Parse(groupIDStr)
-		if err != nil {
-			continue // Skip invalid UUIDs
+	if len(rup.GroupIds) > 0 {
+		groupIDs := make([]uuid.UUID, 0, len(rup.GroupIds))
+		for _, s := range rup.GroupIds {
+			if id, err := uuid.Parse(s); err == nil {
+				groupIDs = append(groupIDs, id)
+			}
 		}
-		group, err := s.repo.GetGroupByKeycloakID(ctx, groupID)
-		if err != nil {
-			continue // Skip if not found
+		if len(groupIDs) > 0 {
+			dbGroups, err := s.repo.GetGroupsByIDs(ctx, groupIDs)
+			if err == nil {
+				for _, g := range dbGroups {
+					g := g
+					groups = append(groups, s.convertToGroupResponse(g))
+				}
+			}
 		}
-		groups = append(groups, s.convertToGroupResponse(*group))
 	}
 
-	// Get methodist
+	// --- methodist & teacher (одиночные запросы — оптимизировать нецелесообразно) ---
 	var methodist *helpers.UserResponse
 	if rup.Methodist.Valid {
-		user, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes)
-		if err == nil {
-			methodist = helpers.ConvertToUserResponse(*user)
+		if u, err := s.repo.GetUserByID(ctx, rup.Methodist.Bytes); err == nil {
+			methodist = helpers.ConvertToUserResponse(*u)
 		}
 	}
 
-	// Get teacher
 	var teacher *helpers.UserResponse
 	if rup.Teacher.Valid {
-		user, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes)
-		if err == nil {
-			teacher = helpers.ConvertToUserResponse(*user)
+		if u, err := s.repo.GetUserByID(ctx, rup.Teacher.Bytes); err == nil {
+			teacher = helpers.ConvertToUserResponse(*u)
 		}
 	}
 
-	// Get exploration note
+	// --- exploration note ---
 	explorationNote := ExplorationNoteResponse{
 		ID:                 uuid.Nil,
 		Basis:              nil,
@@ -1490,24 +1529,69 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 		TechnicalResources: []*ResourceResponse{},
 	}
 	if rup.ExplorationNoteID.Valid {
-		note, err := s.repo.GetExplorationNoteByID(ctx, rup.ExplorationNoteID.Bytes)
-		if err == nil {
-			explorationNote = s.convertToExplorationNoteResponse(ctx, *note)
+		if note, err := s.repo.GetExplorationNoteByID(ctx, rup.ExplorationNoteID.Bytes); err == nil {
+			explorationNote = s.convertToExplorationNoteResponseBatch(ctx, *note)
 		}
 	}
 
-	// Get disciplines
+	// --- batch: disciplines ---
 	disciplines := []*DisciplineResponse{}
-	for _, discID := range rup.Disciplines {
-		disc, err := s.repo.GetDisciplineByID(ctx, discID)
-		if err != nil {
-			continue
+	if len(rup.Disciplines) > 0 {
+		dbDiscs, err := s.repo.GetDisciplinesByIDs(ctx, rup.Disciplines)
+		if err == nil {
+			// Собираем все ID семестров и топиков для единого batch-запроса
+			var allSemIDs, allTopicIDs []uuid.UUID
+			for _, d := range dbDiscs {
+				allSemIDs = append(allSemIDs, d.Semesters...)
+				allTopicIDs = append(allTopicIDs, d.Topics...)
+			}
+
+			semMap := map[uuid.UUID]storage.DisciplineSemester{}
+			if len(allSemIDs) > 0 {
+				sems, err := s.repo.GetSemestersByIDs(ctx, allSemIDs)
+				if err == nil {
+					for _, sem := range sems {
+						semMap[sem.ID] = sem
+					}
+				}
+			}
+
+			topicMap := map[uuid.UUID]storage.DisciplineTopic{}
+			if len(allTopicIDs) > 0 {
+				topics, err := s.repo.GetTopicsByIDs(ctx, allTopicIDs)
+				if err == nil {
+					for _, t := range topics {
+						topicMap[t.ID] = t
+					}
+				}
+			}
+
+			for _, disc := range dbDiscs {
+				semesters := make([]*SemesterResponse, 0, len(disc.Semesters))
+				for _, semID := range disc.Semesters {
+					if sem, ok := semMap[semID]; ok {
+						semesters = append(semesters, &SemesterResponse{
+							ID:         sem.ID,
+							Semester:   sem.Semester,
+							TotalHours: sem.TotalHours,
+						})
+					}
+				}
+				topics := make([]*TopicResponse, 0, len(disc.Topics))
+				for _, topicID := range disc.Topics {
+					if t, ok := topicMap[topicID]; ok {
+						topics = append(topics, s.convertToTopicResponse(t))
+					}
+				}
+				disciplines = append(disciplines, &DisciplineResponse{
+					ID:         disc.ID,
+					Name:       localization.LocaleTextFromJSONB(disc.Name),
+					TotalHours: disc.TotalHours,
+					Semesters:  semesters,
+					Topics:     topics,
+				})
+			}
 		}
-		disciplineResp, err := s.convertToDisciplineResponse(ctx, *disc)
-		if err != nil {
-			continue
-		}
-		disciplines = append(disciplines, disciplineResp)
 	}
 
 	return &RupResponse{
@@ -1531,8 +1615,7 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	}, nil
 }
 
-func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse {
-	return &GroupResponse{
+func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse {	return &GroupResponse{
 		KeycloakID:    group.KeycloakID,
 		Name:          group.Name,
 		Qualification: localization.LocaleTextFromJSONB(group.Qualification),
@@ -1567,6 +1650,71 @@ func (s *rupService) convertToExplorationNoteResponse(ctx context.Context, note 
 			Link: res.Link.String,
 			Type: "TECHNICAL",
 		})
+	}
+
+	return ExplorationNoteResponse{
+		ID:                 note.ID,
+		Basis:              localization.LocaleTextPtrFromJSONB(note.Basis),
+		Goals:              localization.LocaleTextPtrFromJSONB(note.Goals),
+		Competencies:       localization.LocaleTextPtrFromJSONB(note.Competencies),
+		Prerequisites:      localization.LocaleTextPtrFromJSONB(note.Prerequisites),
+		Postrequisites:     localization.LocaleTextPtrFromJSONB(note.Postrequisites),
+		InternetResources:  internetResources,
+		TechnicalResources: technicalResources,
+	}
+}
+
+// convertToTopicResponse — конвертирует storage.DisciplineTopic в TopicResponse
+func (s *rupService) convertToTopicResponse(t storage.DisciplineTopic) *TopicResponse {
+	return &TopicResponse{
+		ID:              t.ID,
+		Name:            localization.LocaleTextFromJSONB(t.Name),
+		Type:            t.Type,
+		LessonID:        helpers.PgUUIDToPtr(t.LessonID),
+		TotalHours:      t.TotalHours,
+		TheoryHours:     t.TheoryHours,
+		PracticeHours:   t.PracticeHours,
+		IndividualHours: t.IndividualHours,
+		SrspHours:       t.SrspHours,
+		SrsHours:        t.SrsHours,
+	}
+}
+
+// convertToExplorationNoteResponseBatch — batch-версия: загружает все ресурсы одним запросом
+func (s *rupService) convertToExplorationNoteResponseBatch(ctx context.Context, note storage.RupExplorationNote) ExplorationNoteResponse {
+	allIDs := append(note.InternetResources, note.TechnicalResources...)
+	resMap := map[uuid.UUID]storage.RupResource{}
+	if len(allIDs) > 0 {
+		resources, err := s.repo.GetResourcesByIDs(ctx, allIDs)
+		if err == nil {
+			for _, r := range resources {
+				resMap[r.ID] = r
+			}
+		}
+	}
+
+	internetResources := make([]*ResourceResponse, 0, len(note.InternetResources))
+	for _, id := range note.InternetResources {
+		if r, ok := resMap[id]; ok {
+			internetResources = append(internetResources, &ResourceResponse{
+				ID:   r.ID,
+				Name: localization.LocaleTextFromJSONB(r.Name),
+				Link: r.Link.String,
+				Type: "INTERNET",
+			})
+		}
+	}
+
+	technicalResources := make([]*ResourceResponse, 0, len(note.TechnicalResources))
+	for _, id := range note.TechnicalResources {
+		if r, ok := resMap[id]; ok {
+			technicalResources = append(technicalResources, &ResourceResponse{
+				ID:   r.ID,
+				Name: localization.LocaleTextFromJSONB(r.Name),
+				Link: r.Link.String,
+				Type: "TECHNICAL",
+			})
+		}
 	}
 
 	return ExplorationNoteResponse{
@@ -1622,8 +1770,6 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 		TotalHours: disc.TotalHours,
 		Semesters:  semesters,
 		Topics:     topics,
-		CreatedAt:  time.Now(), // Placeholder
-		UpdatedAt:  time.Now(), // Placeholder
 	}, nil
 }
 
@@ -1845,20 +1991,15 @@ func (s *rupService) markLanguageGenerationFailed(
 }
 
 func (s *rupService) updateLanguageGenerationState(state RupLanguageGenerationStatus) {
-	s.languageGenerationMu.Lock()
-	defer s.languageGenerationMu.Unlock()
-	s.languageGeneration[state.RupID] = state
+	// Используем background context — метод вызывается из фоновой горутины
+	_ = s.langGen.Set(context.Background(), state)
 }
 
 func (s *rupService) isLanguageGenerationInProgress(rupID uuid.UUID) bool {
-	s.languageGenerationMu.RLock()
-	defer s.languageGenerationMu.RUnlock()
-
-	status, exists := s.languageGeneration[rupID]
-	if !exists {
+	status, exists, err := s.langGen.Get(context.Background(), rupID)
+	if err != nil || !exists {
 		return false
 	}
-
 	return status.Status == rupLanguageGenerationStatusQueued || status.Status == rupLanguageGenerationStatusRunning
 }
 
@@ -1867,10 +2008,7 @@ func (s *rupService) resolveSourceLanguageForRegeneration(rupID uuid.UUID, sourc
 		return normalized
 	}
 
-	s.languageGenerationMu.RLock()
-	defer s.languageGenerationMu.RUnlock()
-
-	if status, exists := s.languageGeneration[rupID]; exists {
+	if status, exists, err := s.langGen.Get(context.Background(), rupID); err == nil && exists {
 		if normalized := normalizeBackendLanguage(status.SourceLanguage); normalized != "" {
 			return normalized
 		}

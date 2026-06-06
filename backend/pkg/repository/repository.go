@@ -26,6 +26,7 @@ type UsersRepository interface {
 	CountUsersFiltered(ctx context.Context, search string, departmentID pgtype.UUID) (int64, error)
 	CountUsersRatingFiltered(ctx context.Context, search string) (int64, error)
 	GetDepartmentsByUserID(ctx context.Context, userID uuid.UUID) ([]storage.Department, error)
+	GetDepartmentsForUsers(ctx context.Context, userIDs []uuid.UUID) ([]storage.GetDepartmentsForUsersRow, error)
 
 	UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error
 	CreatePenalty(ctx context.Context, params storage.CreatePenaltyParams) error
@@ -96,18 +97,27 @@ type Lessons interface {
 	GetLessonProgressByLessonID(ctx context.Context, lessonID uuid.UUID) ([]storage.LessonProgress, error)
 }
 
+type Permissions interface {
+	UpsertUserPermissions(ctx context.Context, userID uuid.UUID, codes []storage.PermissionCode) (storage.Permission, error)
+	GetUserPermissions(ctx context.Context, userID uuid.UUID) (storage.Permission, error)
+	DeleteUserPermissions(ctx context.Context, userID uuid.UUID) error
+	GetUsersWithPermissions(ctx context.Context) ([]storage.GetUsersWithPermissionsRow, error)
+}
+
 type Repository struct {
-	Users   UsersRepository
-	Auth    Auth
-	Rup     Rup
-	Lessons Lessons
+	Users       UsersRepository
+	Auth        Auth
+	Rup         Rup
+	Lessons     Lessons
+	Permissions Permissions
 }
 
 func NewRepository(queries *storage.Queries) *Repository {
 	return &Repository{
-		Users:   NewUsersPostgres(queries),
-		Auth:    NewAuthPostgres(queries),
-		Rup:     NewRupPostgres(queries),
-		Lessons: NewLessonRepository(queries),
+		Users:       NewUsersPostgres(queries),
+		Auth:        NewAuthPostgres(queries),
+		Rup:         NewRupPostgres(queries),
+		Lessons:     NewLessonRepository(queries),
+		Permissions: NewPermissionsPostgres(queries),
 	}
 }

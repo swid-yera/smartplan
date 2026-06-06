@@ -134,6 +134,10 @@ func (r *UsersPostgres) GetDepartmentsByUserID(ctx context.Context, userID uuid.
 	return r.queries.GetDepartmentsByUserID(ctx, userID)
 }
 
+func (r *UsersPostgres) GetDepartmentsForUsers(ctx context.Context, userIDs []uuid.UUID) ([]storage.GetDepartmentsForUsersRow, error) {
+	return r.queries.GetDepartmentsForUsers(ctx, userIDs)
+}
+
 func (r *UsersPostgres) UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error {
 	return r.queries.UpdateUserTotalPoints(ctx, storage.UpdateUserTotalPointsParams{
 		KeycloakID:  teacher,

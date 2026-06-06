@@ -22,6 +22,7 @@ type Router struct {
 	lesson                *LessonHandler
 	ai                    *AIHandler
 	webhooks              *WebhooksHandler
+	permissions           *PermissionHandler
 	sessionAuthMiddleware gin.HandlerFunc
 	corsAllowedOrigins    []string
 }
@@ -37,6 +38,7 @@ func NewRouter(
 	lesson *LessonHandler,
 	ai *AIHandler,
 	webhooks *WebhooksHandler,
+	permissions *PermissionHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
 	corsAllowedOrigins []string,
 ) *Router {
@@ -51,6 +53,7 @@ func NewRouter(
 		groups:                groups,
 		lesson:                lesson,
 		ai:                    ai,
+		permissions:           permissions,
 		sessionAuthMiddleware: sessionAuthMiddleware,
 		corsAllowedOrigins:    corsAllowedOrigins,
 	}
@@ -280,6 +283,21 @@ func (r *Router) Init() *gin.Engine {
 				ai.POST("/rups/resources", r.ai.GenerateResources)
 				ai.POST("/rups/disciplines", r.ai.GenerateDisciplines)
 				ai.POST("/rups/topics", r.ai.GenerateTopicsForDiscipline)
+			}
+		}
+
+		// --- PERMISSIONS ---
+		if r.permissions != nil {
+			perms := protected.Group("/permissions")
+			{
+				// список SPECIAL-пользователей с правами — только admin
+				perms.GET("/specials", middleware.RequireRole("ADMIN"), r.permissions.ListSpecialUsers)
+				// выдача/обновление прав — только admin
+				perms.PUT("/:user_id", middleware.RequireRole("ADMIN"), r.permissions.SetPermissions)
+				// просмотр прав — admin или сам пользователь (доп. проверка внутри хендлера)
+				perms.GET("/:user_id", r.permissions.GetPermissions)
+				// отзыв прав — только admin
+				perms.DELETE("/:user_id", middleware.RequireRole("ADMIN"), r.permissions.RevokePermissions)
 			}
 		}
 	}
