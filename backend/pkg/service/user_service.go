@@ -184,13 +184,9 @@ func (s *userService) GetUsersPaginated(
 		return nil, err
 	}
 
-	users := make([]*User, 0, len(dbUsers))
-	for _, dbUser := range dbUsers {
-		mapped, mapErr := s.toServiceUser(ctx, &dbUser)
-		if mapErr != nil {
-			return nil, mapErr
-		}
-		users = append(users, mapped)
+	users, err := s.toServiceUsers(ctx, dbUsers)
+	if err != nil {
+		return nil, err
 	}
 
 	pages := int(math.Ceil(float64(total) / float64(pageSize)))
@@ -238,13 +234,9 @@ func (s *userService) GetUsersRatingPaginated(
 		return nil, err
 	}
 
-	users := make([]*User, 0, len(dbUsers))
-	for _, dbUser := range dbUsers {
-		mapped, mapErr := s.toServiceUser(ctx, &dbUser)
-		if mapErr != nil {
-			return nil, mapErr
-		}
-		users = append(users, mapped)
+	users, err := s.toServiceUsers(ctx, dbUsers)
+	if err != nil {
+		return nil, err
 	}
 
 	pages := int(math.Ceil(float64(total) / float64(pageSize)))
@@ -266,16 +258,7 @@ func (s *userService) GetTeachersRatingWithDepartments(ctx context.Context) ([]*
 		return nil, err
 	}
 
-	users := make([]*User, 0, len(dbUsers))
-	for _, dbUser := range dbUsers {
-		mapped, mapErr := s.toServiceUser(ctx, &dbUser)
-		if mapErr != nil {
-			return nil, mapErr
-		}
-		users = append(users, mapped)
-	}
-
-	return users, nil
+	return s.toServiceUsers(ctx, dbUsers)
 }
 
 func (s *userService) GetTopTeachersByDepartment(ctx context.Context) ([]DepartmentTopTeachersResponse, error) {
@@ -445,6 +428,109 @@ func (s *userService) GetTopAwardDepartmentsStats(ctx context.Context) ([]AwardD
 	}
 
 	return result, nil
+}
+
+// toServiceUsers — batch-версия toServiceUser.
+// Загружает departments и violations для всех пользователей за 2 запроса вместо 2×N.
+func (s *userService) toServiceUsers(ctx context.Context, dbUsers []storage.User) ([]*User, error) {
+	if len(dbUsers) == 0 {
+		return []*User{}, nil
+	}
+
+	// Собираем ID всех пользователей
+	userIDs := make([]uuid.UUID, len(dbUsers))
+	for i, u := range dbUsers {
+		userIDs[i] = u.KeycloakID
+	}
+
+	// Batch: departments для всех пользователей за 1 запрос
+	deptRows, err := s.repo.GetDepartmentsForUsers(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	// Строим map: userID → []UserDepartment
+	// GetDepartmentsForUsersRow содержит одну запись на каждую пару (department, member).
+	// MemberID — interface{} из-за unnest, приводим к uuid.UUID через pgtype.
+	deptMap := map[uuid.UUID][]UserDepartment{}
+	for _, row := range deptRows {
+		var memberID uuid.UUID
+		switch v := row.MemberID.(type) {
+		case uuid.UUID:
+			memberID = v
+		case [16]byte:
+			memberID = uuid.UUID(v)
+		case string:
+			if parsed, err := uuid.Parse(v); err == nil {
+				memberID = parsed
+			}
+		default:
+			continue
+		}
+		dept := UserDepartment{
+			KeycloakID: row.KeycloakID,
+			Name:       localization.LocaleTextFromJSONB(row.Name),
+		}
+		deptMap[memberID] = append(deptMap[memberID], dept)
+	}
+
+	// Batch: violations — собираем все ViolationIds
+	var allViolationIDs []uuid.UUID
+	for _, u := range dbUsers {
+		allViolationIDs = append(allViolationIDs, u.ViolationIds...)
+	}
+	violationMap := map[uuid.UUID]*ViolationRecord{}
+	if len(allViolationIDs) > 0 {
+		dbViolations, err := s.repo.GetViolationsByIDs(ctx, allViolationIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range dbViolations {
+			v := v
+			violationMap[v.ID] = mapViolationRecord(v)
+		}
+	}
+
+	// Собираем результат
+	users := make([]*User, 0, len(dbUsers))
+	for _, dbUser := range dbUsers {
+		firstName, lastName, phone := "", "", ""
+		if dbUser.FirstName.Valid {
+			firstName = dbUser.FirstName.String
+		}
+		if dbUser.LastName.Valid {
+			lastName = dbUser.LastName.String
+		}
+		if dbUser.Phone.Valid {
+			phone = dbUser.Phone.String
+		}
+
+		departments := deptMap[dbUser.KeycloakID]
+		if departments == nil {
+			departments = []UserDepartment{}
+		}
+
+		violations := make([]*ViolationRecord, 0, len(dbUser.ViolationIds))
+		for _, vid := range dbUser.ViolationIds {
+			if v, ok := violationMap[vid]; ok {
+				violations = append(violations, v)
+			}
+		}
+
+		users = append(users, &User{
+			KeycloakID:  dbUser.KeycloakID,
+			Email:       dbUser.Email,
+			Username:    dbUser.Username,
+			FirstName:   firstName,
+			LastName:    lastName,
+			Role:        string(dbUser.Role),
+			Phone:       phone,
+			Departments: departments,
+			TotalPoints: dbUser.TotalPoints,
+			Violation:   string(dbUser.Violation),
+			Violations:  violations,
+		})
+	}
+	return users, nil
 }
 
 func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*User, error) {

@@ -95,12 +95,15 @@ func main() {
 		log.Infof("Using Gemini API provider with model %s", aiCfg.Gemini.PrimaryModel)
 		aiService = service.NewAIService(httpClient, aiCfg.Gemini, log)
 	}
-	rupService := service.NewRupService(rupRepo, docCfg, httpClient, aiService, minioRepo, cryptoClient, log)
+	rupService := service.NewRupService(rupRepo, docCfg, httpClient, aiService, minioRepo, cryptoClient, rdb, log)
 	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, docCfg, httpClient, minioRepo, log)
 
 	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	syncGuard := service.NewSyncGuard(1 * time.Minute)
+
+	permissionsRepo := repository.NewPermissionsPostgres(queries)
+	permissionService := service.NewPermissionService(permissionsRepo, usersRepo)
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(
@@ -126,6 +129,7 @@ func main() {
 	groupsHandler := handler.NewGroupsHandler(groupsSyncService, syncGuard)
 	lessonHandler := handler.NewLessonHandler(lessonService, log)
 	aiHandler := handler.NewAIHandler(aiService, log)
+	permissionHandler := handler.NewPermissionHandler(permissionService)
 
 	// ---------- ROUTER ----------
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
@@ -142,6 +146,7 @@ func main() {
 		lessonHandler,
 		aiHandler,
 		nil,
+		permissionHandler,
 		sessionAuthMiddleware,
 		serverCfg.CORSAllowedOrigins,
 	)

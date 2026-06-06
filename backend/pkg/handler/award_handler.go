@@ -19,12 +19,12 @@ import (
 
 type AwardHandler struct {
 	// Renamed to 'srv' or 'service' to match your initialization in main.go
-	service *service.AwardService
+	service service.AwardServiceInterface
 }
 
 // NewAwardHandler creates a new instance of AwardHandler
 // This is the function you need to call in main.go
-func NewAwardHandler(service *service.AwardService) *AwardHandler {
+func NewAwardHandler(service service.AwardServiceInterface) *AwardHandler {
 	return &AwardHandler{
 		service: service,
 	}

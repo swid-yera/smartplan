@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"mime/multipart"
 	"time"
 
 	"github.com/google/uuid"
@@ -133,6 +134,41 @@ type UpdateAwardRequest struct {
 	CategoryID    pgtype.UUID `json:"categoryId"`
 	FieldValues   any         `json:"fieldValues"`
 	TotalPoints   int32       `json:"totalPoints"`
+}
+
+// AwardServiceInterface — интерфейс для бизнес-логики наград.
+// Позволяет подменять реализацию в тестах и сохраняет единообразие с другими сервисами.
+type AwardServiceInterface interface {
+	// Awards
+	CreateAward(ctx context.Context, params *storage.CreateAwardParams) (AwardResponse, error)
+	GetAllAwards(ctx context.Context) ([]AwardResponse, error)
+	GetAwardByID(ctx context.Context, id uuid.UUID) (AwardResponse, error)
+	UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error)
+	UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (AwardResponse, error)
+	DeleteAward(ctx context.Context, id uuid.UUID) error
+	BuildSelected(ctx context.Context, award storage.Award) (AwardResponse, error)
+	GetAwardPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) (*PaginatedAwardsResponse, error)
+	CountAwards(ctx context.Context) (int64, error)
+	GetAwardDepartmentsStats(ctx context.Context) ([]AwardDepartmentResponse, error)
+	MergeUploadedFilesIntoFieldValues(ctx context.Context, userID uuid.UUID, awardID uuid.UUID, categoryID pgtype.UUID, rawFieldValues any, formFiles map[string][]*multipart.FileHeader) (map[string]any, error)
+	ResolveFieldValueFileURLs(ctx context.Context, categoryID *uuid.UUID, values map[string]any) (map[string]any, error)
+
+	// Types
+	CreateType(ctx context.Context, params *CreateTypeParams) (TypeResponse, error)
+	GetAllFullTypes(ctx context.Context) ([]TypeResponse, error)
+	BuildType(ctx context.Context, awardType storage.AwardType) (TypeResponse, error)
+	GetTypeByID(ctx context.Context, id uuid.UUID) (TypeResponse, error)
+	UpdateType(ctx context.Context, id uuid.UUID, req CreateAwardTypeRequest) (TypeResponse, error)
+	DeleteType(ctx context.Context, id uuid.UUID) error
+	CreateVariant(ctx context.Context, params *storage.CreateAwardTypesVariantParams) (storage.AwardTypeVariant, error)
+	CreateCriteria(ctx context.Context, params *storage.CreateAwardTypeCriteriaParams) (storage.AwardTypeCriterium, error)
+
+	// Categories
+	CreateCategory(ctx context.Context, req AwardCategoryRequest) (AwardCategoryResponse, error)
+	GetAllCategories(ctx context.Context) ([]AwardCategoryListItemResponse, error)
+	GetCategoryByID(ctx context.Context, id uuid.UUID) (AwardCategoryResponse, error)
+	UpdateCategory(ctx context.Context, id uuid.UUID, req AwardCategoryRequest) (AwardCategoryResponse, error)
+	DeleteCategory(ctx context.Context, id uuid.UUID) error
 }
 
 type AwardService struct {
@@ -492,7 +528,7 @@ func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
 		err = s.userRepo.UpdateUserTotalPoints(
 			ctx,
 			award.Teacher.Bytes,
-			award.TotalPoints,
+			-award.TotalPoints,
 		)
 		if err != nil {
 			return err

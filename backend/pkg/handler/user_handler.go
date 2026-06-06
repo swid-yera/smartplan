@@ -188,11 +188,6 @@ func (h *UserHandler) CreatePenalty(c *gin.Context) {
 		return
 	}
 
-	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
-		return
-	}
-
 	teacherID, err := uuid.Parse(c.Param("teacher_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
@@ -269,14 +264,8 @@ func (h *UserHandler) DeletePenaltyByIDAndTeacherID(c *gin.Context) {
 		return
 	}
 
-	currentUser, ok := userInterface.(*service.User)
-	if !ok {
+	if _, ok := userInterface.(*service.User); !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
-		return
-	}
-
-	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 
@@ -318,11 +307,6 @@ func (h *UserHandler) CreateViolation(c *gin.Context) {
 		return
 	}
 
-	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
-		return
-	}
-
 	targetUserID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
@@ -359,11 +343,6 @@ func (h *UserHandler) UpdateViolation(c *gin.Context) {
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
-		return
-	}
-
-	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 
@@ -410,11 +389,6 @@ func (h *UserHandler) DeleteViolation(c *gin.Context) {
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
-		return
-	}
-
-	if currentUser.Role != "METHODIST" && currentUser.Role != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 

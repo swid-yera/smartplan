@@ -2,14 +2,18 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type RupRepository interface {
+	WithTransaction(ctx context.Context, fn func(txRepo RupRepository) error) error
+
 	CreateRup(ctx context.Context, params storage.CreateRupsParams) (*storage.Rup, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*storage.Rup, error)
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error
@@ -35,6 +39,14 @@ type RupRepository interface {
 	UpdateTopic(ctx context.Context, params storage.UpdateDisciplineTopicParams) error
 	LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error
 
+	// Batch lookups — устраняют N+1
+	GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.User, error)
+	GetResourcesByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.RupResource, error)
+	GetDisciplinesByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.RupDiscipline, error)
+	GetSemestersByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.DisciplineSemester, error)
+	GetTopicsByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.DisciplineTopic, error)
+	GetGroupsByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.Group, error)
+
 	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
 	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
 	CountRups(ctx context.Context) (int64, error)
@@ -42,10 +54,41 @@ type RupRepository interface {
 
 type RupPostgres struct {
 	queries *storage.Queries
+	pool    interface {
+		Begin(ctx context.Context) (pgx.Tx, error)
+	}
 }
 
-func NewRupPostgres(queries *storage.Queries, _ ...storage.DBTX) *RupPostgres {
-	return &RupPostgres{queries: queries}
+func NewRupPostgres(queries *storage.Queries, pool ...storage.DBTX) *RupPostgres {
+	r := &RupPostgres{queries: queries}
+	if len(pool) > 0 {
+		if p, ok := pool[0].(interface{ Begin(ctx context.Context) (pgx.Tx, error) }); ok {
+			r.pool = p
+		}
+	}
+	return r
+}
+
+// WithTransaction выполняет fn внутри одной транзакции.
+// При ошибке делает rollback, при успехе — commit.
+func (r *RupPostgres) WithTransaction(ctx context.Context, fn func(txRepo RupRepository) error) error {
+	if r.pool == nil {
+		return fmt.Errorf("transaction support not configured: pool is nil")
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+
+	txRepo := &RupPostgres{queries: r.queries.WithTx(tx)}
+
+	if err = fn(txRepo); err != nil {
+		_ = tx.Rollback(ctx)
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (r *RupPostgres) CreateRup(ctx context.Context, params storage.CreateRupsParams) (*storage.Rup, error) {
@@ -266,4 +309,34 @@ func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string, teac
 		Teacher:   teacher,
 		Methodist: methodist,
 	})
+}
+
+// GetUsersByIDs — batch загрузка пользователей по списку ID
+func (r *RupPostgres) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.User, error) {
+	return r.queries.GetUsersByIDs(ctx, ids)
+}
+
+// GetResourcesByIDs — batch загрузка ресурсов по списку ID
+func (r *RupPostgres) GetResourcesByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.RupResource, error) {
+	return r.queries.GetResourcesByIDs(ctx, ids)
+}
+
+// GetDisciplinesByIDs — batch загрузка дисциплин по списку ID
+func (r *RupPostgres) GetDisciplinesByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.RupDiscipline, error) {
+	return r.queries.GetDisciplinesByIDs(ctx, ids)
+}
+
+// GetSemestersByIDs — batch загрузка семестров по списку ID
+func (r *RupPostgres) GetSemestersByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.DisciplineSemester, error) {
+	return r.queries.GetSemestersByIDs(ctx, ids)
+}
+
+// GetTopicsByIDs — batch загрузка топиков по списку ID
+func (r *RupPostgres) GetTopicsByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.DisciplineTopic, error) {
+	return r.queries.GetTopicsByIDs(ctx, ids)
+}
+
+// GetGroupsByIDs — batch загрузка групп по списку ID
+func (r *RupPostgres) GetGroupsByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.Group, error) {
+	return r.queries.GetGroupsByIDs(ctx, ids)
 }

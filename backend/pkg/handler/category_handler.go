@@ -11,10 +11,10 @@ import (
 )
 
 type CategoryHandler struct {
-	service *service.AwardService
+	service service.AwardServiceInterface
 }
 
-func NewCategoryHandler(service *service.AwardService) *CategoryHandler {
+func NewCategoryHandler(service service.AwardServiceInterface) *CategoryHandler {
 	return &CategoryHandler{service: service}
 }
 

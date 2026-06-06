@@ -15,7 +15,7 @@ CREATE TYPE violation_enum AS ENUM ('NONE', 'REMARK', 'REBUKE', 'SEVERE_REPRIMAN
 
 CREATE TYPE enum_criteria_method AS ENUM ('NORMAL', 'MEASURING');
 
-CREATE TYPE user_role AS ENUM ('ADMIN', 'TEACHER', 'METHODIST');
+CREATE TYPE user_role AS ENUM ('ADMIN', 'TEACHER', 'METHODIST', 'SPECIAL');
 
 CREATE TYPE enum_lesson_type AS ENUM ('PRACTICE', 'THEORY');
 
@@ -407,4 +407,32 @@ CREATE TABLE lesson_progress(
         jsonb_typeof(content) = 'array'
     ),
     CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id)
+);
+
+-- =====================
+-- PERMISSIONS
+-- =====================
+CREATE TYPE permission_code AS ENUM (
+    'RUP-manage',
+    'RUP-view',
+    'RUP-full',
+    'KPI-manage',
+    'KPI-view',
+    'KPI-full'
+);
+
+CREATE TABLE permissions (
+    id          UUID        PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    user_id     UUID        NOT NULL,
+    permissions permission_code[] NOT NULL DEFAULT '{}',
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
+
+    CONSTRAINT fk_user_permissions_user
+        FOREIGN KEY (user_id)
+        REFERENCES users (keycloak_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_user_permission
+        UNIQUE (user_id)
 );
