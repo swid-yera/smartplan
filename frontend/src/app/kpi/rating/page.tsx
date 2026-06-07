@@ -1,6 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
+import { useMemo } from 'react'
 
 import Link from 'next/link'
 
@@ -22,6 +23,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import type { IDepartmentTopTeachersResponse } from '@types'
 
 import { RatingNav } from './components/rating-nav'
 import localeDictionary from './locale.json'
@@ -50,18 +52,30 @@ const getTeacherRowStyle = (color: string): CSSProperties => ({
 	borderLeftColor: color,
 })
 
+type DepartmentWithTotalPoints = IDepartmentTopTeachersResponse & {
+	totalPoints: number
+}
+
 export default function RatingPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const { data: departments = [], isLoading } = useQuery({
 		...services.statistics.getTopTeachersByDepartmentOptions(),
 	})
+	const departmentsWithTotalPoints = useMemo<DepartmentWithTotalPoints[]>(() => {
+		return departments.map((department) => ({
+			...department,
+			totalPoints: department.teachers
+				.map((teacher) => teacher.totalPoints ?? 0)
+				.reduce((sum, points) => sum + points, 0),
+		}))
+	}, [departments])
 
 	if (isLoading) {
 		return <Loader fullScreen type='default' />
 	}
 
-	if (departments.length === 0) {
+	if (departmentsWithTotalPoints.length === 0) {
 		return (
 			<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
 				<PageTitle description={t.description}>{t.title}</PageTitle>
@@ -103,7 +117,7 @@ export default function RatingPage() {
 			</Card>
 
 			<div className='space-y-4'>
-				{departments.map((department, departmentIndex) => {
+				{departmentsWithTotalPoints.map((department, departmentIndex) => {
 					const color = getDepartmentColor(departmentIndex)
 					const topTeachersCount = department.teachers.length
 					const style = getDepartmentStyle(departmentIndex)
@@ -123,7 +137,7 @@ export default function RatingPage() {
 											</Link>
 										</div>
 										<CardDescription>
-											{department.teachersCount} {t.teachersCount}
+											{department.teachersCount} {t.teachersCount} · {department.totalPoints} {t.points}
 										</CardDescription>
 									</div>
 									<div
