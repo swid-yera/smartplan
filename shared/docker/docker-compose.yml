@@ -37,6 +37,8 @@ services:
          REDIS_ADDR: redis:6379
          DOCUMENT_RENDER_URL: http://render:8000
          DB_SSLMODE: disable
+      extra_hosts:
+         - "host.docker.internal:192.168.65.254"
       depends_on:
          db:
             condition: service_healthy
@@ -46,6 +48,14 @@ services:
             condition: service_started
       ports:
          - '8080:8080'
+      networks:
+         - app-network
+
+   omniroute-proxy:
+      container_name: eduplan-omniroute-proxy
+      image: alpine/socat
+      restart: unless-stopped
+      command: TCP-LISTEN:20128,fork,reuseaddr TCP:192.168.65.254:20128
       networks:
          - app-network
 
