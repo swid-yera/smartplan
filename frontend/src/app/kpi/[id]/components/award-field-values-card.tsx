@@ -12,12 +12,23 @@ interface IAwardFieldValuesCardProps {
 	award: IAward
 }
 
+const capitalizeFirstLetter = (value: string) => {
+	const trimmedValue = value.trim()
+
+	if (!trimmedValue) return value
+
+	return `${trimmedValue.charAt(0).toUpperCase()}${trimmedValue.slice(1)}`
+}
+
 export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).fieldValues
 	const categoryFields = award.category?.fieldsExpanded || []
 	const categoryFieldLabelByKey = new Map(
-		categoryFields.map((field) => [field.key, getLocaleText(field.label, locale) || field.key]),
+		categoryFields.map((field) => [
+			field.key,
+			capitalizeFirstLetter(getLocaleText(field.label, locale) || field.key),
+		]),
 	)
 	const categoryFieldByKey = new Map(categoryFields.map((field) => [field.key, field]))
 	const fileKeyRegex = /(file|document|attachment|image|photo|scan)/i
@@ -121,7 +132,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 
 			return {
 				fieldKey: field.key,
-				fieldLabel: getLocaleText(field.label, locale) || field.key,
+				fieldLabel: capitalizeFirstLetter(getLocaleText(field.label, locale) || field.key),
 				rows,
 				subFields,
 			}
@@ -170,7 +181,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 			<MediaPreviewerCard
 				key={`${fieldKey}-${value}-${idx}`}
 				fileIndex={idx + 1}
-				fileName={fieldKey}
+				fileName={capitalizeFirstLetter(fieldKey)}
 				fileUrl={value}
 				labels={{
 					download: t.download,

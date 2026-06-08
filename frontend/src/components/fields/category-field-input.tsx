@@ -23,9 +23,10 @@ import { ChevronDown } from 'lucide-react'
 
 import {
 	type ICategoryFieldValue,
+	capitalizeFirstLetter,
 	getCategoryFieldValidationError,
-	isFutureDate,
 	isFileFieldValueArray,
+	isFutureDate,
 	normalizeUrlWithoutProtocol,
 	parseDateFromFieldValue,
 } from './category-fields.utils'
@@ -64,7 +65,7 @@ type CategoryFieldInputProps = {
 
 export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInputProps) => {
 	const locale = useLocaleStore((state) => state.locale)
-	const labelText = getLocaleText(field.label, locale)
+	const labelText = capitalizeFirstLetter(getLocaleText(field.label, locale))
 	const placeholderText = getLocaleText(field.placeholder, locale)
 	const helpText = getLocaleText(field.helpText, locale)
 	const t = localeDictionary[locale] ?? localeDictionary.ru

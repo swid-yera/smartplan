@@ -1,5 +1,10 @@
 import { interpolateUILocaleText } from '@helpers'
-import type { ICategoryFieldResponse, ICategoryMultiFieldOptionResponse, ICategoryMultiFieldRowValue, Locale } from '@types'
+import type {
+	ICategoryFieldResponse,
+	ICategoryMultiFieldOptionResponse,
+	ICategoryMultiFieldRowValue,
+	Locale,
+} from '@types'
 import { isAfter, isValid as isValidDate, parseISO, startOfDay } from 'date-fns'
 
 import locale from './locale.json'
@@ -9,6 +14,14 @@ export type ICategoryFieldValues = Record<string, ICategoryFieldValue>
 
 const URL_WITHOUT_PROTOCOL_REGEX =
 	/^(?=.{1,2048}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[A-Za-z]{2,}(?::\d{2,5})?(?:[/?#][^\s]*)?$/
+
+export const capitalizeFirstLetter = (value: string) => {
+	const trimmedValue = value.trim()
+
+	if (!trimmedValue) return value
+
+	return `${trimmedValue.charAt(0).toUpperCase()}${trimmedValue.slice(1)}`
+}
 
 export const buildInitialCategoryFieldValues = (fields: ICategoryFieldResponse[]): ICategoryFieldValues => {
 	return fields.reduce<ICategoryFieldValues>((acc, field) => {
@@ -38,16 +51,12 @@ export const isFileFieldValueArray = (value: ICategoryFieldValue | undefined): v
 	return Array.isArray(value) && value.every(isBrowserFile)
 }
 
-export const isMultiFieldRowArray = (value: ICategoryFieldValue | undefined): value is ICategoryMultiFieldRowValue[] => {
+export const isMultiFieldRowArray = (
+	value: ICategoryFieldValue | undefined,
+): value is ICategoryMultiFieldRowValue[] => {
 	return (
 		Array.isArray(value) &&
-		value.every(
-			(item) =>
-				typeof item === 'object' &&
-				item !== null &&
-				!Array.isArray(item) &&
-				!isBrowserFile(item),
-		)
+		value.every((item) => typeof item === 'object' && item !== null && !Array.isArray(item) && !isBrowserFile(item))
 	)
 }
 
@@ -203,6 +212,7 @@ export const getCategoryFieldValidationError = (
 
 	if (field.type === 'file') {
 		const files = isFileFieldValueArray(value) ? value : []
+
 		if (!files.length) return null
 
 		const maxSizeMb = getValidationNumber(field.validation, 'maxSizeMb')
@@ -283,6 +293,7 @@ const getMultiFieldValidationError = (
 				normalizeMultiFieldValue(rawValue),
 				currentLocale,
 			)
+
 			if (childError) {
 				return childError
 			}
@@ -308,6 +319,7 @@ const getMultiFieldFieldLabel = (field: ICategoryMultiFieldOptionResponse, curre
 
 const normalizeMultiFieldValue = (value: unknown) => {
 	if (typeof value === 'number' || typeof value === 'string') return value
+
 	return undefined
 }
 
@@ -361,6 +373,7 @@ export const serializeCategoryFieldValue = (
 				}
 
 				const normalizedRow: ICategoryMultiFieldRowValue = {}
+
 				for (const subField of subFields) {
 					const rawRowValue = row[subField.key]
 					const serializedValue = serializeMultiFieldChildValue(subField, rawRowValue)
@@ -412,18 +425,17 @@ export const serializeCategoryFieldValue = (
 	return ''
 }
 
-const serializeMultiFieldChildValue = (
-	field: ICategoryFieldResponse,
-	value: unknown,
-): string | number | undefined => {
+const serializeMultiFieldChildValue = (field: ICategoryFieldResponse, value: unknown): string | number | undefined => {
 	if (field.type === 'number') {
 		if (typeof value === 'number' && Number.isFinite(value)) return value
 		if (typeof value !== 'string') return undefined
 
 		const trimmedValue = value.trim()
+
 		if (!trimmedValue) return undefined
 
 		const parsedValue = Number(trimmedValue)
+
 		return Number.isFinite(parsedValue) ? parsedValue : undefined
 	}
 
