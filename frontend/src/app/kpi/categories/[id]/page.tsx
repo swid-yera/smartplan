@@ -169,4 +169,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withRole(Page, [RoleEnum.TEACHER])
