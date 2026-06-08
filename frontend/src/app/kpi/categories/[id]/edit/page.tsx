@@ -319,7 +319,7 @@ const Page = () => {
 								<SelectTrigger className='w-full' id='icon'>
 									<SelectValue placeholder={t.placeholderIcon} />
 								</SelectTrigger>
-								<SelectContent className='w-[220px]'>
+								<SelectContent className='w-55'>
 									<div className='grid grid-cols-4 gap-1 p-1'>
 										<SelectItem
 											className='h-10 w-10 justify-center p-0 pr-0'
