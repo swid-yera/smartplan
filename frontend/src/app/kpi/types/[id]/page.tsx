@@ -3,9 +3,10 @@
 import type { NextPage } from 'next'
 import { useParams } from 'next/navigation'
 
-import { Loader } from '@components'
+import { Loader, withRole } from '@components'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 
 import { TypeView } from './type-view'
 
@@ -29,4 +30,4 @@ const Page: NextPage = () => {
 	return <TypeView type={data} />
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

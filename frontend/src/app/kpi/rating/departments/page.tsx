@@ -5,12 +5,13 @@ import { useMemo } from 'react'
 
 import Link from 'next/link'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 
 import { RatingDistributionChart } from '../components/rating-distribution-chart'
 import { RatingNav } from '../components/rating-nav'
@@ -36,7 +37,7 @@ const getDepartmentStyle = (index: number): CSSProperties => {
 	}
 }
 
-export default function RatingDepartmentsPage() {
+function RatingDepartmentsPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const { data: departments, isLoading } = useQuery({
@@ -144,3 +145,5 @@ export default function RatingDepartmentsPage() {
 		</section>
 	)
 }
+
+export default withRole(RatingDepartmentsPage, [RoleEnum.METHODIST])

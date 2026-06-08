@@ -6,9 +6,12 @@ export * from './ui/page-title'
 export * from './ui/pagination'
 export * from './ui/section-title'
 
+// hocs
+export * from './hocs/with-role'
+
 // sheet
-export * from './sheets/penalty-sheet'
 export * from './sheets/lesson-sheet'
+export * from './sheets/penalty-sheet'
 export * from './sheets/rup-review-sheets'
 export * from './sheets/rup-sheet'
 

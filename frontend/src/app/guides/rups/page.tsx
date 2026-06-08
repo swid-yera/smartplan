@@ -1,9 +1,12 @@
 'use client'
 
+import { withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
+import { RoleEnum } from '@types'
 import { Book, CheckCircle, Clock, FileText, Layers, Users, XCircle } from 'lucide-react'
+
 import localeDictionary from './locale.json'
 
 const Page = () => {
@@ -101,4 +104,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN], true)

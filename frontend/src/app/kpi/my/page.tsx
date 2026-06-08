@@ -2,7 +2,7 @@
 
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { AwardsCard, Loader, Pagination, SectionTitle, UserCard } from '@components'
+import { AwardsCard, Loader, Pagination, SectionTitle, UserCard, withRole } from '@components'
 import { getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -100,4 +100,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.TEACHER])

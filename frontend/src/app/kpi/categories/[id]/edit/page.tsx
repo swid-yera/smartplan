@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, PageTitle } from '@components'
+import { Forbidden, Loader, PageTitle, withRole } from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,
@@ -428,4 +428,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

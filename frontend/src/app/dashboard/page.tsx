@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation'
 
-import { Loader } from '@components'
+import { Loader, withRole } from '@components'
 import { hasRole } from '@helpers'
 import { useAuthStore } from '@store'
 import { RoleEnum } from '@types'
@@ -10,7 +10,7 @@ import { RoleEnum } from '@types'
 import { MethodistDashboard } from './methodist-dashboard'
 import { TeacherDashboard } from './teacher-dashboard'
 
-export default function DashboardPage() {
+function DashboardPage() {
 	const { user, authLoading } = useAuthStore()
 
 	if (authLoading) return <Loader />
@@ -20,3 +20,5 @@ export default function DashboardPage() {
 
 	return isMethodist ? <MethodistDashboard /> : <TeacherDashboard keycloakId={user.keycloakId} />
 }
+
+export default withRole(DashboardPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])

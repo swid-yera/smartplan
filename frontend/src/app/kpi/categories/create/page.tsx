@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { PageTitle } from '@components'
+import { PageTitle, withRole } from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,
@@ -36,6 +36,7 @@ import {
 } from '@shadcn'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { IApiErrorResponse, ICategoryRequest, Locale } from '@types'
+import { RoleEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { Minus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -221,7 +222,7 @@ const Page = () => {
 								<SelectTrigger id='icon'>
 									<SelectValue placeholder={t.placeholderIcon} />
 								</SelectTrigger>
-								<SelectContent className='w-[220px]'>
+								<SelectContent className='w-55'>
 									<div className='grid grid-cols-4 gap-1 p-1'>
 										<SelectItem
 											className='h-10 w-10 justify-center p-0 pr-0'
@@ -287,4 +288,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

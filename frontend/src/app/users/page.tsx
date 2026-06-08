@@ -5,12 +5,13 @@ import { useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { PageTitle, Pagination } from '@components'
+import { PageTitle, Pagination, withRole } from '@components'
 import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 
 import localeDictionary from './locale.json'
 import { UsersFilter } from './users-filter'
@@ -108,4 +109,4 @@ function Page() {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

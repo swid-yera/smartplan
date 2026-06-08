@@ -5,10 +5,12 @@ import { useState } from 'react'
 import type { NextPage } from 'next'
 import { useRouter } from 'next/navigation'
 
+import { withRole } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { useMutation } from '@tanstack/react-query'
 import type { ICreateTypesRequest, Locale } from '@types'
+import { RoleEnum } from '@types'
 import { toast } from 'sonner'
 
 import { TypeEditorLayout } from '../components'
@@ -31,9 +33,12 @@ const Page: NextPage = () => {
 			{ newType: newType },
 			{
 				onSuccess: (createdType) => {
-					toast.success(interpolateUILocaleText(t.toastCreated, { name: getLocaleText(createdType.name, activeLocale) }), {
-						id: toastId,
-					})
+					toast.success(
+						interpolateUILocaleText(t.toastCreated, { name: getLocaleText(createdType.name, activeLocale) }),
+						{
+							id: toastId,
+						},
+					)
 					replace(`/kpi/types/${createdType.id}`)
 				},
 				onError: (err) => {
@@ -60,4 +65,4 @@ const Page: NextPage = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

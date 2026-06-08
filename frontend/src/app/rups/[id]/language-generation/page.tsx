@@ -5,12 +5,13 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader } from '@components'
+import { Loader, withRole } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Progress } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 
 import { trackLanguageGeneration, untrackLanguageGeneration } from '../../language-generation-tracker'
 import localeDictionary from './locale.json'
@@ -127,4 +128,4 @@ const LanguageGenerationPage = () => {
 	)
 }
 
-export default LanguageGenerationPage
+export default withRole(LanguageGenerationPage, [RoleEnum.ADMIN], true)

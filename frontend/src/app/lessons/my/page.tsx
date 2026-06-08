@@ -5,13 +5,15 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle } from '@components'
 import {
 	LessonGroupedListCard,
 	type LessonListFilterOption,
 	LessonListFiltersCard,
 	type LessonListGroup,
 	type LessonListRow,
+	Loader,
+	PageTitle,
+	withRole,
 } from '@components'
 import { getLessonTypeLabels, getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
@@ -19,6 +21,7 @@ import { Alert, AlertDescription, Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { ILesson, LessonTypeEnum } from '@types'
+import { RoleEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
@@ -51,7 +54,7 @@ const formatLessonDate = (value: string | undefined, locale: 'ru' | 'kk', emptyT
 	}).format(date)
 }
 
-export default function MyLessonPlansPage() {
+function MyLessonPlansPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const lessonTypeLabels = getLessonTypeLabels(locale)
@@ -288,6 +291,8 @@ export default function MyLessonPlansPage() {
 		</section>
 	)
 }
+
+export default withRole(MyLessonPlansPage, [RoleEnum.ADMIN], true)
 
 const getLessonText = (
 	value: ILesson['rup_name'] | ILesson['discipline_name'] | ILesson['topic_name'],

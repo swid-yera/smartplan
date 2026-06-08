@@ -43,9 +43,7 @@ export default function LoginErrorPage() {
 
 					<CardContent className='space-y-4 text-center'>
 						<p className='text-sm text-muted-foreground'>
-							{error === 'invalid_token'
-								? t.invalidToken
-								: t.unexpectedError}
+							{error === 'invalid_token' ? t.invalidToken : t.unexpectedError}
 						</p>
 
 						<div className='flex flex-col gap-2'>

@@ -14,6 +14,7 @@ import {
 	RupsCard,
 	UserCard,
 	ViolationDialog,
+	withRole,
 } from '@components'
 import {
 	getNextViolationStatus,
@@ -180,7 +181,7 @@ const Page = () => {
 
 	return (
 		<section className='mx-auto w-full space-y-8 px-4 pb-10 pt-5'>
-			<PageTitle actions={actionButtons} backHref='/users' description={pageTitleDescription}>
+			<PageTitle actions={actionButtons} description={pageTitleDescription}>
 				{interpolateUILocaleText(t.page.title, {
 					firstName: userData.firstName,
 					lastName: userData.lastName,
@@ -310,4 +311,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN, RoleEnum.METHODIST])

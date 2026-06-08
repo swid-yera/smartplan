@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
@@ -24,6 +24,7 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IUserDepartment } from '@types'
+import { RoleEnum } from '@types'
 
 import { RatingDistributionChart } from '../components/rating-distribution-chart'
 import { RatingNav } from '../components/rating-nav'
@@ -37,7 +38,7 @@ const RATING_COLORS = [
 	'var(--chart-5)',
 ] as const
 
-export default function RatingStatsPage() {
+function RatingStatsPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const router = useRouter()
 	const t = getUILocaleSection(localeDictionary, locale)
@@ -189,3 +190,5 @@ export default function RatingStatsPage() {
 		</section>
 	)
 }
+
+export default withRole(RatingStatsPage, [RoleEnum.METHODIST])

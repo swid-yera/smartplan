@@ -2,12 +2,13 @@
 
 import type { FC, PropsWithChildren } from 'react'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { getUILocaleSection, normalizeCriteriaMethod } from '@helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { CriteriaMethodEnum } from '@types'
 import { CheckCircle, ClipboardList, type LucideIcon, TrendingUp, Users } from 'lucide-react'
+
 import localeDictionary from './locale.json'
 
 const Page = () => {
@@ -206,7 +207,7 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [])
 
 interface IInfoCard {
 	icon: LucideIcon

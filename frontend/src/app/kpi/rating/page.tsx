@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 
 import Link from 'next/link'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
@@ -24,6 +24,7 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IDepartmentTopTeachersResponse } from '@types'
+import { RoleEnum } from '@types'
 
 import { RatingNav } from './components/rating-nav'
 import localeDictionary from './locale.json'
@@ -56,7 +57,7 @@ type DepartmentWithTotalPoints = IDepartmentTopTeachersResponse & {
 	totalPoints: number
 }
 
-export default function RatingPage() {
+function RatingPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const { data: departments = [], isLoading } = useQuery({
@@ -188,3 +189,5 @@ export default function RatingPage() {
 		</section>
 	)
 }
+
+export default withRole(RatingPage, [RoleEnum.METHODIST])

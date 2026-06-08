@@ -144,12 +144,12 @@ export const navMain: INav[] = [
 			},
 		],
 	},
-	{
-		id: 'groups',
-		titleKey: 'groups',
-		url: '/groups',
-		icon: Group,
-	},
+	// {
+	// 	id: 'groups',
+	// 	titleKey: 'groups',
+	// 	url: '/groups',
+	// 	icon: Group,
+	// },
 	{
 		id: 'admin',
 		icon: ShieldUser,

@@ -1,14 +1,15 @@
 'use client'
 
-import { CategoryCard, Loader, SectionTitle } from '@components'
+import { CategoryCard, Loader, SectionTitle, withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
-const MethodistAwardsPage = () => {
+const Page = () => {
 	const { user, authLoading } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
@@ -43,4 +44,4 @@ const MethodistAwardsPage = () => {
 	)
 }
 
-export default MethodistAwardsPage
+export default withRole(Page, [RoleEnum.TEACHER])

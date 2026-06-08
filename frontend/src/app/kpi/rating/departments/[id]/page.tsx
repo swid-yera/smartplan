@@ -6,7 +6,7 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
@@ -25,6 +25,7 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IUserDepartment } from '@types'
+import { RoleEnum } from '@types'
 
 import { RatingNav } from '../../components/rating-nav'
 import localeDictionary from './locale.json'
@@ -44,7 +45,7 @@ const getTeacherRowStyle = (color: string): CSSProperties => ({
 	borderLeftColor: color,
 })
 
-export default function RatingDepartmentPage() {
+function RatingDepartmentPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const params = useParams<{ id: string }>()
 	const departmentId = typeof params?.id === 'string' ? params.id : ''
@@ -64,8 +65,6 @@ export default function RatingDepartmentPage() {
 	if (isLoading || (departmentId && department === undefined)) {
 		return <Loader fullScreen type='default' />
 	}
-
-	console.log(department)
 
 	if (!department) {
 		return (
@@ -166,3 +165,5 @@ export default function RatingDepartmentPage() {
 		</section>
 	)
 }
+
+export default withRole(RatingDepartmentPage, [RoleEnum.METHODIST])

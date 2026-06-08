@@ -2,13 +2,12 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, Pagination, RupsCard } from '@components'
+import { Loader, PageTitle, Pagination, RupsCard, withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
-import { useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { StatusEnum } from '@types'
+import { RoleEnum, StatusEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
@@ -75,4 +74,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN], true)

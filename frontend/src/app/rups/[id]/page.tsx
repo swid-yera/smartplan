@@ -5,7 +5,7 @@ import { type FC, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Loader, RupLanguageDialog } from '@components'
+import { Loader, RupLanguageDialog, withRole } from '@components'
 import {
 	extractKriptoApprovalMetadata,
 	getLocaleText,
@@ -53,7 +53,17 @@ import {
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type IRup, type IUpdateStatusRequest, type Locale, RoleEnum, StatusEnum } from '@types'
-import { Edit, FileDown, Loader2, type LucideIcon, MoreVertical, RotateCcw, SendIcon, ShieldAlert, Trash } from 'lucide-react'
+import {
+	Edit,
+	FileDown,
+	Loader2,
+	type LucideIcon,
+	MoreVertical,
+	RotateCcw,
+	SendIcon,
+	ShieldAlert,
+	Trash,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { trackLanguageGeneration } from '../language-generation-tracker'
@@ -488,7 +498,7 @@ const Page: FC = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN], true)
 
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean

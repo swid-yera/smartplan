@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { AwardsCard, Loader, PageTitle } from '@components'
+import { AwardsCard, Loader, PageTitle, withRole } from '@components'
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
 import { Badge, Button, ButtonGroup, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
@@ -169,4 +169,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])
