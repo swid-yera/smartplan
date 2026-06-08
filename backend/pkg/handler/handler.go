@@ -193,7 +193,7 @@ func (r *Router) Init() *gin.Engine {
 			awards.PUT("/:id", middleware.RequireRole("TEACHER", "ADMIN"), r.award.UpdateAward)
 
 			// смена статуса награды — методист и admin
-			awards.PUT("/:id/status", middleware.RequireRole("METHODIST", "ADMIN"), r.award.UpdateAwardStatus)
+			awards.PUT("/:id/status", middleware.RequireRole("METHODIST", "TEACHER", "ADMIN"), r.award.UpdateAwardStatus)
 
 			// удаление — teacher и admin
 			awards.DELETE("/:id", middleware.RequireRole("TEACHER", "ADMIN"), r.award.DeleteAward)
