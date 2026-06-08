@@ -2,9 +2,11 @@ import type {
 	CategoryFieldChildType,
 	CategoryFieldType,
 	ICategoryFieldResponse,
+	ICategoryMultiFieldOptionRequest,
 	ICategoryMultiFieldOptionResponse,
 	ICategoryResponse,
 	Locale,
+	LocaleText,
 	LocalizedText,
 } from '@types'
 
@@ -13,6 +15,7 @@ export const FIELD_TYPE_OPTIONS: CategoryFieldType[] = [
 	'textarea',
 	'number',
 	'select',
+	'group',
 	'date',
 	'file',
 	'url',
@@ -24,6 +27,7 @@ export const FIELD_TYPE_LABELS: Record<CategoryFieldType, string> = {
 	textarea: 'textarea',
 	number: 'number',
 	select: 'select',
+	group: 'group',
 	date: 'date',
 	file: 'file',
 	url: 'url',
@@ -146,6 +150,13 @@ export const toLocaleDraft = (value: LocalizedText): Record<Locale, string> => {
 	return {
 		ru: value.ru || '',
 		kk: value.kz || '',
+	}
+}
+
+const toLocaleRequestText = (value: Record<Locale, string>): LocaleText => {
+	return {
+		ru: value.ru.trim(),
+		kz: value.kk.trim(),
 	}
 }
 
@@ -278,7 +289,7 @@ export const sanitizeFieldValidation = (type: CategoryFieldType, validation: Rec
 	}
 }
 
-export const sanitizeMultiFieldOptions = (options: unknown[]) => {
+export const sanitizeMultiFieldOptions = (options: unknown[]): ICategoryMultiFieldOptionRequest[] => {
 	return options
 		.filter(
 			(option): option is ICategoryMultiFieldOptionFormState =>
@@ -287,28 +298,24 @@ export const sanitizeMultiFieldOptions = (options: unknown[]) => {
 		.map((option, index) => {
 			const key = option.key.trim()
 			const type = MULTI_FIELD_CHILD_TYPE_OPTIONS.includes(option.type) ? option.type : 'text'
-			const labelRu = option.label.ru.trim()
-			const labelKk = option.label.kk.trim()
+			const label = toLocaleRequestText(option.label)
+			const placeholder = option.placeholder.ru.trim() || option.placeholder.kk.trim()
+				? toLocaleRequestText(option.placeholder)
+				: null
+			const helpText = option.helpText.ru.trim() || option.helpText.kk.trim()
+				? toLocaleRequestText(option.helpText)
+				: null
 
 			return {
-				...option,
 				key,
 				type,
-				label: {
-					ru: labelRu,
-					kk: labelKk,
-				},
-				placeholder: {
-					ru: option.placeholder.ru.trim(),
-					kk: option.placeholder.kk.trim(),
-				},
-				helpText: {
-					ru: option.helpText.ru.trim(),
-					kk: option.helpText.kk.trim(),
-				},
+				label,
+				placeholder,
+				helpText,
 				options: sanitizeMultiFieldChildOptions(type, option.options),
 				validation: sanitizeMultiFieldChildValidation(type, option.validation),
 				sortOrder: normalizeSortOrder(option.sortOrder, index + 1),
+				required: option.required,
 			}
 		})
 }

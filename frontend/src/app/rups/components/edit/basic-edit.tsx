@@ -1,7 +1,6 @@
 'use client'
 
 import { getUILocaleSection, normalizeRupType, normalizeStudyForm } from '@helpers'
-import { toLocaleKey } from '../../rup-localization'
 import {
 	Card,
 	CardContent,
@@ -28,6 +27,8 @@ import { type Locale, type LocaleText, RupTypeEnum, StudyFormEnum } from '@types
 import { Info } from 'lucide-react'
 import type { FieldValues, Path } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'
+
+import { toLocaleKey } from '../../rup-localization'
 import localeDictionary from './locale.json'
 
 // Define a base shape for the form data that this component needs.
@@ -91,9 +92,7 @@ export function BasicEdit<T extends IProps>({ activeLocale }: { activeLocale: Lo
 								<Input
 									placeholder={t.basic.moduleNamePlaceholder}
 									value={getRawLocaleTextValue(field.value)[localeKey]}
-									onChange={(event) =>
-										field.onChange(updateRawLocaleText(field.value, event.target.value))
-									}
+									onChange={(event) => field.onChange(updateRawLocaleText(field.value, event.target.value))}
 								/>
 							</FormControl>
 							<FormMessage />
@@ -116,7 +115,9 @@ export function BasicEdit<T extends IProps>({ activeLocale }: { activeLocale: Lo
 										<TooltipContent side='top'>
 											{Object.entries(rupTypeTips).map((obj) => (
 												<p key={obj[0]}>
-													<span className='font-bold'>{normalizeRupType(obj[0] as RupTypeEnum, locale)}:</span>
+													<span className='font-bold'>
+														{normalizeRupType(obj[0] as RupTypeEnum, locale)}:
+													</span>
 													<br />
 													{obj[1]}
 												</p>
@@ -180,9 +181,7 @@ export function BasicEdit<T extends IProps>({ activeLocale }: { activeLocale: Lo
 								<Input
 									placeholder={t.basic.prerequisitesPlaceholder}
 									value={getRawLocaleTextValue(field.value)[localeKey]}
-									onChange={(event) =>
-										field.onChange(updateRawLocaleText(field.value, event.target.value))
-									}
+									onChange={(event) => field.onChange(updateRawLocaleText(field.value, event.target.value))}
 								/>
 							</FormControl>
 							<FormMessage />
@@ -200,9 +199,7 @@ export function BasicEdit<T extends IProps>({ activeLocale }: { activeLocale: Lo
 								<Input
 									placeholder={t.basic.postrequisitesPlaceholder}
 									value={getRawLocaleTextValue(field.value)[localeKey]}
-									onChange={(event) =>
-										field.onChange(updateRawLocaleText(field.value, event.target.value))
-									}
+									onChange={(event) => field.onChange(updateRawLocaleText(field.value, event.target.value))}
 								/>
 							</FormControl>
 							<FormMessage />

@@ -23,6 +23,7 @@ import (
 var allowedDynamicFieldTypes = map[string]struct{}{
 	"text":         {},
 	"textarea":     {},
+	"group":        {},
 	"number":       {},
 	"select":       {},
 	"date":         {},
@@ -34,6 +35,7 @@ var allowedDynamicFieldTypes = map[string]struct{}{
 var allowedMultiFieldTypes = map[string]struct{}{
 	"text":     {},
 	"textarea": {},
+	"group":    {},
 	"number":   {},
 	"select":   {},
 	"date":     {},
@@ -738,9 +740,12 @@ func validateFieldValueType(field storage.AwardCategoryField, value any) error {
 	key := field.Key
 
 	switch fieldType {
-	case "text", "textarea", "date":
+	case "text", "textarea", "date", "group":
 		if _, ok := value.(string); !ok {
 			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
+		}
+		if strings.TrimSpace(value.(string)) == "" {
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
 		}
 	case "url":
 		if err := validateURLOrURLArray(value, key); err != nil {
@@ -856,9 +861,12 @@ func normalizeMultiFieldRows(value any) ([]map[string]any, error) {
 func normalizeMultiFieldChildValue(parentKey string, option AwardCategoryMultiFieldOption, value any) (any, error) {
 	key := fmt.Sprintf("%s.%s", parentKey, option.Key)
 	switch option.Type {
-	case "text", "textarea", "date":
+	case "text", "textarea", "date", "group":
 		if _, ok := value.(string); !ok {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
+		}
+		if strings.TrimSpace(value.(string)) == "" {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
 		}
 		return value, nil
 	case "number":

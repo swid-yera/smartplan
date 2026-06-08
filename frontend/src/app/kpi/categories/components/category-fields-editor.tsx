@@ -270,10 +270,18 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 															? existingMultiOptions.length > 0
 																? existingMultiOptions
 																: [createEmptyMultiFieldOption(1)]
+															: nextType === 'group'
+																? []
 															: field.type === 'multi_fields'
 																? []
 																: field.options,
-													validation: nextType === 'multi_fields' || field.type === 'multi_fields' ? {} : field.validation,
+													validation:
+														nextType === 'multi_fields' ||
+														nextType === 'group' ||
+														field.type === 'multi_fields' ||
+														field.type === 'group'
+															? {}
+															: field.validation,
 												})
 											}}
 										>
@@ -828,6 +836,12 @@ export const CategoryFieldsEditor = ({ activeLocale, fields, onChange }: ICatego
 												</div>
 											</div>
 										) : null}
+									</div>
+								) : null}
+
+								{field.type === 'group' ? (
+									<div className='rounded-md border border-dashed p-3 text-sm text-muted-foreground'>
+										{t.groupFieldDescription}
 									</div>
 								) : null}
 

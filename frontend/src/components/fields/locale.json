@@ -1,6 +1,11 @@
 {
 	"ru": {
 		"selectPlaceholder": "Выберите значение",
+		"groupPlaceholder": "Выберите группу",
+		"groupLoading": "Загрузка групп...",
+		"groupSearch": "Поиск группы...",
+		"groupNotFound": "Группа не найдена",
+		"groupNotFoundCommand": "Группа не найдена.",
 		"urlPlaceholder": "example.com/path",
 		"datePlaceholder": "Выберите дату",
 		"fileDropTitle": "Загрузите файлы",
@@ -29,6 +34,11 @@
 	},
 	"kk": {
 		"selectPlaceholder": "Мәнді таңдаңыз",
+		"groupPlaceholder": "Топты таңдаңыз",
+		"groupLoading": "Топтар жүктелуде...",
+		"groupSearch": "Топты іздеу...",
+		"groupNotFound": "Топ табылмады",
+		"groupNotFoundCommand": "Топ табылмады.",
 		"urlPlaceholder": "example.com/path",
 		"datePlaceholder": "Күнді таңдаңыз",
 		"fileDropTitle": "Файлдарды жүктеңіз",

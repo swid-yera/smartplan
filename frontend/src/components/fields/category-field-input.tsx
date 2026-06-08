@@ -4,6 +4,12 @@ import { getLocaleText } from '@helpers'
 import {
 	Button,
 	Calendar,
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
 	Input,
 	Label,
 	Popover,
@@ -19,7 +25,10 @@ import {
 import { useLocaleStore } from '@store'
 import type { CategoryFieldType, ICategoryFieldResponse } from '@types'
 import { format } from 'date-fns'
-import { ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { services } from '@services'
+import { useState } from 'react'
 
 import {
 	type ICategoryFieldValue,
@@ -71,6 +80,11 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const commonLabel = `${labelText}${field.required ? ' *' : ''}`
 	const validationError = getCategoryFieldValidationError(field, value, locale)
+	const [groupOpen, setGroupOpen] = useState(false)
+	const { data: groupsData = [], isLoading: isGroupsLoading } = useQuery({
+		...services.group.getAllOptions(),
+		enabled: field.type === 'group',
+	})
 
 	if (field.type === 'multi_fields') {
 		return null
@@ -118,6 +132,66 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 				</div>
 			)
 		}
+	}
+
+	if (field.type === 'group') {
+		const selectedGroup = typeof value === 'string' ? groupsData.find((group) => group.name === value) : undefined
+		const hasValue = typeof value === 'string' && value.trim().length > 0
+		const displayValue = hasValue
+			? groupsData.length > 0
+				? selectedGroup?.name || t.groupNotFound
+				: value
+			: isGroupsLoading
+				? t.groupLoading
+				: placeholderText || t.groupPlaceholder
+
+		return (
+			<div className='space-y-2'>
+				<Label htmlFor={field.key}>{commonLabel}</Label>
+				<Popover open={groupOpen} onOpenChange={setGroupOpen}>
+					<PopoverTrigger asChild>
+						<Button
+							className='w-full justify-between font-normal'
+							id={field.key}
+							role='combobox'
+							variant='outline'
+							disabled={isGroupsLoading}
+						>
+							<span className='truncate'>{displayValue}</span>
+							<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent align='center' className='w-[--radix-popover-trigger-width] p-0'>
+						<Command>
+							<CommandInput placeholder={t.groupSearch} />
+							<CommandList>
+								<CommandEmpty>{t.groupNotFoundCommand}</CommandEmpty>
+								<CommandGroup>
+									{groupsData.map((group) => (
+										<CommandItem
+											key={group.keycloakId}
+											value={group.name}
+											onSelect={() => {
+												onChange(field.key, group.name)
+												setGroupOpen(false)
+											}}
+										>
+											<Check
+												className={
+													selectedGroup?.keycloakId === group.keycloakId ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'
+												}
+											/>
+											{group.name}
+										</CommandItem>
+									))}
+								</CommandGroup>
+							</CommandList>
+						</Command>
+					</PopoverContent>
+				</Popover>
+				{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
+			</div>
+		)
 	}
 
 	if (field.type === 'url') {
@@ -189,7 +263,7 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 		)
 	}
 
-	const inputTypeByFieldType: Record<Exclude<CategoryFieldType, 'multi_fields'>, string> = {
+	const inputTypeByFieldType: Record<Exclude<CategoryFieldType, 'multi_fields' | 'group'>, string> = {
 		text: 'text',
 		textarea: 'text',
 		number: 'number',
