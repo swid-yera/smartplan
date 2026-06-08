@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react'
 
-import { formatCourseFromYearAndGroupName, generateStudyYears, getGroupYear, getLocaleText, getUILocaleSection } from '@helpers'
+import {
+	formatCourseFromYearAndGroupName,
+	generateStudyYears,
+	getGroupYear,
+	getLocaleText,
+	getUILocaleSection,
+} from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -38,6 +44,7 @@ import type { IGroup } from '@types'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
+
 import localeDictionary from './locale.json'
 
 type IProps = FieldValues & {

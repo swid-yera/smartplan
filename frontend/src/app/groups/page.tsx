@@ -1,6 +1,6 @@
 'use client'
 
-import { GroupsCard, Loader, PageTitle } from '@components'
+import { GroupsCard, Loader, PageTitle, withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useLocaleStore } from '@store'
@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import localeDictionary from './locale.json'
 
-export default function GroupsPage() {
+const Page = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	// queries
@@ -27,3 +27,5 @@ export default function GroupsPage() {
 		</section>
 	)
 }
+
+export default withRole(Page)

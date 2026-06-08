@@ -5,7 +5,7 @@ import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, PageTitle } from '@components'
+import { Forbidden, Loader, PageTitle, withRole } from '@components'
 import { createLocaleText, getLocaleText, getUILocaleSection, interpolateUILocaleText, isAuthor } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
@@ -400,4 +400,4 @@ const EditPage: FC = () => {
 	)
 }
 
-export default EditPage
+export default withRole(EditPage, [RoleEnum.ADMIN], true)

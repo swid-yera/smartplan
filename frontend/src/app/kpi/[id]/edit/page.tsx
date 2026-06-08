@@ -15,6 +15,7 @@ import {
 	findInvalidUrlCategoryField,
 	isFileFieldValueArray,
 	serializeCategoryFieldValue,
+	withRole,
 } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
@@ -22,19 +23,12 @@ import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, Car
 import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { IApiErrorResponse, ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
+import { RoleEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 
 import { AwardTypeSelectionFields } from '../../components'
 import localeDictionary from './locale.json'
-
-const removeHttpProtocol = (value: string) => value.replace(/^https?:\/\//i, '')
-
-const withHttpsProtocol = (value: string) => {
-	const normalizedValue = removeHttpProtocol(value.trim())
-
-	return normalizedValue ? `https://${normalizedValue}` : ''
-}
 
 const Page = () => {
 	const { id } = useParams<{ id: string }>()
@@ -150,8 +144,10 @@ const Page = () => {
 								if (!row || typeof row !== 'object' || Array.isArray(row)) return null
 
 								const normalizedRow: Record<string, string> = {}
+
 								for (const subField of subFields) {
 									const rowValue = row[subField.key]
+
 									if (typeof rowValue === 'number' && Number.isFinite(rowValue)) {
 										normalizedRow[subField.key] = String(rowValue)
 										continue
@@ -176,6 +172,7 @@ const Page = () => {
 
 			if (Array.isArray(rawValue)) {
 				const firstValue = rawValue.find((item) => typeof item === 'string')
+
 				acc[field.key] = typeof firstValue === 'string' ? firstValue : ''
 
 				return acc
@@ -247,9 +244,7 @@ const Page = () => {
 		const invalidUrlField = findInvalidUrlCategoryField(category.fieldsExpanded, categoryFieldValues)
 
 		if (invalidUrlField) {
-			toast.error(
-				interpolateUILocaleText(t.invalidDomain, { field: getLocaleText(invalidUrlField.label, locale) }),
-			)
+			toast.error(interpolateUILocaleText(t.invalidDomain, { field: getLocaleText(invalidUrlField.label, locale) }))
 
 			return
 		}
@@ -275,6 +270,7 @@ const Page = () => {
 				}
 
 				const existingFiles = existingFileValues[field.key] || []
+
 				acc[field.key] = existingFiles.length > 0 ? existingFiles : ''
 
 				return acc
@@ -376,6 +372,7 @@ const Page = () => {
 					<CategoryFieldsSection
 						emptyText={t.emptyTopFields}
 						fields={topCategoryFields}
+						title={t.topFieldsTitle}
 						values={categoryFieldValues}
 						onChange={handleCategoryFieldChange}
 					/>
@@ -386,6 +383,7 @@ const Page = () => {
 						availableTypes={availableTypes}
 						layout='grid'
 						locale={locale}
+						labels={t.awardTypeSelection}
 						selectedBonusCriteria={selectedBonusCriteria}
 						selectedCriteria={selectedCriteria}
 						selectedType={selectedType}
@@ -457,4 +455,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.TEACHER])

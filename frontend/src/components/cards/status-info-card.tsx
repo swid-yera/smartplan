@@ -2,8 +2,8 @@
 
 import type { FC } from 'react'
 
-import { StatusEnum } from '@types'
 import { useLocaleStore } from '@store'
+import { StatusEnum } from '@types'
 import { Search, ShieldAlert, Timer } from 'lucide-react'
 
 import locale from './locale.json'

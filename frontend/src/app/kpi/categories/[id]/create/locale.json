@@ -1,20 +1,50 @@
 {
-  "ru": {
-    "pageTitle": "Ввод данных",
-    "pageDescription": "Ввод данных с ограничениями и полями выбранной категории",
-    "formTitle": "Ввод данных",
-    "formDescription": "Сначала заполните поля категории, затем выберите тип, вариант и критерий",
-    "typeLabel": "Тип оценивания",
-    "bottomFieldsTitle": "Поля URL и FILE",
-    "createAward": "Создать награду"
-  },
-  "kk": {
-    "pageTitle": "Деректерді енгізу",
-    "pageDescription": "Таңдалған санаттың өрістері мен шектеулері бар деректерді енгізу",
-    "formTitle": "Деректерді енгізу",
-    "formDescription": "Алдымен санат өрістерін толтырып, содан кейін түрді, нұсқаны және критерийді таңдаңыз",
-    "typeLabel": "Бағалау түрі",
-    "bottomFieldsTitle": "URL және FILE өрістері",
-    "createAward": "Марапат құру"
-  }
+	"ru": {
+		"pageTitle": "Ввод данных",
+		"pageDescription": "Ввод данных с ограничениями и полями выбранной категории",
+		"formTitle": "Ввод данных",
+		"formDescription": "Сначала заполните поля категории, затем выберите тип, вариант и критерий",
+		"topFieldsTitle": "Основные поля",
+		"emptyTopFields": "Нет полей кроме URL/FILE",
+		"awardTypeSelection": {
+			"typePlaceholder": "Выберите тип",
+			"variantLabel": "Вариант",
+			"variantPlaceholder": "Выберите вариант",
+			"criteriaLabel": "Критерий",
+			"criteriaPlaceholder": "Выберите критерий",
+			"bonusCriteriaLabel": "Бонусный критерий",
+			"bonusCriteriaPlaceholder": "Выберите критерий",
+			"selectTypeHint": "Сначала выберите тип оценивания",
+			"selectVariantHint": "Сначала выберите вариант",
+			"criteriaPoints": "({points} баллов)",
+			"bonusCriteriaPoints": "({points} бонусных баллов)"
+		},
+		"typeLabel": "Тип оценивания",
+		"bottomFieldsTitle": "Дополнительные поля",
+		"createAward": "Создать награду"
+	},
+	"kk": {
+		"pageTitle": "Деректерді енгізу",
+		"pageDescription": "Таңдалған санаттың өрістері мен шектеулері бар деректерді енгізу",
+		"formTitle": "Деректерді енгізу",
+		"formDescription": "Алдымен санат өрістерін толтырып, содан кейін түрді, нұсқаны және критерийді таңдаңыз",
+		"topFieldsTitle": "Негізгі өрістер",
+		"emptyTopFields": "URL/FILE өрістерінен басқа өрістер жоқ",
+		"awardTypeSelection": {
+			"typePlaceholder": "Түрді таңдаңыз",
+			"variantLabel": "Нұсқа",
+			"variantPlaceholder": "Нұсқаны таңдаңыз",
+			"criteriaLabel": "Критерий",
+			"criteriaPlaceholder": "Критерийді таңдаңыз",
+			"bonusCriteriaLabel": "Бонус критерийі",
+			"bonusCriteriaPlaceholder": "Критерийді таңдаңыз",
+			"selectTypeHint": "Алдымен бағалау түрін таңдаңыз",
+			"selectVariantHint": "Алдымен нұсқаны таңдаңыз",
+			"criteriaPoints": "({points} балл)",
+			"bonusCriteriaPoints": "({points} бонус балл)"
+		},
+		"typeLabel": "Бағалау түрі",
+		"bottomFieldsTitle": "Қосымша өрістер",
+		"createAward": "Марапат құру"
+	}
 }

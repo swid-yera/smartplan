@@ -3,10 +3,21 @@
 import * as React from 'react'
 
 import { cn } from '@lib'
+import { useLocaleStore } from '@store'
+import type { Locale } from '@types'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { type DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker'
 
 import { Button, buttonVariants } from './button'
+
+const MONTH_SHORT_NAMES: Record<Locale, string[]> = {
+	ru: ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],
+	kk: ['қаң', 'ақп', 'нау', 'сәу', 'мам', 'мау', 'шіл', 'там', 'қыр', 'қаз', 'қар', 'жел'],
+}
+
+const getMonthShortName = (date: Date, locale: Locale) => {
+	return MONTH_SHORT_NAMES[locale]?.[date.getMonth()] || MONTH_SHORT_NAMES.ru[date.getMonth()] || ''
+}
 
 function Calendar({
 	className,
@@ -21,6 +32,7 @@ function Calendar({
 	buttonVariant?: React.ComponentProps<typeof Button>['variant']
 }) {
 	const defaultClassNames = getDefaultClassNames()
+	const locale = useLocaleStore((state) => state.locale)
 
 	return (
 		<DayPicker
@@ -120,8 +132,9 @@ function Calendar({
 				...components,
 			}}
 			formatters={{
-				formatMonthDropdown: (date) => date.toLocaleString('default', { month: 'short' }),
 				...formatters,
+				formatCaption: (date) => `${getMonthShortName(date, locale)} ${date.getFullYear()}`,
+				formatMonthDropdown: (date) => getMonthShortName(date, locale),
 			}}
 			showOutsideDays={showOutsideDays}
 			{...props}

@@ -9,6 +9,7 @@ import Zoom from 'react-medium-image-zoom'
 interface IMediaPreviewerCardLabels {
 	download: string
 	hidePreview: string
+	previewUnavailable: string
 	preview: string
 }
 
@@ -22,6 +23,18 @@ interface IMediaPreviewerProps {
 const IMAGE_REGEX = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i
 const PDF_REGEX = /\.pdf(\?.*)?$/i
 const OFFICE_REGEX = /\.(doc|docx|xls|xlsx|ppt|pptx)(\?.*)?$/i
+
+const getFileExtension = (value: string) => {
+	const cleanValue = value.split('?')[0] || value
+	const fileName = cleanValue.split('/').pop() || cleanValue
+	const extension = fileName.split('.').pop()?.toLowerCase()
+
+	if (!extension || extension === fileName.toLowerCase()) {
+		return ''
+	}
+
+	return extension
+}
 
 const shortenUrl = (url: string, maxLength = 68) => {
 	if (url.length <= maxLength) return url
@@ -39,26 +52,18 @@ export const MediaPreviewerCard = ({ fileUrl, fileName, fileIndex, labels }: IMe
 	const isImage = IMAGE_REGEX.test(fileUrl)
 	const isPdf = PDF_REGEX.test(fileUrl)
 	const isOfficeDocument = OFFICE_REGEX.test(fileUrl)
-	const canPreview = isImage || isPdf || isOfficeDocument
+	const canPreview = isImage || isPdf
 	const shortLink = useMemo(() => shortenUrl(fileUrl), [fileUrl])
-
-	const previewUrl = useMemo(() => {
-		if (isPdf) {
-			return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(fileUrl)}`
-		}
-
-		if (isOfficeDocument) {
-			return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`
-		}
-
-		return fileUrl
-	}, [fileUrl, isOfficeDocument, isPdf])
+	const fileExtension = useMemo(() => getFileExtension(fileUrl), [fileUrl])
+	const indexLabel = typeof fileIndex === 'number' ? `#${fileIndex}` : null
+	const extensionLabel = fileExtension ? `.${fileExtension}` : null
+	const fileLabel = [indexLabel, extensionLabel].filter(Boolean).join(' ')
 
 	return (
 		<div className='space-y-3'>
 			<div className='flex flex-wrap items-center gap-2'>
-				{typeof fileIndex === 'number' ? (
-					<span className='rounded-md bg-muted px-2 py-1 text-xs font-semibold'>{fileIndex}</span>
+				{fileLabel ? (
+					<span className='rounded-md bg-muted px-2 py-1 text-xs font-semibold'>{fileLabel}</span>
 				) : null}
 
 				{canPreview ? (
@@ -98,9 +103,19 @@ export const MediaPreviewerCard = ({ fileUrl, fileName, fileIndex, labels }: IMe
 				</div>
 			) : null}
 
-			{isPreviewOpen && !isImage ? (
+			{isPreviewOpen && isPdf ? (
 				<div className='overflow-hidden rounded-lg border bg-background'>
-					<iframe className='h-[560px] w-full' src={previewUrl} title={fileName || 'document-preview'} />
+					<iframe
+						className='h-140 w-full'
+						src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(fileUrl)}`}
+						title={fileName || 'document-preview'}
+					/>
+				</div>
+			) : null}
+
+			{isOfficeDocument ? (
+				<div className='rounded-lg border border-dashed bg-muted/30 p-4'>
+					<p className='text-sm text-muted-foreground'>{labels.previewUnavailable}</p>
 				</div>
 			) : null}
 		</div>

@@ -1,7 +1,7 @@
 import type { LocaleText, LocalizedText } from '../locale.type'
 
-export type CategoryFieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'file' | 'url' | 'multi_fields'
-export type CategoryFieldChildType = Exclude<CategoryFieldType, 'file' | 'url' | 'multi_fields'>
+export type CategoryFieldType = 'text' | 'textarea' | 'number' | 'select' | 'group' | 'date' | 'file' | 'url' | 'multi_fields'
+export type CategoryFieldChildType = Exclude<CategoryFieldType, 'file' | 'url' | 'multi_fields' | 'group'>
 export type ICategoryMultiFieldRowValue = Record<string, string | number>
 
 export interface ICategoryMultiFieldOptionResponse {
@@ -16,6 +16,18 @@ export interface ICategoryMultiFieldOptionResponse {
 	sortOrder: number
 }
 
+export interface ICategoryMultiFieldOptionRequest {
+	key: string
+	label: LocaleText
+	type: CategoryFieldChildType
+	required: boolean
+	placeholder?: LocaleText | null
+	helpText?: LocaleText | null
+	options?: unknown
+	validation?: Record<string, unknown>
+	sortOrder: number
+}
+
 export interface ICategoryFieldRequest {
 	key: string
 	label: LocaleText
@@ -23,7 +35,7 @@ export interface ICategoryFieldRequest {
 	required: boolean
 	placeholder?: LocaleText | null
 	helpText?: LocaleText | null
-	options?: unknown
+	options?: string[] | ICategoryMultiFieldOptionRequest[]
 	validation?: Record<string, unknown>
 	sortOrder: number
 }

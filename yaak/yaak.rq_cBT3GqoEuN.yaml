@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_cBT3GqoEuN
 createdAt: 2025-11-26T12:24:50.682397700
-updatedAt: 2026-02-05T12:32:03.567821400
+updatedAt: 2026-06-04T15:02:46.326525900
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_wRXcNsMiL3
 authentication: {}
@@ -20,7 +20,7 @@ body:
     value: refresh_token
   - enabled: true
     name: refresh_token
-    value: 3Q1OvLkTS0bcc32XuRQUMA-niGuWniZMvnIPuurD44Y
+    value: eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIwZmQzYWE2NS0wMDNkLTQzOTgtYmU0Ny04NTk2MWYxMjM3NjgifQ.eyJleHAiOjE3ODA2Mjg1NDUsImlhdCI6MTc4MDU4NTM0NSwianRpIjoiYzEzOTdkNGUtNDdhNS1lNzU2LWU1MmYtYjM5NGViODM0M2Q2IiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmFzcGMua3ovcmVhbG1zL21hc3RlciIsImF1ZCI6Imh0dHBzOi8vYXV0aC5hc3BjLmt6L3JlYWxtcy9tYXN0ZXIiLCJzdWIiOiJkM2RlNGIxMy04MDEyLTQyYmItOTM5ZS0zZTdlNTk5NzIyMDEiLCJ0eXAiOiJSZWZyZXNoIiwiYXpwIjoicG9ydGFsLW9pZGMiLCJzaWQiOiJHd3JUY3pjOVkxVHEwSEpJUUhzNWpwSTciLCJzY29wZSI6Im9wZW5pZCByb2xlcyBlbWFpbCB3ZWItb3JpZ2lucyBhY3IgYmFzaWMgcHJvZmlsZSJ9.pt3TRKb4w0F03kbXUffOWwc_6N1fJ6OJRkhypAD1IG7EaKY94OLoPPQlnfXe-7Ym2ggfuo6Pn505yqWiDs5LRA
   - enabled: true
     name: ''
     value: ''

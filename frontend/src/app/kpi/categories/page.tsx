@@ -2,22 +2,22 @@
 
 import Link from 'next/link'
 
-import { CategoryCard, Loader, PageTitle } from '@components'
+import { CategoryCard, Loader, PageTitle, withRole } from '@components'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useQuery } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 import { Plus } from 'lucide-react'
 
 const Page = () => {
-	const { data: categories, isLoading } = useQuery({
-		...services.categories.getAllOptions(),
-		enabled: true,
-	})
+	const { data: categories, isLoading } = useQuery({ ...services.categories.getAllOptions() })
 
-	if (isLoading) return <Loader />
+	if (isLoading) {
+		return <Loader type='data' />
+	}
 
 	return (
-		<section className='p-4 max-w-6xl w-full mx-auto space-y-6'>
+		<section className='mx-auto w-full max-w-6xl space-y-6 p-4'>
 			<PageTitle
 				sticky
 				actions={
@@ -50,4 +50,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

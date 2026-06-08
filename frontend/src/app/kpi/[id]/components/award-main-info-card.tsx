@@ -20,8 +20,6 @@ export const AwardMainInfoCard = ({ award }: IAwardMainInfoCardProps) => {
 	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const matchedTypeIcon = getCategoryIconOptionByName(typeName)
 	const TypeIcon = matchedTypeIcon?.Icon || Folder
-	const normalizedBonusCriteria = award.bonusCriteria || award.bonus_criteria || null
-	const bonusCriteriaName = normalizedBonusCriteria ? getLocaleText(normalizedBonusCriteria.name, locale) : '-'
 	const title = categoryName || getLocaleText(award.variant.name, locale)
 
 	return (
@@ -49,10 +47,6 @@ export const AwardMainInfoCard = ({ award }: IAwardMainInfoCardProps) => {
 					<div>
 						<p className='text-sm font-medium text-muted-foreground'>Критерий</p>
 						<p className='text-base'>{criteriaName}</p>
-					</div>
-					<div>
-						<p className='text-sm font-medium text-muted-foreground'>Бонусный критерий</p>
-						<p className='text-base'>{bonusCriteriaName}</p>
 					</div>
 					<div>
 						<p className='text-sm font-medium text-muted-foreground'>Начисленные баллы</p>

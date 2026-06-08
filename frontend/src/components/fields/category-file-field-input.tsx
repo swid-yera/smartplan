@@ -1,9 +1,10 @@
 'use client'
 
-import { getLocaleText } from '@helpers'
+import { getLocaleText, interpolateUILocaleText } from '@helpers'
 import { Dropzone, DropzoneContent, DropzoneEmptyState, Label } from '@shadcn'
 import { useLocaleStore } from '@store'
 import type { ICategoryFieldResponse } from '@types'
+import { Upload } from 'lucide-react'
 
 import localeDictionary from './locale.json'
 
@@ -81,6 +82,14 @@ const formatFileSize = (bytes: number) => {
 	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+const formatAcceptTypes = (accept: Record<string, string[]>) => {
+	return Object.keys(accept)
+		.flatMap((mimeType) => accept[mimeType] || [mimeType])
+		.map((item) => item.replace(/^\./, '').toLowerCase())
+		.filter(Boolean)
+		.join(', ')
+}
+
 const mergeFiles = (currentFiles: File[], nextFiles: File[], maxFiles: number) => {
 	const filesByKey = new Map<string, File>()
 
@@ -124,7 +133,18 @@ export const CategoryFileFieldInput = ({ field, value, onChange }: CategoryFileF
 				onDrop={(files) => onChange(field.key, mergeFiles(value, files, maxFiles))}
 				onError={console.error}
 			>
-				<DropzoneEmptyState />
+				<DropzoneEmptyState>
+					<div className='flex flex-col items-center justify-center'>
+						<div className='flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground'>
+							<Upload size={16} />
+						</div>
+						<p className='my-2 w-full truncate text-wrap font-medium text-sm'>{t.fileDropTitle}</p>
+						<p className='w-full text-wrap text-muted-foreground text-xs'>{t.fileDropHint}</p>
+						<p className='text-wrap text-muted-foreground text-xs'>
+							{interpolateUILocaleText(t.fileDropAccepts, { value: formatAcceptTypes(accept) })}
+						</p>
+					</div>
+				</DropzoneEmptyState>
 				<DropzoneContent>
 					<div className='w-full text-left space-y-2'>
 						<p className='text-sm font-medium'>
@@ -132,7 +152,10 @@ export const CategoryFileFieldInput = ({ field, value, onChange }: CategoryFileF
 						</p>
 						<ul className='space-y-2'>
 							{value.map((file, index) => (
-								<li key={`${file.name}-${file.size}-${file.lastModified}`} className='rounded-md border p-2 text-xs'>
+								<li
+									key={`${file.name}-${file.size}-${file.lastModified}`}
+									className='rounded-md border p-2 text-xs'
+								>
 									<div className='flex items-start justify-between gap-2'>
 										<div className='min-w-0'>
 											<p className='truncate font-medium'>{file.name}</p>

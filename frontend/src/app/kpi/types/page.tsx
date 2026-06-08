@@ -2,18 +2,25 @@
 
 import Link from 'next/link'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { services } from '@services'
 import { Button } from '@shadcn'
+import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 import { Plus } from 'lucide-react'
 
 import { TypesList } from './types-list'
 
 const Page = () => {
-	const { data, isLoading } = useQuery({ ...services.award.getAllTypesOptions(), enabled: true })
+	const locale = useLocaleStore((state) => state.locale)
+	const { data: types, isLoading } = useQuery({
+		...services.award.getAllTypesOptions(),
+	})
 
-	if (isLoading) return <Loader />
+	if (isLoading) {
+		return <Loader type='data' />
+	}
 
 	return (
 		<section className='p-4 w-full space-y-6'>
@@ -32,9 +39,9 @@ const Page = () => {
 				Критерий оценивание
 			</PageTitle>
 
-			<TypesList types={data || []} />
+			<TypesList locale={locale} types={types || []} />
 		</section>
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

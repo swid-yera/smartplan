@@ -17,6 +17,7 @@ import {
 	getCategoryFieldValidationError,
 	isFileFieldValueArray,
 	serializeCategoryFieldValue,
+	withRole,
 } from '@components'
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
@@ -34,6 +35,7 @@ import {
 import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { IApiErrorResponse, ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
+import { RoleEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { Folder } from 'lucide-react'
 import { toast } from 'sonner'
@@ -45,19 +47,13 @@ const DOMAIN_ONLY_REGEX = /^(?=.{1,253}$)(?!-)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61
 
 const removeHttpProtocol = (value: string) => value.replace(/^https?:\/\//i, '')
 
-const withHttpsProtocol = (value: string) => {
-	const normalizedValue = removeHttpProtocol(value.trim())
-
-	return normalizedValue ? `https://${normalizedValue}` : ''
-}
-
 const extractDomain = (value: string) => {
 	const normalizedValue = removeHttpProtocol(value.trim())
 
 	return normalizedValue.split(/[/?#]/)[0]
 }
 
-export default function CreateAwardPage() {
+function CreateAwardPage() {
 	const params = useParams<{ id: string }>()
 	const categoryId = params.id
 	const { push } = useRouter()
@@ -423,7 +419,8 @@ export default function CreateAwardPage() {
 
 				<CardContent className='space-y-5'>
 					<CategoryFieldsSection
-						emptyText='Нет полей кроме URL/FILE'
+						title={t.topFieldsTitle}
+						emptyText={t.emptyTopFields}
 						fields={topCategoryFieldsWithEffectiveRequired}
 						values={categoryFieldValues}
 						onChange={handleCategoryFieldChange}
@@ -438,6 +435,7 @@ export default function CreateAwardPage() {
 						bonusCriteriaOptionsSource='criteria'
 						layout='stack'
 						locale={locale}
+						labels={t.awardTypeSelection}
 						selectedBonusCriteria={selectedBonusCriteria}
 						selectedCriteria={selectedCriteria}
 						selectedType={selectedType}
@@ -473,3 +471,5 @@ export default function CreateAwardPage() {
 		</section>
 	)
 }
+
+export default withRole(CreateAwardPage, [RoleEnum.TEACHER])

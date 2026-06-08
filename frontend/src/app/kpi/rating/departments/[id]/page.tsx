@@ -1,12 +1,11 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { useMemo } from 'react'
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
@@ -25,6 +24,7 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IUserDepartment } from '@types'
+import { RoleEnum } from '@types'
 
 import { RatingNav } from '../../components/rating-nav'
 import localeDictionary from './locale.json'
@@ -44,50 +44,25 @@ const getTeacherRowStyle = (color: string): CSSProperties => ({
 	borderLeftColor: color,
 })
 
-export default function RatingDepartmentPage() {
+const Page = () => {
+	const { id } = useParams<{ id: string }>()
 	const locale = useLocaleStore((state) => state.locale)
-	const params = useParams<{ id: string }>()
-	const departmentId = typeof params?.id === 'string' ? params.id : ''
 	const t = getUILocaleSection(localeDictionary, locale)
 
 	const { data: department, isLoading } = useQuery({
-		...services.statistics.getTeachersByDepartmentOptions(departmentId),
-		enabled: Boolean(departmentId),
+		...services.statistics.getTeachersByDepartmentOptions(id || ''),
+		enabled: !!id,
 	})
 
-	const sortedTeachers = useMemo(() => {
-		if (!department?.teachers?.length) return []
-
-		return [...department.teachers].sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
-	}, [department])
-
-	if (isLoading || (departmentId && department === undefined)) {
-		return <Loader fullScreen type='default' />
+	if (isLoading) {
+		return <Loader type='data' />
 	}
-
-	console.log(department)
 
 	if (!department) {
-		return (
-			<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
-				<PageTitle description={t.description}>{t.title}</PageTitle>
-				<RatingNav
-					labels={{
-						departments: t.departments,
-						stats: t.stats,
-						top20: t.top20,
-					}}
-				/>
-				<Card className='border-dashed'>
-					<CardContent className='py-12 text-center'>
-						<p className='text-base font-medium'>{t.emptyTitle}</p>
-						<p className='mt-2 text-sm text-muted-foreground'>{t.emptyDescription}</p>
-					</CardContent>
-				</Card>
-			</section>
-		)
+		return <p className='p-6 text-center text-muted-foreground'>Отделение не найдено</p>
 	}
 
+	const sortedTeachers = [...department.teachers].sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
 	const departmentTitle = getLocaleText(department.name, locale)
 
 	return (
@@ -166,3 +141,5 @@ export default function RatingDepartmentPage() {
 		</section>
 	)
 }
+
+export default withRole(Page, [RoleEnum.METHODIST])

@@ -6,13 +6,14 @@ import { useLocaleStore } from '@store'
 import type { ICategoryFieldResponse, ICategoryMultiFieldOptionResponse, ICategoryMultiFieldRowValue } from '@types'
 import { Plus, Trash2 } from 'lucide-react'
 
-import localeDictionary from './locale.json'
 import { CategoryFieldInput } from './category-field-input'
 import {
+	type ICategoryFieldValue,
+	capitalizeFirstLetter,
 	createEmptyMultiFieldRow,
 	isMultiFieldRowArray,
-	type ICategoryFieldValue,
 } from './category-fields.utils'
+import localeDictionary from './locale.json'
 
 type CategoryMultiFieldsInputProps = {
 	field: ICategoryFieldResponse
@@ -29,7 +30,7 @@ export const CategoryMultiFieldsInput = ({ field, value, onChange }: CategoryMul
 	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const subFields = Array.isArray(field.options) ? field.options.filter(isCategoryFieldResponse) : []
 	const rows = isMultiFieldRowArray(value) ? value : []
-	const fieldLabel = getLocaleText(field.label, locale) || field.key
+	const fieldLabel = capitalizeFirstLetter(getLocaleText(field.label, locale) || field.key)
 	const helpText = getLocaleText(field.helpText, locale)
 
 	const addRow = () => {
@@ -94,8 +95,14 @@ export const CategoryMultiFieldsInput = ({ field, value, onChange }: CategoryMul
 										<div key={`${field.key}-${rowIndex}-${childField.key}`}>
 											<CategoryFieldInput
 												field={childField as unknown as ICategoryFieldResponse}
-												value={typeof row[childField.key] === 'number' ? String(row[childField.key]) : row[childField.key]}
-												onChange={(_, nextValue) => updateRowValue(rowIndex, childField.key, String(nextValue))}
+												value={
+													typeof row[childField.key] === 'number'
+														? String(row[childField.key])
+														: row[childField.key]
+												}
+												onChange={(_, nextValue) =>
+													updateRowValue(rowIndex, childField.key, String(nextValue))
+												}
 											/>
 										</div>
 									))}
@@ -111,7 +118,9 @@ export const CategoryMultiFieldsInput = ({ field, value, onChange }: CategoryMul
 					) : null}
 				</div>
 			) : (
-				<div className='rounded-md border border-dashed p-3 text-sm text-muted-foreground'>{t.multiFieldsNoSubFields}</div>
+				<div className='rounded-md border border-dashed p-3 text-sm text-muted-foreground'>
+					{t.multiFieldsNoSubFields}
+				</div>
 			)}
 		</div>
 	)

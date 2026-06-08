@@ -1,16 +1,17 @@
 'use client'
 
-import { PageTitle } from '@components'
+import { PageTitle, withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 import { toast } from 'sonner'
 
-import { SyncGroupsCard } from './sync-card'
 import localeDictionary from './locale.json'
+import { SyncGroupsCard } from './sync-card'
 
-export default function GroupsPage() {
+function GroupsPage() {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	// mutations
@@ -33,3 +34,5 @@ export default function GroupsPage() {
 		</section>
 	)
 }
+
+export default withRole(GroupsPage, [RoleEnum.ADMIN])

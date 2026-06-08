@@ -4,8 +4,8 @@ import type { CSSProperties } from 'react'
 
 import Link from 'next/link'
 
-import { Loader, PageTitle } from '@components'
-import { getLocaleText, getUILocaleSection } from '@helpers'
+import { Loader, PageTitle, withRole } from '@components'
+import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
 	Card,
@@ -22,6 +22,9 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import type { IDepartmentTopTeachersResponse } from '@types'
+import { RoleEnum } from '@types'
+import { Sigma, Users2 } from 'lucide-react'
 
 import { RatingNav } from './components/rating-nav'
 import localeDictionary from './locale.json'
@@ -50,18 +53,29 @@ const getTeacherRowStyle = (color: string): CSSProperties => ({
 	borderLeftColor: color,
 })
 
-export default function RatingPage() {
+type DepartmentWithTotalPoints = IDepartmentTopTeachersResponse & {
+	totalPoints: number
+}
+
+const Page = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
-	const { data: departments = [], isLoading } = useQuery({
+	const { data: departments, isLoading } = useQuery({
 		...services.statistics.getTopTeachersByDepartmentOptions(),
 	})
 
 	if (isLoading) {
-		return <Loader fullScreen type='default' />
+		return <Loader type='data' />
 	}
 
-	if (departments.length === 0) {
+	const departmentsWithTotalPoints: DepartmentWithTotalPoints[] = (departments || []).map((department) => ({
+		...department,
+		totalPoints: department.teachers
+			.map((teacher) => teacher.totalPoints ?? 0)
+			.reduce((sum, points) => sum + points, 0),
+	}))
+
+	if (departmentsWithTotalPoints.length === 0) {
 		return (
 			<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
 				<PageTitle description={t.description}>{t.title}</PageTitle>
@@ -83,7 +97,7 @@ export default function RatingPage() {
 	}
 
 	return (
-		<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
+		<section className='mx-auto w-full max-w-6xl space-y-6 p-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 			<RatingNav
 				labels={{
@@ -103,16 +117,16 @@ export default function RatingPage() {
 			</Card>
 
 			<div className='space-y-4'>
-				{departments.map((department, departmentIndex) => {
+				{departmentsWithTotalPoints.map((department, departmentIndex) => {
 					const color = getDepartmentColor(departmentIndex)
 					const topTeachersCount = department.teachers.length
 					const style = getDepartmentStyle(departmentIndex)
 
 					return (
 						<Card key={department.keycloakId} className='overflow-hidden border-l-4' style={style}>
-							<CardHeader className='space-y-3'>
-								<div className='flex flex-wrap items-start justify-between gap-3'>
-									<div className='space-y-1'>
+							<CardHeader className='space-y-4'>
+								<div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
+									<div className='space-y-3'>
 										<div className='flex items-center gap-2'>
 											<span className='h-2.5 w-2.5 rounded-full' style={{ backgroundColor: color }} />
 											<Link
@@ -122,15 +136,25 @@ export default function RatingPage() {
 												{getLocaleText(department.name, locale)}
 											</Link>
 										</div>
-										<CardDescription>
-											{department.teachersCount} {t.teachersCount}
-										</CardDescription>
-									</div>
-									<div
-										className='rounded-full border px-3 py-1 text-xs font-medium'
-										style={{ borderColor: color, color }}
-									>
-										{topTeachersCount}/{department.teachersCount}
+
+										<div className='flex flex-wrap gap-2'>
+											<div
+												className='inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium'
+												style={{ borderColor: color, color }}
+											>
+												<Users2 className='h-4 w-4' />
+												{interpolateUILocaleText(t.departmentSummary.teachers, {
+													current: topTeachersCount,
+													total: department.teachersCount,
+												})}
+											</div>
+											<div className='inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary shadow-sm'>
+												<Sigma className='h-4 w-4' />
+												{interpolateUILocaleText(t.departmentSummary.pointsInline, {
+													points: department.totalPoints,
+												})}
+											</div>
+										</div>
 									</div>
 								</div>
 							</CardHeader>
@@ -174,3 +198,5 @@ export default function RatingPage() {
 		</section>
 	)
 }
+
+export default withRole(Page, [RoleEnum.METHODIST])

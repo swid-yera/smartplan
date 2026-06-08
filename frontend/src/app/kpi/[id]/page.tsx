@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, PageTitle, ResponsibleUsersCard, StatusInfoCard } from '@components'
+import { Loader, PageTitle, ResponsibleUsersCard, StatusInfoCard, withRole } from '@components'
 import { getUILocaleSection, hasRole, isAuthor } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
@@ -233,4 +233,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])

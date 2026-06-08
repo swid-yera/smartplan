@@ -5,7 +5,7 @@ import { type JSX, type KeyboardEvent, useEffect, useMemo, useRef, useState } fr
 import type { NextPage } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, RupLanguageDialog } from '@components'
+import { Loader, PageTitle, RupLanguageDialog, withRole } from '@components'
 import {
 	createLocaleText,
 	getLocaleText,
@@ -35,7 +35,15 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
-import { type ICreateRupRequest, type Locale, type LocaleText, RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
+import {
+	type ICreateRupRequest,
+	type Locale,
+	type LocaleText,
+	RoleEnum,
+	RupTypeEnum,
+	StudyFormEnum,
+	TopicTypeEnum,
+} from '@types'
 import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -580,7 +588,7 @@ const Page: NextPage = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN], true)
 
 export interface ITab {
 	id: string

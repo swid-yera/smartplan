@@ -28,9 +28,14 @@ export const CategoryFieldsSection = ({
 			<h3 className='text-sm font-semibold'>{title}</h3>
 
 			{fields.length ? (
-				<div className={`grid gap-4 ${columns === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+				<div className={`grid items-start gap-4 ${columns === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
 					{fields.map((field) => (
-						<div key={field.id} className={field.type === 'multi_fields' ? 'col-span-full' : ''}>
+						<div
+							key={field.id}
+							className={
+								fields.length === 1 || field.type === 'multi_fields' ? 'col-span-full h-full' : 'h-full'
+							}
+						>
 							{field.type === 'multi_fields' ? (
 								<CategoryMultiFieldsInput field={field} value={values[field.key]} onChange={onChange} />
 							) : (

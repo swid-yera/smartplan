@@ -1,0 +1,40 @@
+type: http_request
+model: http_request
+id: rq_qT949VrvRV
+createdAt: 2026-06-04T14:37:28.553159200
+updatedAt: 2026-06-04T15:16:00.247035200
+workspaceId: wk_yScn9PeBcZ
+folderId: fl_gXkUBfAfQN
+authentication: {}
+authenticationType: null
+body:
+  form:
+  - enabled: true
+    name: ''
+    value: ''
+  text: |-
+    {
+      "attributes": {
+        "birthday": "uka"
+      }
+    }
+bodyType: application/json
+description: ''
+headers:
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: 93EnnXZZzn
+- enabled: true
+  name: Authorization
+  value: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJTeDRGbVh2TGVJSmVCTE5jS3RfVUpjdk9zdFhUZGdmVGMyeUpVX3pjMGZrIn0.eyJleHAiOjE3ODA1ODYyNjUsImlhdCI6MTc4MDU4NTM2NSwianRpIjoib25ydHJ0OjQxOWMwZTllLTExYjctZTNjYi00ZDNhLTMzZTE3NzQ4ZGMwYyIsImlzcyI6Imh0dHBzOi8vYXV0aC5hc3BjLmt6L3JlYWxtcy9tYXN0ZXIiLCJzdWIiOiJkM2RlNGIxMy04MDEyLTQyYmItOTM5ZS0zZTdlNTk5NzIyMDEiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwb3J0YWwtb2lkYyIsInNpZCI6Ikd3clRjemM5WTFUcTBISklRSHM1anBJNyIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiU3R1ZGVudHMiXX0sInNjb3BlIjoib3BlbmlkIGVtYWlsIHByb2ZpbGUiLCJ1cG4iOiJrcG9wb3YyNzAiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsIm5hbWUiOiLQmtC40YDQuNC70Lsg0J_QvtC_0L7QsiIsImdyb3VwcyI6WyJTdHVkZW50cyJdLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJrcG9wb3YyNzAiLCJnaXZlbl9uYW1lIjoi0JrQuNGA0LjQu9C7IiwiY2xhc3MiOlsiU3R1ZGVudHMiXSwiZmFtaWx5X25hbWUiOiLQn9C-0L_QvtCyIiwiZW1haWwiOiJrcG9wb3YyNzBAZ21haWwuY29tIn0.Y611a87C4PEDLGA1Klm6AE7xVfrPwyYLwJO_qz4Q-bLAX1CMhUNuGA6Ju2uZWNZAsCG1YjU9Y3jcxM5aWkuzzV3S3Mh7oPtsNCssd_QB3zauVGLi3xTWLbrBXg0VnLkabuCwrh1XQqr5GYQzXyJfo1FNdsIU4H3maoohleQXcmuZ8dVbmJTN4ZC_WBpIHCf5BZJbSiFS1Y8SgvsL1IXepRju4CHKNVHsAL9oMq7HqUFqjUnTuFYTJE7uJWDxUMAE9-9xoq1ehGnavHH3pIAQmusF-7x4-a5Q-seWVr3ZsZ2u8zTEmHg6tWBXILCuKwGuU8pHnAqDtPZn85gvGXOZLQ
+  id: mSfjfE6xpr
+- enabled: true
+  name: ''
+  value: ''
+  id: KrW76fE37A
+method: POST
+name: rename
+sortPriority: 0.0
+url: https://auth.aspc.kz/realms/master/account
+urlParameters: []

@@ -4,15 +4,14 @@ import { useEffect, useState } from 'react'
 
 import { notFound, useParams } from 'next/navigation'
 
-import { Loader } from '@components'
-import { LessonDetailsContent } from '@components'
+import { LessonDetailsContent, Loader, withRole } from '@components'
 import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { type Locale, RoleEnum } from '@types'
 
-export default function LessonPage() {
+function LessonPage() {
 	const params = useParams<{ id: string }>()
 	const { authLoading, user } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
@@ -45,3 +44,5 @@ export default function LessonPage() {
 		/>
 	)
 }
+
+export default withRole(LessonPage, [RoleEnum.ADMIN], true)

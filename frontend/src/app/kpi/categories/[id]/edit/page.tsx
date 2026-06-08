@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, PageTitle } from '@components'
+import { Forbidden, Loader, PageTitle, withRole } from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,
@@ -319,7 +319,7 @@ const Page = () => {
 								<SelectTrigger className='w-full' id='icon'>
 									<SelectValue placeholder={t.placeholderIcon} />
 								</SelectTrigger>
-								<SelectContent className='w-[220px]'>
+								<SelectContent className='w-55'>
 									<div className='grid grid-cols-4 gap-1 p-1'>
 										<SelectItem
 											className='h-10 w-10 justify-center p-0 pr-0'
@@ -383,6 +383,7 @@ const Page = () => {
 					<AwardTypesSelector
 						activeLocale={activeLocale}
 						awardTypes={awardTypes}
+						labels={t.awardTypesSelector}
 						value={awardTypeIds}
 						onChange={setAwardTypeIds}
 					/>
@@ -428,4 +429,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

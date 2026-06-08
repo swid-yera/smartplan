@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 
+import { withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 import { FileSpreadsheet, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -105,9 +107,7 @@ const Page = () => {
 						) : (
 							<>
 								<FileSpreadsheet className='mb-3 h-8 w-8 text-muted-foreground' />
-								<p className='text-sm font-medium'>
-									{isDragging ? t.dropHere : t.dragHint}
-								</p>
+								<p className='text-sm font-medium'>{isDragging ? t.dropHere : t.dragHint}</p>
 								<p className='mt-1 text-xs text-muted-foreground'>{t.onlyXlsxShort}</p>
 							</>
 						)}
@@ -127,4 +127,4 @@ const Page = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN])

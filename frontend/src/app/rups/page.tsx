@@ -3,11 +3,10 @@
 import type { NextPage } from 'next'
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, RupsCard } from '@components'
+import { Loader, PageTitle, RupsCard, withRole } from '@components'
 import { getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
-import { useAuthStore } from '@store'
-import { useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { RoleEnum, StatusEnum } from '@types'
 
@@ -54,13 +53,7 @@ const Page: NextPage = () => {
 
 	return (
 		<div className='space-y-6 p-6'>
-			<PageTitle
-				description={
-					canCreate
-						? t.teacherDescription
-						: t.methodistDescription
-				}
-			>
+			<PageTitle description={canCreate ? t.teacherDescription : t.methodistDescription}>
 				{isTeacher ? t.teacherTitle : t.methodistTitle}
 			</PageTitle>
 
@@ -88,4 +81,4 @@ const Page: NextPage = () => {
 	)
 }
 
-export default Page
+export default withRole(Page, [RoleEnum.ADMIN], true)

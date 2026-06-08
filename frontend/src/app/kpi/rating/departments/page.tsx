@@ -1,16 +1,14 @@
 'use client'
 
-import type { CSSProperties } from 'react'
-import { useMemo } from 'react'
-
 import Link from 'next/link'
 
-import { Loader, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { RoleEnum } from '@types'
 
 import { RatingDistributionChart } from '../components/rating-distribution-chart'
 import { RatingNav } from '../components/rating-nav'
@@ -26,7 +24,7 @@ const DEPARTMENT_COLORS = [
 
 const getDepartmentColor = (index: number) => DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]
 
-const getDepartmentStyle = (index: number): CSSProperties => {
+const getDepartmentStyle = (index: number) => {
 	const color = getDepartmentColor(index)
 
 	return {
@@ -36,22 +34,18 @@ const getDepartmentStyle = (index: number): CSSProperties => {
 	}
 }
 
-export default function RatingDepartmentsPage() {
+const Page = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const { data: departments, isLoading } = useQuery({
 		...services.award.getAllDepartmentsOptions(),
 	})
 
-	const sortedDepartments = useMemo(() => {
-		if (!departments) return []
-
-		return [...departments].sort((a, b) => b.totalPoints - a.totalPoints)
-	}, [departments])
-
-	if (isLoading || !departments) {
-		return <Loader fullScreen type='default' />
+	if (isLoading) {
+		return <Loader type='data' />
 	}
+
+	const sortedDepartments = [...(departments || [])].sort((a, b) => b.totalPoints - a.totalPoints)
 
 	if (sortedDepartments.length === 0) {
 		return (
@@ -144,3 +138,5 @@ export default function RatingDepartmentsPage() {
 		</section>
 	)
 }
+
+export default withRole(Page, [RoleEnum.METHODIST])
