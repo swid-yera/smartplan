@@ -153,6 +153,23 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		return
 	}
 
+	// TEACHER может переводить только в IN_REVIEW, и только из DRAFT или REJECTED
+	if strings.EqualFold(currentUser.Role, "TEACHER") {
+		if req.Status != storage.AwardsStatusINREVIEW {
+			c.JSON(http.StatusForbidden, gin.H{"error": "teachers can only submit awards for review"})
+			return
+		}
+		existing, err := h.service.GetAwardByID(c.Request.Context(), id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if existing.Status != storage.AwardsStatusDRAFT && existing.Status != storage.AwardsStatusREJECTED {
+			c.JSON(http.StatusForbidden, gin.H{"error": "award can only be submitted for review from draft or rejected status"})
+			return
+		}
+	}
+
 	methodist := pgtype.UUID{Valid: false}
 	if req.Status != storage.AwardsStatusINREVIEW {
 		methodist = parseUUIDPgtype(currentUser.KeycloakID.String())
