@@ -33,7 +33,7 @@ export function ThemeToggle() {
 					<span className='text-xs'>{themeText}</span>
 				</SidebarMenuButton>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align='end'>
+			<DropdownMenuContent align='end' side='top' sideOffset={8}>
 				<DropdownMenuItem onClick={() => setTheme('light')}>
 					<Sun /> {labels.light}
 				</DropdownMenuItem>

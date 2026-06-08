@@ -16,7 +16,10 @@ export function LanguageToggle() {
 	const setLocale = useLocaleStore((state) => state.setLocale)
 	const t = sidebarLocale[locale] ?? sidebarLocale.ru
 
-	const localeName = useMemo(() => (locale === 'kk' ? t.language.kkName : t.language.ruName), [locale, t.language.kkName, t.language.ruName])
+	const localeName = useMemo(
+		() => (locale === 'kk' ? t.language.kkName : t.language.ruName),
+		[locale, t.language.kkName, t.language.ruName],
+	)
 
 	const changeLocale = (nextLocale: Locale) => {
 		if (nextLocale === locale) return
@@ -33,7 +36,7 @@ export function LanguageToggle() {
 					<span className='text-xs'>{localeName}</span>
 				</SidebarMenuButton>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align='end'>
+			<DropdownMenuContent align='end' side='top' sideOffset={8}>
 				<DropdownMenuItem onClick={() => changeLocale('ru')}>
 					RU
 					<span className='text-muted-foreground'>{t.language.ruName}</span>

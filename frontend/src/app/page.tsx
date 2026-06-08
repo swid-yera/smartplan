@@ -1,41 +1,43 @@
 'use client'
 
+import { type MouseEvent } from 'react'
+
 import Link from 'next/link'
 
+import { PageTitle } from '@components'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { Button, Card, CardDescription, CardHeader, CardTitle, Heading } from '@shadcn'
-import { useAuthStore } from '@store'
+import { Button, Card, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useAuthStore, useLocaleStore } from '@store'
 import { ArrowRightCircle, BarChart3, FileText, Loader2, LogIn } from 'lucide-react'
+
+import localeDictionary from './locale.json'
 
 const features = [
 	{
-		icon: <FileText className='h-16 w-16 text-primary' />,
-		title: 'Создание РУП',
-		description:
-			'SmartPlan использует искусственный интеллект для автоматического создания рабочих учебных программ, значительно сокращая время и усилия, необходимые для их разработки.',
+		key: 'rup',
+		icon: <FileText className='h-8 w-8 text-primary' />,
 		preview: '/trailer/rup-trailer.mov',
 	},
 	{
-		icon: <BarChart3 className='h-16 w-16 text-primary' />,
-		title: 'Система KPI и рейтинг',
-		description:
-			'Платформа включает систему KPI для объективной оценки эффективности преподавателей, формируя прозрачный рейтинг на основе их достижений и вклада в учебный процесс.',
+		key: 'kpi',
+		icon: <BarChart3 className='h-8 w-8 text-primary' />,
 		preview: '/trailer/kpi-trailer.mov',
 	},
 	{
-		icon: <FileText className='h-16 w-16 text-primary' />,
-		title: 'Создание плана учебного занятия',
-		description:
-			'SmartPlan использует искусственный интеллект для автоматического создания планов учебных занятий, значительно сокращая время и усилия, необходимые для их разработки.',
+		key: 'lesson',
+		icon: <FileText className='h-8 w-8 text-primary' />,
 		preview: '/trailer/lesson-trailer.mov',
 	},
 ]
 
 const Page = () => {
 	const { authLoading, isAuthenticated } = useAuthStore()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 
-	const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-		const cardWrapper = e.currentTarget
+	const handleMouseEnter = (event: MouseEvent<HTMLDivElement>) => {
+		const cardWrapper = event.currentTarget
 		const videoPreview = cardWrapper.querySelector<HTMLDivElement>('.video-preview')
 		const video = cardWrapper.querySelector('video')
 		const loader = cardWrapper.querySelector<HTMLDivElement>('.video-loader')
@@ -43,100 +45,139 @@ const Page = () => {
 		if (!videoPreview || !video) return
 
 		const cardRect = cardWrapper.getBoundingClientRect()
-		// Приблизительная высота всплывающего окна с видео
 		const videoHeight = 320
 
 		if (cardRect.top < videoHeight) {
-			// Недостаточно места сверху, показать снизу
 			videoPreview.classList.remove('bottom-full', 'mb-4')
 			videoPreview.classList.add('top-full', 'mt-4')
 		} else {
-			// Достаточно места сверху, показать сверху (по умолчанию)
 			videoPreview.classList.remove('top-full', 'mt-4')
 			videoPreview.classList.add('bottom-full', 'mb-4')
 		}
 
+		videoPreview.classList.add('visible', 'opacity-100', 'translate-y-0')
 		if (loader) loader.classList.remove('opacity-0')
+
 		video.currentTime = 0
 		video.play().catch(console.error)
 	}
 
-	const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-		const video = e.currentTarget.querySelector('video')
+	const handleMouseLeave = (event: MouseEvent<HTMLDivElement>) => {
+		const cardWrapper = event.currentTarget
+		const videoPreview = cardWrapper.querySelector<HTMLDivElement>('.video-preview')
+		const video = cardWrapper.querySelector('video')
 
 		if (video) {
 			video.pause()
 		}
+
+		if (videoPreview) {
+			videoPreview.classList.remove('visible', 'opacity-100', 'translate-y-0')
+		}
 	}
 
 	return (
-		<section className='w-full py-12 md:py-24 lg:py-32 mx-auto'>
-			<div className='flex flex-col items-center space-y-4 text-center'>
-				<div className='space-y-2'>
-					<Heading align='center' size='h1'>
-						Добро пожаловать в SmartPlan
-					</Heading>
-					<p className='mx-auto max-w-[700px] text-muted-foreground md:text-xl'>
-						Система создания и управления рабочими учебными программами с использованием ИИ, а также оценки
-						преподавателей по KPI.
-					</p>
+		<section className='mx-auto flex w-full max-w-7xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12'>
+			<PageTitle description={t.pageDescription}>SmartPlan</PageTitle>
+
+			<div className='mt-6 rounded-3xl border border-border/60 bg-card/80 p-5 shadow-sm backdrop-blur-sm sm:p-6 lg:p-8'>
+				<div className='flex flex-col gap-6'>
+					<div className='max-w-3xl space-y-4'>
+						<p className='text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground'>
+							{t.heroEyebrow}
+						</p>
+						<p className='text-sm leading-7 text-muted-foreground sm:text-base'>{t.heroDescription}</p>
+					</div>
+
+					<div className='flex flex-col gap-3 sm:flex-row'>
+						{authLoading ? (
+							<Button disabled className='w-full sm:w-auto' size='lg'>
+								<Loader2 className='h-4 w-4 animate-spin' />
+								{t.actions.loading}
+							</Button>
+						) : isAuthenticated ? (
+							<Button asChild className='w-full sm:w-auto' size='lg'>
+								<Link href='/dashboard'>
+									{t.actions.goDashboard}
+									<ArrowRightCircle className='h-4 w-4' />
+								</Link>
+							</Button>
+						) : (
+							<Button className='w-full sm:w-auto' size='lg' onClick={() => services.auth.redirectToLogin()}>
+								{t.actions.login}
+								<LogIn className='h-4 w-4' />
+							</Button>
+						)}
+					</div>
+
+					<div className='flex flex-wrap gap-2'>
+						{t.tags.map((item) => (
+							<span
+								key={item}
+								className='rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground'
+							>
+								{item}
+							</span>
+						))}
+					</div>
 				</div>
 			</div>
-			<div className='mx-auto mt-12 grid grid-cols-1 items-start gap-8 sm:max-w-4xl sm:grid-cols-2 md:gap-12 lg:max-w-5xl'>
-				{features.map((feature) => (
-					<div
-						key={feature.title}
-						className='group relative h-full'
-						onMouseEnter={handleMouseEnter}
-						onMouseLeave={handleMouseLeave}
-					>
-						<div className='video-preview absolute bottom-full left-1/2 z-10 mb-4 invisible w-[500px] -translate-x-1/2 translate-y-2 rounded-lg border bg-background/80 backdrop-blur-md p-1 shadow-xl opacity-0 transition-all duration-300 group-hover:delay-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100'>
-							<div className='video-loader absolute inset-1 z-10 flex items-center justify-center rounded bg-background/50 backdrop-blur-sm transition-opacity duration-300'>
-								<Loader2 className='h-8 w-8 animate-spin text-primary' />
-							</div>
-							<video
-								loop
-								muted
-								playsInline
-								className='aspect-video w-full rounded bg-muted object-cover'
-								src={feature.preview}
-								onPlaying={(e) => {
-									const loader = e.currentTarget.parentElement?.querySelector('.video-loader')
 
-									if (loader) loader.classList.add('opacity-0')
-								}}
-								onWaiting={(e) => {
-									const loader = e.currentTarget.parentElement?.querySelector('.video-loader')
+			<div className='mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+				{features.map((feature) => {
+					const featureLocale = t.features[feature.key]
 
-									if (loader) loader.classList.remove('opacity-0')
-								}}
-							/>
-						</div>
-						<Card className='h-full transition-all group-hover:-translate-y-1 group-hover:shadow-lg'>
-							<CardHeader className='flex flex-row items-start gap-4'>
-								{feature.icon}
-								<div className='grid gap-1'>
-									<CardTitle>{feature.title}</CardTitle>
-									<CardDescription>{feature.description}</CardDescription>
+					return (
+						<div
+							key={feature.key}
+							className='group relative h-full'
+							onMouseEnter={handleMouseEnter}
+							onMouseLeave={handleMouseLeave}
+						>
+							<div className='video-preview invisible absolute bottom-full left-1/2 z-10 hidden w-[min(92vw,520px)] -translate-x-1/2 translate-y-2 rounded-2xl border border-border/70 bg-background/90 p-1 opacity-0 shadow-xl backdrop-blur-md transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 md:block'>
+								<div className='video-loader absolute inset-1 z-10 flex items-center justify-center rounded-[1.1rem] bg-background/50 backdrop-blur-sm transition-opacity duration-300'>
+									<Loader2 className='h-8 w-8 animate-spin text-primary' />
 								</div>
-							</CardHeader>
-						</Card>
-					</div>
-				))}
-			</div>
-			<div className='mt-12 flex flex-col justify-center gap-2 min-[400px]:flex-row'>
-				{!authLoading &&
-					(isAuthenticated ? (
-						<Button asChild size='lg'>
-							<Link href='/dashboard'>
-								Перейти к панель управлению <ArrowRightCircle />
-							</Link>
-						</Button>
-					) : (
-						<Button size='lg' onClick={() => services.auth.redirectToLogin()}>
-							Войти в аккаунт <LogIn />
-						</Button>
-					))}
+								<video
+									loop
+									muted
+									playsInline
+									className='aspect-video w-full rounded-2xl bg-muted object-cover'
+									src={feature.preview}
+									onPlaying={(event) => {
+										const loader = event.currentTarget.parentElement?.querySelector('.video-loader')
+
+										if (loader) loader.classList.add('opacity-0')
+									}}
+									onWaiting={(event) => {
+										const loader = event.currentTarget.parentElement?.querySelector('.video-loader')
+
+										if (loader) loader.classList.remove('opacity-0')
+									}}
+								/>
+							</div>
+
+							<Card className='h-full overflow-hidden border-border/60 bg-card/90 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md'>
+								<CardHeader className='flex flex-row items-start gap-4 p-5 sm:p-6'>
+									<div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10'>
+										{feature.icon}
+									</div>
+									<div className='grid gap-1'>
+										{featureLocale.status ? (
+											<span className='text-xs font-medium uppercase tracking-[0.18em] text-amber-600'>
+												{featureLocale.status}
+											</span>
+										) : null}
+										<CardTitle className='text-base sm:text-lg'>{featureLocale.title}</CardTitle>
+										<CardDescription className='text-sm leading-6'>
+											{featureLocale.description}
+										</CardDescription>
+									</div>
+								</CardHeader>
+							</Card>
+						</div>
+					)
+				})}
 			</div>
 		</section>
 	)
