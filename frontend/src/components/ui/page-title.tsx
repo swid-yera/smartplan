@@ -3,10 +3,12 @@
 import type { ComponentProps, FC, PropsWithChildren, ReactNode } from 'react'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
+import { useAuthStore, useLocaleStore } from '@store'
+import { RoleEnum } from '@types'
 import { cn } from '@lib'
 import { Button, SidebarTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn'
-import { useLocaleStore } from '@store'
 import { ArrowLeft } from 'lucide-react'
 
 import uiLocale from './locale.json'
@@ -14,7 +16,7 @@ import uiLocale from './locale.json'
 interface IPageHeadingProps extends ComponentProps<'div'> {
 	description?: ReactNode
 	actions?: ReactNode
-	backHref?: string
+	backHref?: string | Record<RoleEnum, string>
 	backLabel?: ReactNode
 	sticky?: boolean
 	top?: ReactNode
@@ -30,12 +32,21 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 	sticky = false,
 	...props
 }) => {
+	const router = useRouter()
+	const { user } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = uiLocale[locale] ?? uiLocale.ru
 	const stickyClassNames =
 		'sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'
 	const descriptionText = typeof description === 'string' ? description.trim() : null
 	const shouldShowDescriptionTooltip = !!descriptionText && descriptionText.length > 90
+	const resolvedBackHref = !backHref
+		? undefined
+		: typeof backHref === 'string'
+			? backHref
+			: user
+				? backHref[user.role]
+				: undefined
 
 	return (
 		<div
@@ -64,14 +75,19 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 				<div className='shrink-0'>{actions}</div>
 			</div>
 			<div className='flex w-full min-w-0 items-center gap-2'>
-				{backHref && (
+				{backHref === 'back' ? (
+					<Button size='sm' type='button' variant='outline' onClick={() => router.back()}>
+						<ArrowLeft />
+						{backLabel || t.pageTitle.back}
+					</Button>
+				) : resolvedBackHref ? (
 					<Button asChild size='sm' type='button' variant='outline'>
-						<Link href={backHref}>
+						<Link href={resolvedBackHref}>
 							<ArrowLeft />
 							{backLabel || t.pageTitle.back}
 						</Link>
 					</Button>
-				)}
+				) : null}
 
 				{shouldShowDescriptionTooltip ? (
 					<Tooltip>

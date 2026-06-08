@@ -181,7 +181,7 @@ const Page = () => {
 
 	return (
 		<section className='mx-auto w-full space-y-8 px-4 pb-10 pt-5'>
-			<PageTitle actions={actionButtons} description={pageTitleDescription}>
+			<PageTitle actions={actionButtons} backHref='back' description={pageTitleDescription}>
 				{interpolateUILocaleText(t.page.title, {
 					firstName: userData.firstName,
 					lastName: userData.lastName,

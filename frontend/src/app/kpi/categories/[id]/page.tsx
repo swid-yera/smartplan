@@ -121,7 +121,11 @@ const Page = () => {
 						</Button>
 					</ButtonGroup>
 				}
-				backHref='/kpi/entry'
+				backHref={{
+					[RoleEnum.TEACHER]: '/kpi/entry',
+					[RoleEnum.METHODIST]: '/kpi/all',
+					[RoleEnum.ADMIN]: '/kpi/entry',
+				}}
 				description={t.pageDescription}
 			>
 				{categoryName}
