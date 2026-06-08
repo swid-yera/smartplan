@@ -44,7 +44,7 @@ export * from './ui/numeric-input'
 export * from './fields'
 
 // media
-export * from './cards/media-previwer-card'
+export * from './cards/media-previewer-card'
 
 // lessons
 export * from './lessons'

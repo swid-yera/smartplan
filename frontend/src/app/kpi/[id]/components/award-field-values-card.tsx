@@ -16,7 +16,9 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).fieldValues
 	const categoryFields = award.category?.fieldsExpanded || []
-	const categoryFieldLabelByKey = new Map(categoryFields.map((field) => [field.key, getLocaleText(field.label, locale) || field.key]))
+	const categoryFieldLabelByKey = new Map(
+		categoryFields.map((field) => [field.key, getLocaleText(field.label, locale) || field.key]),
+	)
 	const categoryFieldByKey = new Map(categoryFields.map((field) => [field.key, field]))
 	const fileKeyRegex = /(file|document|attachment|image|photo|scan)/i
 	const urlKeyRegex = /(url|link|website)/i
@@ -93,6 +95,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 							if (!row || typeof row !== 'object' || Array.isArray(row)) return null
 
 							const normalizedRow: Record<string, string> = {}
+
 							for (const subField of subFields) {
 								const rowValue = row[subField.key]
 
@@ -103,6 +106,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 
 								if (typeof rowValue === 'object' && rowValue !== null) {
 									const localizedText = getLocaleText(rowValue as Parameters<typeof getLocaleText>[0], locale)
+
 									normalizedRow[subField.key] = localizedText || ''
 									continue
 								}
@@ -172,6 +176,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 					download: t.download,
 					hidePreview: t.hidePreview,
 					preview: t.preview,
+					previewUnavailable: t.previewUnavailable,
 				}}
 			/>
 		))
@@ -216,16 +221,24 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 											{rows.length > 0 ? (
 												<div className='space-y-3'>
 													{rows.map((row, rowIndex) => (
-															<div key={`${fieldKey}-${rowIndex}`} className='space-y-3 rounded-md bg-muted/30 p-3'>
-																<p className='text-xs font-medium text-muted-foreground'>
-																	{t.multiFieldsRowTitle.replace('{index}', String(rowIndex + 1))}
-																</p>
+														<div
+															key={`${fieldKey}-${rowIndex}`}
+															className='space-y-3 rounded-md bg-muted/30 p-3'
+														>
+															<p className='text-xs font-medium text-muted-foreground'>
+																{t.multiFieldsRowTitle.replace('{index}', String(rowIndex + 1))}
+															</p>
 															<div className='grid gap-3 md:grid-cols-2'>
 																{subFields.map((subField) => (
-																	<div key={`${fieldKey}-${rowIndex}-${subField.key}`} className='space-y-1'>
+																	<div
+																		key={`${fieldKey}-${rowIndex}-${subField.key}`}
+																		className='space-y-1'
+																	>
 																		<p className='text-xs font-medium text-muted-foreground'>
-																			{getLocaleText(subField.label as Parameters<typeof getLocaleText>[0], locale) ||
-																				subField.key}
+																			{getLocaleText(
+																				subField.label as Parameters<typeof getLocaleText>[0],
+																				locale,
+																			) || subField.key}
 																		</p>
 																		<p className='text-sm break-all'>
 																			{row[subField.key] || t.emptyValue}
