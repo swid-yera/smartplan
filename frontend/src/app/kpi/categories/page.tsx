@@ -1,24 +1,26 @@
-'use client'
-
 import Link from 'next/link'
 
-import { CategoryCard, Loader, PageTitle, withRole } from '@components'
-import { services } from '@services'
+import { CategoryCard, Forbidden, PageTitle } from '@components'
+import { getServerAuthUser, serverFetchJson } from '@lib/server'
 import { Button } from '@shadcn'
-import { useQuery } from '@tanstack/react-query'
+import type { ICategoryListItemResponse } from '@types'
 import { RoleEnum } from '@types'
 import { Plus } from 'lucide-react'
 
-const Page = () => {
-	const { data: categories, isLoading } = useQuery({
-		...services.categories.getAllOptions(),
-		enabled: true,
+export default async function CategoriesPage() {
+	const user = await getServerAuthUser()
+
+	if (!user || user.role !== RoleEnum.ADMIN) {
+		return <Forbidden />
+	}
+
+	const categories = await serverFetchJson<ICategoryListItemResponse[]>('/categories', {
+		includeSid: true,
+		revalidate: 300,
 	})
 
-	if (isLoading) return <Loader />
-
 	return (
-		<section className='p-4 max-w-6xl w-full mx-auto space-y-6'>
+		<section className='mx-auto w-full max-w-6xl space-y-6 p-4'>
 			<PageTitle
 				sticky
 				actions={
@@ -34,7 +36,7 @@ const Page = () => {
 				Категории
 			</PageTitle>
 
-			{categories?.length ? (
+			{categories.length ? (
 				<div className='mx-auto w-full max-w-4xl'>
 					<div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4'>
 						{categories.map((category) => (
@@ -50,5 +52,3 @@ const Page = () => {
 		</section>
 	)
 }
-
-export default withRole(Page, [RoleEnum.ADMIN])

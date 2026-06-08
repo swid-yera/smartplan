@@ -1,3 +1,5 @@
+'use client'
+
 import { CombineCard, Loader, PageTitle, StatusBadge } from '@components'
 import { buildReviewItems, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'

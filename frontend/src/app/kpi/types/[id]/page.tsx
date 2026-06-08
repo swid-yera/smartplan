@@ -1,26 +1,31 @@
-'use client'
-
-import type { NextPage } from 'next'
-import { useParams } from 'next/navigation'
-
-import { Loader, withRole } from '@components'
-import { services } from '@services'
-import { useQuery } from '@tanstack/react-query'
+import { Forbidden } from '@components'
+import { getServerAuthUser, serverFetchJson } from '@lib/server'
+import type { ITypeResponse } from '@types'
 import { RoleEnum } from '@types'
 
 import { TypeView } from './type-view'
 
-const Page: NextPage = () => {
-	const params = useParams<{ id: string }>()
-	const id = params.id
+interface IPageProps {
+	params: Promise<{ id: string }>
+}
 
-	const { data, isLoading } = useQuery({
-		...services.award.getTypeByIdOptions(id),
-		enabled: !!id,
-	})
+export default async function Page({ params }: IPageProps) {
+	const user = await getServerAuthUser()
+	const { id } = await params
 
-	if (isLoading) {
-		return <Loader type='default' />
+	if (!user || user.role !== RoleEnum.ADMIN) {
+		return <Forbidden />
+	}
+
+	let data: ITypeResponse | null = null
+
+	try {
+		data = await serverFetchJson<ITypeResponse>(`/awards/types/${id}`, {
+			includeSid: true,
+			revalidate: 300,
+		})
+	} catch {
+		data = null
 	}
 
 	if (!data) {
@@ -29,5 +34,3 @@ const Page: NextPage = () => {
 
 	return <TypeView type={data} />
 }
-
-export default withRole(Page, [RoleEnum.ADMIN])

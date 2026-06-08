@@ -1,24 +1,19 @@
-'use client'
-
-import { notFound } from 'next/navigation'
-
-import { Loader, withRole } from '@components'
+import { Forbidden } from '@components'
 import { hasRole } from '@helpers'
-import { useAuthStore } from '@store'
+import { getServerAuthUser } from '@lib/server'
 import { RoleEnum } from '@types'
 
 import { MethodistDashboard } from './methodist-dashboard'
 import { TeacherDashboard } from './teacher-dashboard'
 
-function DashboardPage() {
-	const { user, authLoading } = useAuthStore()
+export default async function DashboardPage() {
+	const user = await getServerAuthUser()
 
-	if (authLoading) return <Loader />
-	if (!user) return notFound()
+	if (!user) {
+		return <Forbidden />
+	}
 
 	const isMethodist = hasRole(user.role, RoleEnum.METHODIST)
 
 	return isMethodist ? <MethodistDashboard /> : <TeacherDashboard keycloakId={user.keycloakId} />
 }
-
-export default withRole(DashboardPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])

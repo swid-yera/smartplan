@@ -1,13 +1,10 @@
-'use client'
-
 import type { CSSProperties } from 'react'
-import { useMemo } from 'react'
 
 import Link from 'next/link'
 
-import { Loader, PageTitle, withRole } from '@components'
-import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
-import { services } from '@services'
+import { Forbidden, PageTitle } from '@components'
+import { getLocaleText, getUILocaleSection, hasRole, interpolateUILocaleText } from '@helpers'
+import { getServerAuthUser, getServerLocale, serverFetchJson } from '@lib/server'
 import {
 	Card,
 	CardContent,
@@ -21,8 +18,6 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
-import { useLocaleStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
 import type { IDepartmentTopTeachersResponse } from '@types'
 import { RoleEnum } from '@types'
 import { Sigma, Users2 } from 'lucide-react'
@@ -58,24 +53,25 @@ type DepartmentWithTotalPoints = IDepartmentTopTeachersResponse & {
 	totalPoints: number
 }
 
-function RatingPage() {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
-	const { data: departments = [], isLoading } = useQuery({
-		...services.statistics.getTopTeachersByDepartmentOptions(),
-	})
-	const departmentsWithTotalPoints = useMemo<DepartmentWithTotalPoints[]>(() => {
-		return departments.map((department) => ({
-			...department,
-			totalPoints: department.teachers
-				.map((teacher) => teacher.totalPoints ?? 0)
-				.reduce((sum, points) => sum + points, 0),
-		}))
-	}, [departments])
+export default async function RatingPage() {
+	const [locale, user] = await Promise.all([getServerLocale(), getServerAuthUser()])
 
-	if (isLoading) {
-		return <Loader fullScreen type='default' />
+	if (!user || !hasRole(user.role, RoleEnum.METHODIST, true)) {
+		return <Forbidden />
 	}
+
+	const departments = await serverFetchJson<IDepartmentTopTeachersResponse[]>('/statistics/departments/top-teachers', {
+		includeSid: true,
+		revalidate: 120,
+	})
+
+	const t = getUILocaleSection(localeDictionary, locale)
+	const departmentsWithTotalPoints: DepartmentWithTotalPoints[] = departments.map((department) => ({
+		...department,
+		totalPoints: department.teachers
+			.map((teacher) => teacher.totalPoints ?? 0)
+			.reduce((sum, points) => sum + points, 0),
+	}))
 
 	if (departmentsWithTotalPoints.length === 0) {
 		return (
@@ -150,12 +146,7 @@ function RatingPage() {
 													total: department.teachersCount,
 												})}
 											</div>
-											<div
-												className='inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary shadow-sm'
-												style={{
-													borderColor: 'var(--primary)',
-												}}
-											>
+											<div className='inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary shadow-sm'>
 												<Sigma className='h-4 w-4' />
 												{interpolateUILocaleText(t.departmentSummary.pointsInline, {
 													points: department.totalPoints,
@@ -205,5 +196,3 @@ function RatingPage() {
 		</section>
 	)
 }
-
-export default withRole(RatingPage, [RoleEnum.METHODIST])

@@ -1,20 +1,25 @@
-'use client'
-
 import Link from 'next/link'
 
-import { Loader, PageTitle, withRole } from '@components'
-import { services } from '@services'
+import { Forbidden, PageTitle } from '@components'
+import { getServerAuthUser, getServerLocale, serverFetchJson } from '@lib/server'
 import { Button } from '@shadcn'
-import { useQuery } from '@tanstack/react-query'
+import type { ITypeResponse } from '@types'
 import { RoleEnum } from '@types'
 import { Plus } from 'lucide-react'
 
 import { TypesList } from './types-list'
 
-const Page = () => {
-	const { data, isLoading } = useQuery({ ...services.award.getAllTypesOptions(), enabled: true })
+export default async function TypesPage() {
+	const [user, locale] = await Promise.all([getServerAuthUser(), getServerLocale()])
 
-	if (isLoading) return <Loader />
+	if (!user || user.role !== RoleEnum.ADMIN) {
+		return <Forbidden />
+	}
+
+	const data = await serverFetchJson<ITypeResponse[]>(`/awards/types?locale=${locale}`, {
+		includeSid: true,
+		revalidate: 300,
+	})
 
 	return (
 		<section className='p-4 w-full space-y-6'>
@@ -33,9 +38,7 @@ const Page = () => {
 				Критерий оценивание
 			</PageTitle>
 
-			<TypesList types={data || []} />
+			<TypesList locale={locale} types={data} />
 		</section>
 	)
 }
-
-export default withRole(Page, [RoleEnum.ADMIN])

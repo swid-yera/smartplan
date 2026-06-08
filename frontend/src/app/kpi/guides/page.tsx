@@ -1,13 +1,11 @@
-'use client'
-
 import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { Loader, PageTitle, withRole } from '@components'
+import { Forbidden, PageTitle } from '@components'
 import { getUILocaleSection } from '@helpers'
+import { getServerAuthUser, getServerLocale } from '@lib/server'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import { useAuthStore, useLocaleStore } from '@store'
 import {
 	ArrowRight,
 	BadgeCheck,
@@ -61,12 +59,14 @@ const ROUTES = {
 
 const CRITERIA_TYPES = [{ key: 'fixed' }, { key: 'range' }] as const
 
-const Page = () => {
-	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
-	const { user, authLoading } = useAuthStore()
+export default async function Page() {
+	const [locale, user] = await Promise.all([getServerLocale(), getServerAuthUser()])
 
-	if (!user || authLoading) return <Loader type='data' />
+	if (!user) {
+		return <Forbidden />
+	}
+
+	const t = getUILocaleSection(localeDictionary, locale)
 
 	return (
 		<section className='mx-auto w-full max-w-6xl space-y-8 p-4 sm:p-6'>
@@ -127,7 +127,7 @@ const Page = () => {
 					<CardContent className='p-5 sm:p-6'>
 						<div className='grid gap-4 md:grid-cols-2'>
 							<div className='rounded-2xl border border-primary/15 bg-primary/5 p-5'>
-								<Badge className='w-fit rounded-full px-3 py-1 text-primary' variant='outline'>
+								<Badge className='w-fit rounded-full px-3 py-1 text-primary' variant='secondary'>
 									{t.comparison.kpi.label}
 								</Badge>
 								<h3 className='mt-3 text-lg font-semibold'>{t.comparison.kpi.title}</h3>
@@ -235,8 +235,6 @@ const Page = () => {
 		</section>
 	)
 }
-
-export default withRole(Page, [])
 
 interface IPrincipleCardProps {
 	description: string
