@@ -1,36 +1,30 @@
-import { Forbidden } from '@components'
-import { getServerAuthUser, serverFetchJson } from '@lib/server'
-import type { ITypeResponse } from '@types'
+'use client'
+
+import { useParams } from 'next/navigation'
+
+import { Loader, withRole } from '@components'
+import { services } from '@services'
+import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
 
 import { TypeView } from './type-view'
 
-interface IPageProps {
-	params: Promise<{ id: string }>
-}
+const Page = () => {
+	const { id } = useParams<{ id: string }>()
+	const { data: typeData, isLoading } = useQuery({
+		...services.award.getTypeByIdOptions(id || ''),
+		enabled: !!id,
+	})
 
-export default async function Page({ params }: IPageProps) {
-	const user = await getServerAuthUser()
-	const { id } = await params
-
-	if (!user || user.role !== RoleEnum.ADMIN) {
-		return <Forbidden />
+	if (isLoading) {
+		return <Loader />
 	}
 
-	let data: ITypeResponse | null = null
-
-	try {
-		data = await serverFetchJson<ITypeResponse>(`/awards/types/${id}`, {
-			includeSid: true,
-			revalidate: 300,
-		})
-	} catch {
-		data = null
-	}
-
-	if (!data) {
+	if (!typeData) {
 		return <p className='p-6 text-center text-muted-foreground'>Критерии оценивания не найден</p>
 	}
 
-	return <TypeView type={data} />
+	return <TypeView type={typeData} />
 }
+
+export default withRole(Page, [RoleEnum.ADMIN])

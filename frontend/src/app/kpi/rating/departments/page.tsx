@@ -1,12 +1,13 @@
-import type { CSSProperties } from 'react'
+'use client'
 
 import Link from 'next/link'
 
-import { Forbidden, PageTitle } from '@components'
-import { getLocaleText, getUILocaleSection, hasRole } from '@helpers'
-import { getServerAuthUser, getServerLocale, serverFetchJson } from '@lib/server'
+import { Loader, PageTitle, withRole } from '@components'
+import { getLocaleText, getUILocaleSection } from '@helpers'
+import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import type { IDepartmentRatingResponse } from '@types'
+import { useLocaleStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
 
 import { RatingDistributionChart } from '../components/rating-distribution-chart'
@@ -23,7 +24,7 @@ const DEPARTMENT_COLORS = [
 
 const getDepartmentColor = (index: number) => DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]
 
-const getDepartmentStyle = (index: number): CSSProperties => {
+const getDepartmentStyle = (index: number) => {
 	const color = getDepartmentColor(index)
 
 	return {
@@ -33,20 +34,18 @@ const getDepartmentStyle = (index: number): CSSProperties => {
 	}
 }
 
-export default async function RatingDepartmentsPage() {
-	const [locale, user] = await Promise.all([getServerLocale(), getServerAuthUser()])
-
-	if (!user || !hasRole(user.role, RoleEnum.METHODIST, true)) {
-		return <Forbidden />
-	}
-
-	const departments = await serverFetchJson<IDepartmentRatingResponse[]>('/awards/departments', {
-		includeSid: true,
-		revalidate: 120,
+const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+	const { data: departments, isLoading } = useQuery({
+		...services.award.getAllDepartmentsOptions(),
 	})
 
-	const t = getUILocaleSection(localeDictionary, locale)
-	const sortedDepartments = [...departments].sort((a, b) => b.totalPoints - a.totalPoints)
+	if (isLoading) {
+		return <Loader type='data' />
+	}
+
+	const sortedDepartments = [...(departments || [])].sort((a, b) => b.totalPoints - a.totalPoints)
 
 	if (sortedDepartments.length === 0) {
 		return (
@@ -139,3 +138,5 @@ export default async function RatingDepartmentsPage() {
 		</section>
 	)
 }
+
+export default withRole(Page, [RoleEnum.METHODIST])

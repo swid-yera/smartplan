@@ -1,10 +1,13 @@
+'use client'
+
 import type { CSSProperties } from 'react'
 
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 
-import { Forbidden, PageTitle } from '@components'
+import { Loader, PageTitle, withRole } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
-import { getServerAuthUser, getServerLocale, serverFetchJson } from '@lib/server'
+import { services } from '@services'
 import {
 	Card,
 	CardContent,
@@ -18,7 +21,9 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
-import type { IDepartmentTopTeachersResponse, IUserDepartment } from '@types'
+import { useLocaleStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
+import type { IUserDepartment } from '@types'
 import { RoleEnum } from '@types'
 
 import { RatingNav } from '../../components/rating-nav'
@@ -39,28 +44,24 @@ const getTeacherRowStyle = (color: string): CSSProperties => ({
 	borderLeftColor: color,
 })
 
-interface IPageProps {
-	params: Promise<{ id: string }>
-}
+const Page = () => {
+	const { id } = useParams<{ id: string }>()
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
 
-export default async function RatingDepartmentPage({ params }: IPageProps) {
-	const [locale, user] = await Promise.all([getServerLocale(), getServerAuthUser()])
-	const { id } = await params
-
-	if (!user || user.role !== RoleEnum.METHODIST) {
-		return <Forbidden />
-	}
-
-	const department = await serverFetchJson<IDepartmentTopTeachersResponse>(`/statistics/departments/${id}/teachers`, {
-		includeSid: true,
-		revalidate: 120,
+	const { data: department, isLoading } = useQuery({
+		...services.statistics.getTeachersByDepartmentOptions(id || ''),
+		enabled: !!id,
 	})
 
-	if (!department) {
-		return <Forbidden />
+	if (isLoading) {
+		return <Loader type='data' />
 	}
 
-	const t = getUILocaleSection(localeDictionary, locale)
+	if (!department) {
+		return <p className='p-6 text-center text-muted-foreground'>Отделение не найдено</p>
+	}
+
 	const sortedTeachers = [...department.teachers].sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
 	const departmentTitle = getLocaleText(department.name, locale)
 
@@ -140,3 +141,5 @@ export default async function RatingDepartmentPage({ params }: IPageProps) {
 		</section>
 	)
 }
+
+export default withRole(Page, [RoleEnum.METHODIST])

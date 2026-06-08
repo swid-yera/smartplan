@@ -1,13 +1,15 @@
-import { Forbidden } from '@components'
+'use client'
+
+import { Forbidden, withRole } from '@components'
 import { hasRole } from '@helpers'
-import { getServerAuthUser } from '@lib/server'
+import { useAuthStore } from '@store'
 import { RoleEnum } from '@types'
 
 import { MethodistDashboard } from './methodist-dashboard'
 import { TeacherDashboard } from './teacher-dashboard'
 
-export default async function DashboardPage() {
-	const user = await getServerAuthUser()
+const Page = () => {
+	const { user } = useAuthStore()
 
 	if (!user) {
 		return <Forbidden />
@@ -17,3 +19,5 @@ export default async function DashboardPage() {
 
 	return isMethodist ? <MethodistDashboard /> : <TeacherDashboard keycloakId={user.keycloakId} />
 }
+
+export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])

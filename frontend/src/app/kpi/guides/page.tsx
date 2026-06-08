@@ -1,11 +1,13 @@
+'use client'
+
 import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { Forbidden, PageTitle } from '@components'
+import { PageTitle, withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
-import { getServerAuthUser, getServerLocale } from '@lib/server'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useLocaleStore } from '@store'
 import {
 	ArrowRight,
 	BadgeCheck,
@@ -59,13 +61,8 @@ const ROUTES = {
 
 const CRITERIA_TYPES = [{ key: 'fixed' }, { key: 'range' }] as const
 
-export default async function Page() {
-	const [locale, user] = await Promise.all([getServerLocale(), getServerAuthUser()])
-
-	if (!user) {
-		return <Forbidden />
-	}
-
+const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 
 	return (
@@ -313,3 +310,5 @@ const RouteCard: FC<IRouteCardProps> = ({ ctaLabel, description, href, icon: Ico
 		</Link>
 	)
 }
+
+export default withRole(Page, [])

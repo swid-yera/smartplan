@@ -1,10 +1,12 @@
+'use client'
+
 import type { CSSProperties } from 'react'
 
 import Link from 'next/link'
 
-import { Forbidden, PageTitle } from '@components'
-import { getLocaleText, getUILocaleSection, hasRole, interpolateUILocaleText } from '@helpers'
-import { getServerAuthUser, getServerLocale, serverFetchJson } from '@lib/server'
+import { Loader, PageTitle, withRole } from '@components'
+import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import { services } from '@services'
 import {
 	Card,
 	CardContent,
@@ -18,6 +20,8 @@ import {
 	TableHeader,
 	TableRow,
 } from '@shadcn'
+import { useLocaleStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
 import type { IDepartmentTopTeachersResponse } from '@types'
 import { RoleEnum } from '@types'
 import { Sigma, Users2 } from 'lucide-react'
@@ -53,20 +57,18 @@ type DepartmentWithTotalPoints = IDepartmentTopTeachersResponse & {
 	totalPoints: number
 }
 
-export default async function RatingPage() {
-	const [locale, user] = await Promise.all([getServerLocale(), getServerAuthUser()])
-
-	if (!user || !hasRole(user.role, RoleEnum.METHODIST, true)) {
-		return <Forbidden />
-	}
-
-	const departments = await serverFetchJson<IDepartmentTopTeachersResponse[]>('/statistics/departments/top-teachers', {
-		includeSid: true,
-		revalidate: 120,
+const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale)
+	const { data: departments, isLoading } = useQuery({
+		...services.statistics.getTopTeachersByDepartmentOptions(),
 	})
 
-	const t = getUILocaleSection(localeDictionary, locale)
-	const departmentsWithTotalPoints: DepartmentWithTotalPoints[] = departments.map((department) => ({
+	if (isLoading) {
+		return <Loader type='data' />
+	}
+
+	const departmentsWithTotalPoints: DepartmentWithTotalPoints[] = (departments || []).map((department) => ({
 		...department,
 		totalPoints: department.teachers
 			.map((teacher) => teacher.totalPoints ?? 0)
@@ -95,7 +97,7 @@ export default async function RatingPage() {
 	}
 
 	return (
-		<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
+		<section className='mx-auto w-full max-w-6xl space-y-6 p-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 			<RatingNav
 				labels={{
@@ -196,3 +198,5 @@ export default async function RatingPage() {
 		</section>
 	)
 }
+
+export default withRole(Page, [RoleEnum.METHODIST])

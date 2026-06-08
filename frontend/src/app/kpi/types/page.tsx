@@ -1,25 +1,26 @@
+'use client'
+
 import Link from 'next/link'
 
-import { Forbidden, PageTitle } from '@components'
-import { getServerAuthUser, getServerLocale, serverFetchJson } from '@lib/server'
+import { Loader, PageTitle, withRole } from '@components'
+import { services } from '@services'
 import { Button } from '@shadcn'
-import type { ITypeResponse } from '@types'
+import { useLocaleStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
 import { Plus } from 'lucide-react'
 
 import { TypesList } from './types-list'
 
-export default async function TypesPage() {
-	const [user, locale] = await Promise.all([getServerAuthUser(), getServerLocale()])
-
-	if (!user || user.role !== RoleEnum.ADMIN) {
-		return <Forbidden />
-	}
-
-	const data = await serverFetchJson<ITypeResponse[]>(`/awards/types?locale=${locale}`, {
-		includeSid: true,
-		revalidate: 300,
+const Page = () => {
+	const locale = useLocaleStore((state) => state.locale)
+	const { data: types, isLoading } = useQuery({
+		...services.award.getAllTypesOptions(),
 	})
+
+	if (isLoading) {
+		return <Loader type='data' />
+	}
 
 	return (
 		<section className='p-4 w-full space-y-6'>
@@ -38,7 +39,9 @@ export default async function TypesPage() {
 				Критерий оценивание
 			</PageTitle>
 
-			<TypesList locale={locale} types={data} />
+			<TypesList locale={locale} types={types || []} />
 		</section>
 	)
 }
+
+export default withRole(Page, [RoleEnum.ADMIN])
