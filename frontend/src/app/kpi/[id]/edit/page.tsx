@@ -372,6 +372,7 @@ const Page = () => {
 					<CategoryFieldsSection
 						emptyText={t.emptyTopFields}
 						fields={topCategoryFields}
+						title={t.topFieldsTitle}
 						values={categoryFieldValues}
 						onChange={handleCategoryFieldChange}
 					/>

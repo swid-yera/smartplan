@@ -419,7 +419,8 @@ function CreateAwardPage() {
 
 				<CardContent className='space-y-5'>
 					<CategoryFieldsSection
-						emptyText='Нет полей кроме URL/FILE'
+						title={t.topFieldsTitle}
+						emptyText={t.emptyTopFields}
 						fields={topCategoryFieldsWithEffectiveRequired}
 						values={categoryFieldValues}
 						onChange={handleCategoryFieldChange}
