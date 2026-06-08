@@ -470,4 +470,4 @@ function CreateAwardPage() {
 	)
 }
 
-export default withRole(CreateAwardPage, [RoleEnum.ADMIN])
+export default withRole(CreateAwardPage, [RoleEnum.TEACHER])
