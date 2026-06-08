@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-import { getLocaleText } from '@helpers'
+import { getLocaleText, interpolateUILocaleText } from '@helpers'
 import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn'
 import type { ICriteriaResponse, ITypeResponse, IVariantResponse, Locale } from '@types'
 
@@ -18,6 +18,19 @@ type AwardTypeSelectionFieldsProps = {
 	setSelectedBonusCriteria: (value: ICriteriaResponse | null) => void
 	locale: Locale
 	typeLabel: string
+	labels: {
+		typePlaceholder: string
+		variantLabel: string
+		variantPlaceholder: string
+		criteriaLabel: string
+		criteriaPlaceholder: string
+		bonusCriteriaLabel: string
+		bonusCriteriaPlaceholder: string
+		selectTypeHint: string
+		selectVariantHint: string
+		criteriaPoints: string
+		bonusCriteriaPoints: string
+	}
 	layout?: 'stack' | 'grid'
 	showVariantDescription?: boolean
 	showHints?: boolean
@@ -36,6 +49,7 @@ export const AwardTypeSelectionFields = ({
 	setSelectedBonusCriteria,
 	locale,
 	typeLabel,
+	labels,
 	layout = 'stack',
 	showVariantDescription = false,
 	showHints = false,
@@ -109,7 +123,7 @@ export const AwardTypeSelectionFields = ({
 
 	const variantField = (
 		<div className='space-y-2'>
-			<Label htmlFor='variant'>Вариант</Label>
+			<Label htmlFor='variant'>{labels.variantLabel}</Label>
 			<Select
 				disabled={!selectedType || !selectedType.variants.length}
 				value={selectedVariant?.id || ''}
@@ -121,7 +135,7 @@ export const AwardTypeSelectionFields = ({
 				}}
 			>
 				<SelectTrigger className='w-full' id='variant'>
-					<SelectValue placeholder='Выберите вариант' />
+					<SelectValue placeholder={labels.variantPlaceholder} />
 				</SelectTrigger>
 				<SelectContent>
 					{(selectedType?.variants || []).map((variant) => (
@@ -135,14 +149,14 @@ export const AwardTypeSelectionFields = ({
 				<p className='ml-2 text-xs text-muted-foreground'>{getLocaleText(selectedVariant.description, locale)}</p>
 			) : null}
 			{showHints && !selectedType ? (
-				<p className='ml-2 text-xs text-muted-foreground'>Сначала выберите тип оценивания</p>
+				<p className='ml-2 text-xs text-muted-foreground'>{labels.selectTypeHint}</p>
 			) : null}
 		</div>
 	)
 
 	const criteriaField = (
 		<div className='space-y-2'>
-			<Label htmlFor='criteria'>Критерий</Label>
+			<Label htmlFor='criteria'>{labels.criteriaLabel}</Label>
 			<Select
 				disabled={!selectedVariant || !selectedVariant.criteria.length}
 				value={selectedCriteria?.id || ''}
@@ -153,18 +167,19 @@ export const AwardTypeSelectionFields = ({
 				}}
 			>
 				<SelectTrigger className='w-full' id='criteria'>
-					<SelectValue placeholder='Выберите критерий' />
+					<SelectValue placeholder={labels.criteriaPlaceholder} />
 				</SelectTrigger>
 				<SelectContent>
 					{(selectedVariant?.criteria || []).map((criteria) => (
 						<SelectItem key={criteria.id} value={criteria.id}>
-							{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} баллов)
+							{getLocaleText(criteria.name, locale)}{' '}
+							{interpolateUILocaleText(labels.criteriaPoints, { points: criteria.points.join('-') })}
 						</SelectItem>
 					))}
 				</SelectContent>
 			</Select>
 			{showHints && !selectedVariant ? (
-				<p className='ml-2 text-xs text-muted-foreground'>Сначала выберите вариант</p>
+				<p className='ml-2 text-xs text-muted-foreground'>{labels.selectVariantHint}</p>
 			) : null}
 		</div>
 	)
@@ -188,7 +203,7 @@ export const AwardTypeSelectionFields = ({
 					}}
 				>
 					<SelectTrigger className='w-full' id='type'>
-						<SelectValue placeholder='Выберите тип' />
+						<SelectValue placeholder={labels.typePlaceholder} />
 					</SelectTrigger>
 					<SelectContent>
 						{availableTypes.map((type) => (
@@ -215,7 +230,7 @@ export const AwardTypeSelectionFields = ({
 
 			{selectedVariant?.bonusCriteria?.length ? (
 				<div className='space-y-2'>
-					<Label htmlFor='bonus-criteria'>Бонусный критерий</Label>
+					<Label htmlFor='bonus-criteria'>{labels.bonusCriteriaLabel}</Label>
 					<Select
 						value={selectedBonusCriteria?.id || ''}
 						onValueChange={(id: string) => {
@@ -225,12 +240,13 @@ export const AwardTypeSelectionFields = ({
 						}}
 					>
 						<SelectTrigger className='w-full' id='bonus-criteria'>
-							<SelectValue placeholder='Выберите критерий' />
+							<SelectValue placeholder={labels.bonusCriteriaPlaceholder} />
 						</SelectTrigger>
 						<SelectContent>
 							{bonusCriteriaOptions.map((criteria) => (
 								<SelectItem key={criteria.id} value={criteria.id}>
-									{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} бонусных баллов)
+									{getLocaleText(criteria.name, locale)}{' '}
+									{interpolateUILocaleText(labels.bonusCriteriaPoints, { points: criteria.points.join('-') })}
 								</SelectItem>
 							))}
 						</SelectContent>

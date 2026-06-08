@@ -383,6 +383,7 @@ const Page = () => {
 						availableTypes={availableTypes}
 						layout='grid'
 						locale={locale}
+						labels={t.awardTypeSelection}
 						selectedBonusCriteria={selectedBonusCriteria}
 						selectedCriteria={selectedCriteria}
 						selectedType={selectedType}

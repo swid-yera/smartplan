@@ -269,6 +269,7 @@ const Page = () => {
 					<AwardTypesSelector
 						activeLocale={activeLocale}
 						awardTypes={awardTypes}
+						labels={t.awardTypesSelector}
 						value={awardTypeIds}
 						onChange={setAwardTypeIds}
 					/>

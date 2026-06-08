@@ -10,6 +10,16 @@
     "validationRequiredName": "Название категории обязательно",
     "validationFieldKeyLabel": "У каждого поля должны быть key и label",
     "validationSelectOption": "Для поля «{key}» добавьте хотя бы одну опцию",
+    "awardTypesSelector": {
+      "title": "Типы наград",
+      "selectedCount": "Выбрано: {count}",
+      "triggerPlaceholder": "Поиск и выбор типов наград...",
+      "searchPlaceholder": "Поиск типа оценивания...",
+      "emptyCommand": "Тип оценивания не найден.",
+      "emptyState": "Список типов наград пуст",
+      "selectedHint": "Выбранные типы будут показаны здесь",
+      "removeAria": "Удалить {name}"
+    },
     "toastSaving": "Сохранение категории {name}",
     "toastSaved": "Категория {name} успешно обновлена",
     "toastDeleteLoading": "Удаление категории {name}",
@@ -40,6 +50,16 @@
     "validationRequiredName": "Санат атауы міндетті",
     "validationFieldKeyLabel": "Әр өрісте key және label болуы керек",
     "validationSelectOption": "«{key}» өрісі үшін кемінде бір опция қосыңыз",
+    "awardTypesSelector": {
+      "title": "Марапат түрлері",
+      "selectedCount": "Таңдалды: {count}",
+      "triggerPlaceholder": "Марапат түрлерін іздеу және таңдау...",
+      "searchPlaceholder": "Бағалау түрін іздеу...",
+      "emptyCommand": "Бағалау түрі табылмады.",
+      "emptyState": "Марапат түрлерінің тізімі бос",
+      "selectedHint": "Таңдалған түрлер осында көрсетіледі",
+      "removeAria": "{name} жою"
+    },
     "toastSaving": "{name} санатын сақтау",
     "toastSaved": "{name} санаты сәтті жаңартылды",
     "toastDeleteLoading": "{name} санатын жою",

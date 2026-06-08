@@ -435,6 +435,7 @@ function CreateAwardPage() {
 						bonusCriteriaOptionsSource='criteria'
 						layout='stack'
 						locale={locale}
+						labels={t.awardTypeSelection}
 						selectedBonusCriteria={selectedBonusCriteria}
 						selectedCriteria={selectedCriteria}
 						selectedType={selectedType}
