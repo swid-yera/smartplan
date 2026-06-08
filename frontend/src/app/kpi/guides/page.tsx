@@ -5,9 +5,9 @@ import type { FC } from 'react'
 import Link from 'next/link'
 
 import { PageTitle, withRole } from '@components'
-import { getUILocaleSection } from '@helpers'
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import { useLocaleStore } from '@store'
+import { getUILocaleSection, hasRole } from '@helpers'
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { useAuthStore, useLocaleStore } from '@store'
 import {
 	ArrowRight,
 	BadgeCheck,
@@ -63,7 +63,10 @@ const CRITERIA_TYPES = [{ key: 'fixed' }, { key: 'range' }] as const
 
 const Page = () => {
 	const locale = useLocaleStore((state) => state.locale)
+	const { user } = useAuthStore()
 	const t = getUILocaleSection(localeDictionary, locale)
+
+	const currentRole = user?.role ?? null
 
 	return (
 		<section className='mx-auto w-full max-w-6xl space-y-8 p-4 sm:p-6'>
@@ -206,17 +209,23 @@ const Page = () => {
 							</CardHeader>
 
 							<CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-								{group.items.map((routeKey) => (
-									<RouteCard
-										key={routeKey}
-										ctaLabel={t.open}
-										description={t.routes[routeKey].description}
-										href={ROUTES[routeKey].href}
-										icon={ROUTES[routeKey].icon}
-										roleLabel={t.roles[ROUTES[routeKey].role]}
-										title={t.routes[routeKey].title}
-									/>
-								))}
+								{group.items.map((routeKey) => {
+									const route = ROUTES[routeKey]
+									const disabled = !!currentRole && !hasRole(currentRole, route.role, true)
+
+									return (
+										<RouteCard
+											key={routeKey}
+											ctaLabel={t.open}
+											description={t.routes[routeKey].description}
+											disabled={disabled}
+											href={route.href}
+											icon={route.icon}
+											roleLabel={t.roles[route.role]}
+											title={t.routes[routeKey].title}
+										/>
+									)
+								})}
 							</CardContent>
 						</Card>
 					))}
@@ -276,38 +285,50 @@ const MiniCard: FC<IMiniCardProps> = ({ description, icon: Icon, title }) => {
 interface IRouteCardProps {
 	ctaLabel: string
 	description: string
+	disabled: boolean
 	href: string
 	icon: LucideIcon
 	roleLabel: string
 	title: string
 }
 
-const RouteCard: FC<IRouteCardProps> = ({ ctaLabel, description, href, icon: Icon, roleLabel, title }) => {
+const RouteCard: FC<IRouteCardProps> = ({ ctaLabel, description, disabled, href, icon: Icon, roleLabel, title }) => {
 	return (
-		<Link className='group block h-full' href={href}>
-			<Card className='h-full border-border/60 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md'>
-				<CardContent className='flex h-full flex-col p-5'>
-					<div className='flex items-start justify-between gap-3'>
-						<div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
-							<Icon className='h-5 w-5' />
-						</div>
-						<Badge className='shrink-0 rounded-full px-3 py-1 text-xs' variant='outline'>
-							{roleLabel}
-						</Badge>
+		<Card
+			className={`h-full border-border/60 ${disabled ? 'opacity-60' : 'transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md'}`}
+		>
+			<CardContent className='flex h-full flex-col p-5'>
+				<div className='flex items-start justify-between gap-3'>
+					<div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
+						<Icon className='h-5 w-5' />
 					</div>
+					<Badge className='shrink-0 rounded-full px-3 py-1 text-xs' variant='outline'>
+						{roleLabel}
+					</Badge>
+				</div>
 
-					<div className='mt-4 space-y-2'>
-						<h3 className='text-base font-semibold'>{title}</h3>
-						<p className='text-sm leading-6 text-muted-foreground'>{description}</p>
-					</div>
+				<div className='mt-4 space-y-2'>
+					<h3 className='text-base font-semibold'>{title}</h3>
+					<p className='text-sm leading-6 text-muted-foreground'>{description}</p>
+				</div>
 
-					<div className='mt-4 flex items-center gap-2 text-sm font-medium text-primary'>
-						<span>{ctaLabel}</span>
-						<ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
-					</div>
-				</CardContent>
-			</Card>
-		</Link>
+				<div className='mt-4'>
+					{disabled ? (
+						<Button disabled className='w-full justify-between' variant='outline'>
+							<span>{ctaLabel}</span>
+							<ArrowRight className='h-4 w-4' />
+						</Button>
+					) : (
+						<Button asChild className='group w-full justify-between' variant='outline'>
+							<Link href={href}>
+								<span>{ctaLabel}</span>
+								<ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
+							</Link>
+						</Button>
+					)}
+				</div>
+			</CardContent>
+		</Card>
 	)
 }
 
