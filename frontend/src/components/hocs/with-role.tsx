@@ -37,7 +37,7 @@ export function withRole<T extends object>(
 		return createElement(WrappedComponent, props)
 	}
 
-	WithRole.displayName = `withOnlyFor(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`
+	WithRole.displayName = `withRole(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`
 
 	return WithRole
 }

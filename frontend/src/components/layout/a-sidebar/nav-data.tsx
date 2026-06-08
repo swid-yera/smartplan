@@ -70,7 +70,7 @@ export const navMain: INav[] = [
 				id: 'rups-guides',
 				icon: Film,
 				titleKey: 'rupsGuides',
-				url: '/guides/rups',
+				url: '/rups/guides',
 				role: RoleEnum.TEACHER,
 			},
 			// methodist
@@ -141,6 +141,12 @@ export const navMain: INav[] = [
 				titleKey: 'kpiRating',
 				url: '/kpi/rating',
 				role: RoleEnum.METHODIST,
+			},
+			{
+				id: 'kpi-guides',
+				icon: Film,
+				titleKey: 'kpiGuides',
+				url: '/kpi/guides',
 			},
 		],
 	},
