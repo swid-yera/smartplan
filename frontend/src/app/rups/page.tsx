@@ -81,4 +81,4 @@ const Page: NextPage = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN], true)
+export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST], true)

@@ -128,4 +128,4 @@ const LanguageGenerationPage = () => {
 	)
 }
 
-export default withRole(LanguageGenerationPage, [RoleEnum.ADMIN], true)
+export default withRole(LanguageGenerationPage, [RoleEnum.TEACHER], true)

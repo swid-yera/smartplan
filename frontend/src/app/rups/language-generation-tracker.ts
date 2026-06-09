@@ -5,9 +5,11 @@ const readTrackedRups = (): string[] => {
 
 	try {
 		const raw = window.localStorage.getItem(RUP_LANGUAGE_GENERATION_TRACKER_KEY)
+
 		if (!raw) return []
 
 		const parsed = JSON.parse(raw)
+
 		if (!Array.isArray(parsed)) return []
 
 		return parsed
@@ -29,9 +31,11 @@ export const listTrackedLanguageGenerations = (): string[] => readTrackedRups()
 
 export const trackLanguageGeneration = (rupId: string) => {
 	const id = String(rupId).trim()
+
 	if (!id) return
 
 	const tracked = readTrackedRups()
+
 	if (tracked.includes(id)) return
 
 	writeTrackedRups([...tracked, id])
@@ -39,9 +43,11 @@ export const trackLanguageGeneration = (rupId: string) => {
 
 export const untrackLanguageGeneration = (rupId: string) => {
 	const id = String(rupId).trim()
+
 	if (!id) return
 
 	const tracked = readTrackedRups()
+
 	if (!tracked.length) return
 
 	writeTrackedRups(tracked.filter((trackedId) => trackedId !== id))
