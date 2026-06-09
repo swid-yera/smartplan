@@ -55,7 +55,6 @@ export interface IUser {
 	lastName: string
 	phone: string
 	departments?: IUserDepartment[]
-	deparments?: IUserDepartment[]
 
 	rups?: IRup[]
 	totalPoints?: number

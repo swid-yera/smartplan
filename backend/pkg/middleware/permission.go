@@ -10,7 +10,7 @@ import (
 )
 
 // RequirePermission aborts the request with 403 if the current user does not
-// have at least one of the requested effective permissions. ADMIN passes automatically.
+// have at least one of the requested effective permissions.
 func RequirePermission(codes ...service.PermissionCode) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userInterface, exists := c.Get(ContextUserKey)
@@ -22,11 +22,6 @@ func RequirePermission(codes ...service.PermissionCode) gin.HandlerFunc {
 		user, ok := userInterface.(*service.User)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "invalid user context"})
-			return
-		}
-
-		if user.Role == "ADMIN" {
-			c.Next()
 			return
 		}
 

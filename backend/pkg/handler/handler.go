@@ -19,6 +19,7 @@ type Router struct {
 	category              *CategoryHandler
 	statistics            *StatisticsHandler
 	groups                *GroupsHandler
+	departments           *DepartmentsHandler
 	lesson                *LessonHandler
 	ai                    *AIHandler
 	webhooks              *WebhooksHandler
@@ -35,6 +36,7 @@ func NewRouter(
 	category *CategoryHandler,
 	statistics *StatisticsHandler,
 	groups *GroupsHandler,
+	departments *DepartmentsHandler,
 	lesson *LessonHandler,
 	ai *AIHandler,
 	webhooks *WebhooksHandler,
@@ -51,6 +53,7 @@ func NewRouter(
 		statistics:            statistics,
 		webhooks:              webhooks,
 		groups:                groups,
+		departments:           departments,
 		lesson:                lesson,
 		ai:                    ai,
 		permissions:           permissions,
@@ -104,15 +107,15 @@ func (r *Router) Init() *gin.Engine {
 	{
 		// --- USER ---
 		protected.GET("/me", r.user.GetMe)
-		// список пользователей — только админ
+		// список пользователей — full permission holders
 		protected.GET("/users", middleware.RequirePermission(service.PermRUPFull, service.PermKPIFull), r.user.GetUsers)
-		protected.GET("/users/:keycloak_id", r.user.GetUserByKeycloakID)
+		protected.GET("/users/:keycloak_id", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.user.GetUserByKeycloakID)
 		protected.GET("/users/rating", r.user.GetUsersRating)
-		// нарушения — только методист и админ (роль уже проверяется внутри, но дублируем на уровне роутера)
+		// нарушения — KPI manage
 		protected.POST("/users/:id/violation", middleware.RequirePermission(service.PermKPIManage), r.user.CreateViolation)
 		protected.PUT("/users/:id/violation/:violation_id", middleware.RequirePermission(service.PermKPIManage), r.user.UpdateViolation)
 		protected.DELETE("/users/:id/violation/:violation_id", middleware.RequirePermission(service.PermKPIManage), r.user.DeleteViolation)
-		// штрафы — только методист и админ
+		// штрафы — KPI manage
 		protected.POST("/user/:teacher_id/penalty", middleware.RequirePermission(service.PermKPIManage), r.user.CreatePenalty)
 		protected.GET("/user/:teacher_id/penalty", middleware.RequirePermission(service.PermKPIManage), r.user.GetPenaltiesByTeacherID)
 		protected.GET("/user/:teacher_id/penalty/:penalty_id", middleware.RequirePermission(service.PermKPIManage), r.user.GetPenaltyByIDAndTeacherID)
@@ -197,7 +200,7 @@ func (r *Router) Init() *gin.Engine {
 			// удаление — право управления KPI
 			awards.DELETE("/:id", middleware.RequirePermission(service.PermKPIManage), r.award.DeleteAward)
 
-			// типы наград — только admin
+			// типы наград — KPI full
 			awardTypes := awards.Group("/types")
 			{
 				awardTypes.GET("", middleware.RequirePermission(service.PermKPIFull), r.award.GetAllAwardTypes)
@@ -214,7 +217,7 @@ func (r *Router) Init() *gin.Engine {
 			// чтение — право просмотра KPI
 			categories.GET("", middleware.RequirePermission(service.PermKPIView), r.category.GetCategories)
 			categories.GET("/:id", middleware.RequirePermission(service.PermKPIView), r.category.GetCategoryByID)
-			// изменение структуры категорий — только admin
+			// изменение структуры категорий — KPI full
 			categories.POST("", middleware.RequirePermission(service.PermKPIFull), r.category.CreateCategory)
 			categories.PUT("/:id", middleware.RequirePermission(service.PermKPIFull), r.category.UpdateCategory)
 			categories.DELETE("/:id", middleware.RequirePermission(service.PermKPIFull), r.category.DeleteCategory)
@@ -236,8 +239,17 @@ func (r *Router) Init() *gin.Engine {
 		{
 			// чтение групп — все роли
 			groups.GET("", r.groups.GetAllGroups)
-			// синхронизация с Keycloak — только admin
-			groups.POST("/sync", middleware.RequirePermission(service.PermRUPFull), r.groups.SyncGroups)
+			// синхронизация с Keycloak — full permission holders
+			groups.POST("/sync", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.groups.SyncGroups)
+		}
+
+		// --- DEPARTMENTS ---
+		if r.departments != nil {
+			departments := protected.Group("/departments")
+			{
+				departments.GET("", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.departments.GetAllDepartments)
+				departments.POST("/sync", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.departments.SyncDepartments)
+			}
 		}
 
 		// --- LESSONS ---
@@ -266,7 +278,7 @@ func (r *Router) Init() *gin.Engine {
 			lessons.GET("/:id/download", r.lesson.DownloadLesson)
 			lessons.GET("/:id/progress", r.lesson.GetLessonProgress)
 
-			// создание/редактирование/удаление уроков — только teacher и admin
+			// создание/редактирование/удаление уроков — RUP view/manage
 			lessons.POST("", middleware.RequirePermission(service.PermRUPView), r.lesson.CreateLesson)
 			lessons.POST("/generate-lesson", middleware.RequirePermission(service.PermRUPView), r.lesson.GenerateLesson)
 			lessons.PUT("/:id", middleware.RequirePermission(service.PermRUPView), r.lesson.UpdateLesson)
@@ -274,7 +286,7 @@ func (r *Router) Init() *gin.Engine {
 			lessons.POST("/:id/progress", middleware.RequirePermission(service.PermRUPView), r.lesson.RecordLessonProgress)
 		}
 
-		// --- AI (создание РУП через AI) — только teacher и admin ---
+		// --- AI (создание РУП через AI) — RUP manage ---
 		if r.ai != nil {
 			ai := protected.Group("/ai", middleware.RequirePermission(service.PermRUPManage))
 			{
@@ -289,14 +301,14 @@ func (r *Router) Init() *gin.Engine {
 		if r.permissions != nil {
 			perms := protected.Group("/permissions")
 			{
-				// список SPECIAL-пользователей с правами — только admin
-				perms.GET("/specials", middleware.RequireRole("ADMIN"), r.permissions.ListSpecialUsers)
-				// выдача/обновление прав — только admin
-				perms.PUT("/:user_id", middleware.RequireRole("ADMIN"), r.permissions.SetPermissions)
-				// просмотр прав — admin или сам пользователь (доп. проверка внутри хендлера)
-				perms.GET("/:user_id", r.permissions.GetPermissions)
-				// отзыв прав — только admin
-				perms.DELETE("/:user_id", middleware.RequireRole("ADMIN"), r.permissions.RevokePermissions)
+				// список пользователей с правами — full permission holders
+				perms.GET("/specials", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.permissions.ListSpecialUsers)
+				// выдача/обновление прав — full permission holders
+				perms.PUT("/:user_id", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.permissions.SetPermissions)
+				// просмотр прав — full permission holders
+				perms.GET("/:user_id", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.permissions.GetPermissions)
+				// отзыв прав — full permission holders
+				perms.DELETE("/:user_id", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.permissions.RevokePermissions)
 			}
 		}
 	}

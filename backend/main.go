@@ -102,7 +102,9 @@ func main() {
 
 	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
-	syncGuard := service.NewSyncGuard(1 * time.Minute)
+	departmentsSyncService := kcservice.NewDepartmentsSyncService(kcSyncClient, db, kcCfg)
+	groupsSyncGuard := service.NewSyncGuard(1 * time.Minute)
+	departmentsSyncGuard := service.NewSyncGuard(1 * time.Minute)
 
 	permissionService := service.NewPermissionService(permissionsRepo, usersRepo)
 
@@ -127,7 +129,8 @@ func main() {
 	awardHandler := handler.NewAwardHandler(awardService)
 	categoryHandler := handler.NewCategoryHandler(awardService)
 	statisticsHandler := handler.NewStatisticsHandler(userService)
-	groupsHandler := handler.NewGroupsHandler(groupsSyncService, syncGuard)
+	groupsHandler := handler.NewGroupsHandler(groupsSyncService, groupsSyncGuard)
+	departmentsHandler := handler.NewDepartmentsHandler(awardService, departmentsSyncService, departmentsSyncGuard)
 	lessonHandler := handler.NewLessonHandler(lessonService, log)
 	aiHandler := handler.NewAIHandler(aiService, log)
 	permissionHandler := handler.NewPermissionHandler(permissionService)
@@ -144,6 +147,7 @@ func main() {
 		categoryHandler,
 		statisticsHandler,
 		groupsHandler,
+		departmentsHandler,
 		lessonHandler,
 		aiHandler,
 		nil,

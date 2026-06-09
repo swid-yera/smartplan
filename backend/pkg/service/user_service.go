@@ -621,33 +621,39 @@ func (s *userService) resolveEffectivePermissions(
 	userID uuid.UUID,
 	departments []UserDepartment,
 ) ([]PermissionCode, error) {
+	basePermissions := basePermissionsForRole(role, departments)
+
+	if s.permissions == nil {
+		return basePermissions, nil
+	}
+
+	row, err := s.permissions.GetUserPermissions(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return basePermissions, nil
+		}
+		return nil, err
+	}
+
+	return mergePermissionCodes(basePermissions, row.Permissions), nil
+}
+
+func basePermissionsForRole(role storage.UserRole, departments []UserDepartment) []PermissionCode {
 	switch role {
 	case storage.UserRoleADMIN:
-		return append([]PermissionCode(nil), AllPermissionCodes...), nil
+		return []PermissionCode{PermRUPFull, PermKPIFull}
 	case storage.UserRoleMETHODIST:
-		return []PermissionCode{PermRUPManage, PermKPIManage}, nil
+		return []PermissionCode{PermRUPManage, PermKPIManage}
 	case storage.UserRoleTEACHER:
 		perms := []PermissionCode{PermRUPView}
 		if len(departments) > 0 {
 			perms = append(perms, PermKPIView)
 		}
-		return perms, nil
+		return perms
 	case storage.UserRoleSPECIAL:
-		if s.permissions == nil {
-			return defaultSpecialPermissionCodes(), nil
-		}
-
-		row, err := s.permissions.GetUserPermissions(ctx, userID)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return defaultSpecialPermissionCodes(), nil
-			}
-			return nil, err
-		}
-
-		return mergePermissionCodes(defaultSpecialPermissionCodes(), row.Permissions), nil
+		return defaultSpecialPermissionCodes()
 	default:
-		return []PermissionCode{}, nil
+		return []PermissionCode{}
 	}
 }
 

@@ -1,7 +1,5 @@
-import Link from 'next/link'
-
 import { getUILocaleSection } from '@helpers'
-import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle } from '@shadcn'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { RefreshCw } from 'lucide-react'
 
@@ -30,11 +28,6 @@ export const SyncGroupsCard = ({ onSync, loading }: SyncGroupsCardProps) => {
 					{loading ? t.syncing : t.sync}
 				</Button>
 			</CardContent>
-			<CardFooter>
-				<Button variant='outline'>
-					<Link href='/groups'>{t.viewGroups}</Link>
-				</Button>
-			</CardFooter>
 		</Card>
 	)
 }

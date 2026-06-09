@@ -5,9 +5,6 @@ import type { DetailedHTMLProps, FC, HTMLAttributes } from 'react'
 import { normalizeUserRole } from '@helpers'
 import { services } from '@services'
 import {
-	Avatar,
-	AvatarFallback,
-	AvatarImage,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuGroup,
@@ -35,6 +32,7 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = sidebarLocale[locale] ?? sidebarLocale.ru
 	const logoutLabel = t.logout
+	const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username
 
 	return (
 		<SidebarMenu className={className} {...props}>
@@ -42,23 +40,21 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<SidebarMenuButton
-							className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+							className='w-full justify-between gap-3 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-0'
 							size='lg'
+							tooltip={fullName}
 						>
-							<Avatar className='h-8 w-8 rounded-lg'>
-								<AvatarImage alt={user.username} src='https://avatars.githubusercontent.com/u/1486366' />
-								<AvatarFallback className='rounded-lg'>{user.username}</AvatarFallback>
-							</Avatar>
+							<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
+								<User className='h-5 w-5' />
+							</div>
 
-							<div className='grid flex-1 text-left text-sm leading-tight'>
-								<span className='truncate font-medium'>
-									{user.firstName} {user.lastName}
-								</span>
+							<div className='grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden'>
+								<span className='truncate font-medium'>{fullName}</span>
 								<span className='truncate text-xs text-muted-foreground'>
 									{normalizeUserRole(user.role, locale)}
 								</span>
 							</div>
-							<ChevronsUpDown className='ml-auto size-4' />
+							<ChevronsUpDown className='ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden' />
 						</SidebarMenuButton>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
@@ -69,10 +65,9 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 					>
 						<DropdownMenuLabel className='p-0 font-normal'>
 							<div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
-								<Avatar className='h-8 w-8 rounded-lg'>
-									<AvatarImage alt={user.username} src='https://avatars.githubusercontent.com/u/1486366' />
-									<AvatarFallback className='rounded-lg'>{user.username}</AvatarFallback>
-								</Avatar>
+								<div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary'>
+									<User className='h-5 w-5' />
+								</div>
 								<div className='grid flex-1 text-left text-sm leading-tight'>
 									<span className='truncate font-medium'>{user.firstName}</span>
 									<span className='truncate text-xs'>{user.lastName}</span>
@@ -81,7 +76,7 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
-							<DropdownMenuItem asChild>
+							<DropdownMenuItem>
 								<User />
 								{user.username}
 							</DropdownMenuItem>

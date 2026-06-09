@@ -6,13 +6,12 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { PageTitle, Pagination, withNavAccess } from '@components'
-import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import { getUILocaleSection, hasAnyPermission, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
-import { ShieldCheck } from 'lucide-react'
+import { PermissionCodeEnum } from '@types'
 
 import localeDictionary from './locale.json'
 import { UsersFilter } from './users-filter'
@@ -27,7 +26,8 @@ function Page() {
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
 	const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false)
-	const isAdmin = user?.role === RoleEnum.ADMIN
+	const [permissionsDialogUserId, setPermissionsDialogUserId] = useState<string | undefined>()
+	const canManageUsers = hasAnyPermission(user, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL])
 
 	const { currentPage, itemsPerPage, search } = useMemo(() => {
 		const currentPage = Number(searchParams.get('page') || '1')
@@ -76,22 +76,11 @@ function Page() {
 	const totalUsers = usersData?.meta.total || 0
 	const totalPages = usersData?.meta.pages || 1
 	const paginatedUsers = usersData?.data || []
+	const defaultPermissionsDialogUserId = permissionsDialogUserId ?? paginatedUsers[0]?.keycloakId
 
 	return (
 		<div className='w-full mx-auto py-10 px-2 md:px-4 space-y-8'>
-			<PageTitle
-				actions={
-					isAdmin ? (
-						<Button onClick={() => setIsPermissionsDialogOpen(true)}>
-							<ShieldCheck className='mr-2 h-4 w-4' />
-							{t.page.permissionsButton}
-						</Button>
-					) : undefined
-				}
-				description={t.page.description}
-			>
-				{t.page.title}
-			</PageTitle>
+			<PageTitle description={t.page.description}>{t.page.title}</PageTitle>
 
 			<Card>
 				<CardHeader>
@@ -110,7 +99,14 @@ function Page() {
 						onSearchSubmit={(value) => handleUrlUpdate({ q: value || null, page: 1 })}
 					/>
 
-					<UsersTable isLoading={isLoading || authLoading || isFetching || isRefetching} users={paginatedUsers} />
+					<UsersTable
+						isLoading={isLoading || authLoading || isFetching || isRefetching}
+						users={paginatedUsers}
+						onManagePermissions={(selectedUser) => {
+							setPermissionsDialogUserId(selectedUser.keycloakId)
+							setIsPermissionsDialogOpen(true)
+						}}
+					/>
 
 					<Pagination
 						page={currentPage}
@@ -122,8 +118,17 @@ function Page() {
 				</CardContent>
 			</Card>
 
-			{isAdmin ? (
-				<UsersPermissionsDialog open={isPermissionsDialogOpen} onOpenChange={setIsPermissionsDialogOpen} />
+			{canManageUsers ? (
+				<UsersPermissionsDialog
+					defaultUserId={defaultPermissionsDialogUserId}
+					open={isPermissionsDialogOpen}
+					onOpenChange={(open) => {
+						setIsPermissionsDialogOpen(open)
+						if (!open) {
+							setPermissionsDialogUserId(undefined)
+						}
+					}}
+				/>
 			) : null}
 		</div>
 	)

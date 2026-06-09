@@ -68,7 +68,7 @@ export const RatingStatsClient = ({ locale, teachers, t }: IProps) => {
 		keycloakId: teacher.keycloakId,
 		name: `${teacher.firstName} ${teacher.lastName}`.trim(),
 		value: teacher.totalPoints ?? 0,
-		departments: (teacher.departments ?? teacher.deparments ?? [])
+		departments: (teacher.departments ?? [])
 			.map((department: IUserDepartment) => getLocaleText(department.name, locale))
 			.filter(Boolean),
 	}))
@@ -133,7 +133,7 @@ export const RatingStatsClient = ({ locale, teachers, t }: IProps) => {
 						</TableHeader>
 						<TableBody>
 							{sortedTeachers.map((teacher, index) => {
-								const departmentLabel = (teacher.departments ?? teacher.deparments ?? [])
+								const departmentLabel = (teacher.departments ?? [])
 									.map((department: IUserDepartment) => getLocaleText(department.name, locale))
 									.filter(Boolean)
 									.join(', ')

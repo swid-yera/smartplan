@@ -1,6 +1,7 @@
 import { AiService } from './ai.service'
 import { AuthService } from './auth.service'
 import { AwardService } from './award.service'
+import { DepartmentService } from './department.service'
 import { CategoriesService } from './categories.service'
 import { GroupService } from './group.service'
 import { HikService } from './hik.service'
@@ -17,6 +18,7 @@ export const services = {
 	user: new UserService(),
 	rup: new RupService(),
 	group: new GroupService(),
+	department: new DepartmentService(),
 	award: new AwardService(),
 	categories: new CategoriesService(),
 	lesson: new LessonService(),

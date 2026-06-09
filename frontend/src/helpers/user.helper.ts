@@ -94,6 +94,33 @@ export const hasAnyPermission = (
 	requiredPermissions: PermissionCodeEnum[],
 ): boolean => requiredPermissions.some((permission) => hasPermission(user, permission))
 
+const permissionLabelsByLocale: Record<Locale, Record<PermissionCodeEnum, string>> = {
+	ru: {
+		[PermissionCodeEnum.RUP_VIEW]: 'РУП: создавать',
+		[PermissionCodeEnum.RUP_MANAGE]: 'РУП: оценивать',
+		[PermissionCodeEnum.RUP_FULL]: 'РУП: администрировать',
+		[PermissionCodeEnum.KPI_VIEW]: 'KPI: создавать',
+		[PermissionCodeEnum.KPI_MANAGE]: 'KPI: оценивать',
+		[PermissionCodeEnum.KPI_FULL]: 'KPI: администрировать',
+	},
+	kk: {
+		[PermissionCodeEnum.RUP_VIEW]: 'РУП: құру',
+		[PermissionCodeEnum.RUP_MANAGE]: 'РУП: бағалау',
+		[PermissionCodeEnum.RUP_FULL]: 'РУП: әкімшілеу',
+		[PermissionCodeEnum.KPI_VIEW]: 'KPI: құру',
+		[PermissionCodeEnum.KPI_MANAGE]: 'KPI: бағалау',
+		[PermissionCodeEnum.KPI_FULL]: 'KPI: әкімшілеу',
+	},
+}
+
+export const getPermissionLabels = (locale: Locale = 'ru'): Record<PermissionCodeEnum, string> => {
+	return permissionLabelsByLocale[locale] || permissionLabelsByLocale.ru
+}
+
+export const normalizePermissionCode = (code: PermissionCodeEnum, locale: Locale = 'ru'): string => {
+	return getPermissionLabels(locale)[code]
+}
+
 // normalize user role
 const userRoleLabelsByLocale: Record<Locale, Record<RoleEnum, string>> = {
 	ru: {

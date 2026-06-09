@@ -8,6 +8,7 @@ import { PageTitle, withNavAccess } from '@components'
 import { getUILocaleSection, hasPermission } from '@helpers'
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
+import { PermissionCodeEnum } from '@types'
 import {
 	ArrowRight,
 	BadgeCheck,
@@ -25,7 +26,6 @@ import {
 	Target,
 	Users,
 } from 'lucide-react'
-import { PermissionCodeEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
@@ -301,7 +301,7 @@ const RouteCard: FC<IRouteCardProps> = ({ ctaLabel, description, disabled, href,
 		<Card
 			className={`h-full border-border/60 ${disabled ? 'opacity-60' : 'transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md'}`}
 		>
-			<CardContent className='flex h-full flex-col p-5'>
+			<CardContent className='h-full p-5'>
 				<div className='flex items-start justify-between gap-3'>
 					<div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
 						<Icon className='h-5 w-5' />
@@ -315,23 +315,23 @@ const RouteCard: FC<IRouteCardProps> = ({ ctaLabel, description, disabled, href,
 					<h3 className='text-base font-semibold'>{title}</h3>
 					<p className='text-sm leading-6 text-muted-foreground'>{description}</p>
 				</div>
-
-				<div className='mt-4'>
-					{disabled ? (
-						<Button disabled className='w-full justify-between' variant='outline'>
-							<span>{ctaLabel}</span>
-							<ArrowRight className='h-4 w-4' />
-						</Button>
-					) : (
-						<Button asChild className='group w-full justify-between' variant='outline'>
-							<Link href={href}>
-								<span>{ctaLabel}</span>
-								<ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
-							</Link>
-						</Button>
-					)}
-				</div>
 			</CardContent>
+
+			<div className='mt-4'>
+				{disabled ? (
+					<Button disabled className='w-full justify-between' variant='outline'>
+						<span>{ctaLabel}</span>
+						<ArrowRight className='h-4 w-4' />
+					</Button>
+				) : (
+					<Button asChild className='group w-full justify-between' variant='outline'>
+						<Link href={href}>
+							<span>{ctaLabel}</span>
+							<ArrowRight className='h-4 w-4 transition-transform group-hover:translate-x-0.5' />
+						</Link>
+					</Button>
+				)}
+			</div>
 		</Card>
 	)
 }

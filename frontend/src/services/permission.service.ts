@@ -1,6 +1,6 @@
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
-import { type PermissionCodeEnum } from '@types'
+import { type IUser, type PermissionCodeEnum } from '@types'
 
 export interface ISpecialUserWithPermissions {
 	keycloakId: string
@@ -21,17 +21,6 @@ export interface IUserPermissionsPayload {
 }
 
 export class PermissionService {
-	getSpecialUsersOptions = () => {
-		return queryOptions<ISpecialUserWithPermissions[]>({
-			queryKey: ['permissions', 'specials'],
-			queryFn: async () => {
-				const { data } = await api.get<ISpecialUserWithPermissions[]>('/permissions/specials')
-
-				return data ?? []
-			},
-		})
-	}
-
 	getPermissionsOptions = (userId: string) => {
 		return queryOptions<IUserPermissionsPayload>({
 			queryKey: ['permissions', userId],
@@ -53,8 +42,13 @@ export class PermissionService {
 			mutationFn: (payload: ISetPermissionsPayload) =>
 				api.put<IUserPermissionsPayload>(`/permissions/${userId}`, payload).then((response) => response.data),
 			onSuccess: () => {
-				queryClient.invalidateQueries({ queryKey: ['permissions', 'specials'] })
 				queryClient.invalidateQueries({ queryKey: ['permissions', userId] })
+				queryClient.invalidateQueries({ queryKey: ['users'] })
+				queryClient.invalidateQueries({ queryKey: ['user', userId] })
+				const me = queryClient.getQueryData<IUser>(['me'])
+				if (me?.keycloakId === userId) {
+					queryClient.invalidateQueries({ queryKey: ['me'] })
+				}
 			},
 		})
 	}
@@ -67,8 +61,13 @@ export class PermissionService {
 				await api.delete(`/permissions/${userId}`)
 			},
 			onSuccess: () => {
-				queryClient.invalidateQueries({ queryKey: ['permissions', 'specials'] })
 				queryClient.invalidateQueries({ queryKey: ['permissions', userId] })
+				queryClient.invalidateQueries({ queryKey: ['users'] })
+				queryClient.invalidateQueries({ queryKey: ['user', userId] })
+				const me = queryClient.getQueryData<IUser>(['me'])
+				if (me?.keycloakId === userId) {
+					queryClient.invalidateQueries({ queryKey: ['me'] })
+				}
 			},
 		})
 	}

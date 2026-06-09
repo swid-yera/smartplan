@@ -103,7 +103,7 @@ const Page = () => {
 						<TableBody>
 							{sortedTeachers.map((teacher, index) => {
 								const color = getTeacherColor(index)
-								const departmentLabel = (teacher.departments ?? teacher.deparments ?? [])
+								const departmentLabel = (teacher.departments ?? [])
 									.map((item: IUserDepartment) => getLocaleText(item.name, locale))
 									.filter(Boolean)
 									.join(', ')

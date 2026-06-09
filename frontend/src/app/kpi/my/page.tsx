@@ -71,9 +71,9 @@ const Page = () => {
 		<section className='mx-auto w-full max-w-6xl space-y-6 p-4'>
 			<SectionTitle description={t.profileDescription} title={t.profileTitle} />
 
-			<UserCard showTotalPoints showViolation={false} user={user} />
-
 			<div className='space-y-4'>
+				<UserCard showTotalPoints showViolation={false} user={user} />
+
 				<AwardFilterCard compact className='mb-4' />
 
 				<AwardsCard

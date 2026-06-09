@@ -19,6 +19,7 @@ import {
 	Ribbon,
 	ShieldUser,
 	Users,
+	UsersRound,
 } from 'lucide-react'
 
 export interface INav {
@@ -143,12 +144,6 @@ export const navMain: INav[] = [
 			},
 		],
 	},
-	// {
-	// 	id: 'groups',
-	// 	titleKey: 'groups',
-	// 	url: '/groups',
-	// 	icon: Group,
-	// },
 	{
 		id: 'admin',
 		icon: ShieldUser,
@@ -165,10 +160,17 @@ export const navMain: INav[] = [
 				permissions: [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL],
 			},
 			{
-				id: 'settings',
-				titleKey: 'settings',
-				url: '/settings',
+				id: 'groups',
+				titleKey: 'groups',
+				url: '/groups',
 				icon: Group,
+				permissions: [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL],
+			},
+			{
+				id: 'departments',
+				titleKey: 'departments',
+				url: '/departments',
+				icon: UsersRound,
 				permissions: [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL],
 			},
 			{
