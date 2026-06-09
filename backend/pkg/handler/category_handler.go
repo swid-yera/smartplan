@@ -30,7 +30,7 @@ func (h *CategoryHandler) GetCategories(c *gin.Context) {
 func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid category ID")})
 		return
 	}
 
@@ -45,7 +45,7 @@ func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	var req service.AwardCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body"), "details": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -60,13 +60,13 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid category ID")})
 		return
 	}
 
 	var req service.AwardCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body"), "details": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -81,7 +81,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid category ID")})
 		return
 	}
 
@@ -95,8 +95,9 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 func writeServiceError(c *gin.Context, err error) {
 	var httpErr *service.HTTPStatusError
 	if errors.As(err, &httpErr) {
-		c.JSON(httpErr.StatusCode, gin.H{"error": httpErr.Message})
+		c.JSON(httpErr.StatusCode, gin.H{"error": service.TranslateAPIErrorMessage(httpErr.Message)})
 		return
 	}
-	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 }
+

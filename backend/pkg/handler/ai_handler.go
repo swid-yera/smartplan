@@ -26,8 +26,8 @@ func (h *AIHandler) GenerateRupMeta(c *gin.Context) {
 	var req service.GenerateRupMetaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -36,8 +36,8 @@ func (h *AIHandler) GenerateRupMeta(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to generate rup meta")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to generate rup meta",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to generate rup meta"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -49,8 +49,8 @@ func (h *AIHandler) GenerateResources(c *gin.Context) {
 	var req service.GenerateResourcesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -59,8 +59,8 @@ func (h *AIHandler) GenerateResources(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to generate resources")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to generate resources",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to generate resources"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -72,8 +72,8 @@ func (h *AIHandler) GenerateDisciplines(c *gin.Context) {
 	var req service.GenerateDisciplinesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -82,8 +82,8 @@ func (h *AIHandler) GenerateDisciplines(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to generate disciplines")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to generate disciplines",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to generate disciplines"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -95,8 +95,8 @@ func (h *AIHandler) GenerateTopicsForDiscipline(c *gin.Context) {
 	var req service.GenerateTopicsForDisciplineRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -105,11 +105,12 @@ func (h *AIHandler) GenerateTopicsForDiscipline(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to generate topics for discipline")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to generate topics for discipline",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to generate topics for discipline"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, result)
 }
+

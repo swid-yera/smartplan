@@ -26,7 +26,7 @@ func NewDepartmentsHandler(awardService service.AwardServiceInterface, syncSvc *
 func (h *DepartmentsHandler) GetAllDepartments(c *gin.Context) {
 	departments, err := h.awardService.GetAwardDepartmentsStats(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -42,7 +42,7 @@ func (h *DepartmentsHandler) SyncDepartments(c *gin.Context) {
 
 	result, err := h.syncSvc.SyncDepartments(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -52,3 +52,4 @@ func (h *DepartmentsHandler) SyncDepartments(c *gin.Context) {
 		"result":  result,
 	})
 }
+

@@ -128,12 +128,12 @@ func (r *Router) Init() *gin.Engine {
 			rups.GET("", middleware.RequirePermission(service.PermRUPView), func(c *gin.Context) {
 				userInterface, exists := c.Get(middleware.ContextUserKey)
 				if !exists {
-					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+					c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 					return
 				}
 				currentUser, ok := userInterface.(*service.User)
 				if !ok {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+					c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 					return
 				}
 				if strings.EqualFold(currentUser.Role, "TEACHER") {
@@ -172,12 +172,12 @@ func (r *Router) Init() *gin.Engine {
 			awards.GET("", middleware.RequirePermission(service.PermKPIView), func(c *gin.Context) {
 				userInterface, exists := c.Get(middleware.ContextUserKey)
 				if !exists {
-					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+					c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 					return
 				}
 				currentUser, ok := userInterface.(*service.User)
 				if !ok {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+					c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 					return
 				}
 				if strings.EqualFold(currentUser.Role, "TEACHER") {
@@ -259,12 +259,12 @@ func (r *Router) Init() *gin.Engine {
 			lessons.GET("", func(c *gin.Context) {
 				userInterface, exists := c.Get(middleware.ContextUserKey)
 				if !exists {
-					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+					c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 					return
 				}
 				currentUser, ok := userInterface.(*service.User)
 				if !ok {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+					c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 					return
 				}
 				if strings.EqualFold(currentUser.Role, "TEACHER") {
@@ -315,3 +315,4 @@ func (r *Router) Init() *gin.Engine {
 
 	return engine
 }
+

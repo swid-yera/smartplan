@@ -122,15 +122,15 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		if err != nil {
 			a.log.WithField("Cookie read error:", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "Not authenticated",
-				"details": "Cookie read error",
+				"error": service.TranslateAPIErrorMessage("Not authenticated"),
+				"details": service.TranslateAPIErrorMessage("Cookie read error"),
 			})
 			return
 		}
 		if sid == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "Not authenticated",
-				"details": "Empty session ID",
+				"error": service.TranslateAPIErrorMessage("Not authenticated"),
+				"details": service.TranslateAPIErrorMessage("Empty session ID"),
 			})
 			return
 		}
@@ -145,16 +145,16 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		if err != nil {
 			a.log.WithError(err).WithField("Redis error for session", sessionKey)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "Session not found",
-				"details": "Redis error",
+				"error": service.TranslateAPIErrorMessage("Session not found"),
+				"details": service.TranslateAPIErrorMessage("Redis error"),
 			})
 			return
 		}
 		if len(sessionData) == 0 {
 			a.log.WithField("No session data found for key:", sessionKey)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "Session not found",
-				"details": "Empty session data",
+				"error": service.TranslateAPIErrorMessage("Session not found"),
+				"details": service.TranslateAPIErrorMessage("Empty session data"),
 			})
 			return
 		}
@@ -166,8 +166,8 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		if !ok || accessToken == "" {
 			a.log.WithField("No access token in session for key:", sessionKey)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "Invalid session",
-				"details": "No access token",
+				"error": service.TranslateAPIErrorMessage("Invalid session"),
+				"details": service.TranslateAPIErrorMessage("No access token"),
 			})
 			return
 		}
@@ -178,8 +178,8 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		if err != nil {
 			a.log.WithField("Access token parsing error:", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "Invalid access token",
-				"details": err.Error(),
+				"error": service.TranslateAPIErrorMessage("Invalid access token"),
+				"details": service.TranslateAPIErrorMessage(err.Error()),
 			})
 			return
 		}
@@ -187,7 +187,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		if !token.Valid {
 			a.log.Error("Access token validation failed")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "Access token validation failed",
+				"error": service.TranslateAPIErrorMessage("Access token validation failed"),
 			})
 			return
 		}
@@ -196,7 +196,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid access token claims",
+				"error": service.TranslateAPIErrorMessage("Invalid access token claims"),
 			})
 			return
 		}
@@ -205,7 +205,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		if iss, ok := claims["iss"].(string); !ok || iss != a.issuer {
 			a.log.WithField("Invalid issuer: expected", a.issuer).WithField(", got", claims["iss"])
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid token issuer",
+				"error": service.TranslateAPIErrorMessage("Invalid token issuer"),
 			})
 			return
 		}
@@ -215,7 +215,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		if !ok || azp != a.config.KeycloakClientID {
 			a.log.WithField("Invalid azp: expected", a.config.KeycloakClientID).WithField(", got", claims["azp"])
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid authorized party (azp)",
+				"error": service.TranslateAPIErrorMessage("Invalid authorized party (azp)"),
 			})
 			return
 		}
@@ -225,7 +225,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 			if time.Now().Unix() > int64(exp) {
 				a.log.Error("Access token expired")
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error": "Access token expired",
+					"error": service.TranslateAPIErrorMessage("Access token expired"),
 				})
 				return
 			}
@@ -235,7 +235,7 @@ func (a *AuthMiddleware) ValidateSession() gin.HandlerFunc {
 		sub, ok := claims["sub"].(string)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid subject in access token",
+				"error": service.TranslateAPIErrorMessage("Invalid subject in access token"),
 			})
 			return
 		}
@@ -274,7 +274,7 @@ func (a *AuthMiddleware) logout(c *gin.Context, sid string) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired"})
+	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("Session expired")})
 }
 
 func SessionAuth(userService service.UserService) gin.HandlerFunc {
@@ -282,7 +282,7 @@ func SessionAuth(userService service.UserService) gin.HandlerFunc {
 		sid, err := c.Cookie("sid")
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "no session",
+				"error": service.TranslateAPIErrorMessage("no session"),
 			})
 			return
 		}
@@ -290,7 +290,7 @@ func SessionAuth(userService service.UserService) gin.HandlerFunc {
 		sessionID, err := uuid.Parse(sid)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error": "invalid session",
+				"error": service.TranslateAPIErrorMessage("invalid session"),
 			})
 			return
 		}
@@ -298,7 +298,7 @@ func SessionAuth(userService service.UserService) gin.HandlerFunc {
 		user, err := userService.GetUserBySessionID(c.Request.Context(), sessionID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "session expired or invalid",
+				"error": service.TranslateAPIErrorMessage("session expired or invalid"),
 			})
 			return
 		}
@@ -313,18 +313,18 @@ func AuthRequired(kc *keycloak.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		h := c.GetHeader("Authorization")
 		if h == "" || !strings.HasPrefix(strings.ToLower(h), "bearer ") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing bearer token"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("missing bearer token")})
 			return
 		}
 		token := strings.TrimSpace(h[len("Bearer "):])
 
 		res, err := kc.IntrospectToken(c.Request.Context(), token)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token introspect failed"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("token introspect failed")})
 			return
 		}
 		if res == nil || res.Active == nil || !*res.Active {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token inactive"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("token inactive")})
 			return
 		}
 
@@ -332,3 +332,4 @@ func AuthRequired(kc *keycloak.Client) gin.HandlerFunc {
 		c.Next()
 	}
 }
+

@@ -15,13 +15,13 @@ func RequirePermission(codes ...service.PermissionCode) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userInterface, exists := c.Get(ContextUserKey)
 		if !exists {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("not authenticated")})
 			return
 		}
 
 		user, ok := userInterface.(*service.User)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "invalid user context"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("invalid user context")})
 			return
 		}
 
@@ -33,12 +33,12 @@ func RequirePermission(codes ...service.PermissionCode) gin.HandlerFunc {
 		}
 
 		if len(codes) == 0 {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing permission"})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden: missing permission")})
 			return
 		}
 
 		if len(codes) == 1 {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing permission " + string(codes[0])})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden: missing permission ") + string(codes[0])})
 			return
 		}
 
@@ -49,13 +49,14 @@ func RequirePermission(codes ...service.PermissionCode) gin.HandlerFunc {
 
 		if len(missing) == 2 {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "forbidden: missing permission " + missing[0] + " or " + missing[1],
+				"error": service.TranslateAPIErrorMessage("forbidden: missing permission ") + missing[0] + " or " + missing[1],
 			})
 			return
 		}
 
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-			"error": "forbidden: missing one of permissions " + strings.Join(missing, ", "),
+			"error": service.TranslateAPIErrorMessage("forbidden: missing one of permissions ") + strings.Join(missing, ", "),
 		})
 	}
 }
+

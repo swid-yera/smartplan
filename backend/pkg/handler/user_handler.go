@@ -39,7 +39,7 @@ func (h *UserHandler) GetMe(c *gin.Context) {
 	user, ok := c.Get(middleware.ContextUserKey)
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "user not found in context",
+			"error": service.TranslateAPIErrorMessage("user not found in context"),
 		})
 		return
 	}
@@ -67,7 +67,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	sort, err := parseSortQuery(c, "sort", "desc")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "sort must be 'asc' or 'desc'",
+			"error": service.TranslateAPIErrorMessage("sort must be 'asc' or 'desc'"),
 		})
 		return
 	}
@@ -77,7 +77,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 		parsed, err := uuid.Parse(raw)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "invalid departmentId",
+				"error": service.TranslateAPIErrorMessage("invalid departmentId"),
 			})
 			return
 		}
@@ -94,7 +94,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -122,7 +122,7 @@ func (h *UserHandler) GetUsersRating(c *gin.Context) {
 	sort, err := parseSortQuery(c, "sort", "desc")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "sort must be 'asc' or 'desc'",
+			"error": service.TranslateAPIErrorMessage("sort must be 'asc' or 'desc'"),
 		})
 		return
 	}
@@ -136,7 +136,7 @@ func (h *UserHandler) GetUsersRating(c *gin.Context) {
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -148,7 +148,7 @@ func (h *UserHandler) GetUserByKeycloakID(c *gin.Context) {
 	keycloakIDStr := c.Param("keycloak_id")
 	if keycloakIDStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "keycloak_id is required",
+			"error": service.TranslateAPIErrorMessage("keycloak_id is required"),
 		})
 		return
 	}
@@ -156,7 +156,7 @@ func (h *UserHandler) GetUserByKeycloakID(c *gin.Context) {
 	keycloakID, err := uuid.Parse(keycloakIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid keycloak_id",
+			"error": service.TranslateAPIErrorMessage("invalid keycloak_id"),
 		})
 		return
 	}
@@ -167,7 +167,7 @@ func (h *UserHandler) GetUserByKeycloakID(c *gin.Context) {
 	)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "user not found",
+			"error": service.TranslateAPIErrorMessage("user not found"),
 		})
 		return
 	}
@@ -178,25 +178,25 @@ func (h *UserHandler) GetUserByKeycloakID(c *gin.Context) {
 func (h *UserHandler) CreatePenalty(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	teacherID, err := uuid.Parse(c.Param("teacher_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid teacher_id")})
 		return
 	}
 
 	var req CreatePenaltyRequest
 	if err = c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
 		return
 	}
 
@@ -218,7 +218,7 @@ func (h *UserHandler) CreatePenalty(c *gin.Context) {
 func (h *UserHandler) GetPenaltiesByTeacherID(c *gin.Context) {
 	teacherID, err := uuid.Parse(c.Param("teacher_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid teacher_id")})
 		return
 	}
 
@@ -234,20 +234,20 @@ func (h *UserHandler) GetPenaltiesByTeacherID(c *gin.Context) {
 func (h *UserHandler) GetPenaltyByIDAndTeacherID(c *gin.Context) {
 	teacherID, err := uuid.Parse(c.Param("teacher_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid teacher_id")})
 		return
 	}
 
 	penaltyID, err := uuid.Parse(c.Param("penalty_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid penalty_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid penalty_id")})
 		return
 	}
 
 	penalty, err := h.userService.GetPenaltyByIDAndTeacherID(c.Request.Context(), penaltyID, teacherID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "penalty not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("penalty not found")})
 			return
 		}
 		writeUserServiceError(c, err)
@@ -260,31 +260,31 @@ func (h *UserHandler) GetPenaltyByIDAndTeacherID(c *gin.Context) {
 func (h *UserHandler) DeletePenaltyByIDAndTeacherID(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	if _, ok := userInterface.(*service.User); !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	teacherID, err := uuid.Parse(c.Param("teacher_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid teacher_id")})
 		return
 	}
 
 	penaltyID, err := uuid.Parse(c.Param("penalty_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid penalty_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid penalty_id")})
 		return
 	}
 
 	err = h.userService.DeletePenaltyByIDAndTeacherID(c.Request.Context(), penaltyID, teacherID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "penalty not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("penalty not found")})
 			return
 		}
 		writeUserServiceError(c, err)
@@ -297,25 +297,25 @@ func (h *UserHandler) DeletePenaltyByIDAndTeacherID(c *gin.Context) {
 func (h *UserHandler) CreateViolation(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	targetUserID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid id")})
 		return
 	}
 
 	var req IssueViolationRequest
 	if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
 		return
 	}
 
@@ -336,31 +336,31 @@ func (h *UserHandler) CreateViolation(c *gin.Context) {
 func (h *UserHandler) UpdateViolation(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	targetUserID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid id")})
 		return
 	}
 
 	var req IssueViolationRequest
 	if err = c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
 		return
 	}
 
 	violationID, err := uuid.Parse(c.Param("violation_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid violation_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid violation_id")})
 		return
 	}
 
@@ -382,25 +382,25 @@ func (h *UserHandler) UpdateViolation(c *gin.Context) {
 func (h *UserHandler) DeleteViolation(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	targetUserID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid id")})
 		return
 	}
 
 	violationID, err := uuid.Parse(c.Param("violation_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid violation_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid violation_id")})
 		return
 	}
 
@@ -420,8 +420,9 @@ func (h *UserHandler) DeleteViolation(c *gin.Context) {
 func writeUserServiceError(c *gin.Context, err error) {
 	var httpErr *service.HTTPStatusError
 	if errors.As(err, &httpErr) {
-		c.JSON(httpErr.StatusCode, gin.H{"error": httpErr.Message})
+		c.JSON(httpErr.StatusCode, gin.H{"error": service.TranslateAPIErrorMessage(httpErr.Message)})
 		return
 	}
-	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 }
+

@@ -67,7 +67,7 @@ func (h *AuthHandler) backendCallbackURL() string {
 func (h *AuthHandler) Login(c *gin.Context) {
 	if h == nil || h.cfg == nil {
 		h.log.Error("Auth handler not configured during login attempt")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "auth handler not configured"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("auth handler not configured")})
 		return
 	}
 
@@ -299,3 +299,4 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	h.log.Warn("id_token not found in session, redirecting to frontend login")
 	c.Redirect(http.StatusFound, strings.TrimRight(h.cfg.FrontendURL, "/")+"/login")
 }
+

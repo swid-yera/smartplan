@@ -32,7 +32,7 @@ func (h *WebhooksHandler) KeycloakWebhook(c *gin.Context) {
 	if err := c.ShouldBindJSON(&event); err != nil {
 		h.logger.Warn("invalid webhook payload", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid payload",
+			"error": service.TranslateAPIErrorMessage("invalid payload"),
 		})
 		return
 	}
@@ -57,7 +57,7 @@ func (h *WebhooksHandler) handleServiceError(
 	case errors.Is(err, service.ErrInvalidEvent),
 		errors.Is(err, service.ErrUnsupported):
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": service.TranslateAPIErrorMessage(err.Error()),
 		})
 
 	case errors.Is(err, service.ErrAlreadyHandled):
@@ -66,7 +66,8 @@ func (h *WebhooksHandler) handleServiceError(
 	default:
 		h.logger.Error("failed to process webhook", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "internal server error",
+			"error": service.TranslateAPIErrorMessage("internal server error"),
 		})
 	}
 }
+

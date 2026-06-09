@@ -22,7 +22,7 @@ func (h *StatisticsHandler) GetTeachersRating(c *gin.Context) {
 	result, err := h.userService.GetTeachersRatingWithDepartments(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -34,7 +34,7 @@ func (h *StatisticsHandler) GetTopDepartments(c *gin.Context) {
 	result, err := h.userService.GetTopAwardDepartmentsStats(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -46,7 +46,7 @@ func (h *StatisticsHandler) GetTopTeachersByDepartment(c *gin.Context) {
 	result, err := h.userService.GetTopTeachersByDepartment(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -57,7 +57,7 @@ func (h *StatisticsHandler) GetTopTeachersByDepartment(c *gin.Context) {
 func (h *StatisticsHandler) GetTeachersByDepartment(c *gin.Context) {
 	departmentID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid department id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid department id")})
 		return
 	}
 
@@ -90,9 +90,10 @@ func (h *StatisticsHandler) GetTeachersByDepartment(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
 	c.JSON(http.StatusOK, result)
 }
+

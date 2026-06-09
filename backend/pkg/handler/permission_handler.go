@@ -22,13 +22,13 @@ func NewPermissionHandler(permService service.PermissionService) *PermissionHand
 func (h *PermissionHandler) SetPermissions(c *gin.Context) {
 	userID, err := uuid.Parse(c.Param("user_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid user_id")})
 		return
 	}
 
 	var req service.SetPermissionsRequest
 	if err = c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *PermissionHandler) SetPermissions(c *gin.Context) {
 func (h *PermissionHandler) GetPermissions(c *gin.Context) {
 	userID, err := uuid.Parse(c.Param("user_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid user_id")})
 		return
 	}
 
@@ -64,7 +64,7 @@ func (h *PermissionHandler) GetPermissions(c *gin.Context) {
 func (h *PermissionHandler) RevokePermissions(c *gin.Context) {
 	userID, err := uuid.Parse(c.Param("user_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid user_id")})
 		return
 	}
 
@@ -91,3 +91,4 @@ func (h *PermissionHandler) ListSpecialUsers(c *gin.Context) {
 func writePermissionServiceError(c *gin.Context, err error) {
 	writeUserServiceError(c, err) // переиспользуем ту же логику из user_handler.go
 }
+

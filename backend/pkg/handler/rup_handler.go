@@ -37,8 +37,8 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -47,7 +47,7 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
 		h.log.Error("User not authenticated")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
 		h.log.Error("Invalid user context", currentUser)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
@@ -67,8 +67,8 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to create RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to create RUP",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to create RUP"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -83,7 +83,7 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		h.log.WithError(err).Error("invalid RUP ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid RUP ID")})
 		return
 	}
 
@@ -91,14 +91,14 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			h.log.WithError(err).Error("RUP not found")
-			c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("RUP not found")})
 			return
 		}
 
 		h.log.WithError(err).Error("failed to load RUP before delete")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to delete RUP",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to delete RUP"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -111,7 +111,7 @@ func (h *RupHandler) GetLanguageGenerationStatus(c *gin.Context) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		h.log.WithError(err).Error("invalid RUP ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid RUP ID")})
 		return
 	}
 
@@ -119,8 +119,8 @@ func (h *RupHandler) GetLanguageGenerationStatus(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to get language generation status")
 		c.JSON(http.StatusNotFound, gin.H{
-			"error":   "failed to get language generation status",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to get language generation status"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -133,7 +133,7 @@ func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		h.log.WithError(err).Error("invalid RUP ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid RUP ID")})
 		return
 	}
 
@@ -145,8 +145,8 @@ func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
 		if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 			h.log.WithError(err).Error("invalid JSON format")
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "invalid JSON format",
-				"details": err.Error(),
+				"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+				"details": service.TranslateAPIErrorMessage(err.Error()),
 			})
 			return
 		}
@@ -155,21 +155,21 @@ func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
 		h.log.Error("User not authenticated")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
 		h.log.Error("Invalid user context", currentUser)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	rup, err := h.rupService.GetRupByID(c.Request.Context(), id)
 	if err != nil {
 		h.log.WithError(err).Error("RUP not found")
-		c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("RUP not found")})
 		return
 	}
 
@@ -186,7 +186,7 @@ func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
 		}
 	}
 	if !canEdit {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden")})
 		return
 	}
 
@@ -196,15 +196,15 @@ func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
 		var httpErr *service.HTTPStatusError
 		if errors.As(err, &httpErr) {
 			c.JSON(httpErr.StatusCode, gin.H{
-				"error":   "failed to regenerate language generation",
-				"details": httpErr.Message,
+				"error": service.TranslateAPIErrorMessage("failed to regenerate language generation"),
+				"details": service.TranslateAPIErrorMessage(httpErr.Message),
 			})
 			return
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to regenerate language generation",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to regenerate language generation"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -218,7 +218,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		h.log.WithError(err).Error("invalid RUP ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid RUP ID")})
 		return
 	}
 
@@ -234,8 +234,8 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -244,15 +244,15 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	if strings.EqualFold(req.Status, "APPROVED") {
 		if req.Password == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "failed to update RUP status",
-				"details": "password is required for approved status",
+				"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+				"details": service.TranslateAPIErrorMessage("password is required for approved status"),
 			})
 			return
 		}
 		if !req.Confirmed {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "failed to update RUP status",
-				"details": "confirmation is required for approved status",
+				"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+				"details": service.TranslateAPIErrorMessage("confirmation is required for approved status"),
 			})
 			return
 		}
@@ -262,7 +262,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
 		h.log.Error("User not authenticated")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
@@ -270,13 +270,13 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
 		h.log.Error("Invalid user context", currentUser)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 	if strings.TrimSpace(req.UserID) != "" && req.UserID != currentUser.KeycloakID.String() {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "failed to update RUP status",
-			"details": "user_id does not match current user",
+			"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+			"details": service.TranslateAPIErrorMessage("user_id does not match current user"),
 		})
 		return
 	}
@@ -290,7 +290,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		rup, getErr := h.rupService.GetRupByID(c.Request.Context(), id)
 		if getErr != nil {
 			h.log.WithError(getErr).Error("RUP not found")
-			c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("RUP not found")})
 			return
 		}
 		canSendToReview := strings.EqualFold(currentUser.Role, "ADMIN")
@@ -306,13 +306,13 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 			}
 		}
 		if !canSendToReview {
-			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden")})
 			return
 		}
 	case "APPROVED", "REJECTED", "DRAFT":
 		role := strings.ToUpper(currentUser.Role)
 		if role != "METHODIST" && role != "ADMIN" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden")})
 			return
 		}
 	}
@@ -339,14 +339,14 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		var httpErr *service.HTTPStatusError
 		if errors.As(err, &httpErr) {
 			c.JSON(httpErr.StatusCode, gin.H{
-				"error":   "failed to update RUP status",
-				"details": httpErr.Message,
+				"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+				"details": service.TranslateAPIErrorMessage(httpErr.Message),
 			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to update RUP status",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -360,7 +360,7 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		h.log.WithError(err).Error("invalid RUP ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid RUP ID")})
 		return
 	}
 
@@ -368,8 +368,8 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -377,21 +377,21 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
 		h.log.Error("User not authenticated")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
 		h.log.Error("Invalid user context", currentUser)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	rup, err := h.rupService.GetRupByID(c.Request.Context(), id)
 	if err != nil {
 		h.log.WithError(err).Error("RUP not found")
-		c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("RUP not found")})
 		return
 	}
 
@@ -408,7 +408,7 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 		}
 	}
 	if !canEdit {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden")})
 		return
 	}
 
@@ -416,8 +416,8 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to update RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to update RUP",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to update RUP"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -428,7 +428,7 @@ func (h *RupHandler) DownloadRup(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		h.log.WithError(err).Error("invalid rup id")
-		c.JSON(400, gin.H{"error": "invalid rup id"})
+		c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage("invalid rup id")})
 		return
 	}
 
@@ -443,7 +443,7 @@ func (h *RupHandler) DownloadRup(c *gin.Context) {
 		language,
 	)
 	if err != nil {
-		c.JSON(404, gin.H{"error": "file not found"})
+		c.JSON(404, gin.H{"error": service.TranslateAPIErrorMessage("file not found")})
 		return
 	}
 
@@ -460,25 +460,25 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		h.log.WithError(err).Error("invalid RUP ID")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid RUP ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid RUP ID")})
 		return
 	}
 
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	rup, err := h.rupService.GetRupByID(c.Request.Context(), id)
 	if err != nil {
 		h.log.WithError(err).Error("RUP not found")
-		c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("RUP not found")})
 		return
 	}
 
@@ -486,7 +486,7 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 	isAdmin := strings.EqualFold(currentUser.Role, "ADMIN")
 	isCreator := rup.Teacher != nil && rup.Teacher.KeycloakID == currentUser.KeycloakID
 	if !isAdmin && !isCreator {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden")})
 		return
 	}
 
@@ -494,14 +494,14 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			h.log.WithError(err).Error("RUP not found")
-			c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("RUP not found")})
 			return
 		}
 
 		h.log.WithError(err).Error("failed to delete RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to delete RUP",
-			"details": err.Error(),
+			"error": service.TranslateAPIErrorMessage("failed to delete RUP"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -533,7 +533,7 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	search := strings.TrimSpace(c.Query("search"))
 	sort, err := parseSortQuery(c, "sort", "desc")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "sort must be 'asc' or 'desc'"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("sort must be 'asc' or 'desc'")})
 		return
 	}
 
@@ -541,7 +541,7 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	if v := c.Query("teacher"); v != "" {
 		id, err := uuid.Parse(v)
 		if err != nil {
-			c.JSON(400, gin.H{"error": "invalid teacher id"})
+			c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage("invalid teacher id")})
 			return
 		}
 		teacherID = pgtype.UUID{Bytes: id, Valid: true}
@@ -551,7 +551,7 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	if v := c.Query("methodist"); v != "" {
 		id, err := uuid.Parse(v)
 		if err != nil {
-			c.JSON(400, gin.H{"error": "invalid methodist id"})
+			c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage("invalid methodist id")})
 			return
 		}
 		methodistID = pgtype.UUID{Bytes: id, Valid: true}
@@ -568,9 +568,10 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 		status,
 	)
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
 	c.JSON(200, result)
 }
+

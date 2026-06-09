@@ -17,3 +17,4 @@ func parseSortQuery(c *gin.Context, key string, defaultValue string) (string, er
 	}
 	return sort, nil
 }
+
