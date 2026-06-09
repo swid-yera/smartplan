@@ -218,19 +218,19 @@ export const RupsFilterCard: FC<IProps> = ({ className, compact = true, paramPre
 									</SelectContent>
 								</Select>
 							</div>
-						</div>
 
-						<div className='flex flex-wrap items-center gap-2 xl:ml-auto'>
-							<Button
-								className='h-8 gap-2 px-3 text-xs font-normal'
-								disabled={!hasActiveFilters}
-								type='button'
-								variant='outline'
-								onClick={resetFilters}
-							>
-								<RotateCcw className='h-4 w-4' />
-								{t.rupsFilter.reset}
-							</Button>
+							<div className='flex flex-wrap items-center gap-2 xl:ml-auto'>
+								<Button
+									className='h-8 gap-2 px-3 text-xs font-normal'
+									disabled={!hasActiveFilters}
+									type='button'
+									variant='outline'
+									onClick={resetFilters}
+								>
+									<RotateCcw className='h-4 w-4' />
+									{t.rupsFilter.reset}
+								</Button>
+							</div>
 						</div>
 					</div>
 				</div>

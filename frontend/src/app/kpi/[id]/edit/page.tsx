@@ -22,13 +22,42 @@ import { services } from '@services'
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { IApiErrorResponse, ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
-import { PermissionCodeEnum } from '@types'
+import type {
+	IApiErrorResponse,
+	ICategoryTypeResponse,
+	ICreateAwardRequest,
+	ICriteriaResponse,
+	ITypeResponse,
+	IVariantResponse,
+} from '@types'
+import { CriteriaMethodEnum, PermissionCodeEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 
 import { AwardTypeSelectionFields } from '../../components'
 import localeDictionary from './locale.json'
+
+const normalizeCategoryType = (type: ICategoryTypeResponse): ITypeResponse => ({
+	id: type.id,
+	name: type.name,
+	variants: type.variants.map((variant) => ({
+		id: variant.id,
+		name: variant.name,
+		description: variant.description ?? null,
+		criteria: variant.criteria.map((criteria) => ({
+			id: criteria.id,
+			name: criteria.name,
+			points: criteria.points,
+			method: criteria.method as CriteriaMethodEnum,
+		})),
+		bonus_criteria: (variant.bonus_criteria ?? variant.bonusCriteria ?? null)?.map((criteria) => ({
+			id: criteria.id,
+			name: criteria.name,
+			points: criteria.points,
+			method: criteria.method as CriteriaMethodEnum,
+		})),
+	})),
+})
 
 const Page = () => {
 	const { id } = useParams<{ id: string }>()
@@ -41,6 +70,7 @@ const Page = () => {
 	const [selectedCriteria, setSelectedCriteria] = useState<ICriteriaResponse | null>(null)
 	const [selectedBonusCriteria, setSelectedBonusCriteria] = useState<ICriteriaResponse | null>(null)
 	const [categoryFieldValues, setCategoryFieldValues] = useState<ICategoryFieldValues>({})
+	const [isInitialized, setIsInitialized] = useState(false)
 
 	const { data: types = [], isLoading: isTypesLoading } = useQuery({
 		...services.award.getAllTypesOptions(),
@@ -59,12 +89,16 @@ const Page = () => {
 	})
 
 	const availableTypes = useMemo(() => {
+		if (category?.awardTypesExpanded?.length) {
+			return category.awardTypesExpanded.map(normalizeCategoryType)
+		}
+
 		if (!category?.awardTypes?.length) return types
 
 		const allowedTypeIds = new Set(category.awardTypes)
 
 		return types.filter((type) => allowedTypeIds.has(type.id))
-	}, [category?.awardTypes, types])
+	}, [category?.awardTypes, category?.awardTypesExpanded, types])
 
 	const topCategoryFields = useMemo(
 		() => category?.fieldsExpanded.filter((field) => field.type !== 'url' && field.type !== 'file') ?? [],
@@ -106,24 +140,19 @@ const Page = () => {
 	}, [award?.fieldValues, category?.fieldsExpanded])
 
 	useEffect(() => {
-		if (!award || !types.length) return
-
-		const type = types.find((item) => item.id === award.type.id) || null
-		const variant = type?.variants.find((item) => item.id === award.variant.id) || null
-		const criteria = variant?.criteria.find((item) => item.id === award.criteria.id) || null
-		const normalizedBonusCriteria = award.bonus_criteria || null
-		const bonusCriteria = normalizedBonusCriteria
-			? variant?.bonus_criteria?.find((item) => item.id === normalizedBonusCriteria.id) || null
-			: null
-
-		setSelectedType(type)
-		setSelectedVariant(variant)
-		setSelectedCriteria(criteria)
-		setSelectedBonusCriteria(bonusCriteria)
-	}, [award, types])
+		setIsInitialized(false)
+	}, [award?.id])
 
 	useEffect(() => {
-		if (!award || !category?.fieldsExpanded?.length) return
+		if (!award || !availableTypes.length || !category?.fieldsExpanded?.length || isInitialized) return
+
+		const type = availableTypes.find((item) => item.id === award.type.id) || award.type || null
+		const variant = type?.variants.find((item) => item.id === award.variant.id) || award.variant || null
+		const criteria = variant?.criteria.find((item) => item.id === award.criteria.id) || award.criteria || null
+		const normalizedBonusCriteria = award.bonus_criteria || null
+		const bonusCriteria =
+			normalizedBonusCriteria &&
+			(variant?.bonus_criteria?.find((item) => item.id === normalizedBonusCriteria.id) || normalizedBonusCriteria)
 
 		const initialValues = buildInitialCategoryFieldValues(category.fieldsExpanded)
 
@@ -189,8 +218,13 @@ const Page = () => {
 			return acc
 		}, initialValues)
 
+		setSelectedType(type)
+		setSelectedVariant(variant)
+		setSelectedCriteria(criteria)
+		setSelectedBonusCriteria(bonusCriteria || null)
 		setCategoryFieldValues(mappedValues)
-	}, [award, category?.id, category?.fieldsExpanded])
+		setIsInitialized(true)
+	}, [award, availableTypes, category?.fieldsExpanded, isInitialized])
 
 	useEffect(() => {
 		if (!selectedType) return

@@ -70,7 +70,7 @@ func (r *Router) Init() *gin.Engine {
 
 	_ = engine.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 
-	engine.GET("/healthz", func(c *gin.Context) {
+	engine.GET("/health", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
 
@@ -109,8 +109,8 @@ func (r *Router) Init() *gin.Engine {
 		protected.GET("/me", r.user.GetMe)
 		// список пользователей — full permission holders
 		protected.GET("/users", middleware.RequirePermission(service.PermRUPFull, service.PermKPIFull), r.user.GetUsers)
-		protected.GET("/users/:keycloak_id", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.user.GetUserByKeycloakID)
-		protected.GET("/users/rating", r.user.GetUsersRating)
+		protected.GET("/users/:keycloak_id", middleware.RequirePermission(service.PermKPIManage, service.PermRUPManage), r.user.GetUserByKeycloakID)
+		protected.GET("/users/rating", middleware.RequirePermission(service.PermKPIManage), r.user.GetUsersRating)
 		// нарушения — KPI manage
 		protected.POST("/users/:id/violation", middleware.RequirePermission(service.PermKPIManage), r.user.CreateViolation)
 		protected.PUT("/users/:id/violation/:violation_id", middleware.RequirePermission(service.PermKPIManage), r.user.UpdateViolation)
@@ -147,19 +147,19 @@ func (r *Router) Init() *gin.Engine {
 			rups.GET("/:id/language-generation", middleware.RequirePermission(service.PermRUPView), r.rup.GetLanguageGenerationStatus)
 
 			// создание РУП — право управления РУП
-			rups.POST("", middleware.RequirePermission(service.PermRUPManage), r.rup.CreateRup)
+			rups.POST("", middleware.RequirePermission(service.PermRUPView), r.rup.CreateRup)
 
 			// регенерация языка — право управления РУП
-			rups.POST("/:id/language-generation/regenerate", middleware.RequirePermission(service.PermRUPManage), r.rup.RegenerateLanguageGeneration)
+			rups.POST("/:id/language-generation/regenerate", middleware.RequirePermission(service.PermRUPView), r.rup.RegenerateLanguageGeneration)
 
 			// редактирование РУП — право управления РУП
-			rups.PUT("/:id", middleware.RequirePermission(service.PermRUPManage), r.rup.UpdateRup)
+			rups.PUT("/:id", middleware.RequirePermission(service.PermRUPView), r.rup.UpdateRup)
 
 			// смена статуса РУП — право управления РУП
-			rups.PUT("/:id/status", middleware.RequirePermission(service.PermRUPManage), r.rup.UpdateRupStatus)
+			rups.PUT("/:id/status", middleware.RequirePermission(service.PermRUPView), r.rup.UpdateRupStatus)
 
 			// удаление — право управления РУП
-			rups.DELETE("/:id", middleware.RequirePermission(service.PermRUPManage), r.rup.DeleteRup)
+			rups.DELETE("/:id", middleware.RequirePermission(service.PermRUPView), r.rup.DeleteRup)
 
 			// скачивание — право просмотра РУП
 			rups.GET("/:id/download", middleware.RequirePermission(service.PermRUPView), r.rup.DownloadRup)
@@ -191,14 +191,14 @@ func (r *Router) Init() *gin.Engine {
 			awards.GET("/:id", middleware.RequirePermission(service.PermKPIView), r.award.GetAwardByID)
 
 			// создание/редактирование награды — право управления KPI
-			awards.POST("", middleware.RequirePermission(service.PermKPIManage), r.award.CreateAward)
-			awards.PUT("/:id", middleware.RequirePermission(service.PermKPIManage), r.award.UpdateAward)
+			awards.POST("", middleware.RequirePermission(service.PermKPIView), r.award.CreateAward)
+			awards.PUT("/:id", middleware.RequirePermission(service.PermKPIView), r.award.UpdateAward)
 
 			// смена статуса награды — право управления KPI
-			awards.PUT("/:id/status", middleware.RequirePermission(service.PermKPIManage), r.award.UpdateAwardStatus)
+			awards.PUT("/:id/status", middleware.RequirePermission(service.PermKPIView), r.award.UpdateAwardStatus)
 
 			// удаление — право управления KPI
-			awards.DELETE("/:id", middleware.RequirePermission(service.PermKPIManage), r.award.DeleteAward)
+			awards.DELETE("/:id", middleware.RequirePermission(service.PermKPIView), r.award.DeleteAward)
 
 			// типы наград — KPI full
 			awardTypes := awards.Group("/types")
@@ -240,7 +240,7 @@ func (r *Router) Init() *gin.Engine {
 			// чтение групп — все роли
 			groups.GET("", r.groups.GetAllGroups)
 			// синхронизация с Keycloak — full permission holders
-			groups.POST("/sync", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.groups.SyncGroups)
+			groups.POST("/sync", middleware.RequirePermission(service.PermRUPFull), r.groups.SyncGroups)
 		}
 
 		// --- DEPARTMENTS ---
@@ -256,7 +256,7 @@ func (r *Router) Init() *gin.Engine {
 		lessons := protected.Group("/lessons")
 		{
 			// список уроков — все роли, TEACHER видит только свои
-			lessons.GET("", func(c *gin.Context) {
+			lessons.GET("", middleware.RequirePermission(service.PermRUPView), func(c *gin.Context) {
 				userInterface, exists := c.Get(middleware.ContextUserKey)
 				if !exists {
 					c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
@@ -274,9 +274,9 @@ func (r *Router) Init() *gin.Engine {
 				}
 				r.lesson.GetLessons(c)
 			})
-			lessons.GET("/:id", r.lesson.GetLessonByID)
-			lessons.GET("/:id/download", r.lesson.DownloadLesson)
-			lessons.GET("/:id/progress", r.lesson.GetLessonProgress)
+			lessons.GET("/:id", middleware.RequirePermission(service.PermRUPView), r.lesson.GetLessonByID)
+			lessons.GET("/:id/download", middleware.RequirePermission(service.PermRUPView), r.lesson.DownloadLesson)
+			lessons.GET("/:id/progress", middleware.RequirePermission(service.PermRUPView), r.lesson.GetLessonProgress)
 
 			// создание/редактирование/удаление уроков — RUP view/manage
 			lessons.POST("", middleware.RequirePermission(service.PermRUPView), r.lesson.CreateLesson)
@@ -288,12 +288,12 @@ func (r *Router) Init() *gin.Engine {
 
 		// --- AI (создание РУП через AI) — RUP manage ---
 		if r.ai != nil {
-			ai := protected.Group("/ai", middleware.RequirePermission(service.PermRUPManage))
+			ai := protected.Group("/ai", middleware.RequirePermission(service.PermRUPView))
 			{
-				ai.POST("/rups/meta", r.ai.GenerateRupMeta)
-				ai.POST("/rups/resources", r.ai.GenerateResources)
-				ai.POST("/rups/disciplines", r.ai.GenerateDisciplines)
-				ai.POST("/rups/topics", r.ai.GenerateTopicsForDiscipline)
+				ai.POST("/rups/meta", middleware.RequirePermission(service.PermRUPView), r.ai.GenerateRupMeta)
+				ai.POST("/rups/resources", middleware.RequirePermission(service.PermRUPView), r.ai.GenerateResources)
+				ai.POST("/rups/disciplines", middleware.RequirePermission(service.PermRUPView), r.ai.GenerateDisciplines)
+				ai.POST("/rups/topics", middleware.RequirePermission(service.PermRUPView), r.ai.GenerateTopicsForDiscipline)
 			}
 		}
 
@@ -315,4 +315,3 @@ func (r *Router) Init() *gin.Engine {
 
 	return engine
 }
-

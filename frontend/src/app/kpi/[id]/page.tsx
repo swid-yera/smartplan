@@ -149,19 +149,19 @@ const Page = () => {
 	}
 
 	const canFullAccess = hasPermission(user, PermissionCodeEnum.KPI_FULL)
-	const canManage = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
+	const isAuthor = user.keycloakId === award.teacher.keycloakId || canFullAccess
+	const isMethodist = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
 	const isStatusForEdit = award.status === StatusEnum.DRAFT || award.status === StatusEnum.REJECTED
-	const canManageAward = (canManage || canFullAccess) && isStatusForEdit
-	const isMethodistReview = (canManage || canFullAccess) && award.status === StatusEnum.IN_REVIEW
+	const isMethodistReview = (isMethodist || canFullAccess) && award.status === StatusEnum.IN_REVIEW
 
 	return (
 		<div className='space-y-6 p-6 w-full'>
 			<PageTitle
 				actions={
 					<KpiDetailsActions
-						canManage={canManageAward}
 						id={String(id)}
 						isAdmin={canFullAccess}
+						isAuthor={isAuthor}
 						isMethodistReview={isMethodistReview}
 						isStatusForEdit={isStatusForEdit}
 						onOpenApproveSheet={() => setIsApproveSheetOpen(true)}

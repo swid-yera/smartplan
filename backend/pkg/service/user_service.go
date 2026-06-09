@@ -255,7 +255,7 @@ func (s *userService) GetUsersRatingPaginated(
 }
 
 func (s *userService) GetTeachersRatingWithDepartments(ctx context.Context) ([]*User, error) {
-	dbUsers, err := s.repo.GetTeachersRatingWithDepartments(ctx)
+	dbUsers, err := s.repo.GetAllUsers(ctx, math.MaxInt32, 0, "")
 	if err != nil {
 		return nil, err
 	}
@@ -279,10 +279,30 @@ func (s *userService) GetTopTeachersByDepartment(ctx context.Context) ([]Departm
 }
 
 func (s *userService) GetTeachersByDepartment(ctx context.Context, departmentID uuid.UUID) (*DepartmentTopTeachersResponse, error) {
-	users, err := s.GetTeachersRatingWithDepartments(ctx)
+	dbUsers, err := s.repo.GetUsersPaginated(
+		ctx,
+		math.MaxInt32,
+		0,
+		"",
+		"desc",
+		pgtype.UUID{Bytes: departmentID, Valid: true},
+	)
 	if err != nil {
 		return nil, err
 	}
+
+	users, err := s.toServiceUsers(ctx, dbUsers)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(users) == 0 {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "department not found"}
+	}
+
+	teachers := make([]*User, 0, len(users))
+	var departmentName localization.LocaleText
+	departmentFound := false
 
 	for _, user := range users {
 		if user == nil {
@@ -294,32 +314,28 @@ func (s *userService) GetTeachersByDepartment(ctx context.Context, departmentID 
 				continue
 			}
 
-			teachers := make([]*User, 0)
-			for _, candidate := range users {
-				if candidate == nil {
-					continue
-				}
-
-				for _, candidateDepartment := range candidate.Departments {
-					if candidateDepartment.KeycloakID == departmentID {
-						teachers = append(teachers, candidate)
-						break
-					}
-				}
+			if !departmentFound {
+				departmentName = department.Name
+				departmentFound = true
 			}
 
-			sortTeachersByScoreAndName(teachers)
-
-			return &DepartmentTopTeachersResponse{
-				KeycloakID:    department.KeycloakID,
-				Name:          department.Name,
-				TeachersCount: len(teachers),
-				Teachers:      teachers,
-			}, nil
+			teachers = append(teachers, user)
+			break
 		}
 	}
 
-	return nil, &HTTPStatusError{StatusCode: 404, Message: "department not found"}
+	if !departmentFound {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "department not found"}
+	}
+
+	sortTeachersByScoreAndName(teachers)
+
+	return &DepartmentTopTeachersResponse{
+		KeycloakID:    departmentID,
+		Name:          departmentName,
+		TeachersCount: len(teachers),
+		Teachers:      teachers,
+	}, nil
 }
 
 func (s *userService) groupTeachersByDepartment(users []*User, limit int) []departmentTeachersGroup {

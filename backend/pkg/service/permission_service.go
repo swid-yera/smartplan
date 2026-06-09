@@ -59,6 +59,29 @@ func HasPermissionLevel(granted []PermissionCode, required PermissionCode) bool 
 	return false
 }
 
+func HasPermissionExact(granted []PermissionCode, required PermissionCode) bool {
+	requiredDomain := permissionDomain(required)
+	if requiredDomain == "" {
+		return false
+	}
+
+	requiredFull := PermKPIFull
+	if requiredDomain == "RUP" {
+		requiredFull = PermRUPFull
+	}
+
+	for _, code := range granted {
+		if code == required {
+			return true
+		}
+		if permissionDomain(code) == requiredDomain && code == requiredFull {
+			return true
+		}
+	}
+
+	return false
+}
+
 func canonicalizePermissionCodes(codes []PermissionCode) []PermissionCode {
 	if len(codes) == 0 {
 		return []PermissionCode{}

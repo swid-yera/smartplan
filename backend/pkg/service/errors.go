@@ -80,6 +80,7 @@ var apiErrorExactTranslations = map[string]string{
 	"Session not found":                            "Сессия не найдена",
 	"sort must be 'asc' or 'desc'":                 "Сортировка должна быть 'asc' или 'desc'",
 	"teacher not found":                            "Преподаватель не найден",
+	"teachers can only submit awards for review":   "Можно только отправить награду на проверку",
 	"token inactive":                               "Токен неактивен",
 	"token introspect failed":                      "Не удалось проверить токен",
 	"User not authenticated":                       "Пользователь не аутентифицирован",

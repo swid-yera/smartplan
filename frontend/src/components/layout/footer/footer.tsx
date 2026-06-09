@@ -17,7 +17,7 @@ export const Footer: FC<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDi
 
 	return (
 		<footer className={cn('mt-auto border-t py-8 text-center text-sm text-gray-500', className)} {...props}>
-			<p>
+			<p className='whitespace-pre-line'>
 				© {currentYear} {t.text} <u>"Almaty Polytech College"</u>.
 			</p>
 		</footer>

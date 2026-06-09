@@ -153,8 +153,8 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		return
 	}
 
-	// TEACHER может переводить только в IN_REVIEW, и только из DRAFT или REJECTED
-	if strings.EqualFold(currentUser.Role, "TEACHER") {
+	// Пользователь с точечным KPI-view может только отправить на проверку.
+	if service.HasPermissionExact(currentUser.Permissions, service.PermKPIView) {
 		if req.Status != storage.AwardsStatusINREVIEW {
 			c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("teachers can only submit awards for review")})
 			return
@@ -341,7 +341,7 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 	if strings.HasPrefix(contentType, "application/json") {
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+				"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
 				"details": service.TranslateAPIErrorMessage(err.Error()),
 			})
 			return
@@ -363,7 +363,7 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 
 		if err := json.Unmarshal([]byte(jsonData), &req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": service.TranslateAPIErrorMessage("invalid JSON format inside data field"),
+				"error":   service.TranslateAPIErrorMessage("invalid JSON format inside data field"),
 				"details": service.TranslateAPIErrorMessage(err.Error()),
 			})
 			return
@@ -378,7 +378,7 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		fieldValuesForMerge, mergeValuesErr := mergeFieldValuesPayload(existingAward.FieldValues, req.FieldValues)
 		if mergeValuesErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": service.TranslateAPIErrorMessage("invalid fieldValues payload"),
+				"error":   service.TranslateAPIErrorMessage("invalid fieldValues payload"),
 				"details": mergeValuesErr.Error(),
 			})
 			return
@@ -411,13 +411,13 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		var httpErr *service.HTTPStatusError
 		if errors.As(err, &httpErr) {
 			c.JSON(httpErr.StatusCode, gin.H{
-				"error": service.TranslateAPIErrorMessage("failed to update award"),
+				"error":   service.TranslateAPIErrorMessage("failed to update award"),
 				"details": service.TranslateAPIErrorMessage(httpErr.Message),
 			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to update award"),
+			"error":   service.TranslateAPIErrorMessage("failed to update award"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -551,7 +551,7 @@ func (h *AwardHandler) UpdateAwardType(c *gin.Context) {
 	var req service.CreateAwardTypeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -560,7 +560,7 @@ func (h *AwardHandler) UpdateAwardType(c *gin.Context) {
 	awardType, err := h.service.UpdateType(c.Request.Context(), id, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to update AwardType"),
+			"error":   service.TranslateAPIErrorMessage("failed to update AwardType"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -673,4 +673,3 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 
 	c.JSON(200, result)
 }
-

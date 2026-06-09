@@ -12,7 +12,7 @@ import localeDictionary from './locale.json'
 interface IKpiDetailsActionsProps {
 	id: string
 	isAdmin: boolean
-	canManage: boolean
+	isAuthor: boolean
 	isStatusForEdit: boolean
 	isMethodistReview: boolean
 	onOpenStatusSheet: () => void
@@ -25,7 +25,7 @@ interface IKpiDetailsActionsProps {
 export const KpiDetailsActions = ({
 	id,
 	isAdmin,
-	canManage,
+	isAuthor,
 	isStatusForEdit,
 	isMethodistReview,
 	onOpenStatusSheet,
@@ -46,20 +46,20 @@ export const KpiDetailsActions = ({
 						{t.changeStatus}
 					</Button>
 				)}
-				{canManage && (
+				{isStatusForEdit && isAuthor && (
 					<Button className='hover:text-destructive' size='sm' variant='outline' onClick={onOpenDeleteDialog}>
 						<Trash />
 						{t.delete}
 					</Button>
 				)}
-				{canManage && (
+				{isStatusForEdit && isAuthor && (
 					<Button asChild size='sm' variant='outline'>
 						<Link href={`/kpi/${id}/edit`}>
 							<Edit /> {t.edit}
 						</Link>
 					</Button>
 				)}
-				{isStatusForEdit && (
+				{isStatusForEdit && isAuthor && (
 					<Button className='hover:text-primary' size='sm' variant='outline' onClick={onSendToReview}>
 						<SendIcon />
 						{t.sendToReview}
