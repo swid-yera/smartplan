@@ -36,8 +36,15 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { StatusEnum } from '@types'
-import { ArrowDownUp, Check, ChevronsUpDown, Filter, Layers3, ListFilter } from 'lucide-react'
+import { ArrowDownUp, Check, ChevronsUpDown, Filter, Layers3, ListFilter, RotateCcw } from 'lucide-react'
 
+import {
+	DEFAULT_AWARD_SORT,
+	buildAwardFilterSearchParams,
+	clearPersistedAwardFilterState,
+	getAwardFilterStateFromSearchParams,
+	persistAwardFilterState,
+} from './award-filter-state'
 import localeDictionary from './locale.json'
 
 interface IProps {
@@ -52,24 +59,12 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
+	const searchParamsString = searchParams.toString()
 
-	const currentStatusParam = searchParams.get('status')
-	const currentCategoryIdParam = searchParams.get('categoryId')
-	const currentSortParam = searchParams.get('sort')
-	const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
-		currentStatusParam ? currentStatusParam.split(',') : [],
-	)
-	const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
-		currentCategoryIdParam
-			? currentCategoryIdParam
-					.split(',')
-					.map((id) => id.trim())
-					.filter(Boolean)
-			: [],
-	)
-	const [selectedSort, setSelectedSort] = useState<'asc' | 'desc'>(
-		currentSortParam === 'asc' || currentSortParam === 'desc' ? currentSortParam : 'desc',
-	)
+	const initialState = getAwardFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
+	const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialState.statuses)
+	const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialState.categoryIds)
+	const [selectedSort, setSelectedSort] = useState<'asc' | 'desc'>(initialState.sort)
 	const selectedStatusesText = t.awardFilter.statusesSelected.replace('{count}', String(selectedStatuses.length))
 	const selectedCategoriesText = t.awardFilter.categoriesSelected.replace(
 		'{count}',
@@ -92,6 +87,32 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 		[categories, locale, selectedCategoryIdSet],
 	)
 
+	useEffect(() => {
+		const nextState = getAwardFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
+
+		setSelectedStatuses((prev) => {
+			if (
+				prev.length === nextState.statuses.length &&
+				prev.every((value, index) => value === nextState.statuses[index])
+			) {
+				return prev
+			}
+
+			return nextState.statuses
+		})
+		setSelectedCategoryIds((prev) => {
+			if (
+				prev.length === nextState.categoryIds.length &&
+				prev.every((value, index) => value === nextState.categoryIds[index])
+			) {
+				return prev
+			}
+
+			return nextState.categoryIds
+		})
+		setSelectedSort((prev) => (prev === nextState.sort ? prev : nextState.sort))
+	}, [searchParamsString])
+
 	const toggleStatus = (status: string) => {
 		setSelectedStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]))
 	}
@@ -103,22 +124,45 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 
 	const applyFilters = useCallback(() => {
 		const currentQuery = searchParams.toString()
-		const params = new URLSearchParams(currentQuery)
-
-		if (selectedStatuses.length > 0) params.set('status', selectedStatuses.join(','))
-		else params.delete('status')
-		if (selectedCategoryIds.length > 0) params.set('categoryId', selectedCategoryIds.join(','))
-		else params.delete('categoryId')
-		params.set('sort', selectedSort)
-
-		params.set('page', '1')
-
+		const params = buildAwardFilterSearchParams(
+			new URLSearchParams(currentQuery),
+			{
+				statuses: selectedStatuses,
+				categoryIds: selectedCategoryIds,
+				sort: selectedSort,
+			},
+			{ resetPage: true },
+		)
 		const nextQuery = params.toString()
+
+		persistAwardFilterState({
+			statuses: selectedStatuses,
+			categoryIds: selectedCategoryIds,
+			sort: selectedSort,
+		})
 
 		if (nextQuery === currentQuery) return
 
-		router.replace(`${pathname}?${nextQuery}`)
+		router.replace(`${pathname}?${nextQuery}`, { scroll: false })
 	}, [pathname, router, searchParams, selectedCategoryIds, selectedSort, selectedStatuses])
+
+	const resetFilters = useCallback(() => {
+		const defaults = {
+			statuses: [] as string[],
+			categoryIds: [] as string[],
+			sort: DEFAULT_AWARD_SORT,
+		}
+		const params = buildAwardFilterSearchParams(new URLSearchParams(searchParams.toString()), defaults, {
+			resetPage: true,
+		})
+
+		clearPersistedAwardFilterState()
+		setSelectedStatuses(defaults.statuses)
+		setSelectedCategoryIds(defaults.categoryIds)
+		setSelectedSort(defaults.sort)
+
+		router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+	}, [pathname, router, searchParams])
 
 	useEffect(() => {
 		if (!compact) return
@@ -226,23 +270,38 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 						</div>
 					</div>
 
-					<div className='space-y-1 xl:ml-auto'>
-						<Label className='sr-only'>{t.awardFilter.sort}</Label>
-						<Select value={selectedSort} onValueChange={(value: 'asc' | 'desc') => setSelectedSort(value)}>
-							<SelectTrigger
-								aria-label={t.awardFilter.sort}
-								className='h-8 justify-start gap-1.5 px-2 text-xs font-normal'
-								size='sm'
-								title={selectedSort === 'asc' ? t.awardFilter.sortAsc : t.awardFilter.sortDesc}
-							>
-								<ArrowDownUp className='h-4 w-4 shrink-0' />
-								<SelectValue className='truncate text-left' placeholder={t.awardFilter.sort} />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value='desc'>{t.awardFilter.sortDesc}</SelectItem>
-								<SelectItem value='asc'>{t.awardFilter.sortAsc}</SelectItem>
-							</SelectContent>
-						</Select>
+					<div className='flex flex-wrap items-center gap-2 xl:ml-auto'>
+						<div className='space-y-1'>
+							<Label className='sr-only'>{t.awardFilter.sort}</Label>
+							<Select value={selectedSort} onValueChange={(value: 'asc' | 'desc') => setSelectedSort(value)}>
+								<SelectTrigger
+									aria-label={t.awardFilter.sort}
+									className='h-8 justify-start gap-1.5 px-2 text-xs font-normal'
+									size='sm'
+									title={selectedSort === 'asc' ? t.awardFilter.sortAsc : t.awardFilter.sortDesc}
+								>
+									<ArrowDownUp className='h-4 w-4 shrink-0' />
+									<SelectValue className='truncate text-left' placeholder={t.awardFilter.sort} />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='desc'>{t.awardFilter.sortDesc}</SelectItem>
+									<SelectItem value='asc'>{t.awardFilter.sortAsc}</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						<Button
+							className='h-8 gap-2 px-3 text-xs font-normal'
+							disabled={
+								!selectedStatuses.length && !selectedCategoryIds.length && selectedSort === DEFAULT_AWARD_SORT
+							}
+							type='button'
+							variant='outline'
+							onClick={resetFilters}
+						>
+							<RotateCcw className='h-4 w-4' />
+							{t.awardFilter.reset}
+						</Button>
 					</div>
 				</div>
 			</div>
@@ -381,8 +440,22 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 							</div>
 						</div>
 
-						<div className='flex w-full justify-end lg:w-auto'>
-							<Button className='h-9 w-full px-5 lg:w-auto' type='submit'>
+						<div className='flex w-full flex-col gap-2 sm:flex-row sm:justify-end lg:w-auto'>
+							<Button
+								className='h-9 w-full px-5 sm:w-auto'
+								disabled={
+									!selectedStatuses.length &&
+									!selectedCategoryIds.length &&
+									selectedSort === DEFAULT_AWARD_SORT
+								}
+								type='button'
+								variant='outline'
+								onClick={resetFilters}
+							>
+								<RotateCcw className='mr-2 h-4 w-4' />
+								{t.awardFilter.reset}
+							</Button>
+							<Button className='h-9 w-full px-5 sm:w-auto' type='submit'>
 								{t.awardFilter.apply} <Filter />
 							</Button>
 						</div>

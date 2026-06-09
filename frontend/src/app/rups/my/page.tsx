@@ -1,92 +1,123 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
 
-import { Loader, PageTitle, Pagination, RupsCard, withRole } from '@components'
-import { getUILocaleSection } from '@helpers'
+import type { NextPage } from 'next'
+import Link from 'next/link'
+import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
+
+import { Loader, PageTitle, RupsCard, withRole } from '@components'
+import { getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { RoleEnum, StatusEnum } from '@types'
 import { Plus } from 'lucide-react'
 
-import localeDictionary from './locale.json'
+import { RupsFilterCard } from '../components'
+import {
+	buildRupFilterSearchParams,
+	getRupFilterStateFromSearchParams,
+	hasExplicitRupFilterParams,
+	persistRupFilterState,
+	readPersistedRupFilterState,
+} from '../components/rups-filter-state'
+import localeDictionary from '../locale.json'
 
-const Page = () => {
+const Page: NextPage = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
+	const searchParamsString = searchParams.toString()
+	const { authLoading, user } = useAuthStore()
 
 	const page = Number(searchParams.get('page')) || 1
-	const pageSize = Number(searchParams.get('pageSize')) || 10
+	const filterState = getRupFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
+	const q = filterState.search
+	const status = filterState.statuses as StatusEnum[]
+	const sort = filterState.sort
+	const isTeacher = hasRole(user?.role || RoleEnum.TEACHER, RoleEnum.TEACHER, false)
+	const canCreate = hasRole(user?.role || RoleEnum.TEACHER, RoleEnum.TEACHER, true)
+	const teacherId = isTeacher ? user?.keycloakId : ''
 
-	const { user, authLoading } = useAuthStore()
+	useEffect(() => {
+		const currentParams = new URLSearchParams(searchParamsString)
+		const currentFilterState = getRupFilterStateFromSearchParams(currentParams)
 
-	const { data: rupsData, isLoading: isRupsLoading } = useQuery({
+		if (hasExplicitRupFilterParams(currentParams)) {
+			persistRupFilterState(currentFilterState)
+
+			return
+		}
+
+		const persistedState = readPersistedRupFilterState()
+
+		if (!persistedState) return
+
+		const nextParams = buildRupFilterSearchParams(currentParams, persistedState, { resetPage: true })
+		const nextQuery = nextParams.toString()
+
+		if (nextQuery === currentParams.toString()) return
+
+		router.replace(`${pathname}?${nextQuery}`, { scroll: false })
+	}, [pathname, router, searchParamsString])
+
+	// queries
+	const { data: rupsData, isLoading } = useQuery({
 		...services.rup.getAllOptions({
 			currentPage: page,
-			pageSize: pageSize,
-			teacher: user?.keycloakId,
+			pageSize: 100,
+			search: q,
+			status,
+			sort,
+			teacher: teacherId,
 		}),
-		enabled: !!user,
+		placeholderData: keepPreviousData,
+		enabled: !authLoading && !!user,
 	})
 
 	const setCurrentPage = (newPage: number) => {
 		const params = new URLSearchParams(searchParams.toString())
 
 		params.set('page', String(newPage))
-		router.push(`${pathname}?${params.toString()}`)
+		router.push(`${pathname}?${params.toString()}`, { scroll: false })
 	}
 
-	const setPageSize = (newSize: number) => {
-		const params = new URLSearchParams(searchParams.toString())
-
-		params.set('pageSize', String(newSize))
-		params.set('page', '1')
-		router.push(`${pathname}?${params.toString()}`)
-	}
-
-	if (!user || authLoading) return <Loader type='data' />
+	if (authLoading) return <Loader />
+	if (!user) return notFound()
 
 	return (
-		<section className='p-4 w-full space-y-4'>
+		<div className='space-y-6 p-6'>
 			<PageTitle
 				actions={
-					<Button asChild>
-						<Link href='/rups/create'>
-							<Plus className='mr-2 h-4 w-4' />
-							{t.create}
-						</Link>
-					</Button>
+					canCreate ? (
+						<Button asChild>
+							<Link href='/rups/create'>
+								<Plus className='mr-2 h-4 w-4' />
+								{t.newRupButton}
+							</Link>
+						</Button>
+					) : undefined
 				}
-				description={t.description}
+				description={canCreate ? t.teacherDescription : t.methodistDescription}
 			>
-				{t.title}
+				{isTeacher ? t.teacherTitle : t.methodistTitle}
 			</PageTitle>
 
-			<RupsCard
-				showCreateOnEmpty
-				currentPage={rupsData?.meta.currentPage || 1}
-				isLoading={isRupsLoading}
-				rups={rupsData?.data || []}
-				title={t.listTitle}
-				totalPages={rupsData?.meta.pages || 1}
-				onPageChange={setCurrentPage}
-			/>
+			<RupsFilterCard />
 
-			<Pagination
-				page={rupsData?.meta.currentPage || 1}
-				pageSize={rupsData?.meta.pageSize || 10}
-				pageSizeOptions={[10, 20, 50]}
+			<RupsCard
+				currentPage={rupsData?.meta.currentPage || 1}
+				isLoading={!rupsData && isLoading}
+				rups={rupsData?.data || []}
+				title={isTeacher ? t.listTeacher : t.listMethodist}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
-				onPageSizeChange={setPageSize}
 			/>
-		</section>
+		</div>
 	)
 }
 

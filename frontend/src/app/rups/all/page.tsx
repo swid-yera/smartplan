@@ -1,15 +1,25 @@
 'use client'
 
+import { useEffect } from 'react'
+
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, Pagination, RupsCard, withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { RoleEnum, type StatusEnum } from '@types'
 
+import { KpiUserSearchCard } from '../../kpi/components'
 import { RupsFilterCard } from '../components'
+import {
+	buildRupFilterSearchParams,
+	getRupFilterStateFromSearchParams,
+	hasExplicitRupFilterParams,
+	persistRupFilterState,
+	readPersistedRupFilterState,
+} from '../components/rups-filter-state'
 import localeDictionary from './locale.json'
 
 const Page = () => {
@@ -18,23 +28,47 @@ const Page = () => {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
+	const searchParamsString = searchParams.toString()
+	const { user, authLoading } = useAuthStore()
 
-	const q = searchParams.get('q') || ''
 	const page = Number(searchParams.get('page')) || 1
 	const pageSize = Number(searchParams.get('pageSize')) || 10
-	const statusParam = searchParams.get('status') ?? '' // "PENDING,APPROVED"
+	const filterState = getRupFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
+	const q = filterState.search
+	const status = filterState.statuses as StatusEnum[]
+	const sort = filterState.sort
 
-	const status = statusParam ? statusParam.split(',') : undefined
+	useEffect(() => {
+		const currentParams = new URLSearchParams(searchParamsString)
+		const currentFilterState = getRupFilterStateFromSearchParams(currentParams)
 
-	const { user, authLoading } = useAuthStore()
+		if (hasExplicitRupFilterParams(currentParams)) {
+			persistRupFilterState(currentFilterState)
+
+			return
+		}
+
+		const persistedState = readPersistedRupFilterState()
+
+		if (!persistedState) return
+
+		const nextParams = buildRupFilterSearchParams(currentParams, persistedState, { resetPage: true })
+		const nextQuery = nextParams.toString()
+
+		if (nextQuery === currentParams.toString()) return
+
+		router.replace(`${pathname}?${nextQuery}`, { scroll: false })
+	}, [pathname, router, searchParamsString])
 
 	const { data: rupsData, isLoading: isRupsLoading } = useQuery({
 		...services.rup.getAllOptions({
 			currentPage: page,
 			pageSize: pageSize,
-			search: q as string,
-			status: status as StatusEnum[],
+			search: q,
+			sort,
+			status,
 		}),
+		placeholderData: keepPreviousData,
 		enabled: !!user,
 	})
 
@@ -42,7 +76,7 @@ const Page = () => {
 		const params = new URLSearchParams(searchParams.toString())
 
 		params.set('page', String(newPage))
-		router.push(`${pathname}?${params.toString()}`)
+		router.push(`${pathname}?${params.toString()}`, { scroll: false })
 	}
 
 	const setPageSize = (newSize: number) => {
@@ -50,7 +84,7 @@ const Page = () => {
 
 		params.set('pageSize', String(newSize))
 		params.set('page', '1')
-		router.push(`${pathname}?${params.toString()}`)
+		router.push(`${pathname}?${params.toString()}`, { scroll: false })
 	}
 
 	if (!user || authLoading) return <Loader type='data' />
@@ -58,6 +92,8 @@ const Page = () => {
 	return (
 		<section className='p-4 w-full space-y-4'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
+
+			<KpiUserSearchCard profileTab='rups' />
 
 			<RupsFilterCard className='mb-4' />
 
@@ -82,4 +118,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.METHODIST], true)
+export default withRole(Page, [RoleEnum.METHODIST])

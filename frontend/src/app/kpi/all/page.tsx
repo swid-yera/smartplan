@@ -1,15 +1,24 @@
 'use client'
 
+import { useEffect } from 'react'
+
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination, withRole } from '@components'
 import { getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { RoleEnum, type StatusEnum } from '@types'
 
 import { AwardFilterCard, KpiUserSearchCard } from '../components'
+import {
+	buildAwardFilterSearchParams,
+	getAwardFilterStateFromSearchParams,
+	hasExplicitAwardFilterParams,
+	persistAwardFilterState,
+	readPersistedAwardFilterState,
+} from '../components/award-filter-state'
 import localeDictionary from './locale.json'
 
 const Page = () => {
@@ -18,6 +27,7 @@ const Page = () => {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const pathname = usePathname()
+	const searchParamsString = searchParams.toString()
 
 	// Параметры из URL
 	const page = Number(searchParams.get('page')) || 1
@@ -48,14 +58,38 @@ const Page = () => {
 			categoryId,
 			sort,
 		}),
+		placeholderData: keepPreviousData,
 		enabled: !!user,
 	})
+
+	useEffect(() => {
+		const currentParams = new URLSearchParams(searchParamsString)
+
+		if (hasExplicitAwardFilterParams(currentParams)) {
+			const explicitState = getAwardFilterStateFromSearchParams(currentParams)
+
+			persistAwardFilterState(explicitState)
+
+			return
+		}
+
+		const persistedState = readPersistedAwardFilterState()
+
+		if (!persistedState) return
+
+		const nextParams = buildAwardFilterSearchParams(currentParams, persistedState, { resetPage: true })
+		const nextQuery = nextParams.toString()
+
+		if (nextQuery === currentParams.toString()) return
+
+		router.replace(`${pathname}?${nextQuery}`, { scroll: false })
+	}, [pathname, router, searchParamsString])
 
 	const setCurrentPage = (newPage: number) => {
 		const params = new URLSearchParams(searchParams.toString())
 
 		params.set('page', String(newPage))
-		router.push(`${pathname}?${params.toString()}`)
+		router.push(`${pathname}?${params.toString()}`, { scroll: false })
 	}
 
 	const setPageSize = (newSize: number) => {
@@ -63,7 +97,7 @@ const Page = () => {
 
 		params.set('pageSize', String(newSize))
 		params.set('page', '1') // при смене размера страницы возвращаем на первую страницу
-		router.push(`${pathname}?${params.toString()}`)
+		router.push(`${pathname}?${params.toString()}`, { scroll: false })
 	}
 
 	if (!user || authLoading) return <Loader type='data' />
@@ -80,17 +114,14 @@ const Page = () => {
 			{/* список наград */}
 			<AwardsCard
 				awards={awardsData?.data || []}
-				currentPage={awardsData?.meta.currentPage || 1}
-				isLoading={isAwardsLoading}
+				isLoading={!awardsData && isAwardsLoading}
 				title={t.listTitle}
-				totalPages={awardsData?.meta.pages || 1}
-				onPageChange={setCurrentPage}
 			/>
 
 			{/* пагинация */}
 			<Pagination
-				page={awardsData?.meta.currentPage || 1}
-				pageSize={awardsData?.meta.pageSize || 10}
+				page={page}
+				pageSize={pageSize}
 				pageSizeOptions={[10, 20, 50]}
 				totalPages={awardsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}

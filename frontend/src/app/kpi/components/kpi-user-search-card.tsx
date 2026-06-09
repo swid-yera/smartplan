@@ -17,6 +17,7 @@ import localeDictionary from './locale.json'
 
 interface IProps {
 	className?: string
+	profileTab?: string
 }
 
 const useDebouncedValue = (value: string, delay = 300) => {
@@ -31,7 +32,7 @@ const useDebouncedValue = (value: string, delay = 300) => {
 	return debouncedValue
 }
 
-export const KpiUserSearchCard: FC<IProps> = ({ className }) => {
+export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).userSearch
 	const [searchInput, setSearchInput] = useState('')
@@ -78,7 +79,7 @@ export const KpiUserSearchCard: FC<IProps> = ({ className }) => {
 			<Link
 				key={user.keycloakId}
 				className='flex items-center justify-between gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/60'
-				href={`/users/${user.keycloakId}?tab=kpi`}
+				href={`/users/${user.keycloakId}?tab=${profileTab}`}
 			>
 				<div className='min-w-0 flex-1'>
 					<p className='truncate font-medium hover:underline'>{fullName}</p>

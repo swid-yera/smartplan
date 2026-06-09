@@ -21,7 +21,8 @@
 			"sortDesc": "Новые сначала",
 			"searchCategory": "Поиск категории...",
 			"categoryNotFound": "Категория не найдена.",
-			"apply": "Применить"
+			"apply": "Применить",
+			"reset": "Сбросить"
 		},
 		"userSearch": {
 			"title": "Поиск пользователя",
@@ -57,7 +58,8 @@
 			"sortDesc": "Алдымен жаңалары",
 			"searchCategory": "Санатты іздеу...",
 			"categoryNotFound": "Санат табылмады.",
-			"apply": "Қолдану"
+			"apply": "Қолдану",
+			"reset": "Қалпына келтіру"
 		},
 		"userSearch": {
 			"title": "Пайдаланушыны іздеу",
