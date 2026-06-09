@@ -224,6 +224,8 @@ const Page = () => {
 		</div>
 	)
 
+	console.log(awardsData?.data)
+
 	return (
 		<section className='mx-auto w-full space-y-8 px-4 pb-10 pt-5'>
 			<PageTitle actions={actionButtons} backHref='back' description={t.page.profileDescription}>

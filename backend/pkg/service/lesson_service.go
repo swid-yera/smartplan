@@ -251,7 +251,7 @@ var canonicalLessonStages = []canonicalLessonStage{
 		Name:       localization.LocaleText{Ru: "Формирование новых знаний и навыков", Kz: "Жаңа білім мен дағдыларды қалыптастыру"},
 		FirstTime:  40,
 		SecondTime: 40,
-		ThirdTime:  135,
+		ThirdTime:  30,
 		DefaultContent: localization.LocaleText{
 			Ru: "Выдача практических заданий; демонстрация выполнения; выполнение заданий; контроль, корректировка и помощь студентам при работе.",
 			Kz: "Практикалық тапсырмаларды беру; орындау үлгісін көрсету; тапсырмаларды орындау; жұмыс барысында білім алушыларды бақылау, түзету және қолдау.",
@@ -262,7 +262,7 @@ var canonicalLessonStages = []canonicalLessonStage{
 		Name:       localization.LocaleText{Ru: "Закрепление новой темы", Kz: "Жаңа тақырыпты бекіту"},
 		FirstTime:  15,
 		SecondTime: 20,
-		ThirdTime:  90,
+		ThirdTime:  15,
 		DefaultContent: localization.LocaleText{
 			Ru: "Оформление отчета студентами по выполненной работе; сдача отчетов; обсуждение результатов.",
 			Kz: "Орындалған жұмыс бойынша есепті рәсімдеу; есептерді тапсыру; нәтижелерді талқылау.",
