@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Body, File, UploadFile
+from fastapi import FastAPI, Body, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -57,7 +57,7 @@ def generate_document(payload: dict = Body(...)):
 
     except Exception as e:
         logger.exception("/generate-rup, error while generating document")
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/generate-lesson", response_class=FileResponse)
@@ -86,7 +86,7 @@ def generate_lesson(payload: dict = Body(...)):
 
     except Exception as e:
         logger.exception("/generate-lesson, error while generating document")
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/cleanup")
@@ -108,7 +108,7 @@ async def delete_out_files():
         }
     except Exception as e:
         logger.exception("/cleanup, error during cleanup")
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/hik-to-report", response_class=FileResponse)
@@ -131,4 +131,4 @@ async def hik_to_report(file: UploadFile = File(...)):
         )
     except Exception as e:
         logger.exception("/hik-to-report, error")
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))

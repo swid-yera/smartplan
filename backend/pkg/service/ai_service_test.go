@@ -9,10 +9,12 @@ import (
 func TestGetGeminiModels(t *testing.T) {
 	svc := &aiService{
 		cfg: &config.GeminiConfig{
-			PrimaryModel:           "gemini-2.5-flash-lite",
-			FallbackModel:          "gemini-2.5-flash",
-			SecondaryFallbackModel: "gemini-2.0-flash",
-			TertiaryFallbackModel:  "gemini-2.0-flash-lite",
+			PrimaryModel: "gemini-2.5-flash-lite",
+			FallbackModels: []string{
+				"gemini-2.5-flash",
+				"gemini-2.0-flash",
+				"gemini-2.0-flash-lite",
+			},
 		},
 	}
 
@@ -38,10 +40,12 @@ func TestGetGeminiModels(t *testing.T) {
 func TestGetGeminiModelsSkipsEmptyAndDuplicateEntries(t *testing.T) {
 	svc := &aiService{
 		cfg: &config.GeminiConfig{
-			PrimaryModel:           " gemini-2.5-flash-lite ",
-			FallbackModel:          "gemini-2.5-flash-lite",
-			SecondaryFallbackModel: "",
-			TertiaryFallbackModel:  "gemini-2.0-flash-lite",
+			PrimaryModel: " gemini-2.5-flash-lite ",
+			FallbackModels: []string{
+				"gemini-2.5-flash-lite",
+				"",
+				"gemini-2.0-flash-lite",
+			},
 		},
 	}
 

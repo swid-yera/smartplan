@@ -36,11 +36,8 @@ export interface IUpdateLessonResourceRequest {
 
 export interface IUpdateLessonProgressRequest {
 	id?: string
-	name: LocaleText
 	content: LocaleText[]
-	first_time: number[]
-	second_time: number[]
-	third_time: number[]
+	step_order?: number
 }
 
 export interface IUpdateLessonRequest {

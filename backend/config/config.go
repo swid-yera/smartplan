@@ -143,13 +143,11 @@ type CryptoConfig struct {
 }
 
 type GeminiConfig struct {
-	APIKey                 string
-	APIKeys                []string
-	BaseURL                string
-	PrimaryModel           string
-	FallbackModel          string
-	SecondaryFallbackModel string
-	TertiaryFallbackModel  string
+	APIKey         string
+	APIKeys        []string
+	BaseURL        string
+	PrimaryModel   string
+	FallbackModels []string
 }
 
 type OpenAIConfig struct {
@@ -162,6 +160,15 @@ type AIConfig struct {
 	Provider string
 	Gemini   *GeminiConfig
 	OpenAI   *OpenAIConfig
+}
+
+var defaultGeminiFallbackModels = []string{
+	"gemini-2.5-flash",
+	"gemini-3.5-flash",
+	"gemini-3.1-flash-lite",
+	"gemini-3-flash",
+	"gemma-4-26b-a4b-it",
+	"gemma-4-31b-it",
 }
 
 func loadGeminiAPIKeys() []string {
@@ -227,6 +234,73 @@ func loadGeminiAPIKeys() []string {
 	return result
 }
 
+func loadGeminiFallbackModels() []string {
+	type keyedValue struct {
+		index int
+		value string
+	}
+
+	result := make([]string, 0, 8)
+	seen := make(map[string]struct{}, 8)
+	appendUnique := func(value string) {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			return
+		}
+		if _, exists := seen[trimmed]; exists {
+			return
+		}
+		seen[trimmed] = struct{}{}
+		result = append(result, trimmed)
+	}
+
+	// Backward compatibility with the original single fallback variable.
+	appendUnique(os.Getenv("GEMINI_FALLBACK_MODEL"))
+
+	indexed := make([]keyedValue, 0, 8)
+	for _, item := range os.Environ() {
+		parts := strings.SplitN(item, "=", 2)
+		if len(parts) == 0 {
+			continue
+		}
+
+		envName := parts[0]
+		if !strings.HasPrefix(envName, "GEMINI_FALLBACK_MODEL_") {
+			continue
+		}
+
+		suffix := strings.TrimPrefix(envName, "GEMINI_FALLBACK_MODEL_")
+		index, err := strconv.Atoi(suffix)
+		if err != nil || index <= 0 {
+			continue
+		}
+
+		value := strings.TrimSpace(os.Getenv(envName))
+		if value == "" {
+			continue
+		}
+
+		indexed = append(indexed, keyedValue{
+			index: index,
+			value: value,
+		})
+	}
+
+	sort.Slice(indexed, func(i, j int) bool {
+		return indexed[i].index < indexed[j].index
+	})
+
+	for _, item := range indexed {
+		appendUnique(item.value)
+	}
+
+	// Legacy env support for already deployed environments.
+	appendUnique(os.Getenv("GEMINI_SECONDARY_FALLBACK_MODEL"))
+	appendUnique(os.Getenv("GEMINI_TERTIARY_FALLBACK_MODEL"))
+
+	return result
+}
+
 func LoadServerConfig() *ServerConfig {
 	ensureEnvLoaded()
 
@@ -263,19 +337,21 @@ func LoadGeminiConfig() *GeminiConfig {
 	ensureEnvLoaded()
 
 	apiKeys := loadGeminiAPIKeys()
+	fallbackModels := loadGeminiFallbackModels()
+	if len(fallbackModels) == 0 {
+		fallbackModels = append([]string(nil), defaultGeminiFallbackModels...)
+	}
 	defaultAPIKey := ""
 	if len(apiKeys) > 0 {
 		defaultAPIKey = apiKeys[0]
 	}
 
 	return &GeminiConfig{
-		APIKey:                 defaultAPIKey,
-		APIKeys:                apiKeys,
-		BaseURL:                getEnv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
-		PrimaryModel:           getEnv("GEMINI_PRIMARY_MODEL", "gemini-2.5-flash-lite"),
-		FallbackModel:          getEnv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash"),
-		SecondaryFallbackModel: getEnv("GEMINI_SECONDARY_FALLBACK_MODEL", "gemini-2.0-flash"),
-		TertiaryFallbackModel:  getEnv("GEMINI_TERTIARY_FALLBACK_MODEL", "gemini-2.0-flash-lite"),
+		APIKey:         defaultAPIKey,
+		APIKeys:        apiKeys,
+		BaseURL:        getEnv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
+		PrimaryModel:   getEnv("GEMINI_PRIMARY_MODEL", "gemini-2.5-flash-lite"),
+		FallbackModels: fallbackModels,
 	}
 }
 

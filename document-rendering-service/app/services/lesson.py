@@ -7,7 +7,10 @@ from app.config import LESSON_TEMPLATE_PATH, OUT_DIR
 from app.helpers.rup_helpers import locale_text, normalize_language
 from app.helpers.slugify import slugify_ru
 from app.logger import logger
-from app.post_process import apply_kazakh_lesson_template_localization
+from app.post_process import (
+    apply_kazakh_lesson_template_localization,
+    apply_lesson_template_formatting,
+)
 
 
 def to_text_list(value, language: str = "ru") -> list[str]:
@@ -58,18 +61,18 @@ def map_progress_rows(rows: list[dict]) -> list[dict]:
     language = str(rows[0].get("_language", "ru")).strip().lower() if rows else "ru"
     fixed_names_map = {
         "ru": [
-            "Организационно-\nмотивационный момент",
+            "Организационно-мотивационный момент",
             "Актуализация знаний",
-            "Формирование новых\nзнаний и навыков",
+            "Формирование новых знаний и навыков",
             "Закрепление новой темы",
             "Рефлексия",
             "Оценивание",
             "Домашнее задание",
         ],
         "kz": [
-            "Ұйымдастыру-\nынталандыру кезеңі",
+            "Ұйымдастыру-мотивациялық кезең",
             "Білімді өзектендіру",
-            "Жаңа білім мен\nдағдыларды қалыптастыру",
+            "Жаңа білім мен дағдыларды қалыптастыру",
             "Жаңа тақырыпты бекіту",
             "Рефлексия",
             "Бағалау",
@@ -78,25 +81,23 @@ def map_progress_rows(rows: list[dict]) -> list[dict]:
     }
     fixed_names = fixed_names_map.get(language, fixed_names_map["ru"])
     fixed_times = [
-        [5, 10, 15],
-        [15, 10, 10],
-        [40, 35, 30],
-        [15, 15, 15],
-        [7, 8, 8],
+        [5, 5, 10],
+        [15, 10, 20],
+        [40, 40, 30],
+        [15, 20, 15],
+        [7, 5, 5],
         [5, 7, 7],
-        [3, 5, 5],
+        [3, 3, 3],
     ]
     mapped: list[dict] = []
     for i, name in enumerate(fixed_names):
-        fallback_times = fixed_times[i]
         row = rows[i] if i < len(rows) else {}
-        first_time, second_time, third_time = extract_step_times(row, tuple(fallback_times))
+        first_time, second_time, third_time = fixed_times[i]
         time_str = f"{first_time}/{second_time}/{third_time}мин."
-        resolved_name = locale_text(row.get("name", ""), language) or name
         content = to_multiline_text(row.get("content", []), language)
         mapped.append({
             "num": str(i + 1),
-            "name": f"{resolved_name}\n{time_str}",
+            "name": f"{name}\n{time_str}",
             "content": content,
         })
     return mapped
@@ -110,8 +111,11 @@ def generate_lesson_docx(data: dict) -> Path:
     rup_name = locale_text(data.get("rup_name", ""), language)
     discipline_name = locale_text(data.get("discipline_name", ""), language)
     topic_name = locale_text(data.get("topic_name", ""), language)
-    module_name = discipline_name or rup_name or topic_name
-    ro_code = rup_name if rup_name and rup_name != module_name else ""
+    module_name = rup_name or discipline_name or topic_name
+    ro_code = discipline_name if discipline_name and discipline_name != module_name else ""
+    progress_rows = map_progress_rows(
+        [{**row, "_language": language} for row in data.get("lesson_progress", [])]
+    )
 
     context = {
         "college": "КГКП «ALMATY POLYTECHNIC COLLEGE»",
@@ -129,10 +133,10 @@ def generate_lesson_docx(data: dict) -> Path:
         "expected": locale_text(data.get("expected", ""), language),
         "internet_resources": to_multiline_text(data.get("internet_resources"), language),
         "technical_resources": to_multiline_text(data.get("technical_resources"), language),
-        "lesson_progress": map_progress_rows(
-            [{**row, "_language": language} for row in data.get("lesson_progress", [])]
-        ),
+        "lesson_progress": progress_rows,
     }
+    for index, row in enumerate(progress_rows, start=1):
+        context[f"lesson_stage_{index}"] = row["content"]
 
     logger.info("generating lesson document, rendering template")
     doc = DocxTemplate(LESSON_TEMPLATE_PATH)
@@ -147,5 +151,6 @@ def generate_lesson_docx(data: dict) -> Path:
     logger.info("generating lesson document, saving to %s", output_path)
     doc.save(output_path)
     apply_kazakh_lesson_template_localization(output_path, language)
+    apply_lesson_template_formatting(output_path)
 
     return output_path

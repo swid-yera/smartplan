@@ -1,5 +1,9 @@
+import io
+import zipfile
+
 from docx import Document
 from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.shared import RGBColor
 
 
 def apply_vertical_merge(file_path: str):
@@ -101,7 +105,9 @@ KAZAKH_LESSON_EXACT_TEXT_REPLACEMENTS = {
     "План учебного занятия № ": "Сабақ жоспары № ",
     "Наименование модуля": "Модульдің атауы",
     "/дисциплины": "/пән",
+    "Наименование модуля /дисциплины ": "Модуль / пән атауы ",
     "Подготовил педагог": "Дайындаған педагог",
+    "Подготовил педагог ": "Дайындаған педагог ",
     "Дата проведения": "Өткізу күні",
     "Общие сведения": "Жалпы мәліметтер",
     "Тип занятия": "Сабақ түрі",
@@ -111,10 +117,18 @@ KAZAKH_LESSON_EXACT_TEXT_REPLACEMENTS = {
     "результаты": "нәтижелер",
     "Необходимые ресурсы": "Қажетті ресурстар",
     "Учебно-методическое оснащение,": "Оқу-әдістемелік қамтамасыз ету,",
+    " Учебно-методическое оснащение, справочная литература: ": " Оқу-әдістемелік қамтамасыз ету, анықтамалық әдебиеттер: ",
     "Учебно-методическое оснащение, справочная литература:": "Оқу-әдістемелік қамтамасыз ету, анықтамалық әдебиеттер:",
     "справочная литература:": "анықтамалық әдебиеттер:",
     "Техническое оснащение:": "Техникалық жабдықталуы:",
     "Ход занятия": "Сабақ барысы",
+    "Организационно-мотивационный момент": "Ұйымдастыру-мотивациялық кезең",
+    "Актуализация знаний": "Білімді өзектендіру",
+    "Формирование новых знаний и навыков": "Жаңа білім мен дағдыларды қалыптастыру",
+    "Закрепление новой темы": "Жаңа тақырыпты бекіту",
+    "Рефлексия": "Рефлексия",
+    "Оценивание": "Бағалау",
+    "Домашнее задание": "Үй тапсырмасы",
 }
 
 KAZAKH_LESSON_PARTIAL_TEXT_REPLACEMENTS = (
@@ -195,3 +209,42 @@ def apply_kazakh_lesson_template_localization(file_path: str, language: str):
         return
 
     _apply_document_localization(file_path, _replace_lesson_static_text)
+
+
+def apply_lesson_template_formatting(file_path: str):
+    doc = Document(file_path)
+
+    for paragraph in doc.paragraphs:
+        for run in paragraph.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)
+
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.color.rgb = RGBColor(0, 0, 0)
+
+    doc.save(file_path)
+    _force_black_xml_colors(file_path)
+
+
+def _force_black_xml_colors(file_path: str):
+    with zipfile.ZipFile(file_path, "r") as source_zip:
+        updated_parts: dict[str, bytes] = {}
+
+        for name in source_zip.namelist():
+            data = source_zip.read(name)
+            if name.startswith("word/") and name.endswith(".xml") and b"FF0000" in data:
+                updated_parts[name] = data.replace(b"FF0000", b"000000")
+
+        if not updated_parts:
+            return
+
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as target_zip:
+            for name in source_zip.namelist():
+                target_zip.writestr(name, updated_parts.get(name, source_zip.read(name)))
+
+    with open(file_path, "wb") as destination:
+        destination.write(output.getvalue())

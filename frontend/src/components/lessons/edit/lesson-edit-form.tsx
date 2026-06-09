@@ -18,7 +18,6 @@ import { toast } from 'sonner'
 import { PageTitle } from '../../ui/page-title'
 import type { ILessonFormState } from './lesson-edit.types'
 import {
-	createEmptyLessonProgress,
 	createEmptyResource,
 	createLocaleDraft,
 	extractSaveErrorMessage,
@@ -111,7 +110,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 
 	const handleLessonProgressChange = (
 		index: number,
-		field: 'name' | 'firstTime' | 'secondTime' | 'thirdTime' | 'contentText',
+		field: 'contentText',
 		value: string,
 	) => {
 		setFormData((prev) => {
@@ -120,52 +119,17 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 
 			if (!current) return prev
 
-			if (field === 'firstTime' || field === 'secondTime' || field === 'thirdTime') {
-				nextLessonProgress[index] = {
-					...current,
-					[field]: Math.max(0, Number.parseInt(value, 10) || 0),
-				}
-			} else if (field === 'name' || field === 'contentText') {
-				nextLessonProgress[index] = {
-					...current,
-					[field]: {
-						...current[field],
-						[activeLocale]: value,
-					},
-				}
-			} else {
-				nextLessonProgress[index] = {
-					...current,
-					[field]: value,
-				}
+			nextLessonProgress[index] = {
+				...current,
+				[field]: {
+					...current[field],
+					[activeLocale]: value,
+				},
 			}
 
 			return {
 				...prev,
 				lessonProgress: nextLessonProgress,
-			}
-		})
-	}
-
-	const handleAddLessonProgress = () => {
-		setFormData((prev) => ({
-			...prev,
-			lessonProgress: [...prev.lessonProgress, createEmptyLessonProgress()],
-		}))
-	}
-
-	const handleRemoveLessonProgress = (index: number) => {
-		setFormData((prev) => {
-			if (prev.lessonProgress.length <= 1) {
-				return {
-					...prev,
-					lessonProgress: [createEmptyLessonProgress()],
-				}
-			}
-
-			return {
-				...prev,
-				lessonProgress: prev.lessonProgress.filter((_, itemIndex) => itemIndex !== index),
 			}
 		})
 	}
@@ -211,25 +175,6 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 			lesson_progress: normalizeLessonProgressForRequest(formData.lessonProgress),
 			internet_resources: normalizeResources(formData.internetResources, LessonResourceTypeEnum.INTERNET),
 			technical_resources: normalizeResources(formData.technicalResources, LessonResourceTypeEnum.TECHNICAL),
-		}
-
-		const progressTotals = payload.lesson_progress.reduce(
-			(acc, item) => {
-				acc.first += Number(item.first_time?.[0] || 0)
-				acc.second += Number(item.second_time?.[0] || 0)
-				acc.third += Number(item.third_time?.[0] || 0)
-
-				return acc
-			},
-			{ first: 0, second: 0, third: 0 },
-		)
-
-		if (progressTotals.first !== 90 || progressTotals.second !== 90 || progressTotals.third !== 90) {
-			toast.error(t.lessonProgressTotalError, {
-				description: `Сейчас: ${progressTotals.first}/${progressTotals.second}/${progressTotals.third}`,
-			})
-
-			return
 		}
 
 		const toastId = `lesson-${lesson.id}-update`
@@ -306,9 +251,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 				<LessonProgressEditor
 					activeLocale={activeLocale}
 					items={formData.lessonProgress}
-					onAdd={handleAddLessonProgress}
 					onChange={handleLessonProgressChange}
-					onRemove={handleRemoveLessonProgress}
 				/>
 
 				<div className='grid gap-6 xl:grid-cols-2'>
