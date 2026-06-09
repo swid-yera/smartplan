@@ -77,6 +77,7 @@ type LessonNavigationResponse struct {
 
 type LessonProgressData struct {
 	ID         uuid.UUID                 `json:"id"`
+	StepOrder  int16                     `json:"step_order"`
 	Name       localization.LocaleText   `json:"name"`
 	FirstTime  []int32                   `json:"first_time"`
 	SecondTime []int32                   `json:"second_time"`
@@ -91,6 +92,7 @@ type PaginatedLessonsResponse struct {
 
 type LessonProgressParams struct {
 	ID         uuid.UUID                 `json:"id"`
+	StepOrder  int16                     `json:"step_order"`
 	Name       localization.LocaleText   `json:"name"`
 	FirstTime  []int32                   `json:"first_time"`
 	SecondTime []int32                   `json:"second_time"`
@@ -107,6 +109,7 @@ type UpdateLessonResourceRequest struct {
 
 type UpdateLessonProgressRequest struct {
 	ID         string                    `json:"id"`
+	StepOrder  int16                     `json:"step_order"`
 	Name       localization.LocaleText   `json:"name"`
 	FirstTime  []int32                   `json:"first_time"`
 	SecondTime []int32                   `json:"second_time"`
@@ -165,6 +168,15 @@ type generatedLessonPlan struct {
 	Progress   []GeneratedLessonProgressStep
 }
 
+type canonicalLessonStage struct {
+	StepOrder      int16
+	Name           localization.LocaleText
+	FirstTime      int32
+	SecondTime     int32
+	ThirdTime      int32
+	DefaultContent localization.LocaleText
+}
+
 type lessonDocumentProgressRow struct {
 	Num     string `json:"num"`
 	Name    string `json:"name"`
@@ -211,6 +223,86 @@ const (
 	lessonVariantTotalMins  = int32(90)
 )
 
+var canonicalLessonStages = []canonicalLessonStage{
+	{
+		StepOrder:  1,
+		Name:       localization.LocaleText{Ru: "Организационно-мотивационный момент", Kz: "Ұйымдастыру-мотивациялық кезең"},
+		FirstTime:  5,
+		SecondTime: 5,
+		ThirdTime:  10,
+		DefaultContent: localization.LocaleText{
+			Ru: "Приветствие студентов, проверка посещаемости, мотивация к предстоящей деятельности.",
+			Kz: "Білім алушылармен сәлемдесу, қатысуды тексеру, алдағы оқу әрекетіне ынталандыру.",
+		},
+	},
+	{
+		StepOrder:  2,
+		Name:       localization.LocaleText{Ru: "Актуализация знаний", Kz: "Білімді өзектендіру"},
+		FirstTime:  15,
+		SecondTime: 10,
+		ThirdTime:  20,
+		DefaultContent: localization.LocaleText{
+			Ru: "Повторение базовых знаний, умений и навыков; ввод в новую тему; инструктаж по технике безопасности (при необходимости).",
+			Kz: "Негізгі білім, білік және дағдыларды қайталау; жаңа тақырыпқа кіріспе; қажет болған жағдайда қауіпсіздік техникасы бойынша нұсқаулық беру.",
+		},
+	},
+	{
+		StepOrder:  3,
+		Name:       localization.LocaleText{Ru: "Формирование новых знаний и навыков", Kz: "Жаңа білім мен дағдыларды қалыптастыру"},
+		FirstTime:  40,
+		SecondTime: 40,
+		ThirdTime:  135,
+		DefaultContent: localization.LocaleText{
+			Ru: "Выдача практических заданий; демонстрация выполнения; выполнение заданий; контроль, корректировка и помощь студентам при работе.",
+			Kz: "Практикалық тапсырмаларды беру; орындау үлгісін көрсету; тапсырмаларды орындау; жұмыс барысында білім алушыларды бақылау, түзету және қолдау.",
+		},
+	},
+	{
+		StepOrder:  4,
+		Name:       localization.LocaleText{Ru: "Закрепление новой темы", Kz: "Жаңа тақырыпты бекіту"},
+		FirstTime:  15,
+		SecondTime: 20,
+		ThirdTime:  90,
+		DefaultContent: localization.LocaleText{
+			Ru: "Оформление отчета студентами по выполненной работе; сдача отчетов; обсуждение результатов.",
+			Kz: "Орындалған жұмыс бойынша есепті рәсімдеу; есептерді тапсыру; нәтижелерді талқылау.",
+		},
+	},
+	{
+		StepOrder:  5,
+		Name:       localization.LocaleText{Ru: "Рефлексия", Kz: "Рефлексия"},
+		FirstTime:  7,
+		SecondTime: 5,
+		ThirdTime:  5,
+		DefaultContent: localization.LocaleText{
+			Ru: "Обсуждение: какие навыки приобретены, чему научились, что было полезно и что вызвало затруднения.",
+			Kz: "Талқылау: қандай дағдылар қалыптасты, нені үйренді, не пайдалы болды және қандай қиындықтар кездесті.",
+		},
+	},
+	{
+		StepOrder:  6,
+		Name:       localization.LocaleText{Ru: "Оценивание", Kz: "Бағалау"},
+		FirstTime:  5,
+		SecondTime: 7,
+		ThirdTime:  7,
+		DefaultContent: localization.LocaleText{
+			Ru: "Проверка и оценка выполненных работ; комментарии преподавателя.",
+			Kz: "Орындалған жұмыстарды тексеру және бағалау; оқытушының кері байланысы.",
+		},
+	},
+	{
+		StepOrder:  7,
+		Name:       localization.LocaleText{Ru: "Домашнее задание", Kz: "Үй тапсырмасы"},
+		FirstTime:  3,
+		SecondTime: 3,
+		ThirdTime:  3,
+		DefaultContent: localization.LocaleText{
+			Ru: "Задания для самостоятельного закрепления материала.",
+			Kz: "Материалды өз бетінше бекітуге арналған тапсырмалар.",
+		},
+	},
+}
+
 func NewLessonService(
 	repo repository.Lessons,
 	rupRepo repository.RupRepository,
@@ -230,6 +322,67 @@ func NewLessonService(
 		fileStorage: fileStorage,
 		log:         logger,
 	}
+}
+
+func canonicalLessonProgress(_ storage.EnumLessonType, language string) []GeneratedLessonProgressStep {
+	selectedLanguage := normalizeBackendLanguage(language)
+	progress := make([]GeneratedLessonProgressStep, 0, len(canonicalLessonStages))
+
+	for _, stage := range canonicalLessonStages {
+		progress = append(progress, GeneratedLessonProgressStep{
+			Name:       localeTextByLanguage(stage.Name, selectedLanguage),
+			FirstTime:  stage.FirstTime,
+			SecondTime: stage.SecondTime,
+			ThirdTime:  stage.ThirdTime,
+			Content: []string{
+				localeTextByLanguage(stage.DefaultContent, selectedLanguage),
+			},
+		})
+	}
+
+	return progress
+}
+
+func canonicalLessonStageName(order int16) localization.LocaleText {
+	for _, stage := range canonicalLessonStages {
+		if stage.StepOrder == order {
+			return stage.Name
+		}
+	}
+
+	return localization.LocaleText{}
+}
+
+func canonicalLessonStageTimes(order int16) ([]int32, []int32, []int32) {
+	for _, stage := range canonicalLessonStages {
+		if stage.StepOrder == order {
+			return []int32{stage.FirstTime}, []int32{stage.SecondTime}, []int32{stage.ThirdTime}
+		}
+	}
+
+	return []int32{0}, []int32{0}, []int32{0}
+}
+
+func canonicalLessonStageDefaultContent(order int16) localization.LocaleText {
+	for _, stage := range canonicalLessonStages {
+		if stage.StepOrder == order {
+			return stage.DefaultContent
+		}
+	}
+
+	return localization.LocaleText{}
+}
+
+func canonicalLessonStepOrder(index int) int16 {
+	return int16(index + 1)
+}
+
+func normalizeCanonicalLessonStepOrder(order int16, index int) int16 {
+	if order >= 1 && order <= int16(len(canonicalLessonStages)) {
+		return order
+	}
+
+	return canonicalLessonStepOrder(index)
 }
 
 func (s *LessonService) CreateLesson(ctx context.Context, params LessonParams) error {
@@ -547,7 +700,8 @@ func (s *LessonService) replaceLessonProgress(
 		}
 	}
 
-	for _, step := range progress {
+	for index, step := range progress {
+		stepOrder := normalizeCanonicalLessonStepOrder(int16(index+1), index)
 		sourceContent := make([]string, 0, len(step.Content))
 		for _, item := range step.Content {
 			item = strings.TrimSpace(item)
@@ -556,20 +710,9 @@ func (s *LessonService) replaceLessonProgress(
 			}
 		}
 		if len(sourceContent) == 0 {
-			if normalizeBackendLanguage(language) == "kz" {
-				sourceContent = []string{"Кезең сабақ тақырыбына сәйкес орындалады."}
-			} else {
-				sourceContent = []string{"Этап выполняется согласно теме урока."}
-			}
+			sourceContent = []string{localeTextByLanguage(canonicalLessonStageDefaultContent(stepOrder), language)}
 		}
 
-		name := s.buildBilingualLessonText(
-			ctx,
-			step.Name,
-			language,
-			"этап поурочного плана колледжа",
-			"Сохрани структуру и методическую терминологию этапа занятия.",
-		)
 		content := s.buildBilingualLessonContent(
 			ctx,
 			sourceContent,
@@ -578,12 +721,14 @@ func (s *LessonService) replaceLessonProgress(
 			"Сохрани методический стиль и формат коротких инструкций для преподавателя и обучающихся.",
 		)
 
+		firstTime, secondTime, thirdTime := canonicalLessonStageTimes(stepOrder)
 		if err := s.repo.CreateLessonProgress(ctx, storage.CreateLessonProgressParams{
+			StepOrder:  stepOrder,
 			LessonID:   lessonID,
-			Name:       name.ToJSONB(),
-			FirstTime:  []int32{step.FirstTime},
-			SecondTime: []int32{step.SecondTime},
-			ThirdTime:  []int32{step.ThirdTime},
+			Name:       canonicalLessonStageName(stepOrder).ToJSONB(),
+			FirstTime:  firstTime,
+			SecondTime: secondTime,
+			ThirdTime:  thirdTime,
 			Content:    localization.LocaleTextSliceToJSONB(content),
 		}); err != nil {
 			return fmt.Errorf("create lesson progress: %w", err)
@@ -628,9 +773,6 @@ func (s *LessonService) UpdateLesson(ctx context.Context, id uuid.UUID, req Upda
 	}
 
 	progress := manualProgressToLessonProgressParams(req.LessonProgress)
-	if len(progress) > 0 && !isValidLessonProgressOptions(progress, lessonVariantTotalMins) {
-		return fmt.Errorf("invalid lesson progress durations: each variant must sum to %d minutes", lessonVariantTotalMins)
-	}
 
 	topicName := req.TopicName.Normalized()
 	if topicName.Ru == "" && topicName.Kz == "" {
@@ -726,7 +868,7 @@ func manualResourceMatches(resource *storage.RupResource, name localization.Loca
 
 func manualProgressToLessonProgressParams(progress []UpdateLessonProgressRequest) []LessonProgressParams {
 	result := make([]LessonProgressParams, 0, len(progress))
-	for _, item := range progress {
+	for index, item := range progress {
 		var id uuid.UUID
 		if parsedID, err := uuid.Parse(strings.TrimSpace(item.ID)); err == nil {
 			id = parsedID
@@ -734,6 +876,7 @@ func manualProgressToLessonProgressParams(progress []UpdateLessonProgressRequest
 
 		result = append(result, LessonProgressParams{
 			ID:         id,
+			StepOrder:  normalizeCanonicalLessonStepOrder(item.StepOrder, index),
 			Name:       item.Name.Normalized(),
 			FirstTime:  item.FirstTime,
 			SecondTime: item.SecondTime,
@@ -773,15 +916,28 @@ func (s *LessonService) replaceManualLessonProgress(
 		}
 	}
 
-	for _, item := range progress {
-		firstTime, secondTime, thirdTime := normalizeProgressTriples(item)
+	for index := range canonicalLessonStages {
+		stepOrder := canonicalLessonStepOrder(index)
+		var content []localization.LocaleText
+		for _, item := range progress {
+			if item.StepOrder == stepOrder {
+				content = normalizeLocaleTextSlice(item.Content)
+				break
+			}
+		}
+		if len(content) == 0 {
+			content = []localization.LocaleText{canonicalLessonStageDefaultContent(stepOrder)}
+		}
+
+		firstTime, secondTime, thirdTime := canonicalLessonStageTimes(stepOrder)
 		if err := s.repo.CreateLessonProgress(ctx, storage.CreateLessonProgressParams{
+			StepOrder:  stepOrder,
 			LessonID:   lessonID,
-			Name:       item.Name.ToJSONB(),
+			Name:       canonicalLessonStageName(stepOrder).ToJSONB(),
 			FirstTime:  firstTime,
 			SecondTime: secondTime,
 			ThirdTime:  thirdTime,
-			Content:    localization.LocaleTextSliceToJSONB(item.Content),
+			Content:    localization.LocaleTextSliceToJSONB(content),
 		}); err != nil {
 			return fmt.Errorf("create lesson progress: %w", err)
 		}
@@ -1006,45 +1162,9 @@ func (s *LessonService) GetLessonDownloadURL(ctx context.Context, id uuid.UUID, 
 		groupName = strings.TrimSpace(group.Name)
 	}
 
-	lessonProgressRows, err := s.repo.GetLessonProgressByLessonID(ctx, id)
+	progress, err := s.buildStoredLessonProgressForDocument(ctx, id, selectedLanguage, sourceLanguage, lesson.Type)
 	if err != nil {
-		return "", fmt.Errorf("get lesson progress: %w", err)
-	}
-
-	progress := make([]GeneratedLessonProgressStep, 0, len(lessonProgressRows))
-	for _, row := range lessonProgressRows {
-		nameValue := localization.LocaleTextFromJSONB(row.Name)
-		contentValue := localization.LocaleTextSliceFromJSONB(row.Content)
-		stepName, _ := s.resolveLocalizedLessonText(
-			ctx,
-			nameValue,
-			selectedLanguage,
-			"этап поурочного плана колледжа",
-			"Сохрани структуру и методическую терминологию этапа занятия.",
-		)
-
-		content := localizedLessonContentToStrings(contentValue, selectedLanguage)
-		if !localizedLessonContentHasLanguage(contentValue, selectedLanguage) {
-			content = s.translateLessonContentLines(
-				ctx,
-				localizedLessonContentToStrings(contentValue, sourceLanguage),
-				sourceLanguage,
-				selectedLanguage,
-				"содержание этапа поурочного плана колледжа",
-				"Сохрани методический стиль и формат коротких инструкций для преподавателя и обучающихся.",
-			)
-		}
-
-		progress = append(progress, GeneratedLessonProgressStep{
-			Name:       stepName,
-			FirstTime:  firstProgressMinute(row.FirstTime),
-			SecondTime: firstProgressMinute(row.SecondTime),
-			ThirdTime:  firstProgressMinute(row.ThirdTime),
-			Content:    content,
-		})
-	}
-	if len(progress) == 0 {
-		progress = defaultLessonProgress(lesson.Type, selectedLanguage)
+		return "", err
 	}
 
 	goals, _ := s.resolveLocalizedLessonText(
@@ -1215,27 +1335,29 @@ func (s *LessonService) buildStoredLessonProgressForDocument(
 		return nil, fmt.Errorf("get lesson progress: %w", err)
 	}
 
-	progress := make([]GeneratedLessonProgressStep, 0, len(lessonProgressRows))
+	progress := canonicalLessonProgress(lessonType, selectedLanguage)
+	rowsByOrder := make(map[int16]storage.LessonProgress, len(lessonProgressRows))
 	for _, row := range lessonProgressRows {
-		nameValue := localization.LocaleTextFromJSONB(row.Name)
-		contentValue := localization.LocaleTextSliceFromJSONB(row.Content)
+		rowsByOrder[row.StepOrder] = row
+	}
 
-		stepName := localeTextByLanguage(nameValue, selectedLanguage)
+	for index := range progress {
+		stepOrder := canonicalLessonStepOrder(index)
+		row, exists := rowsByOrder[stepOrder]
+		if !exists {
+			continue
+		}
+
+		contentValue := localization.LocaleTextSliceFromJSONB(row.Content)
 		content := localizedLessonContentToStrings(contentValue, selectedLanguage)
 		if len(content) == 0 {
 			content = localizedLessonContentToStrings(contentValue, sourceLanguage)
 		}
+		if len(content) == 0 {
+			content = progress[index].Content
+		}
 
-		progress = append(progress, GeneratedLessonProgressStep{
-			Name:       stepName,
-			FirstTime:  firstProgressMinute(row.FirstTime),
-			SecondTime: firstProgressMinute(row.SecondTime),
-			ThirdTime:  firstProgressMinute(row.ThirdTime),
-			Content:    content,
-		})
-	}
-	if len(progress) == 0 {
-		progress = defaultLessonProgress(lessonType, selectedLanguage)
+		progress[index].Content = content
 	}
 
 	return progress, nil
@@ -1270,14 +1392,20 @@ func (s *LessonService) resourceStringsFromIDs(
 }
 
 func (s *LessonService) CreateLessonProgress(ctx context.Context, params LessonProgressParams, lessonID uuid.UUID) error {
-	firstTime, secondTime, thirdTime := normalizeProgressTriples(params)
+	stepOrder := normalizeCanonicalLessonStepOrder(params.StepOrder, 0)
+	firstTime, secondTime, thirdTime := canonicalLessonStageTimes(stepOrder)
+	content := normalizeLocaleTextSlice(params.Content)
+	if len(content) == 0 {
+		content = []localization.LocaleText{canonicalLessonStageDefaultContent(stepOrder)}
+	}
 	createParams := storage.CreateLessonProgressParams{
+		StepOrder:  stepOrder,
 		LessonID:   lessonID,
-		Name:       params.Name.ToJSONB(),
+		Name:       canonicalLessonStageName(stepOrder).ToJSONB(),
 		FirstTime:  firstTime,
 		SecondTime: secondTime,
 		ThirdTime:  thirdTime,
-		Content:    localization.LocaleTextSliceToJSONB(params.Content),
+		Content:    localization.LocaleTextSliceToJSONB(content),
 	}
 	return s.repo.CreateLessonProgress(ctx, createParams)
 }
@@ -1786,51 +1914,22 @@ func normalizeGeneratedLessonPlan(
 		return nil, fmt.Errorf("ai response validation failed: expected is empty")
 	}
 
-	progress := make([]GeneratedLessonProgressStep, 0, len(aiResult.LessonProgress))
-	for _, step := range aiResult.LessonProgress {
-		name := strings.TrimSpace(step.Name)
-		if name == "" {
+	progress := canonicalLessonProgress(lessonType, sourceLanguage)
+	for index := range progress {
+		if index >= len(aiResult.LessonProgress) {
 			continue
 		}
 
-		content := make([]string, 0, len(step.Content))
-		for _, item := range step.Content {
+		content := make([]string, 0, len(aiResult.LessonProgress[index].Content))
+		for _, item := range aiResult.LessonProgress[index].Content {
 			item = strings.TrimSpace(item)
 			if item != "" {
 				content = append(content, item)
 			}
 		}
-		if len(content) == 0 {
-			continue
+		if len(content) > 0 {
+			progress[index].Content = content
 		}
-
-		firstTime := step.FirstTime
-		if firstTime < 0 {
-			firstTime = 0
-		}
-		secondTime := step.SecondTime
-		if secondTime < 0 {
-			secondTime = 0
-		}
-		thirdTime := step.ThirdTime
-		if thirdTime < 0 {
-			thirdTime = 0
-		}
-
-		progress = append(progress, GeneratedLessonProgressStep{
-			Name:       name,
-			FirstTime:  firstTime,
-			SecondTime: secondTime,
-			ThirdTime:  thirdTime,
-			Content:    content,
-		})
-	}
-
-	if len(progress) == 0 {
-		progress = defaultLessonProgress(lessonType, sourceLanguage)
-	}
-	if !isValidVariantDurations(progress, lessonVariantTotalMins) {
-		progress = defaultLessonProgress(lessonType, sourceLanguage)
 	}
 
 	return &generatedLessonPlan{
@@ -1843,28 +1942,7 @@ func normalizeGeneratedLessonPlan(
 }
 
 func defaultLessonProgress(lessonType storage.EnumLessonType, language string) []GeneratedLessonProgressStep {
-	_ = lessonType
-	if normalizeBackendLanguage(language) == "kz" {
-		return []GeneratedLessonProgressStep{
-			{Name: "Ұйымдастыру-мотивациялық кезең", FirstTime: 5, SecondTime: 10, ThirdTime: 15, Content: []string{"Білім алушылармен сәлемдесу, қатысуды тексеру, мотивация беру және оқу әрекетіне бағыттау."}},
-			{Name: "Білімді өзектендіру", FirstTime: 15, SecondTime: 10, ThirdTime: 10, Content: []string{"Негізгі білім, білік және дағдыларды қайталау; жаңа тақырыпқа кіріспе; қажет болған жағдайда қауіпсіздік техникасы бойынша нұсқаулық беру."}},
-			{Name: "Жаңа білім мен дағдыларды қалыптастыру", FirstTime: 40, SecondTime: 35, ThirdTime: 30, Content: []string{"Практикалық тапсырмаларды беру; орындау үлгісін көрсету; тапсырмаларды орындау; жұмыс барысында білім алушыларды бақылау, түзету және қолдау."}},
-			{Name: "Жаңа тақырыпты бекіту", FirstTime: 15, SecondTime: 15, ThirdTime: 15, Content: []string{"Орындалған жұмыс бойынша есепті рәсімдеу; есептерді тапсыру; нәтижелерді талқылау."}},
-			{Name: "Рефлексия", FirstTime: 7, SecondTime: 8, ThirdTime: 8, Content: []string{"Талқылау: қандай дағдылар қалыптасты, нені үйренді, не пайдалы болды және қандай қиындықтар кездесті."}},
-			{Name: "Бағалау", FirstTime: 5, SecondTime: 7, ThirdTime: 7, Content: []string{"Орындалған жұмыстарды тексеру және бағалау; оқытушының кері байланысы."}},
-			{Name: "Үй тапсырмасы", FirstTime: 3, SecondTime: 5, ThirdTime: 5, Content: []string{"Материалды өз бетінше бекітуге арналған тапсырмалар."}},
-		}
-	}
-
-	return []GeneratedLessonProgressStep{
-		{Name: "Организационно-мотивационный момент", FirstTime: 5, SecondTime: 10, ThirdTime: 15, Content: []string{"Приветствие студентов, проверка посещаемости, мотивация и предоставление деятельности."}},
-		{Name: "Актуализация знаний", FirstTime: 15, SecondTime: 10, ThirdTime: 10, Content: []string{"Повторение базовых знаний, умений и навыков; ввод в новую тему; инструктаж по технике безопасности при необходимости."}},
-		{Name: "Формирование новых знаний и навыков", FirstTime: 40, SecondTime: 35, ThirdTime: 30, Content: []string{"Выдача практических заданий; демонстрация выполнения; выполнение заданий; контроль, корректировка и помощь студентам при работе."}},
-		{Name: "Закрепление новой темы", FirstTime: 15, SecondTime: 15, ThirdTime: 15, Content: []string{"Оформление отчета студентами по выполненной работе; сдача отчетов; обсуждение результатов."}},
-		{Name: "Рефлексия", FirstTime: 7, SecondTime: 8, ThirdTime: 8, Content: []string{"Обсуждение: какие навыки приобрели, чему научились, что было полезно и что вызвало затруднения."}},
-		{Name: "Оценивание", FirstTime: 5, SecondTime: 7, ThirdTime: 7, Content: []string{"Проверка и оценка выполненных работ; комментарии преподавателя."}},
-		{Name: "Домашнее задание", FirstTime: 3, SecondTime: 5, ThirdTime: 5, Content: []string{"Задания для самостоятельного закрепления материала."}},
-	}
+	return canonicalLessonProgress(lessonType, language)
 }
 
 func buildLessonDocumentPayload(
@@ -2307,16 +2385,34 @@ func (s *LessonService) buildLessonResponse(ctx context.Context, lesson storage.
 
 	// Get lesson progress in persisted order.
 	lessonProgressRows, _ := s.repo.GetLessonProgressByLessonID(ctx, lesson.ID)
-
-	lessonProgress := make([]LessonProgressData, 0, len(lessonProgressRows))
+	lessonProgressByOrder := make(map[int16]storage.LessonProgress, len(lessonProgressRows))
 	for _, item := range lessonProgressRows {
+		lessonProgressByOrder[item.StepOrder] = item
+	}
+
+	lessonProgress := make([]LessonProgressData, 0, len(canonicalLessonStages))
+	for index := range canonicalLessonStages {
+		stepOrder := canonicalLessonStepOrder(index)
+		item, exists := lessonProgressByOrder[stepOrder]
+		firstTime, secondTime, thirdTime := canonicalLessonStageTimes(stepOrder)
+		content := []localization.LocaleText{canonicalLessonStageDefaultContent(stepOrder)}
+		var id uuid.UUID
+		if exists {
+			id = item.ID
+			content = localization.LocaleTextSliceFromJSONB(item.Content)
+			if len(content) == 0 {
+				content = []localization.LocaleText{canonicalLessonStageDefaultContent(stepOrder)}
+			}
+		}
+
 		lessonProgress = append(lessonProgress, LessonProgressData{
-			ID:         item.ID,
-			Name:       localization.LocaleTextFromJSONB(item.Name),
-			FirstTime:  item.FirstTime,
-			SecondTime: item.SecondTime,
-			ThirdTime:  item.ThirdTime,
-			Content:    localization.LocaleTextSliceFromJSONB(item.Content),
+			ID:         id,
+			StepOrder:  stepOrder,
+			Name:       canonicalLessonStageName(stepOrder),
+			FirstTime:  firstTime,
+			SecondTime: secondTime,
+			ThirdTime:  thirdTime,
+			Content:    content,
 		})
 	}
 

@@ -971,22 +971,24 @@ DELETE FROM lessons WHERE id = $1;
 INSERT INTO
     lesson_progress (
         lesson_id,
+        step_order,
         name,
         first_time,
         second_time,
         third_time,
         content
     )
-VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;
 
 -- name: UpdateLessonProgress :exec
 UPDATE lesson_progress
 SET
-    name = $2,
-    first_time = $3,
-    second_time = $4,
-    third_time = $5,
-    content = $6
+    step_order = $2,
+    name = $3,
+    first_time = $4,
+    second_time = $5,
+    third_time = $6,
+    content = $7
 WHERE
     id = $1;
 
@@ -998,7 +1000,7 @@ SELECT *
 FROM lesson_progress
 WHERE
     lesson_id = $1
-ORDER BY id ASC;
+ORDER BY step_order ASC, id ASC;
 
 -- name: DeleteLessonProgress :exec
 DELETE FROM lesson_progress WHERE id = $1;

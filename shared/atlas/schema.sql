@@ -395,17 +395,22 @@ CREATE TABLE lessons (
 CREATE TABLE lesson_progress(
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     lesson_id UUID NOT NULL,
+    step_order SMALLINT NOT NULL,
     name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
     first_time INT[] NOT NULL,
     second_time INT[] NOT NULL,
     third_time INT[] NOT NULL,
     content JSONB NOT NULL DEFAULT '[]'::jsonb,
+    CONSTRAINT lesson_progress_step_order_check CHECK (
+        step_order BETWEEN 1 AND 7
+    ),
     CONSTRAINT lesson_progress_name_locale_check CHECK (
         name ? 'ru' AND name ? 'kz'
     ),
     CONSTRAINT lesson_progress_content_array_check CHECK (
         jsonb_typeof(content) = 'array'
     ),
+    CONSTRAINT lesson_progress_lesson_step_order_key UNIQUE (lesson_id, step_order),
     CONSTRAINT fk_lesson_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id)
 );
 

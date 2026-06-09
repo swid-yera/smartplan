@@ -711,17 +711,19 @@ const createLessonProgress = `-- name: CreateLessonProgress :one
 INSERT INTO
     lesson_progress (
         lesson_id,
+        step_order,
         name,
         first_time,
         second_time,
         third_time,
         content
     )
-VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
 `
 
 type CreateLessonProgressParams struct {
 	LessonID   uuid.UUID `json:"lesson_id"`
+	StepOrder  int16     `json:"step_order"`
 	Name       []byte    `json:"name"`
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`
@@ -732,6 +734,7 @@ type CreateLessonProgressParams struct {
 func (q *Queries) CreateLessonProgress(ctx context.Context, arg CreateLessonProgressParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, createLessonProgress,
 		arg.LessonID,
+		arg.StepOrder,
 		arg.Name,
 		arg.FirstTime,
 		arg.SecondTime,
@@ -2111,7 +2114,7 @@ func (q *Queries) GetGroupsByIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]G
 }
 
 const getLessonProgressByID = `-- name: GetLessonProgressByID :one
-SELECT id, lesson_id, name, first_time, second_time, third_time, content FROM lesson_progress WHERE id = $1
+SELECT id, lesson_id, step_order, name, first_time, second_time, third_time, content FROM lesson_progress WHERE id = $1
 `
 
 func (q *Queries) GetLessonProgressByID(ctx context.Context, id uuid.UUID) (LessonProgress, error) {
@@ -2120,6 +2123,7 @@ func (q *Queries) GetLessonProgressByID(ctx context.Context, id uuid.UUID) (Less
 	err := row.Scan(
 		&i.ID,
 		&i.LessonID,
+		&i.StepOrder,
 		&i.Name,
 		&i.FirstTime,
 		&i.SecondTime,
@@ -2130,11 +2134,11 @@ func (q *Queries) GetLessonProgressByID(ctx context.Context, id uuid.UUID) (Less
 }
 
 const getLessonProgressByLessonID = `-- name: GetLessonProgressByLessonID :many
-SELECT id, lesson_id, name, first_time, second_time, third_time, content
+SELECT id, lesson_id, step_order, name, first_time, second_time, third_time, content
 FROM lesson_progress
 WHERE
     lesson_id = $1
-ORDER BY id ASC
+ORDER BY step_order ASC, id ASC
 `
 
 func (q *Queries) GetLessonProgressByLessonID(ctx context.Context, lessonID uuid.UUID) ([]LessonProgress, error) {
@@ -2149,6 +2153,7 @@ func (q *Queries) GetLessonProgressByLessonID(ctx context.Context, lessonID uuid
 		if err := rows.Scan(
 			&i.ID,
 			&i.LessonID,
+			&i.StepOrder,
 			&i.Name,
 			&i.FirstTime,
 			&i.SecondTime,
@@ -3751,17 +3756,19 @@ func (q *Queries) UpdateLessonFileURL(ctx context.Context, arg UpdateLessonFileU
 const updateLessonProgress = `-- name: UpdateLessonProgress :exec
 UPDATE lesson_progress
 SET
-    name = $2,
-    first_time = $3,
-    second_time = $4,
-    third_time = $5,
-    content = $6
+    step_order = $2,
+    name = $3,
+    first_time = $4,
+    second_time = $5,
+    third_time = $6,
+    content = $7
 WHERE
     id = $1
 `
 
 type UpdateLessonProgressParams struct {
 	ID         uuid.UUID `json:"id"`
+	StepOrder  int16     `json:"step_order"`
 	Name       []byte    `json:"name"`
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`
@@ -3772,6 +3779,7 @@ type UpdateLessonProgressParams struct {
 func (q *Queries) UpdateLessonProgress(ctx context.Context, arg UpdateLessonProgressParams) error {
 	_, err := q.db.Exec(ctx, updateLessonProgress,
 		arg.ID,
+		arg.StepOrder,
 		arg.Name,
 		arg.FirstTime,
 		arg.SecondTime,

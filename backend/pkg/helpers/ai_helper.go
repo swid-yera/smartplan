@@ -786,7 +786,6 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 - "expected" (ожидаемые результаты/күтілетін нәтижелер) - на %s языке
 - "internetResources[].name" (названия ресурсов) - на %s языке
 - "technicalResources[].name" (названия ресурсов) - на %s языке
-- "lessonProgress[].name" (названия этапов) - на %s языке
 - "lessonProgress[].content[]" (содержимое) - на %s языке
 
 НИ ОДНО текстовое поле НЕ должно содержать текст на другом языке!
@@ -796,18 +795,18 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 2) Поле "type" только "PRACTICE" или "THEORY".
 3) "goals", "tasks", "expected" — связный методический текст на %s языке.
 4) "lessonProgress" — массив этапов занятия.
-5) Каждый этап должен содержать:
-   - name: название этапа на %s языке
-   - firstTime: длительность этапа для варианта 1 (мин.)
-   - secondTime: длительность этапа для варианта 2 (мин.)
-   - thirdTime: длительность этапа для варианта 3 (мин.)
+5) Названия этапов и время уже зафиксированы системой и НЕ ДОЛЖНЫ генерироваться.
+6) Верни в "lessonProgress" ровно 7 элементов строго в этом порядке:
+   1. Организационно-мотивационный момент
+   2. Актуализация знаний
+   3. Формирование новых знаний и навыков
+   4. Закрепление новой темы
+   5. Рефлексия
+   6. Оценивание
+   7. Домашнее задание
+7) Каждый элемент "lessonProgress" должен содержать только:
    - content: массив конкретных действий преподавателя и обучающихся на %s языке
-6) Это НЕ части одного этапа. Это 3 альтернативных варианта длительности этапа.
-7) Для каждого варианта суммарная длительность всех этапов должна быть ровно %d минут:
-   - сумма всех firstTime по этапам = %d
-   - сумма всех secondTime по этапам = %d
-   - сумма всех thirdTime по этапам = %d
-8) Значения должны быть неотрицательными целыми числами.
+8) Для каждого этапа content должен быть кратким, предметным и методически корректным, без повторения названия этапа.
 9) Формулировки должны соответствовать теме, не повторять дословно предыдущие уроки.
 10) Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по требованиям выше.
 11) Добавь "internetResources" (4-7 шт.) и "technicalResources" (3-6 шт.):
@@ -831,10 +830,6 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
   ],
   "lessonProgress": [
     {
-      "name": string,
-      "firstTime": number,
-      "secondTime": number,
-      "thirdTime": number,
       "content": [string]
     }
   ]
@@ -866,15 +861,9 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 		responseLanguage, // expected
 		responseLanguage, // internetResources
 		responseLanguage, // technicalResources
-		responseLanguage, // lessonProgress name
 		responseLanguage, // lessonProgress content
 		responseLanguage, // "goals", "tasks", "expected"
-		responseLanguage, // name этапа
 		responseLanguage, // content этапа
-		in.LessonMinutes,
-		in.LessonMinutes,
-		in.LessonMinutes,
-		in.LessonMinutes,
 		responseLanguage, // "name" для ресурсов
 	)
 }
