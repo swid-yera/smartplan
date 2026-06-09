@@ -16,10 +16,16 @@ from app.post_process import (
 def to_text_list(value, language: str = "ru") -> list[str]:
     if value is None:
         return []
+    if isinstance(value, str):
+        text = value.strip()
+        return [text] if text else []
     if isinstance(value, list):
         result = []
         for item in value:
-            text = locale_text(item, language)
+            if isinstance(item, str):
+                text = item.strip()
+            else:
+                text = locale_text(item, language)
             if text:
                 result.append(text)
         return result
