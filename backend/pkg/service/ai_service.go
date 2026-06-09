@@ -493,16 +493,14 @@ func (s *aiService) getGeminiAPIKeys() []string {
 }
 
 func (s *aiService) getGeminiModels() []string {
-	models := []string{
-		strings.TrimSpace(s.cfg.PrimaryModel),
-		strings.TrimSpace(s.cfg.FallbackModel),
-		strings.TrimSpace(s.cfg.SecondaryFallbackModel),
-		strings.TrimSpace(s.cfg.TertiaryFallbackModel),
-	}
+	models := make([]string, 0, 1+len(s.cfg.FallbackModels))
+	models = append(models, strings.TrimSpace(s.cfg.PrimaryModel))
+	models = append(models, s.cfg.FallbackModels...)
 
 	result := make([]string, 0, len(models))
 	seen := make(map[string]struct{}, len(models))
 	for _, model := range models {
+		model = strings.TrimSpace(model)
 		if model == "" {
 			continue
 		}
