@@ -149,7 +149,7 @@ export const TypeView = ({ type }: IProps) => {
 							)}
 
 							{/* bonus */}
-							{variant.bonusCriteria?.length ? (
+							{variant.bonus_criteria?.length ? (
 								<>
 									<Separator />
 
@@ -157,7 +157,7 @@ export const TypeView = ({ type }: IProps) => {
 										<p className='mb-2 text-sm font-medium'>{t.bonusCriteria}</p>
 
 										<ol className='list-[lower-roman] space-y-2 pl-5'>
-											{variant.bonusCriteria.map((c) => (
+											{variant.bonus_criteria.map((c) => (
 												<li key={c.id} className='flex flex-wrap gap-2'>
 													<span className='font-medium'>{getLocaleText(c.name, activeLocale)}</span>
 													<PointsBadge points={c.points} />

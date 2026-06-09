@@ -38,12 +38,9 @@ export interface ILessonProgress {
 	step_order?: number
 	name: LocalizedText
 	content: LocalizedText[]
-	firstTime: number[]
-	secondTime: number[]
-	thirdTime: number[]
-	first_time?: number[]
-	second_time?: number[]
-	third_time?: number[]
+	first_time: number[]
+	second_time: number[]
+	third_time: number[]
 }
 
 export interface ILesson {

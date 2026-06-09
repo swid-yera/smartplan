@@ -80,6 +80,7 @@ export interface ISemester {
 }
 
 export interface IDiscipline {
+	id: string
 	name: LocalizedText
 	totalHours: number
 	semesters: ISemester[]
