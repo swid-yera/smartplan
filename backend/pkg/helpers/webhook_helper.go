@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"strings"
+
 	"eduplan/backend/pkg/service/keycloak"
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -32,10 +34,23 @@ func ExtractRoles(event *keycloak.KeycloakEvent) storage.UserRole {
 		switch s {
 		case "admin":
 			return storage.UserRoleADMIN
+		case "special":
+			return storage.UserRoleSPECIAL
 		case "methodist":
 			return storage.UserRoleMETHODIST
 		case "teacher":
 			return storage.UserRoleTEACHER
+		default:
+			switch {
+			case strings.EqualFold(s, "special"):
+				return storage.UserRoleSPECIAL
+			case strings.EqualFold(s, "admin"):
+				return storage.UserRoleADMIN
+			case strings.EqualFold(s, "methodist"):
+				return storage.UserRoleMETHODIST
+			case strings.EqualFold(s, "teacher"):
+				return storage.UserRoleTEACHER
+			}
 		}
 	}
 

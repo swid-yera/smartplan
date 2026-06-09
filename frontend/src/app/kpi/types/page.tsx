@@ -2,12 +2,11 @@
 
 import Link from 'next/link'
 
-import { Loader, PageTitle, withRole } from '@components'
+import { Loader, PageTitle, withNavAccess } from '@components'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
 import { Plus } from 'lucide-react'
 
 import { TypesList } from './types-list'
@@ -44,4 +43,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withNavAccess(Page)

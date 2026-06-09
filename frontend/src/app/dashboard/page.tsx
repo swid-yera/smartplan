@@ -1,6 +1,6 @@
 'use client'
 
-import { Forbidden, withRole } from '@components'
+import { Forbidden, withNavAccess } from '@components'
 import { hasRole } from '@helpers'
 import { useAuthStore } from '@store'
 import { RoleEnum } from '@types'
@@ -20,4 +20,4 @@ const Page = () => {
 	return isMethodist ? <MethodistDashboard /> : <TeacherDashboard keycloakId={user.keycloakId} />
 }
 
-export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withNavAccess(Page)

@@ -100,6 +100,7 @@ type KeycloakConfig struct {
 	TeacherRoles     []string
 	AdminRoles       []string
 	MethodistRoles   []string
+	SpecialRoles     []string
 }
 
 type DBConfig struct {
@@ -405,6 +406,7 @@ func LoadKeycloakConfig() *KeycloakConfig {
 		TeacherRoles:     splitEnv("TEACHER_ROLES"),
 		AdminRoles:       splitEnv("ADMIN_ROLES"),
 		MethodistRoles:   splitEnv("METHODIST_ROLES"),
+		SpecialRoles:     splitEnv("SPECIAL_ROLES"),
 	}
 }
 

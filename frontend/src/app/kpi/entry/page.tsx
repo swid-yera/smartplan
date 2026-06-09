@@ -1,11 +1,11 @@
 'use client'
 
-import { CategoryCard, Loader, SectionTitle, withRole } from '@components'
+import { CategoryCard, Loader, SectionTitle, withPermission } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
@@ -44,4 +44,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER])
+export default withPermission(Page, [PermissionCodeEnum.KPI_VIEW])

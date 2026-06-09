@@ -5,7 +5,7 @@ import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'reac
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { StatusBadge } from '@components'
-import { getLocaleText, getStatusLabels } from '@helpers'
+import { getCategoryIconOptionByName, getLocaleText, getStatusLabels } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {
@@ -36,7 +36,7 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { StatusEnum } from '@types'
-import { ArrowDownUp, Check, ChevronsUpDown, Filter, Layers3, ListFilter, RotateCcw } from 'lucide-react'
+import { ArrowDownUp, Check, ChevronsUpDown, Filter, Folder, Layers3, ListFilter, RotateCcw } from 'lucide-react'
 
 import {
 	DEFAULT_AWARD_SORT,
@@ -242,26 +242,36 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 										<CommandInput className='h-8 text-xs' placeholder={t.awardFilter.searchCategory} />
 										<CommandList>
 											<CommandEmpty>{t.awardFilter.categoryNotFound}</CommandEmpty>
-											<CommandGroup>
-												{categories.map((category) => {
-													const categoryName = getLocaleText(category.name, locale)
+										<CommandGroup>
+											{categories.map((category) => {
+												const categoryName = getLocaleText(category.name, locale)
+												const categoryIconOption = getCategoryIconOptionByName(category.icon)
+												const CategoryIcon = categoryIconOption?.Icon || Folder
 
-													return (
-														<CommandItem
-															key={category.id}
-															value={categoryName}
-															onSelect={() => toggleCategory(category.id)}
-														>
-															<Check
-																className={cn(
-																	'mr-2 h-4 w-4',
-																	selectedCategoryIdSet.has(category.id) ? 'opacity-100' : 'opacity-0',
-																)}
-															/>
-															{categoryName}
-														</CommandItem>
-													)
-												})}
+												return (
+													<CommandItem
+														key={category.id}
+														value={categoryName}
+														onSelect={() => toggleCategory(category.id)}
+													>
+														<Check
+															className={cn(
+																'mr-2 h-4 w-4',
+																selectedCategoryIdSet.has(category.id) ? 'opacity-100' : 'opacity-0',
+															)}
+														/>
+														<CategoryIcon
+															className={cn(
+																'mr-2 h-4 w-4 shrink-0 transition-colors duration-200',
+																selectedCategoryIdSet.has(category.id)
+																	? 'text-primary'
+																	: 'text-muted-foreground',
+															)}
+														/>
+														{categoryName}
+													</CommandItem>
+												)
+											})}
 											</CommandGroup>
 										</CommandList>
 									</Command>
@@ -399,6 +409,8 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 												<CommandGroup>
 													{categories.map((category) => {
 														const categoryName = getLocaleText(category.name, locale)
+														const categoryIconOption = getCategoryIconOptionByName(category.icon)
+														const CategoryIcon = categoryIconOption?.Icon || Folder
 
 														return (
 															<CommandItem
@@ -412,6 +424,14 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 																		selectedCategoryIdSet.has(category.id)
 																			? 'opacity-100'
 																			: 'opacity-0',
+																	)}
+																/>
+																<CategoryIcon
+																	className={cn(
+																		'mr-2 h-4 w-4 shrink-0 transition-colors duration-200',
+																		selectedCategoryIdSet.has(category.id)
+																			? 'text-primary'
+																			: 'text-muted-foreground',
 																	)}
 																/>
 																{categoryName}

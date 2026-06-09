@@ -5,7 +5,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { Loader, PageTitle, withRole } from '@components'
+import { Loader, PageTitle, withPermission } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
@@ -24,9 +24,9 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IUserDepartment } from '@types'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 
-import { RatingNav } from '../../components/rating-nav'
+import { RatingNav } from '../../kpi/rating/components/rating-nav'
 import localeDictionary from './locale.json'
 
 const TEACHER_COLORS = [
@@ -81,7 +81,7 @@ const Page = () => {
 					<div>
 						<CardTitle>{departmentTitle}</CardTitle>
 						<CardDescription>
-							{department.teachersCount} {t.teachersCount}
+							{t.teachersCount} {department.teachersCount}
 						</CardDescription>
 					</div>
 				</CardHeader>
@@ -101,39 +101,47 @@ const Page = () => {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{sortedTeachers.map((teacher, index) => {
-								const color = getTeacherColor(index)
-								const departmentLabel = (teacher.departments ?? teacher.deparments ?? [])
-									.map((item: IUserDepartment) => getLocaleText(item.name, locale))
-									.filter(Boolean)
-									.join(', ')
+							{sortedTeachers.length > 0 ? (
+								sortedTeachers.map((teacher, index) => {
+									const color = getTeacherColor(index)
+									const departmentLabel = (teacher.departments ?? [])
+										.map((item: IUserDepartment) => getLocaleText(item.name, locale))
+										.filter(Boolean)
+										.join(', ')
 
-								return (
-									<TableRow
-										key={teacher.keycloakId}
-										className='border-l-4 transition-colors hover:bg-muted/40'
-										style={getTeacherRowStyle(color)}
-									>
-										<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
-										<TableCell className='w-16 whitespace-nowrap text-right font-semibold'>
-											{teacher.totalPoints ?? 0}
-										</TableCell>
-										<TableCell className='py-4'>
-											<div className='space-y-1'>
-												<Link
-													className='block text-base font-medium hover:underline'
-													href={`/users/${teacher.keycloakId}?tab=kpi`}
-												>
-													{teacher.firstName} {teacher.lastName}
-												</Link>
-												{departmentLabel ? (
-													<p className='truncate text-xs text-muted-foreground'>{departmentLabel}</p>
-												) : null}
-											</div>
-										</TableCell>
-									</TableRow>
-								)
-							})}
+									return (
+										<TableRow
+											key={teacher.keycloakId}
+											className='border-l-4 transition-colors hover:bg-muted/40'
+											style={getTeacherRowStyle(color)}
+										>
+											<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
+											<TableCell className='w-16 whitespace-nowrap text-right font-semibold'>
+												{teacher.totalPoints ?? 0}
+											</TableCell>
+											<TableCell className='py-4'>
+												<div className='space-y-1'>
+													<Link
+														className='block text-base font-medium hover:underline'
+														href={`/users/${teacher.keycloakId}?tab=kpi`}
+													>
+														{teacher.firstName} {teacher.lastName}
+													</Link>
+													{departmentLabel ? (
+														<p className='truncate text-xs text-muted-foreground'>{departmentLabel}</p>
+													) : null}
+												</div>
+											</TableCell>
+										</TableRow>
+									)
+								})
+							) : (
+								<TableRow>
+									<TableCell className='py-10 text-center text-muted-foreground' colSpan={3}>
+										{t.emptyTitle}
+									</TableCell>
+								</TableRow>
+							)}
 						</TableBody>
 					</Table>
 				</CardContent>
@@ -142,4 +150,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.KPI_MANAGE])

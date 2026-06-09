@@ -7,6 +7,8 @@ export * from './ui/pagination'
 export * from './ui/section-title'
 
 // hocs
+export * from './hocs/with-permission'
+export * from './hocs/with-nav-access'
 export * from './hocs/with-role'
 
 // sheet
@@ -33,6 +35,7 @@ export * from './dialogs/rup-language-dialog'
 export * from './dialogs/violation-dialog'
 
 // badges
+export * from './badges/permission-badge'
 export * from './badges/status-badge'
 export * from './badges/topic-type-badge'
 export * from './badges/violation-badge'

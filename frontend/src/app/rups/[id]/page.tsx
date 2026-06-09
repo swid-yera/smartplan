@@ -5,13 +5,13 @@ import { type FC, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Loader, RupLanguageDialog, withRole } from '@components'
+import { Loader, RupLanguageDialog, withPermission } from '@components'
 import {
 	extractKriptoApprovalMetadata,
 	getLocaleText,
 	getUILocaleSection,
 	hasLocaleTextForLocale,
-	hasRole,
+	hasPermission,
 	interpolateUILocaleText,
 	isAuthor,
 	normalizeStatus,
@@ -52,7 +52,7 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type IRup, type IUpdateStatusRequest, type Locale, RoleEnum, StatusEnum } from '@types'
+import { type IRup, type IUpdateStatusRequest, type Locale, PermissionCodeEnum, StatusEnum } from '@types'
 import {
 	Edit,
 	FileDown,
@@ -271,17 +271,17 @@ const Page: FC = () => {
 	if (!user || !rupData) return notFound()
 
 	// bools
-	const isAdmin = hasRole(user.role, RoleEnum.ADMIN)
-	const isTeacher = hasRole(user.role, RoleEnum.TEACHER)
-	const isMethodist = hasRole(user.role, RoleEnum.METHODIST)
+	const canFullAccess = hasPermission(user, PermissionCodeEnum.RUP_FULL)
+	const canManageRups = hasPermission(user, PermissionCodeEnum.RUP_MANAGE)
+	const canViewRups = hasPermission(user, PermissionCodeEnum.RUP_VIEW)
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
-	const canRegenerateLanguage = rupData.status === StatusEnum.DRAFT && (isRupDeveloper || isAdmin)
+	const canRegenerateLanguage = rupData.status === StatusEnum.DRAFT && (isRupDeveloper || canManageRups || canFullAccess)
 	const canDownload = rupData.status === StatusEnum.APPROVED
-	const canEdit = (isRupDeveloper || isAdmin) && isStatusForEdit
-	const canDelete = (isRupCreator || isAdmin) && isStatusForEdit
-	const canSendToReview = (isRupDeveloper || isAdmin) && isStatusForEdit
+	const canEdit = (isRupDeveloper || canManageRups || canFullAccess) && isStatusForEdit
+	const canDelete = (isRupCreator || canManageRups || canFullAccess) && isStatusForEdit
+	const canSendToReview = (isRupDeveloper || canManageRups || canFullAccess) && isStatusForEdit
 	const isActiveLocaleMissing = !hasRupContentForLocale(rupData, activeLocale)
 	const retrySourceLocale = getOppositeLocale(activeLocale)
 	const selectedLanguageLabel = activeLocale === 'kk' ? t.view.languageKk : t.view.languageRu
@@ -305,7 +305,7 @@ const Page: FC = () => {
 	}
 
 	const availableActions: Array<ILinkAction | IClickAction> = [
-		isAdmin && {
+		canFullAccess && {
 			id: 'change-status',
 			label: t.actions.changeStatus,
 			icon: ShieldAlert,
@@ -344,11 +344,11 @@ const Page: FC = () => {
 		},
 	].filter(Boolean) as Array<ILinkAction | IClickAction>
 
-	const primaryActionPriority = isAdmin
+	const primaryActionPriority = canFullAccess
 		? ['change-status', 'edit', 'send-to-review', 'download', 'regenerate']
-		: isTeacher
+		: canManageRups
 			? ['edit', 'send-to-review', 'download', 'regenerate']
-			: isMethodist
+			: canViewRups
 				? ['download', 'regenerate', 'edit', 'send-to-review']
 				: ['download', 'regenerate', 'edit', 'send-to-review']
 
@@ -454,7 +454,7 @@ const Page: FC = () => {
 						</div>
 					) : null
 				}
-				role={user.role}
+				canManage={canManageRups || canFullAccess}
 				onActiveLocaleChange={setActiveLocale}
 				onStatusChange={handleStatusChange}
 			/>
@@ -498,7 +498,7 @@ const Page: FC = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.RUP_VIEW])
 
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean

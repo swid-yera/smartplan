@@ -1,10 +1,10 @@
 import { type FC, type ReactNode } from 'react'
 
 import { PageTitle, ResponsibleUsersCard, RupReviewSheets, StatusBadge } from '@components'
-import { formatHours, getLocaleText, getUILocaleSection, hasRole, normalizeStudyForm } from '@helpers'
+import { formatHours, getLocaleText, getUILocaleSection, normalizeStudyForm } from '@helpers'
 import { ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { type IRup, type Locale, RoleEnum, StatusEnum } from '@types'
+import { type IRup, type Locale, StatusEnum } from '@types'
 import { Search, ShieldAlert, Timer } from 'lucide-react'
 
 import { ContactsView, DisciplineView, ExplorationView, TopicsView } from '../components'
@@ -13,7 +13,7 @@ import localeDictionary from './locale.json'
 
 interface IRupViewProps {
 	data: IRup
-	role: RoleEnum
+	canManage: boolean
 	activeLocale: Locale
 	localeNotice?: ReactNode
 	onActiveLocaleChange: (nextLocale: Locale) => void
@@ -26,7 +26,7 @@ interface IRupViewProps {
 
 export const RupView: FC<IRupViewProps> = ({
 	data,
-	role,
+	canManage,
 	activeLocale,
 	localeNotice,
 	onActiveLocaleChange,
@@ -51,12 +51,12 @@ export const RupView: FC<IRupViewProps> = ({
 						</Tabs>
 						<ButtonGroup>
 							{actions}
-							<RupReviewSheets data={data} role={role} text={localeText} onStatusChange={onStatusChange} />
+						<RupReviewSheets canManage={canManage} data={data} text={localeText} onStatusChange={onStatusChange} />
 						</ButtonGroup>
 					</div>
 				}
 				backHref='/rups'
-				description={hasRole(role, RoleEnum.METHODIST) ? t.reviewDescription : t.readOnlyDescription}
+				description={canManage ? t.reviewDescription : t.readOnlyDescription}
 			>
 				{` ${getLocaleText(data.name, activeLocale) || `${t.titleFallback} `} `}
 				<StatusBadge locale={activeLocale} status={data.status} />

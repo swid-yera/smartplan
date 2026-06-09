@@ -4087,7 +4087,7 @@ func (q *Queries) UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.
 const upsertUserPermissions = `-- name: UpsertUserPermissions :one
 
 INSERT INTO permissions (user_id, permissions)
-VALUES ($1, $2)
+VALUES ($1, $2::permission_code[])
 ON CONFLICT (user_id) DO UPDATE
     SET permissions = EXCLUDED.permissions,
         updated_at  = NOW()

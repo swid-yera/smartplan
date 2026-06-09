@@ -1,29 +1,33 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { PageTitle, Pagination, withRole } from '@components'
-import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import { PageTitle, Pagination, withNavAccess } from '@components'
+import { getUILocaleSection, hasAnyPermission, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 
 import localeDictionary from './locale.json'
 import { UsersFilter } from './users-filter'
+import { UsersPermissionsDialog } from './users-permissions-dialog'
 import { UsersTable } from './users-table'
 
 function Page() {
-	const { authLoading, isAuthenticated } = useAuthStore()
+	const { authLoading, isAuthenticated, user } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const router = useRouter()
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
+	const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false)
+	const [permissionsDialogUserId, setPermissionsDialogUserId] = useState<string | undefined>()
+	const canManageUsers = hasAnyPermission(user, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL])
 
 	const { currentPage, itemsPerPage, search } = useMemo(() => {
 		const currentPage = Number(searchParams.get('page') || '1')
@@ -72,6 +76,7 @@ function Page() {
 	const totalUsers = usersData?.meta.total || 0
 	const totalPages = usersData?.meta.pages || 1
 	const paginatedUsers = usersData?.data || []
+	const defaultPermissionsDialogUserId = permissionsDialogUserId ?? paginatedUsers[0]?.keycloakId
 
 	return (
 		<div className='w-full mx-auto py-10 px-2 md:px-4 space-y-8'>
@@ -94,7 +99,14 @@ function Page() {
 						onSearchSubmit={(value) => handleUrlUpdate({ q: value || null, page: 1 })}
 					/>
 
-					<UsersTable isLoading={isLoading || authLoading || isFetching || isRefetching} users={paginatedUsers} />
+					<UsersTable
+						isLoading={isLoading || authLoading || isFetching || isRefetching}
+						users={paginatedUsers}
+						onManagePermissions={(selectedUser) => {
+							setPermissionsDialogUserId(selectedUser.keycloakId)
+							setIsPermissionsDialogOpen(true)
+						}}
+					/>
 
 					<Pagination
 						page={currentPage}
@@ -105,8 +117,21 @@ function Page() {
 					/>
 				</CardContent>
 			</Card>
+
+			{canManageUsers ? (
+				<UsersPermissionsDialog
+					defaultUserId={defaultPermissionsDialogUserId}
+					open={isPermissionsDialogOpen}
+					onOpenChange={(open) => {
+						setIsPermissionsDialogOpen(open)
+						if (!open) {
+							setPermissionsDialogUserId(undefined)
+						}
+					}}
+				/>
+			) : null}
 		</div>
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withNavAccess(Page)

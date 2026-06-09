@@ -1,11 +1,11 @@
 'use client'
 
-import { Loader, withRole } from '@components'
+import { Loader, withPermission } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 
 import localeDictionary from './locale.json'
 import { RatingStatsClient } from './rating-stats-client'
@@ -25,4 +25,4 @@ const Page = () => {
 	return <RatingStatsClient locale={locale} t={t} teachers={teachers || []} />
 }
 
-export default withRole(Page, [RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.KPI_MANAGE])

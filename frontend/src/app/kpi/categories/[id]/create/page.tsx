@@ -17,7 +17,7 @@ import {
 	getCategoryFieldValidationError,
 	isFileFieldValueArray,
 	serializeCategoryFieldValue,
-	withRole,
+	withNavAccess,
 } from '@components'
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
@@ -35,7 +35,6 @@ import {
 import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { IApiErrorResponse, ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
-import { RoleEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { Folder } from 'lucide-react'
 import { toast } from 'sonner'
@@ -472,4 +471,4 @@ function CreateAwardPage() {
 	)
 }
 
-export default withRole(CreateAwardPage, [RoleEnum.TEACHER])
+export default withNavAccess(CreateAwardPage)

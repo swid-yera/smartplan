@@ -2,16 +2,16 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"eduplan/backend/pkg/service"
 
 	"github.com/gin-gonic/gin"
 )
 
-// RequirePermission абортирует запрос с 403, если у текущего пользователя
-// нет указанного кода доступа. Должен использоваться после SessionAuth.
-// Применяется только к пользователям с ролью SPECIAL; ADMIN всегда пропускается.
-func RequirePermission(permService service.PermissionService, code service.PermissionCode) gin.HandlerFunc {
+// RequirePermission aborts the request with 403 if the current user does not
+// have at least one of the requested effective permissions.
+func RequirePermission(codes ...service.PermissionCode) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userInterface, exists := c.Get(ContextUserKey)
 		if !exists {
@@ -25,29 +25,37 @@ func RequirePermission(permService service.PermissionService, code service.Permi
 			return
 		}
 
-		// ADMIN имеет полный доступ ко всему
-		if user.Role == "ADMIN" {
-			c.Next()
+		for _, code := range codes {
+			if service.HasPermissionLevel(user.Permissions, code) {
+				c.Next()
+				return
+			}
+		}
+
+		if len(codes) == 0 {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing permission"})
 			return
 		}
 
-		// Для не-SPECIAL ролей этот middleware не применим — запрещаем
-		if user.Role != "SPECIAL" {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		if len(codes) == 1 {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing permission " + string(codes[0])})
 			return
 		}
 
-		// Проверяем конкретное право из БД
-		ok, err := permService.HasPermission(c.Request.Context(), user.KeycloakID, code)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "permission check failed"})
-			return
+		missing := make([]string, 0, len(codes))
+		for _, code := range codes {
+			missing = append(missing, string(code))
 		}
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing permission " + string(code)})
+
+		if len(missing) == 2 {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "forbidden: missing permission " + missing[0] + " or " + missing[1],
+			})
 			return
 		}
 
-		c.Next()
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error": "forbidden: missing one of permissions " + strings.Join(missing, ", "),
+		})
 	}
 }

@@ -38,7 +38,7 @@ export const RatingUserRow: FC<IProps> = ({ index, user }) => {
 	const t = getUILocaleSection(cardsLocale, locale).userCard
 	const placeStyle = getPlaceStyle(index)
 	const placeIcon = getPlaceIcon(index)
-	const departmentNames = (user.departments ?? user.deparments ?? [])
+	const departmentNames = (user.departments ?? [])
 		.map((department) => getLocaleText(department.name, locale))
 		.filter(Boolean)
 	const departmentLabel = departmentNames.join(', ')

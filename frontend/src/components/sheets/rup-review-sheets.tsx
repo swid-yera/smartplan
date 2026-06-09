@@ -2,7 +2,7 @@
 
 import { memo, useState } from 'react'
 
-import { extractKriptoApprovalMetadata, hasRole, parseKriptoFileText } from '@helpers'
+import { extractKriptoApprovalMetadata, parseKriptoFileText } from '@helpers'
 import {
 	Button,
 	Checkbox,
@@ -16,13 +16,13 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@shadcn'
-import { type IRup, RoleEnum, StatusEnum } from '@types'
+import { type IRup, StatusEnum } from '@types'
 import { CheckCircle, SendToBack } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface IRupReviewSheetsProps {
 	data: IRup
-	role: RoleEnum
+	canManage: boolean
 	text: {
 		view: {
 			reject: string
@@ -60,7 +60,7 @@ interface IRupReviewSheetsProps {
 
 export const RupReviewSheets = memo(function RupReviewSheets({
 	data,
-	role,
+	canManage,
 	text,
 	onStatusChange,
 }: IRupReviewSheetsProps) {
@@ -73,7 +73,7 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 	const [fileName, setFileName] = useState('')
 	const [approvePassword, setApprovePassword] = useState('')
 	const [approveConfirmed, setApproveConfirmed] = useState(false)
-	const isMethodistReview = hasRole(role, RoleEnum.METHODIST) && data.status === StatusEnum.IN_REVIEW
+	const isMethodistReview = canManage && data.status === StatusEnum.IN_REVIEW
 
 	const onApproveFileUpload = async (file?: File) => {
 		if (!file) return
