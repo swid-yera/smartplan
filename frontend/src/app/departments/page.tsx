@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react'
 
+import Link from 'next/link'
+
 import { Loader, PageTitle, withNavAccess } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
@@ -102,9 +104,10 @@ const Page = () => {
 							const departmentName = getLocaleText(department.name, locale)
 
 							return (
-								<div
+								<Link
 									key={department.keycloakId}
 									className='flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between'
+									href={`/departments/${department.keycloakId}`}
 								>
 									<div className='min-w-0'>
 										<p className='font-medium'>{departmentName}</p>
@@ -115,7 +118,7 @@ const Page = () => {
 									<Badge variant='secondary' className='w-fit'>
 										{department.totalPoints} {t.points}
 									</Badge>
-								</div>
+								</Link>
 							)
 						})
 					) : (

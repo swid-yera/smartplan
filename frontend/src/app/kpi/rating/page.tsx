@@ -131,7 +131,7 @@ const Page = () => {
 											<span className='h-2.5 w-2.5 rounded-full' style={{ backgroundColor: color }} />
 											<Link
 												className='text-xl font-semibold text-foreground hover:underline'
-												href={`/kpi/rating/departments/${department.keycloakId}`}
+												href={`/departments/${department.keycloakId}`}
 											>
 												{getLocaleText(department.name, locale)}
 											</Link>

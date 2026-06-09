@@ -108,7 +108,7 @@ const Page = () => {
 							<div>
 								<Link
 									className='font-medium text-foreground hover:underline'
-									href={`/kpi/rating/departments/${department.keycloakId}`}
+									href={`/departments/${department.keycloakId}`}
 								>
 									{index + 1}. {getLocaleText(department.name, locale)}
 								</Link>

@@ -26,7 +26,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { IUserDepartment } from '@types'
 import { PermissionCodeEnum } from '@types'
 
-import { RatingNav } from '../../components/rating-nav'
+import { RatingNav } from '../../kpi/rating/components/rating-nav'
 import localeDictionary from './locale.json'
 
 const TEACHER_COLORS = [
