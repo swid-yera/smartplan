@@ -38,4 +38,4 @@ function LessonEditPage() {
 	return <LessonEditForm activeLocale={activeLocale} lesson={lesson} onActiveLocaleChange={setActiveLocale} />
 }
 
-export default withRole(LessonEditPage, [RoleEnum.ADMIN], true)
+export default withRole(LessonEditPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])

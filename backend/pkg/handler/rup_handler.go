@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
 )
@@ -88,8 +89,17 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 
 	rup, err := h.rupService.GetRupByID(c.Request.Context(), id)
 	if err != nil {
-		h.log.WithError(err).Error("RUP not found")
-		c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+		if errors.Is(err, pgx.ErrNoRows) {
+			h.log.WithError(err).Error("RUP not found")
+			c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+			return
+		}
+
+		h.log.WithError(err).Error("failed to load RUP before delete")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to delete RUP",
+			"details": err.Error(),
+		})
 		return
 	}
 
@@ -482,6 +492,12 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 
 	err = h.rupService.DeleteRup(c.Request.Context(), id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			h.log.WithError(err).Error("RUP not found")
+			c.JSON(http.StatusNotFound, gin.H{"error": "RUP not found"})
+			return
+		}
+
 		h.log.WithError(err).Error("failed to delete RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "failed to delete RUP",
@@ -490,7 +506,7 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "RUP deleted successfully"})
+	c.Status(http.StatusNoContent)
 }
 
 func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
