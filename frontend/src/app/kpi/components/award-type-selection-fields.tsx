@@ -185,7 +185,7 @@ export const AwardTypeSelectionFields = ({
 	)
 
 	const bonusCriteriaOptions =
-		bonusCriteriaOptionsSource === 'criteria' ? selectedVariant?.criteria || [] : selectedVariant?.bonusCriteria || []
+		bonusCriteriaOptionsSource === 'criteria' ? selectedVariant?.criteria || [] : selectedVariant?.bonus_criteria || []
 
 	return (
 		<>
@@ -228,13 +228,13 @@ export const AwardTypeSelectionFields = ({
 				</>
 			) : null}
 
-			{selectedVariant?.bonusCriteria?.length ? (
+			{selectedVariant?.bonus_criteria?.length ? (
 				<div className='space-y-2'>
 					<Label htmlFor='bonus-criteria'>{labels.bonusCriteriaLabel}</Label>
 					<Select
 						value={selectedBonusCriteria?.id || ''}
 						onValueChange={(id: string) => {
-							const criteria = selectedVariant.bonusCriteria?.find((item) => item.id === id) || null
+							const criteria = selectedVariant.bonus_criteria?.find((item) => item.id === id) || null
 
 							setSelectedBonusCriteria(criteria)
 						}}

@@ -43,7 +43,7 @@ type AwardResponse struct {
 	Category      *AwardCategoryResponse    `json:"category,omitempty"`
 	FieldValues   map[string]any            `json:"fieldValues"`
 	Fields        []AwardFieldValueResponse `json:"fields,omitempty"`
-	Reason        pgtype.Text               `json:"reason"`
+	Reason        string                    `json:"reason"`
 	Methodist     *helpers.UserResponse     `json:"methodist"`
 	Teacher       *helpers.UserResponse     `json:"teacher"`
 	TotalPoints   int32                     `json:"totalPoints"`
@@ -756,7 +756,7 @@ func (s *AwardService) BuildSelected(ctx context.Context, award storage.Award) (
 		CategoryID:    categoryID,
 		Category:      category,
 		FieldValues:   fieldValues,
-		Reason:        award.Reason,
+		Reason:        award.Reason.String,
 		Methodist:     methodist,
 		Teacher:       teacher,
 		TotalPoints:   award.TotalPoints,

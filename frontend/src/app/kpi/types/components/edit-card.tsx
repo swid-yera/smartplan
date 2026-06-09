@@ -55,7 +55,7 @@ export const EditCard: FC<IProps> = ({ activeLocale, onSubmit, type }) => {
 						},
 					})) || [],
 				bonusCriteria:
-					v.bonusCriteria?.map((criteria) => ({
+					v.bonus_criteria?.map((criteria) => ({
 						...criteria,
 						name: {
 							ru: getLocaleText(criteria.name, 'ru'),

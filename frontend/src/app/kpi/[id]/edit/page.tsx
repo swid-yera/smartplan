@@ -111,9 +111,9 @@ const Page = () => {
 		const type = types.find((item) => item.id === award.type.id) || null
 		const variant = type?.variants.find((item) => item.id === award.variant.id) || null
 		const criteria = variant?.criteria.find((item) => item.id === award.criteria.id) || null
-		const normalizedBonusCriteria = award.bonusCriteria || award.bonus_criteria || null
+		const normalizedBonusCriteria = award.bonus_criteria || null
 		const bonusCriteria = normalizedBonusCriteria
-			? variant?.bonusCriteria?.find((item) => item.id === normalizedBonusCriteria.id) || null
+			? variant?.bonus_criteria?.find((item) => item.id === normalizedBonusCriteria.id) || null
 			: null
 
 		setSelectedType(type)

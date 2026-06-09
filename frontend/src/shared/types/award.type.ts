@@ -27,7 +27,6 @@ export interface IAward {
 	type: IType
 	variant: IVariant
 	criteria: ICriteria
-	bonusCriteria?: ICriteria
 	bonus_criteria?: ICriteria | null
 	categoryId?: string
 	category?: IAwardCategoryResponse | null
@@ -53,7 +52,6 @@ export interface IVariant {
 	name: LocalizedText
 	description: LocalizedText | null
 	criteria: ICriteria[]
-	bonusCriteria?: ICriteria[]
 	bonus_criteria?: ICriteria[] | null
 }
 
