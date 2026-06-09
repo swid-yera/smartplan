@@ -151,7 +151,12 @@ const UserRow: FC<IUserRow> = ({ user, onManagePermissions }) => {
 
 			{onManagePermissions ? (
 				<TableCell className='text-right'>
-					<Button size='sm' variant='outline' onClick={() => onManagePermissions(user)}>
+					<Button
+						className='hover:cursor-pointer'
+						size='sm'
+						variant='outline'
+						onClick={() => onManagePermissions(user)}
+					>
 						{t.table.actions}
 					</Button>
 				</TableCell>

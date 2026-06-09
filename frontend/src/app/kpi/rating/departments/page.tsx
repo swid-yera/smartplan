@@ -113,7 +113,7 @@ const Page = () => {
 									{index + 1}. {getLocaleText(department.name, locale)}
 								</Link>
 								<p className='text-xs text-muted-foreground'>
-									{department.userCount} {t.usersCount}
+									{t.usersCount} {department.userCount}
 								</p>
 							</div>
 							<p className='text-lg font-semibold'>{department.totalPoints}</p>
