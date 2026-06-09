@@ -419,9 +419,9 @@ function CreateAwardPage() {
 
 				<CardContent className='space-y-5'>
 					<CategoryFieldsSection
-						title={t.topFieldsTitle}
 						emptyText={t.emptyTopFields}
 						fields={topCategoryFieldsWithEffectiveRequired}
+						title={t.topFieldsTitle}
 						values={categoryFieldValues}
 						onChange={handleCategoryFieldChange}
 					/>
@@ -433,9 +433,9 @@ function CreateAwardPage() {
 						showVariantDescription
 						availableTypes={availableTypes}
 						bonusCriteriaOptionsSource='criteria'
+						labels={t.awardTypeSelection}
 						layout='stack'
 						locale={locale}
-						labels={t.awardTypeSelection}
 						selectedBonusCriteria={selectedBonusCriteria}
 						selectedCriteria={selectedCriteria}
 						selectedType={selectedType}

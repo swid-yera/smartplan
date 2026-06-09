@@ -381,9 +381,9 @@ const Page = () => {
 
 					<AwardTypeSelectionFields
 						availableTypes={availableTypes}
+						labels={t.awardTypeSelection}
 						layout='grid'
 						locale={locale}
-						labels={t.awardTypeSelection}
 						selectedBonusCriteria={selectedBonusCriteria}
 						selectedCriteria={selectedCriteria}
 						selectedType={selectedType}

@@ -498,7 +498,7 @@ const Page: FC = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN], true)
+export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])
 
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean
