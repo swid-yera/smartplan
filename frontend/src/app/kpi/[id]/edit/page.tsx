@@ -15,7 +15,7 @@ import {
 	findInvalidUrlCategoryField,
 	isFileFieldValueArray,
 	serializeCategoryFieldValue,
-	withRole,
+	withPermission,
 } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
@@ -23,7 +23,7 @@ import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, Car
 import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { IApiErrorResponse, ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 
@@ -455,4 +455,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER])
+export default withPermission(Page, [PermissionCodeEnum.KPI_MANAGE])

@@ -5,12 +5,11 @@ import { useState } from 'react'
 import type { NextPage } from 'next'
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, withRole } from '@components'
+import { Loader, withNavAccess } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { ICreateTypesRequest, Locale } from '@types'
-import { RoleEnum } from '@types'
 import { toast } from 'sonner'
 
 import { TypeEditorLayout } from '../../components'
@@ -70,4 +69,4 @@ const Page: NextPage = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withNavAccess(Page)

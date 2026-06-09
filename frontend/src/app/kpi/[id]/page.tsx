@@ -4,13 +4,13 @@ import { useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, PageTitle, ResponsibleUsersCard, StatusInfoCard, withRole } from '@components'
-import { getUILocaleSection, hasRole } from '@helpers'
+import { Loader, PageTitle, ResponsibleUsersCard, StatusInfoCard, withPermission } from '@components'
+import { getUILocaleSection, hasPermission } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateStatusRequest, type IVariant, RoleEnum, StatusEnum } from '@types'
+import { type IUpdateStatusRequest, type IVariant, PermissionCodeEnum, StatusEnum } from '@types'
 import { toast } from 'sonner'
 
 import { ApproveSheet } from './components/approve-sheet'
@@ -148,20 +148,20 @@ const Page = () => {
 		})
 	}
 
-	const isAdmin = hasRole(user.role, RoleEnum.ADMIN)
-	const isTeacher = hasRole(user.role, RoleEnum.TEACHER)
+	const canFullAccess = hasPermission(user, PermissionCodeEnum.KPI_FULL)
+	const canManage = hasPermission(user, PermissionCodeEnum.KPI_MANAGE)
 	const isStatusForEdit = award.status === StatusEnum.DRAFT || award.status === StatusEnum.REJECTED
-	const canManage = (isAdmin || isTeacher) && isStatusForEdit
-	const isMethodistReview = hasRole(user.role, RoleEnum.METHODIST, true) && award.status === StatusEnum.IN_REVIEW
+	const canManageAward = (canManage || canFullAccess) && isStatusForEdit
+	const isMethodistReview = (canManage || canFullAccess) && award.status === StatusEnum.IN_REVIEW
 
 	return (
 		<div className='space-y-6 p-6 w-full'>
 			<PageTitle
 				actions={
-					<KpiDetailsActions
-						canManage={canManage}
+						<KpiDetailsActions
+						canManage={canManageAward}
 						id={String(id)}
-						isAdmin={isAdmin}
+						isAdmin={canFullAccess}
 						isMethodistReview={isMethodistReview}
 						isStatusForEdit={isStatusForEdit}
 						onOpenApproveSheet={() => setIsApproveSheetOpen(true)}
@@ -231,4 +231,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.KPI_VIEW])

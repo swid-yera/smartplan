@@ -2,8 +2,6 @@
 
 import type { DetailedHTMLProps, FC, HTMLAttributes } from 'react'
 
-import Link from 'next/link'
-
 import { normalizeUserRole } from '@helpers'
 import { services } from '@services'
 import {
@@ -56,7 +54,9 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 								<span className='truncate font-medium'>
 									{user.firstName} {user.lastName}
 								</span>
-								<span className='truncate text-xs text-muted-foreground'>{normalizeUserRole(user.role, locale)}</span>
+								<span className='truncate text-xs text-muted-foreground'>
+									{normalizeUserRole(user.role, locale)}
+								</span>
 							</div>
 							<ChevronsUpDown className='ml-auto size-4' />
 						</SidebarMenuButton>
@@ -82,10 +82,8 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<DropdownMenuItem asChild>
-								<Link href={`/users/${user.keycloakId}`}>
-									<User />
-									{user.username}
-								</Link>
+								<User />
+								{user.username}
 							</DropdownMenuItem>
 							<DropdownMenuItem>
 								<ShieldUser />

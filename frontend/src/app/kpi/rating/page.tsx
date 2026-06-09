@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react'
 
 import Link from 'next/link'
 
-import { Loader, PageTitle, withRole } from '@components'
+import { Loader, PageTitle, withPermission } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
@@ -23,7 +23,7 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IDepartmentTopTeachersResponse } from '@types'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 import { Sigma, Users2 } from 'lucide-react'
 
 import { RatingNav } from './components/rating-nav'
@@ -199,4 +199,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.KPI_MANAGE])

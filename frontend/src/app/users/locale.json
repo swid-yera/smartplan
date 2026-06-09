@@ -2,10 +2,11 @@
 	"ru": {
 		"page": {
 			"title": "Пользователи сайта",
-			"description": "Управляйте списком пользователей, просматривайте их контактные данные и роли.",
+			"description": "Управляйте списком пользователей, просматривайте их контактные данные, роли и permissions.",
 			"cardTitle": "Список пользователей",
 			"cardDescription": "Всего пользователей: {total}. Используйте поиск для фильтрации.",
-			"ratingLink": "Посмотреть рейтинг преподавателей"
+			"ratingLink": "Посмотреть рейтинг преподавателей",
+			"permissionsButton": "Permissions"
 		},
 		"filter": {
 			"searchPlaceholder": "Поиск по имени или email...",
@@ -18,15 +19,31 @@
 			"phone": "Телефон",
 			"role": "Роль",
 			"empty": "Ничего не найдено."
+		},
+		"permissionsModal": {
+			"title": "Управление permissions",
+			"description": "Выберите SPECIAL-пользователя и настройте его доступ к RUP и KPI.",
+			"specialUsers": "SPECIAL пользователи",
+			"selectedUser": "Выбранный пользователь",
+			"currentPermissions": "Текущие permissions",
+			"loading": "Загрузка...",
+			"empty": "SPECIAL пользователи не найдены.",
+			"noPermissions": "Нет permissions",
+			"save": "Сохранить",
+			"revoke": "Сбросить",
+			"close": "Закрыть",
+			"saved": "Permissions обновлены",
+			"revoked": "Permissions сброшены"
 		}
 	},
 	"kk": {
 		"page": {
 			"title": "Сайт пайдаланушылары",
-			"description": "Пайдаланушылар тізімін басқарыңыз, олардың байланыс деректері мен рөлдерін қараңыз.",
+			"description": "Пайдаланушылар тізімін басқарыңыз, олардың байланыс деректері, рөлдері мен permissions қарап шығыңыз.",
 			"cardTitle": "Пайдаланушылар тізімі",
 			"cardDescription": "Барлығы: {total} пайдаланушы. Сүзгілеу үшін іздеуді пайдаланыңыз.",
-			"ratingLink": "Мұғалімдер рейтингін көру"
+			"ratingLink": "Мұғалімдер рейтингін көру",
+			"permissionsButton": "Permissions"
 		},
 		"filter": {
 			"searchPlaceholder": "Аты немесе email бойынша іздеу...",
@@ -39,6 +56,21 @@
 			"phone": "Телефон",
 			"role": "Рөл",
 			"empty": "Ештеңе табылмады."
+		},
+		"permissionsModal": {
+			"title": "Permissions басқару",
+			"description": "SPECIAL пайдаланушыны таңдап, оның RUP және KPI рұқсаттарын орнатыңыз.",
+			"specialUsers": "SPECIAL пайдаланушылар",
+			"selectedUser": "Таңдалған пайдаланушы",
+			"currentPermissions": "Ағымдағы permissions",
+			"loading": "Жүктелуде...",
+			"empty": "SPECIAL пайдаланушылар табылмады.",
+			"noPermissions": "Permissions жоқ",
+			"save": "Сақтау",
+			"revoke": "Тазалау",
+			"close": "Жабу",
+			"saved": "Permissions жаңартылды",
+			"revoked": "Permissions тазартылды"
 		}
 	}
 }

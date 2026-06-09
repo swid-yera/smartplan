@@ -14,11 +14,12 @@ import {
 	RupsCard,
 	UserCard,
 	ViolationDialog,
-	withRole,
+	withNavAccess,
 } from '@components'
 import {
 	getNextViolationStatus,
 	getUILocaleSection,
+	hasPermission,
 	hasRole,
 	interpolateUILocaleText,
 	normalizeViolation,
@@ -27,7 +28,7 @@ import { services } from '@services'
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { RoleEnum, type StatusEnum, ViolationEnum } from '@types'
+import { PermissionCodeEnum, RoleEnum, type StatusEnum, ViolationEnum } from '@types'
 import { ArrowLeft, Gavel, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -319,7 +320,7 @@ const Page = () => {
 							awards={awardsData?.data || []}
 							description={t.page.kpiListDescription}
 							isLoading={awardsLoading}
-							showPointsColumn={hasRole(me.role, RoleEnum.METHODIST, true)}
+							showPointsColumn={hasPermission(me, PermissionCodeEnum.KPI_MANAGE)}
 							title={t.page.kpiListTitle}
 						/>
 
@@ -338,4 +339,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN, RoleEnum.METHODIST])
+export default withNavAccess(Page)

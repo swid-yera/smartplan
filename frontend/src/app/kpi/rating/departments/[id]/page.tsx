@@ -5,7 +5,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { Loader, PageTitle, withRole } from '@components'
+import { Loader, PageTitle, withPermission } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import {
@@ -24,7 +24,7 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IUserDepartment } from '@types'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 
 import { RatingNav } from '../../components/rating-nav'
 import localeDictionary from './locale.json'
@@ -142,4 +142,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.KPI_MANAGE])

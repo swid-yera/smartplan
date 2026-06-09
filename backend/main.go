@@ -82,9 +82,11 @@ func main() {
 		kcCfg,
 	)
 
+	permissionsRepo := repository.NewPermissionsPostgres(queries)
+
 	// ---------- SERVICES ----------
 	authService := service.NewAuthService(rdb, authRepo, kcSyncClient, kcCfg, log)
-	userService := service.NewUserService(usersRepo, rdb)
+	userService := service.NewUserService(usersRepo, permissionsRepo, rdb)
 
 	// ---------- AI SERVICE ----------
 	var aiService service.AIService
@@ -102,7 +104,6 @@ func main() {
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	syncGuard := service.NewSyncGuard(1 * time.Minute)
 
-	permissionsRepo := repository.NewPermissionsPostgres(queries)
 	permissionService := service.NewPermissionService(permissionsRepo, usersRepo)
 
 	// ---------- MIDDLEWARE ----------

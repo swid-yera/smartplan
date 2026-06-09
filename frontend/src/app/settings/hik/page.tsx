@@ -2,13 +2,12 @@
 
 import { useState } from 'react'
 
-import { withRole } from '@components'
+import { withNavAccess } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
 import { FileSpreadsheet, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -127,4 +126,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withNavAccess(Page)

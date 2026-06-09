@@ -5,8 +5,8 @@ import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, PageTitle, withRole } from '@components'
-import { createLocaleText, getLocaleText, getUILocaleSection, interpolateUILocaleText, isAuthor } from '@helpers'
+import { Forbidden, Loader, PageTitle, withPermission } from '@components'
+import { createLocaleText, getLocaleText, getUILocaleSection, hasPermission, interpolateUILocaleText, isAuthor } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
 import { services } from '@services'
@@ -25,7 +25,7 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateRupRequest, type Locale, RoleEnum, RupTypeEnum, StudyFormEnum } from '@types'
+import { type IUpdateRupRequest, type Locale, PermissionCodeEnum, RupTypeEnum, StudyFormEnum } from '@types'
 import { MoreVertical, RotateCcw, SaveIcon } from 'lucide-react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -256,14 +256,12 @@ const EditPage: FC = () => {
 	if (isLoading || authLoading || isGenerationStatusLoading || isLanguageGenerationInProgress) return <Loader />
 	if (!user) return notFound()
 	if (!rupData) notFound()
+	const canFullAccess = hasPermission(user, PermissionCodeEnum.RUP_FULL)
+	const canManage = hasPermission(user, PermissionCodeEnum.RUP_MANAGE)
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
 	// Redirect if not allowed to edit
-
-	if (!isRupDeveloper) return <Forbidden />
-	const isAdmin = user.role === RoleEnum.ADMIN
-	const isTeacher = user.role === RoleEnum.TEACHER
-	const isMethodist = user.role === RoleEnum.METHODIST
+	if (!isRupDeveloper && !canManage && !canFullAccess) return <Forbidden />
 
 	const getStepTransitionDirection = (fromStep: string, toStep: string) =>
 		Number(toStep) >= Number(fromStep) ? 'forward' : 'backward'
@@ -292,7 +290,7 @@ const EditPage: FC = () => {
 								onChange={setActiveLocale}
 							/>
 							<ButtonGroup>
-								{isAdmin && (
+								{canFullAccess && (
 									<Button
 										className='hover:text-destructive'
 										disabled={!methods.formState.isDirty}
@@ -325,7 +323,7 @@ const EditPage: FC = () => {
 									<DropdownMenuItem asChild>
 										<Link href={`/rups/${rupData.id}`}>{t.openView}</Link>
 									</DropdownMenuItem>
-									{!isAdmin && (isTeacher || isMethodist) && (
+									{!canFullAccess && canManage && (
 										<DropdownMenuItem className='cursor-pointer' onClick={() => methods.reset()}>
 											<RotateCcw className='mr-2 h-4 w-4' />
 											{t.resetChanges}
@@ -400,4 +398,4 @@ const EditPage: FC = () => {
 	)
 }
 
-export default withRole(EditPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withPermission(EditPage, [PermissionCodeEnum.RUP_MANAGE])

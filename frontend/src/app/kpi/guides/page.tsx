@@ -4,8 +4,8 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { PageTitle, withRole } from '@components'
-import { getUILocaleSection, hasRole } from '@helpers'
+import { PageTitle, withNavAccess } from '@components'
+import { getUILocaleSection, hasPermission } from '@helpers'
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import {
@@ -25,6 +25,7 @@ import {
 	Target,
 	Users,
 } from 'lucide-react'
+import { PermissionCodeEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
@@ -49,14 +50,19 @@ const ROUTE_GROUPS = [
 ] as const
 
 const ROUTES = {
-	entry: { href: '/kpi/entry', icon: FileInput, role: 'teacher' },
-	my: { href: '/kpi/my', icon: Medal, role: 'teacher' },
-	all: { href: '/kpi/all', icon: Users, role: 'methodist' },
-	rating: { href: '/kpi/rating', icon: BarChart3, role: 'methodist' },
-	departments: { href: '/kpi/rating/departments', icon: Building2, role: 'methodist' },
-	stats: { href: '/kpi/rating/stats', icon: BadgeCheck, role: 'methodist' },
-	categories: { href: '/kpi/categories', icon: ListChecks, role: 'admin' },
-	types: { href: '/kpi/types', icon: SlidersHorizontal, role: 'admin' },
+	entry: { href: '/kpi/entry', icon: FileInput, permission: PermissionCodeEnum.KPI_VIEW, role: 'teacher' },
+	my: { href: '/kpi/my', icon: Medal, permission: PermissionCodeEnum.KPI_VIEW, role: 'teacher' },
+	all: { href: '/kpi/all', icon: Users, permission: PermissionCodeEnum.KPI_MANAGE, role: 'methodist' },
+	rating: { href: '/kpi/rating', icon: BarChart3, permission: PermissionCodeEnum.KPI_MANAGE, role: 'methodist' },
+	departments: {
+		href: '/kpi/rating/departments',
+		icon: Building2,
+		permission: PermissionCodeEnum.KPI_MANAGE,
+		role: 'methodist',
+	},
+	stats: { href: '/kpi/rating/stats', icon: BadgeCheck, permission: PermissionCodeEnum.KPI_MANAGE, role: 'methodist' },
+	categories: { href: '/kpi/categories', icon: ListChecks, permission: PermissionCodeEnum.KPI_FULL, role: 'admin' },
+	types: { href: '/kpi/types', icon: SlidersHorizontal, permission: PermissionCodeEnum.KPI_FULL, role: 'admin' },
 } as const
 
 const CRITERIA_TYPES = [{ key: 'fixed' }, { key: 'range' }] as const
@@ -65,8 +71,6 @@ const Page = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const { user } = useAuthStore()
 	const t = getUILocaleSection(localeDictionary, locale)
-
-	const currentRole = user?.role ?? null
 
 	return (
 		<section className='mx-auto w-full max-w-6xl space-y-8 p-4 sm:p-6'>
@@ -211,7 +215,7 @@ const Page = () => {
 							<CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
 								{group.items.map((routeKey) => {
 									const route = ROUTES[routeKey]
-									const disabled = !!currentRole && !hasRole(currentRole, route.role, true)
+									const disabled = !!user && !hasPermission(user, route.permission)
 
 									return (
 										<RouteCard
@@ -332,4 +336,4 @@ const RouteCard: FC<IRouteCardProps> = ({ ctaLabel, description, disabled, href,
 	)
 }
 
-export default withRole(Page, [])
+export default withNavAccess(Page)

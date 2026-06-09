@@ -4,7 +4,7 @@ import { type FC, useEffect, useState } from 'react'
 
 import Link from 'next/link'
 
-import { getCollapseState, hasRole, setCollapseState } from '@helpers'
+import { canAccessNavItem, getCollapseState, setCollapseState } from '@helpers'
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -19,13 +19,12 @@ import {
 	SidebarMenuSubItem,
 	useSidebar,
 } from '@shadcn'
-import { useAuthStore } from '@store'
-import { useLocaleStore } from '@store'
-import { RoleEnum } from '@types'
+import { useAuthStore, useLocaleStore } from '@store'
+import { type IUser } from '@types'
 import { ChevronRight } from 'lucide-react'
 
-import type { INav } from './nav-data'
 import sidebarLocale from './locale.json'
+import type { INav } from './nav-data'
 
 interface IProps {
 	items: INav[]
@@ -44,7 +43,7 @@ export const NavMain: FC<IProps> = ({ items }) => {
 			<SidebarGroupLabel>{t.groupLabel}</SidebarGroupLabel>
 			<SidebarMenu>
 				{items.map((item) => (
-					<MenuItem key={item.id} item={item} setOpen={setOpen} userRole={user.role} />
+					<MenuItem key={item.id} item={item} setOpen={setOpen} user={user} />
 				))}
 			</SidebarMenu>
 		</SidebarGroup>
@@ -54,17 +53,21 @@ export const NavMain: FC<IProps> = ({ items }) => {
 interface IMenuItem {
 	item: INav
 	setOpen: (open: boolean) => void
-	userRole: RoleEnum
+	user: IUser
 }
 
-const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
+const MenuItem: FC<IMenuItem> = ({ item, setOpen, user }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = sidebarLocale[locale] ?? sidebarLocale.ru
 
-	if (item.role && !hasRole(userRole, item.role, true)) return null
+	const canAccessItem = (navItem: INav) => {
+		return canAccessNavItem(user, navItem)
+	}
+
+	if (!canAccessItem(item)) return null
 
 	if (item.items) {
-		const filteredSubItems = item.items.filter((sub) => !sub.role || hasRole(userRole, sub.role, true))
+		const filteredSubItems = item.items.filter((sub) => canAccessItem(sub))
 
 		if (!filteredSubItems.length) return null
 
@@ -87,7 +90,10 @@ const MenuItem: FC<IMenuItem> = ({ item, setOpen, userRole }) => {
 			<SidebarMenuItem onClick={() => setOpen(true)}>
 				<Collapsible open={open} onOpenChange={handleOpenChange}>
 					<CollapsibleTrigger asChild>
-						<SidebarMenuButton className='group' tooltip={t.nav[item.titleKey as keyof typeof t.nav] || item.titleKey}>
+						<SidebarMenuButton
+							className='group'
+							tooltip={t.nav[item.titleKey as keyof typeof t.nav] || item.titleKey}
+						>
 							<item.icon />
 							<span>{t.nav[item.titleKey as keyof typeof t.nav] || item.titleKey}</span>
 							<ChevronRight

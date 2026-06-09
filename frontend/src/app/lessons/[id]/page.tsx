@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 import { notFound, useParams } from 'next/navigation'
 
-import { LessonDetailsContent, Loader, withRole } from '@components'
+import { LessonDetailsContent, Loader, withNavAccess } from '@components'
 import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -45,4 +45,4 @@ function LessonPage() {
 	)
 }
 
-export default withRole(LessonPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withNavAccess(LessonPage)

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
 
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
@@ -24,9 +25,62 @@ const (
 	PermKPIFull   PermissionCode = storage.PermissionCodeKPIFull
 )
 
+var AllPermissionCodes = []PermissionCode{
+	PermRUPManage,
+	PermRUPView,
+	PermRUPFull,
+	PermKPIManage,
+	PermKPIView,
+	PermKPIFull,
+}
+
+func defaultSpecialPermissionCodes() []PermissionCode {
+	return []PermissionCode{PermRUPView, PermKPIView}
+}
+
+var permissionRanks = map[PermissionCode]int{
+	PermRUPView:   1,
+	PermRUPManage: 2,
+	PermRUPFull:   3,
+	PermKPIView:   1,
+	PermKPIManage: 2,
+	PermKPIFull:   3,
+}
+
+func HasPermissionLevel(granted []PermissionCode, required PermissionCode) bool {
+	requiredRank, ok := permissionRanks[required]
+	if !ok {
+		return false
+	}
+
+	requiredDomain := permissionDomain(required)
+	for _, code := range granted {
+		if permissionDomain(code) != requiredDomain {
+			continue
+		}
+
+		if rank, ok := permissionRanks[code]; ok && rank >= requiredRank {
+			return true
+		}
+	}
+
+	return false
+}
+
+func permissionDomain(code PermissionCode) string {
+	switch code {
+	case PermRUPManage, PermRUPView, PermRUPFull:
+		return "RUP"
+	case PermKPIManage, PermKPIView, PermKPIFull:
+		return "KPI"
+	default:
+		return ""
+	}
+}
+
 // UserPermissions — DTO ответа с правами пользователя
 type UserPermissions struct {
-	UserID      uuid.UUID      `json:"userId"`
+	UserID      uuid.UUID        `json:"userId"`
 	Permissions []PermissionCode `json:"permissions"`
 }
 
@@ -89,20 +143,41 @@ func (s *permissionService) SetPermissions(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 
+	effectivePermissions := perm.Permissions
+	if user.Role == storage.UserRoleSPECIAL {
+		effectivePermissions = mergePermissionCodes(defaultSpecialPermissionCodes(), perm.Permissions)
+	}
+
 	return &UserPermissions{
 		UserID:      perm.UserID,
-		Permissions: perm.Permissions,
+		Permissions: effectivePermissions,
 	}, nil
 }
 
 func (s *permissionService) GetPermissions(ctx context.Context, userID uuid.UUID) (*UserPermissions, error) {
+	user, err := s.userRepo.GetUserByKeycloakID(ctx, userID)
+	if err != nil {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "user not found"}
+	}
+
 	perm, err := s.repo.GetUserPermissions(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			if user.Role == storage.UserRoleSPECIAL {
+				return &UserPermissions{UserID: userID, Permissions: defaultSpecialPermissionCodes()}, nil
+			}
+
 			// Пользователь существует, но прав ещё нет — возвращаем пустой список
 			return &UserPermissions{UserID: userID, Permissions: []PermissionCode{}}, nil
 		}
 		return nil, err
+	}
+
+	if user.Role == storage.UserRoleSPECIAL {
+		return &UserPermissions{
+			UserID:      perm.UserID,
+			Permissions: mergePermissionCodes(defaultSpecialPermissionCodes(), perm.Permissions),
+		}, nil
 	}
 
 	return &UserPermissions{
@@ -120,13 +195,27 @@ func (s *permissionService) RevokePermissions(ctx context.Context, userID uuid.U
 }
 
 func (s *permissionService) ListSpecialUsers(ctx context.Context) ([]SpecialUserWithPermissions, error) {
-	rows, err := s.repo.GetUsersWithPermissions(ctx)
+	totalUsers, err := s.userRepo.CountUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]SpecialUserWithPermissions, 0, len(rows))
-	for _, row := range rows {
+	limit := totalUsers
+	if limit > math.MaxInt32 {
+		limit = math.MaxInt32
+	}
+
+	users, err := s.userRepo.GetAllUsers(ctx, int32(limit), 0, "")
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]SpecialUserWithPermissions, 0)
+	for _, row := range users {
+		if row.Role != storage.UserRoleSPECIAL {
+			continue
+		}
+
 		firstName := ""
 		lastName := ""
 		if row.FirstName.Valid {
@@ -136,9 +225,11 @@ func (s *permissionService) ListSpecialUsers(ctx context.Context) ([]SpecialUser
 			lastName = row.LastName.String
 		}
 
-		perms := row.Permissions
-		if perms == nil {
-			perms = []PermissionCode{}
+		perms := defaultSpecialPermissionCodes()
+		if rowPerms, err := s.repo.GetUserPermissions(ctx, row.KeycloakID); err == nil {
+			perms = mergePermissionCodes(defaultSpecialPermissionCodes(), rowPerms.Permissions)
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, err
 		}
 
 		result = append(result, SpecialUserWithPermissions{
@@ -169,4 +260,21 @@ func (s *permissionService) HasPermission(ctx context.Context, userID uuid.UUID,
 		}
 	}
 	return false, nil
+}
+
+func mergePermissionCodes(groups ...[]PermissionCode) []PermissionCode {
+	seen := make(map[PermissionCode]struct{})
+	result := make([]PermissionCode, 0)
+
+	for _, group := range groups {
+		for _, code := range group {
+			if _, ok := seen[code]; ok {
+				continue
+			}
+			seen[code] = struct{}{}
+			result = append(result, code)
+		}
+	}
+
+	return result
 }

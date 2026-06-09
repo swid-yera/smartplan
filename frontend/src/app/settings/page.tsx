@@ -1,11 +1,10 @@
 'use client'
 
-import { PageTitle, withRole } from '@components'
+import { PageTitle, withNavAccess } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
 import { toast } from 'sonner'
 
 import localeDictionary from './locale.json'
@@ -35,4 +34,4 @@ function GroupsPage() {
 	)
 }
 
-export default withRole(GroupsPage, [RoleEnum.ADMIN])
+export default withNavAccess(GroupsPage)

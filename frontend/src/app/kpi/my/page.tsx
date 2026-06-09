@@ -2,12 +2,12 @@
 
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { AwardsCard, Loader, Pagination, SectionTitle, UserCard, withRole } from '@components'
-import { getUILocaleSection, hasRole } from '@helpers'
+import { AwardsCard, Loader, Pagination, SectionTitle, UserCard, withPermission } from '@components'
+import { getUILocaleSection, hasPermission } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum, type StatusEnum } from '@types'
+import { PermissionCodeEnum, type StatusEnum } from '@types'
 
 import { AwardFilterCard } from '../components'
 import localeDictionary from './locale.json'
@@ -35,7 +35,7 @@ const Page = () => {
 		: undefined
 
 	const { user, authLoading } = useAuthStore()
-	const isTeacher = !!user && hasRole(user.role, RoleEnum.TEACHER, true)
+	const canViewKpi = hasPermission(user, PermissionCodeEnum.KPI_VIEW)
 
 	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
 		...services.award.getAllOptions({
@@ -46,7 +46,7 @@ const Page = () => {
 			sort,
 			teacher: user?.keycloakId,
 		}),
-		enabled: !!user && isTeacher,
+		enabled: !!user && canViewKpi,
 	})
 
 	const setCurrentPage = (newPage: number) => {
@@ -65,7 +65,7 @@ const Page = () => {
 	}
 
 	if (authLoading || !user) return <Loader type='data' />
-	if (!isTeacher) return notFound()
+	if (!canViewKpi) return notFound()
 
 	return (
 		<section className='mx-auto w-full max-w-6xl space-y-6 p-4'>
@@ -97,4 +97,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER])
+export default withPermission(Page, [PermissionCodeEnum.KPI_VIEW])

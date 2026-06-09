@@ -23,6 +23,9 @@ func ResolveHighestRole(
 	if hasAny(roleSet, cfg.AdminRoles) {
 		return storage.UserRoleADMIN, true
 	}
+	if hasAny(roleSet, cfg.SpecialRoles) {
+		return storage.UserRoleSPECIAL, true
+	}
 	if hasAny(roleSet, cfg.MethodistRoles) {
 		return storage.UserRoleMETHODIST, true
 	}

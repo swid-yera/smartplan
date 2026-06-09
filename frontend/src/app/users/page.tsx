@@ -1,29 +1,33 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { PageTitle, Pagination, withRole } from '@components'
+import { PageTitle, Pagination, withNavAccess } from '@components'
 import { getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { RoleEnum } from '@types'
+import { ShieldCheck } from 'lucide-react'
 
 import localeDictionary from './locale.json'
 import { UsersFilter } from './users-filter'
+import { UsersPermissionsDialog } from './users-permissions-dialog'
 import { UsersTable } from './users-table'
 
 function Page() {
-	const { authLoading, isAuthenticated } = useAuthStore()
+	const { authLoading, isAuthenticated, user } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const router = useRouter()
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
+	const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false)
+	const isAdmin = user?.role === RoleEnum.ADMIN
 
 	const { currentPage, itemsPerPage, search } = useMemo(() => {
 		const currentPage = Number(searchParams.get('page') || '1')
@@ -75,7 +79,19 @@ function Page() {
 
 	return (
 		<div className='w-full mx-auto py-10 px-2 md:px-4 space-y-8'>
-			<PageTitle description={t.page.description}>{t.page.title}</PageTitle>
+			<PageTitle
+				actions={
+					isAdmin ? (
+						<Button onClick={() => setIsPermissionsDialogOpen(true)}>
+							<ShieldCheck className='mr-2 h-4 w-4' />
+							{t.page.permissionsButton}
+						</Button>
+					) : undefined
+				}
+				description={t.page.description}
+			>
+				{t.page.title}
+			</PageTitle>
 
 			<Card>
 				<CardHeader>
@@ -105,8 +121,12 @@ function Page() {
 					/>
 				</CardContent>
 			</Card>
+
+			{isAdmin ? (
+				<UsersPermissionsDialog open={isPermissionsDialogOpen} onOpenChange={setIsPermissionsDialogOpen} />
+			) : null}
 		</div>
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withNavAccess(Page)

@@ -1,5 +1,5 @@
 import type { badgeVariants } from '@shadcn'
-import { type IUser, type Locale, RoleEnum, ViolationEnum } from '@types'
+import { PermissionCodeEnum, type IUser, type Locale, RoleEnum, ViolationEnum } from '@types'
 import type { VariantProps } from 'class-variance-authority'
 
 // has role
@@ -7,6 +7,8 @@ export const hasRole = (current: RoleEnum, target: RoleEnum, highestRole = true)
 	switch (current) {
 		case RoleEnum.ADMIN:
 			return highestRole ? true : target === RoleEnum.ADMIN
+		case RoleEnum.SPECIAL:
+			return target === RoleEnum.SPECIAL
 		case RoleEnum.METHODIST:
 			return target === RoleEnum.METHODIST
 		case RoleEnum.TEACHER:
@@ -21,6 +23,8 @@ export const defineHighestRole = (current: RoleEnum): RoleEnum => {
 	switch (current) {
 		case RoleEnum.ADMIN:
 			return RoleEnum.ADMIN
+		case RoleEnum.SPECIAL:
+			return RoleEnum.SPECIAL
 		case RoleEnum.METHODIST:
 			return RoleEnum.METHODIST
 		case RoleEnum.TEACHER:
@@ -47,7 +51,48 @@ export const userRoleButtonVariants: Record<RoleEnum, VariantProps<typeof badgeV
 	ADMIN: 'outline',
 	METHODIST: 'default',
 	TEACHER: 'secondary',
+	SPECIAL: 'outline',
 }
+
+const permissionRankByCode: Record<PermissionCodeEnum, number> = {
+	[PermissionCodeEnum.RUP_VIEW]: 1,
+	[PermissionCodeEnum.RUP_MANAGE]: 2,
+	[PermissionCodeEnum.RUP_FULL]: 3,
+	[PermissionCodeEnum.KPI_VIEW]: 1,
+	[PermissionCodeEnum.KPI_MANAGE]: 2,
+	[PermissionCodeEnum.KPI_FULL]: 3,
+}
+
+const permissionDomainByCode: Record<PermissionCodeEnum, 'RUP' | 'KPI'> = {
+	[PermissionCodeEnum.RUP_VIEW]: 'RUP',
+	[PermissionCodeEnum.RUP_MANAGE]: 'RUP',
+	[PermissionCodeEnum.RUP_FULL]: 'RUP',
+	[PermissionCodeEnum.KPI_VIEW]: 'KPI',
+	[PermissionCodeEnum.KPI_MANAGE]: 'KPI',
+	[PermissionCodeEnum.KPI_FULL]: 'KPI',
+}
+
+export const getUserPermissions = (user?: IUser | null): PermissionCodeEnum[] => {
+	return user?.permissions ?? []
+}
+
+export const hasPermission = (user: IUser | null | undefined, requiredPermission: PermissionCodeEnum): boolean => {
+	if (!user) return false
+
+	const requiredDomain = permissionDomainByCode[requiredPermission]
+	const requiredRank = permissionRankByCode[requiredPermission]
+
+	return getUserPermissions(user).some((permission) => {
+		if (permissionDomainByCode[permission] !== requiredDomain) return false
+
+		return permissionRankByCode[permission] >= requiredRank
+	})
+}
+
+export const hasAnyPermission = (
+	user: IUser | null | undefined,
+	requiredPermissions: PermissionCodeEnum[],
+): boolean => requiredPermissions.some((permission) => hasPermission(user, permission))
 
 // normalize user role
 const userRoleLabelsByLocale: Record<Locale, Record<RoleEnum, string>> = {
@@ -55,11 +100,13 @@ const userRoleLabelsByLocale: Record<Locale, Record<RoleEnum, string>> = {
 		ADMIN: 'Администратор',
 		METHODIST: 'Методист',
 		TEACHER: 'Преподаватель',
+		SPECIAL: 'Специальный',
 	},
 	kk: {
 		ADMIN: 'Әкімші',
 		METHODIST: 'Әдіскер',
 		TEACHER: 'Мұғалім',
+		SPECIAL: 'Арнайы',
 	},
 }
 

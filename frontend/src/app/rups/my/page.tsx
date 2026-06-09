@@ -6,13 +6,13 @@ import type { NextPage } from 'next'
 import Link from 'next/link'
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, RupsCard, withRole } from '@components'
-import { getUILocaleSection, hasRole } from '@helpers'
+import { Loader, PageTitle, RupsCard, withPermission } from '@components'
+import { getUILocaleSection, hasPermission } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { RoleEnum, StatusEnum } from '@types'
+import { PermissionCodeEnum, StatusEnum } from '@types'
 import { Plus } from 'lucide-react'
 
 import { RupsFilterCard } from '../components'
@@ -39,9 +39,9 @@ const Page: NextPage = () => {
 	const q = filterState.search
 	const status = filterState.statuses as StatusEnum[]
 	const sort = filterState.sort
-	const isTeacher = hasRole(user?.role || RoleEnum.TEACHER, RoleEnum.TEACHER, false)
-	const canCreate = hasRole(user?.role || RoleEnum.TEACHER, RoleEnum.TEACHER, true)
-	const teacherId = isTeacher ? user?.keycloakId : ''
+	const canManageRups = hasPermission(user, PermissionCodeEnum.RUP_MANAGE)
+	const canViewRups = hasPermission(user, PermissionCodeEnum.RUP_VIEW)
+	const teacherId = canViewRups && !canManageRups ? user?.keycloakId : ''
 
 	useEffect(() => {
 		const currentParams = new URLSearchParams(searchParamsString)
@@ -93,7 +93,7 @@ const Page: NextPage = () => {
 		<div className='space-y-6 p-6'>
 			<PageTitle
 				actions={
-					canCreate ? (
+					canManageRups ? (
 						<Button asChild>
 							<Link href='/rups/create'>
 								<Plus className='mr-2 h-4 w-4' />
@@ -102,9 +102,9 @@ const Page: NextPage = () => {
 						</Button>
 					) : undefined
 				}
-				description={canCreate ? t.teacherDescription : t.methodistDescription}
+				description={canManageRups ? t.methodistDescription : t.teacherDescription}
 			>
-				{isTeacher ? t.teacherTitle : t.methodistTitle}
+				{canManageRups ? t.methodistTitle : t.teacherTitle}
 			</PageTitle>
 
 			<RupsFilterCard />
@@ -113,7 +113,7 @@ const Page: NextPage = () => {
 				currentPage={rupsData?.meta.currentPage || 1}
 				isLoading={!rupsData && isLoading}
 				rups={rupsData?.data || []}
-				title={isTeacher ? t.listTeacher : t.listMethodist}
+				title={canManageRups ? t.listMethodist : t.listTeacher}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 			/>
@@ -121,4 +121,4 @@ const Page: NextPage = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST], true)
+export default withPermission(Page, [PermissionCodeEnum.RUP_VIEW], true)
