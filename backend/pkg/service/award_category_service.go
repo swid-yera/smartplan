@@ -744,7 +744,7 @@ func validateFieldValueType(field storage.AwardCategoryField, value any) error {
 		if _, ok := value.(string); !ok {
 			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
 		}
-		if strings.TrimSpace(value.(string)) == "" {
+		if field.Required && strings.TrimSpace(value.(string)) == "" {
 			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
 		}
 	case "url":
@@ -865,7 +865,7 @@ func normalizeMultiFieldChildValue(parentKey string, option AwardCategoryMultiFi
 		if _, ok := value.(string); !ok {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
 		}
-		if strings.TrimSpace(value.(string)) == "" {
+		if option.Required && strings.TrimSpace(value.(string)) == "" {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
 		}
 		return value, nil
