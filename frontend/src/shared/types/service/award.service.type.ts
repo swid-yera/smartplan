@@ -48,7 +48,6 @@ export interface IVariantResponse {
 	name: LocalizedText
 	description: LocalizedText | null
 	criteria: ICriteriaResponse[]
-	bonusCriteria?: ICriteriaResponse[]
 	bonus_criteria?: ICriteriaResponse[] | null
 }
 

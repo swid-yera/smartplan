@@ -108,9 +108,9 @@ export class LessonService {
 				id: typeof source.id === 'string' && source.id.trim() ? source.id : `lesson-progress-${index}`,
 				name: (source.name as LocalizedText) ?? '',
 				content,
-				firstTime: this.normalizeMinuteArray(firstTime),
-				secondTime: this.normalizeMinuteArray(secondTime),
-				thirdTime: this.normalizeMinuteArray(thirdTime),
+				first_time: this.normalizeMinuteArray(firstTime),
+				second_time: this.normalizeMinuteArray(secondTime),
+				third_time: this.normalizeMinuteArray(thirdTime),
 			}
 		})
 	}

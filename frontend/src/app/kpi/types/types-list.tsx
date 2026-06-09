@@ -82,12 +82,12 @@ const TypeCard = ({ locale, type }: ITypeCardProps) => {
 							</ol>
 						)}
 
-						{variant.bonusCriteria && variant.bonusCriteria.length > 0 && (
+						{variant.bonus_criteria && variant.bonus_criteria.length > 0 && (
 							<>
 								<Separator className='my-3' />
 
 								<ol className='space-y-2 pl-4'>
-									{variant.bonusCriteria.map((criteria) => (
+									{variant.bonus_criteria.map((criteria) => (
 										<li key={criteria.id} className='list-[lower-roman] text-sm'>
 											<span className='font-medium'>{getLocaleText(criteria.name, locale)}</span>
 											<span className='ml-1 opacity-80'>({criteria.points.join(', ')})</span>
