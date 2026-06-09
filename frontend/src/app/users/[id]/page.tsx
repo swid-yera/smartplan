@@ -26,18 +26,27 @@ import {
 import { services } from '@services'
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { RoleEnum, type StatusEnum, ViolationEnum } from '@types'
 import { ArrowLeft, Gavel, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { AwardFilterCard } from '../../kpi/components'
+import { RupsFilterCard } from '../../rups/components'
+import {
+	buildRupFilterSearchParams,
+	getRupFilterStateFromSearchParams,
+	hasExplicitRupFilterParams,
+	persistRupFilterState,
+	readPersistedRupFilterState,
+} from '../../rups/components/rups-filter-state'
 import localeDictionary from './locale.json'
 
 const Page = () => {
 	const router = useRouter()
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
+	const searchParamsString = searchParams.toString()
 	const params = useParams<{ id: string }>()
 	const { user: me, authLoading, isAuthenticated } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
@@ -62,6 +71,12 @@ const Page = () => {
 				.map((id) => id.trim())
 				.filter(Boolean)
 		: undefined
+	const rupsFilterStorageKey = `eduplan:users:${params.id}:rups-filters`
+	const rupsFilterState = getRupFilterStateFromSearchParams(searchParams, { paramPrefix: 'rups' })
+	const rupsPage = Number(searchParams.get('rupsPage')) || 1
+	const rupsSearch = rupsFilterState.search
+	const rupsStatus = rupsFilterState.statuses as StatusEnum[]
+	const rupsSort = rupsFilterState.sort
 
 	// queries
 	const {
@@ -75,8 +90,16 @@ const Page = () => {
 
 	// rups
 	const { data: rupsData, isLoading: rupsLoading } = useQuery({
-		...services.rup.getAllOptions({ teacher: params.id }),
-		enabled: !userLoading && !isError,
+		...services.rup.getAllOptions({
+			currentPage: rupsPage,
+			pageSize: 10,
+			search: rupsSearch,
+			sort: rupsSort,
+			status: rupsStatus,
+			teacher: params.id,
+		}),
+		placeholderData: keepPreviousData,
+		enabled: !!params.id && !userLoading && !isError && activeTab === 'rups',
 	})
 
 	// awards data
@@ -110,6 +133,31 @@ const Page = () => {
 		router.replace(`${pathname}?${paramsUrl.toString()}`)
 	}, [activeTabParam, pathname, router, searchParams])
 
+	useEffect(() => {
+		const currentParams = new URLSearchParams(searchParams.toString())
+		const currentFilterState = getRupFilterStateFromSearchParams(currentParams, { paramPrefix: 'rups' })
+
+		if (hasExplicitRupFilterParams(currentParams, { paramPrefix: 'rups' })) {
+			persistRupFilterState(currentFilterState, rupsFilterStorageKey)
+
+			return
+		}
+
+		const persistedState = readPersistedRupFilterState(rupsFilterStorageKey)
+
+		if (!persistedState) return
+
+		const nextParams = buildRupFilterSearchParams(currentParams, persistedState, {
+			paramPrefix: 'rups',
+			resetPage: true,
+		})
+		const nextQuery = nextParams.toString()
+
+		if (nextQuery === currentParams.toString()) return
+
+		router.replace(`${pathname}?${nextQuery}`, { scroll: false })
+	}, [pathname, router, rupsFilterStorageKey, searchParamsString])
+
 	if (userLoading || authLoading) {
 		return <Loader />
 	}
@@ -132,7 +180,6 @@ const Page = () => {
 	const isMethodistView = hasRole(me.role, RoleEnum.METHODIST, true)
 	const currentViolation = userData.violation || ViolationEnum.NONE
 	const nextViolation = getNextViolationStatus(currentViolation)
-	const pageTitleDescription = activeTab === 'kpi' ? t.page.kpiProfileDescription : undefined
 
 	const setCurrentTab = (tab: string) => {
 		const paramsUrl = new URLSearchParams(searchParams.toString())
@@ -146,6 +193,13 @@ const Page = () => {
 
 		paramsUrl.set('page', String(newPage))
 		router.push(`${pathname}?${paramsUrl.toString()}`)
+	}
+
+	const setCurrentRupsPage = (newPage: number) => {
+		const paramsUrl = new URLSearchParams(searchParams.toString())
+
+		paramsUrl.set('rupsPage', String(newPage))
+		router.push(`${pathname}?${paramsUrl.toString()}`, { scroll: false })
 	}
 
 	const setPageSize = (newSize: number) => {
@@ -174,7 +228,7 @@ const Page = () => {
 
 	return (
 		<section className='mx-auto w-full space-y-8 px-4 pb-10 pt-5'>
-			<PageTitle actions={actionButtons} backHref='back' description={pageTitleDescription}>
+			<PageTitle actions={actionButtons} backHref='back' description={t.page.profileDescription}>
 				{interpolateUILocaleText(t.page.title, {
 					firstName: userData.firstName,
 					lastName: userData.lastName,
@@ -245,14 +299,18 @@ const Page = () => {
 				</TabsList>
 
 				<TabsContent value='rups'>
-					<RupsCard
-						currentPage={rupsData?.meta.currentPage || 1}
-						isLoading={rupsLoading}
-						rups={rupsData?.data || []}
-						title={t.page.rupsTitle}
-						totalPages={rupsData?.meta.pages || 1}
-						onPageChange={() => true}
-					/>
+					<div className='space-y-4'>
+						<RupsFilterCard compact className='mb-2' paramPrefix='rups' persistKey={rupsFilterStorageKey} />
+
+						<RupsCard
+							currentPage={rupsData?.meta.currentPage || rupsPage}
+							isLoading={rupsLoading}
+							rups={rupsData?.data || []}
+							title={t.page.rupsTitle}
+							totalPages={rupsData?.meta.pages || 1}
+							onPageChange={setCurrentRupsPage}
+						/>
+					</div>
 				</TabsContent>
 
 				<TabsContent value='kpi'>
