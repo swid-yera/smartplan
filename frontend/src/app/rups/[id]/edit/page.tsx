@@ -406,4 +406,4 @@ const EditPage: FC = () => {
 	)
 }
 
-export default withPermission(EditPage, [PermissionCodeEnum.RUP_MANAGE])
+export default withPermission(EditPage, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])

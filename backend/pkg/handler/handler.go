@@ -203,8 +203,8 @@ func (r *Router) Init() *gin.Engine {
 			// типы наград — KPI full
 			awardTypes := awards.Group("/types")
 			{
-				awardTypes.GET("", middleware.RequirePermission(service.PermKPIFull), r.award.GetAllAwardTypes)
-				awardTypes.GET("/:id", middleware.RequirePermission(service.PermKPIFull), r.award.GetAwardTypeByID)
+				awardTypes.GET("", middleware.RequirePermission(service.PermKPIView), r.award.GetAllAwardTypes)
+				awardTypes.GET("/:id", middleware.RequirePermission(service.PermKPIView), r.award.GetAwardTypeByID)
 				awardTypes.POST("", middleware.RequirePermission(service.PermKPIFull), r.award.CreateAwardType)
 				awardTypes.PUT("/:id", middleware.RequirePermission(service.PermKPIFull), r.award.UpdateAwardType)
 				awardTypes.DELETE("/:id", middleware.RequirePermission(service.PermKPIFull), r.award.DeleteType)

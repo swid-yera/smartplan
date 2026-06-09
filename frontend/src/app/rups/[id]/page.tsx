@@ -278,7 +278,8 @@ const Page: FC = () => {
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
-	const canRegenerateLanguage = rupData.status === StatusEnum.DRAFT && (isRupDeveloper || canManageRups || canFullAccess)
+	const canRegenerateLanguage =
+		rupData.status === StatusEnum.DRAFT && (isRupDeveloper || canManageRups || canFullAccess)
 	const canDownload = rupData.status === StatusEnum.APPROVED
 	const canEdit = (isRupDeveloper || canManageRups || canFullAccess) && isStatusForEdit
 	const canDelete = (isRupCreator || canManageRups || canFullAccess) && isStatusForEdit
@@ -418,6 +419,7 @@ const Page: FC = () => {
 					</ButtonGroup>
 				}
 				activeLocale={activeLocale}
+				canManage={canManageRups || canFullAccess}
 				data={rupData}
 				localeNotice={
 					isActiveLocaleMissing ? (
@@ -455,7 +457,6 @@ const Page: FC = () => {
 						</div>
 					) : null
 				}
-				canManage={canManageRups || canFullAccess}
 				onActiveLocaleChange={setActiveLocale}
 				onStatusChange={handleStatusChange}
 			/>
@@ -499,7 +500,11 @@ const Page: FC = () => {
 	)
 }
 
-export default withPermission(Page, [PermissionCodeEnum.RUP_VIEW])
+export default withPermission(Page, [
+	PermissionCodeEnum.RUP_FULL,
+	PermissionCodeEnum.RUP_MANAGE,
+	PermissionCodeEnum.RUP_VIEW,
+])
 
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean

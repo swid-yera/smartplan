@@ -128,4 +128,4 @@ const LanguageGenerationPage = () => {
 	)
 }
 
-export default withPermission(LanguageGenerationPage, [PermissionCodeEnum.RUP_MANAGE])
+export default withPermission(LanguageGenerationPage, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])

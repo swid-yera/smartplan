@@ -139,4 +139,4 @@ const Page = () => {
 	)
 }
 
-export default withPermission(Page, [PermissionCodeEnum.KPI_MANAGE])
+export default withPermission(Page, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_MANAGE])

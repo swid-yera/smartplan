@@ -6,7 +6,7 @@ import type { NextPage } from 'next'
 import Link from 'next/link'
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, RupsCard, withPermission } from '@components'
+import { Loader, PageTitle, RupsCard, withNavAccess } from '@components'
 import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
@@ -121,4 +121,4 @@ const Page: NextPage = () => {
 	)
 }
 
-export default withPermission(Page, [PermissionCodeEnum.RUP_VIEW], true)
+export default withNavAccess(Page)

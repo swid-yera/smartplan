@@ -2,7 +2,7 @@
 
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { AwardsCard, Loader, Pagination, SectionTitle, UserCard, withPermission } from '@components'
+import { AwardsCard, Loader, Pagination, SectionTitle, UserCard, withNavAccess } from '@components'
 import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -97,4 +97,4 @@ const Page = () => {
 	)
 }
 
-export default withPermission(Page, [PermissionCodeEnum.KPI_VIEW])
+export default withNavAccess(Page)

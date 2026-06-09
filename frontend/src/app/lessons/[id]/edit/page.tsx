@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react'
 
 import { notFound, useParams } from 'next/navigation'
 
-import { LessonEditForm, Loader, withNavAccess } from '@components'
+import { LessonEditForm, Loader, withPermission } from '@components'
 import { isAuthor } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import type { Locale } from '@types'
+import { type Locale, PermissionCodeEnum } from '@types'
+
 function LessonEditPage() {
 	const params = useParams<{ id: string }>()
 	const { authLoading, user } = useAuthStore()
@@ -36,4 +37,4 @@ function LessonEditPage() {
 	return <LessonEditForm activeLocale={activeLocale} lesson={lesson} onActiveLocaleChange={setActiveLocale} />
 }
 
-export default withNavAccess(LessonEditPage)
+export default withPermission(LessonEditPage, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])

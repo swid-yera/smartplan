@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { AwardsCard, Loader, PageTitle, Pagination, withNavAccess } from '@components'
+import { AwardsCard, Loader, PageTitle, Pagination, withPermission } from '@components'
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { Badge, Button, ButtonGroup, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
@@ -95,7 +95,8 @@ const Page = () => {
 
 	const categoryIconOption = getCategoryIconOptionByName(category.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
-	const canManageAwards = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
+	const canEditCategories = hasAnyPermission(user, [PermissionCodeEnum.KPI_FULL])
+	const canViewAwards = hasAnyPermission(user, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW])
 	const categoryName = getLocaleText(category.name, locale)
 	const categoryDescription = getLocaleText(category.description, locale) || t.missingDescription
 
@@ -105,7 +106,7 @@ const Page = () => {
 				sticky
 				actions={
 					<ButtonGroup>
-						{canManageAwards && (
+						{canEditCategories && (
 							<Button asChild size='sm' variant='outline'>
 								<Link href={`/kpi/categories/${category.id}/edit`}>
 									<Edit className='mr-2 h-4 w-4' />
@@ -113,7 +114,7 @@ const Page = () => {
 								</Link>
 							</Button>
 						)}
-						{canManageAwards && (
+						{canViewAwards && (
 							<Button asChild size='sm'>
 								<Link href={`/kpi/categories/${category.id}/create`}>
 									<Plus className='mr-2 h-4 w-4' />
@@ -123,7 +124,7 @@ const Page = () => {
 						)}
 					</ButtonGroup>
 				}
-				backHref={canManageAwards ? '/kpi/all' : '/kpi/entry'}
+				backHref={'/kpi/entry'}
 				description={t.pageDescription}
 			>
 				{categoryName}
@@ -149,10 +150,6 @@ const Page = () => {
 							<Badge variant='outline'>{t.typesEmpty}</Badge>
 						)}
 					</div>
-					<div className='text-sm text-muted-foreground'>
-						{t.fieldsCount}{' '}
-						<span className='font-medium text-foreground'>{category.fieldsExpanded?.length || 0}</span>
-					</div>
 				</CardContent>
 			</Card>
 
@@ -174,4 +171,4 @@ const Page = () => {
 	)
 }
 
-export default withNavAccess(Page)
+export default withPermission(Page, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW])

@@ -21,6 +21,7 @@ import { Alert, AlertDescription, Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { ILesson, LessonTypeEnum } from '@types'
+
 import localeDictionary from './locale.json'
 
 const ALL_FILTER = 'ALL'

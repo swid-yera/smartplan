@@ -1,11 +1,10 @@
 'use client'
 
-import { CategoryCard, Loader, SectionTitle, withPermission } from '@components'
+import { CategoryCard, Loader, SectionTitle, withNavAccess } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { PermissionCodeEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
@@ -44,4 +43,4 @@ const Page = () => {
 	)
 }
 
-export default withPermission(Page, [PermissionCodeEnum.KPI_VIEW])
+export default withNavAccess(Page)

@@ -7,16 +7,7 @@ import Link from 'next/link'
 import { Loader, PageTitle, withNavAccess } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import {
-	Badge,
-	Button,
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-	Input,
-} from '@shadcn'
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Search, Users } from 'lucide-react'
@@ -115,16 +106,14 @@ const Page = () => {
 											{department.userCount} {t.usersCount}
 										</p>
 									</div>
-									<Badge variant='secondary' className='w-fit'>
+									<Badge className='w-fit' variant='secondary'>
 										{department.totalPoints} {t.points}
 									</Badge>
 								</Link>
 							)
 						})
 					) : (
-						<p className='py-8 text-center text-muted-foreground'>
-							{search.trim() ? t.notFound : t.empty}
-						</p>
+						<p className='py-8 text-center text-muted-foreground'>{search.trim() ? t.notFound : t.empty}</p>
 					)}
 				</CardContent>
 			</Card>

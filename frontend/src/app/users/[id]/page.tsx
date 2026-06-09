@@ -14,7 +14,7 @@ import {
 	RupsCard,
 	UserCard,
 	ViolationDialog,
-	withNavAccess,
+	withPermission,
 } from '@components'
 import {
 	getNextViolationStatus,
@@ -362,4 +362,9 @@ const Page = () => {
 	)
 }
 
-export default withNavAccess(Page)
+export default withPermission(Page, [
+	PermissionCodeEnum.RUP_FULL,
+	PermissionCodeEnum.KPI_FULL,
+	PermissionCodeEnum.RUP_MANAGE,
+	PermissionCodeEnum.KPI_MANAGE,
+])

@@ -7,9 +7,19 @@ import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
-import type { LucideIcon } from 'lucide-react'
-import { ArrowRightCircle, BarChart3, BookOpenText, FilePlus2, FileText, Loader2, LogIn, Shield, Users } from 'lucide-react'
 import { PermissionCodeEnum } from '@types'
+import type { LucideIcon } from 'lucide-react'
+import {
+	ArrowRightCircle,
+	BarChart3,
+	BookOpenText,
+	FilePlus2,
+	FileText,
+	Loader2,
+	LogIn,
+	Shield,
+	Users,
+} from 'lucide-react'
 
 import localeDictionary from './locale.json'
 
@@ -101,7 +111,11 @@ const HomePageClient = () => {
 								{t.actions.loading}
 							</Button>
 						) : isAuthenticated ? (
-							<Button asChild className='w-full sm:w-auto transition-all duration-200 hover:translate-y-[-1px]' size='lg'>
+							<Button
+								asChild
+								className='w-full sm:w-auto transition-all duration-200 hover:translate-y-[-1px]'
+								size='lg'
+							>
 								<Link href='/dashboard'>
 									{t.actions.goDashboard}
 									<ArrowRightCircle className='h-4 w-4' />

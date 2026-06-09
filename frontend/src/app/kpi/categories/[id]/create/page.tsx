@@ -17,7 +17,7 @@ import {
 	getCategoryFieldValidationError,
 	isFileFieldValueArray,
 	serializeCategoryFieldValue,
-	withNavAccess,
+	withPermission,
 } from '@components'
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
@@ -34,7 +34,14 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { IApiErrorResponse, ICreateAwardRequest, ICriteriaResponse, ITypeResponse, IVariantResponse } from '@types'
+import {
+	type IApiErrorResponse,
+	type ICreateAwardRequest,
+	type ICriteriaResponse,
+	type ITypeResponse,
+	type IVariantResponse,
+	PermissionCodeEnum,
+} from '@types'
 import { isAxiosError } from 'axios'
 import { Folder } from 'lucide-react'
 import { toast } from 'sonner'
@@ -471,4 +478,4 @@ function CreateAwardPage() {
 	)
 }
 
-export default withNavAccess(CreateAwardPage)
+export default withPermission(CreateAwardPage, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW])

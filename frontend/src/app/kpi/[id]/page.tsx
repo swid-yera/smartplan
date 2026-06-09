@@ -158,7 +158,7 @@ const Page = () => {
 		<div className='space-y-6 p-6 w-full'>
 			<PageTitle
 				actions={
-						<KpiDetailsActions
+					<KpiDetailsActions
 						canManage={canManageAward}
 						id={String(id)}
 						isAdmin={canFullAccess}
@@ -231,4 +231,8 @@ const Page = () => {
 	)
 }
 
-export default withPermission(Page, [PermissionCodeEnum.KPI_VIEW])
+export default withPermission(Page, [
+	PermissionCodeEnum.KPI_FULL,
+	PermissionCodeEnum.KPI_MANAGE,
+	PermissionCodeEnum.KPI_VIEW,
+])

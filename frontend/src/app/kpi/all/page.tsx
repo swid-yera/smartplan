@@ -112,11 +112,7 @@ const Page = () => {
 			<AwardFilterCard compact className='mb-4' />
 
 			{/* список наград */}
-			<AwardsCard
-				awards={awardsData?.data || []}
-				isLoading={!awardsData && isAwardsLoading}
-				title={t.listTitle}
-			/>
+			<AwardsCard awards={awardsData?.data || []} isLoading={!awardsData && isAwardsLoading} title={t.listTitle} />
 
 			{/* пагинация */}
 			<Pagination

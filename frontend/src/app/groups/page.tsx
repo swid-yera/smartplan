@@ -7,14 +7,12 @@ import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import settingsLocaleDictionary from '../settings/locale.json'
-import { SyncGroupsCard } from '../settings/sync-card'
 import localeDictionary from './locale.json'
+import { SyncGroupsCard } from './sync-card'
 
 const Page = () => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
-	const syncT = getUILocaleSection(settingsLocaleDictionary, locale)
 
 	const { data: groups, isLoading } = useQuery({
 		...services.group.getAllOptions(),
@@ -23,10 +21,10 @@ const Page = () => {
 	const { mutate: syncGroups, isPending } = useMutation({
 		...services.group.syncOptions(),
 		onSuccess: () => {
-			toast.success(syncT.toastSuccess)
+			toast.success(t.toastSuccess)
 		},
 		onError: () => {
-			toast.error(syncT.toastError)
+			toast.error(t.toastError)
 		},
 	})
 

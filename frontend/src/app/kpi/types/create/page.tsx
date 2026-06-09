@@ -5,11 +5,11 @@ import { useState } from 'react'
 import type { NextPage } from 'next'
 import { useRouter } from 'next/navigation'
 
-import { withNavAccess } from '@components'
+import { withPermission } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { useMutation } from '@tanstack/react-query'
-import type { ICreateTypesRequest, Locale } from '@types'
+import { type ICreateTypesRequest, type Locale, PermissionCodeEnum } from '@types'
 import { toast } from 'sonner'
 
 import { TypeEditorLayout } from '../components'
@@ -64,4 +64,4 @@ const Page: NextPage = () => {
 	)
 }
 
-export default withNavAccess(Page)
+export default withPermission(Page, [PermissionCodeEnum.KPI_FULL])

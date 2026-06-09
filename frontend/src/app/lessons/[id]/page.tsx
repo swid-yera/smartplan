@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 
 import { notFound, useParams } from 'next/navigation'
 
-import { LessonDetailsContent, Loader, withNavAccess } from '@components'
+import { LessonDetailsContent, Loader, withPermission } from '@components'
 import { hasRole } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { type Locale, RoleEnum } from '@types'
+import { type Locale, PermissionCodeEnum, RoleEnum } from '@types'
 
 function LessonPage() {
 	const params = useParams<{ id: string }>()
@@ -45,4 +45,4 @@ function LessonPage() {
 	)
 }
 
-export default withNavAccess(LessonPage)
+export default withPermission(LessonPage, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])

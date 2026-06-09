@@ -104,4 +104,8 @@ const Page = () => {
 	)
 }
 
-export default withPermission(Page, [PermissionCodeEnum.RUP_VIEW])
+export default withPermission(Page, [
+	PermissionCodeEnum.RUP_FULL,
+	PermissionCodeEnum.RUP_MANAGE,
+	PermissionCodeEnum.RUP_VIEW,
+])
