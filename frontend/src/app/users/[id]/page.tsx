@@ -46,10 +46,7 @@ const Page = () => {
 	const [isViolationDialogOpen, setIsViolationDialogOpen] = useState(false)
 
 	const activeTabParam = searchParams.get('tab')
-	const activeTab =
-		activeTabParam === 'created' || activeTabParam === 'assessment' || activeTabParam === 'kpi'
-			? activeTabParam
-			: 'kpi'
+	const activeTab = activeTabParam === 'rups' || activeTabParam === 'kpi' ? activeTabParam : 'rups'
 
 	const page = Number(searchParams.get('page')) || 1
 	const pageSize = Number(searchParams.get('pageSize')) || 10
@@ -76,15 +73,9 @@ const Page = () => {
 		enabled: !!params.id,
 	})
 
-	// created rups
-	const { data: createdRups, isLoading: createdRupsLoading } = useQuery({
+	// rups
+	const { data: rupsData, isLoading: rupsLoading } = useQuery({
 		...services.rup.getAllOptions({ teacher: params.id }),
-		enabled: !userLoading && !isError,
-	})
-
-	// assessment rups
-	const { data: assessmentRups, isLoading: assessmentRupsLoading } = useQuery({
-		...services.rup.getAllOptions({ methodist: params.id }),
 		enabled: !userLoading && !isError,
 	})
 
@@ -115,7 +106,7 @@ const Page = () => {
 
 		const paramsUrl = new URLSearchParams(searchParams.toString())
 
-		paramsUrl.set('tab', 'kpi')
+		paramsUrl.set('tab', 'rups')
 		router.replace(`${pathname}?${paramsUrl.toString()}`)
 	}, [activeTabParam, pathname, router, searchParams])
 
@@ -179,6 +170,8 @@ const Page = () => {
 		</div>
 	)
 
+	console.log(awardsData?.data)
+
 	return (
 		<section className='mx-auto w-full space-y-8 px-4 pb-10 pt-5'>
 			<PageTitle actions={actionButtons} backHref='back' description={pageTitleDescription}>
@@ -190,12 +183,7 @@ const Page = () => {
 
 			<div className='grid items-stretch gap-6 lg:grid-cols-3'>
 				<div className='h-full lg:col-span-2'>
-					<UserCard
-						className='h-full'
-						showTotalPoints={activeTab === 'kpi'}
-						showViolation={activeTab !== 'kpi'}
-						user={userData}
-					/>
+					<UserCard className='h-full' showTotalPoints={true} showViolation={true} user={userData} />
 				</div>
 				<div className='flex h-full min-h-0 flex-col lg:col-span-1'>
 					<PenaltyCard className='min-h-0 flex-1' isLoading={penaltiesLoading} penalties={penaltiesData} />
@@ -248,35 +236,21 @@ const Page = () => {
 
 			<Tabs value={activeTab} onValueChange={setCurrentTab}>
 				<TabsList>
-					<TabsTrigger className='px-6' value='created'>
-						{t.page.createdTab}
-					</TabsTrigger>
-					<TabsTrigger className='px-6' value='assessment'>
-						{t.page.assessmentTab}
+					<TabsTrigger className='px-6' value='rups'>
+						{t.page.rupsTab}
 					</TabsTrigger>
 					<TabsTrigger className='px-6' value='kpi'>
 						{t.page.kpiTab}
 					</TabsTrigger>
 				</TabsList>
 
-				<TabsContent value='created'>
+				<TabsContent value='rups'>
 					<RupsCard
-						currentPage={createdRups?.meta.currentPage || 1}
-						isLoading={createdRupsLoading}
-						rups={createdRups?.data || []}
-						title={t.page.createdRupsTitle}
-						totalPages={createdRups?.meta.pages || 1}
-						onPageChange={() => true}
-					/>
-				</TabsContent>
-
-				<TabsContent value='assessment'>
-					<RupsCard
-						currentPage={assessmentRups?.meta.currentPage || 1}
-						isLoading={assessmentRupsLoading}
-						rups={assessmentRups?.data || []}
-						title={t.page.assessmentRupsTitle}
-						totalPages={assessmentRups?.meta.pages || 1}
+						currentPage={rupsData?.meta.currentPage || 1}
+						isLoading={rupsLoading}
+						rups={rupsData?.data || []}
+						title={t.page.rupsTitle}
+						totalPages={rupsData?.meta.pages || 1}
 						onPageChange={() => true}
 					/>
 				</TabsContent>
@@ -287,13 +261,10 @@ const Page = () => {
 
 						<AwardsCard
 							awards={awardsData?.data || []}
-							currentPage={awardsData?.meta.currentPage || 1}
 							description={t.page.kpiListDescription}
 							isLoading={awardsLoading}
-							showPointsColumn={false}
+							showPointsColumn={hasRole(me.role, RoleEnum.METHODIST, true)}
 							title={t.page.kpiListTitle}
-							totalPages={awardsData?.meta.pages || 1}
-							onPageChange={setCurrentPage}
 						/>
 
 						<Pagination

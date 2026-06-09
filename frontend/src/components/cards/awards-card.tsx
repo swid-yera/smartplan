@@ -5,13 +5,11 @@ import { useState } from 'react'
 
 import Link from 'next/link'
 
-import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import { getCategoryIconOptionByName, getLocaleText, getLocaleTextStrict, getUILocaleSection } from '@helpers'
 import {
-	Button,
 	Card,
 	CardContent,
 	CardDescription,
-	CardFooter,
 	CardHeader,
 	CardTitle,
 	Table,
@@ -25,8 +23,9 @@ import {
 	TooltipTrigger,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
+import type { Locale } from '@types'
 import { type IAward } from '@types'
-import { ChevronLeft, ChevronRight, Folder, UserIcon } from 'lucide-react'
+import { Folder, UserIcon } from 'lucide-react'
 
 import { StatusBadge } from '../badges/status-badge'
 import { AwardSheet } from '../sheets/award-sheet'
@@ -34,11 +33,80 @@ import { Loader } from '../ui/loader'
 import { EmptyCard } from './empty-card'
 import localeDictionary from './locale.json'
 
+const capitalizeFirstLetter = (value: string) => {
+	const trimmedValue = value.trim()
+
+	if (!trimmedValue) return value
+
+	return `${trimmedValue.charAt(0).toUpperCase()}${trimmedValue.slice(1)}`
+}
+
+const normalizePreviewValue = (value: unknown, locale: Locale, fieldType?: string) => {
+	if (value === null || value === undefined) return ''
+
+	if (typeof value === 'string') return value.trim()
+	if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+
+	if (Array.isArray(value)) {
+		if (fieldType === 'multi_fields' && value.length > 0) {
+			return String(value.length)
+		}
+
+		const normalizedItems = value.map((item) => normalizePreviewValue(item, locale)).filter((item) => item.length > 0)
+
+		if (normalizedItems.length > 0) {
+			const preview = normalizedItems.slice(0, 2).join(', ')
+
+			return normalizedItems.length > 2 ? `${preview}…` : preview
+		}
+
+		if (value.length > 0) {
+			return `${value.length}`
+		}
+
+		return ''
+	}
+
+	if (typeof value === 'object') {
+		const localizedText = getLocaleText(value as Parameters<typeof getLocaleText>[0], locale)
+
+		return localizedText?.trim() || ''
+	}
+
+	return ''
+}
+
+const getAwardPreviewFields = (award: IAward, locale: Locale) => {
+	const categoryFields = award.category?.fieldsExpanded || []
+	const labelByKey = new Map(
+		categoryFields.map((field) => [field.key, capitalizeFirstLetter(getLocaleTextStrict(field.label, locale) || '')]),
+	)
+	const orderedKeys = categoryFields
+		.filter((field) => field.type !== 'file' && field.type !== 'url')
+		.map((field) => field.key)
+
+	return orderedKeys
+		.map((fieldKey) => {
+			const categoryField = categoryFields.find((field) => field.key === fieldKey)
+
+			if (categoryField?.type === 'file' || categoryField?.type === 'url') return null
+
+			const value = normalizePreviewValue(award.fieldValues?.[fieldKey], locale, categoryField?.type)
+
+			if (!value) return null
+
+			return {
+				fieldKey,
+				fieldLabel: labelByKey.get(fieldKey) || '',
+				value,
+			}
+		})
+		.filter((field): field is { fieldKey: string; fieldLabel: string; value: string } => !!field)
+		.slice(0, 4)
+}
+
 interface IProps {
 	awards: IAward[]
-	currentPage: number
-	totalPages: number
-	onPageChange: (page: number) => void
 	title: ReactNode
 	description?: ReactNode
 	isLoading: boolean
@@ -48,9 +116,6 @@ interface IProps {
 
 export const AwardsCard: FC<IProps> = ({
 	awards,
-	currentPage,
-	totalPages,
-	onPageChange,
 	title,
 	description,
 	isLoading,
@@ -114,32 +179,6 @@ export const AwardsCard: FC<IProps> = ({
 						</Table>
 					</div>
 				</CardContent>
-
-				{totalPages > 1 && (
-					<CardFooter className='flex items-center justify-end space-x-2'>
-						<Button
-							disabled={currentPage <= 1}
-							size='sm'
-							variant='outline'
-							onClick={() => onPageChange(currentPage - 1)}
-						>
-							<ChevronLeft className='h-4 w-4 mr-2' />
-							{t.back}
-						</Button>
-						<div className='text-sm font-medium'>
-							{interpolateUILocaleText(t.page, { current: currentPage, total: totalPages })}
-						</div>
-						<Button
-							disabled={currentPage >= totalPages}
-							size='sm'
-							variant='outline'
-							onClick={() => onPageChange(currentPage + 1)}
-						>
-							{t.next}
-							<ChevronRight className='h-4 w-4 ml-2' />
-						</Button>
-					</CardFooter>
-				)}
 			</Card>
 
 			<AwardSheet award={selectedAward} onSelect={(award) => setSelectedAward(award)} />
@@ -163,6 +202,7 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect, showPointsColumn }) => {
 	const criteriaSummary = `${getLocaleText(award.type.name, locale)} / ${getLocaleText(award.criteria.name, locale)}`
 	const createdAt = new Date(award.createdAt).toLocaleDateString(dateLocale)
 	const updatedAt = new Date(award.updatedAt).toLocaleString(dateLocale)
+	const previewFields = getAwardPreviewFields(award, locale)
 
 	return (
 		<Tooltip>
@@ -178,22 +218,34 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect, showPointsColumn }) => {
 						onSelect(award)
 					}}
 				>
-					<TableCell className='font-medium whitespace-nowrap w-[84px] min-w-[84px]'>{createdAt}</TableCell>
-					<TableCell className='font-medium whitespace-break-spaces min-w-[100px]'>
+					<TableCell className='font-medium whitespace-nowrap w-21 min-w-21'>{createdAt}</TableCell>
+					<TableCell className='font-medium whitespace-break-spaces min-w-25'>
 						<div className='flex items-center gap-2'>
 							<UserIcon className='h-4 w-4 text-muted-foreground' />
 							<span>{teacherName}</span>
 						</div>
 					</TableCell>
-					<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
-						<Link
-							className='flex items-center gap-2 rounded-sm hover:text-primary hover:underline'
-							href={`/kpi/${award.id}`}
-							onClick={(event) => event.stopPropagation()}
-						>
-							<CategoryIcon className='h-4 w-4 shrink-0 text-primary' />
-							<span>{criteriaSummary}</span>
-						</Link>
+					<TableCell className='font-medium whitespace-break-spaces min-w-75 py-4'>
+						<div className='space-y-1'>
+							<Link
+								className='flex items-center gap-2 rounded-sm hover:text-primary hover:underline'
+								href={`/kpi/${award.id}`}
+								onClick={(event) => event.stopPropagation()}
+							>
+								<CategoryIcon className='h-4 w-4 shrink-0 text-primary' />
+								<span>{criteriaSummary}</span>
+							</Link>
+							{previewFields.length > 0 && (
+								<div className='flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-4 text-muted-foreground'>
+									{previewFields.map((field) => (
+										<span key={field.fieldKey} className='inline-flex min-w-0 gap-1'>
+											<span className='font-medium text-foreground/80'>{field.fieldLabel}:</span>
+											<span className='truncate'>{field.value}</span>
+										</span>
+									))}
+								</div>
+							)}
+						</div>
 					</TableCell>
 					{showPointsColumn && <TableCell className='py-6'>{award.totalPoints || 0}</TableCell>}
 					<TableCell className='text-right'>

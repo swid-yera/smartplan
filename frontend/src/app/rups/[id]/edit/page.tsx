@@ -400,4 +400,4 @@ const EditPage: FC = () => {
 	)
 }
 
-export default withRole(EditPage, [RoleEnum.TEACHER, RoleEnum.METHODIST], true)
+export default withRole(EditPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])

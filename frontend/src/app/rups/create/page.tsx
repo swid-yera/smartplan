@@ -588,7 +588,7 @@ const Page: NextPage = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST], true)
+export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])
 
 export interface ITab {
 	id: string

@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 
 import { Loader, PageTitle, ResponsibleUsersCard, StatusInfoCard, withRole } from '@components'
-import { getUILocaleSection, hasRole, isAuthor } from '@helpers'
+import { getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -151,8 +151,7 @@ const Page = () => {
 	const isAdmin = hasRole(user.role, RoleEnum.ADMIN)
 	const isTeacher = hasRole(user.role, RoleEnum.TEACHER)
 	const isStatusForEdit = award.status === StatusEnum.DRAFT || award.status === StatusEnum.REJECTED
-	const isAwardCreator = isAuthor(user, award.teacher.keycloakId)
-	const canEdit = (isAdmin || isTeacher) && isStatusForEdit
+	const canManage = (isAdmin || isTeacher) && isStatusForEdit
 	const isMethodistReview = hasRole(user.role, RoleEnum.METHODIST, true) && award.status === StatusEnum.IN_REVIEW
 
 	return (
@@ -160,10 +159,9 @@ const Page = () => {
 			<PageTitle
 				actions={
 					<KpiDetailsActions
-						canEdit={canEdit}
+						canManage={canManage}
 						id={String(id)}
 						isAdmin={isAdmin}
-						isAwardCreator={isAwardCreator}
 						isMethodistReview={isMethodistReview}
 						isStatusForEdit={isStatusForEdit}
 						onOpenApproveSheet={() => setIsApproveSheetOpen(true)}

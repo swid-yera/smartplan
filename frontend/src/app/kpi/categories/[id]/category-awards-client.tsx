@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { AwardsCard } from '@components'
+import { Pagination } from '@components'
 import type { IAward } from '@types'
 
 const AWARDS_PAGE_SIZE = 10
@@ -30,14 +31,9 @@ export const CategoryAwardsClient = ({ awards, description, title }: IProps) => 
 	}, [awards, currentPage])
 
 	return (
-		<AwardsCard
-			awards={paginatedAwards}
-			currentPage={currentPage}
-			description={description}
-			isLoading={false}
-			title={title}
-			totalPages={totalPages}
-			onPageChange={setCurrentPage}
-		/>
+		<div className='space-y-4'>
+			<AwardsCard awards={paginatedAwards} description={description} isLoading={false} title={title} />
+			<Pagination page={currentPage} pageSize={AWARDS_PAGE_SIZE} totalPages={totalPages} onPageChange={setCurrentPage} />
+		</div>
 	)
 }

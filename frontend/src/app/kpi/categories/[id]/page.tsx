@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { AwardsCard, Loader, PageTitle, withRole } from '@components'
+import { AwardsCard, Loader, PageTitle, Pagination, withRole } from '@components'
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasRole } from '@helpers'
 import { services } from '@services'
 import { Badge, Button, ButtonGroup, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
@@ -161,10 +161,13 @@ const Page = () => {
 			<div className='mx-auto w-full'>
 				<AwardsCard
 					awards={paginatedAwards}
-					currentPage={currentPage}
 					description={t.awardsDescription}
 					isLoading={false}
 					title={t.awardsTitle}
+				/>
+				<Pagination
+					page={currentPage}
+					pageSize={AWARDS_PAGE_SIZE}
 					totalPages={totalPages}
 					onPageChange={setCurrentPage}
 				/>

@@ -78,13 +78,10 @@ const Page = () => {
 
 				<AwardsCard
 					awards={awardsData?.data || []}
-					currentPage={awardsData?.meta.currentPage || 1}
 					description={t.listDescription}
 					isLoading={isAwardsLoading}
 					showPointsColumn={false}
 					title={t.listTitle}
-					totalPages={awardsData?.meta.pages || 1}
-					onPageChange={setCurrentPage}
 				/>
 
 				<Pagination
