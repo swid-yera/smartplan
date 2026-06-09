@@ -564,6 +564,7 @@ type Lesson struct {
 type LessonProgress struct {
 	ID         uuid.UUID `json:"id"`
 	LessonID   uuid.UUID `json:"lesson_id"`
+	StepOrder  int16     `json:"step_order"`
 	Name       []byte    `json:"name"`
 	FirstTime  []int32   `json:"first_time"`
 	SecondTime []int32   `json:"second_time"`

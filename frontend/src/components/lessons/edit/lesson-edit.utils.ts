@@ -1,5 +1,5 @@
-import { PRACTICE_PROGRESS, THEORY_PROGRESS } from '@constants'
 import { createLocaleText } from '@helpers'
+import { PRACTICE_PROGRESS, THEORY_PROGRESS } from '@constants'
 import type { ILesson, Locale, LocalizedText } from '@types'
 import { LessonResourceTypeEnum, LessonTypeEnum } from '@types'
 import { isAxiosError } from 'axios'
@@ -23,16 +23,6 @@ export function createEmptyResource(): IResourceRow {
 	return {
 		link: '',
 		name: { ru: '', kk: '' },
-	}
-}
-
-export function createEmptyLessonProgress(): ILessonProgressRow {
-	return {
-		contentText: { ru: '', kk: '' },
-		name: { ru: '', kk: '' },
-		firstTime: 0,
-		secondTime: 0,
-		thirdTime: 0,
 	}
 }
 
@@ -112,7 +102,7 @@ export function normalizeResources(items: IResourceRow[], type: LessonResourceTy
 
 export function normalizeLessonProgressForRequest(items: ILessonProgressRow[]) {
 	return items
-		.map((item) => {
+		.map((item, index) => {
 			const ruLines = item.contentText.ru
 				.split('\n')
 				.map((line) => line.trim())
@@ -127,14 +117,10 @@ export function normalizeLessonProgressForRequest(items: ILessonProgressRow[]) {
 
 			return {
 				content,
-				third_time: [Math.max(0, Number(item.thirdTime) || 0)],
 				id: item.id,
-				name: createLocaleText(item.name.ru.trim(), item.name.kk.trim()),
-				second_time: [Math.max(0, Number(item.secondTime) || 0)],
-				first_time: [Math.max(0, Number(item.firstTime) || 0)],
+				step_order: index + 1,
 			}
 		})
-		.filter((item) => Boolean(item.name.ru.trim() || item.name.kz.trim() || item.content.length))
 }
 
 export function toEventDateFormState(value?: string | null): Pick<ILessonFormState, 'eventDate' | 'eventTime'> {

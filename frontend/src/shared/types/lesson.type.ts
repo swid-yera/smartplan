@@ -35,6 +35,7 @@ export interface ILessonNavigation {
 
 export interface ILessonProgress {
 	id: string
+	step_order?: number
 	name: LocalizedText
 	content: LocalizedText[]
 	firstTime: number[]

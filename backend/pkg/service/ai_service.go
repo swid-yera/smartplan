@@ -400,7 +400,6 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 	out.InternetResources = normalizeGeneratedResources(out.InternetResources)
 	out.TechnicalResources = normalizeGeneratedResources(out.TechnicalResources)
 	for i := range out.LessonProgress {
-		out.LessonProgress[i].Name = strings.TrimSpace(out.LessonProgress[i].Name)
 		for j := range out.LessonProgress[i].Content {
 			out.LessonProgress[i].Content[j] = strings.TrimSpace(out.LessonProgress[i].Content[j])
 		}
