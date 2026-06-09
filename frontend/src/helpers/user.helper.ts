@@ -1,5 +1,5 @@
 import type { badgeVariants } from '@shadcn'
-import { PermissionCodeEnum, type IUser, type Locale, RoleEnum, ViolationEnum } from '@types'
+import { type IUser, type Locale, PermissionCodeEnum, RoleEnum, ViolationEnum } from '@types'
 import type { VariantProps } from 'class-variance-authority'
 
 // has role
@@ -54,15 +54,6 @@ export const userRoleButtonVariants: Record<RoleEnum, VariantProps<typeof badgeV
 	SPECIAL: 'outline',
 }
 
-const permissionRankByCode: Record<PermissionCodeEnum, number> = {
-	[PermissionCodeEnum.RUP_VIEW]: 1,
-	[PermissionCodeEnum.RUP_MANAGE]: 2,
-	[PermissionCodeEnum.RUP_FULL]: 3,
-	[PermissionCodeEnum.KPI_VIEW]: 1,
-	[PermissionCodeEnum.KPI_MANAGE]: 2,
-	[PermissionCodeEnum.KPI_FULL]: 3,
-}
-
 const permissionDomainByCode: Record<PermissionCodeEnum, 'RUP' | 'KPI'> = {
 	[PermissionCodeEnum.RUP_VIEW]: 'RUP',
 	[PermissionCodeEnum.RUP_MANAGE]: 'RUP',
@@ -79,20 +70,27 @@ export const getUserPermissions = (user?: IUser | null): PermissionCodeEnum[] =>
 export const hasPermission = (user: IUser | null | undefined, requiredPermission: PermissionCodeEnum): boolean => {
 	if (!user) return false
 
-	const requiredDomain = permissionDomainByCode[requiredPermission]
-	const requiredRank = permissionRankByCode[requiredPermission]
+	return getUserPermissions(user).includes(requiredPermission)
+}
 
-	return getUserPermissions(user).some((permission) => {
+const hasPermissionOrFull = (user: IUser | null | undefined, requiredPermission: PermissionCodeEnum): boolean => {
+	if (!user) return false
+
+	const requiredDomain = permissionDomainByCode[requiredPermission]
+	const domainFullPermission = requiredDomain === 'RUP' ? PermissionCodeEnum.RUP_FULL : PermissionCodeEnum.KPI_FULL
+
+	const permissions = getUserPermissions(user)
+
+	return permissions.some((permission) => {
+		if (permission === requiredPermission) return true
 		if (permissionDomainByCode[permission] !== requiredDomain) return false
 
-		return permissionRankByCode[permission] >= requiredRank
+		return permission === domainFullPermission
 	})
 }
 
-export const hasAnyPermission = (
-	user: IUser | null | undefined,
-	requiredPermissions: PermissionCodeEnum[],
-): boolean => requiredPermissions.some((permission) => hasPermission(user, permission))
+export const hasAnyPermission = (user: IUser | null | undefined, requiredPermissions: PermissionCodeEnum[]): boolean =>
+	requiredPermissions.some((permission) => hasPermissionOrFull(user, permission))
 
 const permissionLabelsByLocale: Record<Locale, Record<PermissionCodeEnum, string>> = {
 	ru: {

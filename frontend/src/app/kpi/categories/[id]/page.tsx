@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination, withNavAccess } from '@components'
-import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasPermission } from '@helpers'
+import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { Badge, Button, ButtonGroup, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -95,7 +95,7 @@ const Page = () => {
 
 	const categoryIconOption = getCategoryIconOptionByName(category.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
-	const canManageAwards = hasPermission(user, PermissionCodeEnum.KPI_MANAGE)
+	const canManageAwards = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
 	const categoryName = getLocaleText(category.name, locale)
 	const categoryDescription = getLocaleText(category.description, locale) || t.missingDescription
 

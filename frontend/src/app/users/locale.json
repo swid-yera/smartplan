@@ -20,7 +20,7 @@
 			"phone": "Телефон",
 			"role": "Роль",
 			"permissions": "Права",
-			"actions": "Действия",
+			"actions": "Права",
 			"empty": "Ничего не найдено."
 		},
 		"permissionsModal": {
@@ -66,7 +66,7 @@
 			"phone": "Телефон",
 			"role": "Рөл",
 			"permissions": "Рұқсаттар",
-			"actions": "Әрекеттер",
+			"actions": "Құқықтар",
 			"empty": "Ештеңе табылмады."
 		},
 		"permissionsModal": {

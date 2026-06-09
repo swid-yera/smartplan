@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 
 import { Loader, PageTitle, ResponsibleUsersCard, StatusInfoCard, withPermission } from '@components'
-import { getUILocaleSection, hasPermission } from '@helpers'
+import { getUILocaleSection, hasAnyPermission, hasPermission } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -149,7 +149,7 @@ const Page = () => {
 	}
 
 	const canFullAccess = hasPermission(user, PermissionCodeEnum.KPI_FULL)
-	const canManage = hasPermission(user, PermissionCodeEnum.KPI_MANAGE)
+	const canManage = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
 	const isStatusForEdit = award.status === StatusEnum.DRAFT || award.status === StatusEnum.REJECTED
 	const canManageAward = (canManage || canFullAccess) && isStatusForEdit
 	const isMethodistReview = (canManage || canFullAccess) && award.status === StatusEnum.IN_REVIEW

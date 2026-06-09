@@ -3,7 +3,7 @@
 import Link from 'next/link'
 
 import { PageTitle } from '@components'
-import { getUILocaleSection, hasAnyPermission, hasPermission } from '@helpers'
+import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -34,22 +34,22 @@ const HomePageClient = () => {
 	const t = getUILocaleSection(localeDictionary, locale)
 
 	const quickActions = [
-		hasPermission(user, PermissionCodeEnum.RUP_VIEW) && {
+		hasAnyPermission(user, [PermissionCodeEnum.RUP_VIEW]) && {
 			href: '/rups/my',
 			label: t.quickActions.myRups,
 			icon: FileText,
 		},
-		hasPermission(user, PermissionCodeEnum.RUP_MANAGE) && {
+		hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE]) && {
 			href: '/rups/create',
 			label: t.quickActions.createRup,
 			icon: FilePlus2,
 		},
-		hasPermission(user, PermissionCodeEnum.KPI_VIEW) && {
+		hasAnyPermission(user, [PermissionCodeEnum.KPI_VIEW]) && {
 			href: '/kpi/my',
 			label: t.quickActions.myKpi,
 			icon: BarChart3,
 		},
-		hasPermission(user, PermissionCodeEnum.KPI_MANAGE) && {
+		hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE]) && {
 			href: '/kpi/all',
 			label: t.quickActions.allKpi,
 			icon: BarChart3,

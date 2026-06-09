@@ -20,7 +20,6 @@ export * from './sheets/rup-sheet'
 // cards
 export * from './cards/awards-card'
 export * from './cards/category-card'
-export * from './cards/combine-card'
 export * from './cards/empty-card'
 export * from './cards/groups-card'
 export * from './cards/penalty-card'

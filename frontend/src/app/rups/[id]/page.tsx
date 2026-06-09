@@ -10,6 +10,7 @@ import {
 	extractKriptoApprovalMetadata,
 	getLocaleText,
 	getUILocaleSection,
+	hasAnyPermission,
 	hasLocaleTextForLocale,
 	hasPermission,
 	interpolateUILocaleText,
@@ -272,8 +273,8 @@ const Page: FC = () => {
 
 	// bools
 	const canFullAccess = hasPermission(user, PermissionCodeEnum.RUP_FULL)
-	const canManageRups = hasPermission(user, PermissionCodeEnum.RUP_MANAGE)
-	const canViewRups = hasPermission(user, PermissionCodeEnum.RUP_VIEW)
+	const canManageRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
+	const canViewRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_VIEW])
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)

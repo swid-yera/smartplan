@@ -3,7 +3,7 @@
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, Pagination, SectionTitle, UserCard, withPermission } from '@components'
-import { getUILocaleSection, hasPermission } from '@helpers'
+import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
@@ -35,7 +35,7 @@ const Page = () => {
 		: undefined
 
 	const { user, authLoading } = useAuthStore()
-	const canViewKpi = hasPermission(user, PermissionCodeEnum.KPI_VIEW)
+	const canViewKpi = hasAnyPermission(user, [PermissionCodeEnum.KPI_VIEW])
 
 	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
 		...services.award.getAllOptions({

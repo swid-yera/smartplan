@@ -627,6 +627,10 @@ func (s *userService) resolveEffectivePermissions(
 		return basePermissions, nil
 	}
 
+	if role == storage.UserRoleADMIN {
+		return basePermissions, nil
+	}
+
 	row, err := s.permissions.GetUserPermissions(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -635,7 +639,7 @@ func (s *userService) resolveEffectivePermissions(
 		return nil, err
 	}
 
-	return mergePermissionCodes(basePermissions, row.Permissions), nil
+	return normalizePermissionCodes(row.Permissions), nil
 }
 
 func basePermissionsForRole(role storage.UserRole, departments []UserDepartment) []PermissionCode {

@@ -6,7 +6,15 @@ import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
 import { Forbidden, Loader, PageTitle, withPermission } from '@components'
-import { createLocaleText, getLocaleText, getUILocaleSection, hasPermission, interpolateUILocaleText, isAuthor } from '@helpers'
+import {
+	createLocaleText,
+	getLocaleText,
+	getUILocaleSection,
+	hasAnyPermission,
+	hasPermission,
+	interpolateUILocaleText,
+	isAuthor,
+} from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
 import { services } from '@services'
@@ -257,7 +265,7 @@ const EditPage: FC = () => {
 	if (!user) return notFound()
 	if (!rupData) notFound()
 	const canFullAccess = hasPermission(user, PermissionCodeEnum.RUP_FULL)
-	const canManage = hasPermission(user, PermissionCodeEnum.RUP_MANAGE)
+	const canManage = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
 	// Redirect if not allowed to edit

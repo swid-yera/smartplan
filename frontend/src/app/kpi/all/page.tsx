@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination, withPermission } from '@components'
-import { getUILocaleSection, hasPermission } from '@helpers'
+import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -47,7 +47,7 @@ const Page = () => {
 
 	// store
 	const { user, authLoading } = useAuthStore()
-	const canSearchUsers = hasPermission(user, PermissionCodeEnum.KPI_MANAGE)
+	const canSearchUsers = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
 
 	// query
 	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({

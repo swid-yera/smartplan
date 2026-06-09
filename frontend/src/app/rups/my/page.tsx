@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, RupsCard, withPermission } from '@components'
-import { getUILocaleSection, hasPermission } from '@helpers'
+import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -39,8 +39,8 @@ const Page: NextPage = () => {
 	const q = filterState.search
 	const status = filterState.statuses as StatusEnum[]
 	const sort = filterState.sort
-	const canManageRups = hasPermission(user, PermissionCodeEnum.RUP_MANAGE)
-	const canViewRups = hasPermission(user, PermissionCodeEnum.RUP_VIEW)
+	const canManageRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
+	const canViewRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_VIEW])
 	const teacherId = canViewRups && !canManageRups ? user?.keycloakId : ''
 
 	useEffect(() => {

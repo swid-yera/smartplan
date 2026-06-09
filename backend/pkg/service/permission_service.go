@@ -127,7 +127,7 @@ type SpecialUserWithPermissions struct {
 
 // SetPermissionsRequest — тело запроса на выдачу/обновление прав
 type SetPermissionsRequest struct {
-	Permissions []PermissionCode `json:"permissions" binding:"required"`
+	Permissions []PermissionCode `json:"permissions"`
 }
 
 // PermissionService описывает бизнес-логику управления правами
@@ -165,6 +165,9 @@ func (s *permissionService) SetPermissions(ctx context.Context, userID uuid.UUID
 	if err != nil {
 		return nil, &HTTPStatusError{StatusCode: 404, Message: "user not found"}
 	}
+	if user.Role == storage.UserRoleADMIN {
+		return nil, &HTTPStatusError{StatusCode: 403, Message: "admin permissions cannot be modified"}
+	}
 
 	canonicalCodes := canonicalizePermissionCodes(codes)
 
@@ -173,14 +176,9 @@ func (s *permissionService) SetPermissions(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 
-	basePermissions, err := s.getBasePermissions(ctx, user)
-	if err != nil {
-		return nil, err
-	}
-
 	return &UserPermissions{
 		UserID:      perm.UserID,
-		Permissions: mergePermissionCodes(basePermissions, perm.Permissions),
+		Permissions: resolveExplicitPermissions(perm.Permissions),
 	}, nil
 }
 
@@ -195,6 +193,10 @@ func (s *permissionService) GetPermissions(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 
+	if user.Role == storage.UserRoleADMIN {
+		return &UserPermissions{UserID: userID, Permissions: basePermissions}, nil
+	}
+
 	perm, err := s.repo.GetUserPermissions(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -205,14 +207,17 @@ func (s *permissionService) GetPermissions(ctx context.Context, userID uuid.UUID
 
 	return &UserPermissions{
 		UserID:      perm.UserID,
-		Permissions: mergePermissionCodes(basePermissions, perm.Permissions),
+		Permissions: resolveExplicitPermissions(perm.Permissions),
 	}, nil
 }
 
 func (s *permissionService) RevokePermissions(ctx context.Context, userID uuid.UUID) error {
-	_, err := s.userRepo.GetUserByKeycloakID(ctx, userID)
+	user, err := s.userRepo.GetUserByKeycloakID(ctx, userID)
 	if err != nil {
 		return &HTTPStatusError{StatusCode: 404, Message: "user not found"}
+	}
+	if user.Role == storage.UserRoleADMIN {
+		return &HTTPStatusError{StatusCode: 403, Message: "admin permissions cannot be modified"}
 	}
 	return s.repo.DeleteUserPermissions(ctx, userID)
 }
@@ -250,7 +255,7 @@ func (s *permissionService) ListSpecialUsers(ctx context.Context) ([]SpecialUser
 
 		perms := defaultSpecialPermissionCodes()
 		if rowPerms, err := s.repo.GetUserPermissions(ctx, row.KeycloakID); err == nil {
-			perms = mergePermissionCodes(perms, rowPerms.Permissions)
+			perms = canonicalizePermissionCodes(rowPerms.Permissions)
 		} else if !errors.Is(err, pgx.ErrNoRows) {
 			return nil, err
 		}
@@ -306,4 +311,12 @@ func mergePermissionCodes(groups ...[]PermissionCode) []PermissionCode {
 	}
 
 	return canonicalizePermissionCodes(combined)
+}
+
+func resolveExplicitPermissions(explicitPermissions []PermissionCode) []PermissionCode {
+	if len(explicitPermissions) == 0 {
+		return []PermissionCode{}
+	}
+
+	return canonicalizePermissionCodes(explicitPermissions)
 }

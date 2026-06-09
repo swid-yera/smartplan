@@ -20,7 +20,6 @@ import {
 	getNextViolationStatus,
 	getUILocaleSection,
 	hasAnyPermission,
-	hasPermission,
 	interpolateUILocaleText,
 	normalizeViolation,
 } from '@helpers'
@@ -180,7 +179,7 @@ const Page = () => {
 		)
 	}
 
-	const canManageViolations = hasPermission(me, PermissionCodeEnum.KPI_MANAGE)
+	const canManageViolations = hasAnyPermission(me, [PermissionCodeEnum.KPI_MANAGE])
 	const canManageUserPermissions = hasAnyPermission(me, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.RUP_FULL])
 	const currentViolation = userData.violation || ViolationEnum.NONE
 	const nextViolation = getNextViolationStatus(currentViolation)
@@ -344,7 +343,7 @@ const Page = () => {
 							awards={awardsData?.data || []}
 							description={t.page.kpiListDescription}
 							isLoading={awardsLoading}
-							showPointsColumn={hasPermission(me, PermissionCodeEnum.KPI_MANAGE)}
+							showPointsColumn={hasAnyPermission(me, [PermissionCodeEnum.KPI_MANAGE])}
 							title={t.page.kpiListTitle}
 						/>
 

@@ -5,7 +5,7 @@ import type { FC } from 'react'
 import Link from 'next/link'
 
 import { PageTitle, withNavAccess } from '@components'
-import { getUILocaleSection, hasPermission } from '@helpers'
+import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { PermissionCodeEnum } from '@types'
@@ -215,7 +215,7 @@ const Page = () => {
 							<CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
 								{group.items.map((routeKey) => {
 									const route = ROUTES[routeKey]
-									const disabled = !!user && !hasPermission(user, route.permission)
+									const disabled = !!user && !hasAnyPermission(user, [route.permission])
 
 									return (
 										<RouteCard
