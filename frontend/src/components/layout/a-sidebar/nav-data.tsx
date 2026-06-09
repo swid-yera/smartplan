@@ -57,21 +57,21 @@ export const navMain: INav[] = [
 				icon: LibraryBig,
 				titleKey: 'rupsMy',
 				url: '/rups/my',
-				role: RoleEnum.TEACHER,
+				// role: RoleEnum.TEACHER,
 			},
 			{
 				id: 'rups-create',
 				icon: FilePlus,
 				titleKey: 'rupsCreate',
 				url: '/rups/create',
-				role: RoleEnum.TEACHER,
+				// role: RoleEnum.TEACHER,
 			},
 			{
 				id: 'rups-guides',
 				icon: Film,
 				titleKey: 'rupsGuides',
 				url: '/rups/guides',
-				role: RoleEnum.TEACHER,
+				// role: RoleEnum.TEACHER,
 			},
 			// methodist
 			{

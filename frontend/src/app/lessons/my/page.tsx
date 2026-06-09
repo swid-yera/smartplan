@@ -292,7 +292,7 @@ function MyLessonPlansPage() {
 	)
 }
 
-export default withRole(MyLessonPlansPage, [RoleEnum.ADMIN], true)
+export default withRole(MyLessonPlansPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])
 
 const getLessonText = (
 	value: ILesson['rup_name'] | ILesson['discipline_name'] | ILesson['topic_name'],

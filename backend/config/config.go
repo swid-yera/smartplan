@@ -143,11 +143,13 @@ type CryptoConfig struct {
 }
 
 type GeminiConfig struct {
-	APIKey        string
-	APIKeys       []string
-	BaseURL       string
-	PrimaryModel  string
-	FallbackModel string
+	APIKey                 string
+	APIKeys                []string
+	BaseURL                string
+	PrimaryModel           string
+	FallbackModel          string
+	SecondaryFallbackModel string
+	TertiaryFallbackModel  string
 }
 
 type OpenAIConfig struct {
@@ -267,11 +269,13 @@ func LoadGeminiConfig() *GeminiConfig {
 	}
 
 	return &GeminiConfig{
-		APIKey:        defaultAPIKey,
-		APIKeys:       apiKeys,
-		BaseURL:       getEnv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
-		PrimaryModel:  getEnv("GEMINI_PRIMARY_MODEL", "gemini-2.5-flash-lite"),
-		FallbackModel: getEnv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash"),
+		APIKey:                 defaultAPIKey,
+		APIKeys:                apiKeys,
+		BaseURL:                getEnv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
+		PrimaryModel:           getEnv("GEMINI_PRIMARY_MODEL", "gemini-2.5-flash-lite"),
+		FallbackModel:          getEnv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash"),
+		SecondaryFallbackModel: getEnv("GEMINI_SECONDARY_FALLBACK_MODEL", "gemini-2.0-flash"),
+		TertiaryFallbackModel:  getEnv("GEMINI_TERTIARY_FALLBACK_MODEL", "gemini-2.0-flash-lite"),
 	}
 }
 

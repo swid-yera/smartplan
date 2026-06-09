@@ -45,4 +45,4 @@ function LessonPage() {
 	)
 }
 
-export default withRole(LessonPage, [RoleEnum.ADMIN], true)
+export default withRole(LessonPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])
