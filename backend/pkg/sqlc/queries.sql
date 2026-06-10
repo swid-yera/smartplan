@@ -1073,6 +1073,19 @@ WHERE
     (
         sqlc.narg('teacher')::uuid IS NULL
         OR l.teacher = sqlc.narg('teacher')::uuid
+        OR EXISTS (
+            SELECT 1 FROM rups r
+            WHERE sqlc.narg('teacher')::uuid = ANY(r.contacts)
+              AND EXISTS (
+                  SELECT 1 FROM rup_disciplines rd
+                  WHERE rd.id = ANY(r.disciplines)
+                    AND EXISTS (
+                        SELECT 1 FROM discipline_topics dt
+                        WHERE dt.id = ANY(rd.topics)
+                          AND dt.lesson_id = l.id
+                    )
+              )
+        )
     ) AND
     (
         sqlc.narg('id')::uuid IS NULL
@@ -1193,6 +1206,19 @@ WHERE
     AND (
         sqlc.narg('teacher')::uuid IS NULL
         OR l.teacher = sqlc.narg('teacher')::uuid
+        OR EXISTS (
+            SELECT 1 FROM rups r
+            WHERE sqlc.narg('teacher')::uuid = ANY(r.contacts)
+              AND EXISTS (
+                  SELECT 1 FROM rup_disciplines rd
+                  WHERE rd.id = ANY(r.disciplines)
+                    AND EXISTS (
+                        SELECT 1 FROM discipline_topics dt
+                        WHERE dt.id = ANY(rd.topics)
+                          AND dt.lesson_id = l.id
+                    )
+              )
+        )
     )
     AND (
         sqlc.narg('id')::uuid IS NULL
