@@ -5,7 +5,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 
 import { Loader, PageTitle, withNavAccess } from '@components'
-import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
+import { getLocaleText, getUILocaleSection, getUserTotalPoints, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
 	Card,
@@ -70,7 +70,7 @@ const Page = () => {
 	const departmentsWithTotalPoints: DepartmentWithTotalPoints[] = (departments || []).map((department) => ({
 		...department,
 		totalPoints: department.teachers
-			.map((teacher) => teacher.totalPoints ?? 0)
+			.map((teacher) => getUserTotalPoints(teacher))
 			.reduce((sum, points) => sum + points, 0),
 	}))
 
@@ -175,7 +175,7 @@ const Page = () => {
 											>
 												<TableCell className='w-12 text-center font-semibold'>{teacherIndex + 1}</TableCell>
 												<TableCell className='w-16 whitespace-nowrap text-right font-semibold'>
-													{teacher.totalPoints ?? 0}
+													{getUserTotalPoints(teacher)}
 												</TableCell>
 												<TableCell className='py-4'>
 													<Link

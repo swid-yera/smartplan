@@ -93,7 +93,10 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 SELECT *
 FROM users
 WHERE
-    total_points > 0
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(points_by_categories, '{}'::jsonb)) AS e(key, value)
+    ), 0) > 0
     AND
     (
         sqlc.arg('search') = '' OR
@@ -107,7 +110,10 @@ WHERE
         email ILIKE '%' || sqlc.arg('search') || '%'
     )
 ORDER BY
-    total_points DESC,
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(points_by_categories, '{}'::jsonb)) AS e(key, value)
+    ), 0) DESC,
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN created_at END ASC,
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN created_at END DESC,
     created_at DESC
@@ -124,7 +130,10 @@ WHERE
         WHERE u.keycloak_id = ANY(d.users)
     )
 ORDER BY
-    u.total_points DESC,
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(u.points_by_categories, '{}'::jsonb)) AS e(key, value)
+    ), 0) DESC,
     u.created_at DESC,
     u.keycloak_id DESC;
 
@@ -132,7 +141,10 @@ ORDER BY
 SELECT COUNT(*)
 FROM users
 WHERE
-    total_points > 0
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(points_by_categories, '{}'::jsonb)) AS e(key, value)
+    ), 0) > 0
     AND
     (
         $1 = '' OR
@@ -204,7 +216,12 @@ SELECT * FROM departments WHERE $1::uuid = ANY(users);
 SELECT
     d.keycloak_id,
     d.name,
-    COALESCE(SUM(u.total_points), 0)::INT AS total_points,
+    COALESCE(SUM(
+        COALESCE((
+            SELECT SUM(value::int)
+            FROM jsonb_each_text(COALESCE(u.points_by_categories, '{}'::jsonb)) AS e(key, value)
+        ), 0)
+    ), 0)::INT AS total_points,
     COALESCE(COUNT(u.keycloak_id), 0)::INT AS user_count
 FROM departments d
 LEFT JOIN LATERAL unnest(d.users) AS du(user_id) ON TRUE
@@ -218,7 +235,12 @@ ORDER BY d.keycloak_id;
 SELECT
     d.keycloak_id,
     d.name,
-    COALESCE(SUM(u.total_points), 0)::INT AS total_points,
+    COALESCE(SUM(
+        COALESCE((
+            SELECT SUM(value::int)
+            FROM jsonb_each_text(COALESCE(u.points_by_categories, '{}'::jsonb)) AS e(key, value)
+        ), 0)
+    ), 0)::INT AS total_points,
     COALESCE(COUNT(u.keycloak_id), 0)::INT AS user_count
 FROM departments d
 LEFT JOIN LATERAL unnest(d.users) AS du(user_id) ON TRUE
@@ -232,10 +254,20 @@ LIMIT 3;
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
 
--- name: UpdateUserTotalPoints :exec
+-- name: AdjustUserCategoryPoints :exec
 UPDATE users
 SET
-    total_points = total_points + $2
+    points_by_categories = CASE
+        WHEN COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> sqlc.arg('category_key')::text)::int, 0) + sqlc.arg('points_delta')::int = 0
+            THEN COALESCE(points_by_categories, '{}'::jsonb) - sqlc.arg('category_key')::text
+        ELSE jsonb_set(
+            COALESCE(points_by_categories, '{}'::jsonb),
+            ARRAY[sqlc.arg('category_key')::text],
+            to_jsonb(COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> sqlc.arg('category_key')::text)::int, 0) + sqlc.arg('points_delta')::int),
+            true
+        )
+    END,
+    updated_at = NOW()
 WHERE
     keycloak_id = $1;
 
@@ -281,7 +313,16 @@ ORDER BY array_position(sqlc.arg('ids')::uuid[], id);
 UPDATE users
 SET
     violation_ids = array_append(violation_ids, sqlc.arg('violation_id')::uuid),
-    total_points = total_points - 10,
+    points_by_categories = CASE
+        WHEN COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> sqlc.arg('category_key')::text)::int, 0) - 10 = 0
+            THEN COALESCE(points_by_categories, '{}'::jsonb) - sqlc.arg('category_key')::text
+        ELSE jsonb_set(
+            COALESCE(points_by_categories, '{}'::jsonb),
+            ARRAY[sqlc.arg('category_key')::text],
+            to_jsonb(COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> sqlc.arg('category_key')::text)::int, 0) - 10),
+            true
+        )
+    END,
     violation = CASE
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 2 THEN 'REBUKE'::violation_enum
@@ -296,9 +337,19 @@ WHERE
 UPDATE users
 SET
     violation_ids = array_remove(violation_ids, sqlc.arg('violation_id')::uuid),
-    total_points = CASE
-        WHEN sqlc.arg('violation_id')::uuid = ANY(violation_ids) THEN total_points + 10
-        ELSE total_points
+    points_by_categories = CASE
+        WHEN sqlc.arg('violation_id')::uuid = ANY(violation_ids) THEN
+            CASE
+                WHEN COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> sqlc.arg('category_key')::text)::int, 0) + 10 = 0
+                    THEN COALESCE(points_by_categories, '{}'::jsonb) - sqlc.arg('category_key')::text
+                ELSE jsonb_set(
+                    COALESCE(points_by_categories, '{}'::jsonb),
+                    ARRAY[sqlc.arg('category_key')::text],
+                    to_jsonb(COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> sqlc.arg('category_key')::text)::int, 0) + 10),
+                    true
+                )
+            END
+        ELSE COALESCE(points_by_categories, '{}'::jsonb)
     END,
     violation = CASE
         WHEN COALESCE(cardinality(array_remove(violation_ids, sqlc.arg('violation_id')::uuid)), 0) >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
@@ -1131,7 +1182,7 @@ LIMIT $3;
 
 -- name: UpsertUserPermissions :one
 INSERT INTO permissions (user_id, permissions)
-VALUES ($1, $2::permission_code[])
+VALUES ($1, sqlc.arg('permissions')::permission_code[])
 ON CONFLICT (user_id) DO UPDATE
     SET permissions = EXCLUDED.permissions,
         updated_at  = NOW()

@@ -67,6 +67,16 @@ export const getUserPermissions = (user?: IUser | null): PermissionCodeEnum[] =>
 	return user?.permissions ?? []
 }
 
+export const sumPointsByCategories = (pointsByCategories?: Record<string, number> | null): number => {
+	if (!pointsByCategories) return 0
+
+	return Object.values(pointsByCategories).reduce((sum, points) => sum + points, 0)
+}
+
+export const getUserTotalPoints = (user?: IUser | null): number => {
+	return sumPointsByCategories(user?.pointsByCategories)
+}
+
 export const hasPermission = (user: IUser | null | undefined, requiredPermission: PermissionCodeEnum): boolean => {
 	if (!user) return false
 

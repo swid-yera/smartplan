@@ -357,6 +357,10 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
 	}
 
+	if err = s.syncApprovedAwardPoints(ctx, existingAward, updatedAward); err != nil {
+		return AwardResponse{}, err
+	}
+
 	res, err := s.BuildSelected(ctx, updatedAward)
 	if err != nil {
 		return AwardResponse{}, err
@@ -396,31 +400,8 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
 	}
 
-	// 3. Обрабатываем points ТОЛЬКО при смене APPROVED
-	switch {
-	case award.Status != storage.AwardsStatusAPPROVED &&
-		params.Status == storage.AwardsStatusAPPROVED:
-
-		err = s.userRepo.UpdateUserTotalPoints(
-			ctx,
-			award.Teacher.Bytes,      // или updatedAward.Teacher
-			updatedAward.TotalPoints, // <- вот тут новое значение
-		)
-		if err != nil {
-			return AwardResponse{}, err
-		}
-
-	case award.Status == storage.AwardsStatusAPPROVED &&
-		params.Status != storage.AwardsStatusAPPROVED:
-
-		err = s.userRepo.UpdateUserTotalPoints(
-			ctx,
-			award.Teacher.Bytes,
-			-award.TotalPoints, // <- минус новое значение
-		)
-		if err != nil {
-			return AwardResponse{}, err
-		}
+	if err = s.syncApprovedAwardPoints(ctx, award, updatedAward); err != nil {
+		return AwardResponse{}, err
 	}
 
 	// 4. Формируем response
@@ -523,19 +504,73 @@ func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	// если award был APPROVED — списываем points
 	if award.Status == storage.AwardsStatusAPPROVED {
-		err = s.userRepo.UpdateUserTotalPoints(
-			ctx,
-			award.Teacher.Bytes,
-			-award.TotalPoints,
-		)
-		if err != nil {
+		categoryKey, keyErr := awardCategoryKey(award)
+		if keyErr != nil {
+			return keyErr
+		}
+		if err = s.userRepo.AdjustUserCategoryPoints(ctx, award.Teacher.Bytes, categoryKey, -award.TotalPoints); err != nil {
 			return err
 		}
 	}
 
 	return s.repo.DeleteAward(ctx, id)
+}
+
+func awardCategoryKey(award storage.Award) (string, error) {
+	if !award.CategoryID.Valid {
+		return "", fmt.Errorf("approved award must have category id")
+	}
+
+	return uuid.UUID(award.CategoryID.Bytes).String(), nil
+}
+
+func (s *AwardService) syncApprovedAwardPoints(ctx context.Context, before storage.Award, after storage.Award) error {
+	beforeApproved := before.Status == storage.AwardsStatusAPPROVED
+	afterApproved := after.Status == storage.AwardsStatusAPPROVED
+
+	switch {
+	case !beforeApproved && !afterApproved:
+		return nil
+	case !beforeApproved && afterApproved:
+		categoryKey, err := awardCategoryKey(after)
+		if err != nil {
+			return err
+		}
+		return s.userRepo.AdjustUserCategoryPoints(ctx, after.Teacher.Bytes, categoryKey, after.TotalPoints)
+	case beforeApproved && !afterApproved:
+		categoryKey, err := awardCategoryKey(before)
+		if err != nil {
+			return err
+		}
+		return s.userRepo.AdjustUserCategoryPoints(ctx, before.Teacher.Bytes, categoryKey, -before.TotalPoints)
+	default:
+		beforeCategoryKey, err := awardCategoryKey(before)
+		if err != nil {
+			return err
+		}
+		afterCategoryKey, err := awardCategoryKey(after)
+		if err != nil {
+			return err
+		}
+
+		if before.Teacher.Bytes != after.Teacher.Bytes || beforeCategoryKey != afterCategoryKey {
+			if err = s.userRepo.AdjustUserCategoryPoints(ctx, before.Teacher.Bytes, beforeCategoryKey, -before.TotalPoints); err != nil {
+				return err
+			}
+			if err = s.userRepo.AdjustUserCategoryPoints(ctx, after.Teacher.Bytes, afterCategoryKey, after.TotalPoints); err != nil {
+				return err
+			}
+			return nil
+		}
+
+		delta := after.TotalPoints - before.TotalPoints
+		if delta == 0 {
+			return nil
+		}
+
+		return s.userRepo.AdjustUserCategoryPoints(ctx, after.Teacher.Bytes, afterCategoryKey, delta)
+	}
 }
 
 // types

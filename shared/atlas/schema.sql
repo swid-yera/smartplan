@@ -33,7 +33,7 @@ CREATE TABLE users (
 
     role user_role NOT NULL,
     rups TEXT[],
-    total_points INT NOT NULL DEFAULT 0,
+    points_by_categories JSONB NOT NULL DEFAULT '{}'::jsonb,
     awards TEXT[],
     violation violation_enum NOT NULL DEFAULT 'NONE',
     violation_ids UUID[] NOT NULL DEFAULT '{}',

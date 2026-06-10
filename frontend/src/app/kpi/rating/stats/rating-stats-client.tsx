@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
-import { getLocaleText } from '@helpers'
+import { getLocaleText, getUserTotalPoints } from '@helpers'
 import {
 	Card,
 	CardContent,
@@ -58,16 +58,16 @@ export const RatingStatsClient = ({ locale, teachers, t }: IProps) => {
 	const router = useRouter()
 
 	const sortedTeachers = useMemo(() => {
-		return [...teachers].sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
+		return [...teachers].sort((a, b) => getUserTotalPoints(b) - getUserTotalPoints(a))
 	}, [teachers])
 
 	const averagePoints =
-		sortedTeachers.reduce((sum, teacher) => sum + (teacher.totalPoints ?? 0), 0) / (sortedTeachers.length || 1)
+		sortedTeachers.reduce((sum, teacher) => sum + getUserTotalPoints(teacher), 0) / (sortedTeachers.length || 1)
 
 	const chartData = sortedTeachers.map((teacher) => ({
 		keycloakId: teacher.keycloakId,
 		name: `${teacher.firstName} ${teacher.lastName}`.trim(),
-		value: teacher.totalPoints ?? 0,
+		value: getUserTotalPoints(teacher),
 		departments: (teacher.departments ?? [])
 			.map((department: IUserDepartment) => getLocaleText(department.name, locale))
 			.filter(Boolean),
@@ -145,11 +145,11 @@ export const RatingStatsClient = ({ locale, teachers, t }: IProps) => {
 								}
 
 								return (
-									<TableRow key={teacher.keycloakId} className='border-l-4 transition-colors' style={rowStyle}>
-										<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
-										<TableCell className='w-16 text-right font-semibold whitespace-nowrap'>
-											{teacher.totalPoints ?? 0}
-										</TableCell>
+								<TableRow key={teacher.keycloakId} className='border-l-4 transition-colors' style={rowStyle}>
+									<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
+									<TableCell className='w-16 text-right font-semibold whitespace-nowrap'>
+										{getUserTotalPoints(teacher)}
+									</TableCell>
 										<TableCell className='py-4'>
 											<div className='space-y-1'>
 												<Link

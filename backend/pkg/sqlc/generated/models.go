@@ -206,11 +206,6 @@ func (e *PermissionCode) Scan(src interface{}) error {
 	return nil
 }
 
-// Value implements the driver Valuer interface.
-func (e PermissionCode) Value() (driver.Value, error) {
-	return string(e), nil
-}
-
 type NullPermissionCode struct {
 	PermissionCode PermissionCode `json:"permission_code"`
 	Valid          bool           `json:"valid"` // Valid is true if PermissionCode is not NULL
@@ -641,22 +636,22 @@ type RupResource struct {
 }
 
 type User struct {
-	KeycloakID        uuid.UUID          `json:"keycloak_id"`
-	Email             string             `json:"email"`
-	Username          string             `json:"username"`
-	FirstName         pgtype.Text        `json:"first_name"`
-	LastName          pgtype.Text        `json:"last_name"`
-	Phone             pgtype.Text        `json:"phone"`
-	Role              UserRole           `json:"role"`
-	Rups              []string           `json:"rups"`
-	TotalPoints       int32              `json:"total_points"`
-	Awards            []string           `json:"awards"`
-	Violation         ViolationEnum      `json:"violation"`
-	ViolationIds      []uuid.UUID        `json:"violation_ids"`
-	PasswordChangedAt pgtype.Timestamptz `json:"password_changed_at"`
-	LastSeenAt        pgtype.Timestamptz `json:"last_seen_at"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	KeycloakID         uuid.UUID          `json:"keycloak_id"`
+	Email              string             `json:"email"`
+	Username           string             `json:"username"`
+	FirstName          pgtype.Text        `json:"first_name"`
+	LastName           pgtype.Text        `json:"last_name"`
+	Phone              pgtype.Text        `json:"phone"`
+	Role               UserRole           `json:"role"`
+	Rups               []string           `json:"rups"`
+	PointsByCategories []byte             `json:"points_by_categories"`
+	Awards             []string           `json:"awards"`
+	Violation          ViolationEnum      `json:"violation"`
+	ViolationIds       []uuid.UUID        `json:"violation_ids"`
+	PasswordChangedAt  pgtype.Timestamptz `json:"password_changed_at"`
+	LastSeenAt         pgtype.Timestamptz `json:"last_seen_at"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Violation struct {

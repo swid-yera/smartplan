@@ -33,11 +33,49 @@ func (q *Queries) AddUserToDepartment(ctx context.Context, arg AddUserToDepartme
 	return err
 }
 
+const adjustUserCategoryPoints = `-- name: AdjustUserCategoryPoints :exec
+UPDATE users
+SET
+    points_by_categories = CASE
+        WHEN COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> $2::text)::int, 0) + $3::int = 0
+            THEN COALESCE(points_by_categories, '{}'::jsonb) - $2::text
+        ELSE jsonb_set(
+            COALESCE(points_by_categories, '{}'::jsonb),
+            ARRAY[$2::text],
+            to_jsonb(COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> $2::text)::int, 0) + $3::int),
+            true
+        )
+    END,
+    updated_at = NOW()
+WHERE
+    keycloak_id = $1
+`
+
+type AdjustUserCategoryPointsParams struct {
+	KeycloakID  uuid.UUID `json:"keycloak_id"`
+	CategoryKey string    `json:"category_key"`
+	PointsDelta int32     `json:"points_delta"`
+}
+
+func (q *Queries) AdjustUserCategoryPoints(ctx context.Context, arg AdjustUserCategoryPointsParams) error {
+	_, err := q.db.Exec(ctx, adjustUserCategoryPoints, arg.KeycloakID, arg.CategoryKey, arg.PointsDelta)
+	return err
+}
+
 const applyViolationToUser = `-- name: ApplyViolationToUser :one
 UPDATE users
 SET
     violation_ids = array_append(violation_ids, $1::uuid),
-    total_points = total_points - 10,
+    points_by_categories = CASE
+        WHEN COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> $2::text)::int, 0) - 10 = 0
+            THEN COALESCE(points_by_categories, '{}'::jsonb) - $2::text
+        ELSE jsonb_set(
+            COALESCE(points_by_categories, '{}'::jsonb),
+            ARRAY[$2::text],
+            to_jsonb(COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> $2::text)::int, 0) - 10),
+            true
+        )
+    END,
     violation = CASE
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
         WHEN COALESCE(cardinality(violation_ids), 0) + 1 = 2 THEN 'REBUKE'::violation_enum
@@ -46,16 +84,17 @@ SET
     END,
     updated_at = NOW()
 WHERE
-    keycloak_id = $2 RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
+    keycloak_id = $3 RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type ApplyViolationToUserParams struct {
 	ViolationID uuid.UUID `json:"violation_id"`
+	CategoryKey string    `json:"category_key"`
 	KeycloakID  uuid.UUID `json:"keycloak_id"`
 }
 
 func (q *Queries) ApplyViolationToUser(ctx context.Context, arg ApplyViolationToUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, applyViolationToUser, arg.ViolationID, arg.KeycloakID)
+	row := q.db.QueryRow(ctx, applyViolationToUser, arg.ViolationID, arg.CategoryKey, arg.KeycloakID)
 	var i User
 	err := row.Scan(
 		&i.KeycloakID,
@@ -66,7 +105,7 @@ func (q *Queries) ApplyViolationToUser(ctx context.Context, arg ApplyViolationTo
 		&i.Phone,
 		&i.Role,
 		&i.Rups,
-		&i.TotalPoints,
+		&i.PointsByCategories,
 		&i.Awards,
 		&i.Violation,
 		&i.ViolationIds,
@@ -333,7 +372,10 @@ const countUsersRatingFiltered = `-- name: CountUsersRatingFiltered :one
 SELECT COUNT(*)
 FROM users
 WHERE
-    total_points > 0
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(points_by_categories, '{}'::jsonb)) AS e(key, value)
+    ), 0) > 0
     AND
     (
         $1 = '' OR
@@ -1069,7 +1111,7 @@ INSERT INTO
         role,
         phone
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -1102,7 +1144,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Phone,
 		&i.Role,
 		&i.Rups,
-		&i.TotalPoints,
+		&i.PointsByCategories,
 		&i.Awards,
 		&i.Violation,
 		&i.ViolationIds,
@@ -1610,7 +1652,7 @@ func (q *Queries) GetAllRups(ctx context.Context, arg GetAllRupsParams) ([]Rup, 
 }
 
 const getAllUsers = `-- name: GetAllUsers :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type GetAllUsersParams struct {
@@ -1636,7 +1678,7 @@ func (q *Queries) GetAllUsers(ctx context.Context, arg GetAllUsersParams) ([]Use
 			&i.Phone,
 			&i.Role,
 			&i.Rups,
-			&i.TotalPoints,
+			&i.PointsByCategories,
 			&i.Awards,
 			&i.Violation,
 			&i.ViolationIds,
@@ -1745,7 +1787,12 @@ const getAwardDepartmentsStats = `-- name: GetAwardDepartmentsStats :many
 SELECT
     d.keycloak_id,
     d.name,
-    COALESCE(SUM(u.total_points), 0)::INT AS total_points,
+    COALESCE(SUM(
+        COALESCE((
+            SELECT SUM(value::int)
+            FROM jsonb_each_text(COALESCE(u.points_by_categories, '{}'::jsonb)) AS e(key, value)
+        ), 0)
+    ), 0)::INT AS total_points,
     COALESCE(COUNT(u.keycloak_id), 0)::INT AS user_count
 FROM departments d
 LEFT JOIN LATERAL unnest(d.users) AS du(user_id) ON TRUE
@@ -2915,7 +2962,7 @@ func (q *Queries) GetSemestersByIDs(ctx context.Context, dollar_1 []uuid.UUID) (
 }
 
 const getTeachersRatingWithDepartments = `-- name: GetTeachersRatingWithDepartments :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 FROM users u
 WHERE
     u.role = 'TEACHER'::user_role
@@ -2925,7 +2972,10 @@ WHERE
         WHERE u.keycloak_id = ANY(d.users)
     )
 ORDER BY
-    u.total_points DESC,
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(u.points_by_categories, '{}'::jsonb)) AS e(key, value)
+    ), 0) DESC,
     u.created_at DESC,
     u.keycloak_id DESC
 `
@@ -2948,7 +2998,7 @@ func (q *Queries) GetTeachersRatingWithDepartments(ctx context.Context) ([]User,
 			&i.Phone,
 			&i.Role,
 			&i.Rups,
-			&i.TotalPoints,
+			&i.PointsByCategories,
 			&i.Awards,
 			&i.Violation,
 			&i.ViolationIds,
@@ -2971,7 +3021,12 @@ const getTopAwardDepartmentsStats = `-- name: GetTopAwardDepartmentsStats :many
 SELECT
     d.keycloak_id,
     d.name,
-    COALESCE(SUM(u.total_points), 0)::INT AS total_points,
+    COALESCE(SUM(
+        COALESCE((
+            SELECT SUM(value::int)
+            FROM jsonb_each_text(COALESCE(u.points_by_categories, '{}'::jsonb)) AS e(key, value)
+        ), 0)
+    ), 0)::INT AS total_points,
     COALESCE(COUNT(u.keycloak_id), 0)::INT AS user_count
 FROM departments d
 LEFT JOIN LATERAL unnest(d.users) AS du(user_id) ON TRUE
@@ -3051,7 +3106,7 @@ func (q *Queries) GetTopicsByIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]D
 }
 
 const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = $1
 `
 
 func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (User, error) {
@@ -3066,7 +3121,7 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID)
 		&i.Phone,
 		&i.Role,
 		&i.Rups,
-		&i.TotalPoints,
+		&i.PointsByCategories,
 		&i.Awards,
 		&i.Violation,
 		&i.ViolationIds,
@@ -3096,7 +3151,7 @@ func (q *Queries) GetUserPermissions(ctx context.Context, userID uuid.UUID) (Per
 }
 
 const getUsersByIDs = `-- name: GetUsersByIDs :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = ANY($1::uuid[])
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at FROM users WHERE keycloak_id = ANY($1::uuid[])
 `
 
 func (q *Queries) GetUsersByIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]User, error) {
@@ -3117,7 +3172,7 @@ func (q *Queries) GetUsersByIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]Us
 			&i.Phone,
 			&i.Role,
 			&i.Rups,
-			&i.TotalPoints,
+			&i.PointsByCategories,
 			&i.Awards,
 			&i.Violation,
 			&i.ViolationIds,
@@ -3137,7 +3192,7 @@ func (q *Queries) GetUsersByIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]Us
 }
 
 const getUsersPaginated = `-- name: GetUsersPaginated :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 FROM users u
 WHERE
     (
@@ -3202,7 +3257,7 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 			&i.Phone,
 			&i.Role,
 			&i.Rups,
-			&i.TotalPoints,
+			&i.PointsByCategories,
 			&i.Awards,
 			&i.Violation,
 			&i.ViolationIds,
@@ -3222,10 +3277,13 @@ func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedPa
 }
 
 const getUsersRatingPaginated = `-- name: GetUsersRatingPaginated :many
-SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
+SELECT keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 FROM users
 WHERE
-    total_points > 0
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(points_by_categories, '{}'::jsonb)) AS e(key, value)
+    ), 0) > 0
     AND
     (
         $1 = '' OR
@@ -3239,7 +3297,10 @@ WHERE
         email ILIKE '%' || $1 || '%'
     )
 ORDER BY
-    total_points DESC,
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(points_by_categories, '{}'::jsonb)) AS e(key, value)
+    ), 0) DESC,
     CASE WHEN LOWER($2::text) = 'asc' THEN created_at END ASC,
     CASE WHEN LOWER($2::text) = 'desc' THEN created_at END DESC,
     created_at DESC
@@ -3276,7 +3337,7 @@ func (q *Queries) GetUsersRatingPaginated(ctx context.Context, arg GetUsersRatin
 			&i.Phone,
 			&i.Role,
 			&i.Rups,
-			&i.TotalPoints,
+			&i.PointsByCategories,
 			&i.Awards,
 			&i.Violation,
 			&i.ViolationIds,
@@ -3445,9 +3506,19 @@ const removeViolationFromUser = `-- name: RemoveViolationFromUser :one
 UPDATE users
 SET
     violation_ids = array_remove(violation_ids, $1::uuid),
-    total_points = CASE
-        WHEN $1::uuid = ANY(violation_ids) THEN total_points + 10
-        ELSE total_points
+    points_by_categories = CASE
+        WHEN $1::uuid = ANY(violation_ids) THEN
+            CASE
+                WHEN COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> $2::text)::int, 0) + 10 = 0
+                    THEN COALESCE(points_by_categories, '{}'::jsonb) - $2::text
+                ELSE jsonb_set(
+                    COALESCE(points_by_categories, '{}'::jsonb),
+                    ARRAY[$2::text],
+                    to_jsonb(COALESCE((COALESCE(points_by_categories, '{}'::jsonb) ->> $2::text)::int, 0) + 10),
+                    true
+                )
+            END
+        ELSE COALESCE(points_by_categories, '{}'::jsonb)
     END,
     violation = CASE
         WHEN COALESCE(cardinality(array_remove(violation_ids, $1::uuid)), 0) >= 3 THEN 'SEVERE_REPRIMAND'::violation_enum
@@ -3457,16 +3528,17 @@ SET
     END,
     updated_at = NOW()
 WHERE
-    keycloak_id = $2 RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, total_points, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
+    keycloak_id = $3 RETURNING keycloak_id, email, username, first_name, last_name, phone, role, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 `
 
 type RemoveViolationFromUserParams struct {
 	ViolationID uuid.UUID `json:"violation_id"`
+	CategoryKey string    `json:"category_key"`
 	KeycloakID  uuid.UUID `json:"keycloak_id"`
 }
 
 func (q *Queries) RemoveViolationFromUser(ctx context.Context, arg RemoveViolationFromUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, removeViolationFromUser, arg.ViolationID, arg.KeycloakID)
+	row := q.db.QueryRow(ctx, removeViolationFromUser, arg.ViolationID, arg.CategoryKey, arg.KeycloakID)
 	var i User
 	err := row.Scan(
 		&i.KeycloakID,
@@ -3477,7 +3549,7 @@ func (q *Queries) RemoveViolationFromUser(ctx context.Context, arg RemoveViolati
 		&i.Phone,
 		&i.Role,
 		&i.Rups,
-		&i.TotalPoints,
+		&i.PointsByCategories,
 		&i.Awards,
 		&i.Violation,
 		&i.ViolationIds,
@@ -4003,24 +4075,6 @@ type UpdateUserRoleParams struct {
 
 func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {
 	_, err := q.db.Exec(ctx, updateUserRole, arg.KeycloakID, arg.Role)
-	return err
-}
-
-const updateUserTotalPoints = `-- name: UpdateUserTotalPoints :exec
-UPDATE users
-SET
-    total_points = total_points + $2
-WHERE
-    keycloak_id = $1
-`
-
-type UpdateUserTotalPointsParams struct {
-	KeycloakID  uuid.UUID `json:"keycloak_id"`
-	TotalPoints int32     `json:"total_points"`
-}
-
-func (q *Queries) UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error {
-	_, err := q.db.Exec(ctx, updateUserTotalPoints, arg.KeycloakID, arg.TotalPoints)
 	return err
 }
 

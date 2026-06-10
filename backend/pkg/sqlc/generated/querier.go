@@ -13,6 +13,7 @@ import (
 
 type Querier interface {
 	AddUserToDepartment(ctx context.Context, arg AddUserToDepartmentParams) error
+	AdjustUserCategoryPoints(ctx context.Context, arg AdjustUserCategoryPointsParams) error
 	ApplyViolationToUser(ctx context.Context, arg ApplyViolationToUserParams) (User, error)
 	CountAwards(ctx context.Context) (int64, error)
 	CountAwardsFiltered(ctx context.Context, arg CountAwardsFilteredParams) (int64, error)
@@ -132,7 +133,6 @@ type Querier interface {
 	UpdateUserPasswordChangedAt(ctx context.Context, arg UpdateUserPasswordChangedAtParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error
-	UpdateUserTotalPoints(ctx context.Context, arg UpdateUserTotalPointsParams) error
 	UpdateViolationByIDAndUserID(ctx context.Context, arg UpdateViolationByIDAndUserIDParams) (Violation, error)
 	UpsertDepartment(ctx context.Context, arg UpsertDepartmentParams) (uuid.UUID, error)
 	UpsertGroup(ctx context.Context, arg UpsertGroupParams) (uuid.UUID, error)

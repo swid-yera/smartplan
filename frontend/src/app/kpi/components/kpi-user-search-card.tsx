@@ -4,7 +4,7 @@ import { type FC, useEffect, useMemo, useState } from 'react'
 
 import Link from 'next/link'
 
-import { getUILocaleSection, normalizeTotalPoints, normalizeUserRole } from '@helpers'
+import { getUILocaleSection, getUserTotalPoints, normalizeTotalPoints, normalizeUserRole } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Separator, Skeleton } from '@shadcn'
@@ -74,6 +74,7 @@ export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' })
 
 	const renderUserRow = (user: IUser) => {
 		const fullName = `${user.firstName} ${user.lastName}`.trim()
+		const totalPoints = getUserTotalPoints(user)
 
 		return (
 			<Link
@@ -88,7 +89,7 @@ export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' })
 
 				<div className='flex shrink-0 items-center gap-2'>
 					<Badge variant='secondary'>{normalizeUserRole(user.role, locale)}</Badge>
-					<Badge variant='outline'>{normalizeTotalPoints(user.totalPoints ?? 0, locale)}</Badge>
+					<Badge variant='outline'>{normalizeTotalPoints(totalPoints, locale)}</Badge>
 					<ArrowRight className='h-4 w-4 text-muted-foreground' />
 				</div>
 			</Link>
