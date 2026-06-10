@@ -166,6 +166,19 @@ WHERE
     AND (
         $2::uuid IS NULL
         OR l.teacher = $2::uuid
+        OR EXISTS (
+            SELECT 1 FROM rups r
+            WHERE $2::uuid = ANY(r.contacts)
+              AND EXISTS (
+                  SELECT 1 FROM rup_disciplines rd
+                  WHERE rd.id = ANY(r.disciplines)
+                    AND EXISTS (
+                        SELECT 1 FROM discipline_topics dt
+                        WHERE dt.id = ANY(rd.topics)
+                          AND dt.lesson_id = l.id
+                    )
+              )
+        )
     )
     AND (
         $3::uuid IS NULL
@@ -2211,6 +2224,19 @@ WHERE
     (
         $2::uuid IS NULL
         OR l.teacher = $2::uuid
+        OR EXISTS (
+            SELECT 1 FROM rups r
+            WHERE $2::uuid = ANY(r.contacts)
+              AND EXISTS (
+                  SELECT 1 FROM rup_disciplines rd
+                  WHERE rd.id = ANY(r.disciplines)
+                    AND EXISTS (
+                        SELECT 1 FROM discipline_topics dt
+                        WHERE dt.id = ANY(rd.topics)
+                          AND dt.lesson_id = l.id
+                    )
+              )
+        )
     ) AND
     (
         $3::uuid IS NULL

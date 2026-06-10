@@ -87,14 +87,8 @@ func main() {
 	userService := service.NewUserService(usersRepo, rdb)
 
 	// ---------- AI SERVICE ----------
-	var aiService service.AIService
-	if aiCfg.Provider == "openai" {
-		log.Infof("Using OpenAI-compatible API provider at %s with model %s", aiCfg.OpenAI.BaseURL, aiCfg.OpenAI.Model)
-		aiService = service.NewOpenAIService(httpClient, aiCfg.OpenAI, log)
-	} else {
-		log.Infof("Using Gemini API provider with model %s", aiCfg.Gemini.PrimaryModel)
-		aiService = service.NewAIService(httpClient, aiCfg.Gemini, log)
-	}
+	log.Infof("Using Gemini API provider with model %s", aiCfg.Gemini.PrimaryModel)
+	aiService := service.NewAIService(httpClient, aiCfg.Gemini, log)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, aiService, minioRepo, cryptoClient, rdb, log)
 	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, docCfg, httpClient, minioRepo, log)
 

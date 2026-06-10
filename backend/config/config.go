@@ -150,16 +150,9 @@ type GeminiConfig struct {
 	FallbackModels []string
 }
 
-type OpenAIConfig struct {
-	APIKey  string
-	BaseURL string
-	Model   string
-}
-
 type AIConfig struct {
 	Provider string
 	Gemini   *GeminiConfig
-	OpenAI   *OpenAIConfig
 }
 
 var defaultGeminiFallbackModels = []string{
@@ -355,16 +348,6 @@ func LoadGeminiConfig() *GeminiConfig {
 	}
 }
 
-func LoadOpenAIConfig() *OpenAIConfig {
-	ensureEnvLoaded()
-
-	return &OpenAIConfig{
-		APIKey:  getEnv("OPENAI_API_KEY", ""),
-		BaseURL: getEnv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-		Model:   getEnv("OPENAI_MODEL", "gpt-4"),
-	}
-}
-
 func LoadAIConfig() *AIConfig {
 	ensureEnvLoaded()
 
@@ -373,7 +356,6 @@ func LoadAIConfig() *AIConfig {
 	return &AIConfig{
 		Provider: provider,
 		Gemini:   LoadGeminiConfig(),
-		OpenAI:   LoadOpenAIConfig(),
 	}
 }
 
