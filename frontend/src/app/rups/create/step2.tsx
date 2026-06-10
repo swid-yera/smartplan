@@ -5,7 +5,6 @@ import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
 import type { IGenerateResources, Locale, LocaleText } from '@types'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -41,16 +40,11 @@ export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale
 	const [isLoading, setIsLoading] = useState(false)
 	const [additionalMessage, setAdditionalMessage] = useState('')
 	const [includeCurrentContent, setIncludeCurrentContent] = useState(true)
-
-	const { data: teachersData, isLoading: teacherLoading } = useQuery({
-		...services.user.getAllOptions({ currentPage: 1, pageSize: 100, search: '' }),
-		enabled: true,
-	})
 	const mapGeneratedText = (value: string): LocaleText =>
 		activeLocale === 'ru' ? { ru: getLocaleText(value, 'ru'), kz: '' } : { ru: '', kz: getLocaleText(value, 'kk') }
 
 	const handleGenerate = async () => {
-		if (isLoading || teacherLoading) return
+		if (isLoading) return
 
 		try {
 			setIsLoading(true)
@@ -112,7 +106,7 @@ export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale
 
 	return (
 		<div className='w-full space-y-5'>
-			<ContactsEdit creatorId={user.keycloakId} teachersData={teachersData?.data || []} />
+			<ContactsEdit creator={user} />
 
 			<GenerateCard
 				buttonText={isLoading ? t.generatingButton : t.generateButton}
@@ -140,7 +134,7 @@ export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale
 					</div>
 				}
 				description={t.generateDescription}
-				disabled={isLoading || teacherLoading}
+				disabled={isLoading}
 				disabledReason={t.generateDisabledReason}
 				title={t.generateTitle}
 				onClick={() => handleGenerate()}

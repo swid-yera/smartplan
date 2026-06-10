@@ -44,12 +44,12 @@ export const UserCard: FC<IUserMainProps> = ({
 
 	return (
 		<Card className={cn(className)}>
-			<CardHeader className='flex items-center gap-4'>
+			<CardHeader className='flex max-md:flex-col items-center gap-4'>
 				<div className='flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary'>
 					<UserIcon className='h-8 w-8' />
 				</div>
 				<div className='flex-1'>
-					<CardTitle className='text-2xl capitalize'>
+					<CardTitle className='text-2xl max-md:text-center capitalize'>
 						{user.firstName} {user.lastName}
 					</CardTitle>
 					<CardDescription className='flex flex-wrap items-center gap-2'>

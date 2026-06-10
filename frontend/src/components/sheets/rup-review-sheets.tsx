@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 
 import { extractKriptoApprovalMetadata, parseKriptoFileText } from '@helpers'
 import {
@@ -17,7 +17,7 @@ import {
 	Textarea,
 } from '@shadcn'
 import { type IRup, StatusEnum } from '@types'
-import { CheckCircle, SendToBack } from 'lucide-react'
+import { CheckCircle, Eye, EyeOff, SendToBack } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface IRupReviewSheetsProps {
@@ -37,10 +37,13 @@ interface IRupReviewSheetsProps {
 			approveSheetTitle: string
 			approveSheetDescription: string
 			approveFileLabel: string
+			chooseFile: string
 			fileLabel: string
 			approveKeyIdLabel: string
 			approveKeyIdPlaceholder: string
 			approvePasswordLabel: string
+			showPassword: string
+			hidePassword: string
 			approveCheckbox: string
 			approveConfirm: string
 		}
@@ -73,6 +76,8 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 	const [fileName, setFileName] = useState('')
 	const [approvePassword, setApprovePassword] = useState('')
 	const [approveConfirmed, setApproveConfirmed] = useState(false)
+	const [showApprovePassword, setShowApprovePassword] = useState(false)
+	const fileInputRef = useRef<HTMLInputElement | null>(null)
 	const isMethodistReview = canManage && data.status === StatusEnum.IN_REVIEW
 
 	const onApproveFileUpload = async (file?: File) => {
@@ -174,18 +179,30 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 						<div className='grid gap-4 px-4 py-4'>
 							<div className='grid gap-2'>
 								<Label htmlFor='approve-kripto-file'>{t.approveFileLabel}</Label>
-								<Input
-									accept='.kripto,application/json'
-									id='approve-kripto-file'
-									type='file'
-									onChange={(e) => {
-										const file = e.target.files?.[0]
+								<div className='flex items-center gap-2'>
+									<Input
+										ref={fileInputRef}
+										accept='.kripto,application/json'
+										className='hidden'
+										id='approve-kripto-file'
+										type='file'
+										onChange={(e) => {
+											const file = e.target.files?.[0]
 
-										onApproveFileUpload(file).catch((err) => {
-											toast.error(err.message || text.toasts.kriptoReadError)
-										})
-									}}
-								/>
+											onApproveFileUpload(file).catch((err) => {
+												toast.error(err.message || text.toasts.kriptoReadError)
+											})
+										}}
+									/>
+									<Button
+										className='shrink-0'
+										type='button'
+										variant='outline'
+										onClick={() => fileInputRef.current?.click()}
+									>
+										{t.chooseFile}
+									</Button>
+								</div>
 								{fileName && (
 									<p className='text-xs text-muted-foreground'>
 										{t.fileLabel}: {fileName}
@@ -200,13 +217,25 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 
 							<div className='grid gap-2'>
 								<Label htmlFor='approve-password'>{t.approvePasswordLabel}</Label>
-								<Input
-									id='approve-password'
-									placeholder={t.approvePasswordLabel}
-									type='password'
-									value={approvePassword}
-									onChange={(e) => setApprovePassword(e.target.value)}
-								/>
+								<div className='relative'>
+									<Input
+										className='pr-10'
+										id='approve-password'
+										placeholder={t.approvePasswordLabel}
+										type={showApprovePassword ? 'text' : 'password'}
+										value={approvePassword}
+										onChange={(e) => setApprovePassword(e.target.value)}
+									/>
+									<Button
+										aria-label={showApprovePassword ? t.hidePassword : t.showPassword}
+										className='absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 p-0'
+										type='button'
+										variant='ghost'
+										onClick={() => setShowApprovePassword((current) => !current)}
+									>
+										{showApprovePassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+									</Button>
+								</div>
 							</div>
 
 							<div className='grid gap-2'>

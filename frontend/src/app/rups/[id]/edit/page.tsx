@@ -33,9 +33,17 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateRupRequest, type Locale, PermissionCodeEnum, RupTypeEnum, StudyFormEnum } from '@types'
+import {
+	type IApiErrorResponse,
+	type IUpdateRupRequest,
+	type Locale,
+	PermissionCodeEnum,
+	RupTypeEnum,
+	StudyFormEnum,
+} from '@types'
+import { isAxiosError } from 'axios'
 import { MoreVertical, RotateCcw, SaveIcon } from 'lucide-react'
-import { FormProvider, useForm } from 'react-hook-form'
+import { type FieldErrors, FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Step1 } from '../../create/step1'
@@ -168,6 +176,37 @@ const EditPage: FC = () => {
 		methods.reset(mappedRupValues, { keepDirty: false, keepTouched: false })
 	}, [mappedRupValues, methods])
 
+	const collectFieldMessages = (errors: FieldErrors<RUPFormData>): string[] => {
+		const messages: string[] = []
+
+		const walk = (value: unknown) => {
+			if (!value) return
+
+			if (Array.isArray(value)) {
+				value.forEach(walk)
+
+				return
+			}
+
+			if (typeof value !== 'object') return
+
+			const record = value as Record<string, unknown> & { message?: unknown }
+
+			if (typeof record.message === 'string' && record.message.trim()) {
+				messages.push(record.message)
+			}
+
+			Object.entries(record).forEach(([key, nested]) => {
+				if (key === 'message' || key === 'type' || key === 'ref') return
+				walk(nested)
+			})
+		}
+
+		walk(errors)
+
+		return [...new Set(messages)]
+	}
+
 	// Warn user about unsaved changes before leaving the page.
 	// NOTE: This works for page reloads, closing the tab, or navigating away.
 	// It does not prevent client-side navigation via <Link> in Next.js App Router without more complex handling.
@@ -246,13 +285,33 @@ const EditPage: FC = () => {
 					replace(`/rups/${updatedRup.id}`)
 				},
 				onError: (err) => {
+					let errorMessage = err.message
+
+					if (isAxiosError<IApiErrorResponse>(err)) {
+						const details = err.response?.data?.details
+						const backendError = err.response?.data?.error
+
+						errorMessage =
+							(typeof details === 'string' && details.trim()) ||
+							(typeof backendError === 'string' && backendError.trim()) ||
+							errorMessage
+					}
+
 					toast.error(interpolateUILocaleText(t.saveError, { name: rupName }), {
 						id: toastId,
-						description: err.message,
+						description: errorMessage,
 					})
 				},
 			},
 		)
+	}
+
+	const onInvalid = (errors: FieldErrors<RUPFormData>) => {
+		const firstMessage = collectFieldMessages(errors)[0]
+
+		toast.error(t.fieldsError, {
+			description: firstMessage,
+		})
 	}
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {
@@ -268,6 +327,7 @@ const EditPage: FC = () => {
 	const canManage = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
+
 	// Redirect if not allowed to edit
 	if (!isRupDeveloper && !canManage && !canFullAccess) return <Forbidden />
 
@@ -286,7 +346,7 @@ const EditPage: FC = () => {
 			<form
 				className='w-full mx-auto px-4 py-6 space-y-4'
 				onKeyDown={handleKeyDown}
-				onSubmit={methods.handleSubmit(onSubmit)}
+				onSubmit={methods.handleSubmit(onSubmit, onInvalid)}
 			>
 				<PageTitle
 					sticky

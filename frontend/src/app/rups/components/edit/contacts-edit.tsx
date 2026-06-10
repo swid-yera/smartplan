@@ -2,8 +2,7 @@
 
 import { type FC, useEffect, useMemo, useState } from 'react'
 
-import { getUILocaleSection } from '@helpers'
-import { formatAsDash } from '@helpers'
+import { formatAsDash, getUILocaleSection } from '@helpers'
 import {
 	Button,
 	Card,
@@ -28,41 +27,54 @@ import {
 	TableRow,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
 import type { IUser } from '@types'
 import { ChevronsUpDown, Mail, Phone, Trash2, User, UserPlus } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext, useWatch } from 'react-hook-form'
+
+import { services } from '@services'
 import localeDictionary from './locale.json'
 
-type IProps = FieldValues & {
+type ContactsFormValues = FieldValues & {
 	contacts: string[]
-	creatorId: string
-	teachersData: IUser[]
 }
 
-export function ContactsEdit<T extends IProps>({
-	creatorId,
-	teachersData,
-}: {
-	creatorId: string
-	teachersData: IUser[]
-}) {
+interface IContactsEditProps {
+	creator: IUser
+}
+
+export function ContactsEdit<T extends ContactsFormValues>({
+	creator,
+}: IContactsEditProps) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const form = useFormContext<T>()
+	const [searchValue, setSearchValue] = useState('')
 	const watchedContacts = (useWatch({ control: form.control, name: 'contacts' as Path<T> }) as string[]) || []
+	const { data: teachersData = [], isLoading: isTeachersLoading } = useQuery({
+		...services.user.getAllOptions({ currentPage: 1, pageSize: 100, search: searchValue }),
+		enabled: true,
+		select: (response) => response.data,
+	})
 
 	// automatically add creatorId if not present
 	useEffect(() => {
-		if (creatorId && !watchedContacts.includes(creatorId)) {
-			form.setValue('contacts' as Path<T>, [...watchedContacts, creatorId] as PathValue<T, Path<T>>, {
+		if (creator.keycloakId && !watchedContacts.includes(creator.keycloakId)) {
+			form.setValue('contacts' as Path<T>, [...watchedContacts, creator.keycloakId] as PathValue<T, Path<T>>, {
 				shouldDirty: false, // usually false for auto-fills, change to true if needed
 			})
 		}
-	}, [creatorId, watchedContacts, form])
+	}, [creator.keycloakId, watchedContacts, form])
 
 	const contactsData = useMemo(() => {
-		return watchedContacts.map((id) => teachersData.find((t) => t?.keycloakId === id)).filter(Boolean) as IUser[]
-	}, [teachersData, watchedContacts])
+		return watchedContacts
+			.map((id) => {
+				if (id === creator.keycloakId) return creator
+
+				return teachersData.find((t) => t?.keycloakId === id)
+			})
+			.filter(Boolean) as IUser[]
+	}, [creator, teachersData, watchedContacts])
 
 	const handleAddTeacher = (id: string) => {
 		if (watchedContacts.includes(id)) return
@@ -73,7 +85,7 @@ export function ContactsEdit<T extends IProps>({
 
 	const handleRemoveTeacher = (id: string) => {
 		// prevent user from removing themselves the creator
-		if (id === creatorId) return
+		if (id === creator.keycloakId) return
 
 		const filtered = watchedContacts.filter((contactId) => contactId !== id)
 
@@ -92,8 +104,11 @@ export function ContactsEdit<T extends IProps>({
 				<TeacherSelector
 					teachersData={teachersData}
 					watchedContacts={watchedContacts}
+					searchValue={searchValue}
+					isLoading={isTeachersLoading}
 					text={t.contacts}
 					onSelect={handleAddTeacher}
+					onSearchValueChange={setSearchValue}
 				/>
 			</CardHeader>
 
@@ -110,7 +125,7 @@ export function ContactsEdit<T extends IProps>({
 						</TableHeader>
 						<TableBody>
 							{contactsData.map((teacher) => {
-								const isCreator = teacher.keycloakId === creatorId
+								const isCreator = teacher.keycloakId === creator.keycloakId
 
 								return (
 									<TableRow key={teacher.keycloakId} className='group'>
@@ -124,7 +139,9 @@ export function ContactsEdit<T extends IProps>({
 														{teacher.firstName} {teacher.lastName}
 													</span>
 													{isCreator && (
-														<span className='text-[10px] text-primary font-normal'>{t.contacts.creator}</span>
+														<span className='text-[10px] text-primary font-normal'>
+															{t.contacts.creator}
+														</span>
 													)}
 												</div>
 											</div>
@@ -176,8 +193,11 @@ export function ContactsEdit<T extends IProps>({
 // teacher selector
 interface ITeacherSelector {
 	onSelect: (id: string) => void
+	onSearchValueChange: (value: string) => void
 	teachersData: IUser[]
 	watchedContacts: string[]
+	searchValue: string
+	isLoading: boolean
 	text: {
 		selectTeacher: string
 		searchPlaceholder: string
@@ -187,7 +207,15 @@ interface ITeacherSelector {
 	}
 }
 
-const TeacherSelector: FC<ITeacherSelector> = ({ onSelect, teachersData, watchedContacts, text }) => {
+const TeacherSelector: FC<ITeacherSelector> = ({
+	onSelect,
+	onSearchValueChange,
+	searchValue,
+	isLoading,
+	teachersData,
+	watchedContacts,
+	text,
+}) => {
 	const [open, setOpen] = useState(false)
 
 	return (
@@ -200,10 +228,14 @@ const TeacherSelector: FC<ITeacherSelector> = ({ onSelect, teachersData, watched
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent align='end' className='w-[350px] p-0' sideOffset={8}>
-				<Command>
-					<CommandInput placeholder={text.searchPlaceholder} />
+				<Command shouldFilter={false}>
+					<CommandInput
+						placeholder={text.searchPlaceholder}
+						value={searchValue}
+						onValueChange={onSearchValueChange}
+					/>
 					<CommandList className='max-h-[300px]'>
-						<CommandEmpty>{text.notFound}</CommandEmpty>
+						{!isLoading && teachersData.length === 0 ? <CommandEmpty>{text.notFound}</CommandEmpty> : null}
 						<CommandGroup heading={text.availableTeachers}>
 							{teachersData.map((teacher) => {
 								const isAdded = watchedContacts.includes(teacher.keycloakId)

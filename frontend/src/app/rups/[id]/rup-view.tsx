@@ -42,20 +42,24 @@ export const RupView: FC<IRupViewProps> = ({
 			<PageTitle
 				sticky
 				actions={
-					<div className='flex items-center gap-2'>
+					<div className='flex flex-col items-end justify-start gap-2'>
+						<ButtonGroup>
+							{actions}
+							<RupReviewSheets
+								canManage={canManage}
+								data={data}
+								text={localeText}
+								onStatusChange={onStatusChange}
+							/>
+						</ButtonGroup>
 						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
 							<TabsList>
 								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
 								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
 							</TabsList>
 						</Tabs>
-						<ButtonGroup>
-							{actions}
-						<RupReviewSheets canManage={canManage} data={data} text={localeText} onStatusChange={onStatusChange} />
-						</ButtonGroup>
 					</div>
 				}
-				backHref='/rups'
 				description={canManage ? t.reviewDescription : t.readOnlyDescription}
 			>
 				{` ${getLocaleText(data.name, activeLocale) || `${t.titleFallback} `} `}

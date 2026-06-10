@@ -108,7 +108,7 @@ func (r *Router) Init() *gin.Engine {
 		// --- USER ---
 		protected.GET("/me", r.user.GetMe)
 		// список пользователей — full permission holders
-		protected.GET("/users", middleware.RequirePermission(service.PermRUPFull, service.PermKPIFull), r.user.GetUsers)
+		protected.GET("/users", middleware.RequirePermission(service.PermRUPView, service.PermKPIView), r.user.GetUsers)
 		protected.GET("/users/:keycloak_id", middleware.RequirePermission(service.PermKPIManage, service.PermRUPManage), r.user.GetUserByKeycloakID)
 		protected.GET("/users/rating", middleware.RequirePermission(service.PermKPIManage), r.user.GetUsersRating)
 		// нарушения — KPI manage

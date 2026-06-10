@@ -37,7 +37,7 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -67,7 +67,7 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to create RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to create RUP"),
+			"error":   service.TranslateAPIErrorMessage("failed to create RUP"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -97,7 +97,7 @@ func (h *RupHandler) GetRupByID(c *gin.Context) {
 
 		h.log.WithError(err).Error("failed to load RUP before delete")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to delete RUP"),
+			"error":   service.TranslateAPIErrorMessage("failed to delete RUP"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -119,7 +119,7 @@ func (h *RupHandler) GetLanguageGenerationStatus(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to get language generation status")
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to get language generation status"),
+			"error":   service.TranslateAPIErrorMessage("failed to get language generation status"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -145,7 +145,7 @@ func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
 		if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 			h.log.WithError(err).Error("invalid JSON format")
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+				"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
 				"details": service.TranslateAPIErrorMessage(err.Error()),
 			})
 			return
@@ -173,7 +173,7 @@ func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
 		return
 	}
 
-	canEdit := strings.EqualFold(currentUser.Role, "ADMIN")
+	canEdit := service.HasPermissionExact(currentUser.Permissions, service.PermRUPFull)
 	if !canEdit && rup.Teacher != nil {
 		canEdit = rup.Teacher.KeycloakID == currentUser.KeycloakID
 	}
@@ -196,14 +196,14 @@ func (h *RupHandler) RegenerateLanguageGeneration(c *gin.Context) {
 		var httpErr *service.HTTPStatusError
 		if errors.As(err, &httpErr) {
 			c.JSON(httpErr.StatusCode, gin.H{
-				"error": service.TranslateAPIErrorMessage("failed to regenerate language generation"),
+				"error":   service.TranslateAPIErrorMessage("failed to regenerate language generation"),
 				"details": service.TranslateAPIErrorMessage(httpErr.Message),
 			})
 			return
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to regenerate language generation"),
+			"error":   service.TranslateAPIErrorMessage("failed to regenerate language generation"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -234,7 +234,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -244,14 +244,14 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	if strings.EqualFold(req.Status, "APPROVED") {
 		if req.Password == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+				"error":   service.TranslateAPIErrorMessage("failed to update RUP status"),
 				"details": service.TranslateAPIErrorMessage("password is required for approved status"),
 			})
 			return
 		}
 		if !req.Confirmed {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+				"error":   service.TranslateAPIErrorMessage("failed to update RUP status"),
 				"details": service.TranslateAPIErrorMessage("confirmation is required for approved status"),
 			})
 			return
@@ -275,7 +275,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	}
 	if strings.TrimSpace(req.UserID) != "" && req.UserID != currentUser.KeycloakID.String() {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+			"error":   service.TranslateAPIErrorMessage("failed to update RUP status"),
 			"details": service.TranslateAPIErrorMessage("user_id does not match current user"),
 		})
 		return
@@ -293,7 +293,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("RUP not found")})
 			return
 		}
-		canSendToReview := strings.EqualFold(currentUser.Role, "ADMIN")
+		canSendToReview := service.HasPermissionExact(currentUser.Permissions, service.PermRUPFull)
 		if !canSendToReview && rup.Teacher != nil {
 			canSendToReview = rup.Teacher.KeycloakID == currentUser.KeycloakID
 		}
@@ -310,8 +310,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 			return
 		}
 	case "APPROVED", "REJECTED", "DRAFT":
-		role := strings.ToUpper(currentUser.Role)
-		if role != "METHODIST" && role != "ADMIN" {
+		if !service.HasPermissionExact(currentUser.Permissions, service.PermRUPManage) {
 			c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden")})
 			return
 		}
@@ -339,13 +338,13 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		var httpErr *service.HTTPStatusError
 		if errors.As(err, &httpErr) {
 			c.JSON(httpErr.StatusCode, gin.H{
-				"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+				"error":   service.TranslateAPIErrorMessage("failed to update RUP status"),
 				"details": service.TranslateAPIErrorMessage(httpErr.Message),
 			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to update RUP status"),
+			"error":   service.TranslateAPIErrorMessage("failed to update RUP status"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -368,7 +367,7 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.log.WithError(err).Error("invalid JSON format")
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": service.TranslateAPIErrorMessage("invalid JSON format"),
+			"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -395,7 +394,7 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 		return
 	}
 
-	canEdit := strings.EqualFold(currentUser.Role, "ADMIN")
+	canEdit := service.HasPermissionExact(currentUser.Permissions, service.PermRUPFull)
 	if !canEdit && rup.Teacher != nil {
 		canEdit = rup.Teacher.KeycloakID == currentUser.KeycloakID
 	}
@@ -416,7 +415,7 @@ func (h *RupHandler) UpdateRup(c *gin.Context) {
 	if err != nil {
 		h.log.WithError(err).Error("failed to update RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to update RUP"),
+			"error":   service.TranslateAPIErrorMessage("failed to update RUP"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -483,7 +482,7 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 	}
 
 	// Только создатель (teacher) или admin могут удалять
-	isAdmin := strings.EqualFold(currentUser.Role, "ADMIN")
+	isAdmin := service.HasPermissionExact(currentUser.Permissions, service.PermRUPFull)
 	isCreator := rup.Teacher != nil && rup.Teacher.KeycloakID == currentUser.KeycloakID
 	if !isAdmin && !isCreator {
 		c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden")})
@@ -500,7 +499,7 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 
 		h.log.WithError(err).Error("failed to delete RUP")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": service.TranslateAPIErrorMessage("failed to delete RUP"),
+			"error":   service.TranslateAPIErrorMessage("failed to delete RUP"),
 			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
@@ -574,4 +573,3 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 
 	c.JSON(200, result)
 }
-

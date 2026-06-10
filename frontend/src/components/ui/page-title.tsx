@@ -5,10 +5,10 @@ import type { ComponentProps, FC, PropsWithChildren, ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { useAuthStore, useLocaleStore } from '@store'
-import { RoleEnum } from '@types'
 import { cn } from '@lib'
 import { Button, SidebarTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shadcn'
+import { useAuthStore, useLocaleStore } from '@store'
+import { RoleEnum } from '@types'
 import { ArrowLeft } from 'lucide-react'
 
 import uiLocale from './locale.json'
