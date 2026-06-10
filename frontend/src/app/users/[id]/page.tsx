@@ -70,7 +70,7 @@ const Page = () => {
 	const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false)
 
 	const activeTabParam = searchParams.get('tab')
-	const activeTab = activeTabParam === 'rups' || activeTabParam === 'kpi' ? activeTabParam : 'rups'
+	const activeTab = activeTabParam === 'rups' || activeTabParam === 'kpi' ? activeTabParam : 'kpi'
 
 	const page = Number(searchParams.get('page')) || 1
 	const pageSize = Number(searchParams.get('pageSize')) || 10

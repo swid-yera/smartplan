@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-import { getLocaleText, interpolateUILocaleText } from '@helpers'
+import { formatCriteriaPoints, getLocaleText, interpolateUILocaleText } from '@helpers'
 import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn'
 import type { ICriteriaResponse, ITypeResponse, IVariantResponse, Locale } from '@types'
 
@@ -226,7 +226,7 @@ export const AwardTypeSelectionFields = ({
 					{(selectedVariant?.criteria || []).map((criteria) => (
 						<SelectItem key={criteria.id} value={criteria.id}>
 							{getLocaleText(criteria.name, locale)}{' '}
-							{interpolateUILocaleText(labels.criteriaPoints, { points: criteria.points.join('-') })}
+							{interpolateUILocaleText(labels.criteriaPoints, { points: formatCriteriaPoints(criteria.points) })}
 						</SelectItem>
 					))}
 				</SelectContent>
@@ -239,55 +239,67 @@ export const AwardTypeSelectionFields = ({
 
 	const bonusCriteriaOptions =
 		bonusCriteriaOptionsSource === 'criteria' ? selectedVariant?.criteria || [] : selectedVariant?.bonus_criteria || []
+	const showTypeField = availableTypes.length !== 1 || !selectedType || availableTypes[0]?.id !== selectedType.id
+	const showVariantField =
+		!selectedType || selectedType.variants.length !== 1 || !selectedVariant || selectedType.variants[0]?.id !== selectedVariant.id
+	const showCriteriaField =
+		!selectedVariant || selectedVariant.criteria.length !== 1 || !selectedCriteria || selectedVariant.criteria[0]?.id !== selectedCriteria.id
+	const showBonusCriteriaField =
+		!selectedVariant ||
+		bonusCriteriaOptions.length !== 1 ||
+		!selectedBonusCriteria ||
+		bonusCriteriaOptions[0]?.id !== selectedBonusCriteria.id
 
 	return (
 		<>
-			<div className='space-y-2'>
-				<Label htmlFor='type'>{typeLabel}</Label>
-				<Select
-					value={selectedType?.id || ''}
-					onValueChange={(id: string) => {
-						const type = availableTypes.find((item) => item.id === id) || null
+			{showTypeField ? (
+				<div className='space-y-2'>
+					<Label htmlFor='type'>{typeLabel}</Label>
+					<Select
+						value={selectedType?.id || ''}
+						onValueChange={(id: string) => {
+							const type = availableTypes.find((item) => item.id === id) || null
 
-						setSelectedType(type)
-						setSelectedVariant(null)
-						setSelectedCriteria(null)
-						setSelectedBonusCriteria(null)
-					}}
-				>
-					<SelectTrigger className='w-full' id='type'>
-						<SelectValue placeholder={labels.typePlaceholder} />
-					</SelectTrigger>
-					<SelectContent>
-						{availableTypes.map((type) => (
-							<SelectItem key={type.id} value={type.id}>
-								{getLocaleText(type.name, locale)}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
+							setSelectedType(type)
+							setSelectedVariant(null)
+							setSelectedCriteria(null)
+							setSelectedBonusCriteria(null)
+						}}
+					>
+						<SelectTrigger className='w-full' id='type'>
+							<SelectValue placeholder={labels.typePlaceholder} />
+						</SelectTrigger>
+						<SelectContent>
+							{availableTypes.map((type) => (
+								<SelectItem key={type.id} value={type.id}>
+									{getLocaleText(type.name, locale)}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+			) : null}
 
 			{layout === 'grid' ? (
-				<div className='grid grid-cols-2 gap-4'>
-					{variantField}
-					{criteriaField}
+				<div className={`grid gap-4 ${showVariantField && showCriteriaField ? 'grid-cols-2' : 'grid-cols-1'}`}>
+					{showVariantField ? variantField : null}
+					{showCriteriaField ? criteriaField : null}
 				</div>
 			) : null}
 			{layout === 'stack' ? (
 				<>
-					{variantField}
-					{criteriaField}
+					{showVariantField ? variantField : null}
+					{showCriteriaField ? criteriaField : null}
 				</>
 			) : null}
 
-			{selectedVariant?.bonus_criteria?.length ? (
+			{showBonusCriteriaField ? (
 				<div className='space-y-2'>
 					<Label htmlFor='bonus-criteria'>{labels.bonusCriteriaLabel}</Label>
 					<Select
 						value={selectedBonusCriteria?.id || ''}
 						onValueChange={(id: string) => {
-							const criteria = selectedVariant.bonus_criteria?.find((item) => item.id === id) || null
+							const criteria = selectedVariant?.bonus_criteria?.find((item) => item.id === id) || null
 
 							setSelectedBonusCriteria(criteria)
 						}}
@@ -299,7 +311,7 @@ export const AwardTypeSelectionFields = ({
 							{bonusCriteriaOptions.map((criteria) => (
 								<SelectItem key={criteria.id} value={criteria.id}>
 									{getLocaleText(criteria.name, locale)}{' '}
-									{interpolateUILocaleText(labels.bonusCriteriaPoints, { points: criteria.points.join('-') })}
+									{interpolateUILocaleText(labels.bonusCriteriaPoints, { points: formatCriteriaPoints(criteria.points) })}
 								</SelectItem>
 							))}
 						</SelectContent>

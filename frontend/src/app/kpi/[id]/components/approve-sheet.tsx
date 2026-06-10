@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
-import { getLocaleText, getUILocaleSection } from '@helpers'
+import { formatCriteriaPoints, getLocaleText, getUILocaleSection } from '@helpers'
 import {
 	Button,
 	Input,
@@ -222,7 +222,7 @@ export const ApproveSheet = ({
 										<SelectContent>
 											{currentCriteriaOptions.map((criteria) => (
 												<SelectItem key={criteria.id} value={criteria.id}>
-													{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} баллов)
+													{getLocaleText(criteria.name, locale)} ({formatCriteriaPoints(criteria.points)} баллов)
 												</SelectItem>
 											))}
 										</SelectContent>

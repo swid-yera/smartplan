@@ -5,7 +5,13 @@ import { useState } from 'react'
 
 import Link from 'next/link'
 
-import { getCategoryIconOptionByName, getLocaleText, getLocaleTextStrict, getUILocaleSection } from '@helpers'
+import {
+	getCategoryIconOptionByName,
+	getLocaleText,
+	getLocaleTextStrict,
+	getUILocaleSection,
+	hasAnyPermission,
+} from '@helpers'
 import {
 	Card,
 	CardContent,
@@ -22,9 +28,8 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@shadcn'
-import { useLocaleStore } from '@store'
-import type { Locale } from '@types'
-import { type IAward } from '@types'
+import { useAuthStore, useLocaleStore } from '@store'
+import { type IAward, type Locale, PermissionCodeEnum } from '@types'
 import { Folder, UserIcon } from 'lucide-react'
 
 import { StatusBadge } from '../badges/status-badge'
@@ -194,9 +199,16 @@ interface IAwardRow {
 
 const AwardRow: FC<IAwardRow> = ({ award, onSelect, showPointsColumn }) => {
 	const locale = useLocaleStore((state) => state.locale)
+	const me = useAuthStore((state) => state.user)
 	const t = getUILocaleSection(localeDictionary, locale).awardsCard
 	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
 	const teacherName = `${award?.teacher?.firstName} ${award?.teacher.lastName}`.trim() || t.unknownTeacher
+	const canOpenTeacherKpi = hasAnyPermission(me, [
+		PermissionCodeEnum.KPI_MANAGE,
+		PermissionCodeEnum.RUP_MANAGE,
+		PermissionCodeEnum.KPI_FULL,
+		PermissionCodeEnum.RUP_FULL,
+	])
 	const categoryIconOption = getCategoryIconOptionByName(award.category?.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const criteriaSummary = `${getLocaleText(award.type.name, locale)} / ${getLocaleText(award.criteria.name, locale)}`
@@ -222,7 +234,17 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect, showPointsColumn }) => {
 					<TableCell className='font-medium whitespace-break-spaces min-w-25'>
 						<div className='flex items-center gap-2'>
 							<UserIcon className='h-4 w-4 text-muted-foreground' />
-							<span>{teacherName}</span>
+							{canOpenTeacherKpi && award.teacher?.keycloakId ? (
+								<Link
+									className='rounded-sm hover:text-primary hover:underline'
+									href={`/users/${award.teacher.keycloakId}?tab=kpi`}
+									onClick={(event) => event.stopPropagation()}
+								>
+									{teacherName}
+								</Link>
+							) : (
+								<span>{teacherName}</span>
+							)}
 						</div>
 					</TableCell>
 					<TableCell className='font-medium whitespace-break-spaces min-w-75 py-4'>

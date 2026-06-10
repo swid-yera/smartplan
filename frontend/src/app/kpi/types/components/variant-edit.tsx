@@ -15,6 +15,7 @@ import {
 import { useLocaleStore } from '@store'
 import type { Locale } from '@types'
 import { CriteriaMethodEnum } from '@types'
+import { useEffect, useState } from 'react'
 import { Plus, Trash } from 'lucide-react'
 import localeDictionary from './locale.json'
 
@@ -47,6 +48,31 @@ interface IProps {
 export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IProps) => {
 	const uiLocale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, uiLocale)
+	const [criteriaDrafts, setCriteriaDrafts] = useState<string[][]>(() =>
+		variant.criteria.map((criteria) => criteria.points.map((point) => String(point))),
+	)
+
+	useEffect(() => {
+		setCriteriaDrafts(variant.criteria.map((criteria) => criteria.points.map((point) => String(point))))
+	}, [variant.criteria])
+
+	const isSignedIntegerDraft = (value: string) => /^-?\d*$/.test(value.trim())
+	const isCompleteSignedInteger = (value: string) => /^-?\d+$/.test(value.trim())
+
+	const updateCriteria = (criteriaIndex: number, updater: (criteria: ICriteriaForm) => ICriteriaForm) => {
+		const next = [...variant.criteria]
+		next[criteriaIndex] = updater(next[criteriaIndex])
+
+		onChange({ ...variant, criteria: next })
+	}
+
+	const updateCriteriaDraft = (criteriaIndex: number, draft: string[]) => {
+		setCriteriaDrafts((prev) => {
+			const next = [...prev]
+			next[criteriaIndex] = draft
+			return next
+		})
+	}
 
 	const addCriteria = () => {
 		const newCriteria: ICriteriaForm = {
@@ -157,18 +183,17 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 									<Select
 										value={c.method}
 										onValueChange={(value: CriteriaMethodEnum) => {
-											const next = [...variant.criteria]
+											const nextPoints =
+												value === CriteriaMethodEnum.NORMAL
+													? [c.points?.[0] ?? 0]
+													: [c.points?.[0] ?? 0, c.points?.[1] ?? c.points?.[0] ?? 0]
 
-											next[i] = {
-												...c,
+											updateCriteria(i, (criteria) => ({
+												...criteria,
 												method: value,
-												points:
-													value === CriteriaMethodEnum.NORMAL
-														? [c.points?.[0] ?? 0]
-														: [c.points?.[0] ?? 0, c.points?.[1] ?? 0],
-											}
-
-											onChange({ ...variant, criteria: next })
+												points: nextPoints,
+											}))
+											updateCriteriaDraft(i, nextPoints.map((point) => String(point)))
 										}}
 									>
 										<SelectTrigger className='w-48'>
@@ -183,63 +208,77 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 
 									{/* points */}
 									{c.method === CriteriaMethodEnum.NORMAL ? (
-										<Input
-											min={0}
+											<Input
 											placeholder={t.pointsPlaceholder}
-											type='number'
-											value={c.points?.[0] ?? 0}
+											type='text'
+											value={criteriaDrafts[i]?.[0] ?? String(c.points?.[0] ?? 0)}
 											onChange={(e) => {
-												const value = Math.max(0, Number(e.target.value))
+												const rawValue = e.target.value
+												if (!isSignedIntegerDraft(rawValue)) return
 
-												const next = [...variant.criteria]
+												updateCriteriaDraft(i, [rawValue])
 
-												next[i] = {
-													...c,
-													points: [value],
-												}
+												if (!isCompleteSignedInteger(rawValue)) return
 
-												onChange({ ...variant, criteria: next })
+												updateCriteria(i, (criteria) => ({
+													...criteria,
+													points: [Number(rawValue)],
+												}))
 											}}
 										/>
 									) : (
 										<div className='flex gap-2'>
 											<Input
-												min={0}
 												placeholder={t.minPlaceholder}
-												type='number'
-												value={c.points?.[0] ?? 0}
+												type='text'
+												value={criteriaDrafts[i]?.[0] ?? String(c.points?.[0] ?? 0)}
 												onChange={(e) => {
-													const min = Math.max(0, Number(e.target.value))
-													const max = c.points?.[1] ?? min
+													const rawMin = e.target.value
+													if (!isSignedIntegerDraft(rawMin)) return
 
-													const next = [...variant.criteria]
+													const currentDraft = criteriaDrafts[i] ?? [
+														String(c.points?.[0] ?? 0),
+														String(c.points?.[1] ?? c.points?.[0] ?? 0),
+													]
+													updateCriteriaDraft(i, [rawMin, currentDraft[1] ?? String(c.points?.[1] ?? c.points?.[0] ?? 0)])
 
-													next[i] = {
-														...c,
-														points: [min, Math.max(min, max)],
-													}
+													if (!isCompleteSignedInteger(rawMin)) return
 
-													onChange({ ...variant, criteria: next })
+													const min = Number(rawMin)
+													const rawMax = currentDraft[1] ?? String(c.points?.[1] ?? c.points?.[0] ?? min)
+													const max = isCompleteSignedInteger(rawMax) ? Number(rawMax) : c.points?.[1] ?? min
+
+													updateCriteria(i, (criteria) => ({
+														...criteria,
+														points: [Math.min(min, max), Math.max(min, max)],
+													}))
 												}}
 											/>
 
 											<Input
-												min={0}
 												placeholder={t.maxPlaceholder}
-												type='number'
-												value={c.points?.[1] ?? 0}
+												type='text'
+												value={criteriaDrafts[i]?.[1] ?? String(c.points?.[1] ?? c.points?.[0] ?? 0)}
 												onChange={(e) => {
-													const max = Math.max(0, Number(e.target.value))
-													const min = c.points?.[0] ?? 0
+													const rawMax = e.target.value
+													if (!isSignedIntegerDraft(rawMax)) return
 
-													const next = [...variant.criteria]
+													const currentDraft = criteriaDrafts[i] ?? [
+														String(c.points?.[0] ?? 0),
+														String(c.points?.[1] ?? c.points?.[0] ?? 0),
+													]
+													updateCriteriaDraft(i, [currentDraft[0] ?? String(c.points?.[0] ?? 0), rawMax])
 
-													next[i] = {
-														...c,
-														points: [Math.min(min, max), max],
-													}
+													if (!isCompleteSignedInteger(rawMax)) return
 
-													onChange({ ...variant, criteria: next })
+													const max = Number(rawMax)
+													const rawMin = currentDraft[0] ?? String(c.points?.[0] ?? 0)
+													const min = isCompleteSignedInteger(rawMin) ? Number(rawMin) : c.points?.[0] ?? max
+
+													updateCriteria(i, (criteria) => ({
+														...criteria,
+														points: [Math.min(min, max), Math.max(min, max)],
+													}))
 												}}
 											/>
 										</div>

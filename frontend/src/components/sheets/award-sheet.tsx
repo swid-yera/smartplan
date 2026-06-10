@@ -171,7 +171,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 										{award.teacher ? (
 											<Link
 												className='hover:underline hover:text-primary font-semibold'
-												href={`/users/${award.teacher.keycloakId}`}
+												href={`/users/${award.teacher.keycloakId}?tab=kpi`}
 											>
 												{award.teacher.firstName} {award.teacher.lastName}
 											</Link>
@@ -185,7 +185,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 										{award.methodist ? (
 											<Link
 												className='hover:underline hover:text-primary font-semibold'
-												href={`/users/${award.methodist.keycloakId}`}
+												href={`/users/${award.methodist.keycloakId}?tab=kpi`}
 											>
 												{award.methodist.firstName} {award.methodist.lastName}
 											</Link>
