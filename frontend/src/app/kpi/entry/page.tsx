@@ -1,6 +1,6 @@
 'use client'
 
-import { CategoryCard, Loader, SectionTitle, withNavAccess } from '@components'
+import { CategoryCard, Loader, PageTitle, withNavAccess } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -22,7 +22,9 @@ const Page = () => {
 
 	return (
 		<section className='p-4 max-w-6xl w-full mx-auto space-y-6'>
-			<SectionTitle description={t.inputDescription} title={t.inputTitle} />
+			<PageTitle backHref={'/kpi/my'} description={t.inputDescription}>
+				{t.inputTitle}
+			</PageTitle>
 
 			<div className='space-y-4'>
 				{categories?.length ? (

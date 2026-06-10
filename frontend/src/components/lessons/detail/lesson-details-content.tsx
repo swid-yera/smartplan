@@ -2,21 +2,18 @@
 
 import { useMemo, useState } from 'react'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { getLocaleText, getUILocaleSection, hasRole, toBackendLocale, topicTypeIcons } from '@helpers'
 import { services } from '@services'
-import { Button, ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
-import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { ILesson, Locale } from '@types'
 import { RoleEnum, TopicTypeEnum } from '@types'
-import { ChevronLeft, ChevronRight, Edit, FileDown, RefreshCw, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageTitle } from '../../ui/page-title'
 import { LessonDeleteDialog, LessonRegenerateDialog } from './lesson-action-dialogs'
+import { LessonDetailsActions } from './lesson-details-actions'
 import { LessonGoalsGrid } from './lesson-goals-grid'
 import { LessonOverviewGrid } from './lesson-overview-grid'
 import { type ILessonContext, type IRegenerateFormData } from './lesson-page.types'
@@ -42,7 +39,6 @@ export function LessonDetailsContent({
 	userKeycloakId,
 	userRole,
 }: IProps) {
-	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const { push } = useRouter()
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -74,13 +70,6 @@ export function LessonDetailsContent({
 	const resolvedTopicType = inferredTopicType || fallbackTopicType
 	const LessonTypeIcon = topicTypeIcons[resolvedTopicType]
 	const canRegenerate = Boolean(currentRupId && currentDisciplineId && currentTopicId)
-	const previousLesson = lesson.previous_lesson || lesson.previousLesson
-	const nextLesson = lesson.next_lesson || lesson.nextLesson
-	const hasLessonNavigation = Boolean(previousLesson || nextLesson)
-	const previousLessonTitle = previousLesson
-		? getLocaleText(previousLesson.topic_name, activeLocale) || t.lessonUntitled
-		: ''
-	const nextLessonTitle = nextLesson ? getLocaleText(nextLesson.topic_name, activeLocale) || t.lessonUntitled : ''
 	const lessonProgress = useMemo(
 		() => normalizeLessonProgress(lessonContext.lesson_progress, activeLocale),
 		[activeLocale, lessonContext.lesson_progress],
@@ -103,6 +92,7 @@ export function LessonDetailsContent({
 	const isAdmin = hasRole(userRole, RoleEnum.ADMIN)
 	const isTeacherOwner = hasRole(userRole, RoleEnum.TEACHER, false) && userKeycloakId === teacherId
 	const canManageLessonResolved = canManageLesson || isAdmin || isTeacherOwner
+	const canDownload = true
 	const cardClassName = 'border-border/70 bg-card/90 shadow-sm shadow-black/5'
 	const groupName = lesson.group?.name || lesson.group_id || t.empty
 
@@ -242,95 +232,20 @@ export function LessonDetailsContent({
 			<PageTitle
 				sticky
 				actions={
-					<div className='flex flex-col items-end justify-end gap-3'>
-						{hasLessonNavigation ? (
-							<ButtonGroup>
-								{previousLesson ? (
-									<Button
-										asChild
-										className='h-9 max-w-[14rem] rounded-full px-3 text-xs sm:max-w-[18rem] sm:px-4'
-										size='sm'
-										title={`${t.previousLesson}: ${previousLessonTitle}`}
-										variant='outline'
-									>
-										<Link
-											className='flex min-w-0 items-center gap-1.5'
-											href={`/lessons/${previousLesson.id}`}
-										>
-											<ChevronLeft className='h-4 w-4 shrink-0' />
-											<span className='min-w-0 truncate'>
-												<span className='hidden sm:inline'>{t.previousLesson}: </span>
-												{previousLessonTitle}
-											</span>
-										</Link>
-									</Button>
-								) : null}
-								{nextLesson ? (
-									<Button
-										asChild
-										className='h-9 max-w-[14rem] rounded-full px-3 text-xs sm:max-w-[18rem] sm:px-4'
-										size='sm'
-										title={`${t.nextLesson}: ${nextLessonTitle}`}
-										variant='outline'
-									>
-										<Link className='flex min-w-0 items-center gap-1.5' href={`/lessons/${nextLesson.id}`}>
-											<span className='min-w-0 truncate'>
-												<span className='hidden sm:inline'>{t.nextLesson}: </span>
-												{nextLessonTitle}
-											</span>
-											<ChevronRight className='h-4 w-4 shrink-0' />
-										</Link>
-									</Button>
-								) : null}
-							</ButtonGroup>
-						) : null}
-						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
-							<TabsList>
-								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
-								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
-							</TabsList>
-						</Tabs>
-						<ButtonGroup>
-							{canManageLessonResolved && (
-								<Button
-									className='hover:text-primary'
-									disabled={!canRegenerate || regenerateLessonMutation.isPending}
-									size='sm'
-									variant='outline'
-									onClick={handleRegenerateClick}
-								>
-									<RefreshCw className='mr-2 h-4 w-4' />
-									{t.regenerate}
-								</Button>
-							)}
-							<Button size='sm' variant='outline' onClick={handleDownload}>
-								<FileDown className='mr-2 h-4 w-4' />
-								{t.openFile}
-							</Button>
-						</ButtonGroup>
-						<ButtonGroup>
-							{canManageLessonResolved && (
-								<Button asChild size='sm' variant='outline'>
-									<Link href={`/lessons/${lesson.id}/edit`}>
-										<Edit className='mr-2 h-4 w-4' />
-										{t.edit}
-									</Link>
-								</Button>
-							)}
-							{canManageLessonResolved && (
-								<Button
-									className='hover:text-destructive'
-									disabled={deleteLessonMutation.isPending}
-									size='sm'
-									variant='outline'
-									onClick={() => setIsDeleteDialogOpen(true)}
-								>
-									<Trash className='mr-2 h-4 w-4' />
-									{t.delete}
-								</Button>
-							)}
-						</ButtonGroup>
-					</div>
+					<LessonDetailsActions
+						activeLocale={activeLocale}
+						canDelete={canManageLessonResolved}
+						canDownload={canDownload}
+						canEdit={canManageLessonResolved}
+						canRegenerate={canManageLessonResolved && canRegenerate}
+						isDeletePending={deleteLessonMutation.isPending}
+						isRegeneratePending={regenerateLessonMutation.isPending}
+						lessonId={lesson.id}
+						onActiveLocaleChange={onActiveLocaleChange}
+						onDelete={() => setIsDeleteDialogOpen(true)}
+						onDownload={handleDownload}
+						onRegenerate={handleRegenerateClick}
+					/>
 				}
 				backHref={backHref}
 				description={t.pageDescription}
@@ -351,7 +266,11 @@ export function LessonDetailsContent({
 
 			<LessonGoalsGrid cardClassName={cardClassName} lesson={lesson} lessonLocale={activeLocale} />
 
-			<LessonProgressCard cardClassName={cardClassName} lessonLocale={activeLocale} lessonProgress={lessonProgress} />
+			<LessonProgressCard
+				cardClassName={cardClassName}
+				lessonLocale={activeLocale}
+				lessonProgress={lessonProgress}
+			/>
 
 			<LessonResourcesGrid cardClassName={cardClassName} lesson={lesson} lessonLocale={activeLocale} />
 

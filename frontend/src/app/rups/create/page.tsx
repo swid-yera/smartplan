@@ -5,7 +5,7 @@ import { type JSX, type KeyboardEvent, useEffect, useMemo, useRef, useState } fr
 import type { NextPage } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, RupLanguageDialog, withPermission } from '@components'
+import { Loader, LocaleToggleButton, PageTitle, RupLanguageDialog, withPermission } from '@components'
 import {
 	createLocaleText,
 	getLocaleText,
@@ -533,14 +533,11 @@ const Page: NextPage = () => {
 													})}
 												</Badge>
 											) : null}
-											<Button
-												size='sm'
-												type='button'
-												variant='outline'
-												onClick={() => setIsLanguageDialogOpen(true)}
-											>
-												{pageT.changeLanguage}
-											</Button>
+											<LocaleToggleButton
+												activeLocale={creationLocale ?? 'ru'}
+												labels={{ kk: t.languages.kk, ru: t.languages.ru }}
+												onChangeLocale={confirmCreationLanguage}
+											/>
 										</div>
 									}
 									className='mb-5'

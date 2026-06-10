@@ -17,12 +17,14 @@ import {
 	Textarea,
 } from '@shadcn'
 import { type IRup, StatusEnum } from '@types'
-import { CheckCircle, Eye, EyeOff, SendToBack } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface IRupReviewSheetsProps {
 	data: IRup
 	canManage: boolean
+	isRejectSheetOpen: boolean
+	isApproveSheetOpen: boolean
 	text: {
 		view: {
 			reject: string
@@ -55,6 +57,8 @@ interface IRupReviewSheetsProps {
 			kriptoPasswordRequired: string
 		}
 	}
+	onRejectSheetOpenChange: (open: boolean) => void
+	onApproveSheetOpenChange: (open: boolean) => void
 	onStatusChange: (
 		newStatus: StatusEnum,
 		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
@@ -64,13 +68,15 @@ interface IRupReviewSheetsProps {
 export const RupReviewSheets = memo(function RupReviewSheets({
 	data,
 	canManage,
+	isRejectSheetOpen,
+	isApproveSheetOpen,
 	text,
+	onRejectSheetOpenChange,
+	onApproveSheetOpenChange,
 	onStatusChange,
 }: IRupReviewSheetsProps) {
 	const t = text.view
 	const [generalComment, setGeneralComment] = useState('')
-	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
-	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
 	const [keyId, setKeyId] = useState('')
 	const [userId, setUserId] = useState('')
 	const [fileName, setFileName] = useState('')
@@ -102,30 +108,16 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 
 	return (
 		<>
-			<div className='flex items-center gap-2'>
-				<Button
-					className='hover:text-destructive'
-					size='sm'
-					variant='outline'
-					onClick={() => setIsRejectSheetOpen(true)}
-				>
-					<SendToBack className='mr-2 h-4 w-4' />
-					{t.reject}
-				</Button>
-
-				<Button
-					className='hover:text-primary'
-					size='sm'
-					variant='outline'
-					onClick={() => setIsApproveSheetOpen(true)}
-				>
-					<CheckCircle className='mr-2 h-4 w-4' />
-					{t.approve}
-				</Button>
-			</div>
-
 			{isRejectSheetOpen && (
-				<Sheet open={isRejectSheetOpen} onOpenChange={setIsRejectSheetOpen}>
+				<Sheet
+					open={isRejectSheetOpen}
+					onOpenChange={(open) => {
+						onRejectSheetOpenChange(open)
+						if (!open) {
+							setGeneralComment('')
+						}
+					}}
+				>
 					<SheetContent>
 						<SheetHeader>
 							<SheetTitle>{t.rejectSheetTitle}</SheetTitle>
@@ -144,12 +136,20 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 							</div>
 						</div>
 						<SheetFooter>
-							<Button variant='outline' onClick={() => setIsRejectSheetOpen(false)}>
+							<Button
+								type='button'
+								variant='outline'
+								onClick={() => {
+									onRejectSheetOpenChange(false)
+									setGeneralComment('')
+								}}
+							>
 								{t.cancel}
 							</Button>
 							<Button
 								disabled={!generalComment}
 								variant='destructive'
+								type='button'
 								onClick={() => {
 									if (!generalComment.trim()) {
 										toast.error(t.rejectReasonRequired)
@@ -158,7 +158,7 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 									}
 
 									onStatusChange(StatusEnum.REJECTED, { reason: generalComment })
-									setIsRejectSheetOpen(false)
+									onRejectSheetOpenChange(false)
 									setGeneralComment('')
 								}}
 							>
@@ -170,7 +170,23 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 			)}
 
 			{isApproveSheetOpen && (
-				<Sheet open={isApproveSheetOpen} onOpenChange={setIsApproveSheetOpen}>
+				<Sheet
+					open={isApproveSheetOpen}
+					onOpenChange={(open) => {
+						onApproveSheetOpenChange(open)
+						if (!open) {
+							setKeyId('')
+							setUserId('')
+							setFileName('')
+							setApprovePassword('')
+							setApproveConfirmed(false)
+							setShowApprovePassword(false)
+							if (fileInputRef.current) {
+								fileInputRef.current.value = ''
+							}
+						}
+					}}
+				>
 					<SheetContent>
 						<SheetHeader>
 							<SheetTitle>{t.approveSheetTitle}</SheetTitle>
@@ -252,10 +268,20 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 							</div>
 						</div>
 						<SheetFooter>
-							<Button variant='outline' onClick={() => setIsApproveSheetOpen(false)}>
+							<Button
+								type='button'
+								variant='outline'
+								onClick={() => {
+									onApproveSheetOpenChange(false)
+									if (fileInputRef.current) {
+										fileInputRef.current.value = ''
+									}
+								}}
+							>
 								{t.cancel}
 							</Button>
 							<Button
+								type='button'
 								disabled={!fileName || !keyId.trim() || !approvePassword || !approveConfirmed}
 								onClick={() => {
 									if (!fileName || !keyId.trim()) {
@@ -275,12 +301,15 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 										password: approvePassword,
 										confirmed: approveConfirmed,
 									})
-									setIsApproveSheetOpen(false)
+									onApproveSheetOpenChange(false)
 									setKeyId('')
 									setUserId('')
 									setFileName('')
 									setApprovePassword('')
 									setApproveConfirmed(false)
+									if (fileInputRef.current) {
+										fileInputRef.current.value = ''
+									}
 								}}
 							>
 								{t.approveConfirm}

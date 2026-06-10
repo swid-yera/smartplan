@@ -3,6 +3,7 @@
 		"pageTitle": {
 			"back": "Назад"
 		},
+		"moreActions": "Дополнительные действия",
 		"pagination": {
 			"rowsPerPage": "Строк на странице",
 			"pageOf": "Страница {page} из {totalPages}"
@@ -44,6 +45,7 @@
 		"pageTitle": {
 			"back": "Артқа"
 		},
+		"moreActions": "Қосымша әрекеттер",
 		"pagination": {
 			"rowsPerPage": "Беттегі жол саны",
 			"pageOf": "{page} / {totalPages} бет"

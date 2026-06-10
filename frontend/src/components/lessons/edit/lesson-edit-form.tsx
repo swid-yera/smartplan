@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 
 import { createLocaleText, getUILocaleSection, toBackendLocale } from '@helpers'
 import { services } from '@services'
-import { Button, ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
+import { Button, ButtonGroup } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
 import type { ILesson, IUpdateLessonRequest, Locale } from '@types'
@@ -15,6 +15,7 @@ import { LessonResourceTypeEnum } from '@types'
 import { Grid2X2, Link2, Save, X } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { LocaleToggleButton } from '../../ui/locale-toggle-button'
 import { PageTitle } from '../../ui/page-title'
 import type { ILessonFormState } from './lesson-edit.types'
 import {
@@ -210,14 +211,13 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 		<section className='mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8'>
 			<PageTitle
 				actions={
-					<div className='flex flex-col items-end gap-3'>
-						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
-							<TabsList>
-								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
-								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
-							</TabsList>
-						</Tabs>
-						<ButtonGroup>
+					<div className='flex flex-wrap items-center justify-end gap-2'>
+						<LocaleToggleButton
+							activeLocale={activeLocale}
+							labels={{ kk: t.languageKk, ru: t.languageRu }}
+							onChangeLocale={onActiveLocaleChange}
+						/>
+						<ButtonGroup className='w-full flex-wrap justify-end sm:w-auto'>
 							<Button form='lesson-edit-form' type='submit'>
 								<Save className='mr-2 h-4 w-4' />
 								{t.save}

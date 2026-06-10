@@ -5,7 +5,7 @@ import { type FC, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { PageTitle } from '@components'
+import { LocaleToggleButton, PageTitle } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
@@ -24,9 +24,6 @@ import {
 	CardHeader,
 	CardTitle,
 	Separator,
-	Tabs,
-	TabsList,
-	TabsTrigger,
 } from '@shadcn'
 import { useMutation } from '@tanstack/react-query'
 import type { ITypeResponse, Locale } from '@types'
@@ -79,9 +76,9 @@ export const TypeView = ({ type }: IProps) => {
 			<PageTitle
 				sticky
 				actions={
-					<div className='flex flex-col gap-2 items-end justify-center'>
-						<ButtonGroup>
-							<Button asChild className='hover:text-primary' size='sm' variant='outline'>
+					<div className='flex flex-wrap items-center justify-end gap-2'>
+						<ButtonGroup className='sm:w-auto'>
+							<Button asChild className='hover:text-primary' variant='outline'>
 								<Link href={`/kpi/types/${type.id}/edit`}>
 									<Pen />
 									{t.edit}
@@ -89,21 +86,20 @@ export const TypeView = ({ type }: IProps) => {
 							</Button>
 							<Button
 								className='hover:text-destructive'
-								size='sm'
 								variant='outline'
 								onClick={() => setIsDeleteDialogOpen(true)}
 							>
 								<Trash />
 								{t.delete}
 							</Button>
-						</ButtonGroup>
 
-						<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
-							<TabsList>
-								<TabsTrigger value='ru'>{t.langRu}</TabsTrigger>
-								<TabsTrigger value='kk'>{t.langKk}</TabsTrigger>
-							</TabsList>
-						</Tabs>
+							<LocaleToggleButton
+								activeLocale={activeLocale}
+								labels={{ kk: t.langKk, ru: t.langRu }}
+								variant='default'
+								onChangeLocale={setActiveLocale}
+							/>
+						</ButtonGroup>
 					</div>
 				}
 				backHref={backHref}

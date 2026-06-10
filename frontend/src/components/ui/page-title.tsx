@@ -48,18 +48,39 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 				? backHref[user.role]
 				: undefined
 
+	const renderBackButton = (className: string) => {
+		if (!resolvedBackHref && backHref !== 'back') return null
+
+		const backButtonContent = (
+			<>
+				<ArrowLeft />
+				{backLabel || t.pageTitle.back}
+			</>
+		)
+
+		return backHref === 'back' ? (
+			<Button className={className} size='sm' type='button' variant='outline' onClick={() => router.back()}>
+				{backButtonContent}
+			</Button>
+		) : resolvedBackHref ? (
+			<Button asChild className={className} size='sm' type='button' variant='outline'>
+				<Link href={resolvedBackHref}>{backButtonContent}</Link>
+			</Button>
+		) : null
+	}
+
 	return (
 		<div
-			className={cn('flex flex-col w-full space-y-2', className, {
+			className={cn('flex w-full flex-col gap-2', className, {
 				[stickyClassNames]: sticky,
 				'px-4 py-4': sticky,
 			})}
 			data-rup-sticky-title={sticky ? 'true' : undefined}
 			{...props}
 		>
-			<div className='flex items-center justify-between w-full space-x-4'>
+			<div className='grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] md:items-start'>
 				<TooltipProvider delayDuration={200}>
-					<h1 className='md:text-3xl text-xl flex min-w-0 flex-1 items-center gap-2 font-bold tracking-tight'>
+					<h1 className='flex min-w-0 items-center gap-2 text-xl font-bold tracking-tight md:text-3xl'>
 						<SidebarTrigger className='shrink-0' type='button' />
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -72,27 +93,17 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 					</h1>
 				</TooltipProvider>
 
-				<div className='shrink-0'>{actions}</div>
+				<div className='flex w-full items-center justify-end gap-2'>{actions}</div>
 			</div>
-			<div className='flex w-full min-w-0 items-center gap-2'>
-				{backHref === 'back' ? (
-					<Button size='sm' type='button' variant='outline' onClick={() => router.back()}>
-						<ArrowLeft />
-						{backLabel || t.pageTitle.back}
-					</Button>
-				) : resolvedBackHref ? (
-					<Button asChild size='sm' type='button' variant='outline'>
-						<Link href={resolvedBackHref}>
-							<ArrowLeft />
-							{backLabel || t.pageTitle.back}
-						</Link>
-					</Button>
-				) : null}
 
+			{renderBackButton('shrink-0 sm:hidden')}
+
+			<div className='flex w-full flex-col gap-2 sm:flex-row sm:items-center'>
+				{renderBackButton('shrink-0 max-sm:hidden')}
 				{shouldShowDescriptionTooltip ? (
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<p className='text-muted-foreground md:text-base text-sm min-w-0 flex-1 truncate'>
+							<p className='min-w-0 flex-1 truncate text-sm text-muted-foreground md:text-base'>
 								{descriptionText}
 							</p>
 						</TooltipTrigger>
@@ -101,7 +112,7 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 						</TooltipContent>
 					</Tooltip>
 				) : (
-					<p className='text-muted-foreground md:text-base text-sm min-w-0 flex-1'>{description}</p>
+					<p className='min-w-0 flex-1 text-sm text-muted-foreground md:text-base'>{description}</p>
 				)}
 			</div>
 		</div>

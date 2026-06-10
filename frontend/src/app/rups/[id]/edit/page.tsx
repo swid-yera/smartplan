@@ -5,7 +5,7 @@ import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, PageTitle, withPermission } from '@components'
+import { Forbidden, Loader, LocaleToggleButton, PageTitle, withPermission } from '@components'
 import {
 	createLocaleText,
 	getLocaleText,
@@ -42,7 +42,7 @@ import {
 	StudyFormEnum,
 } from '@types'
 import { isAxiosError } from 'axios'
-import { MoreVertical, RotateCcw, SaveIcon } from 'lucide-react'
+import { BookOpen, MoreVertical, RotateCcw, SaveIcon } from 'lucide-react'
 import { type FieldErrors, FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -75,23 +75,6 @@ const defaultValues: RUPFormData = {
 	contacts: [], // default creator id :(
 	disciplines: [],
 }
-
-const LanguageTabs = ({
-	value,
-	onChange,
-	labels,
-}: {
-	value: Locale
-	onChange: (locale: Locale) => void
-	labels: { ru: string; kk: string }
-}) => (
-	<Tabs value={value} onValueChange={(next) => onChange(next as Locale)}>
-		<TabsList>
-			<TabsTrigger value='ru'>{labels.ru}</TabsTrigger>
-			<TabsTrigger value='kk'>{labels.kk}</TabsTrigger>
-		</TabsList>
-	</Tabs>
-)
 
 const EditPage: FC = () => {
 	const { replace } = useRouter()
@@ -351,35 +334,16 @@ const EditPage: FC = () => {
 				<PageTitle
 					sticky
 					actions={
-						<div className='flex flex-wrap items-center justify-end gap-2'>
-							<LanguageTabs
-								labels={{ kk: t.languages.kk, ru: t.languages.ru }}
-								value={activeLocale}
-								onChange={setActiveLocale}
-							/>
-							<ButtonGroup>
-								{canFullAccess && (
-									<Button
-										className='hover:text-destructive'
-										disabled={!methods.formState.isDirty}
-										type='button'
-										variant='outline'
-										onClick={() => methods.reset()}
-									>
-										<RotateCcw className='mr-2 h-4 w-4' />
-										{t.resetChanges}
-									</Button>
-								)}
-								<Button
-									className='hover:text-primary'
-									disabled={!methods.formState.isDirty}
-									type='submit'
-									variant='outline'
-								>
-									<SaveIcon className='mr-2 h-4 w-4' />
-									{t.save}
-								</Button>
-							</ButtonGroup>
+						<ButtonGroup className=''>
+							<Button
+								className='hover:text-primary'
+								disabled={!methods.formState.isDirty}
+								type='submit'
+								variant='outline'
+							>
+								<SaveIcon className='mr-2 h-4 w-4' />
+								{t.save}
+							</Button>
 
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
@@ -389,17 +353,28 @@ const EditPage: FC = () => {
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align='end' className='w-56'>
 									<DropdownMenuItem asChild>
-										<Link href={`/rups/${rupData.id}`}>{t.openView}</Link>
+										<Link href={`/rups/${rupData.id}`}>
+											<BookOpen />
+											{t.openView}
+										</Link>
 									</DropdownMenuItem>
-									{!canFullAccess && canManage && (
-										<DropdownMenuItem className='cursor-pointer' onClick={() => methods.reset()}>
-											<RotateCcw className='mr-2 h-4 w-4' />
-											{t.resetChanges}
-										</DropdownMenuItem>
-									)}
+									<DropdownMenuItem
+										disabled={!methods.formState.isDirty}
+										variant='destructive'
+										onClick={() => methods.reset()}
+									>
+										<RotateCcw className='mr-2 h-4 w-4' />
+										{t.resetChanges}
+									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
-						</div>
+
+							<LocaleToggleButton
+								activeLocale={activeLocale}
+								labels={{ kk: t.languages.kk, ru: t.languages.ru }}
+								onChangeLocale={setActiveLocale}
+							/>
+						</ButtonGroup>
 					}
 					backHref={`/rups/${rupData.id}`}
 					description={t.description}

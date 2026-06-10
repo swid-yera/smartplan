@@ -1,4 +1,5 @@
 export * from './lesson-action-dialogs'
+export * from './lesson-details-actions'
 export * from './lesson-details-content'
 export * from './lesson-goals-grid'
 export * from './lesson-overview-grid'

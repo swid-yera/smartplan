@@ -52,7 +52,6 @@ import { Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { trackLanguageGeneration } from '../language-generation-tracker'
-import { RupDetailsActions } from './components/rup-details-actions'
 import localeDictionary from './locale.json'
 import { RupView } from './rup-view'
 
@@ -259,7 +258,6 @@ const Page: FC = () => {
 	// bools
 	const canFullAccess = hasPermission(user, PermissionCodeEnum.RUP_FULL)
 	const canManageRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
-	const canViewRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_VIEW])
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
@@ -276,25 +274,14 @@ const Page: FC = () => {
 	return (
 		<>
 			<RupView
-				actions={
-					<RupDetailsActions
-						canDelete={canDelete}
-						canDownload={canDownload}
-						canEdit={canEdit}
-						canRegenerateLanguage={canRegenerateLanguage}
-						canSendToReview={canSendToReview}
-						canViewRups={canViewRups}
-						id={rupId}
-						isAdmin={canFullAccess}
-						onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
-						onOpenDownloadDialog={() => setIsDownloadLanguageDialogOpen(true)}
-						onOpenRegenerateDialog={() => setIsRegenerateDialogOpen(true)}
-						onOpenStatusSheet={() => setIsSheetOpen(true)}
-						onSendToReview={() => handleStatusChange(StatusEnum.IN_REVIEW)}
-					/>
-				}
 				activeLocale={activeLocale}
 				canManage={canManageRups || canFullAccess}
+				canDelete={canDelete}
+				canDownload={canDownload}
+				canEdit={canEdit}
+				canFullAccess={canFullAccess}
+				canRegenerateLanguage={canRegenerateLanguage}
+				canSendToReview={canSendToReview}
 				data={rupData}
 				localeNotice={
 					isActiveLocaleMissing ? (
@@ -332,8 +319,15 @@ const Page: FC = () => {
 						</div>
 					) : null
 				}
+				isDeletePending={deleteMutation.isPending}
+				isRegeneratePending={regenerateLanguageMutation.isPending}
+				onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
+				onOpenDownloadDialog={() => setIsDownloadLanguageDialogOpen(true)}
+				onOpenRegenerateDialog={() => setIsRegenerateDialogOpen(true)}
+				onOpenStatusSheet={() => setIsSheetOpen(true)}
 				onActiveLocaleChange={setActiveLocale}
 				onStatusChange={handleStatusChange}
+				onSendToReview={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 			/>
 
 			<StatusChangeSheet

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, PageTitle, withNavAccess } from '@components'
+import { Forbidden, Loader, LocaleToggleButton, PageTitle, withNavAccess } from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,
@@ -39,9 +39,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Separator,
-	Tabs,
-	TabsList,
-	TabsTrigger,
 	Textarea,
 } from '@shadcn'
 import { useAuthStore } from '@store'
@@ -264,34 +261,33 @@ const Page = () => {
 			<PageTitle
 				sticky
 				actions={
-					<div className='flex flex-col gap-2 items-end justify-center'>
-						<ButtonGroup>
-							<Button
-								className='hover:text-destructive'
-								variant='outline'
-								onClick={() => setIsDeleteDialogOpen(true)}
-							>
-								<Trash2 className='mr-2 h-4 w-4' />
-								{t.delete}
-							</Button>
-							<Button
-								className='hover:text-primary'
-								disabled={updateMutation.isPending}
-								variant='outline'
-								onClick={handleSubmit}
-							>
-								<Save className='mr-2 h-4 w-4' />
-								{t.save}
-							</Button>
-						</ButtonGroup>
+					<ButtonGroup className='sm:w-auto'>
+						<Button
+							className='hover:text-primary'
+							disabled={updateMutation.isPending}
+							variant='outline'
+							onClick={handleSubmit}
+						>
+							<Save className='mr-2 h-4 w-4' />
+							{t.save}
+						</Button>
 
-						<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
-							<TabsList>
-								<TabsTrigger value='ru'>{t.langRu}</TabsTrigger>
-								<TabsTrigger value='kk'>{t.langKk}</TabsTrigger>
-							</TabsList>
-						</Tabs>
-					</div>
+						<Button
+							className='hover:text-destructive'
+							type='button'
+							variant='outline'
+							onClick={() => setIsDeleteDialogOpen(true)}
+						>
+							<Trash2 className='mr-2 h-4 w-4' />
+							{t.delete}
+						</Button>
+
+						<LocaleToggleButton
+							activeLocale={activeLocale}
+							labels={{ kk: t.langKk, ru: t.langRu }}
+							onChangeLocale={setActiveLocale}
+						/>
+					</ButtonGroup>
 				}
 				backHref={backHref}
 				description={t.pageDescription}

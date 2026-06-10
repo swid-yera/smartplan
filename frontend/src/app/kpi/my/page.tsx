@@ -2,7 +2,7 @@
 
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { AwardsCard, Loader, Pagination, SectionTitle, UserCard, withNavAccess } from '@components'
+import { AwardsCard, Loader, PageTitle, Pagination, UserCard, withNavAccess } from '@components'
 import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
@@ -69,7 +69,7 @@ const Page = () => {
 
 	return (
 		<section className='mx-auto w-full max-w-6xl space-y-6 p-4'>
-			<SectionTitle description={t.profileDescription} title={t.profileTitle} />
+			<PageTitle description={t.profileDescription}>{t.profileTitle}</PageTitle>
 
 			<div className='space-y-4'>
 				<UserCard showTotalPoints showViolation={false} user={user} />
