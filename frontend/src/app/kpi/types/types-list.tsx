@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { getLocaleText } from '@helpers'
+import { formatCriteriaPoints, getLocaleText } from '@helpers'
 import { Button, Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import type { ITypeResponse, Locale } from '@types'
 import { Pencil } from 'lucide-react'
@@ -76,7 +76,7 @@ const TypeCard = ({ locale, type }: ITypeCardProps) => {
 								{variant.criteria.map((criteria) => (
 									<li key={criteria.id} className='list-[lower-roman] text-sm'>
 										<span className='font-medium'>{getLocaleText(criteria.name, locale)}</span>
-										<span className='ml-1 text-muted-foreground'>({criteria.points.join('-')}) баллов</span>
+										<span className='ml-1 text-muted-foreground'>({formatCriteriaPoints(criteria.points)}) баллов</span>
 									</li>
 								))}
 							</ol>
@@ -90,7 +90,7 @@ const TypeCard = ({ locale, type }: ITypeCardProps) => {
 									{variant.bonus_criteria.map((criteria) => (
 										<li key={criteria.id} className='list-[lower-roman] text-sm'>
 											<span className='font-medium'>{getLocaleText(criteria.name, locale)}</span>
-											<span className='ml-1 opacity-80'>({criteria.points.join(', ')})</span>
+											<span className='ml-1 opacity-80'>({formatCriteriaPoints(criteria.points)})</span>
 										</li>
 									))}
 								</ol>
