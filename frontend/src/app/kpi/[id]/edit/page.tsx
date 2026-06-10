@@ -148,11 +148,13 @@ const Page = () => {
 
 		const type = availableTypes.find((item) => item.id === award.type.id) || award.type || null
 		const variant = type?.variants.find((item) => item.id === award.variant.id) || award.variant || null
-		const criteria = variant?.criteria.find((item) => item.id === award.criteria.id) || award.criteria || null
+		const variantCriteria = variant?.criteria ?? []
+		const criteria = variantCriteria.find((item) => item.id === award.criteria.id) || award.criteria || null
 		const normalizedBonusCriteria = award.bonus_criteria || null
 		const bonusCriteria =
 			normalizedBonusCriteria &&
-			(variant?.bonus_criteria?.find((item) => item.id === normalizedBonusCriteria.id) || normalizedBonusCriteria)
+			((variant?.bonus_criteria ?? []).find((item) => item.id === normalizedBonusCriteria.id) ||
+				normalizedBonusCriteria)
 
 		const initialValues = buildInitialCategoryFieldValues(category.fieldsExpanded)
 
