@@ -5,7 +5,7 @@ import { type JSX, type KeyboardEvent, useEffect, useMemo, useRef, useState } fr
 import type { NextPage } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, LocaleToggleButton, PageTitle, RupLanguageDialog, withPermission } from '@components'
+import { Loader, PageTitle, RupLanguageDialog, withPermission } from '@components'
 import {
 	createLocaleText,
 	getLocaleText,
@@ -525,20 +525,13 @@ const Page: NextPage = () => {
 								<PageTitle
 									sticky
 									actions={
-										<div className='flex items-center gap-2'>
-											{creationLocale ? (
-												<Badge variant='secondary'>
-													{interpolateUILocaleText(pageT.selectedLanguage, {
-														language: creationLocale === 'ru' ? t.languages.ru : t.languages.kk,
-													})}
-												</Badge>
-											) : null}
-											<LocaleToggleButton
-												activeLocale={creationLocale ?? 'ru'}
-												labels={{ kk: t.languages.kk, ru: t.languages.ru }}
-												onChangeLocale={confirmCreationLanguage}
-											/>
-										</div>
+										creationLocale ? (
+											<Badge variant='secondary'>
+												{interpolateUILocaleText(pageT.selectedLanguage, {
+													language: creationLocale === 'ru' ? t.languages.ru : t.languages.kk,
+												})}
+											</Badge>
+										) : null
 									}
 									className='mb-5'
 									description={tab.description}
