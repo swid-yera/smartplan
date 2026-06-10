@@ -45,4 +45,8 @@ function LessonPage() {
 	)
 }
 
-export default withPermission(LessonPage, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])
+export default withPermission(LessonPage, [
+	PermissionCodeEnum.RUP_FULL,
+	PermissionCodeEnum.RUP_MANAGE,
+	PermissionCodeEnum.RUP_VIEW,
+])

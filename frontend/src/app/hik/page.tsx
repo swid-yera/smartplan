@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { withRole } from '@components'
+import { PageTitle, withRole } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
@@ -69,60 +69,64 @@ const Page = () => {
 	}
 
 	return (
-		<div className='flex min-h-[60vh] items-center justify-center px-6'>
-			<Card className='w-full'>
-				<CardHeader>
-					<CardTitle>{t.cardTitle}</CardTitle>
-					<CardDescription>{t.cardDescription}</CardDescription>
-				</CardHeader>
+		<div className='mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-6'>
+			<PageTitle description={t.cardDescription}>{t.cardTitle}</PageTitle>
 
-				<CardContent>
-					<input
-						accept='.xlsx'
-						className='hidden'
-						disabled={isPending}
-						id='hik-upload'
-						type='file'
-						onChange={handleFileChange}
-					/>
+			<div className='flex min-h-[60vh] items-center justify-center'>
+				<Card className='w-full'>
+					<CardHeader>
+						<CardTitle>{t.cardTitle}</CardTitle>
+						<CardDescription>{t.cardDescription}</CardDescription>
+					</CardHeader>
 
-					<label
-						className={`
-							flex cursor-pointer flex-col items-center justify-center
-							rounded-xl border-2 border-dashed p-6 text-center
-							transition-all
-							${isPending && 'cursor-not-allowed opacity-50'}
-							${isDragging ? 'border-primary bg-primary/10 scale-[1.01]' : 'hover:border-primary hover:bg-primary/5'}
-						`}
-						htmlFor='hik-upload'
-						onDragLeave={handleDragLeave}
-						onDragOver={handleDragOver}
-						onDrop={handleDrop}
-					>
-						{isPending ? (
-							<>
-								<Loader2 className='mb-3 h-8 w-8 animate-spin text-muted-foreground' />
-								<p className='text-sm text-muted-foreground'>{t.generating}</p>
-							</>
-						) : (
-							<>
-								<FileSpreadsheet className='mb-3 h-8 w-8 text-muted-foreground' />
-								<p className='text-sm font-medium'>{isDragging ? t.dropHere : t.dragHint}</p>
-								<p className='mt-1 text-xs text-muted-foreground'>{t.onlyXlsxShort}</p>
-							</>
-						)}
-					</label>
+					<CardContent>
+						<input
+							accept='.xlsx'
+							className='hidden'
+							disabled={isPending}
+							id='hik-upload'
+							type='file'
+							onChange={handleFileChange}
+						/>
 
-					<Button
-						className='mt-4 w-full'
-						disabled={isPending}
-						onClick={() => document.getElementById('hik-upload')?.click()}
-					>
-						{isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-						{t.uploadAndDownload}
-					</Button>
-				</CardContent>
-			</Card>
+						<label
+							className={`
+								flex cursor-pointer flex-col items-center justify-center
+								rounded-xl border-2 border-dashed p-6 text-center
+								transition-all
+								${isPending && 'cursor-not-allowed opacity-50'}
+								${isDragging ? 'border-primary bg-primary/10 scale-[1.01]' : 'hover:border-primary hover:bg-primary/5'}
+							`}
+							htmlFor='hik-upload'
+							onDragLeave={handleDragLeave}
+							onDragOver={handleDragOver}
+							onDrop={handleDrop}
+						>
+							{isPending ? (
+								<>
+									<Loader2 className='mb-3 h-8 w-8 animate-spin text-muted-foreground' />
+									<p className='text-sm text-muted-foreground'>{t.generating}</p>
+								</>
+							) : (
+								<>
+									<FileSpreadsheet className='mb-3 h-8 w-8 text-muted-foreground' />
+									<p className='text-sm font-medium'>{isDragging ? t.dropHere : t.dragHint}</p>
+									<p className='mt-1 text-xs text-muted-foreground'>{t.onlyXlsxShort}</p>
+								</>
+							)}
+						</label>
+
+						<Button
+							className='mt-4 w-full'
+							disabled={isPending}
+							onClick={() => document.getElementById('hik-upload')?.click()}
+						>
+							{isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+							{t.uploadAndDownload}
+						</Button>
+					</CardContent>
+				</Card>
+			</div>
 		</div>
 	)
 }
