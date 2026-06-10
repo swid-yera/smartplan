@@ -138,10 +138,11 @@ func (r *UsersPostgres) GetDepartmentsForUsers(ctx context.Context, userIDs []uu
 	return r.queries.GetDepartmentsForUsers(ctx, userIDs)
 }
 
-func (r *UsersPostgres) UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error {
-	return r.queries.UpdateUserTotalPoints(ctx, storage.UpdateUserTotalPointsParams{
-		KeycloakID:  teacher,
-		TotalPoints: points,
+func (r *UsersPostgres) AdjustUserCategoryPoints(ctx context.Context, userID uuid.UUID, categoryKey string, pointsDelta int32) error {
+	return r.queries.AdjustUserCategoryPoints(ctx, storage.AdjustUserCategoryPointsParams{
+		KeycloakID:  userID,
+		CategoryKey: categoryKey,
+		PointsDelta: pointsDelta,
 	})
 }
 

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
 import { Loader, PageTitle, withPermission } from '@components'
-import { getLocaleText, getUILocaleSection } from '@helpers'
+import { getLocaleText, getUILocaleSection, getUserTotalPoints } from '@helpers'
 import { services } from '@services'
 import {
 	Card,
@@ -62,7 +62,7 @@ const Page = () => {
 		return <p className='p-6 text-center text-muted-foreground'>Отделение не найдено</p>
 	}
 
-	const sortedTeachers = [...department.teachers].sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0))
+	const sortedTeachers = [...department.teachers].sort((a, b) => getUserTotalPoints(b) - getUserTotalPoints(a))
 	const departmentTitle = getLocaleText(department.name, locale)
 
 	return (
@@ -117,7 +117,7 @@ const Page = () => {
 										>
 											<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
 											<TableCell className='w-16 whitespace-nowrap text-right font-semibold'>
-												{teacher.totalPoints ?? 0}
+												{getUserTotalPoints(teacher)}
 											</TableCell>
 											<TableCell className='py-4'>
 												<div className='space-y-1'>

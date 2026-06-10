@@ -53,3 +53,10 @@ export const normalizeTotalPoints = (points: number = 0, locale: Locale = 'ru'):
 
 	return `${points} баллов`
 }
+
+export const formatCriteriaPoints = (points: number[]): string => {
+	if (!points?.length) return ''
+	if (points.length === 1) return `${points[0]}`
+
+	return `${points[0]} – ${points[1]}`
+}

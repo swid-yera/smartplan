@@ -24,18 +24,18 @@ type UserDepartment struct {
 }
 
 type User struct {
-	KeycloakID  uuid.UUID          `json:"keycloakId"`
-	Email       string             `json:"email"`
-	Username    string             `json:"username"`
-	FirstName   string             `json:"firstName"`
-	LastName    string             `json:"lastName"`
-	Role        string             `json:"role"`
-	Phone       string             `json:"phone"`
-	Departments []UserDepartment   `json:"departments"`
-	Permissions []PermissionCode   `json:"permissions"`
-	TotalPoints int32              `json:"totalPoints"`
-	Violation   string             `json:"violation"`
-	Violations  []*ViolationRecord `json:"violations"`
+	KeycloakID         uuid.UUID          `json:"keycloakId"`
+	Email              string             `json:"email"`
+	Username           string             `json:"username"`
+	FirstName          string             `json:"firstName"`
+	LastName           string             `json:"lastName"`
+	Role               string             `json:"role"`
+	Phone              string             `json:"phone"`
+	Departments        []UserDepartment   `json:"departments"`
+	Permissions        []PermissionCode   `json:"permissions"`
+	PointsByCategories map[string]int32   `json:"pointsByCategories"`
+	Violation          string             `json:"violation"`
+	Violations         []*ViolationRecord `json:"violations"`
 }
 
 type Penalty struct {
@@ -255,7 +255,7 @@ func (s *userService) GetUsersRatingPaginated(
 }
 
 func (s *userService) GetTeachersRatingWithDepartments(ctx context.Context) ([]*User, error) {
-	dbUsers, err := s.repo.GetAllUsers(ctx, math.MaxInt32, 0, "")
+	dbUsers, err := s.repo.GetTeachersRatingWithDepartments(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ func (s *userService) groupTeachersByDepartment(users []*User, limit int) []depa
 
 		for _, teacher := range group.response.Teachers {
 			if teacher != nil {
-				group.score += teacher.TotalPoints
+				group.score += sumPointsByCategories(teacher.PointsByCategories)
 			}
 		}
 
@@ -409,12 +409,12 @@ func sortTeachersByScoreAndName(teachers []*User) {
 		rightID := ""
 
 		if left != nil {
-			leftPoints = left.TotalPoints
+			leftPoints = sumPointsByCategories(left.PointsByCategories)
 			leftName = strings.TrimSpace(left.FirstName + " " + left.LastName)
 			leftID = left.KeycloakID.String()
 		}
 		if right != nil {
-			rightPoints = right.TotalPoints
+			rightPoints = sumPointsByCategories(right.PointsByCategories)
 			rightName = strings.TrimSpace(right.FirstName + " " + right.LastName)
 			rightID = right.KeycloakID.String()
 		}
@@ -539,19 +539,24 @@ func (s *userService) toServiceUsers(ctx context.Context, dbUsers []storage.User
 			return nil, err
 		}
 
+		pointsByCategories, err := decodePointsByCategories(dbUser.PointsByCategories)
+		if err != nil {
+			return nil, err
+		}
+
 		users = append(users, &User{
-			KeycloakID:  dbUser.KeycloakID,
-			Email:       dbUser.Email,
-			Username:    dbUser.Username,
-			FirstName:   firstName,
-			LastName:    lastName,
-			Role:        string(dbUser.Role),
-			Phone:       phone,
-			Departments: departments,
-			Permissions: permissions,
-			TotalPoints: dbUser.TotalPoints,
-			Violation:   string(dbUser.Violation),
-			Violations:  violations,
+			KeycloakID:         dbUser.KeycloakID,
+			Email:              dbUser.Email,
+			Username:           dbUser.Username,
+			FirstName:          firstName,
+			LastName:           lastName,
+			Role:               string(dbUser.Role),
+			Phone:              phone,
+			Departments:        departments,
+			Permissions:        permissions,
+			PointsByCategories: pointsByCategories,
+			Violation:          string(dbUser.Violation),
+			Violations:         violations,
 		})
 	}
 	return users, nil
@@ -602,19 +607,24 @@ func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*U
 		return nil, err
 	}
 
+	pointsByCategories, err := decodePointsByCategories(user.PointsByCategories)
+	if err != nil {
+		return nil, err
+	}
+
 	return &User{
-		KeycloakID:  user.KeycloakID,
-		Email:       user.Email,
-		Username:    user.Username,
-		FirstName:   firstName,
-		LastName:    lastName,
-		Role:        string(user.Role),
-		Phone:       phone,
-		Departments: mappedDepartments,
-		Permissions: permissions,
-		TotalPoints: user.TotalPoints,
-		Violation:   string(user.Violation),
-		Violations:  violations,
+		KeycloakID:         user.KeycloakID,
+		Email:              user.Email,
+		Username:           user.Username,
+		FirstName:          firstName,
+		LastName:           lastName,
+		Role:               string(user.Role),
+		Phone:              phone,
+		Departments:        mappedDepartments,
+		Permissions:        permissions,
+		PointsByCategories: pointsByCategories,
+		Violation:          string(user.Violation),
+		Violations:         violations,
 	}, nil
 }
 
@@ -727,7 +737,7 @@ func (s *userService) CreatePenalty(ctx context.Context, methodistID uuid.UUID, 
 		return nil, err
 	}
 
-	if err = s.repo.UpdateUserTotalPoints(ctx, teacherID, -points); err != nil {
+	if err = s.repo.AdjustUserCategoryPoints(ctx, teacherID, violationsAndPenaltiesCategoryKey, -points); err != nil {
 		return nil, err
 	}
 
@@ -782,7 +792,7 @@ func (s *userService) DeletePenaltyByIDAndTeacherID(ctx context.Context, penalty
 	}
 
 	if penaltyPoints != 0 {
-		if err = s.repo.UpdateUserTotalPoints(ctx, teacherID, penaltyPoints); err != nil {
+		if err = s.repo.AdjustUserCategoryPoints(ctx, teacherID, violationsAndPenaltiesCategoryKey, penaltyPoints); err != nil {
 			return err
 		}
 	}
@@ -839,6 +849,7 @@ func (s *userService) IssueViolation(ctx context.Context, issuedByID uuid.UUID, 
 	updatedUser, err := s.repo.ApplyViolationToUser(ctx, storage.ApplyViolationToUserParams{
 		ViolationID: dbViolation.ID,
 		KeycloakID:  userID,
+		CategoryKey: violationsAndPenaltiesCategoryKey,
 	})
 	if err != nil {
 		return nil, err
@@ -929,6 +940,7 @@ func (s *userService) DeleteViolation(ctx context.Context, issuedByID uuid.UUID,
 	_, err = s.repo.RemoveViolationFromUser(ctx, storage.RemoveViolationFromUserParams{
 		ViolationID: violationID,
 		KeycloakID:  userID,
+		CategoryKey: violationsAndPenaltiesCategoryKey,
 	})
 	return err
 }

@@ -1,4 +1,5 @@
 import type { CriteriaMethodEnum } from '../award.type'
+import type { IAward } from '../award.type'
 import type { LocaleText, LocalizedText } from '../locale.type'
 import type { ICategoryMultiFieldRowValue, ICategoryResponse } from './categories.service.type'
 
@@ -27,7 +28,7 @@ export interface IVariantRequest {
 	name: LocaleText
 	description: LocaleText | null
 	criteria: ICriteriaRequest[]
-	bonusCriteria: ICriteriaRequest[]
+	bonus_criteria: ICriteriaRequest[]
 }
 
 export interface ICriteriaRequest {
@@ -63,6 +64,28 @@ export interface IDepartmentRatingResponse {
 	name: LocalizedText
 	totalPoints: number
 	userCount: number
+}
+
+export interface IReviewTeacherSummaryResponse {
+	keycloakId: string
+	firstName: string
+	lastName: string
+	username: string
+	totalPoints: number
+	reviewAwardsCount: number
+}
+
+export interface IAwardUserKpiCategorySummaryResponse {
+	categoryId: string
+	category?: ICategoryResponse
+	currentPoints: number
+	pendingPoints: number
+	awards: IAward[]
+}
+
+export interface IAwardUserKpiSummaryResponse {
+	currentPoints: number
+	categories: IAwardUserKpiCategorySummaryResponse[]
 }
 
 export type IAwardCategoryResponse = ICategoryResponse

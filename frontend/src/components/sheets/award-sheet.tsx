@@ -31,7 +31,12 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const openPageButtonRef = useRef<HTMLAnchorElement | null>(null)
-	const totalPoints = award?.status !== StatusEnum.APPROVED ? t.award.pointsAfterApprove : award.totalPoints
+	const totalPoints =
+		award?.status === StatusEnum.IN_REVIEW
+			? award.criteria.points[0] ?? award.totalPoints
+			: award?.status !== StatusEnum.APPROVED
+				? t.award.pointsAfterApprove
+				: award.totalPoints
 	const category = award?.category ?? null
 	const categoryName = category ? getLocaleText(category.name, locale) : ''
 	const categoryDescription = category?.description ? getLocaleText(category.description, locale) : ''
@@ -171,7 +176,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 										{award.teacher ? (
 											<Link
 												className='hover:underline hover:text-primary font-semibold'
-												href={`/users/${award.teacher.keycloakId}`}
+												href={`/users/${award.teacher.keycloakId}?tab=kpi`}
 											>
 												{award.teacher.firstName} {award.teacher.lastName}
 											</Link>
@@ -185,7 +190,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 										{award.methodist ? (
 											<Link
 												className='hover:underline hover:text-primary font-semibold'
-												href={`/users/${award.methodist.keycloakId}`}
+												href={`/users/${award.methodist.keycloakId}?tab=kpi`}
 											>
 												{award.methodist.firstName} {award.methodist.lastName}
 											</Link>

@@ -4,7 +4,7 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { getLocaleText, getUILocaleSection, normalizeViolation } from '@helpers'
+import { getLocaleText, getUILocaleSection, getUserTotalPoints, normalizeViolation } from '@helpers'
 import { TableCell, TableRow, Tooltip, TooltipContent, TooltipTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type IUser, ViolationEnum } from '@types'
@@ -48,6 +48,7 @@ export const RatingUserRow: FC<IProps> = ({ index, user }) => {
 	)[0]
 	const hasViolation = (user.violation && user.violation !== ViolationEnum.NONE) || violations.length > 0
 	const fullName = `${user.firstName} ${user.lastName}`.trim()
+	const totalPoints = getUserTotalPoints(user)
 
 	return (
 		<TableRow className={placeStyle}>
@@ -101,7 +102,7 @@ export const RatingUserRow: FC<IProps> = ({ index, user }) => {
 			</TableCell>
 
 			<TableCell className='pr-10 text-right text-base font-semibold whitespace-nowrap'>
-				{user.totalPoints ?? 0}
+				{totalPoints}
 			</TableCell>
 		</TableRow>
 	)

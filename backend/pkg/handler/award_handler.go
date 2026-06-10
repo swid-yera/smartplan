@@ -99,6 +99,40 @@ func (h *AwardHandler) GetAwardDepartments(c *gin.Context) {
 	c.JSON(http.StatusOK, departments)
 }
 
+func (h *AwardHandler) GetReviewTeachers(c *gin.Context) {
+	teachers, err := h.service.GetReviewTeachers(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
+		return
+	}
+
+	c.JSON(http.StatusOK, teachers)
+}
+
+func (h *AwardHandler) GetUserAwardsSummary(c *gin.Context) {
+	userIDParam := c.Param("user_id")
+	userID, err := uuid.Parse(userIDParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid user_id")})
+		return
+	}
+
+	summary, err := h.service.GetUserAwardsSummary(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
+		return
+	}
+
+	for categoryIndex := range summary.Categories {
+		for awardIndex := range summary.Categories[categoryIndex].Awards {
+			summary.Categories[categoryIndex].Awards[awardIndex] =
+				h.resolveAwardFieldValues(c.Request.Context(), summary.Categories[categoryIndex].Awards[awardIndex])
+		}
+	}
+
+	c.JSON(http.StatusOK, summary)
+}
+
 func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 	idParam := c.Param("id")
 
@@ -141,11 +175,12 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status      storage.AwardsStatus `json:"status"`
-		Reason      pgtype.Text          `json:"reason"`
-		Variant     pgtype.UUID          `json:"variant"`
-		Criteria    pgtype.UUID          `json:"criteria"`
-		TotalPoints int32                `json:"totalPoints"`
+		Status        storage.AwardsStatus `json:"status"`
+		Reason        pgtype.Text          `json:"reason"`
+		Variant       pgtype.UUID          `json:"variant"`
+		Criteria      pgtype.UUID          `json:"criteria"`
+		BonusCriteria *string              `json:"bonusCriteria"`
+		TotalPoints   int32                `json:"totalPoints"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -177,17 +212,31 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		methodist = parseUUIDPgtype(currentUser.KeycloakID.String())
 	}
 
-	params := storage.UpdateAwardStatusParams{
-		ID:          id,
-		Status:      req.Status,
-		Reason:      req.Reason,
-		Methodist:   methodist,
-		Variant:     req.Variant,
-		Criteria:    req.Criteria,
-		TotalPoints: req.TotalPoints,
+	bonusCriteria := pgtype.UUID{Valid: false}
+	bonusCriteriaTouched := false
+	if req.BonusCriteria != nil {
+		bonusCriteriaTouched = true
+		if *req.BonusCriteria != "" {
+			bonusCriteria = parseUUIDPgtype(*req.BonusCriteria)
+			if !bonusCriteria.Valid {
+				c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid BonusCriteriaID UUID format")})
+				return
+			}
+		}
 	}
 
-	award, err := h.service.UpdateAwardStatus(c.Request.Context(), params)
+	params := service.UpdateAwardStatusRequest{
+		Status:               req.Status,
+		Reason:               req.Reason,
+		Methodist:            methodist,
+		Variant:              req.Variant,
+		Criteria:             req.Criteria,
+		BonusCriteria:        bonusCriteria,
+		BonusCriteriaTouched: bonusCriteriaTouched,
+		TotalPoints:          req.TotalPoints,
+	}
+
+	award, err := h.service.UpdateAwardStatus(c.Request.Context(), id, params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return

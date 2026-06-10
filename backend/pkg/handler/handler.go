@@ -188,6 +188,8 @@ func (r *Router) Init() *gin.Engine {
 				r.award.GetAwardsPaginated(c)
 			})
 			awards.GET("/departments", middleware.RequirePermission(service.PermKPIView), r.award.GetAwardDepartments)
+			awards.GET("/review-teachers", middleware.RequirePermission(service.PermKPIManage), r.award.GetReviewTeachers)
+			awards.GET("/users/:user_id/summary", middleware.RequirePermission(service.PermKPIView), r.award.GetUserAwardsSummary)
 			awards.GET("/:id", middleware.RequirePermission(service.PermKPIView), r.award.GetAwardByID)
 
 			// создание/редактирование награды — право управления KPI

@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 
 import {
+	getUserTotalPoints,
 	getLocaleText,
 	getUILocaleSection,
 	normalizeTotalPoints,
@@ -37,6 +38,7 @@ export const UserCard: FC<IUserMainProps> = ({
 	const me = useAuthStore((state) => state.user)
 	const t = getUILocaleSection(localeDictionary, locale).userCard
 	const shouldShowTotalPoints = showTotalPoints || me?.role !== RoleEnum.TEACHER
+	const totalPoints = getUserTotalPoints(user)
 	const departmentNames = (user.departments ?? [])
 		.map((department) => getLocaleText(department.name, locale))
 		.filter(Boolean)
@@ -110,7 +112,7 @@ export const UserCard: FC<IUserMainProps> = ({
 					{shouldShowTotalPoints && (
 						<div className='space-y-1'>
 							<p className='text-sm font-medium text-muted-foreground'>{t.totalPoints}</p>
-							<p className='text-primary'>{normalizeTotalPoints(user.totalPoints ?? 0, locale)}</p>
+							<p className='text-primary'>{normalizeTotalPoints(totalPoints, locale)}</p>
 						</div>
 					)}
 				</div>

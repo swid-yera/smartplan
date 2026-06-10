@@ -3,15 +3,33 @@
 import { type FC, useEffect, useMemo, useState } from 'react'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-import { getUILocaleSection, normalizeTotalPoints, normalizeUserRole } from '@helpers'
+import { Loader } from '@components'
+import { getUILocaleSection, getUserTotalPoints, normalizeTotalPoints, normalizeUserRole } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Separator, Skeleton } from '@shadcn'
-import { useLocaleStore } from '@store'
+import {
+	Badge,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+	Input,
+	Separator,
+	Skeleton,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@shadcn'
+import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { type IUser } from '@types'
-import { ArrowRight, Search } from 'lucide-react'
+import { type IReviewTeacherSummaryResponse, type IUser } from '@types'
+import { ArrowRight, FileSearch, Search, User } from 'lucide-react'
 
 import localeDictionary from './locale.json'
 
@@ -32,9 +50,12 @@ const useDebouncedValue = (value: string, delay = 300) => {
 	return debouncedValue
 }
 
-export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' }) => {
+export const KpiTeachersHubCard: FC<IProps> = ({ className, profileTab = 'kpi' }) => {
 	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale).userSearch
+	const user = useAuthStore((state) => state.user)
+	const t = getUILocaleSection(localeDictionary, locale)
+	const searchT = t.userSearch
+	const reviewT = t.reviewTeachers
 	const [searchInput, setSearchInput] = useState('')
 	const [panelMounted, setPanelMounted] = useState(false)
 	const [panelVisible, setPanelVisible] = useState(false)
@@ -49,10 +70,15 @@ export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' })
 			pageSize: 5,
 			search: debouncedSearch,
 		}),
-		enabled: shouldSearch,
+		enabled: shouldSearch && !!user,
+	})
+	const { data: reviewTeachers = [], isLoading: isReviewTeachersLoading } = useQuery({
+		...services.award.getReviewTeachersOptions(),
+		enabled: !!user,
 	})
 
 	const teacherUsers = useMemo(() => usersData?.data.filter((user) => user.role) ?? [], [usersData])
+	const hasReviewTeachers = reviewTeachers.length > 0
 
 	useEffect(() => {
 		let openTimer: ReturnType<typeof setTimeout> | undefined
@@ -74,6 +100,7 @@ export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' })
 
 	const renderUserRow = (user: IUser) => {
 		const fullName = `${user.firstName} ${user.lastName}`.trim()
+		const totalPoints = getUserTotalPoints(user)
 
 		return (
 			<Link
@@ -88,7 +115,7 @@ export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' })
 
 				<div className='flex shrink-0 items-center gap-2'>
 					<Badge variant='secondary'>{normalizeUserRole(user.role, locale)}</Badge>
-					<Badge variant='outline'>{normalizeTotalPoints(user.totalPoints ?? 0, locale)}</Badge>
+					<Badge variant='outline'>{normalizeTotalPoints(totalPoints, locale)}</Badge>
 					<ArrowRight className='h-4 w-4 text-muted-foreground' />
 				</div>
 			</Link>
@@ -100,18 +127,18 @@ export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' })
 			<CardHeader className='space-y-1 pb-3'>
 				<CardTitle className='flex items-center gap-2 text-base'>
 					<Search className='h-5 w-5 text-primary' />
-					{t.title}
+					{searchT.title}
 				</CardTitle>
-				<CardDescription className='text-sm'>{t.description}</CardDescription>
+				<CardDescription className='text-sm'>{searchT.description}</CardDescription>
 			</CardHeader>
 
-			<CardContent className='space-y-3'>
+			<CardContent className='space-y-6'>
 				<div className='relative w-full max-w-xs sm:max-w-sm'>
-					<label className='text-xs font-medium text-muted-foreground'>{t.label}</label>
+					<label className='text-xs font-medium text-muted-foreground'>{searchT.label}</label>
 					<Input
 						autoComplete='off'
 						className='h-9'
-						placeholder={t.placeholder}
+						placeholder={searchT.placeholder}
 						value={searchInput}
 						onChange={(e) => setSearchInput(e.target.value)}
 					/>
@@ -144,8 +171,8 @@ export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' })
 										</div>
 									) : (
 										<div className='p-3 text-sm text-muted-foreground'>
-											<p>{t.empty}</p>
-											<p>{t.emptyHint}</p>
+											<p>{searchT.empty}</p>
+											<p>{searchT.emptyHint}</p>
 										</div>
 									)}
 								</div>
@@ -153,7 +180,158 @@ export const KpiUserSearchCard: FC<IProps> = ({ className, profileTab = 'kpi' })
 						</div>
 					)}
 				</div>
+
+				<div className='space-y-3 rounded-xl border bg-muted/20 p-4'>
+					<div className='flex items-start justify-between gap-3'>
+						<div className='space-y-1'>
+							<div className='flex items-center gap-2'>
+								<FileSearch className='h-4 w-4 text-primary' />
+								<p className='text-sm font-semibold'>{reviewT.title}</p>
+							</div>
+							<p className='text-xs text-muted-foreground'>{reviewT.description}</p>
+						</div>
+						<Badge variant='secondary'>{reviewTeachers.length}</Badge>
+					</div>
+
+					<div className='relative hidden w-full overflow-x-auto md:block'>
+						<Table className='min-w-180'>
+							<TableHeader>
+								<TableRow>
+									<TableHead className='pl-4 font-semibold'>{reviewT.fullName}</TableHead>
+									<TableHead className='font-semibold'>{reviewT.login}</TableHead>
+									<TableHead className='font-semibold'>{reviewT.points}</TableHead>
+									<TableHead className='font-semibold'>{reviewT.count}</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{hasReviewTeachers ? (
+									reviewTeachers.map((teacher) => (
+										<ReviewTeacherRow key={teacher.keycloakId} teacher={teacher} />
+									))
+								) : (
+									<TableRow>
+										<TableCell className='h-32 text-center' colSpan={4}>
+											{isReviewTeachersLoading ? (
+												<Loader
+													className='flex flex-col items-center justify-center'
+													fullScreen={false}
+													type='data'
+												/>
+											) : (
+												reviewT.empty
+											)}
+										</TableCell>
+									</TableRow>
+								)}
+							</TableBody>
+						</Table>
+					</div>
+
+					<div className='space-y-3 md:hidden'>
+						{hasReviewTeachers ? (
+							reviewTeachers.map((teacher) => (
+								<ReviewTeacherMobileCard key={teacher.keycloakId} teacher={teacher} />
+							))
+						) : (
+							<div className='flex min-h-28 items-center justify-center rounded-xl border bg-background px-4 text-center text-sm text-muted-foreground'>
+								{isReviewTeachersLoading ? (
+									<Loader
+										className='flex flex-col items-center justify-center'
+										fullScreen={false}
+										type='data'
+									/>
+								) : (
+									reviewT.empty
+								)}
+							</div>
+						)}
+					</div>
+				</div>
 			</CardContent>
 		</Card>
+	)
+}
+
+interface IReviewTeacherRowProps {
+	teacher: IReviewTeacherSummaryResponse
+}
+
+const ReviewTeacherRow: FC<IReviewTeacherRowProps> = ({ teacher }) => {
+	const router = useRouter()
+	const locale = useLocaleStore((state) => state.locale)
+
+	const fullName = `${teacher.firstName} ${teacher.lastName}`.trim() || '—'
+
+	return (
+		<TableRow
+			className='cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70'
+			role='button'
+			tabIndex={0}
+			onClick={() => router.push(`/users/${teacher.keycloakId}?tab=kpi`)}
+			onKeyDown={(event) => {
+				if (event.key !== 'Enter' && event.key !== ' ') return
+				event.preventDefault()
+				router.push(`/users/${teacher.keycloakId}?tab=kpi`)
+			}}
+		>
+			<TableCell className='pl-4 font-medium'>
+				<div className='flex items-center gap-3'>
+					<div className='flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary'>
+						<User className='h-5 w-5' />
+					</div>
+					<div className='min-w-0'>
+						<p className='truncate font-medium capitalize'>{fullName}</p>
+					</div>
+				</div>
+			</TableCell>
+			<TableCell className='font-medium'>{teacher.username}</TableCell>
+			<TableCell>
+				<Badge variant='outline'>
+					{teacher.totalPoints.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}
+				</Badge>
+			</TableCell>
+			<TableCell>
+				<Badge variant='secondary'>
+					{teacher.reviewAwardsCount.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}
+				</Badge>
+			</TableCell>
+		</TableRow>
+	)
+}
+
+interface IReviewTeacherMobileCardProps {
+	teacher: IReviewTeacherSummaryResponse
+}
+
+const ReviewTeacherMobileCard: FC<IReviewTeacherMobileCardProps> = ({ teacher }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const fullName = `${teacher.firstName} ${teacher.lastName}`.trim() || '—'
+
+	return (
+		<Link
+			className='block rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40'
+			href={`/users/${teacher.keycloakId}?tab=kpi`}
+		>
+			<div className='flex items-start gap-3'>
+				<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
+					<User className='h-5 w-5' />
+				</div>
+				<div className='min-w-0 flex-1'>
+					<p className='truncate font-medium capitalize'>{fullName}</p>
+					<p className='truncate text-xs text-muted-foreground'>{teacher.username}</p>
+					<div className='mt-3 flex items-center justify-between gap-2'>
+						<div className='flex items-center gap-2'>
+							<Badge variant='outline'>
+								{teacher.totalPoints.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}
+							</Badge>
+							<Badge variant='secondary'>
+								{teacher.reviewAwardsCount.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}
+							</Badge>
+						</div>
+						<ArrowRight className='h-4 w-4 text-muted-foreground' />
+					</div>
+				</div>
+			</div>
+		</Link>
 	)
 }

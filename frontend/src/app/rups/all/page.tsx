@@ -11,7 +11,7 @@ import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, type StatusEnum } from '@types'
 
-import { KpiUserSearchCard } from '../../kpi/components'
+import { KpiTeachersHubCard } from '../../kpi/components'
 import { RupsFilterCard } from '../components'
 import {
 	buildRupFilterSearchParams,
@@ -93,7 +93,7 @@ const Page = () => {
 		<section className='p-4 w-full space-y-4'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 
-			<KpiUserSearchCard profileTab='rups' />
+			<KpiTeachersHubCard profileTab='rups' />
 
 			<RupsFilterCard className='mb-4' />
 

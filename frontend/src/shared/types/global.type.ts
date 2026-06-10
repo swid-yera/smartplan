@@ -57,7 +57,7 @@ export interface IUser {
 	departments?: IUserDepartment[]
 
 	rups?: IRup[]
-	totalPoints?: number
+	pointsByCategories?: Record<string, number>
 	awards?: IAward[]
 	violation?: ViolationEnum
 	violations?: IViolationRecord[]

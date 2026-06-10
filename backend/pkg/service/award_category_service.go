@@ -740,11 +740,19 @@ func validateFieldValueType(field storage.AwardCategoryField, value any) error {
 	key := field.Key
 
 	switch fieldType {
-	case "text", "textarea", "date", "group":
+	case "text", "textarea", "date":
 		if _, ok := value.(string); !ok {
 			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
 		}
 		if field.Required && strings.TrimSpace(value.(string)) == "" {
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
+		}
+	case "group":
+		strValue, ok := value.(string)
+		if !ok {
+			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
+		}
+		if strings.TrimSpace(strValue) == "" {
 			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
 		}
 	case "url":
@@ -861,11 +869,20 @@ func normalizeMultiFieldRows(value any) ([]map[string]any, error) {
 func normalizeMultiFieldChildValue(parentKey string, option AwardCategoryMultiFieldOption, value any) (any, error) {
 	key := fmt.Sprintf("%s.%s", parentKey, option.Key)
 	switch option.Type {
-	case "text", "textarea", "date", "group":
+	case "text", "textarea", "date":
 		if _, ok := value.(string); !ok {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
 		}
 		if option.Required && strings.TrimSpace(value.(string)) == "" {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
+		}
+		return value, nil
+	case "group":
+		strValue, ok := value.(string)
+		if !ok {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
+		}
+		if strings.TrimSpace(strValue) == "" {
 			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
 		}
 		return value, nil

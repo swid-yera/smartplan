@@ -11,7 +11,7 @@ import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, type StatusEnum } from '@types'
 
-import { AwardFilterCard, KpiUserSearchCard } from '../components'
+import { AwardFilterCard, KpiTeachersHubCard } from '../components'
 import {
 	buildAwardFilterSearchParams,
 	getAwardFilterStateFromSearchParams,
@@ -106,11 +106,10 @@ const Page = () => {
 		<section className='p-4 w-full space-y-4'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 
-			{canSearchUsers && <KpiUserSearchCard />}
+			{canSearchUsers && <KpiTeachersHubCard />}
 
 			{/* фильтр и поиск */}
 			<AwardFilterCard compact className='mb-4' />
-
 			{/* список наград */}
 			<AwardsCard awards={awardsData?.data || []} isLoading={!awardsData && isAwardsLoading} title={t.listTitle} />
 

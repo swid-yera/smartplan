@@ -28,7 +28,7 @@ type UsersRepository interface {
 	GetDepartmentsByUserID(ctx context.Context, userID uuid.UUID) ([]storage.Department, error)
 	GetDepartmentsForUsers(ctx context.Context, userIDs []uuid.UUID) ([]storage.GetDepartmentsForUsersRow, error)
 
-	UpdateUserTotalPoints(ctx context.Context, teacher uuid.UUID, points int32) error
+	AdjustUserCategoryPoints(ctx context.Context, userID uuid.UUID, categoryKey string, pointsDelta int32) error
 	CreatePenalty(ctx context.Context, params storage.CreatePenaltyParams) error
 	GetPenaltiesByTeacherID(ctx context.Context, teacherID uuid.UUID) ([]storage.Penalty, error)
 	GetPenaltyByIDAndTeacherID(ctx context.Context, params storage.GetPenaltyByIDAndTeacherIDParams) (storage.Penalty, error)
