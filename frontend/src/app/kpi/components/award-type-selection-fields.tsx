@@ -4,7 +4,7 @@ import { getLocaleText, interpolateUILocaleText } from '@helpers'
 import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shadcn'
 import type { ICriteriaResponse, ITypeResponse, IVariantResponse, Locale } from '@types'
 
-type BonusCriteriaOptionsSource = 'bonus' | 'criteria'
+const NO_BONUS_CRITERIA_VALUE = '__none__'
 
 type AwardTypeSelectionFieldsProps = {
 	availableTypes: ITypeResponse[]
@@ -26,6 +26,7 @@ type AwardTypeSelectionFieldsProps = {
 		criteriaPlaceholder: string
 		bonusCriteriaLabel: string
 		bonusCriteriaPlaceholder: string
+		noBonusCriteria: string
 		selectTypeHint: string
 		selectVariantHint: string
 		criteriaPoints: string
@@ -34,7 +35,6 @@ type AwardTypeSelectionFieldsProps = {
 	layout?: 'stack' | 'grid'
 	showVariantDescription?: boolean
 	showHints?: boolean
-	bonusCriteriaOptionsSource?: BonusCriteriaOptionsSource
 }
 
 export const AwardTypeSelectionFields = ({
@@ -53,7 +53,6 @@ export const AwardTypeSelectionFields = ({
 	layout = 'stack',
 	showVariantDescription = false,
 	showHints = false,
-	bonusCriteriaOptionsSource = 'bonus',
 }: AwardTypeSelectionFieldsProps) => {
 	const isCriteriaValidInList = (criteria: ICriteriaResponse | null, list: ICriteriaResponse[] | null | undefined) =>
 		!!criteria && !!list?.some((item) => item.id === criteria.id)
@@ -77,18 +76,18 @@ export const AwardTypeSelectionFields = ({
 		}
 
 		const criteriaList = nextVariant?.criteria || []
+
 		if (!isCriteriaValidInList(selectedCriteria, criteriaList)) {
 			setSelectedCriteria(criteriaList.length === 1 ? criteriaList[0] : null)
 		}
 
-		const bonusCriteriaList =
-			bonusCriteriaOptionsSource === 'criteria' ? criteriaList : nextVariant?.bonus_criteria || []
+		const bonusCriteriaList = nextVariant?.bonus_criteria || []
+
 		if (!isCriteriaValidInList(selectedBonusCriteria, bonusCriteriaList)) {
-			setSelectedBonusCriteria(bonusCriteriaList.length === 1 ? bonusCriteriaList[0] : null)
+			setSelectedBonusCriteria(null)
 		}
 	}, [
 		availableTypes,
-		bonusCriteriaOptionsSource,
 		selectedBonusCriteria,
 		selectedCriteria,
 		selectedType,
@@ -111,14 +110,15 @@ export const AwardTypeSelectionFields = ({
 			setSelectedVariant(nextVariant)
 
 			const criteriaList = nextVariant?.criteria || []
+
 			if (!isCriteriaValidInList(selectedCriteria, criteriaList)) {
 				setSelectedCriteria(criteriaList.length === 1 ? criteriaList[0] : null)
 			}
 
-			const bonusCriteriaList =
-				bonusCriteriaOptionsSource === 'criteria' ? criteriaList : nextVariant?.bonus_criteria || []
+			const bonusCriteriaList = nextVariant?.bonus_criteria || []
+
 			if (!isCriteriaValidInList(selectedBonusCriteria, bonusCriteriaList)) {
-				setSelectedBonusCriteria(bonusCriteriaList.length === 1 ? bonusCriteriaList[0] : null)
+				setSelectedBonusCriteria(null)
 			}
 
 			return
@@ -133,17 +133,17 @@ export const AwardTypeSelectionFields = ({
 		setSelectedVariant(onlyVariant)
 
 		const criteriaList = onlyVariant.criteria || []
+
 		if (!isCriteriaValidInList(selectedCriteria, criteriaList)) {
 			setSelectedCriteria(criteriaList.length === 1 ? criteriaList[0] : null)
 		}
 
-		const bonusCriteriaList =
-			bonusCriteriaOptionsSource === 'criteria' ? criteriaList : onlyVariant.bonus_criteria || []
+		const bonusCriteriaList = onlyVariant.bonus_criteria || []
+
 		if (!isCriteriaValidInList(selectedBonusCriteria, bonusCriteriaList)) {
-			setSelectedBonusCriteria(bonusCriteriaList.length === 1 ? bonusCriteriaList[0] : null)
+			setSelectedBonusCriteria(null)
 		}
 	}, [
-		bonusCriteriaOptionsSource,
 		selectedCriteria,
 		selectedBonusCriteria,
 		selectedType,
@@ -174,6 +174,17 @@ export const AwardTypeSelectionFields = ({
 		setSelectedCriteria(onlyCriteria)
 	}, [selectedVariant, selectedCriteria, setSelectedCriteria])
 
+	useEffect(() => {
+		if (!selectedVariant) return
+
+		const bonusCriteriaList = selectedVariant.bonus_criteria || []
+
+		if (!selectedBonusCriteria) return
+		if (bonusCriteriaList.some((criteria) => criteria.id === selectedBonusCriteria.id)) return
+
+		setSelectedBonusCriteria(null)
+	}, [selectedBonusCriteria, selectedVariant, setSelectedBonusCriteria])
+
 	const variantField = (
 		<div className='space-y-2'>
 			<Label htmlFor='variant'>{labels.variantLabel}</Label>
@@ -185,6 +196,7 @@ export const AwardTypeSelectionFields = ({
 
 					setSelectedVariant(variant)
 					setSelectedCriteria(null)
+					setSelectedBonusCriteria(null)
 				}}
 			>
 				<SelectTrigger className='w-full' id='variant'>
@@ -237,8 +249,7 @@ export const AwardTypeSelectionFields = ({
 		</div>
 	)
 
-	const bonusCriteriaOptions =
-		bonusCriteriaOptionsSource === 'criteria' ? selectedVariant?.criteria || [] : selectedVariant?.bonus_criteria || []
+	const bonusCriteriaOptions = selectedVariant?.bonus_criteria || []
 
 	return (
 		<>
@@ -285,8 +296,14 @@ export const AwardTypeSelectionFields = ({
 				<div className='space-y-2'>
 					<Label htmlFor='bonus-criteria'>{labels.bonusCriteriaLabel}</Label>
 					<Select
-						value={selectedBonusCriteria?.id || ''}
+						value={selectedBonusCriteria?.id || NO_BONUS_CRITERIA_VALUE}
 						onValueChange={(id: string) => {
+							if (id === NO_BONUS_CRITERIA_VALUE) {
+								setSelectedBonusCriteria(null)
+
+								return
+							}
+
 							const criteria = selectedVariant.bonus_criteria?.find((item) => item.id === id) || null
 
 							setSelectedBonusCriteria(criteria)
@@ -296,6 +313,7 @@ export const AwardTypeSelectionFields = ({
 							<SelectValue placeholder={labels.bonusCriteriaPlaceholder} />
 						</SelectTrigger>
 						<SelectContent>
+							<SelectItem value={NO_BONUS_CRITERIA_VALUE}>{labels.noBonusCriteria}</SelectItem>
 							{bonusCriteriaOptions.map((criteria) => (
 								<SelectItem key={criteria.id} value={criteria.id}>
 									{getLocaleText(criteria.name, locale)}{' '}

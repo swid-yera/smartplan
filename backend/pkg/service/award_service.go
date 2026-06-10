@@ -136,6 +136,17 @@ type UpdateAwardRequest struct {
 	TotalPoints   int32       `json:"totalPoints"`
 }
 
+type UpdateAwardStatusRequest struct {
+	Status               storage.AwardsStatus `json:"status"`
+	Reason               pgtype.Text          `json:"reason"`
+	Methodist            pgtype.UUID          `json:"methodist"`
+	Variant              pgtype.UUID          `json:"variant"`
+	Criteria             pgtype.UUID          `json:"criteria"`
+	BonusCriteria        pgtype.UUID          `json:"bonusCriteria"`
+	BonusCriteriaTouched bool                 `json:"-"`
+	TotalPoints          int32                `json:"totalPoints"`
+}
+
 // AwardServiceInterface — интерфейс для бизнес-логики наград.
 // Позволяет подменять реализацию в тестах и сохраняет единообразие с другими сервисами.
 type AwardServiceInterface interface {
@@ -144,7 +155,7 @@ type AwardServiceInterface interface {
 	GetAllAwards(ctx context.Context) ([]AwardResponse, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (AwardResponse, error)
 	UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error)
-	UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (AwardResponse, error)
+	UpdateAwardStatus(ctx context.Context, id uuid.UUID, params UpdateAwardStatusRequest) (AwardResponse, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
 	BuildSelected(ctx context.Context, award storage.Award) (AwardResponse, error)
 	GetAwardPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) (*PaginatedAwardsResponse, error)
@@ -212,6 +223,10 @@ func (s *AwardService) CreateAward(ctx context.Context, params *storage.CreateAw
 			s.log.Error("create award error: get award bonus criteria by id error: ", err)
 			return AwardResponse{}, err
 		}
+	}
+
+	if _, err = s.resolveAwardSelectionPoints(ctx, params.Variant, params.Criteria, params.BonusCriteria, nil); err != nil {
+		return AwardResponse{}, err
 	}
 
 	fieldValuesMap, err := s.normalizeFieldValuesInput(params.FieldValues)
@@ -340,6 +355,25 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 		return AwardResponse{}, err
 	}
 
+	if _, err = s.resolveAwardSelectionPoints(ctx, req.Variant, req.Criteria, req.BonusCriteria, nil); err != nil {
+		return AwardResponse{}, err
+	}
+
+	totalPoints := req.TotalPoints
+	if existingAward.Status == storage.AwardsStatusAPPROVED {
+		resolvedPoints, pointsErr := s.resolveAwardSelectionPoints(
+			ctx,
+			req.Variant,
+			req.Criteria,
+			req.BonusCriteria,
+			nil,
+		)
+		if pointsErr != nil {
+			return AwardResponse{}, pointsErr
+		}
+		totalPoints = resolvedPoints
+	}
+
 	// 2. Обновление основных полей Award
 	params := storage.UpdateAwardParams{
 		ID:            id,
@@ -349,7 +383,7 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 		BonusCriteria: req.BonusCriteria,
 		CategoryID:    categoryID,
 		FieldValues:   fieldValuesJSON,
-		TotalPoints:   req.TotalPoints,
+		TotalPoints:   totalPoints,
 	}
 
 	updatedAward, err := s.repo.UpdateAward(ctx, params)
@@ -369,32 +403,38 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 	return res, nil
 }
 
-func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.UpdateAwardStatusParams) (AwardResponse, error) {
+func (s *AwardService) UpdateAwardStatus(ctx context.Context, id uuid.UUID, params UpdateAwardStatusRequest) (AwardResponse, error) {
 
 	// 1. Получаем текущее состояние award
-	award, err := s.repo.GetAwardByID(ctx, params.ID)
+	award, err := s.repo.GetAwardByID(ctx, id)
 	if err != nil {
 		return AwardResponse{}, err
 	}
 
-	resolvedVariant, resolvedCriteria, resolvedTotalPoints, err := s.resolveAwardStatusPoints(ctx, award, params)
+	resolvedVariant, resolvedCriteria, resolvedBonusCriteria, resolvedTotalPoints, err := s.resolveAwardStatusPoints(
+		ctx,
+		award,
+		params,
+	)
 	if err != nil {
 		return AwardResponse{}, err
 	}
 
 	params.Variant = resolvedVariant
 	params.Criteria = resolvedCriteria
+	params.BonusCriteria = resolvedBonusCriteria
 	params.TotalPoints = resolvedTotalPoints
 
 	// 2. Обновляем статус
 	updatedAward, err := s.repo.UpdateAwardStatus(ctx, storage.UpdateAwardStatusParams{
-		ID:          params.ID,
-		Status:      params.Status,
-		Reason:      params.Reason,
-		Methodist:   params.Methodist,
-		Variant:     params.Variant,
-		Criteria:    params.Criteria,
-		TotalPoints: params.TotalPoints,
+		ID:            id,
+		Status:        params.Status,
+		Reason:        params.Reason,
+		Methodist:     params.Methodist,
+		Variant:       params.Variant,
+		Criteria:      params.Criteria,
+		BonusCriteria: params.BonusCriteria,
+		TotalPoints:   params.TotalPoints,
 	})
 	if err != nil {
 		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
@@ -413,7 +453,11 @@ func (s *AwardService) UpdateAwardStatus(ctx context.Context, params storage.Upd
 	return res, nil
 }
 
-func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award storage.Award, params storage.UpdateAwardStatusParams) (pgtype.UUID, pgtype.UUID, int32, error) {
+func (s *AwardService) resolveAwardStatusPoints(
+	ctx context.Context,
+	award storage.Award,
+	params UpdateAwardStatusRequest,
+) (pgtype.UUID, pgtype.UUID, pgtype.UUID, int32, error) {
 	resolvedVariant := award.Variant
 	if params.Variant.Valid {
 		resolvedVariant = params.Variant
@@ -424,13 +468,18 @@ func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award stora
 		resolvedCriteria = params.Criteria
 	}
 
+	resolvedBonusCriteria := award.BonusCriteria
+	if params.BonusCriteriaTouched {
+		resolvedBonusCriteria = params.BonusCriteria
+	}
+
 	if params.Status != storage.AwardsStatusAPPROVED {
-		return award.Variant, award.Criteria, 0, nil
+		return resolvedVariant, resolvedCriteria, resolvedBonusCriteria, 0, nil
 	}
 
 	dbType, err := s.repo.GetAwardTypeByID(ctx, award.Type.Bytes)
 	if err != nil {
-		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("failed to get award type: %w", err)
+		return pgtype.UUID{}, pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("failed to get award type: %w", err)
 	}
 
 	variantAllowed := false
@@ -441,49 +490,61 @@ func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award stora
 		}
 	}
 	if !variantAllowed {
-		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("selected variant does not belong to award type")
-	}
-
-	dbVariant, err := s.repo.GetAwardTypeVariantByID(ctx, resolvedVariant.Bytes)
-	if err != nil {
-		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("failed to get award variant: %w", err)
+		return pgtype.UUID{}, pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("selected variant does not belong to award type")
 	}
 
 	if !resolvedCriteria.Valid {
+		dbVariant, variantErr := s.repo.GetAwardTypeVariantByID(ctx, resolvedVariant.Bytes)
+		if variantErr != nil {
+			return pgtype.UUID{}, pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("failed to get award variant: %w", variantErr)
+		}
 		if len(dbVariant.Criteria) == 0 {
-			return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("criteria is required for approved award")
+			return pgtype.UUID{}, pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("criteria is required for approved award")
 		}
 		resolvedCriteria = pgtype.UUID{Bytes: dbVariant.Criteria[0], Valid: true}
 	}
 
-	isValidCriteria := false
-	for _, criteriaID := range dbVariant.Criteria {
-		if criteriaID == resolvedCriteria.Bytes {
-			isValidCriteria = true
-			break
+	resolvedTotalPoints, err := s.resolveAwardSelectionPoints(
+		ctx,
+		resolvedVariant,
+		resolvedCriteria,
+		resolvedBonusCriteria,
+		&params.TotalPoints,
+	)
+	if err != nil {
+		return pgtype.UUID{}, pgtype.UUID{}, pgtype.UUID{}, 0, err
+	}
+
+	return resolvedVariant, resolvedCriteria, resolvedBonusCriteria, resolvedTotalPoints, nil
+}
+
+func containsAwardUUID(list []uuid.UUID, target uuid.UUID) bool {
+	for _, item := range list {
+		if item == target {
+			return true
 		}
 	}
-	if !isValidCriteria {
-		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("selected criteria does not belong to award variant")
+
+	return false
+}
+
+func resolveCriteriaPoints(criteria storage.AwardTypeCriterium, requestedPoints *int32) (int32, error) {
+	if len(criteria.Points) == 0 {
+		return 0, fmt.Errorf("award criteria points are required")
 	}
 
-	dbCriteria, err := s.repo.GetAwardTypeCriteriaByID(ctx, resolvedCriteria.Bytes)
-	if err != nil {
-		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("failed to get award criteria: %w", err)
-	}
-
-	if len(dbCriteria.Points) == 0 {
-		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("award criteria points are required")
-	}
-
-	switch dbCriteria.Method {
+	switch criteria.Method {
 	case storage.EnumCriteriaMethodNORMAL:
-		return resolvedVariant, resolvedCriteria, dbCriteria.Points[0], nil
+		return criteria.Points[0], nil
 	case storage.EnumCriteriaMethodMEASURING:
-		minPoints := dbCriteria.Points[0]
-		maxPoints := dbCriteria.Points[len(dbCriteria.Points)-1]
-		resolvedPoints := params.TotalPoints
+		minPoints := criteria.Points[0]
+		maxPoints := criteria.Points[len(criteria.Points)-1]
 
+		if requestedPoints == nil {
+			return minPoints, nil
+		}
+
+		resolvedPoints := *requestedPoints
 		if resolvedPoints < minPoints {
 			resolvedPoints = minPoints
 		}
@@ -491,10 +552,72 @@ func (s *AwardService) resolveAwardStatusPoints(ctx context.Context, award stora
 			resolvedPoints = maxPoints
 		}
 
-		return resolvedVariant, resolvedCriteria, resolvedPoints, nil
+		return resolvedPoints, nil
 	default:
-		return pgtype.UUID{}, pgtype.UUID{}, 0, fmt.Errorf("unsupported criteria method")
+		return 0, fmt.Errorf("unsupported criteria method")
 	}
+}
+
+func resolveBonusCriteriaPoints(criteria storage.AwardTypeCriterium) (int32, error) {
+	if len(criteria.Points) == 0 {
+		return 0, fmt.Errorf("award bonus criteria points are required")
+	}
+
+	return criteria.Points[0], nil
+}
+
+func (s *AwardService) resolveAwardSelectionPoints(
+	ctx context.Context,
+	variantID pgtype.UUID,
+	criteriaID pgtype.UUID,
+	bonusCriteriaID pgtype.UUID,
+	requestedPoints *int32,
+) (int32, error) {
+	if !variantID.Valid {
+		return 0, fmt.Errorf("award variant is required")
+	}
+	if !criteriaID.Valid {
+		return 0, fmt.Errorf("criteria is required")
+	}
+
+	dbVariant, err := s.repo.GetAwardTypeVariantByID(ctx, variantID.Bytes)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get award variant: %w", err)
+	}
+
+	if !containsAwardUUID(dbVariant.Criteria, criteriaID.Bytes) {
+		return 0, fmt.Errorf("selected criteria does not belong to award variant")
+	}
+
+	dbCriteria, err := s.repo.GetAwardTypeCriteriaByID(ctx, criteriaID.Bytes)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get award criteria: %w", err)
+	}
+
+	totalPoints, err := resolveCriteriaPoints(dbCriteria, requestedPoints)
+	if err != nil {
+		return 0, err
+	}
+
+	if !bonusCriteriaID.Valid {
+		return totalPoints, nil
+	}
+
+	if !containsAwardUUID(dbVariant.BonusCriteria, bonusCriteriaID.Bytes) {
+		return 0, fmt.Errorf("selected bonus criteria does not belong to award variant")
+	}
+
+	dbBonusCriteria, err := s.repo.GetAwardTypeCriteriaByID(ctx, bonusCriteriaID.Bytes)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get award bonus criteria: %w", err)
+	}
+
+	bonusPoints, err := resolveBonusCriteriaPoints(dbBonusCriteria)
+	if err != nil {
+		return 0, err
+	}
+
+	return totalPoints + bonusPoints, nil
 }
 
 func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {

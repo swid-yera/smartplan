@@ -746,7 +746,8 @@ SET
     methodist = $4,
     variant = $5,
     criteria = $6,
-    total_points = $7,
+    bonus_criteria = $7,
+    total_points = $8,
     updated_at = NOW()
 WHERE
     id = $1;

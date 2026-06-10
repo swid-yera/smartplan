@@ -141,11 +141,12 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status      storage.AwardsStatus `json:"status"`
-		Reason      pgtype.Text          `json:"reason"`
-		Variant     pgtype.UUID          `json:"variant"`
-		Criteria    pgtype.UUID          `json:"criteria"`
-		TotalPoints int32                `json:"totalPoints"`
+		Status        storage.AwardsStatus `json:"status"`
+		Reason        pgtype.Text          `json:"reason"`
+		Variant       pgtype.UUID          `json:"variant"`
+		Criteria      pgtype.UUID          `json:"criteria"`
+		BonusCriteria *string              `json:"bonusCriteria"`
+		TotalPoints   int32                `json:"totalPoints"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -177,17 +178,31 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		methodist = parseUUIDPgtype(currentUser.KeycloakID.String())
 	}
 
-	params := storage.UpdateAwardStatusParams{
-		ID:          id,
-		Status:      req.Status,
-		Reason:      req.Reason,
-		Methodist:   methodist,
-		Variant:     req.Variant,
-		Criteria:    req.Criteria,
-		TotalPoints: req.TotalPoints,
+	bonusCriteria := pgtype.UUID{Valid: false}
+	bonusCriteriaTouched := false
+	if req.BonusCriteria != nil {
+		bonusCriteriaTouched = true
+		if *req.BonusCriteria != "" {
+			bonusCriteria = parseUUIDPgtype(*req.BonusCriteria)
+			if !bonusCriteria.Valid {
+				c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid BonusCriteriaID UUID format")})
+				return
+			}
+		}
 	}
 
-	award, err := h.service.UpdateAwardStatus(c.Request.Context(), params)
+	params := service.UpdateAwardStatusRequest{
+		Status:               req.Status,
+		Reason:               req.Reason,
+		Methodist:            methodist,
+		Variant:              req.Variant,
+		Criteria:             req.Criteria,
+		BonusCriteria:        bonusCriteria,
+		BonusCriteriaTouched: bonusCriteriaTouched,
+		TotalPoints:          req.TotalPoints,
+	}
+
+	award, err := h.service.UpdateAwardStatus(c.Request.Context(), id, params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return

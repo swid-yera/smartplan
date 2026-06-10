@@ -18,6 +18,7 @@ export interface IUpdateStatusRequest {
 	reason?: string
 	variant?: string
 	criteria?: string
+	bonusCriteria?: string
 	key_id?: string
 	user_id?: string
 	totalPoints?: number

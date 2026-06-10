@@ -60,9 +60,10 @@ const Page = () => {
 				? ({
 						...award.variant,
 						criteria: [award.criteria],
+						bonus_criteria: award.bonus_criteria ? [award.bonus_criteria] : [],
 					} as IVariant)
 				: null,
-		[award?.criteria, award?.variant],
+		[award?.bonus_criteria, award?.criteria, award?.variant],
 	)
 	const variantOptions = useMemo(() => {
 		if (awardType?.variants?.length) return awardType.variants
@@ -83,6 +84,14 @@ const Page = () => {
 				: null,
 		[award, award?.criteria, selectedVariant],
 	)
+	const selectedBonusCriteria = useMemo(
+		() =>
+			award?.bonus_criteria
+				? selectedVariant?.bonus_criteria?.find((criteria) => criteria.id === award.bonus_criteria?.id) ||
+					award.bonus_criteria
+				: null,
+		[award, award?.bonus_criteria, selectedVariant],
+	)
 
 	if (isLoading || authLoading || !user) return <Loader />
 
@@ -100,6 +109,7 @@ const Page = () => {
 		reason?: string,
 		variantId?: string,
 		criteriaId?: string,
+		bonusCriteriaId?: string | null,
 		totalPoints?: number,
 	) => {
 		setIsStatusSheetOpen(false)
@@ -116,6 +126,7 @@ const Page = () => {
 			reason: payloadReason,
 			variant: variantId,
 			criteria: criteriaId,
+			bonusCriteria: newStatus === StatusEnum.APPROVED ? (bonusCriteriaId ?? '') : undefined,
 			totalPoints: payloadTotalPoints,
 		}
 
@@ -219,12 +230,13 @@ const Page = () => {
 
 			<ApproveSheet
 				isOpen={isApproveSheetOpen}
+				selectedBonusCriteria={selectedBonusCriteria}
 				selectedCriteria={selectedCriteria}
 				selectedVariant={selectedVariant}
 				variantOptions={variantOptions}
 				onOpenChange={setIsApproveSheetOpen}
-				onStatusChange={(variantId, criteriaId, totalPoints) =>
-					handleStatusChange(StatusEnum.APPROVED, '', variantId, criteriaId, totalPoints)
+				onStatusChange={(variantId, criteriaId, bonusCriteriaId, totalPoints) =>
+					handleStatusChange(StatusEnum.APPROVED, '', variantId, criteriaId, bonusCriteriaId, totalPoints)
 				}
 			/>
 		</div>

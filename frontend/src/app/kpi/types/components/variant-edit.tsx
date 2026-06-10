@@ -16,6 +16,7 @@ import { useLocaleStore } from '@store'
 import type { Locale } from '@types'
 import { CriteriaMethodEnum } from '@types'
 import { Plus, Trash } from 'lucide-react'
+
 import localeDictionary from './locale.json'
 
 export interface ILocalizedDraft {
@@ -48,21 +49,29 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 	const uiLocale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, uiLocale)
 
-	const addCriteria = () => {
-		const newCriteria: ICriteriaForm = {
-			name: {
-				ru: '',
-				kk: '',
-			},
-			points: [0],
-			method: CriteriaMethodEnum.NORMAL,
-		}
+	const createEmptyCriteria = (): ICriteriaForm => ({
+		name: {
+			ru: '',
+			kk: '',
+		},
+		points: [0],
+		method: CriteriaMethodEnum.NORMAL,
+	})
 
+	const addCriteria = () => {
 		onChange({
 			...variant,
-			criteria: [...variant.criteria, newCriteria],
+			criteria: [...variant.criteria, createEmptyCriteria()],
 		})
 	}
+
+	const addBonusCriteria = () => {
+		onChange({
+			...variant,
+			bonusCriteria: [...variant.bonusCriteria, createEmptyCriteria()],
+		})
+	}
+
 	const removeCriteria = (criteriaIndex: number) => {
 		onChange({
 			...variant,
@@ -70,11 +79,31 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 		})
 	}
 
+	const removeBonusCriteria = (criteriaIndex: number) => {
+		onChange({
+			...variant,
+			bonusCriteria: variant.bonusCriteria.filter((_, index) => index !== criteriaIndex),
+		})
+	}
+
+	const updateCriteriaList = (listKey: 'criteria' | 'bonusCriteria', itemIndex: number, nextItem: ICriteriaForm) => {
+		const nextList = [...variant[listKey]]
+
+		nextList[itemIndex] = nextItem
+
+		onChange({
+			...variant,
+			[listKey]: nextList,
+		})
+	}
+
 	return (
 		<Card className='relative'>
 			<CardHeader className='pb-2'>
 				<div className='flex items-start justify-between'>
-					<CardTitle className='text-base'>{interpolateUILocaleText(t.variantTitle, { index: index + 1 })}</CardTitle>
+					<CardTitle className='text-base'>
+						{interpolateUILocaleText(t.variantTitle, { index: index + 1 })}
+					</CardTitle>
 
 					<Button size='icon' variant='ghost' onClick={onDelete}>
 						<Trash className='h-4 w-4 text-muted-foreground' />
@@ -129,16 +158,15 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 										placeholder={t.criteriaNamePlaceholder}
 										value={c.name[locale]}
 										onChange={(e) => {
-											const next = [...variant.criteria]
-
-											next[i] = {
+											const nextCriteria = {
 												...c,
 												name: {
 													...c.name,
 													[locale]: e.target.value,
 												},
 											}
-											onChange({ ...variant, criteria: next })
+
+											updateCriteriaList('criteria', i, nextCriteria)
 										}}
 									/>
 									<Button
@@ -157,9 +185,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 									<Select
 										value={c.method}
 										onValueChange={(value: CriteriaMethodEnum) => {
-											const next = [...variant.criteria]
-
-											next[i] = {
+											const nextCriteria = {
 												...c,
 												method: value,
 												points:
@@ -168,7 +194,7 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 														: [c.points?.[0] ?? 0, c.points?.[1] ?? 0],
 											}
 
-											onChange({ ...variant, criteria: next })
+											updateCriteriaList('criteria', i, nextCriteria)
 										}}
 									>
 										<SelectTrigger className='w-48'>
@@ -190,15 +216,12 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 											value={c.points?.[0] ?? 0}
 											onChange={(e) => {
 												const value = Math.max(0, Number(e.target.value))
-
-												const next = [...variant.criteria]
-
-												next[i] = {
+												const nextCriteria = {
 													...c,
 													points: [value],
 												}
 
-												onChange({ ...variant, criteria: next })
+												updateCriteriaList('criteria', i, nextCriteria)
 											}}
 										/>
 									) : (
@@ -211,15 +234,12 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 												onChange={(e) => {
 													const min = Math.max(0, Number(e.target.value))
 													const max = c.points?.[1] ?? min
-
-													const next = [...variant.criteria]
-
-													next[i] = {
+													const nextCriteria = {
 														...c,
 														points: [min, Math.max(min, max)],
 													}
 
-													onChange({ ...variant, criteria: next })
+													updateCriteriaList('criteria', i, nextCriteria)
 												}}
 											/>
 
@@ -231,15 +251,136 @@ export const VariantEdit = ({ index, locale, variant, onChange, onDelete }: IPro
 												onChange={(e) => {
 													const max = Math.max(0, Number(e.target.value))
 													const min = c.points?.[0] ?? 0
-
-													const next = [...variant.criteria]
-
-													next[i] = {
+													const nextCriteria = {
 														...c,
 														points: [Math.min(min, max), max],
 													}
 
-													onChange({ ...variant, criteria: next })
+													updateCriteriaList('criteria', i, nextCriteria)
+												}}
+											/>
+										</div>
+									)}
+								</div>
+							</li>
+						))}
+					</ol>
+				</div>
+
+				<div className='space-y-2'>
+					<div className='flex items-center justify-between'>
+						<p className='text-sm font-medium'>{t.bonusCriteriaTitle}</p>
+						<Button size='sm' variant='outline' onClick={addBonusCriteria}>
+							<Plus className='mr-2 h-3 w-3' />
+							{t.addBonusCriteria}
+						</Button>
+					</div>
+
+					<ol className='list-[lower-roman] space-y-8 pl-5'>
+						{variant.bonusCriteria.map((c, i) => (
+							<li key={i} className='space-y-3'>
+								<div className='flex items-center gap-2'>
+									<Input
+										placeholder={t.bonusCriteriaNamePlaceholder}
+										value={c.name[locale]}
+										onChange={(e) => {
+											const nextCriteria = {
+												...c,
+												name: {
+													...c.name,
+													[locale]: e.target.value,
+												},
+											}
+
+											updateCriteriaList('bonusCriteria', i, nextCriteria)
+										}}
+									/>
+									<Button
+										aria-label={t.removeBonusCriteria}
+										size='icon'
+										type='button'
+										variant='ghost'
+										onClick={() => removeBonusCriteria(i)}
+									>
+										<Trash className='h-4 w-4 text-muted-foreground' />
+									</Button>
+								</div>
+
+								<div className='flex gap-3'>
+									<Select
+										value={c.method}
+										onValueChange={(value: CriteriaMethodEnum) => {
+											const nextCriteria = {
+												...c,
+												method: value,
+												points:
+													value === CriteriaMethodEnum.NORMAL
+														? [c.points?.[0] ?? 0]
+														: [c.points?.[0] ?? 0, c.points?.[1] ?? 0],
+											}
+
+											updateCriteriaList('bonusCriteria', i, nextCriteria)
+										}}
+									>
+										<SelectTrigger className='w-48'>
+											<SelectValue placeholder={t.methodPlaceholder} />
+										</SelectTrigger>
+
+										<SelectContent>
+											<SelectItem value={CriteriaMethodEnum.NORMAL}>{t.fixedMethod}</SelectItem>
+											<SelectItem value={CriteriaMethodEnum.MEASURING}>{t.rangeMethod}</SelectItem>
+										</SelectContent>
+									</Select>
+
+									{c.method === CriteriaMethodEnum.NORMAL ? (
+										<Input
+											min={0}
+											placeholder={t.pointsPlaceholder}
+											type='number'
+											value={c.points?.[0] ?? 0}
+											onChange={(e) => {
+												const value = Math.max(0, Number(e.target.value))
+												const nextCriteria = {
+													...c,
+													points: [value],
+												}
+
+												updateCriteriaList('bonusCriteria', i, nextCriteria)
+											}}
+										/>
+									) : (
+										<div className='flex gap-2'>
+											<Input
+												min={0}
+												placeholder={t.minPlaceholder}
+												type='number'
+												value={c.points?.[0] ?? 0}
+												onChange={(e) => {
+													const min = Math.max(0, Number(e.target.value))
+													const max = c.points?.[1] ?? min
+													const nextCriteria = {
+														...c,
+														points: [min, Math.max(min, max)],
+													}
+
+													updateCriteriaList('bonusCriteria', i, nextCriteria)
+												}}
+											/>
+
+											<Input
+												min={0}
+												placeholder={t.maxPlaceholder}
+												type='number'
+												value={c.points?.[1] ?? 0}
+												onChange={(e) => {
+													const max = Math.max(0, Number(e.target.value))
+													const min = c.points?.[0] ?? 0
+													const nextCriteria = {
+														...c,
+														points: [Math.min(min, max), max],
+													}
+
+													updateCriteriaList('bonusCriteria', i, nextCriteria)
 												}}
 											/>
 										</div>
