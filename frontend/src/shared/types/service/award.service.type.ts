@@ -28,7 +28,7 @@ export interface IVariantRequest {
 	name: LocaleText
 	description: LocaleText | null
 	criteria: ICriteriaRequest[]
-	bonusCriteria: ICriteriaRequest[]
+	bonus_criteria: ICriteriaRequest[]
 }
 
 export interface ICriteriaRequest {

@@ -24,19 +24,23 @@ import { CriteriaMethodEnum, type ICriteria, type IVariant } from '@types'
 
 import localeDictionary from './locale.json'
 
+const NO_BONUS_CRITERIA_VALUE = '__none__'
+
 interface IApproveSheetProps {
 	isOpen: boolean
 	onOpenChange: (state: boolean) => void
-	onStatusChange: (variantId: string, criteriaId: string, awardPoints: number) => void
+	onStatusChange: (variantId: string, criteriaId: string, bonusCriteriaId: string | null, awardPoints: number) => void
 	variantOptions: IVariant[]
 	selectedVariant?: IVariant | null
 	selectedCriteria?: ICriteria | null
+	selectedBonusCriteria?: ICriteria | null
 }
 
 const resolveInitialSelection = (
 	variantOptions: IVariant[],
 	selectedVariant: IVariant | null,
 	selectedCriteria: ICriteria | null,
+	selectedBonusCriteria: ICriteria | null,
 ) => {
 	const initialVariant =
 		(selectedVariant && variantOptions.some((variant) => variant.id === selectedVariant.id)
@@ -55,9 +59,16 @@ const resolveInitialSelection = (
 		selectedCriteria ??
 		null
 
+	const bonusCriteriaOptions = initialVariant?.bonus_criteria ?? []
+	const initialBonusCriteria =
+		(selectedBonusCriteria && bonusCriteriaOptions.some((criteria) => criteria.id === selectedBonusCriteria.id)
+			? selectedBonusCriteria
+			: null) ?? null
+
 	return {
 		variantId: initialVariant?.id ?? '',
 		criteriaId: initialCriteria?.id ?? '',
+		bonusCriteriaId: initialBonusCriteria?.id ?? NO_BONUS_CRITERIA_VALUE,
 	}
 }
 
@@ -68,14 +79,21 @@ export const ApproveSheet = ({
 	variantOptions = [],
 	selectedVariant = null,
 	selectedCriteria = null,
+	selectedBonusCriteria = null,
 }: IApproveSheetProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).approveSheet
 
 	const [isEditing, setIsEditing] = useState(false)
-	const initialSelection = resolveInitialSelection(variantOptions, selectedVariant, selectedCriteria)
+	const initialSelection = resolveInitialSelection(
+		variantOptions,
+		selectedVariant,
+		selectedCriteria,
+		selectedBonusCriteria,
+	)
 	const [currentVariantId, setCurrentVariantId] = useState(initialSelection.variantId)
 	const [currentCriteriaId, setCurrentCriteriaId] = useState(initialSelection.criteriaId)
+	const [currentBonusCriteriaId, setCurrentBonusCriteriaId] = useState(initialSelection.bonusCriteriaId)
 
 	const currentVariant = useMemo(
 		() => variantOptions.find((variant) => variant.id === currentVariantId) || selectedVariant || null,
@@ -89,6 +107,13 @@ export const ApproveSheet = ({
 			null,
 		[currentCriteriaId, currentCriteriaOptions],
 	)
+	const currentBonusCriteriaOptions = currentVariant?.bonus_criteria ?? []
+	const currentBonusCriteria = useMemo(
+		() =>
+			currentBonusCriteriaOptions.find((criteria) => criteria.id === currentBonusCriteriaId) ||
+			(currentBonusCriteriaId === NO_BONUS_CRITERIA_VALUE ? null : currentBonusCriteriaOptions[0] || null),
+		[currentBonusCriteriaId, currentBonusCriteriaOptions],
+	)
 
 	const currentPoints = currentCriteria?.points ?? []
 	const isMeasuring = currentCriteria?.method === CriteriaMethodEnum.MEASURING
@@ -96,19 +121,35 @@ export const ApproveSheet = ({
 	const max = currentPoints[currentPoints.length - 1] ?? min
 	const variantName = currentVariant ? getLocaleText(currentVariant.name, locale) : ''
 	const criteriaName = currentCriteria ? getLocaleText(currentCriteria.name, locale) : ''
+	const bonusCriteriaName = currentBonusCriteria ? getLocaleText(currentBonusCriteria.name, locale) : t.noBonusCriteria
 	const [awardPoints, setAwardPoints] = useState<number>(min)
 
 	useEffect(() => {
-		const nextSelection = resolveInitialSelection(variantOptions, selectedVariant, selectedCriteria)
+		const nextSelection = resolveInitialSelection(
+			variantOptions,
+			selectedVariant,
+			selectedCriteria,
+			selectedBonusCriteria,
+		)
 
 		setIsEditing(false)
 		setCurrentVariantId(nextSelection.variantId)
 		setCurrentCriteriaId(nextSelection.criteriaId)
-	}, [isOpen, selectedCriteria?.id, selectedVariant?.id, variantOptions])
+		setCurrentBonusCriteriaId(nextSelection.bonusCriteriaId)
+	}, [isOpen, selectedBonusCriteria?.id, selectedCriteria?.id, selectedVariant?.id, variantOptions])
 
 	useEffect(() => {
 		setAwardPoints(min)
 	}, [currentCriteria?.id, min])
+
+	useEffect(() => {
+		if (
+			currentBonusCriteriaId !== NO_BONUS_CRITERIA_VALUE &&
+			!currentBonusCriteriaOptions.some((criteria) => criteria.id === currentBonusCriteriaId)
+		) {
+			setCurrentBonusCriteriaId(NO_BONUS_CRITERIA_VALUE)
+		}
+	}, [currentBonusCriteriaId, currentBonusCriteriaOptions])
 
 	const handleVariantChange = (variantId: string) => {
 		setCurrentVariantId(variantId)
@@ -116,6 +157,7 @@ export const ApproveSheet = ({
 		const nextVariant = variantOptions.find((variant) => variant.id === variantId) || null
 
 		setCurrentCriteriaId(nextVariant?.criteria[0]?.id ?? '')
+		setCurrentBonusCriteriaId(NO_BONUS_CRITERIA_VALUE)
 	}
 
 	const handleEditStart = () => {
@@ -123,11 +165,17 @@ export const ApproveSheet = ({
 	}
 
 	const handleEditCancel = () => {
-		const nextSelection = resolveInitialSelection(variantOptions, selectedVariant, selectedCriteria)
+		const nextSelection = resolveInitialSelection(
+			variantOptions,
+			selectedVariant,
+			selectedCriteria,
+			selectedBonusCriteria,
+		)
 
 		setIsEditing(false)
 		setCurrentVariantId(nextSelection.variantId)
 		setCurrentCriteriaId(nextSelection.criteriaId)
+		setCurrentBonusCriteriaId(nextSelection.bonusCriteriaId)
 	}
 
 	const handleEditSave = () => {
@@ -137,7 +185,7 @@ export const ApproveSheet = ({
 	const handleApprove = () => {
 		if (!currentVariant || !currentCriteria) return
 
-		onStatusChange(currentVariant.id, currentCriteria.id, awardPoints)
+		onStatusChange(currentVariant.id, currentCriteria.id, currentBonusCriteria?.id || null, awardPoints)
 		onOpenChange(false)
 	}
 
@@ -177,6 +225,10 @@ export const ApproveSheet = ({
 							<p>
 								<span className='text-muted-foreground'>{t.criteriaLabel}:</span>{' '}
 								<span className='font-medium'>{criteriaName || t.empty}</span>
+							</p>
+							<p>
+								<span className='text-muted-foreground'>{t.bonusCriteriaLabel}:</span>{' '}
+								<span className='font-medium'>{bonusCriteriaName}</span>
 							</p>
 							<p>
 								<span className='text-muted-foreground'>{t.methodLabel}:</span>{' '}
@@ -223,6 +275,25 @@ export const ApproveSheet = ({
 											{currentCriteriaOptions.map((criteria) => (
 												<SelectItem key={criteria.id} value={criteria.id}>
 													{getLocaleText(criteria.name, locale)} ({formatCriteriaPoints(criteria.points)} баллов)
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							)}
+
+							{currentBonusCriteriaOptions.length > 0 && (
+								<div className='space-y-2'>
+									<Label htmlFor='bonus-criteria-select'>{t.bonusCriteriaSelectLabel}</Label>
+									<Select value={currentBonusCriteriaId} onValueChange={setCurrentBonusCriteriaId}>
+										<SelectTrigger className='w-full' id='bonus-criteria-select'>
+											<SelectValue placeholder={t.bonusCriteriaSelectPlaceholder} />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value={NO_BONUS_CRITERIA_VALUE}>{t.noBonusCriteria}</SelectItem>
+											{currentBonusCriteriaOptions.map((criteria) => (
+												<SelectItem key={criteria.id} value={criteria.id}>
+													{getLocaleText(criteria.name, locale)} ({criteria.points.join('-')} баллов)
 												</SelectItem>
 											))}
 										</SelectContent>

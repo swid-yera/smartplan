@@ -438,7 +438,6 @@ function CreateAwardPage() {
 						showHints
 						showVariantDescription
 						availableTypes={availableTypes}
-						bonusCriteriaOptionsSource='criteria'
 						labels={t.awardTypeSelection}
 						layout='stack'
 						locale={locale}

@@ -16,6 +16,8 @@ export const AwardMainInfoCard = ({ award }: IAwardMainInfoCardProps) => {
 	const typeName = getLocaleText(award.type.name, locale)
 	const categoryName = award.category ? getLocaleText(award.category.name, locale) : ''
 	const criteriaName = getLocaleText(award.criteria.name, locale)
+	const bonusCriteriaName = award.bonus_criteria ? getLocaleText(award.bonus_criteria.name, locale) : ''
+	const bonusCriteriaPoints = award.bonus_criteria?.points?.[0] ?? 0
 	const categoryIconOption = getCategoryIconOptionByName(award.category?.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const matchedTypeIcon = getCategoryIconOptionByName(typeName)
@@ -48,6 +50,14 @@ export const AwardMainInfoCard = ({ award }: IAwardMainInfoCardProps) => {
 						<p className='text-sm font-medium text-muted-foreground'>Критерий</p>
 						<p className='text-base'>{criteriaName}</p>
 					</div>
+					{award.bonus_criteria ? (
+						<div>
+							<p className='text-sm font-medium text-muted-foreground'>Бонусный критерий</p>
+							<p className='text-base'>
+								{bonusCriteriaName} (+{bonusCriteriaPoints})
+							</p>
+						</div>
+					) : null}
 					<div>
 						<p className='text-sm font-medium text-muted-foreground'>Начисленные баллы</p>
 						{award.status !== StatusEnum.APPROVED ? (

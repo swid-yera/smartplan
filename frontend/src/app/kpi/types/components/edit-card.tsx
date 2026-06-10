@@ -19,8 +19,8 @@ import { useLocaleStore } from '@store'
 import type { ICreateTypesRequest, ITypeResponse, Locale } from '@types'
 import { Plus } from 'lucide-react'
 
-import { type ILocalizedDraft, type IVariantForm, VariantEdit } from './variant-edit'
 import localeDictionary from './locale.json'
+import { type ILocalizedDraft, type IVariantForm, VariantEdit } from './variant-edit'
 
 interface IProps {
 	activeLocale: Locale
@@ -99,7 +99,7 @@ export const EditCard: FC<IProps> = ({ activeLocale, onSubmit, type }) => {
 					...criteria,
 					name: createLocaleText(criteria.name.ru, criteria.name.kk),
 				})),
-				bonusCriteria: variant.bonusCriteria.map((criteria) => ({
+				bonus_criteria: variant.bonusCriteria.map((criteria) => ({
 					...criteria,
 					name: createLocaleText(criteria.name.ru, criteria.name.kk),
 				})),
@@ -153,9 +153,7 @@ export const EditCard: FC<IProps> = ({ activeLocale, onSubmit, type }) => {
 						/>
 					))}
 
-					{!variants.length && (
-						<p className='text-sm text-muted-foreground'>{t.emptyVariants}</p>
-					)}
+					{!variants.length && <p className='text-sm text-muted-foreground'>{t.emptyVariants}</p>}
 				</div>
 			</CardContent>
 
