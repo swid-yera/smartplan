@@ -10,6 +10,8 @@ import (
 	"io"
 	"math"
 	"mime/multipart"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -66,11 +68,33 @@ type PaginatedAwardsResponse struct {
 	Meta PaginationMeta  `json:"meta"`
 }
 
+type AwardUserAwardsSummaryCategoryResponse struct {
+	CategoryID    string                 `json:"categoryId"`
+	Category      *AwardCategoryResponse `json:"category,omitempty"`
+	CurrentPoints int32                  `json:"currentPoints"`
+	PendingPoints int32                  `json:"pendingPoints"`
+	Awards        []AwardResponse        `json:"awards"`
+}
+
+type AwardUserAwardsSummaryResponse struct {
+	CurrentPoints int32                                    `json:"currentPoints"`
+	Categories    []AwardUserAwardsSummaryCategoryResponse `json:"categories"`
+}
+
 type AwardDepartmentResponse struct {
 	KeycloakID  uuid.UUID               `json:"keycloakId"`
 	Name        localization.LocaleText `json:"name"`
 	TotalPoints int32                   `json:"totalPoints"`
 	UserCount   int32                   `json:"userCount"`
+}
+
+type AwardReviewTeacherResponse struct {
+	KeycloakID        uuid.UUID `json:"keycloakId"`
+	FirstName         string    `json:"firstName"`
+	LastName          string    `json:"lastName"`
+	Username          string    `json:"username"`
+	TotalPoints       int32     `json:"totalPoints"`
+	ReviewAwardsCount int32     `json:"reviewAwardsCount"`
 }
 
 type SelectedVariantResponse struct {
@@ -148,8 +172,10 @@ type AwardServiceInterface interface {
 	DeleteAward(ctx context.Context, id uuid.UUID) error
 	BuildSelected(ctx context.Context, award storage.Award) (AwardResponse, error)
 	GetAwardPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) (*PaginatedAwardsResponse, error)
+	GetUserAwardsSummary(ctx context.Context, userID uuid.UUID) (AwardUserAwardsSummaryResponse, error)
 	CountAwards(ctx context.Context) (int64, error)
 	GetAwardDepartmentsStats(ctx context.Context) ([]AwardDepartmentResponse, error)
+	GetReviewTeachers(ctx context.Context) ([]AwardReviewTeacherResponse, error)
 	MergeUploadedFilesIntoFieldValues(ctx context.Context, userID uuid.UUID, awardID uuid.UUID, categoryID pgtype.UUID, rawFieldValues any, formFiles map[string][]*multipart.FileHeader) (map[string]any, error)
 	ResolveFieldValueFileURLs(ctx context.Context, categoryID *uuid.UUID, values map[string]any) (map[string]any, error)
 
@@ -1019,6 +1045,93 @@ func (s *AwardService) GetAwardPaginated(
 	}, nil
 }
 
+func (s *AwardService) GetUserAwardsSummary(ctx context.Context, userID uuid.UUID) (AwardUserAwardsSummaryResponse, error) {
+	awardsPage, err := s.GetAwardPaginated(
+		ctx,
+		1,
+		math.MaxInt32,
+		"",
+		"desc",
+		pgtype.UUID{Bytes: userID, Valid: true},
+		pgtype.UUID{},
+		nil,
+		nil,
+	)
+	if err != nil {
+		return AwardUserAwardsSummaryResponse{}, err
+	}
+
+	byCategory := make(map[string]*AwardUserAwardsSummaryCategoryResponse)
+	categoryOrder := make([]string, 0)
+	currentPoints := int32(0)
+
+	for _, award := range awardsPage.Data {
+		categoryKey := awardCategorySummaryKey(award)
+		group, exists := byCategory[categoryKey]
+		if !exists {
+			categoryID := awardCategorySummaryKey(award)
+			if award.CategoryID != nil {
+				categoryID = award.CategoryID.String()
+			} else if award.Category != nil {
+				categoryID = award.Category.ID.String()
+			}
+
+			var category *AwardCategoryResponse
+			if award.Category != nil {
+				categoryCopy := *award.Category
+				category = &categoryCopy
+			}
+
+			group = &AwardUserAwardsSummaryCategoryResponse{
+				CategoryID: categoryID,
+				Category:   category,
+				Awards:     make([]AwardResponse, 0),
+			}
+			byCategory[categoryKey] = group
+			categoryOrder = append(categoryOrder, categoryKey)
+		}
+
+		group.Awards = append(group.Awards, award)
+
+		switch award.Status {
+		case storage.AwardsStatusAPPROVED:
+			currentPoints += award.TotalPoints
+			group.CurrentPoints += award.TotalPoints
+		case storage.AwardsStatusINREVIEW:
+			group.PendingPoints += awardSummaryPoints(award)
+		}
+	}
+
+	categories := make([]AwardUserAwardsSummaryCategoryResponse, 0, len(byCategory))
+	for _, key := range categoryOrder {
+		group := byCategory[key]
+		sortAwardsForUserSummary(group.Awards)
+		categories = append(categories, *group)
+	}
+
+	sort.SliceStable(categories, func(i, j int) bool {
+		if categories[i].CurrentPoints != categories[j].CurrentPoints {
+			return categories[i].CurrentPoints > categories[j].CurrentPoints
+		}
+		if categories[i].PendingPoints != categories[j].PendingPoints {
+			return categories[i].PendingPoints > categories[j].PendingPoints
+		}
+
+		left := awardCategorySummaryLabel(categories[i].Category)
+		right := awardCategorySummaryLabel(categories[j].Category)
+		if left != right {
+			return left < right
+		}
+
+		return categories[i].CategoryID < categories[j].CategoryID
+	})
+
+	return AwardUserAwardsSummaryResponse{
+		CurrentPoints: currentPoints,
+		Categories:    categories,
+	}, nil
+}
+
 func (s *AwardService) GetAwardDepartmentsStats(ctx context.Context) ([]AwardDepartmentResponse, error) {
 	rows, err := s.repo.GetAwardDepartmentsStats(ctx)
 	if err != nil {
@@ -1036,4 +1149,87 @@ func (s *AwardService) GetAwardDepartmentsStats(ctx context.Context) ([]AwardDep
 	}
 
 	return result, nil
+}
+
+func (s *AwardService) GetReviewTeachers(ctx context.Context) ([]AwardReviewTeacherResponse, error) {
+	rows, err := s.repo.GetAwardReviewTeachersStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]AwardReviewTeacherResponse, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, AwardReviewTeacherResponse{
+			KeycloakID:        row.KeycloakID,
+			FirstName:         row.FirstName,
+			LastName:          row.LastName,
+			Username:          row.Username,
+			TotalPoints:       row.TotalPoints,
+			ReviewAwardsCount: row.ReviewAwardsCount,
+		})
+	}
+
+	return result, nil
+}
+
+func sortAwardsForUserSummary(awards []AwardResponse) {
+	sort.SliceStable(awards, func(i, j int) bool {
+		leftRank := awardStatusPriority(awards[i].Status)
+		rightRank := awardStatusPriority(awards[j].Status)
+		if leftRank != rightRank {
+			return leftRank < rightRank
+		}
+
+		if !awards[i].CreatedAt.Equal(awards[j].CreatedAt) {
+			return awards[i].CreatedAt.After(awards[j].CreatedAt)
+		}
+
+		return awards[i].ID.String() < awards[j].ID.String()
+	})
+}
+
+func awardStatusPriority(status storage.AwardsStatus) int {
+	switch status {
+	case storage.AwardsStatusINREVIEW:
+		return 1
+	case storage.AwardsStatusREJECTED:
+		return 2
+	case storage.AwardsStatusAPPROVED:
+		return 3
+	default:
+		return 4
+	}
+}
+
+func awardSummaryPoints(award AwardResponse) int32 {
+	if award.Status == storage.AwardsStatusINREVIEW {
+		if points := award.Criteria.Points; len(points) > 0 {
+			return points[0]
+		}
+	}
+
+	return award.TotalPoints
+}
+
+func awardCategorySummaryKey(award AwardResponse) string {
+	if award.CategoryID != nil {
+		return award.CategoryID.String()
+	}
+	if award.Category != nil {
+		return award.Category.ID.String()
+	}
+	return award.ID.String()
+}
+
+func awardCategorySummaryLabel(category *AwardCategoryResponse) string {
+	if category == nil {
+		return ""
+	}
+
+	left := strings.TrimSpace(category.Name.Ru)
+	if left != "" {
+		return left
+	}
+
+	return strings.TrimSpace(category.Name.Kz)
 }

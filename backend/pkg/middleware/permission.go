@@ -59,4 +59,3 @@ func RequirePermission(codes ...service.PermissionCode) gin.HandlerFunc {
 		})
 	}
 }
-

@@ -9,6 +9,8 @@ import type {
 	IGetAllRequest,
 	IMessageResponse,
 	IPagination,
+	IAwardUserKpiSummaryResponse,
+	IReviewTeacherSummaryResponse,
 	ITypeResponse,
 	IUpdateAwardRequest,
 	IUpdateStatusRequest,
@@ -30,6 +32,32 @@ export class AwardService {
 				})
 
 				if (!data) return []
+
+				return data
+			},
+		})
+	}
+
+	// get teachers with awards in review
+	getReviewTeachersOptions = () => {
+		return queryOptions<IReviewTeacherSummaryResponse[]>({
+			queryKey: ['awards-review-teachers'],
+			queryFn: async () => {
+				const { data } = await api.get<IReviewTeacherSummaryResponse[]>('/awards/review-teachers')
+
+				if (!data) return []
+
+				return data
+			},
+		})
+	}
+
+	// get grouped KPI awards summary for user profile
+	getUserKpiAwardsSummaryOptions = (userId: string) => {
+		return queryOptions<IAwardUserKpiSummaryResponse>({
+			queryKey: ['users-kpi-awards-summary', userId],
+			queryFn: async () => {
+				const { data } = await api.get<IAwardUserKpiSummaryResponse>(`/awards/users/${userId}/summary`)
 
 				return data
 			},

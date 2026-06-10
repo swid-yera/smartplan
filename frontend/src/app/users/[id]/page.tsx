@@ -5,10 +5,8 @@ import { useEffect, useState } from 'react'
 import { notFound, useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import {
-	AwardsCard,
 	Loader,
 	PageTitle,
-	Pagination,
 	PenaltyCard,
 	PenaltySheet,
 	RupsCard,
@@ -38,12 +36,11 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { PermissionCodeEnum, type StatusEnum, ViolationEnum } from '@types'
+import { PermissionCodeEnum, StatusEnum, ViolationEnum } from '@types'
 import { ArrowLeft, Gavel, MoreVertical, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 
 import uiLocale from '../../../components/ui/locale.json'
-import { AwardFilterCard } from '../../kpi/components'
 import { RupsFilterCard } from '../../rups/components'
 import {
 	buildRupFilterSearchParams,
@@ -52,6 +49,7 @@ import {
 	persistRupFilterState,
 	readPersistedRupFilterState,
 } from '../../rups/components/rups-filter-state'
+import { UserKpiAwardsView } from './components/user-kpi-awards-view'
 import { UsersPermissionsDialog } from '../users-permissions-dialog'
 import localeDictionary from './locale.json'
 
@@ -71,21 +69,6 @@ const Page = () => {
 
 	const activeTabParam = searchParams.get('tab')
 	const activeTab = activeTabParam === 'rups' || activeTabParam === 'kpi' ? activeTabParam : 'kpi'
-
-	const page = Number(searchParams.get('page')) || 1
-	const pageSize = Number(searchParams.get('pageSize')) || 10
-	const statusParam = searchParams.get('status') ?? ''
-	const categoryIdParam = searchParams.get('categoryId') ?? ''
-	const sortParam = searchParams.get('sort')
-
-	const status = statusParam ? statusParam.split(',') : undefined
-	const sort = sortParam === 'asc' || sortParam === 'desc' ? sortParam : 'desc'
-	const categoryId = categoryIdParam
-		? categoryIdParam
-				.split(',')
-				.map((id) => id.trim())
-				.filter(Boolean)
-		: undefined
 	const rupsFilterStorageKey = `eduplan:users:${params.id}:rups-filters`
 	const rupsFilterState = getRupFilterStateFromSearchParams(searchParams, { paramPrefix: 'rups' })
 	const rupsPage = Number(searchParams.get('rupsPage')) || 1
@@ -117,16 +100,9 @@ const Page = () => {
 		enabled: !!params.id && !userLoading && !isError && activeTab === 'rups',
 	})
 
-	// awards data
-	const { data: awardsData, isLoading: awardsLoading } = useQuery({
-		...services.award.getAllOptions({
-			categoryId,
-			currentPage: page,
-			pageSize,
-			sort,
-			status: status as StatusEnum[],
-			teacher: params.id,
-		}),
+	// awards grouped summary data
+	const { data: kpiAwardsSummary, isLoading: kpiAwardsLoading } = useQuery({
+		...services.award.getUserKpiAwardsSummaryOptions(params.id),
 		enabled: !!params.id && !!userData && !isError && activeTab === 'kpi',
 	})
 
@@ -204,26 +180,11 @@ const Page = () => {
 		router.push(`${pathname}?${paramsUrl.toString()}`)
 	}
 
-	const setCurrentPage = (newPage: number) => {
-		const paramsUrl = new URLSearchParams(searchParams.toString())
-
-		paramsUrl.set('page', String(newPage))
-		router.push(`${pathname}?${paramsUrl.toString()}`)
-	}
-
 	const setCurrentRupsPage = (newPage: number) => {
 		const paramsUrl = new URLSearchParams(searchParams.toString())
 
 		paramsUrl.set('rupsPage', String(newPage))
 		router.push(`${pathname}?${paramsUrl.toString()}`, { scroll: false })
-	}
-
-	const setPageSize = (newSize: number) => {
-		const paramsUrl = new URLSearchParams(searchParams.toString())
-
-		paramsUrl.set('pageSize', String(newSize))
-		paramsUrl.set('page', '1')
-		router.push(`${pathname}?${paramsUrl.toString()}`)
 	}
 
 	type IAction = {
@@ -307,8 +268,6 @@ const Page = () => {
 				) : null}
 			</ButtonGroup>
 		) : null
-
-	console.log(awardsData?.data)
 
 	return (
 		<section className='mx-auto w-full space-y-8 px-4 pb-10 pt-5'>
@@ -406,26 +365,7 @@ const Page = () => {
 				</TabsContent>
 
 				<TabsContent value='kpi'>
-					<div className='space-y-4'>
-						<AwardFilterCard compact className='mb-2' />
-
-						<AwardsCard
-							awards={awardsData?.data || []}
-							description={t.page.kpiListDescription}
-							isLoading={awardsLoading}
-							showPointsColumn={hasAnyPermission(me, [PermissionCodeEnum.KPI_MANAGE])}
-							title={t.page.kpiListTitle}
-						/>
-
-						<Pagination
-							page={awardsData?.meta.currentPage || 1}
-							pageSize={awardsData?.meta.pageSize || 10}
-							pageSizeOptions={[10, 20, 50]}
-							totalPages={awardsData?.meta.pages || 1}
-							onPageChange={setCurrentPage}
-							onPageSizeChange={setPageSize}
-						/>
-					</div>
+					<UserKpiAwardsView isLoading={kpiAwardsLoading} summary={kpiAwardsSummary} userId={params.id} />
 				</TabsContent>
 			</Tabs>
 		</section>

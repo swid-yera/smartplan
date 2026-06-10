@@ -251,6 +251,27 @@ GROUP BY
 ORDER BY total_points DESC, d.keycloak_id
 LIMIT 3;
 
+-- name: GetAwardReviewTeachersStats :many
+SELECT
+    u.keycloak_id,
+    COALESCE(u.first_name, '') AS first_name,
+    COALESCE(u.last_name, '') AS last_name,
+    u.username,
+    COALESCE((
+        SELECT SUM(value::int)
+        FROM jsonb_each_text(COALESCE(u.points_by_categories, '{}'::jsonb))
+    ), 0)::INT AS total_points,
+    COUNT(a.id)::INT AS review_awards_count
+FROM awards a
+JOIN users u ON u.keycloak_id = a.teacher
+WHERE a.status = 'IN_REVIEW'::awards_status
+GROUP BY
+    u.keycloak_id,
+    u.first_name,
+    u.last_name,
+    u.username
+ORDER BY review_awards_count DESC, total_points DESC, u.last_name, u.first_name, u.username, u.keycloak_id;
+
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
 

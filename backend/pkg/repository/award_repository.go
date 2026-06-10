@@ -174,3 +174,7 @@ func (r *AwardRepository) CountAwardsFiltered(ctx context.Context, search string
 func (r *AwardRepository) GetAwardDepartmentsStats(ctx context.Context) ([]storage.GetAwardDepartmentsStatsRow, error) {
 	return r.queries.GetAwardDepartmentsStats(ctx)
 }
+
+func (r *AwardRepository) GetAwardReviewTeachersStats(ctx context.Context) ([]storage.GetAwardReviewTeachersStatsRow, error) {
+	return r.queries.GetAwardReviewTeachersStats(ctx)
+}

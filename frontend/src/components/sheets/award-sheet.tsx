@@ -31,7 +31,12 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const openPageButtonRef = useRef<HTMLAnchorElement | null>(null)
-	const totalPoints = award?.status !== StatusEnum.APPROVED ? t.award.pointsAfterApprove : award.totalPoints
+	const totalPoints =
+		award?.status === StatusEnum.IN_REVIEW
+			? award.criteria.points[0] ?? award.totalPoints
+			: award?.status !== StatusEnum.APPROVED
+				? t.award.pointsAfterApprove
+				: award.totalPoints
 	const category = award?.category ?? null
 	const categoryName = category ? getLocaleText(category.name, locale) : ''
 	const categoryDescription = category?.description ? getLocaleText(category.description, locale) : ''

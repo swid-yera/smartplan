@@ -99,6 +99,40 @@ func (h *AwardHandler) GetAwardDepartments(c *gin.Context) {
 	c.JSON(http.StatusOK, departments)
 }
 
+func (h *AwardHandler) GetReviewTeachers(c *gin.Context) {
+	teachers, err := h.service.GetReviewTeachers(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
+		return
+	}
+
+	c.JSON(http.StatusOK, teachers)
+}
+
+func (h *AwardHandler) GetUserAwardsSummary(c *gin.Context) {
+	userIDParam := c.Param("user_id")
+	userID, err := uuid.Parse(userIDParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid user_id")})
+		return
+	}
+
+	summary, err := h.service.GetUserAwardsSummary(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
+		return
+	}
+
+	for categoryIndex := range summary.Categories {
+		for awardIndex := range summary.Categories[categoryIndex].Awards {
+			summary.Categories[categoryIndex].Awards[awardIndex] =
+				h.resolveAwardFieldValues(c.Request.Context(), summary.Categories[categoryIndex].Awards[awardIndex])
+		}
+	}
+
+	c.JSON(http.StatusOK, summary)
+}
+
 func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 	idParam := c.Param("id")
 
