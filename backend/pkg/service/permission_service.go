@@ -106,19 +106,30 @@ func canonicalizePermissionCodes(codes []PermissionCode) []PermissionCode {
 	}
 
 	for _, domain := range orderedDomains {
-		if _, ok := seen[domain.full]; ok {
+		hasView := hasPermissionCode(seen, domain.view)
+		hasManage := hasPermissionCode(seen, domain.manage)
+		hasFull := hasPermissionCode(seen, domain.full)
+
+		if hasFull || (hasView && hasManage) {
 			result = append(result, domain.full)
 			continue
 		}
-		if _, ok := seen[domain.view]; ok {
+
+		if hasView {
 			result = append(result, domain.view)
 		}
-		if _, ok := seen[domain.manage]; ok {
+
+		if hasManage {
 			result = append(result, domain.manage)
 		}
 	}
 
 	return result
+}
+
+func hasPermissionCode(seen map[PermissionCode]struct{}, code PermissionCode) bool {
+	_, ok := seen[code]
+	return ok
 }
 
 func permissionDomain(code PermissionCode) string {

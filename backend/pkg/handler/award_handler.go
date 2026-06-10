@@ -153,8 +153,10 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 		return
 	}
 
-	// Пользователь с точечным KPI-view может только отправить на проверку.
-	if service.HasPermissionExact(currentUser.Permissions, service.PermKPIView) {
+	// Только чистый KPI-view может отправить награду на проверку.
+	// KPI-manage и KPI-full могут менять статус без этих ограничений.
+	if service.HasPermissionExact(currentUser.Permissions, service.PermKPIView) &&
+		!service.HasPermissionLevel(currentUser.Permissions, service.PermKPIManage) {
 		if req.Status != storage.AwardsStatusINREVIEW {
 			c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("teachers can only submit awards for review")})
 			return

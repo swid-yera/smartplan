@@ -4,13 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, LocaleToggleButton, PageTitle, withNavAccess } from '@components'
+import { Loader, LocaleToggleButton, PageTitle, withPermission } from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,
 	getLocaleText,
 	getUILocaleSection,
-	hasRole,
 	interpolateUILocaleText,
 } from '@helpers'
 import { services } from '@services'
@@ -44,7 +43,7 @@ import {
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { IApiErrorResponse, ICategoryRequest, Locale } from '@types'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { Minus, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -65,7 +64,7 @@ import localeDictionary from './locale.json'
 const Page = () => {
 	const { id } = useParams<{ id: string }>()
 	const { push, replace } = useRouter()
-	const { user, authLoading } = useAuthStore()
+	const { authLoading } = useAuthStore()
 	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
 	const t = getUILocaleSection(localeDictionary, activeLocale)
 
@@ -96,7 +95,6 @@ const Page = () => {
 		...services.categories.deleteMutationOptions(),
 	})
 
-	const isAdmin = user ? hasRole(user.role, RoleEnum.ADMIN) : false
 	const isPageLoading = authLoading || isCategoryLoading
 
 	useEffect(() => {
@@ -253,7 +251,6 @@ const Page = () => {
 	}
 
 	if (isPageLoading) return <Loader type='data' />
-	if (!user || !isAdmin) return <Forbidden />
 	if (!category) return <p className='p-6 text-center text-muted-foreground'>{t.notFound}</p>
 
 	return (
@@ -425,4 +422,4 @@ const Page = () => {
 	)
 }
 
-export default withNavAccess(Page)
+export default withPermission(Page, [PermissionCodeEnum.KPI_FULL])

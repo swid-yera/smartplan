@@ -89,7 +89,7 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 		writeServiceError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Category deleted successfully"})
+	c.Status(http.StatusNoContent)
 }
 
 func writeServiceError(c *gin.Context, err error) {
@@ -100,4 +100,3 @@ func writeServiceError(c *gin.Context, err error) {
 	}
 	c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 }
-
