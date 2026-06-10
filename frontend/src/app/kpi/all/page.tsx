@@ -4,12 +4,12 @@ import { useEffect } from 'react'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { AwardsCard, Loader, PageTitle, Pagination, withRole } from '@components'
-import { getUILocaleSection, hasRole } from '@helpers'
+import { AwardsCard, Loader, PageTitle, Pagination, withPermission } from '@components'
+import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { RoleEnum, type StatusEnum } from '@types'
+import { PermissionCodeEnum, type StatusEnum } from '@types'
 
 import { AwardFilterCard, KpiUserSearchCard } from '../components'
 import {
@@ -47,7 +47,7 @@ const Page = () => {
 
 	// store
 	const { user, authLoading } = useAuthStore()
-	const canSearchUsers = !!user && hasRole(user.role, RoleEnum.METHODIST, true)
+	const canSearchUsers = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
 
 	// query
 	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
@@ -112,11 +112,7 @@ const Page = () => {
 			<AwardFilterCard compact className='mb-4' />
 
 			{/* список наград */}
-			<AwardsCard
-				awards={awardsData?.data || []}
-				isLoading={!awardsData && isAwardsLoading}
-				title={t.listTitle}
-			/>
+			<AwardsCard awards={awardsData?.data || []} isLoading={!awardsData && isAwardsLoading} title={t.listTitle} />
 
 			{/* пагинация */}
 			<Pagination
@@ -131,4 +127,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.KPI_MANAGE])

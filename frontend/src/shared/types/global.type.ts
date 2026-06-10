@@ -14,6 +14,16 @@ export enum RoleEnum {
 	TEACHER = 'TEACHER',
 	METHODIST = 'METHODIST',
 	ADMIN = 'ADMIN',
+	SPECIAL = 'SPECIAL',
+}
+
+export enum PermissionCodeEnum {
+	RUP_MANAGE = 'RUP-manage',
+	RUP_VIEW = 'RUP-view',
+	RUP_FULL = 'RUP-full',
+	KPI_MANAGE = 'KPI-manage',
+	KPI_VIEW = 'KPI-view',
+	KPI_FULL = 'KPI-full',
 }
 
 export interface IGroup {
@@ -39,12 +49,12 @@ export interface IUser {
 	username: string
 	email?: string
 	role: RoleEnum
+	permissions?: PermissionCodeEnum[]
 
 	firstName: string
 	lastName: string
 	phone: string
 	departments?: IUserDepartment[]
-	deparments?: IUserDepartment[]
 
 	rups?: IRup[]
 	totalPoints?: number

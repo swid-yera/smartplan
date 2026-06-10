@@ -14,6 +14,7 @@ import { useAuthStore, useLocaleStore } from '@store'
 import { type IUser, RoleEnum } from '@types'
 import { Mail, Phone, UserIcon } from 'lucide-react'
 
+import { PermissionBadge } from '../badges/permission-badge'
 import { ViolationBadge } from '../badges/violation-badge'
 import localeDictionary from './locale.json'
 
@@ -22,26 +23,33 @@ interface IUserMainProps {
 	className?: string
 	showViolation?: boolean
 	showTotalPoints?: boolean
+	showPermissions?: boolean
 }
 
-export const UserCard: FC<IUserMainProps> = ({ user, className, showViolation = true, showTotalPoints = false }) => {
+export const UserCard: FC<IUserMainProps> = ({
+	user,
+	className,
+	showViolation = true,
+	showTotalPoints = false,
+	showPermissions = false,
+}) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const me = useAuthStore((state) => state.user)
 	const t = getUILocaleSection(localeDictionary, locale).userCard
 	const shouldShowTotalPoints = showTotalPoints || me?.role !== RoleEnum.TEACHER
-	const departmentNames = (user.departments ?? user.deparments ?? [])
+	const departmentNames = (user.departments ?? [])
 		.map((department) => getLocaleText(department.name, locale))
 		.filter(Boolean)
 		.join(', ')
 
 	return (
 		<Card className={cn(className)}>
-			<CardHeader className='flex items-center gap-4'>
+			<CardHeader className='flex max-md:flex-col items-center gap-4'>
 				<div className='flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary'>
 					<UserIcon className='h-8 w-8' />
 				</div>
 				<div className='flex-1'>
-					<CardTitle className='text-2xl capitalize'>
+					<CardTitle className='text-2xl max-md:text-center capitalize'>
 						{user.firstName} {user.lastName}
 					</CardTitle>
 					<CardDescription className='flex flex-wrap items-center gap-2'>
@@ -62,17 +70,17 @@ export const UserCard: FC<IUserMainProps> = ({ user, className, showViolation = 
 				<div className='grid gap-4 md:grid-cols-2'>
 					<div className='space-y-1'>
 						<p className='text-sm font-medium text-muted-foreground'>{t.firstName}</p>
-						<p className='flex items-center gap-2'>{user.firstName}</p>
+						<p className='flex items-center gap-2'>{user.firstName ?? '—'}</p>
 					</div>
 
 					<div className='space-y-1'>
 						<p className='text-sm font-medium text-muted-foreground'>{t.lastName}</p>
-						<p className=''>{user.lastName}</p>
+						<p className=''>{user.lastName ?? '—'}</p>
 					</div>
 
 					<div className='space-y-1'>
 						<p className='text-sm font-medium text-muted-foreground'>{t.username}</p>
-						<p>{user.username}</p>
+						<p>{user.username ?? '—'}</p>
 					</div>
 
 					<div className='space-y-1'>
@@ -81,7 +89,7 @@ export const UserCard: FC<IUserMainProps> = ({ user, className, showViolation = 
 							{user.email && (
 								<>
 									<Mail className='h-4 w-4 text-muted-foreground' />
-									{user.email}
+									{user.email ?? '—'}
 								</>
 							)}
 						</p>
@@ -93,7 +101,7 @@ export const UserCard: FC<IUserMainProps> = ({ user, className, showViolation = 
 							{user.phone && (
 								<>
 									<Phone className='h-4 w-4 text-muted-foreground' />
-									{prettifyPhone(user.phone)}
+									{prettifyPhone(user.phone) ?? '—'}
 								</>
 							)}
 						</p>
@@ -106,6 +114,17 @@ export const UserCard: FC<IUserMainProps> = ({ user, className, showViolation = 
 						</div>
 					)}
 				</div>
+
+				{showPermissions && (user.permissions ?? []).length > 0 && (
+					<div className='space-y-2'>
+						<p className='text-sm font-medium text-muted-foreground'>{t.permissions}</p>
+						<div className='flex flex-wrap gap-2'>
+							{(user.permissions ?? []).map((permission) => (
+								<PermissionBadge key={permission} permission={permission} />
+							))}
+						</div>
+					</div>
+				)}
 
 				{showViolation && <ViolationBadge user={user} />}
 			</CardContent>

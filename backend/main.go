@@ -82,9 +82,11 @@ func main() {
 		kcCfg,
 	)
 
+	permissionsRepo := repository.NewPermissionsPostgres(queries)
+
 	// ---------- SERVICES ----------
 	authService := service.NewAuthService(rdb, authRepo, kcSyncClient, kcCfg, log)
-	userService := service.NewUserService(usersRepo, rdb)
+	userService := service.NewUserService(usersRepo, permissionsRepo, rdb)
 
 	// ---------- AI SERVICE ----------
 	log.Infof("Using Gemini API provider with model %s", aiCfg.Gemini.PrimaryModel)
@@ -94,9 +96,10 @@ func main() {
 
 	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
-	syncGuard := service.NewSyncGuard(1 * time.Minute)
+	departmentsSyncService := kcservice.NewDepartmentsSyncService(kcSyncClient, db, kcCfg)
+	groupsSyncGuard := service.NewSyncGuard(1 * time.Minute)
+	departmentsSyncGuard := service.NewSyncGuard(1 * time.Minute)
 
-	permissionsRepo := repository.NewPermissionsPostgres(queries)
 	permissionService := service.NewPermissionService(permissionsRepo, usersRepo)
 
 	// ---------- MIDDLEWARE ----------
@@ -119,8 +122,9 @@ func main() {
 	rupHandler := handler.NewRupHandler(rupService, log)
 	awardHandler := handler.NewAwardHandler(awardService)
 	categoryHandler := handler.NewCategoryHandler(awardService)
-	statisticsHandler := handler.NewStatisticsHandler(userService)
-	groupsHandler := handler.NewGroupsHandler(groupsSyncService, syncGuard)
+	statisticsHandler := handler.NewStatisticsHandler(userService, awardService)
+	groupsHandler := handler.NewGroupsHandler(groupsSyncService, groupsSyncGuard)
+	departmentsHandler := handler.NewDepartmentsHandler(awardService, departmentsSyncService, departmentsSyncGuard)
 	lessonHandler := handler.NewLessonHandler(lessonService, log)
 	aiHandler := handler.NewAIHandler(aiService, log)
 	permissionHandler := handler.NewPermissionHandler(permissionService)
@@ -137,6 +141,7 @@ func main() {
 		categoryHandler,
 		statisticsHandler,
 		groupsHandler,
+		departmentsHandler,
 		lessonHandler,
 		aiHandler,
 		nil,

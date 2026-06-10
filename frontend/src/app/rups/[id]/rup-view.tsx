@@ -1,11 +1,26 @@
-import { type FC, type ReactNode } from 'react'
+import { type FC, type ReactNode, useState } from 'react'
 
-import { PageTitle, ResponsibleUsersCard, RupReviewSheets, StatusBadge } from '@components'
-import { formatHours, getLocaleText, getUILocaleSection, hasRole, normalizeStudyForm } from '@helpers'
-import { ButtonGroup, Tabs, TabsList, TabsTrigger } from '@shadcn'
+import Link from 'next/link'
+
+import { LocaleToggleButton, PageTitle, ResponsibleUsersCard, RupReviewSheets, StatusBadge } from '@components'
+import { formatHours, getLocaleText, getUILocaleSection, normalizeStudyForm } from '@helpers'
+import { Button, ButtonGroup, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { type IRup, type Locale, RoleEnum, StatusEnum } from '@types'
-import { Search, ShieldAlert, Timer } from 'lucide-react'
+import { type IRup, type Locale, StatusEnum } from '@types'
+import {
+	CheckCircle,
+	Edit,
+	FileDown,
+	type LucideIcon,
+	MoreVertical,
+	RefreshCw,
+	Search,
+	SendIcon,
+	SendToBack,
+	ShieldAlert,
+	Timer,
+	Trash,
+} from 'lucide-react'
 
 import { ContactsView, DisciplineView, ExplorationView, TopicsView } from '../components'
 import { BasicView } from '../components/view/basic-view'
@@ -13,7 +28,13 @@ import localeDictionary from './locale.json'
 
 interface IRupViewProps {
 	data: IRup
-	role: RoleEnum
+	canManage: boolean
+	canFullAccess: boolean
+	canEdit: boolean
+	canSendToReview: boolean
+	canDownload: boolean
+	canRegenerateLanguage: boolean
+	canDelete: boolean
 	activeLocale: Locale
 	localeNotice?: ReactNode
 	onActiveLocaleChange: (nextLocale: Locale) => void
@@ -21,42 +42,198 @@ interface IRupViewProps {
 		newStatus: StatusEnum,
 		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
 	) => void
-	actions?: ReactNode
+	onOpenStatusSheet: () => void
+	onOpenDeleteDialog: () => void
+	onOpenDownloadDialog: () => void
+	onOpenRegenerateDialog: () => void
+	onSendToReview: () => void
+	isDeletePending: boolean
+	isRegeneratePending: boolean
 }
 
 export const RupView: FC<IRupViewProps> = ({
 	data,
-	role,
+	canManage,
+	canFullAccess,
+	canEdit,
+	canSendToReview,
+	canDownload,
+	canRegenerateLanguage,
+	canDelete,
 	activeLocale,
 	localeNotice,
 	onActiveLocaleChange,
 	onStatusChange,
-	actions,
+	onOpenStatusSheet,
+	onOpenDeleteDialog,
+	onOpenDownloadDialog,
+	onOpenRegenerateDialog,
+	onSendToReview,
+	isDeletePending,
+	isRegeneratePending,
 }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const localeText = getUILocaleSection(localeDictionary, locale)
 	const t = getUILocaleSection(localeDictionary, activeLocale).view
+	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
+	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
+	const actionsText = localeText.actions
+	const isMethodistReview = canManage && data.status === StatusEnum.IN_REVIEW
+
+	type IActionBase = {
+		id: string
+		label: string
+		icon: LucideIcon
+		variant?: 'default' | 'destructive'
+	}
+
+	type ILinkAction = IActionBase & {
+		href: string
+		onClick?: never
+	}
+
+	type IClickAction = IActionBase & {
+		href?: never
+		onClick: () => void
+		disabled?: boolean
+	}
+
+	const availableActions: Array<ILinkAction | IClickAction> = [
+		canFullAccess && {
+			id: 'change-status',
+			label: actionsText.changeStatus,
+			icon: ShieldAlert,
+			onClick: onOpenStatusSheet,
+		},
+		canEdit && {
+			id: 'edit',
+			label: actionsText.edit,
+			icon: Edit,
+			href: `/rups/${data.id}/edit`,
+		},
+		canSendToReview && {
+			id: 'send-to-review',
+			label: actionsText.sendToReview,
+			icon: SendIcon,
+			onClick: onSendToReview,
+		},
+		canDownload && {
+			id: 'download',
+			label: actionsText.download,
+			icon: FileDown,
+			onClick: onOpenDownloadDialog,
+		},
+		canRegenerateLanguage && {
+			id: 'regenerate',
+			label: actionsText.regenerate,
+			icon: RefreshCw,
+			onClick: onOpenRegenerateDialog,
+		},
+		isMethodistReview && {
+			id: 'approve',
+			label: t.approve,
+			icon: CheckCircle,
+			onClick: () => setIsApproveSheetOpen(true),
+		},
+		isMethodistReview && {
+			id: 'reject',
+			label: t.reject,
+			icon: SendToBack,
+			onClick: () => setIsRejectSheetOpen(true),
+			variant: 'destructive',
+		},
+		canDelete && {
+			id: 'delete',
+			label: actionsText.delete,
+			icon: Trash,
+			onClick: onOpenDeleteDialog,
+			variant: 'destructive',
+		},
+	].filter(Boolean) as Array<ILinkAction | IClickAction>
+
+	const primaryAction = availableActions[0] ?? null
+	const overflowActions = availableActions.slice(1)
+
+	const renderAction = (action: ILinkAction | IClickAction) =>
+		action.href ? (
+			<Button asChild key={action.id} className='h-9' variant='outline'>
+				<Link href={action.href}>
+					<action.icon className='mr-2 h-4 w-4' />
+					{action.label}
+				</Link>
+			</Button>
+		) : (
+			<Button
+				key={action.id}
+				className={action.variant === 'destructive' ? 'h-9 hover:text-destructive' : 'h-9 hover:text-primary'}
+				disabled={
+					(action.id === 'regenerate' && isRegeneratePending) || (action.id === 'delete' && isDeletePending)
+				}
+				variant='outline'
+				onClick={action.onClick}
+			>
+				<action.icon className='mr-2 h-4 w-4' />
+				{action.label}
+			</Button>
+		)
 
 	return (
 		<div className='w-full mx-auto relative'>
 			<PageTitle
 				sticky
 				actions={
-					<div className='flex items-center gap-2'>
-						<Tabs value={activeLocale} onValueChange={(next) => onActiveLocaleChange(next as Locale)}>
-							<TabsList>
-								<TabsTrigger value='ru'>{t.languageRu}</TabsTrigger>
-								<TabsTrigger value='kk'>{t.languageKk}</TabsTrigger>
-							</TabsList>
-						</Tabs>
-						<ButtonGroup>
-							{actions}
-							<RupReviewSheets data={data} role={role} text={localeText} onStatusChange={onStatusChange} />
-						</ButtonGroup>
-					</div>
+					<ButtonGroup className='sm:w-auto'>
+						{primaryAction ? renderAction(primaryAction) : null}
+
+						{overflowActions.length > 0 ? (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										aria-label={actionsText.moreActions}
+										className='h-9 px-3'
+										type='button'
+										variant='outline'
+									>
+										<MoreVertical className='h-4 w-4' />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align='end' className='w-56'>
+									{overflowActions.map((action) =>
+										action.href ? (
+											<DropdownMenuItem key={action.id} asChild>
+												<Link href={action.href}>
+													<action.icon className='mr-2 h-4 w-4' />
+													{action.label}
+												</Link>
+											</DropdownMenuItem>
+										) : (
+											<DropdownMenuItem
+												key={action.id}
+												disabled={
+													(action.id === 'regenerate' && isRegeneratePending) ||
+													(action.id === 'delete' && isDeletePending)
+												}
+												variant={action.variant}
+												onClick={action.onClick}
+											>
+												<action.icon className='mr-2 h-4 w-4' />
+												{action.label}
+											</DropdownMenuItem>
+										),
+									)}
+								</DropdownMenuContent>
+							</DropdownMenu>
+						) : null}
+
+						<LocaleToggleButton
+							activeLocale={activeLocale}
+							labels={{ kk: t.languageKk, ru: t.languageRu }}
+							variant='default'
+							onChangeLocale={onActiveLocaleChange}
+						/>
+					</ButtonGroup>
 				}
-				backHref='/rups'
-				description={hasRole(role, RoleEnum.METHODIST) ? t.reviewDescription : t.readOnlyDescription}
+				description={canManage ? t.reviewDescription : t.readOnlyDescription}
 			>
 				{` ${getLocaleText(data.name, activeLocale) || `${t.titleFallback} `} `}
 				<StatusBadge locale={activeLocale} status={data.status} />
@@ -174,6 +351,17 @@ export const RupView: FC<IRupViewProps> = ({
 					type={data.type}
 				/>
 			</div>
+
+			<RupReviewSheets
+				canManage={canManage}
+				data={data}
+				isApproveSheetOpen={isApproveSheetOpen}
+				isRejectSheetOpen={isRejectSheetOpen}
+				text={localeText}
+				onApproveSheetOpenChange={setIsApproveSheetOpen}
+				onRejectSheetOpenChange={setIsRejectSheetOpen}
+				onStatusChange={onStatusChange}
+			/>
 		</div>
 	)
 }

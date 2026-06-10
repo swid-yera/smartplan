@@ -24,6 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 		const normalizedUser: IAuthUser | null = user
 			? {
 					...user,
+					permissions: user.permissions ?? [],
 					violation: user.violation ?? ViolationEnum.NONE,
 					violations: user.violations ?? [],
 				}

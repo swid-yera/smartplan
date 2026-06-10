@@ -5,7 +5,7 @@ import { type JSX, type KeyboardEvent, useEffect, useMemo, useRef, useState } fr
 import type { NextPage } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, RupLanguageDialog, withRole } from '@components'
+import { Loader, LocaleToggleButton, PageTitle, RupLanguageDialog, withPermission } from '@components'
 import {
 	createLocaleText,
 	getLocaleText,
@@ -39,7 +39,7 @@ import {
 	type ICreateRupRequest,
 	type Locale,
 	type LocaleText,
-	RoleEnum,
+	PermissionCodeEnum,
 	RupTypeEnum,
 	StudyFormEnum,
 	TopicTypeEnum,
@@ -533,14 +533,11 @@ const Page: NextPage = () => {
 													})}
 												</Badge>
 											) : null}
-											<Button
-												size='sm'
-												type='button'
-												variant='outline'
-												onClick={() => setIsLanguageDialogOpen(true)}
-											>
-												{pageT.changeLanguage}
-											</Button>
+											<LocaleToggleButton
+												activeLocale={creationLocale ?? 'ru'}
+												labels={{ kk: t.languages.kk, ru: t.languages.ru }}
+												onChangeLocale={confirmCreationLanguage}
+											/>
 										</div>
 									}
 									className='mb-5'
@@ -588,7 +585,7 @@ const Page: NextPage = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])
 
 export interface ITab {
 	id: string

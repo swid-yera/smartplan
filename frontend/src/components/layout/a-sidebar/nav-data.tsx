@@ -1,4 +1,4 @@
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum, RoleEnum } from '@types'
 import {
 	Award,
 	BookCopy,
@@ -19,6 +19,7 @@ import {
 	Ribbon,
 	ShieldUser,
 	Users,
+	UsersRound,
 } from 'lucide-react'
 
 export interface INav {
@@ -27,14 +28,9 @@ export interface INav {
 	url: string
 	icon: LucideIcon
 	defaultOpen?: boolean
-	role?: RoleEnum
-	items?: {
-		id: string
-		icon: LucideIcon
-		titleKey: string
-		url: string
-		role?: RoleEnum
-	}[]
+	roles?: RoleEnum[]
+	permissions?: PermissionCodeEnum[]
+	items?: INav[]
 }
 
 export const navMain: INav[] = [
@@ -49,43 +45,42 @@ export const navMain: INav[] = [
 		titleKey: 'rups',
 		url: '/rups',
 		icon: PenIcon,
+		permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_MANAGE, PermissionCodeEnum.RUP_FULL],
 		items: [
-			// teacher
 			{
 				id: 'rups-my',
 				icon: LibraryBig,
 				titleKey: 'rupsMy',
 				url: '/rups/my',
-				// role: RoleEnum.TEACHER,
+				permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_FULL],
 			},
 			{
 				id: 'rups-create',
 				icon: FilePlus,
 				titleKey: 'rupsCreate',
 				url: '/rups/create',
-				// role: RoleEnum.TEACHER,
+				permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_FULL],
 			},
-			{
-				id: 'rups-guides',
-				icon: Film,
-				titleKey: 'rupsGuides',
-				url: '/rups/guides',
-				// role: RoleEnum.TEACHER,
-			},
-			// methodist
+
 			{
 				id: 'rups-all',
 				icon: BookCopy,
 				titleKey: 'rupsAll',
 				url: '/rups/all',
-				role: RoleEnum.METHODIST,
+				permissions: [PermissionCodeEnum.RUP_MANAGE, PermissionCodeEnum.RUP_FULL],
 			},
 			{
 				id: 'rups-review',
 				icon: ClipboardClock,
 				titleKey: 'rupsReview',
 				url: '/rups/review',
-				role: RoleEnum.METHODIST,
+				permissions: [PermissionCodeEnum.RUP_MANAGE, PermissionCodeEnum.RUP_FULL],
+			},
+			{
+				id: 'rups-guides',
+				icon: Film,
+				titleKey: 'rupsGuides',
+				url: '/rups/guides',
 			},
 		],
 	},
@@ -94,14 +89,14 @@ export const navMain: INav[] = [
 		titleKey: 'lessons',
 		url: '/lessons',
 		icon: BookOpen,
-		role: RoleEnum.TEACHER,
+		permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_FULL],
 		items: [
 			{
 				id: 'lessons-my',
 				icon: Notebook,
 				titleKey: 'lessonsMy',
 				url: '/lessons/my',
-				role: RoleEnum.TEACHER,
+				permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_FULL],
 			},
 		],
 	},
@@ -110,36 +105,35 @@ export const navMain: INav[] = [
 		titleKey: 'kpi',
 		url: '/kpi',
 		icon: Award,
+		permissions: [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW, PermissionCodeEnum.KPI_MANAGE],
 		items: [
-			// teacher
 			{
 				id: 'kpi-my',
 				icon: Medal,
 				titleKey: 'kpiMy',
 				url: '/kpi/my',
-				role: RoleEnum.TEACHER,
+				permissions: [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW],
 			},
 			{
 				id: 'kpi-entry',
 				icon: FilePlus,
 				titleKey: 'kpiEntry',
 				url: '/kpi/entry',
-				role: RoleEnum.TEACHER,
+				permissions: [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW],
 			},
-			// methodist
 			{
 				id: 'kpi-all',
 				icon: Ribbon,
 				titleKey: 'kpiAll',
 				url: '/kpi/all',
-				role: RoleEnum.METHODIST,
+				permissions: [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_MANAGE],
 			},
 			{
 				id: 'kpi-rating',
 				icon: ChartBar,
 				titleKey: 'kpiRating',
 				url: '/kpi/rating',
-				role: RoleEnum.METHODIST,
+				permissions: [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_MANAGE],
 			},
 			{
 				id: 'kpi-guides',
@@ -149,43 +143,48 @@ export const navMain: INav[] = [
 			},
 		],
 	},
-	// {
-	// 	id: 'groups',
-	// 	titleKey: 'groups',
-	// 	url: '/groups',
-	// 	icon: Group,
-	// },
 	{
 		id: 'admin',
 		icon: ShieldUser,
 		titleKey: 'admin',
 		url: '/admin',
-		defaultOpen: true,
-		role: RoleEnum.ADMIN,
+		defaultOpen: false,
+		permissions: [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL],
 		items: [
 			{
 				id: 'users',
 				titleKey: 'users',
 				url: '/users',
 				icon: Users,
+				permissions: [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL],
 			},
 			{
-				id: 'settings',
-				titleKey: 'settings',
-				url: '/settings',
+				id: 'groups',
+				titleKey: 'groups',
+				url: '/groups',
 				icon: Group,
+				permissions: [PermissionCodeEnum.RUP_FULL],
+			},
+			{
+				id: 'departments',
+				titleKey: 'departments',
+				url: '/departments',
+				icon: UsersRound,
+				permissions: [PermissionCodeEnum.KPI_FULL],
 			},
 			{
 				id: 'kpi-categories',
 				titleKey: 'kpiCategories',
 				url: '/kpi/categories',
 				icon: ListCheck,
+				permissions: [PermissionCodeEnum.KPI_FULL],
 			},
 			{
 				id: 'kpi-criteria',
 				titleKey: 'kpiCriteria',
 				url: '/kpi/types',
 				icon: ListCheck,
+				permissions: [PermissionCodeEnum.KPI_FULL],
 			},
 		],
 	},

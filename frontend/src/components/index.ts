@@ -2,11 +2,14 @@
 export * from './ui/editable-hour-cell'
 export * from './ui/forbidden'
 export * from './ui/loader'
+export * from './ui/locale-toggle-button'
 export * from './ui/page-title'
 export * from './ui/pagination'
 export * from './ui/section-title'
 
 // hocs
+export * from './hocs/with-permission'
+export * from './hocs/with-nav-access'
 export * from './hocs/with-role'
 
 // sheet
@@ -18,7 +21,6 @@ export * from './sheets/rup-sheet'
 // cards
 export * from './cards/awards-card'
 export * from './cards/category-card'
-export * from './cards/combine-card'
 export * from './cards/empty-card'
 export * from './cards/groups-card'
 export * from './cards/penalty-card'
@@ -33,6 +35,7 @@ export * from './dialogs/rup-language-dialog'
 export * from './dialogs/violation-dialog'
 
 // badges
+export * from './badges/permission-badge'
 export * from './badges/status-badge'
 export * from './badges/topic-type-badge'
 export * from './badges/violation-badge'

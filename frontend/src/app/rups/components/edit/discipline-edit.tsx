@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 
 import { EditableHourCell } from '@components'
 import { formatAsDash, getLocaleText, getUILocaleSection } from '@helpers'
-import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -44,6 +43,7 @@ import {
 	useFormContext,
 	useWatch,
 } from 'react-hook-form'
+
 import localeDictionary from './locale.json'
 
 type Semester = { semester: number; totalHours: number }
@@ -57,6 +57,17 @@ type Discipline = {
 type IProps = FieldValues & {
 	disciplines: Discipline[]
 }
+
+const getRawLocalizedValue = (value: LocaleText, locale: Locale) => {
+	if (!value || typeof value !== 'object') return ''
+
+	return locale === 'kk' ? (value.kz ?? '') : (value.ru ?? '')
+}
+
+const updateRawLocaleText = (value: LocaleText, locale: Locale, next: string): LocaleText => ({
+	...value,
+	[locale === 'kk' ? 'kz' : 'ru']: next,
+})
 
 export function DisciplineEdit<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
 	const locale = useLocaleStore((state) => state.locale)
@@ -127,7 +138,7 @@ export function DisciplineEdit<T extends IProps>({ activeLocale }: { activeLocal
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead className='w-full min-w-[400px]' rowSpan={3}>
+								<TableHead className='w-full min-w-100' rowSpan={3}>
 									{t.discipline.tableDiscipline}:
 								</TableHead>
 								<TableHead className='text-center wrap-break-words whitespace-normal' rowSpan={3}>
@@ -283,14 +294,10 @@ function DisciplineRow<T extends IProps>({
 									<FormControl>
 										<Input
 											placeholder={namePlaceholder}
-											value={getLocalizedValue(field.value as LocaleText, activeLocale)}
+											value={getRawLocalizedValue(field.value as LocaleText, activeLocale)}
 											onChange={(event) =>
 												field.onChange(
-													updateLocaleText(
-														field.value as LocaleText,
-														activeLocale,
-														event.target.value,
-													),
+													updateRawLocaleText(field.value as LocaleText, activeLocale, event.target.value),
 												)
 											}
 										/>

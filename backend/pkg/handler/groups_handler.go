@@ -40,7 +40,7 @@ func (h *GroupsHandler) SyncGroups(c *gin.Context) {
 
 	result, err := h.syncSvc.SyncGroups(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -50,3 +50,4 @@ func (h *GroupsHandler) SyncGroups(c *gin.Context) {
 		"result":  result,
 	})
 }
+

@@ -55,6 +55,9 @@ export const AwardTypeSelectionFields = ({
 	showHints = false,
 	bonusCriteriaOptionsSource = 'bonus',
 }: AwardTypeSelectionFieldsProps) => {
+	const isCriteriaValidInList = (criteria: ICriteriaResponse | null, list: ICriteriaResponse[] | null | undefined) =>
+		!!criteria && !!list?.some((item) => item.id === criteria.id)
+
 	useEffect(() => {
 		if (availableTypes.length !== 1) return
 
@@ -63,16 +66,37 @@ export const AwardTypeSelectionFields = ({
 		if (selectedType?.id === onlyType.id) return
 
 		setSelectedType(onlyType)
-		setSelectedVariant(null)
-		setSelectedCriteria(null)
-		setSelectedBonusCriteria(null)
+
+		const nextVariant =
+			selectedVariant && onlyType.variants.some((variant) => variant.id === selectedVariant.id)
+				? selectedVariant
+				: onlyType.variants[0] || null
+
+		if (nextVariant?.id !== selectedVariant?.id) {
+			setSelectedVariant(nextVariant)
+		}
+
+		const criteriaList = nextVariant?.criteria || []
+		if (!isCriteriaValidInList(selectedCriteria, criteriaList)) {
+			setSelectedCriteria(criteriaList.length === 1 ? criteriaList[0] : null)
+		}
+
+		const bonusCriteriaList =
+			bonusCriteriaOptionsSource === 'criteria' ? criteriaList : nextVariant?.bonus_criteria || []
+		if (!isCriteriaValidInList(selectedBonusCriteria, bonusCriteriaList)) {
+			setSelectedBonusCriteria(bonusCriteriaList.length === 1 ? bonusCriteriaList[0] : null)
+		}
 	}, [
 		availableTypes,
+		bonusCriteriaOptionsSource,
+		selectedBonusCriteria,
+		selectedCriteria,
 		selectedType,
 		setSelectedType,
 		setSelectedVariant,
 		setSelectedCriteria,
 		setSelectedBonusCriteria,
+		selectedVariant,
 	])
 
 	useEffect(() => {
@@ -82,9 +106,20 @@ export const AwardTypeSelectionFields = ({
 			!!selectedVariant && selectedType.variants.some((variant) => variant.id === selectedVariant.id)
 
 		if (!isSelectedVariantValid && selectedVariant) {
-			setSelectedVariant(null)
-			setSelectedCriteria(null)
-			setSelectedBonusCriteria(null)
+			const nextVariant = selectedType.variants[0] || null
+
+			setSelectedVariant(nextVariant)
+
+			const criteriaList = nextVariant?.criteria || []
+			if (!isCriteriaValidInList(selectedCriteria, criteriaList)) {
+				setSelectedCriteria(criteriaList.length === 1 ? criteriaList[0] : null)
+			}
+
+			const bonusCriteriaList =
+				bonusCriteriaOptionsSource === 'criteria' ? criteriaList : nextVariant?.bonus_criteria || []
+			if (!isCriteriaValidInList(selectedBonusCriteria, bonusCriteriaList)) {
+				setSelectedBonusCriteria(bonusCriteriaList.length === 1 ? bonusCriteriaList[0] : null)
+			}
 
 			return
 		}
@@ -96,9 +131,27 @@ export const AwardTypeSelectionFields = ({
 		if (selectedVariant?.id === onlyVariant.id) return
 
 		setSelectedVariant(onlyVariant)
-		setSelectedCriteria(null)
-		setSelectedBonusCriteria(null)
-	}, [selectedType, selectedVariant, setSelectedVariant, setSelectedCriteria, setSelectedBonusCriteria])
+
+		const criteriaList = onlyVariant.criteria || []
+		if (!isCriteriaValidInList(selectedCriteria, criteriaList)) {
+			setSelectedCriteria(criteriaList.length === 1 ? criteriaList[0] : null)
+		}
+
+		const bonusCriteriaList =
+			bonusCriteriaOptionsSource === 'criteria' ? criteriaList : onlyVariant.bonus_criteria || []
+		if (!isCriteriaValidInList(selectedBonusCriteria, bonusCriteriaList)) {
+			setSelectedBonusCriteria(bonusCriteriaList.length === 1 ? bonusCriteriaList[0] : null)
+		}
+	}, [
+		bonusCriteriaOptionsSource,
+		selectedCriteria,
+		selectedBonusCriteria,
+		selectedType,
+		selectedVariant,
+		setSelectedVariant,
+		setSelectedCriteria,
+		setSelectedBonusCriteria,
+	])
 
 	useEffect(() => {
 		if (!selectedVariant) return

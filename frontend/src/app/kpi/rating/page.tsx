@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react'
 
 import Link from 'next/link'
 
-import { Loader, PageTitle, withRole } from '@components'
+import { Loader, PageTitle, withNavAccess } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
@@ -23,7 +23,6 @@ import {
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { IDepartmentTopTeachersResponse } from '@types'
-import { RoleEnum } from '@types'
 import { Sigma, Users2 } from 'lucide-react'
 
 import { RatingNav } from './components/rating-nav'
@@ -131,7 +130,7 @@ const Page = () => {
 											<span className='h-2.5 w-2.5 rounded-full' style={{ backgroundColor: color }} />
 											<Link
 												className='text-xl font-semibold text-foreground hover:underline'
-												href={`/kpi/rating/departments/${department.keycloakId}`}
+												href={`/departments/${department.keycloakId}`}
 											>
 												{getLocaleText(department.name, locale)}
 											</Link>
@@ -199,4 +198,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.METHODIST])
+export default withNavAccess(Page)

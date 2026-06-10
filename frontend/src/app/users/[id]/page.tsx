@@ -14,23 +14,35 @@ import {
 	RupsCard,
 	UserCard,
 	ViolationDialog,
-	withRole,
+	withPermission,
 } from '@components'
 import {
 	getNextViolationStatus,
 	getUILocaleSection,
-	hasRole,
+	hasAnyPermission,
 	interpolateUILocaleText,
 	normalizeViolation,
 } from '@helpers'
 import { services } from '@services'
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
+import {
+	Button,
+	ButtonGroup,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { RoleEnum, type StatusEnum, ViolationEnum } from '@types'
-import { ArrowLeft, Gavel, ShieldAlert } from 'lucide-react'
+import { PermissionCodeEnum, type StatusEnum, ViolationEnum } from '@types'
+import { ArrowLeft, Gavel, MoreVertical, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 
+import uiLocale from '../../../components/ui/locale.json'
 import { AwardFilterCard } from '../../kpi/components'
 import { RupsFilterCard } from '../../rups/components'
 import {
@@ -40,6 +52,7 @@ import {
 	persistRupFilterState,
 	readPersistedRupFilterState,
 } from '../../rups/components/rups-filter-state'
+import { UsersPermissionsDialog } from '../users-permissions-dialog'
 import localeDictionary from './locale.json'
 
 const Page = () => {
@@ -51,8 +64,10 @@ const Page = () => {
 	const { user: me, authLoading, isAuthenticated } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
+	const uiT = getUILocaleSection(uiLocale, locale)
 	const [isPenaltySheetOpen, setIsPenaltySheetOpen] = useState(false)
 	const [isViolationDialogOpen, setIsViolationDialogOpen] = useState(false)
+	const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false)
 
 	const activeTabParam = searchParams.get('tab')
 	const activeTab = activeTabParam === 'rups' || activeTabParam === 'kpi' ? activeTabParam : 'rups'
@@ -177,7 +192,8 @@ const Page = () => {
 		)
 	}
 
-	const isMethodistView = hasRole(me.role, RoleEnum.METHODIST, true)
+	const canManageViolations = hasAnyPermission(me, [PermissionCodeEnum.KPI_MANAGE])
+	const canManageUserPermissions = hasAnyPermission(me, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.RUP_FULL])
 	const currentViolation = userData.violation || ViolationEnum.NONE
 	const nextViolation = getNextViolationStatus(currentViolation)
 
@@ -210,19 +226,89 @@ const Page = () => {
 		router.push(`${pathname}?${paramsUrl.toString()}`)
 	}
 
-	// page title action buttons
-	const actionButtons = isMethodistView && (
-		<div className='flex items-center gap-2'>
-			<Button size='sm' variant='outline' onClick={() => setIsPenaltySheetOpen(true)}>
-				<ShieldAlert className='mr-2 h-4 w-4' />
-				{t.page.penalties}
-			</Button>
-			<Button size='sm' variant='outline' onClick={() => setIsViolationDialogOpen(true)}>
-				<Gavel className='mr-2 h-4 w-4' />
-				{t.page.violations}
-			</Button>
-		</div>
+	type IAction = {
+		id: string
+		label: string
+		icon: typeof ShieldAlert
+		onClick: () => void
+		variant?: 'default' | 'destructive'
+	}
+
+	const actionItems: IAction[] = [
+		canManageUserPermissions
+			? {
+					id: 'permissions',
+					label: t.page.permissions,
+					icon: ShieldCheck,
+					onClick: () => setIsPermissionsDialogOpen(true),
+				}
+			: null,
+		canManageViolations
+			? {
+					id: 'penalties',
+					label: t.page.penalties,
+					icon: ShieldAlert,
+					onClick: () => setIsPenaltySheetOpen(true),
+				}
+			: null,
+		canManageViolations
+			? {
+					id: 'violations',
+					label: t.page.violations,
+					icon: Gavel,
+					onClick: () => setIsViolationDialogOpen(true),
+				}
+			: null,
+	].filter((item): item is IAction => !!item)
+
+	const visibleActions = actionItems.length > 2 ? actionItems.slice(0, 1) : actionItems
+	const overflowActions = actionItems.slice(visibleActions.length)
+
+	const renderActionButton = (action: IAction) => (
+		<Button
+			key={action.id}
+			className={action.variant === 'destructive' ? 'hover:text-destructive' : ''}
+			size='sm'
+			variant='outline'
+			onClick={action.onClick}
+		>
+			<action.icon className='mr-2 h-4 w-4' />
+			{action.label}
+		</Button>
 	)
+
+	const actionButtons =
+		actionItems.length > 0 ? (
+			<ButtonGroup className='w-full flex-wrap justify-end sm:w-auto'>
+				{visibleActions.map(renderActionButton)}
+
+				{overflowActions.length > 0 ? (
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								aria-label={uiT.moreActions}
+								className='px-3'
+								size='icon-sm'
+								type='button'
+								variant='outline'
+							>
+								<MoreVertical className='h-4 w-4' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align='end' className='w-56'>
+							{overflowActions.map((action) => (
+								<DropdownMenuItem key={action.id} variant={action.variant} onClick={action.onClick}>
+									<action.icon className='mr-2 h-4 w-4' />
+									{action.label}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				) : null}
+			</ButtonGroup>
+		) : null
+
+	console.log(awardsData?.data)
 
 	return (
 		<section className='mx-auto w-full space-y-8 px-4 pb-10 pt-5'>
@@ -286,6 +372,14 @@ const Page = () => {
 				}}
 			/>
 
+			{canManageUserPermissions ? (
+				<UsersPermissionsDialog
+					defaultUserId={params.id}
+					open={isPermissionsDialogOpen}
+					onOpenChange={setIsPermissionsDialogOpen}
+				/>
+			) : null}
+
 			<Tabs value={activeTab} onValueChange={setCurrentTab}>
 				<TabsList>
 					<TabsTrigger className='px-6' value='rups'>
@@ -319,7 +413,7 @@ const Page = () => {
 							awards={awardsData?.data || []}
 							description={t.page.kpiListDescription}
 							isLoading={awardsLoading}
-							showPointsColumn={hasRole(me.role, RoleEnum.METHODIST, true)}
+							showPointsColumn={hasAnyPermission(me, [PermissionCodeEnum.KPI_MANAGE])}
 							title={t.page.kpiListTitle}
 						/>
 
@@ -338,4 +432,9 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN, RoleEnum.METHODIST])
+export default withPermission(Page, [
+	PermissionCodeEnum.RUP_FULL,
+	PermissionCodeEnum.KPI_FULL,
+	PermissionCodeEnum.RUP_MANAGE,
+	PermissionCodeEnum.KPI_MANAGE,
+])

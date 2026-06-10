@@ -32,6 +32,7 @@ type User struct {
 	Role        string             `json:"role"`
 	Phone       string             `json:"phone"`
 	Departments []UserDepartment   `json:"departments"`
+	Permissions []PermissionCode   `json:"permissions"`
 	TotalPoints int32              `json:"totalPoints"`
 	Violation   string             `json:"violation"`
 	Violations  []*ViolationRecord `json:"violations"`
@@ -76,7 +77,7 @@ type PaginatedUsersResponse struct {
 type DepartmentTopTeachersResponse struct {
 	KeycloakID    uuid.UUID               `json:"keycloakId"`
 	Name          localization.LocaleText `json:"name"`
-	TeachersCount int                    `json:"teachersCount"`
+	TeachersCount int                     `json:"teachersCount"`
 	Teachers      []*User                 `json:"teachers"`
 }
 
@@ -106,12 +107,13 @@ type UserService interface {
 }
 
 type userService struct {
-	repo  repository.UsersRepository
-	redis *redis.Client
+	repo        repository.UsersRepository
+	permissions repository.Permissions
+	redis       *redis.Client
 }
 
-func NewUserService(repo repository.UsersRepository, redisClient *redis.Client) UserService {
-	return &userService{repo: repo, redis: redisClient}
+func NewUserService(repo repository.UsersRepository, permissions repository.Permissions, redisClient *redis.Client) UserService {
+	return &userService{repo: repo, permissions: permissions, redis: redisClient}
 }
 
 func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error) {
@@ -253,7 +255,7 @@ func (s *userService) GetUsersRatingPaginated(
 }
 
 func (s *userService) GetTeachersRatingWithDepartments(ctx context.Context) ([]*User, error) {
-	dbUsers, err := s.repo.GetTeachersRatingWithDepartments(ctx)
+	dbUsers, err := s.repo.GetAllUsers(ctx, math.MaxInt32, 0, "")
 	if err != nil {
 		return nil, err
 	}
@@ -277,10 +279,30 @@ func (s *userService) GetTopTeachersByDepartment(ctx context.Context) ([]Departm
 }
 
 func (s *userService) GetTeachersByDepartment(ctx context.Context, departmentID uuid.UUID) (*DepartmentTopTeachersResponse, error) {
-	users, err := s.GetTeachersRatingWithDepartments(ctx)
+	dbUsers, err := s.repo.GetUsersPaginated(
+		ctx,
+		math.MaxInt32,
+		0,
+		"",
+		"desc",
+		pgtype.UUID{Bytes: departmentID, Valid: true},
+	)
 	if err != nil {
 		return nil, err
 	}
+
+	users, err := s.toServiceUsers(ctx, dbUsers)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(users) == 0 {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "department not found"}
+	}
+
+	teachers := make([]*User, 0, len(users))
+	var departmentName localization.LocaleText
+	departmentFound := false
 
 	for _, user := range users {
 		if user == nil {
@@ -292,32 +314,28 @@ func (s *userService) GetTeachersByDepartment(ctx context.Context, departmentID 
 				continue
 			}
 
-			teachers := make([]*User, 0)
-			for _, candidate := range users {
-				if candidate == nil {
-					continue
-				}
-
-				for _, candidateDepartment := range candidate.Departments {
-					if candidateDepartment.KeycloakID == departmentID {
-						teachers = append(teachers, candidate)
-						break
-					}
-				}
+			if !departmentFound {
+				departmentName = department.Name
+				departmentFound = true
 			}
 
-			sortTeachersByScoreAndName(teachers)
-
-			return &DepartmentTopTeachersResponse{
-				KeycloakID:    department.KeycloakID,
-				Name:          department.Name,
-				TeachersCount: len(teachers),
-				Teachers:      teachers,
-			}, nil
+			teachers = append(teachers, user)
+			break
 		}
 	}
 
-	return nil, &HTTPStatusError{StatusCode: 404, Message: "department not found"}
+	if !departmentFound {
+		return nil, &HTTPStatusError{StatusCode: 404, Message: "department not found"}
+	}
+
+	sortTeachersByScoreAndName(teachers)
+
+	return &DepartmentTopTeachersResponse{
+		KeycloakID:    departmentID,
+		Name:          departmentName,
+		TeachersCount: len(teachers),
+		Teachers:      teachers,
+	}, nil
 }
 
 func (s *userService) groupTeachersByDepartment(users []*User, limit int) []departmentTeachersGroup {
@@ -516,6 +534,11 @@ func (s *userService) toServiceUsers(ctx context.Context, dbUsers []storage.User
 			}
 		}
 
+		permissions, err := s.resolveEffectivePermissions(ctx, storage.UserRole(dbUser.Role), dbUser.KeycloakID, departments)
+		if err != nil {
+			return nil, err
+		}
+
 		users = append(users, &User{
 			KeycloakID:  dbUser.KeycloakID,
 			Email:       dbUser.Email,
@@ -525,6 +548,7 @@ func (s *userService) toServiceUsers(ctx context.Context, dbUsers []storage.User
 			Role:        string(dbUser.Role),
 			Phone:       phone,
 			Departments: departments,
+			Permissions: permissions,
 			TotalPoints: dbUser.TotalPoints,
 			Violation:   string(dbUser.Violation),
 			Violations:  violations,
@@ -573,6 +597,11 @@ func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*U
 		}
 	}
 
+	permissions, err := s.resolveEffectivePermissions(ctx, user.Role, user.KeycloakID, mappedDepartments)
+	if err != nil {
+		return nil, err
+	}
+
 	return &User{
 		KeycloakID:  user.KeycloakID,
 		Email:       user.Email,
@@ -582,6 +611,7 @@ func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*U
 		Role:        string(user.Role),
 		Phone:       phone,
 		Departments: mappedDepartments,
+		Permissions: permissions,
 		TotalPoints: user.TotalPoints,
 		Violation:   string(user.Violation),
 		Violations:  violations,
@@ -599,6 +629,70 @@ func (s *userService) GetUserByKeycloakID(ctx context.Context, keycloakID uuid.U
 
 func (s *userService) CountUsers(ctx context.Context) (int64, error) {
 	return s.repo.CountUsers(ctx)
+}
+
+func (s *userService) resolveEffectivePermissions(
+	ctx context.Context,
+	role storage.UserRole,
+	userID uuid.UUID,
+	departments []UserDepartment,
+) ([]PermissionCode, error) {
+	basePermissions := basePermissionsForRole(role, departments)
+
+	if s.permissions == nil {
+		return basePermissions, nil
+	}
+
+	if role == storage.UserRoleADMIN {
+		return basePermissions, nil
+	}
+
+	row, err := s.permissions.GetUserPermissions(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return basePermissions, nil
+		}
+		return nil, err
+	}
+
+	return normalizePermissionCodes(row.Permissions), nil
+}
+
+func basePermissionsForRole(role storage.UserRole, departments []UserDepartment) []PermissionCode {
+	switch role {
+	case storage.UserRoleADMIN:
+		return []PermissionCode{PermRUPFull, PermKPIFull}
+	case storage.UserRoleMETHODIST:
+		return []PermissionCode{PermRUPManage, PermKPIManage}
+	case storage.UserRoleTEACHER:
+		perms := []PermissionCode{PermRUPView}
+		if len(departments) > 0 {
+			perms = append(perms, PermKPIView)
+		}
+		return perms
+	case storage.UserRoleSPECIAL:
+		return defaultSpecialPermissionCodes()
+	default:
+		return []PermissionCode{}
+	}
+}
+
+func normalizePermissionCodes(codes []PermissionCode) []PermissionCode {
+	if len(codes) == 0 {
+		return []PermissionCode{}
+	}
+
+	seen := make(map[PermissionCode]struct{}, len(codes))
+	result := make([]PermissionCode, 0, len(codes))
+	for _, code := range codes {
+		if _, ok := seen[code]; ok {
+			continue
+		}
+		seen[code] = struct{}{}
+		result = append(result, code)
+	}
+
+	return result
 }
 
 func (s *userService) CreatePenalty(ctx context.Context, methodistID uuid.UUID, teacherID uuid.UUID, points int32, note string) (*Penalty, error) {

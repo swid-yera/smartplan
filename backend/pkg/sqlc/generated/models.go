@@ -206,6 +206,11 @@ func (e *PermissionCode) Scan(src interface{}) error {
 	return nil
 }
 
+// Value implements the driver Valuer interface.
+func (e PermissionCode) Value() (driver.Value, error) {
+	return string(e), nil
+}
+
 type NullPermissionCode struct {
 	PermissionCode PermissionCode `json:"permission_code"`
 	Valid          bool           `json:"valid"` // Valid is true if PermissionCode is not NULL

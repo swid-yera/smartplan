@@ -43,23 +43,23 @@ func NewLessonHandler(lessonService *service.LessonService, log *logrus.Logger) 
 func (h *LessonHandler) CreateLesson(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 	var lessonParams service.LessonParams
 	if err := c.ShouldBindJSON(&lessonParams); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
 		return
 	}
 	lessonParams.TeacherID = currentUser.KeycloakID
 
 	if err := h.lessonService.CreateLesson(c.Request.Context(), lessonParams); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 	c.Status(http.StatusCreated)
@@ -69,12 +69,12 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 	// Парсим query-параметры
 	currentPage, err := parseQueryInt(c, "currentPage", 1)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid page")})
 		return
 	}
 	pageSize, err := parseQueryInt(c, "pageSize", 10)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page_size"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid page_size")})
 		return
 	}
 
@@ -88,7 +88,7 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 	}
 
 	if lessonType != "" && lessonType != "PRACTICE" && lessonType != "THEORY" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson type"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid lesson type")})
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 	if teacherIDStr := c.Query("teacher"); teacherIDStr != "" {
 		id, err := uuid.Parse(teacherIDStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid teacher ID"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid teacher ID")})
 			return
 		}
 		teacher = pgtype.UUID{
@@ -110,7 +110,7 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 	if lessonIDStr := c.Query("lesson_id"); lessonIDStr != "" {
 		id, err := uuid.Parse(lessonIDStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid lesson ID")})
 			return
 		}
 		lessonID = pgtype.UUID{
@@ -123,7 +123,7 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 	resp, err := h.lessonService.GetAllLessons(c.Request.Context(), currentPage, pageSize, teacher, lessonID, search, lessonType, discipline, groupName, sort)
 	if err != nil {
 		h.log.Error(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -133,18 +133,18 @@ func (h *LessonHandler) GetLessons(c *gin.Context) {
 func (h *LessonHandler) GetLessonByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid lesson ID")})
 		return
 	}
 
 	lesson, err := h.lessonService.GetLessonByID(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "lesson not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("lesson not found")})
 			return
 		}
 		h.log.Error(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -154,7 +154,7 @@ func (h *LessonHandler) GetLessonByID(c *gin.Context) {
 func (h *LessonHandler) DownloadLesson(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid lesson ID")})
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *LessonHandler) DownloadLesson(c *gin.Context) {
 	url, err := h.lessonService.GetLessonDownloadURL(c.Request.Context(), id, language)
 	if err != nil {
 		h.log.WithError(err).Error("failed to build lesson download url")
-		c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("file not found")})
 		return
 	}
 
@@ -176,34 +176,34 @@ func (h *LessonHandler) DownloadLesson(c *gin.Context) {
 func (h *LessonHandler) UpdateLesson(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	if _, ok := userInterface.(*service.User); !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid lesson ID")})
 		return
 	}
 
 	var req service.UpdateLessonRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
 		return
 	}
 
 	if err := h.lessonService.UpdateLesson(c.Request.Context(), id, req); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "lesson not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("lesson not found")})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -218,7 +218,7 @@ func (h *LessonHandler) DeleteLesson(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "error",
-			"error":  "invalid lesson ID",
+			"error": service.TranslateAPIErrorMessage("invalid lesson ID"),
 		})
 		return
 	}
@@ -227,14 +227,14 @@ func (h *LessonHandler) DeleteLesson(c *gin.Context) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status": "error",
-				"error":  "lesson not found",
+				"error": service.TranslateAPIErrorMessage("lesson not found"),
 			})
 			return
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
-			"error":  err.Error(),
+			"error": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -245,18 +245,18 @@ func (h *LessonHandler) DeleteLesson(c *gin.Context) {
 func (h *LessonHandler) RecordLessonProgress(c *gin.Context) {
 	lessonID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid lesson ID")})
 		return
 	}
 
 	var params service.LessonProgressParams
 	if err := c.ShouldBindJSON(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
 		return
 	}
 
 	if err := h.lessonService.CreateLessonProgress(c.Request.Context(), params, lessonID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -266,13 +266,13 @@ func (h *LessonHandler) RecordLessonProgress(c *gin.Context) {
 func (h *LessonHandler) GetLessonProgress(c *gin.Context) {
 	lessonID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lesson ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid lesson ID")})
 		return
 	}
 
 	progress, err := h.lessonService.GetLessonProgressByLessonID(c.Request.Context(), lessonID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -284,7 +284,7 @@ func (h *LessonHandler) GenerateLesson(c *gin.Context) {
 	if !exists {
 		c.JSON(http.StatusOK, gin.H{
 			"status": false,
-			"error":  "user not authenticated",
+			"error": service.TranslateAPIErrorMessage("user not authenticated"),
 		})
 		return
 	}
@@ -293,7 +293,7 @@ func (h *LessonHandler) GenerateLesson(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusOK, gin.H{
 			"status": false,
-			"error":  "invalid user context",
+			"error": service.TranslateAPIErrorMessage("invalid user context"),
 		})
 		return
 	}
@@ -302,7 +302,7 @@ func (h *LessonHandler) GenerateLesson(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status": false,
-			"error":  "invalid request body",
+			"error": service.TranslateAPIErrorMessage("invalid request body"),
 		})
 		return
 	}
@@ -312,7 +312,7 @@ func (h *LessonHandler) GenerateLesson(c *gin.Context) {
 		h.log.WithError(err).Error("generate lesson failed")
 		c.JSON(http.StatusOK, gin.H{
 			"status": false,
-			"error":  err.Error(),
+			"error": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -322,3 +322,4 @@ func (h *LessonHandler) GenerateLesson(c *gin.Context) {
 		"lessonId": lesson_id.String(),
 	})
 }
+

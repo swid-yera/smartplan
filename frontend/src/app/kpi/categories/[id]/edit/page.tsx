@@ -4,13 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, PageTitle, withRole } from '@components'
+import { Loader, LocaleToggleButton, PageTitle, withPermission } from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,
 	getLocaleText,
 	getUILocaleSection,
-	hasRole,
 	interpolateUILocaleText,
 } from '@helpers'
 import { services } from '@services'
@@ -39,15 +38,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Separator,
-	Tabs,
-	TabsList,
-	TabsTrigger,
 	Textarea,
 } from '@shadcn'
 import { useAuthStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { IApiErrorResponse, ICategoryRequest, Locale } from '@types'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { Minus, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -68,7 +64,7 @@ import localeDictionary from './locale.json'
 const Page = () => {
 	const { id } = useParams<{ id: string }>()
 	const { push, replace } = useRouter()
-	const { user, authLoading } = useAuthStore()
+	const { authLoading } = useAuthStore()
 	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
 	const t = getUILocaleSection(localeDictionary, activeLocale)
 
@@ -99,7 +95,6 @@ const Page = () => {
 		...services.categories.deleteMutationOptions(),
 	})
 
-	const isAdmin = user ? hasRole(user.role, RoleEnum.ADMIN) : false
 	const isPageLoading = authLoading || isCategoryLoading
 
 	useEffect(() => {
@@ -256,7 +251,6 @@ const Page = () => {
 	}
 
 	if (isPageLoading) return <Loader type='data' />
-	if (!user || !isAdmin) return <Forbidden />
 	if (!category) return <p className='p-6 text-center text-muted-foreground'>{t.notFound}</p>
 
 	return (
@@ -264,34 +258,33 @@ const Page = () => {
 			<PageTitle
 				sticky
 				actions={
-					<div className='flex flex-col gap-2 items-end justify-center'>
-						<ButtonGroup>
-							<Button
-								className='hover:text-destructive'
-								variant='outline'
-								onClick={() => setIsDeleteDialogOpen(true)}
-							>
-								<Trash2 className='mr-2 h-4 w-4' />
-								{t.delete}
-							</Button>
-							<Button
-								className='hover:text-primary'
-								disabled={updateMutation.isPending}
-								variant='outline'
-								onClick={handleSubmit}
-							>
-								<Save className='mr-2 h-4 w-4' />
-								{t.save}
-							</Button>
-						</ButtonGroup>
+					<ButtonGroup className='sm:w-auto'>
+						<Button
+							className='hover:text-primary'
+							disabled={updateMutation.isPending}
+							variant='outline'
+							onClick={handleSubmit}
+						>
+							<Save className='mr-2 h-4 w-4' />
+							{t.save}
+						</Button>
 
-						<Tabs value={activeLocale} onValueChange={(value) => setActiveLocale(value as Locale)}>
-							<TabsList>
-								<TabsTrigger value='ru'>{t.langRu}</TabsTrigger>
-								<TabsTrigger value='kk'>{t.langKk}</TabsTrigger>
-							</TabsList>
-						</Tabs>
-					</div>
+						<Button
+							className='hover:text-destructive'
+							type='button'
+							variant='outline'
+							onClick={() => setIsDeleteDialogOpen(true)}
+						>
+							<Trash2 className='mr-2 h-4 w-4' />
+							{t.delete}
+						</Button>
+
+						<LocaleToggleButton
+							activeLocale={activeLocale}
+							labels={{ kk: t.langKk, ru: t.langRu }}
+							onChangeLocale={setActiveLocale}
+						/>
+					</ButtonGroup>
 				}
 				backHref={backHref}
 				description={t.pageDescription}
@@ -429,4 +422,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withPermission(Page, [PermissionCodeEnum.KPI_FULL])

@@ -13,7 +13,7 @@ import {
 	type LessonListRow,
 	Loader,
 	PageTitle,
-	withRole,
+	withNavAccess,
 } from '@components'
 import { getLessonTypeLabels, getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
@@ -21,7 +21,6 @@ import { Alert, AlertDescription, Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { ILesson, LessonTypeEnum } from '@types'
-import { RoleEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
@@ -292,7 +291,7 @@ function MyLessonPlansPage() {
 	)
 }
 
-export default withRole(MyLessonPlansPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withNavAccess(MyLessonPlansPage)
 
 const getLessonText = (
 	value: ILesson['rup_name'] | ILesson['discipline_name'] | ILesson['topic_name'],

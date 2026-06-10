@@ -10,3 +10,4 @@ func SetupRoutes(r *gin.Engine, webhooksService service.WebhooksService, cfg *Co
 	h := NewHandler(webhooksService, cfg)
 	r.POST("/webhooks/keycloak", h.HandleWebhook)
 }
+

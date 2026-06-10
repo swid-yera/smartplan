@@ -5,13 +5,13 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { AwardsCard, Loader, PageTitle, Pagination, withRole } from '@components'
-import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasRole } from '@helpers'
+import { AwardsCard, Loader, PageTitle, Pagination, withPermission } from '@components'
+import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
 import { Badge, Button, ButtonGroup, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 import { Edit, Folder, Plus } from 'lucide-react'
 
 import localeDictionary from './locale.json'
@@ -95,7 +95,8 @@ const Page = () => {
 
 	const categoryIconOption = getCategoryIconOptionByName(category.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
-	const isAdmin = user ? hasRole(user.role, RoleEnum.ADMIN) : false
+	const canEditCategories = hasAnyPermission(user, [PermissionCodeEnum.KPI_FULL])
+	const canViewAwards = hasAnyPermission(user, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW])
 	const categoryName = getLocaleText(category.name, locale)
 	const categoryDescription = getLocaleText(category.description, locale) || t.missingDescription
 
@@ -105,7 +106,7 @@ const Page = () => {
 				sticky
 				actions={
 					<ButtonGroup>
-						{isAdmin && (
+						{canEditCategories && (
 							<Button asChild size='sm' variant='outline'>
 								<Link href={`/kpi/categories/${category.id}/edit`}>
 									<Edit className='mr-2 h-4 w-4' />
@@ -113,19 +114,17 @@ const Page = () => {
 								</Link>
 							</Button>
 						)}
-						<Button asChild size='sm'>
-							<Link href={`/kpi/categories/${category.id}/create`}>
-								<Plus className='mr-2 h-4 w-4' />
-								{t.create}
-							</Link>
-						</Button>
+						{canViewAwards && (
+							<Button asChild size='sm'>
+								<Link href={`/kpi/categories/${category.id}/create`}>
+									<Plus className='mr-2 h-4 w-4' />
+									{t.create}
+								</Link>
+							</Button>
+						)}
 					</ButtonGroup>
 				}
-				backHref={{
-					[RoleEnum.TEACHER]: '/kpi/entry',
-					[RoleEnum.METHODIST]: '/kpi/all',
-					[RoleEnum.ADMIN]: '/kpi/entry',
-				}}
+				backHref={'/kpi/entry'}
 				description={t.pageDescription}
 			>
 				{categoryName}
@@ -151,10 +150,6 @@ const Page = () => {
 							<Badge variant='outline'>{t.typesEmpty}</Badge>
 						)}
 					</div>
-					<div className='text-sm text-muted-foreground'>
-						{t.fieldsCount}{' '}
-						<span className='font-medium text-foreground'>{category.fieldsExpanded?.length || 0}</span>
-					</div>
 				</CardContent>
 			</Card>
 
@@ -176,4 +171,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER])
+export default withPermission(Page, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW])

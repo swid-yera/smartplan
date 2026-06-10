@@ -2,10 +2,10 @@
 
 import { useParams } from 'next/navigation'
 
-import { Loader, withRole } from '@components'
+import { Loader, withPermission } from '@components'
 import { services } from '@services'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 
 import { TypeView } from './type-view'
 
@@ -27,4 +27,4 @@ const Page = () => {
 	return <TypeView type={typeData} />
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withPermission(Page, [PermissionCodeEnum.KPI_FULL])

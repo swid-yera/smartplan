@@ -103,10 +103,13 @@
 			"approveSheetTitle": "Подтверждение РУП",
 			"approveSheetDescription": "Загрузите .kripto v3, введите пароль и подпишите challenge для проверки владения ключом.",
 			"approveFileLabel": "Файл ЭЦП (.kripto)",
+			"chooseFile": "Выбрать файл",
 			"fileLabel": "Файл",
 			"approveKeyIdLabel": "Определенный key_id",
 			"approveKeyIdPlaceholder": "UUID ключа",
 			"approvePasswordLabel": "Пароль .kripto",
+			"showPassword": "Показать пароль",
+			"hidePassword": "Скрыть пароль",
 			"approveCheckbox": "Подтверждаю, что ключ должен быть проверен в kripto перед утверждением",
 			"approveConfirm": "Утвердить"
 		}
@@ -215,10 +218,13 @@
 			"approveSheetTitle": "РУП-ты бекіту",
 			"approveSheetDescription": "Кілт иелігін тексеру үшін .kripto v3 жүктеп, құпиясөз енгізіп, challenge-ке қол қойыңыз.",
 			"approveFileLabel": "ЭЦҚ файлы (.kripto)",
+			"chooseFile": "Файл таңдау",
 			"fileLabel": "Файл",
 			"approveKeyIdLabel": "Анықталған key_id",
 			"approveKeyIdPlaceholder": "Кілт UUID",
 			"approvePasswordLabel": ".kripto құпиясөзі",
+			"showPassword": "Құпиясөзді көрсету",
+			"hidePassword": "Құпиясөзді жасыру",
 			"approveCheckbox": "Бекіту алдында кілт kripto арқылы тексерілуі керек екенін растаймын",
 			"approveConfirm": "Бекіту"
 		}

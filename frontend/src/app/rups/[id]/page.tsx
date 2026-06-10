@@ -2,16 +2,16 @@
 
 import { type FC, useEffect, useState } from 'react'
 
-import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Loader, RupLanguageDialog, withRole } from '@components'
+import { Loader, RupLanguageDialog, withPermission } from '@components'
 import {
 	extractKriptoApprovalMetadata,
 	getLocaleText,
 	getUILocaleSection,
+	hasAnyPermission,
 	hasLocaleTextForLocale,
-	hasRole,
+	hasPermission,
 	interpolateUILocaleText,
 	isAuthor,
 	normalizeStatus,
@@ -29,12 +29,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
-	ButtonGroup,
 	Checkbox,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
 	Input,
 	Label,
 	Select,
@@ -52,18 +47,8 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type IRup, type IUpdateStatusRequest, type Locale, RoleEnum, StatusEnum } from '@types'
-import {
-	Edit,
-	FileDown,
-	Loader2,
-	type LucideIcon,
-	MoreVertical,
-	RotateCcw,
-	SendIcon,
-	ShieldAlert,
-	Trash,
-} from 'lucide-react'
+import { type IRup, type IUpdateStatusRequest, type Locale, PermissionCodeEnum, StatusEnum } from '@types'
+import { Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { trackLanguageGeneration } from '../language-generation-tracker'
@@ -271,152 +256,32 @@ const Page: FC = () => {
 	if (!user || !rupData) return notFound()
 
 	// bools
-	const isAdmin = hasRole(user.role, RoleEnum.ADMIN)
-	const isTeacher = hasRole(user.role, RoleEnum.TEACHER)
-	const isMethodist = hasRole(user.role, RoleEnum.METHODIST)
+	const canFullAccess = hasPermission(user, PermissionCodeEnum.RUP_FULL)
+	const canManageRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
 	const isStatusForEdit = rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
-	const canRegenerateLanguage = rupData.status === StatusEnum.DRAFT && (isRupDeveloper || isAdmin)
+	const canRegenerateLanguage = rupData.status === StatusEnum.DRAFT && (isRupDeveloper || canFullAccess)
 	const canDownload = rupData.status === StatusEnum.APPROVED
-	const canEdit = (isRupDeveloper || isAdmin) && isStatusForEdit
-	const canDelete = (isRupCreator || isAdmin) && isStatusForEdit
-	const canSendToReview = (isRupDeveloper || isAdmin) && isStatusForEdit
+	const canEdit = (isRupDeveloper || canFullAccess) && isStatusForEdit
+	const canDelete = (isRupCreator || canFullAccess) && isStatusForEdit
+	const canSendToReview = (isRupDeveloper || canFullAccess) && isStatusForEdit
 	const isActiveLocaleMissing = !hasRupContentForLocale(rupData, activeLocale)
 	const retrySourceLocale = getOppositeLocale(activeLocale)
 	const selectedLanguageLabel = activeLocale === 'kk' ? t.view.languageKk : t.view.languageRu
 	const sourceLanguageLabel = retrySourceLocale === 'kk' ? t.view.languageKk : t.view.languageRu
 
-	type IActionBase = {
-		id: string
-		label: string
-		icon: LucideIcon
-		variant?: 'default' | 'destructive'
-	}
-
-	type ILinkAction = IActionBase & {
-		href: string
-		onClick?: never
-	}
-
-	type IClickAction = IActionBase & {
-		href?: never
-		onClick: () => void
-	}
-
-	const availableActions: Array<ILinkAction | IClickAction> = [
-		isAdmin && {
-			id: 'change-status',
-			label: t.actions.changeStatus,
-			icon: ShieldAlert,
-			onClick: () => setIsSheetOpen(true),
-		},
-		canEdit && {
-			id: 'edit',
-			label: t.actions.edit,
-			icon: Edit,
-			href: `/rups/${rupId}/edit`,
-		},
-		canSendToReview && {
-			id: 'send-to-review',
-			label: t.actions.sendToReview,
-			icon: SendIcon,
-			onClick: () => handleStatusChange(StatusEnum.IN_REVIEW),
-		},
-		canDownload && {
-			id: 'download',
-			label: t.actions.download,
-			icon: FileDown,
-			onClick: () => setIsDownloadLanguageDialogOpen(true),
-		},
-		canRegenerateLanguage && {
-			id: 'regenerate',
-			label: t.actions.regenerate,
-			icon: RotateCcw,
-			onClick: () => setIsRegenerateDialogOpen(true),
-		},
-		canDelete && {
-			id: 'delete',
-			label: t.actions.delete,
-			icon: Trash,
-			onClick: () => setIsDeleteDialogOpen(true),
-			variant: 'destructive',
-		},
-	].filter(Boolean) as Array<ILinkAction | IClickAction>
-
-	const primaryActionPriority = isAdmin
-		? ['change-status', 'edit', 'send-to-review', 'download', 'regenerate']
-		: isTeacher
-			? ['edit', 'send-to-review', 'download', 'regenerate']
-			: isMethodist
-				? ['download', 'regenerate', 'edit', 'send-to-review']
-				: ['download', 'regenerate', 'edit', 'send-to-review']
-
-	const primaryAction =
-		primaryActionPriority
-			.map((actionId) => availableActions.find((action) => action.id === actionId))
-			.find(Boolean) ?? null
-	const overflowActions = availableActions.filter((action) => action.id !== primaryAction?.id)
-	const actionButtonClassName = 'h-9'
-
 	return (
 		<>
 			<RupView
-				actions={
-					<ButtonGroup>
-						{primaryAction &&
-							(primaryAction.href ? (
-								<Button asChild className={actionButtonClassName} variant='outline'>
-									<Link href={primaryAction.href}>
-										<primaryAction.icon className='mr-2 h-4 w-4' />
-										{primaryAction.label}
-									</Link>
-								</Button>
-							) : (
-								<Button
-									className={`${actionButtonClassName} hover:text-primary`}
-									variant='outline'
-									onClick={primaryAction.onClick}
-								>
-									<primaryAction.icon className='mr-2 h-4 w-4' />
-									{primaryAction.label}
-								</Button>
-							))}
-
-						{overflowActions.length > 0 && (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										aria-label={t.actions.moreActions}
-										className={`${actionButtonClassName} px-3`}
-										type='button'
-										variant='outline'
-									>
-										<MoreVertical className='h-4 w-4' />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align='end' className='w-56'>
-									{overflowActions.map((action) =>
-										action.href ? (
-											<DropdownMenuItem key={action.id} asChild>
-												<Link href={action.href}>
-													<action.icon className='mr-2 h-4 w-4' />
-													{action.label}
-												</Link>
-											</DropdownMenuItem>
-										) : (
-											<DropdownMenuItem key={action.id} variant={action.variant} onClick={action.onClick}>
-												<action.icon className='mr-2 h-4 w-4' />
-												{action.label}
-											</DropdownMenuItem>
-										),
-									)}
-								</DropdownMenuContent>
-							</DropdownMenu>
-						)}
-					</ButtonGroup>
-				}
 				activeLocale={activeLocale}
+				canManage={canManageRups || canFullAccess}
+				canDelete={canDelete}
+				canDownload={canDownload}
+				canEdit={canEdit}
+				canFullAccess={canFullAccess}
+				canRegenerateLanguage={canRegenerateLanguage}
+				canSendToReview={canSendToReview}
 				data={rupData}
 				localeNotice={
 					isActiveLocaleMissing ? (
@@ -454,9 +319,15 @@ const Page: FC = () => {
 						</div>
 					) : null
 				}
-				role={user.role}
+				isDeletePending={deleteMutation.isPending}
+				isRegeneratePending={regenerateLanguageMutation.isPending}
+				onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
+				onOpenDownloadDialog={() => setIsDownloadLanguageDialogOpen(true)}
+				onOpenRegenerateDialog={() => setIsRegenerateDialogOpen(true)}
+				onOpenStatusSheet={() => setIsSheetOpen(true)}
 				onActiveLocaleChange={setActiveLocale}
 				onStatusChange={handleStatusChange}
+				onSendToReview={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 			/>
 
 			<StatusChangeSheet
@@ -473,32 +344,40 @@ const Page: FC = () => {
 				onDelete={handleDeleteRup}
 			/>
 
-			<RupLanguageDialog
-				confirmLabel={t.actions.download}
-				currentLanguage={activeLocale}
-				description={t.downloadLanguageDialog.description}
-				languageLabels={{ kk: t.view.languageKk, ru: t.view.languageRu }}
-				open={isDownloadLanguageDialogOpen}
-				title={t.downloadLanguageDialog.title}
-				onConfirm={onDownload}
-				onOpenChange={setIsDownloadLanguageDialogOpen}
-			/>
+			{rupData.status === StatusEnum.APPROVED && (
+				<RupLanguageDialog
+					confirmLabel={t.actions.download}
+					currentLanguage={activeLocale}
+					description={t.downloadLanguageDialog.description}
+					languageLabels={{ kk: t.view.languageKk, ru: t.view.languageRu }}
+					open={isDownloadLanguageDialogOpen}
+					title={t.downloadLanguageDialog.title}
+					onConfirm={onDownload}
+					onOpenChange={setIsDownloadLanguageDialogOpen}
+				/>
+			)}
 
-			<RupLanguageDialog
-				confirmLabel={t.languageDialog.confirm}
-				currentLanguage={activeLocale}
-				description={t.languageDialog.description}
-				languageLabels={{ kk: t.view.languageKk, ru: t.view.languageRu }}
-				open={isRegenerateDialogOpen}
-				title={t.languageDialog.title}
-				onConfirm={handleRegenerateLanguage}
-				onOpenChange={setIsRegenerateDialogOpen}
-			/>
+			{(rupData.status === StatusEnum.DRAFT || rupData.status === StatusEnum.REJECTED) && (
+				<RupLanguageDialog
+					confirmLabel={t.languageDialog.confirm}
+					currentLanguage={activeLocale}
+					description={t.languageDialog.description}
+					languageLabels={{ kk: t.view.languageKk, ru: t.view.languageRu }}
+					open={isRegenerateDialogOpen}
+					title={t.languageDialog.title}
+					onConfirm={handleRegenerateLanguage}
+					onOpenChange={setIsRegenerateDialogOpen}
+				/>
+			)}
 		</>
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withPermission(Page, [
+	PermissionCodeEnum.RUP_FULL,
+	PermissionCodeEnum.RUP_MANAGE,
+	PermissionCodeEnum.RUP_VIEW,
+])
 
 interface IStatusChangeSheetProps {
 	isSheetOpen: boolean

@@ -36,7 +36,7 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 	if h.config != nil && h.config.SecretKey != "" {
 		if err := h.validateSignature(c); err != nil {
 			log.Error().Err(err).Msg("Webhook signature validation failed")
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid signature"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("Invalid signature")})
 			return
 		}
 	}
@@ -44,7 +44,7 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 	var event keycloak.KeycloakEvent
 	if err := c.ShouldBindJSON(&event); err != nil {
 		log.Error().Err(err).Msg("Failed to parse Keycloak event")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("Invalid JSON payload")})
 		return
 	}
 
@@ -53,7 +53,7 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 			Str("eventType", string(event.Type)).
 			Str("keycloakID", event.UserID).
 			Msg("Failed to process Keycloak event")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process event"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Failed to process event")})
 		return
 	}
 
@@ -90,3 +90,4 @@ func (h *Handler) validateSignature(c *gin.Context) error {
 	}
 	return nil
 }
+

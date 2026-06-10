@@ -1,10 +1,10 @@
 'use client'
 
-import { withRole } from '@components'
+import { withPermission } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 import { Book, CheckCircle, Clock, FileText, Layers, Users, XCircle } from 'lucide-react'
 
 import localeDictionary from './locale.json'
@@ -104,4 +104,8 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withPermission(Page, [
+	PermissionCodeEnum.RUP_FULL,
+	PermissionCodeEnum.RUP_MANAGE,
+	PermissionCodeEnum.RUP_VIEW,
+])

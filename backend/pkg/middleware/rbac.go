@@ -20,21 +20,22 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userInterface, exists := c.Get(ContextUserKey)
 		if !exists {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("not authenticated")})
 			return
 		}
 
 		user, ok := userInterface.(*service.User)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "invalid user context"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("invalid user context")})
 			return
 		}
 
 		if _, permitted := allowed[strings.ToUpper(user.Role)]; !permitted {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("forbidden")})
 			return
 		}
 
 		c.Next()
 	}
 }
+

@@ -4,12 +4,12 @@ import { useEffect } from 'react'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, Pagination, RupsCard, withRole } from '@components'
+import { Loader, PageTitle, Pagination, RupsCard, withPermission } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { RoleEnum, type StatusEnum } from '@types'
+import { PermissionCodeEnum, type StatusEnum } from '@types'
 
 import { KpiUserSearchCard } from '../../kpi/components'
 import { RupsFilterCard } from '../components'
@@ -118,4 +118,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_MANAGE])

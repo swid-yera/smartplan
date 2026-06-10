@@ -78,7 +78,7 @@ func parseUUID(s string) uuid.UUID {
 func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 	awards, err := h.service.GetAllAwards(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *AwardHandler) GetAllAwards(c *gin.Context) {
 func (h *AwardHandler) GetAwardDepartments(c *gin.Context) {
 	departments, err := h.service.GetAwardDepartmentsStats(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -104,13 +104,13 @@ func (h *AwardHandler) GetAwardByID(c *gin.Context) {
 
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid award ID")})
 		return
 	}
 
 	award, err := h.service.GetAwardByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -124,19 +124,19 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid award ID")})
 		return
 	}
 
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
@@ -149,23 +149,25 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
 		return
 	}
 
-	// TEACHER может переводить только в IN_REVIEW, и только из DRAFT или REJECTED
-	if strings.EqualFold(currentUser.Role, "TEACHER") {
+	// Только чистый KPI-view может отправить награду на проверку.
+	// KPI-manage и KPI-full могут менять статус без этих ограничений.
+	if service.HasPermissionExact(currentUser.Permissions, service.PermKPIView) &&
+		!service.HasPermissionLevel(currentUser.Permissions, service.PermKPIManage) {
 		if req.Status != storage.AwardsStatusINREVIEW {
-			c.JSON(http.StatusForbidden, gin.H{"error": "teachers can only submit awards for review"})
+			c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("teachers can only submit awards for review")})
 			return
 		}
 		existing, err := h.service.GetAwardByID(c.Request.Context(), id)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 			return
 		}
 		if existing.Status != storage.AwardsStatusDRAFT && existing.Status != storage.AwardsStatusREJECTED {
-			c.JSON(http.StatusForbidden, gin.H{"error": "award can only be submitted for review from draft or rejected status"})
+			c.JSON(http.StatusForbidden, gin.H{"error": service.TranslateAPIErrorMessage("award can only be submitted for review from draft or rejected status")})
 			return
 		}
 	}
@@ -187,7 +189,7 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 
 	award, err := h.service.UpdateAwardStatus(c.Request.Context(), params)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 	c.JSON(http.StatusOK, award)
@@ -197,13 +199,13 @@ func (h *AwardHandler) DeleteAward(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid award ID")})
 		return
 	}
 
 	err = h.service.DeleteAward(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -213,53 +215,53 @@ func (h *AwardHandler) DeleteAward(c *gin.Context) {
 func (h *AwardHandler) CreateAward(c *gin.Context) {
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
 	// parse multipart form
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("failed to parse form")})
 		return
 	}
 
 	// parse json data from form field
 	jsonData := c.PostForm("data")
 	if jsonData == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("data field is required")})
 		return
 	}
 
 	// unmarshal json data to struct
 	var params service.CreateAwardParams
 	if err := json.Unmarshal([]byte(jsonData), &params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON format inside data field", "details": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid JSON format inside data field"), "details": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
 	// type to uuid
 	typeID, err := uuid.Parse(params.AwardType.String())
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid TypeID UUID format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid TypeID UUID format")})
 		return
 	}
 
 	variantID, err := uuid.Parse(params.AwardVariant.String())
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid VariantID UUID format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid VariantID UUID format")})
 		return
 	}
 
 	criteriaID, err := uuid.Parse(params.AwardCriteria.String())
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid CriteriaID UUID format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid CriteriaID UUID format")})
 		return
 	}
 
@@ -267,7 +269,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	if params.AwardBonusCriteria.Valid {
 		parsed, err := uuid.Parse(params.AwardBonusCriteria.String())
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid BonusCriteriaID UUID format"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid BonusCriteriaID UUID format")})
 			return
 		}
 		bonusCriteriaPg = pgtype.UUID{Bytes: parsed, Valid: true}
@@ -303,10 +305,10 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 	if err != nil {
 		var httpErr *service.HTTPStatusError
 		if errors.As(err, &httpErr) {
-			c.JSON(httpErr.StatusCode, gin.H{"error": "failed to create award", "details": httpErr.Message})
+			c.JSON(httpErr.StatusCode, gin.H{"error": service.TranslateAPIErrorMessage("failed to create award"), "details": service.TranslateAPIErrorMessage(httpErr.Message)})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create award", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("failed to create award"), "details": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -320,19 +322,19 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid award ID")})
 		return
 	}
 
 	userInterface, exists := c.Get(middleware.ContextUserKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
 		return
 	}
 
 	currentUser, ok := userInterface.(*service.User)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 		return
 	}
 
@@ -341,8 +343,8 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 	if strings.HasPrefix(contentType, "application/json") {
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "invalid JSON format",
-				"details": err.Error(),
+				"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
+				"details": service.TranslateAPIErrorMessage(err.Error()),
 			})
 			return
 		}
@@ -350,35 +352,35 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		// parse multipart form
 		form, err := c.MultipartForm()
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse form"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("failed to parse form")})
 			return
 		}
 
 		// parse json data from form field
 		jsonData := c.PostForm("data")
 		if jsonData == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "data field is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("data field is required")})
 			return
 		}
 
 		if err := json.Unmarshal([]byte(jsonData), &req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "invalid JSON format inside data field",
-				"details": err.Error(),
+				"error":   service.TranslateAPIErrorMessage("invalid JSON format inside data field"),
+				"details": service.TranslateAPIErrorMessage(err.Error()),
 			})
 			return
 		}
 
 		existingAward, getErr := h.service.GetAwardByID(c.Request.Context(), id)
 		if getErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve current award", "details": getErr.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("failed to resolve current award"), "details": getErr.Error()})
 			return
 		}
 
 		fieldValuesForMerge, mergeValuesErr := mergeFieldValuesPayload(existingAward.FieldValues, req.FieldValues)
 		if mergeValuesErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "invalid fieldValues payload",
+				"error":   service.TranslateAPIErrorMessage("invalid fieldValues payload"),
 				"details": mergeValuesErr.Error(),
 			})
 			return
@@ -411,14 +413,14 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		var httpErr *service.HTTPStatusError
 		if errors.As(err, &httpErr) {
 			c.JSON(httpErr.StatusCode, gin.H{
-				"error":   "failed to update award",
-				"details": httpErr.Message,
+				"error":   service.TranslateAPIErrorMessage("failed to update award"),
+				"details": service.TranslateAPIErrorMessage(httpErr.Message),
 			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to update award",
-			"details": err.Error(),
+			"error":   service.TranslateAPIErrorMessage("failed to update award"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -503,13 +505,13 @@ func normalizeFieldValuesPayload(input any) (map[string]any, error) {
 func (h *AwardHandler) CreateAwardType(c *gin.Context) {
 	var req service.CreateTypeParams
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body: ") + err.Error()})
 		return
 	}
 
 	awardType, err := h.service.CreateType(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -519,7 +521,7 @@ func (h *AwardHandler) CreateAwardType(c *gin.Context) {
 func (h *AwardHandler) GetAllAwardTypes(c *gin.Context) {
 	awardTypes, err := h.service.GetAllFullTypes(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 	c.JSON(http.StatusOK, awardTypes)
@@ -529,12 +531,12 @@ func (h *AwardHandler) GetAwardTypeByID(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid award type ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid award type ID")})
 		return
 	}
 	awardType, err := h.service.GetTypeByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 	c.JSON(http.StatusOK, awardType)
@@ -544,15 +546,15 @@ func (h *AwardHandler) UpdateAwardType(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid AwardType ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid AwardType ID")})
 		return
 	}
 
 	var req service.CreateAwardTypeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid JSON format",
-			"details": err.Error(),
+			"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -560,8 +562,8 @@ func (h *AwardHandler) UpdateAwardType(c *gin.Context) {
 	awardType, err := h.service.UpdateType(c.Request.Context(), id, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "failed to update AwardType",
-			"details": err.Error(),
+			"error":   service.TranslateAPIErrorMessage("failed to update AwardType"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
 		})
 		return
 	}
@@ -572,13 +574,13 @@ func (h *AwardHandler) DeleteType(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid AwardType ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid AwardType ID")})
 		return
 	}
 
 	err = h.service.DeleteType(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 
@@ -608,7 +610,7 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 	search := strings.TrimSpace(c.Query("search"))
 	sort, err := parseSortQuery(c, "sort", "desc")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "sort must be 'asc' or 'desc'"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("sort must be 'asc' or 'desc'")})
 		return
 	}
 
@@ -616,7 +618,7 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 	if v := c.Query("teacher"); v != "" {
 		id, err := uuid.Parse(v)
 		if err != nil {
-			c.JSON(400, gin.H{"error": "invalid teacher id"})
+			c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage("invalid teacher id")})
 			return
 		}
 		teacherID = pgtype.UUID{Bytes: id, Valid: true}
@@ -626,7 +628,7 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 	if v := c.Query("methodist"); v != "" {
 		id, err := uuid.Parse(v)
 		if err != nil {
-			c.JSON(400, gin.H{"error": "invalid methodist id"})
+			c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage("invalid methodist id")})
 			return
 		}
 		methodistID = pgtype.UUID{Bytes: id, Valid: true}
@@ -644,7 +646,7 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 
 			id, err := uuid.Parse(idStr)
 			if err != nil {
-				c.JSON(400, gin.H{"error": "invalid category id"})
+				c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage("invalid category id")})
 				return
 			}
 			categoryIDs = append(categoryIDs, id)
@@ -663,7 +665,7 @@ func (h *AwardHandler) GetAwardsPaginated(c *gin.Context) {
 		status,
 	)
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
 		return
 	}
 

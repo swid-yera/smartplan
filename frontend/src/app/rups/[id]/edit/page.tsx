@@ -5,8 +5,16 @@ import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, PageTitle, withRole } from '@components'
-import { createLocaleText, getLocaleText, getUILocaleSection, interpolateUILocaleText, isAuthor } from '@helpers'
+import { Forbidden, Loader, LocaleToggleButton, PageTitle, withPermission } from '@components'
+import {
+	createLocaleText,
+	getLocaleText,
+	getUILocaleSection,
+	hasAnyPermission,
+	hasPermission,
+	interpolateUILocaleText,
+	isAuthor,
+} from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
 import { services } from '@services'
@@ -25,9 +33,17 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { type IUpdateRupRequest, type Locale, RoleEnum, RupTypeEnum, StudyFormEnum } from '@types'
-import { MoreVertical, RotateCcw, SaveIcon } from 'lucide-react'
-import { FormProvider, useForm } from 'react-hook-form'
+import {
+	type IApiErrorResponse,
+	type IUpdateRupRequest,
+	type Locale,
+	PermissionCodeEnum,
+	RupTypeEnum,
+	StudyFormEnum,
+} from '@types'
+import { isAxiosError } from 'axios'
+import { BookOpen, MoreVertical, RotateCcw, SaveIcon } from 'lucide-react'
+import { type FieldErrors, FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Step1 } from '../../create/step1'
@@ -59,23 +75,6 @@ const defaultValues: RUPFormData = {
 	contacts: [], // default creator id :(
 	disciplines: [],
 }
-
-const LanguageTabs = ({
-	value,
-	onChange,
-	labels,
-}: {
-	value: Locale
-	onChange: (locale: Locale) => void
-	labels: { ru: string; kk: string }
-}) => (
-	<Tabs value={value} onValueChange={(next) => onChange(next as Locale)}>
-		<TabsList>
-			<TabsTrigger value='ru'>{labels.ru}</TabsTrigger>
-			<TabsTrigger value='kk'>{labels.kk}</TabsTrigger>
-		</TabsList>
-	</Tabs>
-)
 
 const EditPage: FC = () => {
 	const { replace } = useRouter()
@@ -160,6 +159,37 @@ const EditPage: FC = () => {
 		methods.reset(mappedRupValues, { keepDirty: false, keepTouched: false })
 	}, [mappedRupValues, methods])
 
+	const collectFieldMessages = (errors: FieldErrors<RUPFormData>): string[] => {
+		const messages: string[] = []
+
+		const walk = (value: unknown) => {
+			if (!value) return
+
+			if (Array.isArray(value)) {
+				value.forEach(walk)
+
+				return
+			}
+
+			if (typeof value !== 'object') return
+
+			const record = value as Record<string, unknown> & { message?: unknown }
+
+			if (typeof record.message === 'string' && record.message.trim()) {
+				messages.push(record.message)
+			}
+
+			Object.entries(record).forEach(([key, nested]) => {
+				if (key === 'message' || key === 'type' || key === 'ref') return
+				walk(nested)
+			})
+		}
+
+		walk(errors)
+
+		return [...new Set(messages)]
+	}
+
 	// Warn user about unsaved changes before leaving the page.
 	// NOTE: This works for page reloads, closing the tab, or navigating away.
 	// It does not prevent client-side navigation via <Link> in Next.js App Router without more complex handling.
@@ -238,13 +268,33 @@ const EditPage: FC = () => {
 					replace(`/rups/${updatedRup.id}`)
 				},
 				onError: (err) => {
+					let errorMessage = err.message
+
+					if (isAxiosError<IApiErrorResponse>(err)) {
+						const details = err.response?.data?.details
+						const backendError = err.response?.data?.error
+
+						errorMessage =
+							(typeof details === 'string' && details.trim()) ||
+							(typeof backendError === 'string' && backendError.trim()) ||
+							errorMessage
+					}
+
 					toast.error(interpolateUILocaleText(t.saveError, { name: rupName }), {
 						id: toastId,
-						description: err.message,
+						description: errorMessage,
 					})
 				},
 			},
 		)
+	}
+
+	const onInvalid = (errors: FieldErrors<RUPFormData>) => {
+		const firstMessage = collectFieldMessages(errors)[0]
+
+		toast.error(t.fieldsError, {
+			description: firstMessage,
+		})
 	}
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {
@@ -256,14 +306,13 @@ const EditPage: FC = () => {
 	if (isLoading || authLoading || isGenerationStatusLoading || isLanguageGenerationInProgress) return <Loader />
 	if (!user) return notFound()
 	if (!rupData) notFound()
+	const canFullAccess = hasPermission(user, PermissionCodeEnum.RUP_FULL)
+	const canManage = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
 	const isRupCreator = isAuthor(user, rupData.teacher.keycloakId)
 	const isRupDeveloper = isRupCreator || rupData.contacts.some((contact) => contact.keycloakId === user.keycloakId)
-	// Redirect if not allowed to edit
 
-	if (!isRupDeveloper) return <Forbidden />
-	const isAdmin = user.role === RoleEnum.ADMIN
-	const isTeacher = user.role === RoleEnum.TEACHER
-	const isMethodist = user.role === RoleEnum.METHODIST
+	// Redirect if not allowed to edit
+	if (!isRupDeveloper && !canManage && !canFullAccess) return <Forbidden />
 
 	const getStepTransitionDirection = (fromStep: string, toStep: string) =>
 		Number(toStep) >= Number(fromStep) ? 'forward' : 'backward'
@@ -280,40 +329,21 @@ const EditPage: FC = () => {
 			<form
 				className='w-full mx-auto px-4 py-6 space-y-4'
 				onKeyDown={handleKeyDown}
-				onSubmit={methods.handleSubmit(onSubmit)}
+				onSubmit={methods.handleSubmit(onSubmit, onInvalid)}
 			>
 				<PageTitle
 					sticky
 					actions={
-						<div className='flex flex-wrap items-center justify-end gap-2'>
-							<LanguageTabs
-								labels={{ kk: t.languages.kk, ru: t.languages.ru }}
-								value={activeLocale}
-								onChange={setActiveLocale}
-							/>
-							<ButtonGroup>
-								{isAdmin && (
-									<Button
-										className='hover:text-destructive'
-										disabled={!methods.formState.isDirty}
-										type='button'
-										variant='outline'
-										onClick={() => methods.reset()}
-									>
-										<RotateCcw className='mr-2 h-4 w-4' />
-										{t.resetChanges}
-									</Button>
-								)}
-								<Button
-									className='hover:text-primary'
-									disabled={!methods.formState.isDirty}
-									type='submit'
-									variant='outline'
-								>
-									<SaveIcon className='mr-2 h-4 w-4' />
-									{t.save}
-								</Button>
-							</ButtonGroup>
+						<ButtonGroup className=''>
+							<Button
+								className='hover:text-primary'
+								disabled={!methods.formState.isDirty}
+								type='submit'
+								variant='outline'
+							>
+								<SaveIcon className='mr-2 h-4 w-4' />
+								{t.save}
+							</Button>
 
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
@@ -323,17 +353,28 @@ const EditPage: FC = () => {
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align='end' className='w-56'>
 									<DropdownMenuItem asChild>
-										<Link href={`/rups/${rupData.id}`}>{t.openView}</Link>
+										<Link href={`/rups/${rupData.id}`}>
+											<BookOpen />
+											{t.openView}
+										</Link>
 									</DropdownMenuItem>
-									{!isAdmin && (isTeacher || isMethodist) && (
-										<DropdownMenuItem className='cursor-pointer' onClick={() => methods.reset()}>
-											<RotateCcw className='mr-2 h-4 w-4' />
-											{t.resetChanges}
-										</DropdownMenuItem>
-									)}
+									<DropdownMenuItem
+										disabled={!methods.formState.isDirty}
+										variant='destructive'
+										onClick={() => methods.reset()}
+									>
+										<RotateCcw className='mr-2 h-4 w-4' />
+										{t.resetChanges}
+									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
-						</div>
+
+							<LocaleToggleButton
+								activeLocale={activeLocale}
+								labels={{ kk: t.languages.kk, ru: t.languages.ru }}
+								onChangeLocale={setActiveLocale}
+							/>
+						</ButtonGroup>
 					}
 					backHref={`/rups/${rupData.id}`}
 					description={t.description}
@@ -400,4 +441,4 @@ const EditPage: FC = () => {
 	)
 }
 
-export default withRole(EditPage, [RoleEnum.TEACHER, RoleEnum.METHODIST])
+export default withPermission(EditPage, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])

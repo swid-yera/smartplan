@@ -17,8 +17,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tool
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = '18.2rem'
-const SIDEBAR_WIDTH_MOBILE = '19rem'
+const SIDEBAR_WIDTH = '19.1rem'
+const SIDEBAR_WIDTH_MOBILE = '19.2rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
 
@@ -194,7 +194,7 @@ function Sidebar({
 
 	return (
 		<div
-			className='group peer text-sidebar-foreground hidden md:block'
+			className='group peer text-sidebar-foreground hidden min-[1024px]:block'
 			data-collapsible={state === 'collapsed' ? collapsible : ''}
 			data-side={side}
 			data-slot='sidebar'
@@ -215,7 +215,7 @@ function Sidebar({
 			/>
 			<div
 				className={cn(
-					'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
+					'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear min-[1024px]:flex',
 					side === 'left'
 						? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
 						: 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',

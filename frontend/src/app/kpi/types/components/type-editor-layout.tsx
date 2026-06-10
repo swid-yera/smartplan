@@ -1,7 +1,6 @@
 'use client'
 
-import { PageTitle } from '@components'
-import { Tabs, TabsList, TabsTrigger } from '@shadcn'
+import { LocaleToggleButton, PageTitle } from '@components'
 import type { ICreateTypesRequest, ITypeResponse, Locale } from '@types'
 
 import { EditCard } from './edit-card'
@@ -34,12 +33,11 @@ export const TypeEditorLayout = ({
 			<PageTitle
 				sticky
 				actions={
-					<Tabs value={activeLocale} onValueChange={(value) => onLocaleChange(value as Locale)}>
-						<TabsList>
-							<TabsTrigger value='ru'>{langRuLabel}</TabsTrigger>
-							<TabsTrigger value='kk'>{langKkLabel}</TabsTrigger>
-						</TabsList>
-					</Tabs>
+					<LocaleToggleButton
+						activeLocale={activeLocale}
+						labels={{ kk: langKkLabel, ru: langRuLabel }}
+						onChangeLocale={onLocaleChange}
+					/>
 				}
 				backHref={backHref}
 				description={description}

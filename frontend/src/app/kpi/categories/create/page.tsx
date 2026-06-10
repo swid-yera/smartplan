@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { PageTitle, withRole } from '@components'
+import { PageTitle, withNavAccess } from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,
@@ -36,7 +36,6 @@ import {
 } from '@shadcn'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { IApiErrorResponse, ICategoryRequest, Locale } from '@types'
-import { RoleEnum } from '@types'
 import { isAxiosError } from 'axios'
 import { Minus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -289,4 +288,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.ADMIN])
+export default withNavAccess(Page)

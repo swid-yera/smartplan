@@ -1,8 +1,8 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 
-import { extractKriptoApprovalMetadata, hasRole, parseKriptoFileText } from '@helpers'
+import { extractKriptoApprovalMetadata, parseKriptoFileText } from '@helpers'
 import {
 	Button,
 	Checkbox,
@@ -16,13 +16,15 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@shadcn'
-import { type IRup, RoleEnum, StatusEnum } from '@types'
-import { CheckCircle, SendToBack } from 'lucide-react'
+import { type IRup, StatusEnum } from '@types'
+import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface IRupReviewSheetsProps {
 	data: IRup
-	role: RoleEnum
+	canManage: boolean
+	isRejectSheetOpen: boolean
+	isApproveSheetOpen: boolean
 	text: {
 		view: {
 			reject: string
@@ -37,10 +39,13 @@ interface IRupReviewSheetsProps {
 			approveSheetTitle: string
 			approveSheetDescription: string
 			approveFileLabel: string
+			chooseFile: string
 			fileLabel: string
 			approveKeyIdLabel: string
 			approveKeyIdPlaceholder: string
 			approvePasswordLabel: string
+			showPassword: string
+			hidePassword: string
 			approveCheckbox: string
 			approveConfirm: string
 		}
@@ -52,6 +57,8 @@ interface IRupReviewSheetsProps {
 			kriptoPasswordRequired: string
 		}
 	}
+	onRejectSheetOpenChange: (open: boolean) => void
+	onApproveSheetOpenChange: (open: boolean) => void
 	onStatusChange: (
 		newStatus: StatusEnum,
 		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
@@ -60,20 +67,24 @@ interface IRupReviewSheetsProps {
 
 export const RupReviewSheets = memo(function RupReviewSheets({
 	data,
-	role,
+	canManage,
+	isRejectSheetOpen,
+	isApproveSheetOpen,
 	text,
+	onRejectSheetOpenChange,
+	onApproveSheetOpenChange,
 	onStatusChange,
 }: IRupReviewSheetsProps) {
 	const t = text.view
 	const [generalComment, setGeneralComment] = useState('')
-	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
-	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
 	const [keyId, setKeyId] = useState('')
 	const [userId, setUserId] = useState('')
 	const [fileName, setFileName] = useState('')
 	const [approvePassword, setApprovePassword] = useState('')
 	const [approveConfirmed, setApproveConfirmed] = useState(false)
-	const isMethodistReview = hasRole(role, RoleEnum.METHODIST) && data.status === StatusEnum.IN_REVIEW
+	const [showApprovePassword, setShowApprovePassword] = useState(false)
+	const fileInputRef = useRef<HTMLInputElement | null>(null)
+	const isMethodistReview = canManage && data.status === StatusEnum.IN_REVIEW
 
 	const onApproveFileUpload = async (file?: File) => {
 		if (!file) return
@@ -97,30 +108,16 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 
 	return (
 		<>
-			<div className='flex items-center gap-2'>
-				<Button
-					className='hover:text-destructive'
-					size='sm'
-					variant='outline'
-					onClick={() => setIsRejectSheetOpen(true)}
-				>
-					<SendToBack className='mr-2 h-4 w-4' />
-					{t.reject}
-				</Button>
-
-				<Button
-					className='hover:text-primary'
-					size='sm'
-					variant='outline'
-					onClick={() => setIsApproveSheetOpen(true)}
-				>
-					<CheckCircle className='mr-2 h-4 w-4' />
-					{t.approve}
-				</Button>
-			</div>
-
 			{isRejectSheetOpen && (
-				<Sheet open={isRejectSheetOpen} onOpenChange={setIsRejectSheetOpen}>
+				<Sheet
+					open={isRejectSheetOpen}
+					onOpenChange={(open) => {
+						onRejectSheetOpenChange(open)
+						if (!open) {
+							setGeneralComment('')
+						}
+					}}
+				>
 					<SheetContent>
 						<SheetHeader>
 							<SheetTitle>{t.rejectSheetTitle}</SheetTitle>
@@ -139,12 +136,20 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 							</div>
 						</div>
 						<SheetFooter>
-							<Button variant='outline' onClick={() => setIsRejectSheetOpen(false)}>
+							<Button
+								type='button'
+								variant='outline'
+								onClick={() => {
+									onRejectSheetOpenChange(false)
+									setGeneralComment('')
+								}}
+							>
 								{t.cancel}
 							</Button>
 							<Button
 								disabled={!generalComment}
 								variant='destructive'
+								type='button'
 								onClick={() => {
 									if (!generalComment.trim()) {
 										toast.error(t.rejectReasonRequired)
@@ -153,7 +158,7 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 									}
 
 									onStatusChange(StatusEnum.REJECTED, { reason: generalComment })
-									setIsRejectSheetOpen(false)
+									onRejectSheetOpenChange(false)
 									setGeneralComment('')
 								}}
 							>
@@ -165,7 +170,23 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 			)}
 
 			{isApproveSheetOpen && (
-				<Sheet open={isApproveSheetOpen} onOpenChange={setIsApproveSheetOpen}>
+				<Sheet
+					open={isApproveSheetOpen}
+					onOpenChange={(open) => {
+						onApproveSheetOpenChange(open)
+						if (!open) {
+							setKeyId('')
+							setUserId('')
+							setFileName('')
+							setApprovePassword('')
+							setApproveConfirmed(false)
+							setShowApprovePassword(false)
+							if (fileInputRef.current) {
+								fileInputRef.current.value = ''
+							}
+						}
+					}}
+				>
 					<SheetContent>
 						<SheetHeader>
 							<SheetTitle>{t.approveSheetTitle}</SheetTitle>
@@ -174,18 +195,30 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 						<div className='grid gap-4 px-4 py-4'>
 							<div className='grid gap-2'>
 								<Label htmlFor='approve-kripto-file'>{t.approveFileLabel}</Label>
-								<Input
-									accept='.kripto,application/json'
-									id='approve-kripto-file'
-									type='file'
-									onChange={(e) => {
-										const file = e.target.files?.[0]
+								<div className='flex items-center gap-2'>
+									<Input
+										ref={fileInputRef}
+										accept='.kripto,application/json'
+										className='hidden'
+										id='approve-kripto-file'
+										type='file'
+										onChange={(e) => {
+											const file = e.target.files?.[0]
 
-										onApproveFileUpload(file).catch((err) => {
-											toast.error(err.message || text.toasts.kriptoReadError)
-										})
-									}}
-								/>
+											onApproveFileUpload(file).catch((err) => {
+												toast.error(err.message || text.toasts.kriptoReadError)
+											})
+										}}
+									/>
+									<Button
+										className='shrink-0'
+										type='button'
+										variant='outline'
+										onClick={() => fileInputRef.current?.click()}
+									>
+										{t.chooseFile}
+									</Button>
+								</div>
 								{fileName && (
 									<p className='text-xs text-muted-foreground'>
 										{t.fileLabel}: {fileName}
@@ -200,13 +233,25 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 
 							<div className='grid gap-2'>
 								<Label htmlFor='approve-password'>{t.approvePasswordLabel}</Label>
-								<Input
-									id='approve-password'
-									placeholder={t.approvePasswordLabel}
-									type='password'
-									value={approvePassword}
-									onChange={(e) => setApprovePassword(e.target.value)}
-								/>
+								<div className='relative'>
+									<Input
+										className='pr-10'
+										id='approve-password'
+										placeholder={t.approvePasswordLabel}
+										type={showApprovePassword ? 'text' : 'password'}
+										value={approvePassword}
+										onChange={(e) => setApprovePassword(e.target.value)}
+									/>
+									<Button
+										aria-label={showApprovePassword ? t.hidePassword : t.showPassword}
+										className='absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 p-0'
+										type='button'
+										variant='ghost'
+										onClick={() => setShowApprovePassword((current) => !current)}
+									>
+										{showApprovePassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+									</Button>
+								</div>
 							</div>
 
 							<div className='grid gap-2'>
@@ -223,10 +268,20 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 							</div>
 						</div>
 						<SheetFooter>
-							<Button variant='outline' onClick={() => setIsApproveSheetOpen(false)}>
+							<Button
+								type='button'
+								variant='outline'
+								onClick={() => {
+									onApproveSheetOpenChange(false)
+									if (fileInputRef.current) {
+										fileInputRef.current.value = ''
+									}
+								}}
+							>
 								{t.cancel}
 							</Button>
 							<Button
+								type='button'
 								disabled={!fileName || !keyId.trim() || !approvePassword || !approveConfirmed}
 								onClick={() => {
 									if (!fileName || !keyId.trim()) {
@@ -246,12 +301,15 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 										password: approvePassword,
 										confirmed: approveConfirmed,
 									})
-									setIsApproveSheetOpen(false)
+									onApproveSheetOpenChange(false)
 									setKeyId('')
 									setUserId('')
 									setFileName('')
 									setApprovePassword('')
 									setApproveConfirmed(false)
+									if (fileInputRef.current) {
+										fileInputRef.current.value = ''
+									}
 								}}
 							>
 								{t.approveConfirm}

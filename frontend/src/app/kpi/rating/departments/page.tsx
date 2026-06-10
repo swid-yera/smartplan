@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 
-import { Loader, PageTitle, withRole } from '@components'
+import { Loader, PageTitle, withPermission } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { RoleEnum } from '@types'
+import { PermissionCodeEnum } from '@types'
 
 import { RatingDistributionChart } from '../components/rating-distribution-chart'
 import { RatingNav } from '../components/rating-nav'
@@ -108,12 +108,12 @@ const Page = () => {
 							<div>
 								<Link
 									className='font-medium text-foreground hover:underline'
-									href={`/kpi/rating/departments/${department.keycloakId}`}
+									href={`/departments/${department.keycloakId}`}
 								>
 									{index + 1}. {getLocaleText(department.name, locale)}
 								</Link>
 								<p className='text-xs text-muted-foreground'>
-									{department.userCount} {t.usersCount}
+									{t.usersCount} {department.userCount}
 								</p>
 							</div>
 							<p className='text-lg font-semibold'>{department.totalPoints}</p>
@@ -139,4 +139,4 @@ const Page = () => {
 	)
 }
 
-export default withRole(Page, [RoleEnum.METHODIST])
+export default withPermission(Page, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_MANAGE])

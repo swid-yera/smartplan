@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"eduplan/backend/pkg/service"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,7 +22,7 @@ func ValidateRequestHeaders() gin.HandlerFunc {
 				!strings.Contains(contentType, "application/x-www-form-urlencoded") &&
 				!strings.Contains(contentType, "multipart/form-data") {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-					"error": "Invalid Content-Type. Expected application/json, application/x-www-form-urlencoded, or multipart/form-data",
+					"error": service.TranslateAPIErrorMessage("Invalid Content-Type. Expected application/json, application/x-www-form-urlencoded, or multipart/form-data"),
 				})
 				return
 			}
@@ -31,7 +33,7 @@ func ValidateRequestHeaders() gin.HandlerFunc {
 		if accept != "" && !strings.Contains(accept, "application/json") &&
 			!strings.Contains(accept, "*/*") {
 			c.AbortWithStatusJSON(http.StatusNotAcceptable, gin.H{
-				"error": "Invalid Accept header. Expected application/json",
+				"error": service.TranslateAPIErrorMessage("Invalid Accept header. Expected application/json"),
 			})
 			return
 		}
@@ -46,7 +48,7 @@ func ValidateQueryParams(requiredParams ...string) gin.HandlerFunc {
 		for _, param := range requiredParams {
 			if c.Query(param) == "" {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-					"error": "Missing required query parameter: " + param,
+					"error": service.TranslateAPIErrorMessage("Missing required query parameter: ") + param,
 				})
 				return
 			}
@@ -61,7 +63,7 @@ func ValidateJSONBody() gin.HandlerFunc {
 		if c.Request.Method == "POST" || c.Request.Method == "PUT" {
 			if c.Request.ContentLength == 0 {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-					"error": "Request body is required",
+					"error": service.TranslateAPIErrorMessage("Request body is required"),
 				})
 				return
 			}
@@ -69,3 +71,4 @@ func ValidateJSONBody() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
