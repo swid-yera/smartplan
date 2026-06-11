@@ -12,10 +12,11 @@ import (
 	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
 	kcservice "eduplan/backend/pkg/service/keycloak"
+	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
@@ -74,29 +75,18 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 		return uuid.Nil, fmt.Errorf("user has no allowed roles from list: %v", kcRoles)
 	}
 
+	userType := helpers.ResolveUserTypeFromGroups(claimStrings(claims, "all_groups"))
+
 	s.log.WithFields(logrus.Fields{
 		"keycloak_id": keycloakID,
 		"role":        role,
+		"user_type":   userType,
 	}).Info("Resolved user role")
 
-	user, err := s.users.CreateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
+	user, err := s.syncUserProfile(ctx, keycloakID, role, userType, email, username, firstName, lastName, phone)
 	if err != nil {
-		if isUniqueViolation(err) {
-			err = s.users.UpdateUser(ctx, keycloakID, role, email, username, firstName, lastName, phone)
-			if err != nil {
-				s.log.WithError(err).Error("Failed to update existing user profile")
-				return uuid.Nil, err
-			}
-
-			user, err = s.users.GetUserByKeycloakID(ctx, keycloakID)
-			if err != nil {
-				s.log.WithError(err).Error("Failed to get existing user after update")
-				return uuid.Nil, err
-			}
-		} else {
-			s.log.WithError(err).Error("Failed to create user")
-			return uuid.Nil, err
-		}
+		s.log.WithError(err).Error("Failed to sync user profile")
+		return uuid.Nil, err
 	}
 
 	_ = user
@@ -132,6 +122,78 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	}
 
 	return sessionID, nil
+}
+
+func claimStrings(claims jwt.MapClaims, key string) []string {
+	raw, exists := claims[key]
+	if !exists || raw == nil {
+		return nil
+	}
+
+	switch value := raw.(type) {
+	case string:
+		return []string{value}
+	case []string:
+		return append([]string(nil), value...)
+	case []interface{}:
+		items := make([]string, 0, len(value))
+		for _, item := range value {
+			if s, ok := item.(string); ok {
+				items = append(items, s)
+			}
+		}
+		return items
+	default:
+		return nil
+	}
+}
+
+func (s *authService) syncUserProfile(
+	ctx context.Context,
+	keycloakID uuid.UUID,
+	role storage.UserRole,
+	userType storage.UserType,
+	email, username, firstName, lastName, phone string,
+) (*storage.User, error) {
+	user, err := s.users.GetUserByKeycloakID(ctx, keycloakID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return s.users.CreateUser(ctx, keycloakID, role, userType, email, username, firstName, lastName, phone)
+		}
+		return nil, err
+	}
+
+	roleChanged := user.Role != role
+	userTypeChanged := user.UserType != userType
+	profileChanged := roleChanged ||
+		userTypeChanged ||
+		user.Email != email ||
+		user.Username != username ||
+		user.FirstName.String != firstName ||
+		user.LastName.String != lastName ||
+		user.Phone.String != phone
+
+	if !profileChanged {
+		return user, nil
+	}
+
+	if roleChanged || userTypeChanged {
+		s.log.WithFields(logrus.Fields{
+			"keycloak_id":       keycloakID,
+			"old_role":          user.Role,
+			"new_role":          role,
+			"old_user_type":     user.UserType,
+			"new_user_type":     userType,
+			"role_changed":      roleChanged,
+			"user_type_changed": userTypeChanged,
+		}).Info("User role or teacher type changed during login sync")
+	}
+
+	if err := s.users.UpdateUser(ctx, keycloakID, role, userType, email, username, firstName, lastName, phone); err != nil {
+		return nil, err
+	}
+
+	return s.users.GetUserByKeycloakID(ctx, keycloakID)
 }
 
 func (s *authService) resolveUserDepartments(ctx context.Context, keycloakID uuid.UUID, claims jwt.MapClaims) ([]repository.DepartmentMembershipInput, error) {
@@ -464,11 +526,3 @@ func (s *authService) InvalidateAllSessions(ctx context.Context, keycloakID uuid
 	return err
 }
 
-// isUniqueViolation проверяет ошибку Postgres на уникальное ограничение
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
-	}
-	return false
-}

@@ -12,8 +12,8 @@ import (
 
 type AuthRepository interface {
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*storage.User, error)
-	CreateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone string) (*storage.User, error)
-	UpdateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, email, username, firstName, lastName, phone string) error
+	CreateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, userType storage.UserType, email, username, firstName, lastName, phone string) (*storage.User, error)
+	UpdateUser(ctx context.Context, keycloakID uuid.UUID, role storage.UserRole, userType storage.UserType, email, username, firstName, lastName, phone string) error
 	SyncUserDepartments(ctx context.Context, userID uuid.UUID, departments []DepartmentMembershipInput) error
 }
 
@@ -45,6 +45,7 @@ func (r *AuthPostgres) CreateUser(
 	ctx context.Context,
 	keycloakID uuid.UUID,
 	role storage.UserRole,
+	userType storage.UserType,
 	email, username, firstName, lastName, phone string,
 ) (*storage.User, error) {
 	user, err := r.queries.CreateUser(ctx, storage.CreateUserParams{
@@ -54,6 +55,7 @@ func (r *AuthPostgres) CreateUser(
 		FirstName:  pgtype.Text{String: firstName, Valid: true},
 		LastName:   pgtype.Text{String: lastName, Valid: true},
 		Role:       role,
+		UserType:   userType,
 		Phone:      pgtype.Text{String: phone, Valid: true},
 	})
 	if err != nil {
@@ -67,6 +69,7 @@ func (r *AuthPostgres) UpdateUser(
 	ctx context.Context,
 	keycloakID uuid.UUID,
 	role storage.UserRole,
+	userType storage.UserType,
 	email, username, firstName, lastName, phone string,
 ) error {
 	err := r.queries.UpdateUserProfile(ctx, storage.UpdateUserProfileParams{
@@ -74,6 +77,7 @@ func (r *AuthPostgres) UpdateUser(
 		Email:      email,
 		Username:   username,
 		Role:       role,
+		UserType:   userType,
 		FirstName:  pgtype.Text{String: firstName, Valid: true},
 		LastName:   pgtype.Text{String: lastName, Valid: true},
 		Phone:      pgtype.Text{String: phone, Valid: true},
