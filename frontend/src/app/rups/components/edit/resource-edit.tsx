@@ -3,7 +3,6 @@
 import { getUILocaleSection } from '@helpers'
 import { getLocaleText } from '@helpers'
 import { cn } from '@lib'
-import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -41,6 +40,8 @@ import {
 	useFieldArray,
 	useFormContext,
 } from 'react-hook-form'
+
+import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
 import localeDictionary from './locale.json'
 
 type ResourceListValues = FieldValues & {
@@ -170,10 +171,8 @@ export function ResourceEdit<T extends ResourceListValues>({
 												<AlertDialogDescription>
 													{t.resource.confirmPrefix}
 													<strong className='text-foreground ml-1'>
-														{getLocaleText(
-															(fields[index] as { name?: LocaleText }).name,
-															activeLocale,
-														) || `№${index + 1}`}
+														{getLocaleText((fields[index] as { name?: LocaleText }).name, activeLocale) ||
+															`№${index + 1}`}
 													</strong>
 													{t.resource.confirmSuffix}
 												</AlertDialogDescription>
@@ -200,12 +199,10 @@ export function ResourceEdit<T extends ResourceListValues>({
 						type='button'
 						variant='outline'
 						onClick={() =>
-							append(
-								{
-									name: { ru: '', kz: '' },
-									link: '',
-								} as PathValue<T, ArrayPath<T>>,
-							)
+							append({
+								name: { ru: '', kz: '' },
+								link: '',
+							} as PathValue<T, ArrayPath<T>>)
 						}
 					>
 						{buttonText}

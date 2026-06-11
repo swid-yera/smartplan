@@ -18,6 +18,7 @@ import {
 	TableRow,
 } from '@shadcn'
 import type { IDiscipline, Locale, LocalizedText } from '@types'
+
 import localeDictionary from './locale.json'
 
 interface IProps {

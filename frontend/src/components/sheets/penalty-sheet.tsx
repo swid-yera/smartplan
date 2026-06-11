@@ -161,102 +161,96 @@ export const PenaltySheet: FC<IPenaltySheetProps> = ({
 		<>
 			<Sheet open={open} onOpenChange={onOpenChange}>
 				<SheetContent className='flex h-full flex-col sm:max-w-lg'>
-				<SheetHeader>
-					<SheetTitle>{t.title}</SheetTitle>
-					<SheetDescription>{t.description}</SheetDescription>
-				</SheetHeader>
+					<SheetHeader>
+						<SheetTitle>{t.title}</SheetTitle>
+						<SheetDescription>{t.description}</SheetDescription>
+					</SheetHeader>
 
-				<div className='grid gap-4 px-4 py-2'>
-					<div className='grid gap-2'>
-						<Label htmlFor='penalty-points'>{t.pointsLabel}</Label>
-						<Input
-							id='penalty-points'
-							inputMode='numeric'
-							min={1}
-							placeholder={t.pointsPlaceholder}
-							pattern='[0-9]*'
-							type='text'
-							value={points}
-							onChange={(e) => onPointsChange(e.target.value)}
-							onPaste={(e) => {
-								const pasted = e.clipboardData.getData('text')
-								if (!/^\d*$/.test(pasted)) {
-									e.preventDefault()
-								}
-							}}
-							onKeyDown={(e) => {
-								if (
-									![
-										'Backspace',
-										'Delete',
-										'ArrowLeft',
-										'ArrowRight',
-										'Tab',
-										'Home',
-										'End',
-									].includes(e.key) &&
-									!/^\d$/.test(e.key)
-								) {
-									e.preventDefault()
-								}
-							}}
-						/>
+					<div className='grid gap-4 px-4 py-2'>
+						<div className='grid gap-2'>
+							<Label htmlFor='penalty-points'>{t.pointsLabel}</Label>
+							<Input
+								id='penalty-points'
+								inputMode='numeric'
+								min={1}
+								placeholder={t.pointsPlaceholder}
+								pattern='[0-9]*'
+								type='text'
+								value={points}
+								onChange={(e) => onPointsChange(e.target.value)}
+								onPaste={(e) => {
+									const pasted = e.clipboardData.getData('text')
+									if (!/^\d*$/.test(pasted)) {
+										e.preventDefault()
+									}
+								}}
+								onKeyDown={(e) => {
+									if (
+										!['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'].includes(
+											e.key,
+										) &&
+										!/^\d$/.test(e.key)
+									) {
+										e.preventDefault()
+									}
+								}}
+							/>
+						</div>
+
+						<div className='grid gap-2'>
+							<Label htmlFor='penalty-note'>{t.noteLabel}</Label>
+							<Textarea
+								id='penalty-note'
+								placeholder={t.notePlaceholder}
+								rows={4}
+								value={note}
+								onChange={(e) => setNote(e.target.value)}
+							/>
+						</div>
 					</div>
 
-					<div className='grid gap-2'>
-						<Label htmlFor='penalty-note'>{t.noteLabel}</Label>
-						<Textarea
-							id='penalty-note'
-							placeholder={t.notePlaceholder}
-							rows={4}
-							value={note}
-							onChange={(e) => setNote(e.target.value)}
-						/>
-					</div>
-				</div>
+					<SheetFooter className='px-4'>
+						<Button disabled={createPenaltyMutation.isPending} onClick={onCreatePenalty}>
+							{t.create}
+						</Button>
+					</SheetFooter>
 
-				<SheetFooter className='px-4'>
-					<Button disabled={createPenaltyMutation.isPending} onClick={onCreatePenalty}>
-						{t.create}
-					</Button>
-				</SheetFooter>
+					<Separator className='my-3' />
 
-				<Separator className='my-3' />
-
-				<div className='flex-1 space-y-2 overflow-y-auto px-4 pb-4'>
-					{isLoading ? (
-						<p className='text-sm text-muted-foreground'>{t.loading}</p>
-					) : sortedPenalties.length === 0 ? (
-						<p className='text-sm text-muted-foreground'>{t.empty}</p>
-					) : (
-						sortedPenalties.map((penalty) => (
-							<div key={penalty.id} className='space-y-2 rounded-md border p-3'>
-								<div className='flex items-start justify-between gap-2'>
-									<div>
-										<p className='font-semibold text-destructive'>
-											-{penalty.points} {t.points}
-										</p>
-										<p className='text-sm'>{penalty.note}</p>
-										<p className='mt-1 text-xs text-muted-foreground'>
-											{new Date(penalty.createdAt).toLocaleString(dateLocale)}
-										</p>
+					<div className='flex-1 space-y-2 overflow-y-auto px-4 pb-4'>
+						{isLoading ? (
+							<p className='text-sm text-muted-foreground'>{t.loading}</p>
+						) : sortedPenalties.length === 0 ? (
+							<p className='text-sm text-muted-foreground'>{t.empty}</p>
+						) : (
+							sortedPenalties.map((penalty) => (
+								<div key={penalty.id} className='space-y-2 rounded-md border p-3'>
+									<div className='flex items-start justify-between gap-2'>
+										<div>
+											<p className='font-semibold text-destructive'>
+												-{penalty.points} {t.points}
+											</p>
+											<p className='text-sm'>{penalty.note}</p>
+											<p className='mt-1 text-xs text-muted-foreground'>
+												{new Date(penalty.createdAt).toLocaleString(dateLocale)}
+											</p>
+										</div>
+										<Button
+											disabled={deletePenaltyMutation.isPending}
+											size='icon'
+											variant='ghost'
+											onClick={() => {
+												setSelectedPenaltyId(penalty.id)
+												setDeleteDialogOpen(true)
+											}}
+										>
+											<Trash2 className='h-4 w-4 text-destructive' />
+										</Button>
 									</div>
-									<Button
-										disabled={deletePenaltyMutation.isPending}
-										size='icon'
-										variant='ghost'
-										onClick={() => {
-											setSelectedPenaltyId(penalty.id)
-											setDeleteDialogOpen(true)
-										}}
-									>
-										<Trash2 className='h-4 w-4 text-destructive' />
-									</Button>
 								</div>
-							</div>
-						))
-					)}
-				</div>
+							))
+						)}
+					</div>
 				</SheetContent>
 			</Sheet>
 

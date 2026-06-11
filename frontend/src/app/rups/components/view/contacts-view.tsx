@@ -18,6 +18,7 @@ import {
 } from '@shadcn'
 import type { IUser, Locale } from '@types'
 import { Mail, Phone, User, UserPlus } from 'lucide-react'
+
 import localeDictionary from './locale.json'
 
 type IProps = {
@@ -64,7 +65,9 @@ export const ContactsView: FC<IProps> = ({ creatorId, contacts, activeLocale }) 
 														{teacher.firstName} {teacher.lastName}
 													</span>
 													{isCreator && (
-														<span className='text-[10px] text-primary font-normal'>{t.contacts.creator}</span>
+														<span className='text-[10px] text-primary font-normal'>
+															{t.contacts.creator}
+														</span>
 													)}
 												</div>
 											</div>

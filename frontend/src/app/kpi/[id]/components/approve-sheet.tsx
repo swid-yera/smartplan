@@ -274,7 +274,8 @@ export const ApproveSheet = ({
 										<SelectContent>
 											{currentCriteriaOptions.map((criteria) => (
 												<SelectItem key={criteria.id} value={criteria.id}>
-													{getLocaleText(criteria.name, locale)} ({formatCriteriaPoints(criteria.points)} баллов)
+													{getLocaleText(criteria.name, locale)} ({formatCriteriaPoints(criteria.points)}{' '}
+													баллов)
 												</SelectItem>
 											))}
 										</SelectContent>

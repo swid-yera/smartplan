@@ -25,7 +25,9 @@ export class PermissionService {
 		return queryOptions<IUserPermissionsPayload>({
 			queryKey: ['permissions', userId],
 			queryFn: async () => {
-				const { data } = await api.get<{ userId: string; permissions: PermissionCodeEnum[] }>(`/permissions/${userId}`)
+				const { data } = await api.get<{ userId: string; permissions: PermissionCodeEnum[] }>(
+					`/permissions/${userId}`,
+				)
 
 				return {
 					userId: data?.userId ?? userId,

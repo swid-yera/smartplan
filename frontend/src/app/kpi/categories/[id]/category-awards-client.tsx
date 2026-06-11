@@ -33,7 +33,12 @@ export const CategoryAwardsClient = ({ awards, description, title }: IProps) => 
 	return (
 		<div className='space-y-4'>
 			<AwardsCard awards={paginatedAwards} description={description} isLoading={false} title={title} />
-			<Pagination page={currentPage} pageSize={AWARDS_PAGE_SIZE} totalPages={totalPages} onPageChange={setCurrentPage} />
+			<Pagination
+				page={currentPage}
+				pageSize={AWARDS_PAGE_SIZE}
+				totalPages={totalPages}
+				onPageChange={setCurrentPage}
+			/>
 		</div>
 	)
 }

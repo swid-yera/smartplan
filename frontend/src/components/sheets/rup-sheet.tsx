@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { type FC, useRef } from 'react'
 
@@ -20,8 +20,8 @@ import { useLocaleStore } from '@store'
 import type { IRup } from '@types'
 import { BookOpen, Clock, ComponentIcon, Users } from 'lucide-react'
 
-import locale from './locale.json'
 import { StatusBadge } from '../badges/status-badge'
+import locale from './locale.json'
 
 interface IRupSheet {
 	onSelect: (rup: IRup | null) => void
@@ -55,107 +55,107 @@ export const RupSheet: FC<IRupSheet> = ({ rup, onSelect }) => {
 						<div className='flex-1 overflow-y-auto px-4'>
 							<div className='grid auto-rows-min gap-6 pb-4'>
 								<div className='space-y-3'>
-								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-									<BookOpen className='w-4 h-4 mr-2' /> {t.main}
-								</h4>
+									<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+										<BookOpen className='w-4 h-4 mr-2' /> {t.main}
+									</h4>
 
-								<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
-									<p className='font-medium'>{t.status}:</p>
-									<StatusBadge status={rup.status} />
+									<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
+										<p className='font-medium'>{t.status}:</p>
+										<StatusBadge status={rup.status} />
 
-									{rup?.reason && (
-										<>
-											<p className='font-medium'>{t.rejectReason}:</p>
-											<p>{rup?.reason}</p>
-										</>
-									)}
+										{rup?.reason && (
+											<>
+												<p className='font-medium'>{t.rejectReason}:</p>
+												<p>{rup?.reason}</p>
+											</>
+										)}
 
-									<p className='font-medium'>{t.name}:</p>
-									<p>{getLocaleText(rup.name, currentLocale)}</p>
+										<p className='font-medium'>{t.name}:</p>
+										<p>{getLocaleText(rup.name, currentLocale)}</p>
 
-									<p className='font-medium'>{t.studyForm}:</p>
-									<p>{normalizeStudyForm(rup.studyForm, currentLocale)}</p>
+										<p className='font-medium'>{t.studyForm}:</p>
+										<p>{normalizeStudyForm(rup.studyForm, currentLocale)}</p>
+									</div>
 								</div>
-							</div>
 
 								<Separator />
 
 								<div className='space-y-3'>
-								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-									<Users className='w-4 h-4 mr-2' /> {t.responsible}
-								</h4>
+									<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+										<Users className='w-4 h-4 mr-2' /> {t.responsible}
+									</h4>
 
-								<div className='grid grid-cols-[1fr_2fr] space-y-3 text-sm'>
-									<p className='font-medium'>{t.teacher}:</p>
-									<p>
-										{rup.teacher ? (
-											<Link
-												className='hover:underline hover:text-primary font-semibold'
-												href={`/users/${rup.teacher.keycloakId}`}
-											>
-												{rup.teacher.firstName} {rup.teacher.lastName}
-											</Link>
-										) : (
-											t.empty
-										)}
-									</p>
+									<div className='grid grid-cols-[1fr_2fr] space-y-3 text-sm'>
+										<p className='font-medium'>{t.teacher}:</p>
+										<p>
+											{rup.teacher ? (
+												<Link
+													className='hover:underline hover:text-primary font-semibold'
+													href={`/users/${rup.teacher.keycloakId}`}
+												>
+													{rup.teacher.firstName} {rup.teacher.lastName}
+												</Link>
+											) : (
+												t.empty
+											)}
+										</p>
 
-									<p className='font-medium'>{t.methodist}:</p>
-									<p>
-										{rup.methodist ? (
-											<Link
-												className='hover:underline hover:text-primary font-semibold'
-												href={`/users/${rup.methodist.keycloakId}`}
-											>
-												{rup.methodist.firstName} {rup.methodist.lastName}
-											</Link>
-										) : (
-											t.empty
-										)}
-									</p>
+										<p className='font-medium'>{t.methodist}:</p>
+										<p>
+											{rup.methodist ? (
+												<Link
+													className='hover:underline hover:text-primary font-semibold'
+													href={`/users/${rup.methodist.keycloakId}`}
+												>
+													{rup.methodist.firstName} {rup.methodist.lastName}
+												</Link>
+											) : (
+												t.empty
+											)}
+										</p>
+									</div>
 								</div>
-							</div>
 
 								{rup.groups[0] && (
-								<>
-									<Separator />
+									<>
+										<Separator />
 
-									<div className='space-y-3'>
-										<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-											<ComponentIcon className='w-4 h-4 mr-2' /> {t.group}
-										</h4>
+										<div className='space-y-3'>
+											<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+												<ComponentIcon className='w-4 h-4 mr-2' /> {t.group}
+											</h4>
 
-										<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
-											<p className='font-medium'>{t.name}:</p>
-											<p>{rup.groups[0]?.name}</p>
+											<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
+												<p className='font-medium'>{t.name}:</p>
+												<p>{rup.groups[0]?.name}</p>
 
-											<p className='font-medium'>{t.course}:</p>
-											<p>{rup.course}</p>
+												<p className='font-medium'>{t.course}:</p>
+												<p>{rup.course}</p>
 
-											<p className='font-medium'>{t.studyYear}:</p>
-											<p>{rup.studyYear}</p>
+												<p className='font-medium'>{t.studyYear}:</p>
+												<p>{rup.studyYear}</p>
 
-											<p className='font-medium'>{t.specialty}:</p>
-											<p>{getLocaleText(rup.groups[0]?.specialty, currentLocale)}</p>
+												<p className='font-medium'>{t.specialty}:</p>
+												<p>{getLocaleText(rup.groups[0]?.specialty, currentLocale)}</p>
 
-											<p className='font-medium'>{t.qualification}:</p>
-											<p>{getLocaleText(rup.groups[0]?.qualification, currentLocale)}</p>
+												<p className='font-medium'>{t.qualification}:</p>
+												<p>{getLocaleText(rup.groups[0]?.qualification, currentLocale)}</p>
+											</div>
 										</div>
-									</div>
-								</>
+									</>
 								)}
 
 								<Separator />
 
 								<div className='space-y-3'>
-								<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-									<Clock className='w-4 h-4 mr-2' /> {t.hours}
-								</h4>
+									<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+										<Clock className='w-4 h-4 mr-2' /> {t.hours}
+									</h4>
 
-								<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
-									<p className='font-medium'>{t.totalHours}:</p>
-									<p>{formatHours(rup.totalHours)}</p>
-								</div>
+									<div className='grid grid-cols-[1fr_2fr] gap-2 text-sm'>
+										<p className='font-medium'>{t.totalHours}:</p>
+										<p>{formatHours(rup.totalHours)}</p>
+									</div>
 								</div>
 							</div>
 						</div>

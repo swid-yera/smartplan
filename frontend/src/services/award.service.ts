@@ -3,13 +3,13 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
 	IAward,
+	IAwardUserKpiSummaryResponse,
 	ICreateAwardRequest,
 	ICreateTypesRequest,
 	IDepartmentRatingResponse,
 	IGetAllRequest,
 	IMessageResponse,
 	IPagination,
-	IAwardUserKpiSummaryResponse,
 	IReviewTeacherSummaryResponse,
 	ITypeResponse,
 	IUpdateAwardRequest,

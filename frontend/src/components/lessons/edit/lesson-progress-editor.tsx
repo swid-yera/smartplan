@@ -1,16 +1,7 @@
 'use client'
 
 import { getUILocaleSection } from '@helpers'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-	Input,
-	Label,
-	Textarea,
-} from '@shadcn'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Textarea } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { Waypoints } from 'lucide-react'
 
@@ -45,38 +36,19 @@ export function LessonProgressEditor({ activeLocale, items, onChange }: IProps) 
 									<Label htmlFor={`lesson-progress-name-${index}`}>
 										{t.progressStage} {index + 1}
 									</Label>
-									<Input
-										id={`lesson-progress-name-${index}`}
-										readOnly
-										value={item.name[activeLocale]}
-									/>
+									<Input id={`lesson-progress-name-${index}`} readOnly value={item.name[activeLocale]} />
 								</div>
 								<div className='grid gap-2'>
 									<Label htmlFor={`lesson-progress-start-${index}`}>{t.progressVariant1}</Label>
-									<Input
-										id={`lesson-progress-start-${index}`}
-										readOnly
-										type='number'
-										value={item.firstTime}
-									/>
+									<Input id={`lesson-progress-start-${index}`} readOnly type='number' value={item.firstTime} />
 								</div>
 								<div className='grid gap-2'>
 									<Label htmlFor={`lesson-progress-end-${index}`}>{t.progressVariant2}</Label>
-									<Input
-										id={`lesson-progress-end-${index}`}
-										readOnly
-										type='number'
-										value={item.secondTime}
-									/>
+									<Input id={`lesson-progress-end-${index}`} readOnly type='number' value={item.secondTime} />
 								</div>
 								<div className='grid gap-2'>
 									<Label htmlFor={`lesson-progress-third-${index}`}>{t.progressVariant3}</Label>
-									<Input
-										id={`lesson-progress-third-${index}`}
-										readOnly
-										type='number'
-										value={item.thirdTime}
-									/>
+									<Input id={`lesson-progress-third-${index}`} readOnly type='number' value={item.thirdTime} />
 								</div>
 							</div>
 

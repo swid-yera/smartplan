@@ -21,7 +21,11 @@ const criteriaMethodLabelsByLocale: Record<Locale, Record<CriteriaMethodEnum, st
 }
 
 // normalize criteria method
-export const normalizeCriteriaMethod = (criteriaMethod: CriteriaMethodEnum, points?: number[], locale: Locale = 'ru') => {
+export const normalizeCriteriaMethod = (
+	criteriaMethod: CriteriaMethodEnum,
+	points?: number[],
+	locale: Locale = 'ru',
+) => {
 	const labels = criteriaMethodLabelsByLocale[locale] || criteriaMethodLabelsByLocale.ru
 	const label = labels[criteriaMethod]
 

@@ -21,6 +21,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { Sparkles } from 'lucide-react'
+
 import localeDictionary from './locale.json'
 
 interface GenerateCardProps {

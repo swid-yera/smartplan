@@ -164,10 +164,7 @@ export const mapCategoryToFormFields = (category: ICategoryResponse): ICategoryF
 	return (category.fieldsExpanded || []).map((field, index) => mapCategoryFieldToFormState(field, index))
 }
 
-export const mapCategoryFieldToFormState = (
-	field: ICategoryFieldResponse,
-	index: number,
-): ICategoryFieldFormState => ({
+export const mapCategoryFieldToFormState = (field: ICategoryFieldResponse, index: number): ICategoryFieldFormState => ({
 	key: field.key,
 	label: toLocaleDraft(field.label),
 	type: field.type,
@@ -299,12 +296,12 @@ export const sanitizeMultiFieldOptions = (options: unknown[]): ICategoryMultiFie
 			const key = option.key.trim()
 			const type = MULTI_FIELD_CHILD_TYPE_OPTIONS.includes(option.type) ? option.type : 'text'
 			const label = toLocaleRequestText(option.label)
-			const placeholder = option.placeholder.ru.trim() || option.placeholder.kk.trim()
-				? toLocaleRequestText(option.placeholder)
-				: null
-			const helpText = option.helpText.ru.trim() || option.helpText.kk.trim()
-				? toLocaleRequestText(option.helpText)
-				: null
+			const placeholder =
+				option.placeholder.ru.trim() || option.placeholder.kk.trim()
+					? toLocaleRequestText(option.placeholder)
+					: null
+			const helpText =
+				option.helpText.ru.trim() || option.helpText.kk.trim() ? toLocaleRequestText(option.helpText) : null
 
 			return {
 				key,
@@ -329,7 +326,10 @@ export const sanitizeMultiFieldChildOptions = (type: CategoryFieldChildType, opt
 		.filter((option) => option.length > 0)
 }
 
-export const sanitizeMultiFieldChildValidation = (type: CategoryFieldChildType, validation: Record<string, unknown>) => {
+export const sanitizeMultiFieldChildValidation = (
+	type: CategoryFieldChildType,
+	validation: Record<string, unknown>,
+) => {
 	const allowedKeysByType: Partial<Record<CategoryFieldChildType, string[]>> = {
 		text: ['minLength', 'maxLength'],
 		textarea: ['minLength', 'maxLength'],
@@ -371,7 +371,10 @@ export const isValidMultiFieldDefinition = (field: ICategoryFieldFormState) => {
 		if (!isAllowedType) return false
 		if (seen.has(normalizedKey)) return false
 		seen.add(normalizedKey)
-		if (typedSubField.type === 'select' && sanitizeMultiFieldChildOptions(typedSubField.type, typedSubField.options).length === 0) {
+		if (
+			typedSubField.type === 'select' &&
+			sanitizeMultiFieldChildOptions(typedSubField.type, typedSubField.options).length === 0
+		) {
 			return false
 		}
 	}

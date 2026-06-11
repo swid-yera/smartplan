@@ -10,6 +10,7 @@ import type { IUser, Locale } from '@types'
 import { Calendar, User, UserSearch } from 'lucide-react'
 
 import locale from './locale.json'
+
 interface IProps {
 	teacher: IUser
 	methodist?: IUser

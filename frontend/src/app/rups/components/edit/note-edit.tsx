@@ -1,7 +1,5 @@
 'use client'
 
-import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
-import type { Locale, LocaleText } from '@types'
 import {
 	Card,
 	CardContent,
@@ -14,7 +12,10 @@ import {
 	FormMessage,
 	Textarea,
 } from '@shadcn'
+import type { Locale, LocaleText } from '@types'
 import { type FieldValues, type Path, useFormContext } from 'react-hook-form'
+
+import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
 
 interface IProps<T extends FieldValues> {
 	name: Path<T>
@@ -60,7 +61,9 @@ export function NoteEdit<T extends FieldValues>({
 									rows={rows}
 									value={getLocalizedValue(field.value as LocaleText, activeLocale)}
 									onChange={(event) =>
-										field.onChange(updateLocaleText(field.value as LocaleText, activeLocale, event.target.value))
+										field.onChange(
+											updateLocaleText(field.value as LocaleText, activeLocale, event.target.value),
+										)
 									}
 								/>
 							</FormControl>

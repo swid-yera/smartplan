@@ -109,11 +109,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 		})
 	}
 
-	const handleLessonProgressChange = (
-		index: number,
-		field: 'contentText',
-		value: string,
-	) => {
+	const handleLessonProgressChange = (index: number, field: 'contentText', value: string) => {
 		setFormData((prev) => {
 			const nextLessonProgress = [...prev.lessonProgress]
 			const current = nextLessonProgress[index]

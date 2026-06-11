@@ -18,7 +18,9 @@ import { cleanupDeleteCache } from './query-cache'
 
 export class LessonService {
 	private isLocalizedTextObject = (value: unknown): value is { ru?: unknown; kz?: unknown } =>
-		Boolean(value) && typeof value === 'object' && ('ru' in (value as Record<string, unknown>) || 'kz' in (value as Record<string, unknown>))
+		Boolean(value) &&
+		typeof value === 'object' &&
+		('ru' in (value as Record<string, unknown>) || 'kz' in (value as Record<string, unknown>))
 
 	private normalizeProgressMinute = (value: unknown): number => {
 		if (Array.isArray(value)) {
@@ -72,9 +74,9 @@ export class LessonService {
 			const rawContent = source.content
 			const contentItems = Array.isArray(rawContent)
 				? rawContent
-					: typeof rawContent === 'string'
-						? rawContent.split('\n')
-						: []
+				: typeof rawContent === 'string'
+					? rawContent.split('\n')
+					: []
 			const content = contentItems
 				.map((contentItem) => {
 					if (typeof contentItem === 'string') {

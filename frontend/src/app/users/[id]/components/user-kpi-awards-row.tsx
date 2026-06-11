@@ -4,13 +4,13 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
+import { StatusBadge } from '@components'
 import { getCategoryIconOptionByName, getLocaleText, getLocaleTextStrict, getUILocaleSection } from '@helpers'
 import { Button, TableCell, TableRow, Tooltip, TooltipContent, TooltipTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type IAward, StatusEnum } from '@types'
 import { ArrowUpRight, Folder } from 'lucide-react'
 
-import { StatusBadge } from '@components'
 import localeDictionary from '../locale.json'
 
 interface IProps {
@@ -89,7 +89,7 @@ export const UserKpiAwardsRow: FC<IProps> = ({ award, onSelect }) => {
 	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const criteriaSummary = `${getLocaleText(award.type.name, locale)} / ${getLocaleText(award.criteria.name, locale)}`
 	const displayPoints =
-		award.status === StatusEnum.IN_REVIEW ? award.criteria.points[0] ?? award.totalPoints : award.totalPoints
+		award.status === StatusEnum.IN_REVIEW ? (award.criteria.points[0] ?? award.totalPoints) : award.totalPoints
 	const createdAt = new Date(award.createdAt).toLocaleDateString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')
 	const previewFields = getAwardPreviewFields(award, locale)
 
@@ -147,7 +147,10 @@ export const UserKpiAwardsRow: FC<IProps> = ({ award, onSelect }) => {
 			<TooltipContent side='top' sideOffset={8}>
 				<div className='max-w-sm space-y-1'>
 					<p className='text-sm'>
-						{t.kpiAwardUpdatedAt}: <span className='font-medium'>{new Date(award.updatedAt).toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}</span>
+						{t.kpiAwardUpdatedAt}:{' '}
+						<span className='font-medium'>
+							{new Date(award.updatedAt).toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}
+						</span>
 					</p>
 					{award.reason ? (
 						<p className='text-sm'>

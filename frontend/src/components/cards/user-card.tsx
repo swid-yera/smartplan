@@ -1,9 +1,9 @@
 import type { FC } from 'react'
 
 import {
-	getUserTotalPoints,
 	getLocaleText,
 	getUILocaleSection,
+	getUserTotalPoints,
 	normalizeTotalPoints,
 	normalizeUserRole,
 	prettifyPhone,

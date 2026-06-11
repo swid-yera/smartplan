@@ -6,7 +6,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { RegenerateDescriptionDialog, TopicTypeBadge } from '@components'
-import { createLocaleText, formatAsDash, formatHours, getLocaleText, getUILocaleSection, toBackendLocale } from '@helpers'
+import {
+	createLocaleText,
+	formatAsDash,
+	formatHours,
+	getLocaleText,
+	getUILocaleSection,
+	toBackendLocale,
+} from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
 import {

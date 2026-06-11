@@ -2,11 +2,10 @@
 
 import type { ComponentProps, FC } from 'react'
 
+import { cn } from '@lib'
 import { Button } from '@shadcn'
 import { type Locale } from '@types'
 import { Languages } from 'lucide-react'
-
-import { cn } from '@lib'
 
 type ILocaleToggleButtonProps = Omit<ComponentProps<typeof Button>, 'onClick'> & {
 	activeLocale: Locale

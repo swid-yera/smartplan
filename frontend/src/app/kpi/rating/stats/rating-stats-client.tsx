@@ -145,11 +145,11 @@ export const RatingStatsClient = ({ locale, teachers, t }: IProps) => {
 								}
 
 								return (
-								<TableRow key={teacher.keycloakId} className='border-l-4 transition-colors' style={rowStyle}>
-									<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
-									<TableCell className='w-16 text-right font-semibold whitespace-nowrap'>
-										{getUserTotalPoints(teacher)}
-									</TableCell>
+									<TableRow key={teacher.keycloakId} className='border-l-4 transition-colors' style={rowStyle}>
+										<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
+										<TableCell className='w-16 text-right font-semibold whitespace-nowrap'>
+											{getUserTotalPoints(teacher)}
+										</TableCell>
 										<TableCell className='py-4'>
 											<div className='space-y-1'>
 												<Link

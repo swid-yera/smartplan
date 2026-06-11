@@ -1,4 +1,5 @@
 import type { IAward, IReviewItem, IRup } from '@types'
+
 import { getLocaleText } from './locale.helper'
 
 export const mapRupToReviewItem = (rup: IRup): IReviewItem => ({
