@@ -2,8 +2,8 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { Loader } from '@components'
-import { getLocaleText, getUILocaleSection, normalizeUserRole, prettifyPhone, userRoleButtonVariants } from '@helpers'
+import { DepartmentBadge, Loader, UserTypeBadge } from '@components'
+import { getUILocaleSection, prettifyPhone } from '@helpers'
 import {
 	Badge,
 	Button,
@@ -102,8 +102,6 @@ const UserRow: FC<IUserRow> = ({ user, onManagePermissions }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const permissions = user.permissions ?? []
-	const departments = (user.departments ?? []).map((department) => getLocaleText(department.name, locale))
-	const departmentNames = departments.filter(Boolean)
 
 	return (
 		<TableRow key={user.keycloakId}>
@@ -116,15 +114,9 @@ const UserRow: FC<IUserRow> = ({ user, onManagePermissions }) => {
 						<p className='truncate font-medium capitalize'>
 							{user.firstName} {user.lastName}
 						</p>
-						<div className='mt-1'>
-							<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role, locale)}</Badge>
-						</div>
-						<div className='mt-1'>
-							{departmentNames.map((departmentName) => (
-								<Badge key={departmentName} variant='outline'>
-									{departmentName}
-								</Badge>
-							))}
+						<div className='mt-1 flex flex-wrap items-center gap-1.5'>
+							<UserTypeBadge locale={locale} userType={user.userType} />
+							<DepartmentBadge departments={user.departments} locale={locale} />
 						</div>
 					</div>
 				</Link>
@@ -174,8 +166,6 @@ const UserMobileCard: FC<IUserMobileCardProps> = ({ user, onManagePermissions })
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const permissions = user.permissions ?? []
-	const departments = (user.departments ?? []).map((department) => getLocaleText(department.name, locale))
-	const departmentNames = departments.filter(Boolean)
 
 	return (
 		<Card className='overflow-hidden'>
@@ -190,12 +180,8 @@ const UserMobileCard: FC<IUserMobileCardProps> = ({ user, onManagePermissions })
 						</p>
 						<p className='truncate text-xs text-muted-foreground'>{user.username}</p>
 						<div className='mt-2 flex flex-wrap gap-1.5'>
-							<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role, locale)}</Badge>
-							{departmentNames.map((departmentName) => (
-								<Badge key={departmentName} variant='outline'>
-									{departmentName}
-								</Badge>
-							))}
+							<UserTypeBadge locale={locale} userType={user.userType} />
+							<DepartmentBadge departments={user.departments} locale={locale} />
 						</div>
 					</div>
 				</Link>

@@ -17,6 +17,14 @@ export enum RoleEnum {
 	SPECIAL = 'SPECIAL',
 }
 
+export enum UserTypeEnum {
+	GENERAL = 'GENERAL',
+	HEAD = 'HEAD',
+	MASTER = 'MASTER',
+	SPECIALIST = 'SPECIALIST',
+	NULL = 'NULL',
+}
+
 export enum PermissionCodeEnum {
 	RUP_MANAGE = 'RUP-manage',
 	RUP_VIEW = 'RUP-view',
@@ -49,6 +57,7 @@ export interface IUser {
 	username: string
 	email?: string
 	role: RoleEnum
+	userType: UserTypeEnum
 	permissions?: PermissionCodeEnum[]
 
 	firstName: string

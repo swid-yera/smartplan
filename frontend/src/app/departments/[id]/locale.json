@@ -6,6 +6,14 @@
 		"teachersCount": "Сотрудников: ",
 		"points": "Баллы",
 		"tableTitle": "Рейтинг сотрудников",
+		"table": {
+			"index": "#",
+			"username": "ФИО",
+			"login": "Логин",
+			"contacts": "Контакты",
+			"types": "Тип",
+			"points": "Баллы"
+		},
 		"emptyTitle": "Пока нет ни одного сотрудника",
 		"emptyDescription": "У этого отделения пока нет данных KPI для отображения рейтинга.",
 		"departments": "Отделения",
@@ -19,6 +27,14 @@
 		"teachersCount": "оқытушы",
 		"points": "Ұпай",
 		"tableTitle": "Қызметкерлердің рейтингі",
+		"table": {
+			"index": "#",
+			"username": "Аты-жөні",
+			"login": "Логин",
+			"contacts": "Байланыс",
+			"types": "Түрі",
+			"points": "Ұпай"
+		},
 		"emptyTitle": "Әзірге қызметкерлер жоқ",
 		"emptyDescription": "Бұл бөлім үшін KPI деректері әзірге жоқ.",
 		"departments": "Бөлімдер",

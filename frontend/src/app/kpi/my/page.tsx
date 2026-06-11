@@ -76,7 +76,7 @@ const Page = () => {
 			<PageTitle description={t.profileDescription}>{t.profileTitle}</PageTitle>
 
 			<div className='space-y-4'>
-				<UserCard showTotalPoints showViolation={false} user={user} />
+				<UserCard showTotalPoints={false} showViolation={false} user={user} />
 
 				<AwardFilterCard compact className='mb-4' />
 

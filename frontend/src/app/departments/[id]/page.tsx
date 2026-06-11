@@ -5,8 +5,8 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-import { Loader, PageTitle, withPermission } from '@components'
-import { getLocaleText, getUILocaleSection, getUserTotalPoints } from '@helpers'
+import { Loader, PageTitle, UserTypeBadge, withPermission } from '@components'
+import { getLocaleText, getUILocaleSection, getUserTotalPoints, normalizeTotalPoints, prettifyPhone } from '@helpers'
 import { services } from '@services'
 import {
 	Card,
@@ -23,8 +23,8 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import type { IUserDepartment } from '@types'
 import { PermissionCodeEnum } from '@types'
+import { Mail, Phone } from 'lucide-react'
 
 import { RatingNav } from '../../kpi/rating/components/rating-nav'
 import localeDictionary from './locale.json'
@@ -95,19 +95,26 @@ const Page = () => {
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead className='w-12 text-center'>#</TableHead>
-								<TableHead className='w-16 text-right'>{t.points}</TableHead>
-								<TableHead>{t.teacher}</TableHead>
+								<TableHead className='w-12 text-center'>{t.table.index}</TableHead>
+								<TableHead className='min-w-40'>{t.table.username}</TableHead>
+								<TableHead className='min-w-36'>{t.table.login}</TableHead>
+								<TableHead className='min-w-56'>{t.table.contacts}</TableHead>
+								<TableHead className='w-32'>{t.table.types}</TableHead>
+								<TableHead className='w-24 text-right'>{t.table.points}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{sortedTeachers.length > 0 ? (
 								sortedTeachers.map((teacher, index) => {
 									const color = getTeacherColor(index)
-									const departmentLabel = (teacher.departments ?? [])
-										.map((item: IUserDepartment) => getLocaleText(item.name, locale))
-										.filter(Boolean)
-										.join(', ')
+									const displayName =
+										[teacher.firstName, teacher.lastName].filter(Boolean).join(' ').trim() ||
+										teacher.username ||
+										'—'
+									const totalPoints = normalizeTotalPoints(getUserTotalPoints(teacher), locale)
+									const email = teacher.email?.trim() || ''
+									const phone = teacher.phone ? prettifyPhone(teacher.phone) : ''
+									const contacts = [email, phone].filter(Boolean)
 
 									return (
 										<TableRow
@@ -116,28 +123,51 @@ const Page = () => {
 											style={getTeacherRowStyle(color)}
 										>
 											<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
-											<TableCell className='w-16 whitespace-nowrap text-right font-semibold'>
-												{getUserTotalPoints(teacher)}
+											<TableCell className='font-medium'>
+												<Link
+													className='block truncate hover:underline'
+													href={`/users/${teacher.keycloakId}?tab=kpi`}
+												>
+													{displayName}
+												</Link>
+											</TableCell>
+											<TableCell className='text-sm text-muted-foreground'>
+												<div className='truncate'>{teacher.username || '—'}</div>
 											</TableCell>
 											<TableCell className='py-4'>
-												<div className='space-y-1'>
-													<Link
-														className='block text-base font-medium hover:underline'
-														href={`/users/${teacher.keycloakId}?tab=kpi`}
-													>
-														{teacher.firstName} {teacher.lastName}
-													</Link>
-													{departmentLabel ? (
-														<p className='truncate text-xs text-muted-foreground'>{departmentLabel}</p>
-													) : null}
+												<div className='space-y-1 text-sm'>
+													{contacts.length > 0 ? (
+														<>
+															{email ? (
+																<div className='flex min-w-0 items-center gap-2'>
+																	<Mail className='h-4 w-4 shrink-0 text-muted-foreground' />
+																	<span className='truncate'>{email}</span>
+																</div>
+															) : null}
+															{phone ? (
+																<div className='flex min-w-0 items-center gap-2'>
+																	<Phone className='h-4 w-4 shrink-0 text-muted-foreground' />
+																	<span className='truncate'>{phone}</span>
+																</div>
+															) : null}
+														</>
+													) : (
+														<span className='text-muted-foreground'>—</span>
+													)}
 												</div>
+											</TableCell>
+											<TableCell>
+												<UserTypeBadge locale={locale} userType={teacher.userType} />
+											</TableCell>
+											<TableCell className='whitespace-nowrap text-right font-semibold'>
+												{totalPoints}
 											</TableCell>
 										</TableRow>
 									)
 								})
 							) : (
 								<TableRow>
-									<TableCell className='py-10 text-center text-muted-foreground' colSpan={3}>
+									<TableCell className='py-10 text-center text-muted-foreground' colSpan={6}>
 										{t.emptyTitle}
 									</TableCell>
 								</TableRow>
