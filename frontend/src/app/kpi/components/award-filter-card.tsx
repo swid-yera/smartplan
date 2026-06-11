@@ -50,9 +50,16 @@ import localeDictionary from './locale.json'
 interface IProps {
 	className?: string
 	compact?: boolean
+	defaultStatuses?: string[]
+	hideCategoryFilter?: boolean
 }
 
-export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
+export const AwardFilterCard: FC<IProps> = ({
+	className,
+	compact = false,
+	defaultStatuses = [],
+	hideCategoryFilter = false,
+}) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = localeDictionary[locale] ?? localeDictionary.ru
 	const labels = getStatusLabels(locale)
@@ -60,10 +67,18 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 	const router = useRouter()
 	const pathname = usePathname()
 	const searchParamsString = searchParams.toString()
+	const normalizedDefaultStatuses = useMemo(
+		() => defaultStatuses.map((status) => status.trim()).filter(Boolean),
+		[defaultStatuses],
+	)
 
 	const initialState = getAwardFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
-	const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialState.statuses)
-	const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialState.categoryIds)
+	const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
+		initialState.statuses.length > 0 ? initialState.statuses : normalizedDefaultStatuses,
+	)
+	const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
+		hideCategoryFilter ? [] : initialState.categoryIds,
+	)
 	const [selectedSort, setSelectedSort] = useState<'asc' | 'desc'>(initialState.sort)
 	const selectedStatusesText = t.awardFilter.statusesSelected.replace('{count}', String(selectedStatuses.length))
 	const selectedCategoriesText = t.awardFilter.categoriesSelected.replace(
@@ -71,11 +86,12 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 		String(selectedCategoryIds.length),
 	)
 	const didMountRef = useRef(false)
-	const compactFiltersSignature = `${selectedStatuses.join('|')}::${selectedCategoryIds.join('|')}::${selectedSort}`
+	const compactFiltersSignature = `${selectedStatuses.join('|')}::${hideCategoryFilter ? '' : selectedCategoryIds.join('|')}::${selectedSort}`
 	const lastAppliedCompactFiltersRef = useRef(compactFiltersSignature)
 
 	const { data: categories = [] } = useQuery({
 		...services.categories.getAllOptions(),
+		enabled: !hideCategoryFilter,
 	})
 
 	const selectedCategoryIdSet = useMemo(() => new Set(selectedCategoryIds), [selectedCategoryIds])
@@ -89,18 +105,18 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 
 	useEffect(() => {
 		const nextState = getAwardFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
+		const nextStatuses = nextState.statuses.length > 0 ? nextState.statuses : normalizedDefaultStatuses
 
 		setSelectedStatuses((prev) => {
-			if (
-				prev.length === nextState.statuses.length &&
-				prev.every((value, index) => value === nextState.statuses[index])
-			) {
+			if (prev.length === nextStatuses.length && prev.every((value, index) => value === nextStatuses[index])) {
 				return prev
 			}
 
-			return nextState.statuses
+			return nextStatuses
 		})
 		setSelectedCategoryIds((prev) => {
+			if (hideCategoryFilter) return []
+
 			if (
 				prev.length === nextState.categoryIds.length &&
 				prev.every((value, index) => value === nextState.categoryIds[index])
@@ -111,12 +127,14 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 			return nextState.categoryIds
 		})
 		setSelectedSort((prev) => (prev === nextState.sort ? prev : nextState.sort))
-	}, [searchParamsString])
+	}, [hideCategoryFilter, normalizedDefaultStatuses, searchParamsString])
 
 	const toggleStatus = (status: string) => {
 		setSelectedStatuses((prev) => (prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]))
 	}
 	const toggleCategory = (categoryId: string) => {
+		if (hideCategoryFilter) return
+
 		setSelectedCategoryIds((prev) =>
 			prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
 		)
@@ -128,7 +146,7 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 			new URLSearchParams(currentQuery),
 			{
 				statuses: selectedStatuses,
-				categoryIds: selectedCategoryIds,
+				categoryIds: hideCategoryFilter ? [] : selectedCategoryIds,
 				sort: selectedSort,
 			},
 			{ resetPage: true },
@@ -137,7 +155,7 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 
 		persistAwardFilterState({
 			statuses: selectedStatuses,
-			categoryIds: selectedCategoryIds,
+			categoryIds: hideCategoryFilter ? [] : selectedCategoryIds,
 			sort: selectedSort,
 		})
 
@@ -148,7 +166,7 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 
 	const resetFilters = useCallback(() => {
 		const defaults = {
-			statuses: [] as string[],
+			statuses: normalizedDefaultStatuses,
 			categoryIds: [] as string[],
 			sort: DEFAULT_AWARD_SORT,
 		}
@@ -162,7 +180,7 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 		setSelectedSort(defaults.sort)
 
 		router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-	}, [pathname, router, searchParams])
+	}, [normalizedDefaultStatuses, pathname, router, searchParams])
 
 	useEffect(() => {
 		if (!compact) return
@@ -220,64 +238,68 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 							</Popover>
 						</div>
 
-						<div className='space-y-1'>
-							<Label className='sr-only'>{t.awardFilter.category}</Label>
-							<Popover>
-								<PopoverTrigger asChild>
-									<Button
-										aria-label={t.awardFilter.category}
-										className='h-8 min-w-40 justify-start gap-2 px-3 text-xs font-normal'
-										role='combobox'
-										title={selectedCategories.length > 0 ? selectedCategoriesText : t.awardFilter.category}
-										variant='outline'
-									>
-										<Layers3 className='h-4 w-4 shrink-0' />
-										<span className='truncate'>
-											{selectedCategories.length > 0 ? selectedCategoriesText : t.awardFilter.category}
-										</span>
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent align='start' className='w-(--radix-popover-trigger-width) min-w-96 p-0'>
-									<Command>
-										<CommandInput className='h-8 text-xs' placeholder={t.awardFilter.searchCategory} />
-										<CommandList>
-											<CommandEmpty>{t.awardFilter.categoryNotFound}</CommandEmpty>
-											<CommandGroup>
-												{categories.map((category) => {
-													const categoryName = getLocaleText(category.name, locale)
-													const categoryIconOption = getCategoryIconOptionByName(category.icon)
-													const CategoryIcon = categoryIconOption?.Icon || Folder
+						{!hideCategoryFilter ? (
+							<div className='space-y-1'>
+								<Label className='sr-only'>{t.awardFilter.category}</Label>
+								<Popover>
+									<PopoverTrigger asChild>
+										<Button
+											aria-label={t.awardFilter.category}
+											className='h-8 min-w-40 justify-start gap-2 px-3 text-xs font-normal'
+											role='combobox'
+											title={selectedCategories.length > 0 ? selectedCategoriesText : t.awardFilter.category}
+											variant='outline'
+										>
+											<Layers3 className='h-4 w-4 shrink-0' />
+											<span className='truncate'>
+												{selectedCategories.length > 0 ? selectedCategoriesText : t.awardFilter.category}
+											</span>
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent align='start' className='w-(--radix-popover-trigger-width) min-w-96 p-0'>
+										<Command>
+											<CommandInput className='h-8 text-xs' placeholder={t.awardFilter.searchCategory} />
+											<CommandList>
+												<CommandEmpty>{t.awardFilter.categoryNotFound}</CommandEmpty>
+												<CommandGroup>
+													{categories.map((category) => {
+														const categoryName = getLocaleText(category.name, locale)
+														const categoryIconOption = getCategoryIconOptionByName(category.icon)
+														const CategoryIcon = categoryIconOption?.Icon || Folder
 
-													return (
-														<CommandItem
-															key={category.id}
-															value={categoryName}
-															onSelect={() => toggleCategory(category.id)}
-														>
-															<Check
-																className={cn(
-																	'mr-2 h-4 w-4',
-																	selectedCategoryIdSet.has(category.id) ? 'opacity-100' : 'opacity-0',
-																)}
-															/>
-															<CategoryIcon
-																className={cn(
-																	'mr-2 h-4 w-4 shrink-0 transition-colors duration-200',
-																	selectedCategoryIdSet.has(category.id)
-																		? 'text-primary'
-																		: 'text-muted-foreground',
-																)}
-															/>
-															{categoryName}
-														</CommandItem>
-													)
-												})}
-											</CommandGroup>
-										</CommandList>
-									</Command>
-								</PopoverContent>
-							</Popover>
-						</div>
+														return (
+															<CommandItem
+																key={category.id}
+																value={categoryName}
+																onSelect={() => toggleCategory(category.id)}
+															>
+																<Check
+																	className={cn(
+																		'mr-2 h-4 w-4',
+																		selectedCategoryIdSet.has(category.id)
+																			? 'opacity-100'
+																			: 'opacity-0',
+																	)}
+																/>
+																<CategoryIcon
+																	className={cn(
+																		'mr-2 h-4 w-4 shrink-0 transition-colors duration-200',
+																		selectedCategoryIdSet.has(category.id)
+																			? 'text-primary'
+																			: 'text-muted-foreground',
+																	)}
+																/>
+																{categoryName}
+															</CommandItem>
+														)
+													})}
+												</CommandGroup>
+											</CommandList>
+										</Command>
+									</PopoverContent>
+								</Popover>
+							</div>
+						) : null}
 					</div>
 
 					<div className='flex flex-wrap items-center gap-2 xl:ml-auto'>
@@ -303,7 +325,9 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 						<Button
 							className='h-8 gap-2 px-3 text-xs font-normal'
 							disabled={
-								!selectedStatuses.length && !selectedCategoryIds.length && selectedSort === DEFAULT_AWARD_SORT
+								!selectedStatuses.length &&
+								(hideCategoryFilter ? true : !selectedCategoryIds.length) &&
+								selectedSort === DEFAULT_AWARD_SORT
 							}
 							type='button'
 							variant='outline'
@@ -383,67 +407,68 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 								</Popover>
 							</div>
 
-							{/* category */}
-							<div className='space-y-1'>
-								<Label className='text-xs font-medium'>{t.awardFilter.category}</Label>
-								<Popover>
-									<PopoverTrigger asChild>
-										<Button
-											className='h-9 w-full justify-between font-normal'
-											role='combobox'
-											variant='outline'
-										>
-											{selectedCategories.length > 0 ? (
-												<span className='truncate'>{selectedCategoriesText}</span>
-											) : (
-												<span className='text-muted-foreground'>{t.awardFilter.selectCategories}</span>
-											)}
-											<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-										</Button>
-									</PopoverTrigger>
-									<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-0'>
-										<Command>
-											<CommandInput className='h-9' placeholder={t.awardFilter.searchCategory} />
-											<CommandList>
-												<CommandEmpty>{t.awardFilter.categoryNotFound}</CommandEmpty>
-												<CommandGroup>
-													{categories.map((category) => {
-														const categoryName = getLocaleText(category.name, locale)
-														const categoryIconOption = getCategoryIconOptionByName(category.icon)
-														const CategoryIcon = categoryIconOption?.Icon || Folder
+							{!hideCategoryFilter ? (
+								<div className='space-y-1'>
+									<Label className='text-xs font-medium'>{t.awardFilter.category}</Label>
+									<Popover>
+										<PopoverTrigger asChild>
+											<Button
+												className='h-9 w-full justify-between font-normal'
+												role='combobox'
+												variant='outline'
+											>
+												{selectedCategories.length > 0 ? (
+													<span className='truncate'>{selectedCategoriesText}</span>
+												) : (
+													<span className='text-muted-foreground'>{t.awardFilter.selectCategories}</span>
+												)}
+												<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+											</Button>
+										</PopoverTrigger>
+										<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-0'>
+											<Command>
+												<CommandInput className='h-9' placeholder={t.awardFilter.searchCategory} />
+												<CommandList>
+													<CommandEmpty>{t.awardFilter.categoryNotFound}</CommandEmpty>
+													<CommandGroup>
+														{categories.map((category) => {
+															const categoryName = getLocaleText(category.name, locale)
+															const categoryIconOption = getCategoryIconOptionByName(category.icon)
+															const CategoryIcon = categoryIconOption?.Icon || Folder
 
-														return (
-															<CommandItem
-																key={category.id}
-																value={categoryName}
-																onSelect={() => toggleCategory(category.id)}
-															>
-																<Check
-																	className={cn(
-																		'mr-2 h-4 w-4',
-																		selectedCategoryIdSet.has(category.id)
-																			? 'opacity-100'
-																			: 'opacity-0',
-																	)}
-																/>
-																<CategoryIcon
-																	className={cn(
-																		'mr-2 h-4 w-4 shrink-0 transition-colors duration-200',
-																		selectedCategoryIdSet.has(category.id)
-																			? 'text-primary'
-																			: 'text-muted-foreground',
-																	)}
-																/>
-																{categoryName}
-															</CommandItem>
-														)
-													})}
-												</CommandGroup>
-											</CommandList>
-										</Command>
-									</PopoverContent>
-								</Popover>
-							</div>
+															return (
+																<CommandItem
+																	key={category.id}
+																	value={categoryName}
+																	onSelect={() => toggleCategory(category.id)}
+																>
+																	<Check
+																		className={cn(
+																			'mr-2 h-4 w-4',
+																			selectedCategoryIdSet.has(category.id)
+																				? 'opacity-100'
+																				: 'opacity-0',
+																		)}
+																	/>
+																	<CategoryIcon
+																		className={cn(
+																			'mr-2 h-4 w-4 shrink-0 transition-colors duration-200',
+																			selectedCategoryIdSet.has(category.id)
+																				? 'text-primary'
+																				: 'text-muted-foreground',
+																		)}
+																	/>
+																	{categoryName}
+																</CommandItem>
+															)
+														})}
+													</CommandGroup>
+												</CommandList>
+											</Command>
+										</PopoverContent>
+									</Popover>
+								</div>
+							) : null}
 
 							{/* sort */}
 							<div className='space-y-1'>
@@ -465,7 +490,7 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 								className='h-9 w-full px-5 sm:w-auto'
 								disabled={
 									!selectedStatuses.length &&
-									!selectedCategoryIds.length &&
+									(hideCategoryFilter ? true : !selectedCategoryIds.length) &&
 									selectedSort === DEFAULT_AWARD_SORT
 								}
 								type='button'
@@ -499,22 +524,26 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 									</div>
 								</div>
 
-								<div className='space-y-2'>
-									<p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
-										{t.awardFilter.selectedCategoriesTitle}
-									</p>
-									<div className='flex flex-wrap gap-1.5'>
-										{selectedCategories.length > 0 ? (
-											selectedCategories.map((category) => (
-												<Badge key={category.id} variant='secondary'>
-													{getLocaleText(category.name, locale)}
-												</Badge>
-											))
-										) : (
-											<span className='text-sm text-muted-foreground'>{t.awardFilter.nothingSelected}</span>
-										)}
+								{!hideCategoryFilter ? (
+									<div className='space-y-2'>
+										<p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+											{t.awardFilter.selectedCategoriesTitle}
+										</p>
+										<div className='flex flex-wrap gap-1.5'>
+											{selectedCategories.length > 0 ? (
+												selectedCategories.map((category) => (
+													<Badge key={category.id} variant='secondary'>
+														{getLocaleText(category.name, locale)}
+													</Badge>
+												))
+											) : (
+												<span className='text-sm text-muted-foreground'>
+													{t.awardFilter.nothingSelected}
+												</span>
+											)}
+										</div>
 									</div>
-								</div>
+								) : null}
 							</div>
 						</div>
 					)}

@@ -28,7 +28,7 @@ export const CategoryFieldsSection = ({
 			<h3 className='text-sm font-semibold'>{title}</h3>
 
 			{fields.length ? (
-				<div className={`grid items-start gap-4 ${columns === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+				<div className={`grid items-start gap-4 ${columns === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
 					{fields.map((field) => (
 						<div
 							key={field.id}

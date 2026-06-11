@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { AwardsCard, Forbidden, PageTitle, RupsCard, withNavAccess } from '@components'
 import { getUILocaleSection, hasAnyPermission, hasPermission } from '@helpers'
 import { services } from '@services'
-import { Button } from '@shadcn'
+import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQueries } from '@tanstack/react-query'
 import { PermissionCodeEnum, StatusEnum } from '@types'
@@ -105,8 +105,16 @@ const Page = () => {
 		canFullKpi,
 	})
 	const adminQuickActions = canUseAdminShortcuts ? buildAdminActions() : []
+	const hasRupTab = canViewRup || canManageRup || canFullRup
+	const hasKpiTab = canViewKpi || canManageKpi || canFullKpi
+	const visibleTabs = [hasRupTab ? 'rup' : null, hasKpiTab ? 'kpi' : null].filter(
+		(tab): tab is 'rup' | 'kpi' => tab !== null,
+	)
+	const defaultTab = visibleTabs[0] ?? 'rup'
+	const rupTabCount = canManageRup || canFullRup ? rupReviewCount : rupTotalCount
+	const kpiTabCount = canManageKpi || canFullKpi ? kpiReviewCount : kpiTotalCount
 	const quickGroups = [
-		(canViewRup || canManageRup || canFullRup) && {
+		hasRupTab && {
 			key: 'rup' as const,
 			title: t.rupTitle,
 			description: canManageRup || canFullRup ? t.rupDescriptionManage : t.rupDescriptionView,
@@ -117,7 +125,7 @@ const Page = () => {
 			icon: BookOpen,
 			actions: rupQuickActions,
 		},
-		(canViewKpi || canManageKpi || canFullKpi) && {
+		hasKpiTab && {
 			key: 'kpi' as const,
 			title: t.kpiTitle,
 			description: canManageKpi || canFullKpi ? t.kpiDescriptionManage : t.kpiDescriptionView,
@@ -173,31 +181,56 @@ const Page = () => {
 				</div>
 			</div>
 
-			<div className='grid gap-6 lg:grid-cols-2'>
-				{canViewRup || canManageRup || canFullRup ? (
-					<RupsCard
-						showCreateOnEmpty
-						className='h-full'
-						currentPage={1}
-						description={canManageRup || canFullRup ? t.rupDescriptionManage : t.rupDescriptionView}
-						isLoading={canManageRup || canFullRup ? reviewRupsQuery.isLoading : recentRupsQuery.isLoading}
-						rups={rupList}
-						title={canManageRup || canFullRup ? t.reviewRupsTitle : t.myRupsTitle}
-						totalPages={1}
-						onPageChange={() => undefined}
-					/>
-				) : null}
+			{visibleTabs.length > 0 ? (
+				<Tabs className='space-y-4' defaultValue={defaultTab}>
+					<TabsList className={`grid w-full ${visibleTabs.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} md:w-fit`}>
+						{hasRupTab ? (
+							<TabsTrigger className='px-4' value='rup'>
+								<span>{t.rupTitle}</span>
+								<Badge className='ml-1.5 h-5 min-w-5 px-1.5 text-[10px]' variant='secondary'>
+									{rupTabCount}
+								</Badge>
+							</TabsTrigger>
+						) : null}
+						{hasKpiTab ? (
+							<TabsTrigger className='px-4' value='kpi'>
+								<span>{t.kpiTitle}</span>
+								<Badge className='ml-1.5 h-5 min-w-5 px-1.5 text-[10px]' variant='secondary'>
+									{kpiTabCount}
+								</Badge>
+							</TabsTrigger>
+						) : null}
+					</TabsList>
 
-				{canViewKpi || canManageKpi || canFullKpi ? (
-					<AwardsCard
-						showCreateOnEmpty
-						awards={awardList}
-						description={canManageKpi || canFullKpi ? t.kpiDescriptionManage : t.kpiDescriptionView}
-						isLoading={canManageKpi || canFullKpi ? reviewKpiQuery.isLoading : recentKpiQuery.isLoading}
-						title={canManageKpi || canFullKpi ? t.reviewKpiTitle : t.myKpiTitle}
-					/>
-				) : null}
-			</div>
+					{hasRupTab ? (
+						<TabsContent className='mt-0' value='rup'>
+							<RupsCard
+								showCreateOnEmpty
+								className='h-full'
+								currentPage={1}
+								description={canManageRup || canFullRup ? t.rupDescriptionManage : t.rupDescriptionView}
+								isLoading={canManageRup || canFullRup ? reviewRupsQuery.isLoading : recentRupsQuery.isLoading}
+								rups={rupList}
+								title={canManageRup || canFullRup ? t.reviewRupsTitle : t.myRupsTitle}
+								totalPages={1}
+								onPageChange={() => undefined}
+							/>
+						</TabsContent>
+					) : null}
+
+					{hasKpiTab ? (
+						<TabsContent className='mt-0' value='kpi'>
+							<AwardsCard
+								showCreateOnEmpty
+								awards={awardList}
+								description={canManageKpi || canFullKpi ? t.kpiDescriptionManage : t.kpiDescriptionView}
+								isLoading={canManageKpi || canFullKpi ? reviewKpiQuery.isLoading : recentKpiQuery.isLoading}
+								title={canManageKpi || canFullKpi ? t.reviewKpiTitle : t.myKpiTitle}
+							/>
+						</TabsContent>
+					) : null}
+				</Tabs>
+			) : null}
 		</section>
 	)
 }

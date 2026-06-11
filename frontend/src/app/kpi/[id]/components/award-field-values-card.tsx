@@ -5,6 +5,7 @@ import { getLocaleText, getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useLocaleStore } from '@store'
 import type { IAward } from '@types'
+import { format, isValid, parseISO } from 'date-fns'
 
 import localeDictionary from './locale.json'
 
@@ -51,6 +52,32 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 		return ''
 	}
 
+	const formatDateValue = (value: string) => {
+		const trimmedValue = value.trim()
+
+		if (!trimmedValue) {
+			return null
+		}
+
+		const parsedDate = parseISO(trimmedValue)
+		const date = isValid(parsedDate) ? parsedDate : new Date(trimmedValue)
+
+		if (!isValid(date)) {
+			return null
+		}
+
+		const localeCode = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
+
+		return {
+			dotted: format(date, 'dd.MM.yyyy'),
+			text: new Intl.DateTimeFormat(localeCode, {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric',
+			}).format(date),
+		}
+	}
+
 	const awardFieldValues = Object.entries(award.fieldValues || {}).filter(([fieldKey]) => {
 		return categoryFieldByKey.get(fieldKey)?.type !== 'multi_fields'
 	})
@@ -58,6 +85,7 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 	const isFileValue = (value: string) => fileValueRegex.test(value.trim())
 	const isUrlValue = (value: string) => urlValueRegex.test(value.trim())
 	const getFieldLabel = (fieldKey: string) => categoryFieldLabelByKey.get(fieldKey) || fieldKey
+	const getFieldType = (fieldKey: string) => categoryFieldByKey.get(fieldKey)?.type
 
 	const sections = awardFieldValues.reduce(
 		(acc, [fieldKey, rawValue]) => {
@@ -150,6 +178,21 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 		))
 	}
 
+	const renderDateValue = (value: string) => {
+		const formatted = formatDateValue(value)
+
+		if (!formatted) {
+			return <p className='text-sm whitespace-pre-wrap break-all'>{value}</p>
+		}
+
+		return (
+			<div className='space-y-0.5'>
+				<p className='text-sm whitespace-pre-wrap break-all'>{formatted.text}</p>
+				<p className='text-xs text-muted-foreground'>{formatted.dotted}</p>
+			</div>
+		)
+	}
+
 	const renderUrlValues = (values: string[]) => {
 		if (values.length === 0) {
 			return <p className='text-sm text-muted-foreground'>{t.emptyValue}</p>
@@ -212,7 +255,13 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 									{sections.info.map(({ fieldKey, fieldLabel, values }) => (
 										<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
 											<p className='text-sm font-medium text-muted-foreground'>{fieldLabel}</p>
-											<div className='space-y-2'>{renderTextValues(values)}</div>
+											<div className='space-y-2'>
+												{getFieldType(fieldKey) === 'date'
+													? values.map((value, idx) => (
+															<div key={`${value}-${idx}`}>{renderDateValue(value)}</div>
+														))
+													: renderTextValues(values)}
+											</div>
 										</div>
 									))}
 								</div>
@@ -251,9 +300,19 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 																				locale,
 																			) || subField.key}
 																		</p>
-																		<p className='text-sm break-all'>
-																			{row[subField.key] || t.emptyValue}
-																		</p>
+																		{subField.type === 'date' ? (
+																			row[subField.key] ? (
+																				renderDateValue(row[subField.key])
+																			) : (
+																				<p className='text-sm text-muted-foreground'>
+																					{t.emptyValue}
+																				</p>
+																			)
+																		) : (
+																			<p className='text-sm break-all'>
+																				{row[subField.key] || t.emptyValue}
+																			</p>
+																		)}
 																	</div>
 																))}
 															</div>
