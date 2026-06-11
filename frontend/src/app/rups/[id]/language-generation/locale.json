@@ -1,62 +1,62 @@
 {
-  "ru": {
-    "title": "Генерация второго языка",
-    "description": "ИИ постепенно переводит РУП на второй язык. Не закрывайте страницу до завершения.",
-    "statusLabel": "Статус",
-    "stageLabel": "Текущий этап",
-    "progressLabel": "Прогресс",
-    "stageCounter": "Этап {current} из {total}",
-    "statuses": {
-      "queued": "В очереди",
-      "running": "Выполняется",
-      "completed": "Завершено",
-      "failed": "Ошибка"
-    },
-    "stages": {
-      "queued": "Ожидание запуска",
-      "ready": "Готово",
-      "load_rup": "Подготовка данных РУП",
-      "translate_core": "Перевод основных данных",
-      "translate_exploration": "Перевод пояснительной записки и целей",
-      "translate_resources": "Перевод учебных и технических ресурсов",
-      "translate_disciplines_and_topics": "Перевод дисциплин и тем",
-      "save_translations": "Сохранение перевода",
-      "completed": "Генерация завершена"
-    },
-    "unknownStage": "Определяем этап…",
-    "errorTitle": "Не удалось завершить генерацию",
-    "openRup": "Открыть РУП",
-    "backToRups": "К списку РУП",
-    "loading": "Загружаем статус генерации…"
-  },
-  "kk": {
-    "title": "Екінші тілді генерациялау",
-    "description": "ИИ РУП-ты екінші тілге кезең-кезеңімен аударады. Аяқталғанша бетті жаппаңыз.",
-    "statusLabel": "Күйі",
-    "stageLabel": "Ағымдағы кезең",
-    "progressLabel": "Прогресс",
-    "stageCounter": "{total} кезеңнің {current}-кезеңі",
-    "statuses": {
-      "queued": "Кезекте",
-      "running": "Орындалуда",
-      "completed": "Аяқталды",
-      "failed": "Қате"
-    },
-    "stages": {
-      "queued": "Іске қосылуын күту",
-      "ready": "Дайын",
-      "load_rup": "РУП деректерін дайындау",
-      "translate_core": "Негізгі деректерді аудару",
-      "translate_exploration": "Түсіндірме жазба мен мақсаттарды аудару",
-      "translate_resources": "Оқу және техникалық ресурстарды аудару",
-      "translate_disciplines_and_topics": "Пәндер мен тақырыптарды аудару",
-      "save_translations": "Аударманы сақтау",
-      "completed": "Генерация аяқталды"
-    },
-    "unknownStage": "Кезең анықталуда…",
-    "errorTitle": "Генерацияны аяқтау мүмкін болмады",
-    "openRup": "РУП-ты ашу",
-    "backToRups": "РУП тізіміне",
-    "loading": "Генерация күйі жүктелуде…"
-  }
+	"ru": {
+		"title": "Генерация второго языка",
+		"description": "ИИ постепенно переводит РУП на второй язык. Не закрывайте страницу до завершения.",
+		"statusLabel": "Статус",
+		"stageLabel": "Текущий этап",
+		"progressLabel": "Прогресс",
+		"stageCounter": "Этап {current} из {total}",
+		"statuses": {
+			"queued": "В очереди",
+			"running": "Выполняется",
+			"completed": "Завершено",
+			"failed": "Ошибка"
+		},
+		"stages": {
+			"queued": "Ожидание запуска",
+			"ready": "Готово",
+			"load_rup": "Подготовка данных РУП",
+			"translate_core": "Перевод основных данных",
+			"translate_exploration": "Перевод пояснительной записки и целей",
+			"translate_resources": "Перевод учебных и технических ресурсов",
+			"translate_disciplines_and_topics": "Перевод дисциплин и тем",
+			"save_translations": "Сохранение перевода",
+			"completed": "Генерация завершена"
+		},
+		"unknownStage": "Определяем этап…",
+		"errorTitle": "Не удалось завершить генерацию",
+		"openRup": "Открыть РУП",
+		"backToRups": "К списку РУП",
+		"loading": "Загружаем статус генерации…"
+	},
+	"kk": {
+		"title": "Екінші тілді генерациялау",
+		"description": "ИИ РУП-ты екінші тілге кезең-кезеңімен аударады. Аяқталғанша бетті жаппаңыз.",
+		"statusLabel": "Күйі",
+		"stageLabel": "Ағымдағы кезең",
+		"progressLabel": "Прогресс",
+		"stageCounter": "{total} кезеңнің {current}-кезеңі",
+		"statuses": {
+			"queued": "Кезекте",
+			"running": "Орындалуда",
+			"completed": "Аяқталды",
+			"failed": "Қате"
+		},
+		"stages": {
+			"queued": "Іске қосылуын күту",
+			"ready": "Дайын",
+			"load_rup": "РУП деректерін дайындау",
+			"translate_core": "Негізгі деректерді аудару",
+			"translate_exploration": "Түсіндірме жазба мен мақсаттарды аудару",
+			"translate_resources": "Оқу және техникалық ресурстарды аудару",
+			"translate_disciplines_and_topics": "Пәндер мен тақырыптарды аудару",
+			"save_translations": "Аударманы сақтау",
+			"completed": "Генерация аяқталды"
+		},
+		"unknownStage": "Кезең анықталуда…",
+		"errorTitle": "Генерацияны аяқтау мүмкін болмады",
+		"openRup": "РУП-ты ашу",
+		"backToRups": "РУП тізіміне",
+		"loading": "Генерация күйі жүктелуде…"
+	}
 }

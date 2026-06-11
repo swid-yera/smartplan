@@ -6,6 +6,7 @@ import { formatAsDash, getLocaleText, getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import type { IRup, Locale } from '@types'
 import { ExternalLink } from 'lucide-react'
+
 import localeDictionary from './locale.json'
 
 interface IProps {
@@ -23,8 +24,12 @@ export const ExplorationView: FC<IProps> = ({ data, activeLocale }) => {
 			</CardHeader>
 
 			<CardContent>
-				<p className='leading-relaxed indent-4'>{formatAsDash(getLocaleText(data.explorationNote.basis, activeLocale))}</p>
-				<p className='leading-relaxed indent-4'>{formatAsDash(getLocaleText(data.explorationNote.goals, activeLocale))}</p>
+				<p className='leading-relaxed indent-4'>
+					{formatAsDash(getLocaleText(data.explorationNote.basis, activeLocale))}
+				</p>
+				<p className='leading-relaxed indent-4'>
+					{formatAsDash(getLocaleText(data.explorationNote.goals, activeLocale))}
+				</p>
 				<p className='leading-relaxed indent-4'>
 					<span className='font-bold'>{t.exploration.competencies}: </span>
 					{formatAsDash(getLocaleText(data.explorationNote.competencies, activeLocale))}

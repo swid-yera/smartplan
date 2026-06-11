@@ -5,8 +5,8 @@ import * as React from 'react'
 import { usePathname } from 'next/navigation'
 
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, Skeleton } from '@shadcn'
-import { useAuthStore } from '@store'
 import { useSidebar } from '@shadcn'
+import { useAuthStore } from '@store'
 
 import { navFooter, navMain } from './nav-data'
 import { NavFooter } from './nav-footer'

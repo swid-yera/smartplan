@@ -3,6 +3,7 @@
 import { type FC, useEffect, useMemo, useState } from 'react'
 
 import { formatAsDash, getUILocaleSection } from '@helpers'
+import { services } from '@services'
 import {
 	Button,
 	Card,
@@ -32,7 +33,6 @@ import type { IUser } from '@types'
 import { ChevronsUpDown, Mail, Phone, Trash2, User, UserPlus } from 'lucide-react'
 import { type FieldValues, type Path, type PathValue, useFormContext, useWatch } from 'react-hook-form'
 
-import { services } from '@services'
 import localeDictionary from './locale.json'
 
 type ContactsFormValues = FieldValues & {
@@ -43,9 +43,7 @@ interface IContactsEditProps {
 	creator: IUser
 }
 
-export function ContactsEdit<T extends ContactsFormValues>({
-	creator,
-}: IContactsEditProps) {
+export function ContactsEdit<T extends ContactsFormValues>({ creator }: IContactsEditProps) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const form = useFormContext<T>()

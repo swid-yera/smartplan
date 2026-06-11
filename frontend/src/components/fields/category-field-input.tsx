@@ -1,6 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+
 import { getLocaleText } from '@helpers'
+import { services } from '@services'
 import {
 	Button,
 	Calendar,
@@ -23,12 +26,10 @@ import {
 	Textarea,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
+import { useQuery } from '@tanstack/react-query'
 import type { CategoryFieldType, ICategoryFieldResponse } from '@types'
 import { format } from 'date-fns'
 import { Check, ChevronDown, ChevronsUpDown } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { services } from '@services'
-import { useState } from 'react'
 
 import {
 	type ICategoryFieldValue,
@@ -178,7 +179,9 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 										>
 											<Check
 												className={
-													selectedGroup?.keycloakId === group.keycloakId ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'
+													selectedGroup?.keycloakId === group.keycloakId
+														? 'mr-2 h-4 w-4 opacity-100'
+														: 'mr-2 h-4 w-4 opacity-0'
 												}
 											/>
 											{group.name}

@@ -1,26 +1,26 @@
 {
-  "ru": {
-    "loadingTitle": "ИИ генерирует второй язык для РУП",
-    "loadingDescription": "{status}. Прогресс: {progress}%",
-    "completedTitle": "Генерация второго языка завершена",
-    "completedDescription": "Вы можете открыть РУП и продолжить работу.",
-    "failedTitle": "Генерация второго языка завершилась с ошибкой",
-    "unknownError": "Неизвестная ошибка",
-    "statuses": {
-      "queued": "В очереди",
-      "running": "Выполняется"
-    }
-  },
-  "kk": {
-    "loadingTitle": "ИИ РУП үшін екінші тілді генерациялап жатыр",
-    "loadingDescription": "{status}. Прогресс: {progress}%",
-    "completedTitle": "Екінші тіл генерациясы аяқталды",
-    "completedDescription": "РУП-ты ашып, жұмысты жалғастыра аласыз.",
-    "failedTitle": "Екінші тіл генерациясы қате аяқталды",
-    "unknownError": "Белгісіз қате",
-    "statuses": {
-      "queued": "Кезекте",
-      "running": "Орындалуда"
-    }
-  }
+	"ru": {
+		"loadingTitle": "ИИ генерирует второй язык для РУП",
+		"loadingDescription": "{status}. Прогресс: {progress}%",
+		"completedTitle": "Генерация второго языка завершена",
+		"completedDescription": "Вы можете открыть РУП и продолжить работу.",
+		"failedTitle": "Генерация второго языка завершилась с ошибкой",
+		"unknownError": "Неизвестная ошибка",
+		"statuses": {
+			"queued": "В очереди",
+			"running": "Выполняется"
+		}
+	},
+	"kk": {
+		"loadingTitle": "ИИ РУП үшін екінші тілді генерациялап жатыр",
+		"loadingDescription": "{status}. Прогресс: {progress}%",
+		"completedTitle": "Екінші тіл генерациясы аяқталды",
+		"completedDescription": "РУП-ты ашып, жұмысты жалғастыра аласыз.",
+		"failedTitle": "Екінші тіл генерациясы қате аяқталды",
+		"unknownError": "Белгісіз қате",
+		"statuses": {
+			"queued": "Кезекте",
+			"running": "Орындалуда"
+		}
+	}
 }

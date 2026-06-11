@@ -286,9 +286,7 @@ const ReviewTeacherRow: FC<IReviewTeacherRowProps> = ({ teacher }) => {
 			</TableCell>
 			<TableCell className='font-medium'>{teacher.username}</TableCell>
 			<TableCell>
-				<Badge variant='outline'>
-					{teacher.totalPoints.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}
-				</Badge>
+				<Badge variant='outline'>{teacher.totalPoints.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}</Badge>
 			</TableCell>
 			<TableCell>
 				<Badge variant='secondary'>

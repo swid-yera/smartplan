@@ -101,9 +101,7 @@ export const RatingUserRow: FC<IProps> = ({ index, user }) => {
 				</div>
 			</TableCell>
 
-			<TableCell className='pr-10 text-right text-base font-semibold whitespace-nowrap'>
-				{totalPoints}
-			</TableCell>
+			<TableCell className='pr-10 text-right text-base font-semibold whitespace-nowrap'>{totalPoints}</TableCell>
 		</TableRow>
 	)
 }

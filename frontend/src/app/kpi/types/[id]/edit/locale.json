@@ -1,18 +1,18 @@
 {
-  "ru": {
-    "description": "Редактирование критерия оценивания",
-    "langRu": "Русский",
-    "langKk": "Қазақша",
-    "toastCreating": "Создание {name}",
-    "toastCreated": "{name} успешно создан",
-    "toastError": "Произошла ошибка при обновлении {name}"
-  },
-  "kk": {
-    "description": "Бағалау критерийін өңдеу",
-    "langRu": "Русский",
-    "langKk": "Қазақша",
-    "toastCreating": "{name} құру",
-    "toastCreated": "{name} сәтті құрылды",
-    "toastError": "{name} жаңарту кезінде қате болды"
-  }
+	"ru": {
+		"description": "Редактирование критерия оценивания",
+		"langRu": "Русский",
+		"langKk": "Қазақша",
+		"toastCreating": "Создание {name}",
+		"toastCreated": "{name} успешно создан",
+		"toastError": "Произошла ошибка при обновлении {name}"
+	},
+	"kk": {
+		"description": "Бағалау критерийін өңдеу",
+		"langRu": "Русский",
+		"langKk": "Қазақша",
+		"toastCreating": "{name} құру",
+		"toastCreated": "{name} сәтті құрылды",
+		"toastError": "{name} жаңарту кезінде қате болды"
+	}
 }

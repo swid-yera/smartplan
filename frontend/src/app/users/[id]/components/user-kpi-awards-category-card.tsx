@@ -2,7 +2,6 @@
 
 import type { FC } from 'react'
 
-import type { IAwardUserKpiCategorySummaryResponse } from '@types'
 import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection } from '@helpers'
 import {
 	Badge,
@@ -23,11 +22,12 @@ import {
 	TooltipTrigger,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
+import type { IAwardUserKpiCategorySummaryResponse } from '@types'
 import { type IAward } from '@types'
 import { ChevronDown, Folder } from 'lucide-react'
 
-import { UserKpiAwardsRow } from './user-kpi-awards-row'
 import localeDictionary from '../locale.json'
+import { UserKpiAwardsRow } from './user-kpi-awards-row'
 
 interface IProps {
 	category: IAwardUserKpiCategorySummaryResponse
@@ -91,7 +91,9 @@ export const UserKpiAwardsCategoryCard: FC<IProps> = ({ category, isCollapsed, o
 									<TooltipContent>{t.kpiCategoryPendingPoints}</TooltipContent>
 								</Tooltip>
 
-								<ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+								<ChevronDown
+									className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`}
+								/>
 							</div>
 						</button>
 					</CollapsibleTrigger>
@@ -107,8 +109,12 @@ export const UserKpiAwardsCategoryCard: FC<IProps> = ({ category, isCollapsed, o
 											<TableHead className='whitespace-nowrap'>{t.kpiAwardsTableDate}</TableHead>
 											<TableHead>{t.kpiAwardsTableCriteria}</TableHead>
 											<TableHead className='whitespace-nowrap'>{t.kpiAwardsTablePoints}</TableHead>
-											<TableHead className='whitespace-nowrap text-right'>{t.kpiAwardsTableStatus}</TableHead>
-											<TableHead className='whitespace-nowrap text-right'>{t.kpiAwardsTableActions}</TableHead>
+											<TableHead className='whitespace-nowrap text-right'>
+												{t.kpiAwardsTableStatus}
+											</TableHead>
+											<TableHead className='whitespace-nowrap text-right'>
+												{t.kpiAwardsTableActions}
+											</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>

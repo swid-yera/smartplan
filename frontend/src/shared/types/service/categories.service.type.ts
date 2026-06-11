@@ -1,6 +1,15 @@
 import type { LocaleText, LocalizedText } from '../locale.type'
 
-export type CategoryFieldType = 'text' | 'textarea' | 'number' | 'select' | 'group' | 'date' | 'file' | 'url' | 'multi_fields'
+export type CategoryFieldType =
+	| 'text'
+	| 'textarea'
+	| 'number'
+	| 'select'
+	| 'group'
+	| 'date'
+	| 'file'
+	| 'url'
+	| 'multi_fields'
 export type CategoryFieldChildType = Exclude<CategoryFieldType, 'file' | 'url' | 'multi_fields' | 'group'>
 export type ICategoryMultiFieldRowValue = Record<string, string | number>
 

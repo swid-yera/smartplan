@@ -68,9 +68,12 @@ export const buildRupFilterSearchParams = (
 	options?: { resetPage?: boolean; paramPrefix?: string },
 ) => {
 	const params = new URLSearchParams(baseParams.toString())
-	const { search: searchKey, statuses: statusKey, sort: sortKey, page: pageKey } = getRupFilterParamNames(
-		options?.paramPrefix,
-	)
+	const {
+		search: searchKey,
+		statuses: statusKey,
+		sort: sortKey,
+		page: pageKey,
+	} = getRupFilterParamNames(options?.paramPrefix)
 
 	params.delete(searchKey)
 	params.delete(statusKey)

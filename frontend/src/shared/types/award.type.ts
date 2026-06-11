@@ -1,7 +1,7 @@
 import type { IUser, StatusEnum } from './global.type'
 import type { LocalizedText } from './locale.type'
-import type { ICategoryMultiFieldRowValue } from './service/categories.service.type'
 import type { IAwardCategoryResponse } from './service/award.service.type'
+import type { ICategoryMultiFieldRowValue } from './service/categories.service.type'
 
 export enum ViolationEnum {
 	NONE = 'NONE',

@@ -242,36 +242,36 @@ export const AwardFilterCard: FC<IProps> = ({ className, compact = false }) => {
 										<CommandInput className='h-8 text-xs' placeholder={t.awardFilter.searchCategory} />
 										<CommandList>
 											<CommandEmpty>{t.awardFilter.categoryNotFound}</CommandEmpty>
-										<CommandGroup>
-											{categories.map((category) => {
-												const categoryName = getLocaleText(category.name, locale)
-												const categoryIconOption = getCategoryIconOptionByName(category.icon)
-												const CategoryIcon = categoryIconOption?.Icon || Folder
+											<CommandGroup>
+												{categories.map((category) => {
+													const categoryName = getLocaleText(category.name, locale)
+													const categoryIconOption = getCategoryIconOptionByName(category.icon)
+													const CategoryIcon = categoryIconOption?.Icon || Folder
 
-												return (
-													<CommandItem
-														key={category.id}
-														value={categoryName}
-														onSelect={() => toggleCategory(category.id)}
-													>
-														<Check
-															className={cn(
-																'mr-2 h-4 w-4',
-																selectedCategoryIdSet.has(category.id) ? 'opacity-100' : 'opacity-0',
-															)}
-														/>
-														<CategoryIcon
-															className={cn(
-																'mr-2 h-4 w-4 shrink-0 transition-colors duration-200',
-																selectedCategoryIdSet.has(category.id)
-																	? 'text-primary'
-																	: 'text-muted-foreground',
-															)}
-														/>
-														{categoryName}
-													</CommandItem>
-												)
-											})}
+													return (
+														<CommandItem
+															key={category.id}
+															value={categoryName}
+															onSelect={() => toggleCategory(category.id)}
+														>
+															<Check
+																className={cn(
+																	'mr-2 h-4 w-4',
+																	selectedCategoryIdSet.has(category.id) ? 'opacity-100' : 'opacity-0',
+																)}
+															/>
+															<CategoryIcon
+																className={cn(
+																	'mr-2 h-4 w-4 shrink-0 transition-colors duration-200',
+																	selectedCategoryIdSet.has(category.id)
+																		? 'text-primary'
+																		: 'text-muted-foreground',
+																)}
+															/>
+															{categoryName}
+														</CommandItem>
+													)
+												})}
 											</CommandGroup>
 										</CommandList>
 									</Command>

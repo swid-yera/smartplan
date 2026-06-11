@@ -18,10 +18,7 @@ const POLL_INTERVAL_MS = 2500
 
 const isInProgressStatus = (status: string) => status === 'queued' || status === 'running'
 
-const getStatusLabel = (
-	t: typeof localeDictionary.ru,
-	status: IRupLanguageGenerationStatus['status'],
-): string => {
+const getStatusLabel = (t: typeof localeDictionary.ru, status: IRupLanguageGenerationStatus['status']): string => {
 	if (status === 'queued') return t.statuses.queued
 	if (status === 'running') return t.statuses.running
 	return status

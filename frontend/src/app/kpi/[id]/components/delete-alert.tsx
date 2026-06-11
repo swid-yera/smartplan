@@ -12,6 +12,7 @@ import {
 	AlertDialogTitle,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
+
 import localeDictionary from './locale.json'
 
 interface IDeleteAlertProps {

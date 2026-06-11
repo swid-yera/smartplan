@@ -157,17 +157,7 @@ function Row({ label, value, empty }: { label: string; value: string | number; e
 	)
 }
 
-function InfoRow({
-	label,
-	value,
-	icon,
-	empty,
-}: {
-	label: string
-	value: ReactNode
-	icon: ReactNode
-	empty: string
-}) {
+function InfoRow({ label, value, icon, empty }: { label: string; value: ReactNode; icon: ReactNode; empty: string }) {
 	return (
 		<div className='grid gap-1'>
 			<p className='text-[11px] uppercase tracking-wide text-muted-foreground'>{label}</p>

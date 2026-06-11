@@ -76,7 +76,9 @@ const TypeCard = ({ locale, type }: ITypeCardProps) => {
 								{variant.criteria.map((criteria) => (
 									<li key={criteria.id} className='list-[lower-roman] text-sm'>
 										<span className='font-medium'>{getLocaleText(criteria.name, locale)}</span>
-										<span className='ml-1 text-muted-foreground'>({formatCriteriaPoints(criteria.points)}) баллов</span>
+										<span className='ml-1 text-muted-foreground'>
+											({formatCriteriaPoints(criteria.points)}) баллов
+										</span>
 									</li>
 								))}
 							</ol>

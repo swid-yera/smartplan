@@ -1,5 +1,5 @@
-import { createLocaleText } from '@helpers'
 import { PRACTICE_PROGRESS, THEORY_PROGRESS } from '@constants'
+import { createLocaleText } from '@helpers'
 import type { ILesson, Locale, LocalizedText } from '@types'
 import { LessonResourceTypeEnum, LessonTypeEnum } from '@types'
 import { isAxiosError } from 'axios'
@@ -101,26 +101,21 @@ export function normalizeResources(items: IResourceRow[], type: LessonResourceTy
 }
 
 export function normalizeLessonProgressForRequest(items: ILessonProgressRow[]) {
-	return items
-		.map((item, index) => {
-			const ruLines = item.contentText.ru
-				.split('\n')
-				.map((line) => line.trim())
-			const kkLines = item.contentText.kk
-				.split('\n')
-				.map((line) => line.trim())
-			const contentLength = Math.max(ruLines.length, kkLines.length)
-			const content = Array.from({ length: contentLength }, (_, index) => ({
-				ru: ruLines[index] || '',
-				kz: kkLines[index] || '',
-			})).filter((line) => line.ru.trim() || line.kz.trim())
+	return items.map((item, index) => {
+		const ruLines = item.contentText.ru.split('\n').map((line) => line.trim())
+		const kkLines = item.contentText.kk.split('\n').map((line) => line.trim())
+		const contentLength = Math.max(ruLines.length, kkLines.length)
+		const content = Array.from({ length: contentLength }, (_, index) => ({
+			ru: ruLines[index] || '',
+			kz: kkLines[index] || '',
+		})).filter((line) => line.ru.trim() || line.kz.trim())
 
-			return {
-				content,
-				id: item.id,
-				step_order: index + 1,
-			}
-		})
+		return {
+			content,
+			id: item.id,
+			step_order: index + 1,
+		}
+	})
 }
 
 export function toEventDateFormState(value?: string | null): Pick<ILessonFormState, 'eventDate' | 'eventTime'> {

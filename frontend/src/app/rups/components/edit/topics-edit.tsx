@@ -15,9 +15,15 @@ import {
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { formatAsDash, formatHours, getHoursStyle, getLocaleText, getUILocaleSection, normalizeTopicType } from '@helpers'
+import {
+	formatAsDash,
+	formatHours,
+	getHoursStyle,
+	getLocaleText,
+	getUILocaleSection,
+	normalizeTopicType,
+} from '@helpers'
 import { cn } from '@lib'
-import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -58,6 +64,7 @@ import {
 	useWatch,
 } from 'react-hook-form'
 
+import { getLocalizedValue, updateLocaleText } from '../../rup-localization'
 import { GenerateConfirmButton } from '../generate-card'
 import localeDictionary from './locale.json'
 
@@ -351,11 +358,10 @@ function DisciplineBlock<T extends IProps>({
 	const [selectedTopicKeys, setSelectedTopicKeys] = useState<string[]>([])
 	const [isDeleteSelectedOpen, setIsDeleteSelectedOpen] = useState(false)
 
-	const disciplineName =
-		(useWatch({
-			control: form.control,
-			name: `disciplines.${disciplineIndex}.name` as Path<T>,
-		}) as LocaleText | undefined) ?? { ru: '', kz: '' }
+	const disciplineName = (useWatch({
+		control: form.control,
+		name: `disciplines.${disciplineIndex}.name` as Path<T>,
+	}) as LocaleText | undefined) ?? { ru: '', kz: '' }
 	const disciplineTopics =
 		(useWatch({
 			control: form.control,
@@ -654,15 +660,15 @@ function DisciplineBlock<T extends IProps>({
 										topicFields.map((field, index) => (
 											<TopicRow
 												activeLocale={activeLocale}
-											key={field.key}
-											disciplineIndex={disciplineIndex}
-											id={field.key}
-											isSelected={selectedTopicKeys.includes(field.key)}
-											rupType={rupType}
-											text={text}
-											toggleSelectTopic={toggleSelectTopic}
-											topicIndex={index}
-										/>
+												key={field.key}
+												disciplineIndex={disciplineIndex}
+												id={field.key}
+												isSelected={selectedTopicKeys.includes(field.key)}
+												rupType={rupType}
+												text={text}
+												toggleSelectTopic={toggleSelectTopic}
+												topicIndex={index}
+											/>
 										))
 									) : (
 										<TableRow>
@@ -696,7 +702,9 @@ function DisciplineBlock<T extends IProps>({
 									</TableCell>
 									<TableCell className='text-right'>
 										<GenerateConfirmButton
-											buttonText={isGeneratingCurrentDiscipline ? text.generatingButton : text.generateButton}
+											buttonText={
+												isGeneratingCurrentDiscipline ? text.generatingButton : text.generateButton
+											}
 											confirmButtonText={text.generateButton}
 											confirmContent={
 												<div className='grid gap-4'>
@@ -736,7 +744,9 @@ function DisciplineBlock<T extends IProps>({
 														</div>
 														{!isPracticeModule && (
 															<div className='flex flex-col gap-2'>
-																<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>{text.snz}</Label>
+																<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>
+																	{text.snz}
+																</Label>
 																<NumericInput
 																	id={`discipline-${disciplineIndex}-snz-count`}
 																	max={snzMax}
@@ -793,7 +803,9 @@ function DisciplineBlock<T extends IProps>({
 															{text.selectedHours}:{' '}
 															<span className='font-medium text-foreground'>{preferredHoursTotal}</span>
 														</p>
-														{!isPreferredHoursValid && <p className='text-destructive'>{text.hoursValidation}</p>}
+														{!isPreferredHoursValid && (
+															<p className='text-destructive'>{text.hoursValidation}</p>
+														)}
 													</div>
 												</div>
 											}

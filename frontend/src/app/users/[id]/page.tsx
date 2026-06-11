@@ -49,8 +49,8 @@ import {
 	persistRupFilterState,
 	readPersistedRupFilterState,
 } from '../../rups/components/rups-filter-state'
-import { UserKpiAwardsView } from './components/user-kpi-awards-view'
 import { UsersPermissionsDialog } from '../users-permissions-dialog'
+import { UserKpiAwardsView } from './components/user-kpi-awards-view'
 import localeDictionary from './locale.json'
 
 const Page = () => {

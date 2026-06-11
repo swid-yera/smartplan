@@ -1,7 +1,7 @@
 import { type IUser } from '@types'
 
+import { type INav, navMain } from '../components/layout/a-sidebar/nav-data'
 import { hasAnyPermission, hasRole } from './user.helper'
-import { navMain, type INav } from '../components/layout/a-sidebar/nav-data'
 
 const normalizePath = (value: string): string => {
 	const pathname = value.split('?')[0]?.split('#')[0] ?? ''
@@ -40,7 +40,11 @@ export const canAccessNavItem = (user: IUser | null | undefined, navItem: INav):
 	return true
 }
 
-export const canAccessNavPath = (user: IUser | null | undefined, pathname: string, items: INav[] = navMain): boolean => {
+export const canAccessNavPath = (
+	user: IUser | null | undefined,
+	pathname: string,
+	items: INav[] = navMain,
+): boolean => {
 	if (!user) return false
 
 	const matchedItems = flattenNavItems(items).filter((item) => isPathMatch(pathname, item.url))

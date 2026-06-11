@@ -1,16 +1,16 @@
 {
-  "ru": {
-    "profileTitle": "Мой KPI профиль",
-    "profileDescription": "Профиль и категории KPI",
-    "inputTitle": "Ввод данных",
-    "inputDescription": "Выберите категорию для создания данных для KPI",
-    "empty": "Категории пока не созданы"
-  },
-  "kk": {
-    "profileTitle": "Менің KPI профилім",
-    "profileDescription": "KPI профилі және санаттары",
-    "inputTitle": "Деректерді енгізу",
-    "inputDescription": "KPI үшін деректер құруға санатты таңдаңыз",
-    "empty": "Санаттар әлі құрылмаған"
-  }
+	"ru": {
+		"profileTitle": "Мой KPI профиль",
+		"profileDescription": "Профиль и категории KPI",
+		"inputTitle": "Ввод данных",
+		"inputDescription": "Выберите категорию для создания данных для KPI",
+		"empty": "Категории пока не созданы"
+	},
+	"kk": {
+		"profileTitle": "Менің KPI профилім",
+		"profileDescription": "KPI профилі және санаттары",
+		"inputTitle": "Деректерді енгізу",
+		"inputDescription": "KPI үшін деректер құруға санатты таңдаңыз",
+		"empty": "Санаттар әлі құрылмаған"
+	}
 }

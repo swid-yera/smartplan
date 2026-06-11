@@ -3,7 +3,16 @@
 import type { FC } from 'react'
 
 import { getUILocaleSection } from '@helpers'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Tooltip, TooltipContent, TooltipTrigger } from '@shadcn'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@shadcn'
 import { useLocaleStore } from '@store'
 import { Info } from 'lucide-react'
 
