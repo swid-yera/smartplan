@@ -158,6 +158,9 @@ func (r *Router) Init() *gin.Engine {
 			// смена статуса РУП — право управления РУП
 			rups.PUT("/:id/status", middleware.RequirePermission(service.PermRUPView), r.rup.UpdateRupStatus)
 
+			// артефакт подписи Kripto — право просмотра РУП
+			rups.GET("/:id/signature-artifact", middleware.RequirePermission(service.PermRUPView), r.rup.GetRupSignatureArtifact)
+
 			// удаление — право управления РУП
 			rups.DELETE("/:id", middleware.RequirePermission(service.PermRUPView), r.rup.DeleteRup)
 

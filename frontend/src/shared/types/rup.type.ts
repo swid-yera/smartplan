@@ -101,3 +101,21 @@ export interface ITopics {
 	srspHours: number
 	srsHours: number
 }
+
+export interface IRupSignatureArtifact {
+	id: string
+	rupId: string
+	documentId: string
+	documentVersion: string
+	documentHash: string
+	keyId: string
+	userId: string
+	signature: string
+	signerName: string
+	signerRole: string
+	signatureId: string
+	verificationUrl: string
+	qrSvg: string
+	createdAt: string
+	updatedAt: string
+}

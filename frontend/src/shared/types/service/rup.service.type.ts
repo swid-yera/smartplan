@@ -1,5 +1,6 @@
 import type { StatusEnum } from '../global.type'
 import type { BackendLocale, LocaleText } from '../locale.type'
+import type { IRupSignatureArtifact } from '../rup.type'
 import type { RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '../rup.type'
 import type { IPaginationRequest } from './global.service.type'
 
@@ -61,6 +62,11 @@ export interface IUpdateRupRequest extends ICreateRupRequest {
 	methodist?: string // IUser.keycloakId
 }
 
+export interface IUpdateRupStatusResponse {
+	message: string
+	artifact?: IRupSignatureArtifact
+}
+
 // download response
 export interface IDownloadResponse {
 	url: string
@@ -83,6 +89,8 @@ export interface IRegenerateLanguageGenerationRequest {
 	id: string
 	sourceLanguage?: BackendLocale
 }
+
+export type IGetRupSignatureArtifactResponse = IRupSignatureArtifact
 
 // get all
 export interface IGetAllRequest extends IPaginationRequest {

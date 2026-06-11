@@ -18,6 +18,7 @@ import (
 type CryptoClient interface {
 	ValidateKeyOwnership(ctx context.Context, payload ValidateKeyOwnershipRequest, correlationID string) (*ValidateKeyOwnershipResponse, error)
 	VerifySignature(ctx context.Context, payload VerifySignatureRequest, correlationID string) (*VerifySignatureResponse, error)
+	RegisterSignature(ctx context.Context, payload RegisterSignatureRequest, correlationID string) (*RegisterSignatureResponse, error)
 }
 
 type cryptoClient struct {
@@ -28,8 +29,8 @@ type cryptoClient struct {
 }
 
 type ValidateKeyOwnershipRequest struct {
-	KeyID  string `json:"key_id"`
-	UserID string `json:"user_id"`
+	KeyID    string `json:"key_id"`
+	UserID   string `json:"user_id"`
 	Password string `json:"password,omitempty"`
 }
 
@@ -51,6 +52,23 @@ type VerifySignatureRequest struct {
 type VerifySignatureResponse struct {
 	IsValid bool   `json:"is_valid"`
 	Status  string `json:"status"`
+}
+
+type RegisterSignatureRequest struct {
+	DocumentID      string `json:"document_id"`
+	DocumentVersion string `json:"document_version"`
+	DocumentHash    string `json:"document_hash"`
+	KeyID           string `json:"key_id"`
+	UserID          string `json:"user_id"`
+	Signature       string `json:"signature"`
+	SignerName      string `json:"signer_name"`
+	SignerRole      string `json:"signer_role"`
+}
+
+type RegisterSignatureResponse struct {
+	SignatureID     string `json:"signature_id"`
+	VerificationURL string `json:"verification_url"`
+	QRSvg           string `json:"qr_svg"`
 }
 
 type CryptoHTTPError struct {
@@ -137,6 +155,52 @@ func (c *cryptoClient) VerifySignature(
 		ctx,
 		http.MethodPost,
 		"/verify",
+		payload,
+		true,
+		correlationID,
+		&out,
+	); err != nil {
+		return nil, err
+	}
+
+	return &out, nil
+}
+
+func (c *cryptoClient) RegisterSignature(
+	ctx context.Context,
+	payload RegisterSignatureRequest,
+	correlationID string,
+) (*RegisterSignatureResponse, error) {
+	if strings.TrimSpace(payload.DocumentID) == "" {
+		return nil, fmt.Errorf("document_id is required")
+	}
+	if strings.TrimSpace(payload.DocumentVersion) == "" {
+		return nil, fmt.Errorf("document_version is required")
+	}
+	if strings.TrimSpace(payload.DocumentHash) == "" {
+		return nil, fmt.Errorf("document_hash is required")
+	}
+	if strings.TrimSpace(payload.KeyID) == "" {
+		return nil, fmt.Errorf("key_id is required")
+	}
+	if strings.TrimSpace(payload.UserID) == "" {
+		return nil, fmt.Errorf("user_id is required")
+	}
+	if strings.TrimSpace(payload.Signature) == "" {
+		return nil, fmt.Errorf("signature is required")
+	}
+	if strings.TrimSpace(payload.SignerName) == "" {
+		return nil, fmt.Errorf("signer_name is required")
+	}
+	if strings.TrimSpace(payload.SignerRole) == "" {
+		return nil, fmt.Errorf("signer_role is required")
+	}
+
+	var out RegisterSignatureResponse
+	if err := c.doJSON(
+		ctx,
+		http.MethodPost,
+		"/integration/signatures/register",
 		payload,
 		true,
 		correlationID,

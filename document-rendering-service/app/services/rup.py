@@ -1,6 +1,13 @@
+import io
 from docxtpl import DocxTemplate
 from datetime import datetime
 from pathlib import Path
+
+import qrcode
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches
+from qrcode.constants import ERROR_CORRECT_M
 
 from app.logger import logger
 from app.config import OUT_DIR, TEMPLATE_PATH
@@ -15,6 +22,30 @@ from app.mappers import (
     build_resources,
 )
 from app.post_process import apply_kazakh_template_localization, apply_vertical_merge
+
+
+def append_verification_qr(file_path: Path, verification_url: str, language: str) -> None:
+    url = (verification_url or "").strip()
+    if not url:
+        return
+
+    doc = Document(file_path)
+
+    qr = qrcode.QRCode(error_correction=ERROR_CORRECT_M, box_size=8, border=2)
+    qr.add_data(url)
+    qr.make(fit=True)
+
+    image = qr.make_image(fill_color="black", back_color="white")
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    qr_paragraph = doc.add_paragraph()
+    qr_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    qr_run = qr_paragraph.add_run()
+    qr_run.add_picture(buffer, width=Inches(1.85))
+
+    doc.save(file_path)
 
 
 def generate_rup_docx(data: dict) -> Path:
@@ -100,5 +131,6 @@ def generate_rup_docx(data: dict) -> Path:
     logger.info("generating rup document, applying vertical merge: %s", rup_name)
     apply_vertical_merge(output_path)
     apply_kazakh_template_localization(output_path, language)
+    append_verification_qr(output_path, data.get("verificationUrl"), language)
 
     return output_path

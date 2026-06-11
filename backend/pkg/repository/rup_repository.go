@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	storage "eduplan/backend/pkg/sqlc/generated"
 
@@ -19,6 +20,9 @@ type RupRepository interface {
 	UpdateRupStatus(ctx context.Context, id uuid.UUID, status storage.RupsStatus, reason pgtype.Text, methodistID pgtype.UUID) error
 	UpdateRup(ctx context.Context, params storage.UpdateRupParams) (*storage.Rup, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
+	CreateRupSignatureArtifact(ctx context.Context, artifact RupSignatureArtifact) (*RupSignatureArtifact, error)
+	GetLatestRupSignatureArtifact(ctx context.Context, rupID uuid.UUID) (*RupSignatureArtifact, error)
+	GetRupSignatureArtifactByUnique(ctx context.Context, rupID uuid.UUID, documentHash string, keyID uuid.UUID, userID uuid.UUID, signature string) (*RupSignatureArtifact, error)
 
 	CreateExplorationNote(ctx context.Context, params storage.CreateRupExplorationNoteParams) (*storage.RupExplorationNote, error)
 	CreateResource(ctx context.Context, params storage.CreateRupResourceParams) (*storage.RupResource, error)
@@ -52,8 +56,27 @@ type RupRepository interface {
 	CountRups(ctx context.Context) (int64, error)
 }
 
+type RupSignatureArtifact struct {
+	ID              uuid.UUID `json:"id"`
+	RupID           uuid.UUID `json:"rupId"`
+	DocumentID      string    `json:"documentId"`
+	DocumentVersion uuid.UUID `json:"documentVersion"`
+	DocumentHash    string    `json:"documentHash"`
+	KeyID           uuid.UUID `json:"keyId"`
+	UserID          uuid.UUID `json:"userId"`
+	Signature       string    `json:"signature"`
+	SignerName      string    `json:"signerName"`
+	SignerRole      string    `json:"signerRole"`
+	SignatureID     string    `json:"signatureId"`
+	VerificationURL string    `json:"verificationUrl"`
+	QRSvg           string    `json:"qrSvg"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
 type RupPostgres struct {
 	queries *storage.Queries
+	db      storage.DBTX
 	pool    interface {
 		Begin(ctx context.Context) (pgx.Tx, error)
 	}
@@ -62,7 +85,10 @@ type RupPostgres struct {
 func NewRupPostgres(queries *storage.Queries, pool ...storage.DBTX) *RupPostgres {
 	r := &RupPostgres{queries: queries}
 	if len(pool) > 0 {
-		if p, ok := pool[0].(interface{ Begin(ctx context.Context) (pgx.Tx, error) }); ok {
+		r.db = pool[0]
+		if p, ok := pool[0].(interface {
+			Begin(ctx context.Context) (pgx.Tx, error)
+		}); ok {
 			r.pool = p
 		}
 	}
@@ -82,6 +108,9 @@ func (r *RupPostgres) WithTransaction(ctx context.Context, fn func(txRepo RupRep
 	}
 
 	txRepo := &RupPostgres{queries: r.queries.WithTx(tx)}
+	if r.db != nil {
+		txRepo.db = tx
+	}
 
 	if err = fn(txRepo); err != nil {
 		_ = tx.Rollback(ctx)
@@ -145,6 +174,82 @@ func (r *RupPostgres) GetRupsByTeacher(ctx context.Context, teacher pgtype.UUID)
 
 func (r *RupPostgres) DeleteRup(ctx context.Context, id uuid.UUID) error {
 	return r.queries.DeleteRup(ctx, id)
+}
+
+func (r *RupPostgres) CreateRupSignatureArtifact(ctx context.Context, artifact RupSignatureArtifact) (*RupSignatureArtifact, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("signature artifact db is not configured")
+	}
+
+	query := `
+		INSERT INTO rup_signature_artifacts (
+			rup_id,
+			document_id,
+			document_version,
+			document_hash,
+			key_id,
+			user_id,
+			signature,
+			signer_name,
+			signer_role,
+			signature_id,
+			verification_url,
+			qr_svg
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+		ON CONFLICT (rup_id, document_hash, key_id, user_id, signature)
+		DO UPDATE SET
+			updated_at = NOW()
+		RETURNING id, rup_id, document_id, document_version, document_hash, key_id, user_id, signature, signer_name, signer_role, signature_id, verification_url, qr_svg, created_at, updated_at
+	`
+
+	row := r.db.QueryRow(ctx, query,
+		artifact.RupID,
+		artifact.DocumentID,
+		artifact.DocumentVersion,
+		artifact.DocumentHash,
+		artifact.KeyID,
+		artifact.UserID,
+		artifact.Signature,
+		artifact.SignerName,
+		artifact.SignerRole,
+		artifact.SignatureID,
+		artifact.VerificationURL,
+		artifact.QRSvg,
+	)
+
+	return scanRupSignatureArtifact(row)
+}
+
+func (r *RupPostgres) GetLatestRupSignatureArtifact(ctx context.Context, rupID uuid.UUID) (*RupSignatureArtifact, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("signature artifact db is not configured")
+	}
+
+	row := r.db.QueryRow(ctx, `
+		SELECT id, rup_id, document_id, document_version, document_hash, key_id, user_id, signature, signer_name, signer_role, signature_id, verification_url, qr_svg, created_at, updated_at
+		FROM rup_signature_artifacts
+		WHERE rup_id = $1
+		ORDER BY created_at DESC, document_version DESC
+		LIMIT 1
+	`, rupID)
+
+	return scanRupSignatureArtifact(row)
+}
+
+func (r *RupPostgres) GetRupSignatureArtifactByUnique(ctx context.Context, rupID uuid.UUID, documentHash string, keyID uuid.UUID, userID uuid.UUID, signature string) (*RupSignatureArtifact, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("signature artifact db is not configured")
+	}
+
+	row := r.db.QueryRow(ctx, `
+		SELECT id, rup_id, document_id, document_version, document_hash, key_id, user_id, signature, signer_name, signer_role, signature_id, verification_url, qr_svg, created_at, updated_at
+		FROM rup_signature_artifacts
+		WHERE rup_id = $1 AND document_hash = $2 AND key_id = $3 AND user_id = $4 AND signature = $5
+		LIMIT 1
+	`, rupID, documentHash, keyID, userID, signature)
+
+	return scanRupSignatureArtifact(row)
 }
 
 func (r *RupPostgres) CreateExplorationNote(ctx context.Context, params storage.CreateRupExplorationNoteParams) (*storage.RupExplorationNote, error) {
@@ -217,6 +322,33 @@ func (r *RupPostgres) GetDisciplineByID(ctx context.Context, id uuid.UUID) (*sto
 		return nil, err
 	}
 	return &discipline, nil
+}
+
+func scanRupSignatureArtifact(row interface {
+	Scan(dest ...any) error
+}) (*RupSignatureArtifact, error) {
+	var artifact RupSignatureArtifact
+	if err := row.Scan(
+		&artifact.ID,
+		&artifact.RupID,
+		&artifact.DocumentID,
+		&artifact.DocumentVersion,
+		&artifact.DocumentHash,
+		&artifact.KeyID,
+		&artifact.UserID,
+		&artifact.Signature,
+		&artifact.SignerName,
+		&artifact.SignerRole,
+		&artifact.SignatureID,
+		&artifact.VerificationURL,
+		&artifact.QRSvg,
+		&artifact.CreatedAt,
+		&artifact.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+
+	return &artifact, nil
 }
 
 func (r *RupPostgres) GetDisciplineByTopicID(ctx context.Context, topicID uuid.UUID) (*storage.RupDiscipline, error) {

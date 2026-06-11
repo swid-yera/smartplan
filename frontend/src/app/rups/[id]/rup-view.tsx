@@ -6,7 +6,7 @@ import { LocaleToggleButton, PageTitle, ResponsibleUsersCard, RupReviewSheets, S
 import { formatHours, getLocaleText, getUILocaleSection, normalizeStudyForm } from '@helpers'
 import { Button, ButtonGroup, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { type IRup, type Locale, StatusEnum } from '@types'
+import { type IKriptoKeyPayload, type IRup, type IRupSignatureArtifact, type Locale, StatusEnum } from '@types'
 import {
 	CheckCircle,
 	Edit,
@@ -36,11 +36,12 @@ interface IRupViewProps {
 	canRegenerateLanguage: boolean
 	canDelete: boolean
 	activeLocale: Locale
+	kriptoArtifact?: IRupSignatureArtifact
 	localeNotice?: ReactNode
 	onActiveLocaleChange: (nextLocale: Locale) => void
 	onStatusChange: (
 		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
+		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean; kripto?: IKriptoKeyPayload },
 	) => void
 	onOpenStatusSheet: () => void
 	onOpenDeleteDialog: () => void
@@ -71,6 +72,7 @@ export const RupView: FC<IRupViewProps> = ({
 	onSendToReview,
 	isDeletePending,
 	isRegeneratePending,
+	kriptoArtifact,
 }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const localeText = getUILocaleSection(localeDictionary, locale)
@@ -350,6 +352,22 @@ export const RupView: FC<IRupViewProps> = ({
 					rupStatus={data.status}
 					type={data.type}
 				/>
+
+				{kriptoArtifact && (
+					<div className='rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm'>
+						{kriptoArtifact.qrSvg && (
+							<div className='flex justify-center'>
+								<div className='rounded-2xl border bg-background p-3 shadow-sm'>
+									<img
+										alt={t.kriptoTitle}
+										className='h-56 w-56 object-contain'
+										src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(kriptoArtifact.qrSvg)}`}
+									/>
+								</div>
+							</div>
+						)}
+					</div>
+				)}
 			</div>
 
 			<RupReviewSheets

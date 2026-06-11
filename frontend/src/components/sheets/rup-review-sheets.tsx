@@ -16,7 +16,7 @@ import {
 	SheetTitle,
 	Textarea,
 } from '@shadcn'
-import { type IRup, StatusEnum } from '@types'
+import { type IKriptoKeyPayload, type IRup, StatusEnum } from '@types'
 import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -43,6 +43,7 @@ interface IRupReviewSheetsProps {
 			fileLabel: string
 			approveKeyIdLabel: string
 			approveKeyIdPlaceholder: string
+			approveSignatureLabel: string
 			approvePasswordLabel: string
 			showPassword: string
 			hidePassword: string
@@ -61,7 +62,7 @@ interface IRupReviewSheetsProps {
 	onApproveSheetOpenChange: (open: boolean) => void
 	onStatusChange: (
 		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
+		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean; kripto?: IKriptoKeyPayload },
 	) => void
 }
 
@@ -79,6 +80,8 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 	const [generalComment, setGeneralComment] = useState('')
 	const [keyId, setKeyId] = useState('')
 	const [userId, setUserId] = useState('')
+	const [publicKey, setPublicKey] = useState('')
+	const [kripto, setKripto] = useState<IKriptoKeyPayload | null>(null)
 	const [fileName, setFileName] = useState('')
 	const [approvePassword, setApprovePassword] = useState('')
 	const [approveConfirmed, setApproveConfirmed] = useState(false)
@@ -100,6 +103,16 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 
 		setKeyId(metadata.keyId)
 		setUserId(metadata.userId)
+		setPublicKey(metadata.publicKey)
+		setKripto({
+			format: metadata.format,
+			version: metadata.version,
+			algorithm: metadata.algorithm,
+			keyId: metadata.keyId,
+			userId: metadata.userId,
+			publicKey: metadata.publicKey,
+			encryptedPrivateKey: metadata.encryptedPrivateKey,
+		})
 		setFileName(file.name)
 		toast.success(text.toasts.kriptoParsed)
 	}
@@ -177,6 +190,8 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 						if (!open) {
 							setKeyId('')
 							setUserId('')
+							setPublicKey('')
+							setKripto(null)
 							setFileName('')
 							setApprovePassword('')
 							setApproveConfirmed(false)
@@ -232,6 +247,11 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 							</div>
 
 							<div className='grid gap-2'>
+								<Label htmlFor='approve-signature'>{t.approveSignatureLabel}</Label>
+								<Input readOnly id='approve-signature' value={publicKey ? `${publicKey.slice(0, 16)}...` : ''} />
+							</div>
+
+							<div className='grid gap-2'>
 								<Label htmlFor='approve-password'>{t.approvePasswordLabel}</Label>
 								<div className='relative'>
 									<Input
@@ -282,7 +302,7 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 							</Button>
 							<Button
 								type='button'
-								disabled={!fileName || !keyId.trim() || !approvePassword || !approveConfirmed}
+								disabled={!fileName || !keyId.trim() || !kripto || !approvePassword || !approveConfirmed}
 								onClick={() => {
 									if (!fileName || !keyId.trim()) {
 										toast.error(text.toasts.kriptoUploadRequired)
@@ -300,10 +320,13 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 										userId,
 										password: approvePassword,
 										confirmed: approveConfirmed,
+										kripto: kripto ?? undefined,
 									})
 									onApproveSheetOpenChange(false)
 									setKeyId('')
 									setUserId('')
+									setPublicKey('')
+									setKripto(null)
 									setFileName('')
 									setApprovePassword('')
 									setApproveConfirmed(false)
