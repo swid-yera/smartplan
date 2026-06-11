@@ -7,8 +7,7 @@ import Link from 'next/link'
 import { getLocaleText, getUILocaleSection, normalizeTopicType } from '@helpers'
 import { cn } from '@lib'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import type { ILesson, TopicTypeEnum } from '@types'
-import type { Locale } from '@types'
+import type { ILesson, Locale, TopicTypeEnum } from '@types'
 import { FileText, Folder, GraduationCap, Grid2X2, type LucideIcon, Phone, Timer, UserRound } from 'lucide-react'
 
 import { formatDate } from './lesson-page.utils'
@@ -51,35 +50,35 @@ export function LessonOverviewGrid({
 				</CardHeader>
 				<CardContent className='space-y-5'>
 					<InfoRow
+						empty={t.empty}
 						icon={<Folder className='h-4 w-4' />}
 						label={t.rup}
 						value={getLocaleText(lesson.rup_name, lessonLocale)}
-						empty={t.empty}
 					/>
 					<InfoRow
+						empty={t.empty}
 						icon={<Grid2X2 className='h-4 w-4' />}
 						label={t.discipline}
 						value={getLocaleText(lesson.discipline_name, lessonLocale)}
-						empty={t.empty}
 					/>
 					<InfoRow
+						empty={t.empty}
 						icon={<FileText className='h-4 w-4' />}
 						label={t.topic}
 						value={getLocaleText(lesson.topic_name, lessonLocale)}
-						empty={t.empty}
 					/>
 					<div className='grid gap-5 md:grid-cols-2'>
 						<InfoRow
+							empty={t.empty}
 							icon={<LessonTypeIcon className='h-4 w-4' />}
 							label={t.lessonType}
 							value={normalizeTopicType(resolvedTopicTypeLabel, lessonLocale)}
-							empty={t.empty}
 						/>
 						<InfoRow
+							empty={t.empty}
 							icon={<Timer className='h-4 w-4' />}
 							label={t.date}
 							value={formatDate(lesson.event_date, lessonLocale)}
-							empty={t.empty}
 						/>
 					</div>
 				</CardContent>
@@ -98,6 +97,7 @@ export function LessonOverviewGrid({
 				<CardContent className='flex h-full w-full flex-col justify-between gap-8'>
 					<div className='grid gap-5'>
 						<InfoRow
+							empty={t.empty}
 							icon={<UserRound className='h-4 w-4' />}
 							label={t.teacherName}
 							value={
@@ -112,35 +112,34 @@ export function LessonOverviewGrid({
 									teacherName
 								)
 							}
-							empty={t.empty}
 						/>
 						<InfoRow
+							empty={t.empty}
 							icon={<Phone className='h-4 w-4' />}
 							label={t.phone}
 							value={lesson.teacher?.phone || t.empty}
-							empty={t.empty}
 						/>
 						<InfoRow
+							empty={t.empty}
 							icon={<GraduationCap className='h-4 w-4' />}
 							label={t.group}
 							value={groupName || t.empty}
-							empty={t.empty}
 						/>
 						<Row
+							empty={t.empty}
 							label={t.qualification}
 							value={getLocaleText(lesson.group?.qualification, lessonLocale) || t.empty}
-							empty={t.empty}
 						/>
 						<Row
+							empty={t.empty}
 							label={t.specialty}
 							value={getLocaleText(lesson.group?.specialty, lessonLocale) || t.empty}
-							empty={t.empty}
 						/>
 					</div>
 
 					<div className='grid gap-5'>
-						<Row label={t.createdAt} value={formatDate(lesson.created_at, lessonLocale)} empty={t.empty} />
-						<Row label={t.updatedAt} value={formatDate(lesson.updated_at, lessonLocale)} empty={t.empty} />
+						<Row empty={t.empty} label={t.createdAt} value={formatDate(lesson.created_at, lessonLocale)} />
+						<Row empty={t.empty} label={t.updatedAt} value={formatDate(lesson.updated_at, lessonLocale)} />
 					</div>
 				</CardContent>
 			</Card>

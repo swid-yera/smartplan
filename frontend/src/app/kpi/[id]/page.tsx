@@ -14,9 +14,9 @@ import { type IUpdateStatusRequest, type IVariant, PermissionCodeEnum, StatusEnu
 import { toast } from 'sonner'
 
 import { ApproveSheet } from './components/approve-sheet'
-import { ChangePointsSheet } from './components/change-points-sheet'
 import { AwardFieldValuesCard } from './components/award-field-values-card'
 import { AwardMainInfoCard } from './components/award-main-info-card'
+import { ChangePointsSheet } from './components/change-points-sheet'
 import { DeleteAlert } from './components/delete-alert'
 import { KpiDetailsActions } from './components/kpi-details-actions'
 import localeDictionary from './components/locale.json'
@@ -174,10 +174,10 @@ const Page = () => {
 			<PageTitle
 				actions={
 					<KpiDetailsActions
+						canChangePoints={canChangePoints}
 						id={String(id)}
 						isAdmin={canFullAccess}
 						isAuthor={isAuthor}
-						canChangePoints={canChangePoints}
 						isMethodistReview={isMethodistReview}
 						isStatusForEdit={isStatusForEdit}
 						onOpenApproveSheet={() => setIsApproveSheetOpen(true)}

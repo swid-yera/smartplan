@@ -1,32 +1,85 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination, withPermission } from '@components'
-import { getCategoryIconOptionByName, getLocaleText, getUILocaleSection, hasAnyPermission } from '@helpers'
+import {
+	getCategoryIconOptionByName,
+	getLocaleText,
+	getUILocaleSection,
+	hasAnyPermission,
+	hasPermission,
+} from '@helpers'
 import { services } from '@services'
-import { Badge, Button, ButtonGroup, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import {
+	Badge,
+	Button,
+	ButtonGroup,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+	Label,
+	Switch,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
-import { useQuery } from '@tanstack/react-query'
-import { PermissionCodeEnum } from '@types'
-import { Edit, Folder, Plus } from 'lucide-react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { PermissionCodeEnum, StatusEnum } from '@types'
+import { Edit, Folder, Info, Plus } from 'lucide-react'
 
+import { AwardFilterCard } from '../../components'
+import { useCategoryAwardsScope } from './award-scope-state'
 import localeDictionary from './locale.json'
-
-const AWARDS_FETCH_SIZE = 500
-const AWARDS_PAGE_SIZE = 10
 
 const Page = () => {
 	const params = useParams<{ id: string }>()
 	const categoryId = params.id
+	const searchParams = useSearchParams()
+	const pathname = usePathname()
+	const router = useRouter()
 	const { user, authLoading } = useAuthStore()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 
-	const [currentPage, setCurrentPage] = useState(1)
+	const canManageAwards = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
+	const canFullAwards = hasPermission(user, PermissionCodeEnum.KPI_FULL)
+	const canViewAwards = hasAnyPermission(user, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW])
+	const canManageOnlyAwards = canManageAwards && !canFullAwards
+	const {
+		isReady: isScopeReady,
+		scope,
+		setAwardsScope,
+	} = useCategoryAwardsScope({
+		canFullAwards,
+		canManageOnlyAwards,
+	})
+	const showAllAwards = canManageOnlyAwards || scope === 'all'
+	const page = Number(searchParams.get('page')) || 1
+	const pageSize = Number(searchParams.get('pageSize')) || 10
+	const sortParam = searchParams.get('sort')
+	const statusParam = searchParams.get('status') ?? ''
+	const sort = sortParam === 'asc' || sortParam === 'desc' ? sortParam : 'desc'
+	const defaultStatuses =
+		canManageOnlyAwards || (canFullAwards && showAllAwards)
+			? [StatusEnum.IN_REVIEW, StatusEnum.APPROVED]
+			: ([] as StatusEnum[])
+	const status = statusParam
+		? (statusParam
+				.split(',')
+				.map((value) => value.trim())
+				.filter(Boolean) as StatusEnum[])
+		: defaultStatuses.length
+			? defaultStatuses
+			: undefined
+	const showAllAwardsInQuery = showAllAwards
+	const teacher = showAllAwardsInQuery ? undefined : user?.keycloakId
 
 	const { data: category, isLoading: isCategoryLoading } = useQuery({
 		...services.categories.getByIdOptions(categoryId),
@@ -34,13 +87,16 @@ const Page = () => {
 	})
 
 	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
+		placeholderData: keepPreviousData,
 		...services.award.getAllOptions({
-			currentPage: 1,
-			pageSize: AWARDS_FETCH_SIZE,
-			teacher: user?.keycloakId,
+			currentPage: page,
+			pageSize,
+			sort,
+			status,
+			teacher,
 			categoryId,
 		}),
-		enabled: !!categoryId,
+		enabled: !!categoryId && !!user && !authLoading && (!canFullAwards || isScopeReady),
 	})
 
 	const { data: awardTypes } = useQuery({
@@ -48,30 +104,8 @@ const Page = () => {
 		enabled: !!categoryId,
 	})
 
-	const filteredAwards = useMemo(() => {
-		const awards = awardsData?.data || []
-		const categoryAwardTypes = category?.awardTypes || []
-
-		if (!categoryAwardTypes.length) return []
-
-		const allowedTypeIds = new Set(categoryAwardTypes)
-
-		return awards.filter((award) => allowedTypeIds.has(award.type.id))
-	}, [awardsData?.data, category?.awardTypes])
-
-	const totalPages = Math.max(1, Math.ceil(filteredAwards.length / AWARDS_PAGE_SIZE))
-
-	useEffect(() => {
-		if (currentPage > totalPages) {
-			setCurrentPage(totalPages)
-		}
-	}, [currentPage, totalPages])
-
-	const paginatedAwards = useMemo(() => {
-		const start = (currentPage - 1) * AWARDS_PAGE_SIZE
-
-		return filteredAwards.slice(start, start + AWARDS_PAGE_SIZE)
-	}, [currentPage, filteredAwards])
+	const awards = awardsData?.data || []
+	const totalPages = awardsData?.meta.pages || 1
 
 	const categoryAwardTypeNames = useMemo(() => {
 		if (category?.awardTypesExpanded?.length) {
@@ -85,7 +119,7 @@ const Page = () => {
 		return category.awardTypes.map((typeId) => awardTypeNameById.get(typeId) || typeId)
 	}, [locale, awardTypes, category?.awardTypes, category?.awardTypesExpanded])
 
-	if (isCategoryLoading || isAwardsLoading || authLoading) {
+	if (isCategoryLoading || isAwardsLoading || authLoading || (canFullAwards && !isScopeReady)) {
 		return <Loader type='data' />
 	}
 
@@ -96,9 +130,32 @@ const Page = () => {
 	const categoryIconOption = getCategoryIconOptionByName(category.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const canEditCategories = hasAnyPermission(user, [PermissionCodeEnum.KPI_FULL])
-	const canViewAwards = hasAnyPermission(user, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW])
 	const categoryName = getLocaleText(category.name, locale)
 	const categoryDescription = getLocaleText(category.description, locale) || t.missingDescription
+	const awardsDescription = showAllAwardsInQuery ? t.awardsAllDescription : t.awardsOwnDescription
+
+	const updateSearchParams = (nextParams: Record<string, string | number | null>) => {
+		const paramsUrl = new URLSearchParams(searchParams.toString())
+
+		for (const [key, value] of Object.entries(nextParams)) {
+			if (value === null || value === '') {
+				paramsUrl.delete(key)
+				continue
+			}
+
+			paramsUrl.set(key, String(value))
+		}
+
+		router.push(`${pathname}?${paramsUrl.toString()}`, { scroll: false })
+	}
+
+	const setCurrentPage = (nextPage: number) => {
+		updateSearchParams({ page: nextPage })
+	}
+
+	const setPageSize = (nextPageSize: number) => {
+		updateSearchParams({ pageSize: nextPageSize, page: 1 })
+	}
 
 	return (
 		<section className='p-4 w-full max-w-6xl mx-auto space-y-6'>
@@ -153,22 +210,63 @@ const Page = () => {
 				</CardContent>
 			</Card>
 
+			{canFullAwards ? (
+				<div className='flex mb-4 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+					<div className='space-y-1'>
+						<div className='flex items-center gap-2'>
+							<p className='text-sm font-medium'>{showAllAwardsInQuery ? t.awardsAllTitle : t.awardsOwnTitle}</p>
+							{showAllAwardsInQuery ? (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											aria-label={t.awardsAllDescription}
+											className='size-7 shrink-0'
+											size='icon'
+											type='button'
+											variant='ghost'
+										>
+											<Info className='h-4 w-4' />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side='top'>{t.awardsAllDescription}</TooltipContent>
+								</Tooltip>
+							) : null}
+						</div>
+						{!showAllAwardsInQuery ? <p className='text-sm text-muted-foreground'>{awardsDescription}</p> : null}
+					</div>
+
+					<div className='flex items-center gap-3'>
+						<Label className='text-sm text-muted-foreground' htmlFor='category-awards-scope'>
+							{t.awardsScopeLabel}
+						</Label>
+						<Switch checked={showAllAwards} id='category-awards-scope' onCheckedChange={setAwardsScope} />
+					</div>
+				</div>
+			) : null}
+
+			<AwardFilterCard compact hideCategoryFilter className='mb-2' defaultStatuses={defaultStatuses} />
 			<div className='mx-auto w-full'>
 				<AwardsCard
-					awards={paginatedAwards}
-					description={t.awardsDescription}
-					isLoading={false}
+					awards={awards}
+					description={awardsDescription}
+					isLoading={isAwardsLoading}
 					title={t.awardsTitle}
 				/>
 				<Pagination
-					page={currentPage}
-					pageSize={AWARDS_PAGE_SIZE}
+					page={awardsData?.meta.currentPage || page}
+					pageSize={awardsData?.meta.pageSize || pageSize}
+					pageSizeOptions={[10, 20, 50]}
 					totalPages={totalPages}
 					onPageChange={setCurrentPage}
+					onPageSizeChange={setPageSize}
 				/>
 			</div>
 		</section>
 	)
 }
 
-export default withPermission(Page, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_VIEW])
+export default withPermission(Page, [
+	PermissionCodeEnum.KPI_FULL,
+	PermissionCodeEnum.KPI_VIEW,
+	PermissionCodeEnum.KPI_MANAGE,
+])
