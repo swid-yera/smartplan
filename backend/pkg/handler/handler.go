@@ -198,6 +198,7 @@ func (r *Router) Init() *gin.Engine {
 
 			// смена статуса награды — право управления KPI
 			awards.PUT("/:id/status", middleware.RequirePermission(service.PermKPIView), r.award.UpdateAwardStatus)
+			awards.PUT("/:id/points", middleware.RequirePermission(service.PermKPIFull), r.award.UpdateAwardPoints)
 
 			// удаление — право управления KPI
 			awards.DELETE("/:id", middleware.RequirePermission(service.PermKPIView), r.award.DeleteAward)

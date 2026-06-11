@@ -6,6 +6,7 @@ import (
 	"eduplan/backend/pkg/localization"
 	"eduplan/backend/pkg/repository"
 	storage "eduplan/backend/pkg/sqlc/generated"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/sirupsen/logrus"
 )
@@ -179,6 +181,7 @@ type AwardServiceInterface interface {
 	GetAllAwards(ctx context.Context) ([]AwardResponse, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (AwardResponse, error)
 	UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error)
+	UpdateAwardPoints(ctx context.Context, id uuid.UUID, totalPoints int32) (AwardResponse, error)
 	UpdateAwardStatus(ctx context.Context, id uuid.UUID, params UpdateAwardStatusRequest) (AwardResponse, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
 	BuildSelected(ctx context.Context, award storage.Award) (AwardResponse, error)
@@ -415,6 +418,42 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 	updatedAward, err := s.repo.UpdateAward(ctx, params)
 	if err != nil {
 		return AwardResponse{}, fmt.Errorf("update award failed: %w", err)
+	}
+
+	if err = s.syncApprovedAwardPoints(ctx, existingAward, updatedAward); err != nil {
+		return AwardResponse{}, err
+	}
+
+	res, err := s.BuildSelected(ctx, updatedAward)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	return res, nil
+}
+
+func (s *AwardService) UpdateAwardPoints(ctx context.Context, id uuid.UUID, totalPoints int32) (AwardResponse, error) {
+	existingAward, err := s.repo.GetAwardByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return AwardResponse{}, &HTTPStatusError{StatusCode: 404, Message: "award not found"}
+		}
+		return AwardResponse{}, err
+	}
+
+	if existingAward.Status != storage.AwardsStatusAPPROVED {
+		return AwardResponse{}, &HTTPStatusError{
+			StatusCode: 400,
+			Message:    "award points can only be changed for approved awards",
+		}
+	}
+
+	updatedAward, err := s.repo.UpdateAwardPoints(ctx, storage.UpdateAwardPointsParams{
+		ID:          id,
+		TotalPoints: totalPoints,
+	})
+	if err != nil {
+		return AwardResponse{}, fmt.Errorf("update award points failed: %w", err)
 	}
 
 	if err = s.syncApprovedAwardPoints(ctx, existingAward, updatedAward); err != nil {

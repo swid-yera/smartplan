@@ -120,6 +120,7 @@ type Querier interface {
 	RemoveViolationFromUser(ctx context.Context, arg RemoveViolationFromUserParams) (User, error)
 	UpdateAward(ctx context.Context, arg UpdateAwardParams) (Award, error)
 	UpdateAwardCategory(ctx context.Context, arg UpdateAwardCategoryParams) (AwardCategory, error)
+	UpdateAwardPoints(ctx context.Context, arg UpdateAwardPointsParams) (Award, error)
 	UpdateAwardStatus(ctx context.Context, arg UpdateAwardStatusParams) error
 	UpdateAwardType(ctx context.Context, arg UpdateAwardTypeParams) error
 	UpdateAwardTypeVariants(ctx context.Context, arg UpdateAwardTypeVariantsParams) (AwardType, error)

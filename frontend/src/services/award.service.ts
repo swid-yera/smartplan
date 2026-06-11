@@ -12,6 +12,7 @@ import type {
 	IPagination,
 	IReviewTeacherSummaryResponse,
 	ITypeResponse,
+	IUpdateAwardPointsRequest,
 	IUpdateAwardRequest,
 	IUpdateStatusRequest,
 } from '@types'
@@ -222,6 +223,24 @@ export class AwardService {
 				const locale = getCurrentBackendLocale()
 				queryClient.setQueryData(['award', id, locale], updatedAward)
 				queryClient.invalidateQueries({ queryKey: ['awards'] })
+			},
+		})
+	}
+
+	// update award points by id
+	updatePointsOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: ({ id, totalPoints }: IUpdateAwardPointsRequest) =>
+				api.put<IAward>(`/awards/${id}/points`, { totalPoints }).then((r) => r.data),
+
+			onSuccess: (updatedAward, { id }) => {
+				const locale = getCurrentBackendLocale()
+				queryClient.setQueryData(['award', id, locale], updatedAward)
+				queryClient.invalidateQueries({ queryKey: ['award', id] })
+				queryClient.invalidateQueries({ queryKey: ['awards'] })
+				queryClient.invalidateQueries({ queryKey: ['users-kpi-awards-summary'] })
 			},
 		})
 	}
