@@ -9,6 +9,7 @@ import (
 
 	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
+	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -71,6 +72,13 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 		})
 		return
 	}
+	userType, err := parseUserTypeQuery(c.Query("userType"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": service.TranslateAPIErrorMessage("invalid userType"),
+		})
+		return
+	}
 
 	departmentID := pgtype.UUID{}
 	if raw := strings.TrimSpace(c.Query("departmentId")); raw != "" {
@@ -90,6 +98,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 		pageSize,
 		search,
 		sort,
+		userType,
 		departmentID,
 	)
 	if err != nil {
@@ -415,6 +424,24 @@ func (h *UserHandler) DeleteViolation(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func parseUserTypeQuery(raw string) (string, error) {
+	value := strings.ToUpper(strings.TrimSpace(raw))
+	if value == "" {
+		return "", nil
+	}
+
+	switch storage.UserType(value) {
+	case storage.UserTypeGENERAL,
+		storage.UserTypeHEAD,
+		storage.UserTypeMASTER,
+		storage.UserTypeSPECIALIST,
+		storage.UserTypeNULL:
+		return value, nil
+	default:
+		return "", errors.New("invalid user type")
+	}
 }
 
 func writeUserServiceError(c *gin.Context, err error) {

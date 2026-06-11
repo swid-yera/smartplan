@@ -346,12 +346,16 @@ WHERE
         u.email ILIKE '%' || $1 || '%'
     )
     AND (
-        $2::uuid IS NULL
+        $2 = '' OR
+        u.user_type = $2::user_type
+    )
+    AND (
+        $3::uuid IS NULL
         OR EXISTS (
             SELECT 1
             FROM departments d
             WHERE
-                d.keycloak_id = $2::uuid
+                d.keycloak_id = $3::uuid
                 AND u.keycloak_id = ANY(d.users)
         )
     )
@@ -359,11 +363,12 @@ WHERE
 
 type CountUsersFilteredParams struct {
 	Search       interface{} `json:"search"`
+	UserType     interface{} `json:"user_type"`
 	DepartmentID pgtype.UUID `json:"department_id"`
 }
 
 func (q *Queries) CountUsersFiltered(ctx context.Context, arg CountUsersFilteredParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsersFiltered, arg.Search, arg.DepartmentID)
+	row := q.db.QueryRow(ctx, countUsersFiltered, arg.Search, arg.UserType, arg.DepartmentID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -3274,26 +3279,31 @@ WHERE
         u.email ILIKE '%' || $1 || '%'
     )
     AND (
-        $2::uuid IS NULL
+        $2 = '' OR
+        u.user_type = $2::user_type
+    )
+    AND (
+        $3::uuid IS NULL
         OR EXISTS (
             SELECT 1
             FROM departments d
             WHERE
-                d.keycloak_id = $2::uuid
+                d.keycloak_id = $3::uuid
                 AND u.keycloak_id = ANY(d.users)
         )
     )
 ORDER BY
-    CASE WHEN LOWER($3::text) = 'asc' THEN u.created_at END ASC,
-    CASE WHEN LOWER($3::text) = 'asc' THEN u.keycloak_id END ASC,
-    CASE WHEN LOWER($3::text) = 'desc' THEN u.created_at END DESC,
-    CASE WHEN LOWER($3::text) = 'desc' THEN u.keycloak_id END DESC,
+    CASE WHEN LOWER($4::text) = 'asc' THEN u.created_at END ASC,
+    CASE WHEN LOWER($4::text) = 'asc' THEN u.keycloak_id END ASC,
+    CASE WHEN LOWER($4::text) = 'desc' THEN u.created_at END DESC,
+    CASE WHEN LOWER($4::text) = 'desc' THEN u.keycloak_id END DESC,
     u.created_at DESC
-LIMIT $5 OFFSET $4
+LIMIT $6 OFFSET $5
 `
 
 type GetUsersPaginatedParams struct {
 	Search       interface{} `json:"search"`
+	UserType     interface{} `json:"user_type"`
 	DepartmentID pgtype.UUID `json:"department_id"`
 	Sort         string      `json:"sort"`
 	Offset       int32       `json:"offset"`
@@ -3303,6 +3313,7 @@ type GetUsersPaginatedParams struct {
 func (q *Queries) GetUsersPaginated(ctx context.Context, arg GetUsersPaginatedParams) ([]User, error) {
 	rows, err := q.db.Query(ctx, getUsersPaginated,
 		arg.Search,
+		arg.UserType,
 		arg.DepartmentID,
 		arg.Sort,
 		arg.Offset,

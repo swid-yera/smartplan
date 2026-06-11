@@ -74,6 +74,10 @@ WHERE
         u.email ILIKE '%' || sqlc.arg('search') || '%'
     )
     AND (
+        sqlc.arg('user_type') = '' OR
+        u.user_type = sqlc.arg('user_type')::user_type
+    )
+    AND (
         sqlc.narg('department_id')::uuid IS NULL
         OR EXISTS (
             SELECT 1
@@ -174,6 +178,10 @@ WHERE
         COALESCE(u.last_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
         COALESCE(u.username, '') ILIKE '%' || sqlc.arg('search') || '%' OR
         u.email ILIKE '%' || sqlc.arg('search') || '%'
+    )
+    AND (
+        sqlc.arg('user_type') = '' OR
+        u.user_type = sqlc.arg('user_type')::user_type
     )
     AND (
         sqlc.narg('department_id')::uuid IS NULL
