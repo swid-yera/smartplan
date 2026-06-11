@@ -18,6 +18,11 @@ export interface ICreateAwardRequest {
 
 export type IUpdateAwardRequest = ICreateAwardRequest
 
+export interface IUpdateAwardPointsRequest {
+	id: string
+	totalPoints: number
+}
+
 // create types
 export interface ICreateTypesRequest {
 	name: LocaleText

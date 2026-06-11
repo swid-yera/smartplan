@@ -3720,6 +3720,43 @@ func (q *Queries) UpdateAwardCategory(ctx context.Context, arg UpdateAwardCatego
 	return i, err
 }
 
+const updateAwardPoints = `-- name: UpdateAwardPoints :one
+UPDATE awards
+SET
+    total_points = $2,
+    updated_at = NOW()
+WHERE
+    id = $1
+RETURNING id, status, reason, methodist, teacher, total_points, type, variant, criteria, bonus_criteria, category_id, field_values, created_at, updated_at
+`
+
+type UpdateAwardPointsParams struct {
+	ID          uuid.UUID `json:"id"`
+	TotalPoints int32     `json:"total_points"`
+}
+
+func (q *Queries) UpdateAwardPoints(ctx context.Context, arg UpdateAwardPointsParams) (Award, error) {
+	row := q.db.QueryRow(ctx, updateAwardPoints, arg.ID, arg.TotalPoints)
+	var i Award
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.Reason,
+		&i.Methodist,
+		&i.Teacher,
+		&i.TotalPoints,
+		&i.Type,
+		&i.Variant,
+		&i.Criteria,
+		&i.BonusCriteria,
+		&i.CategoryID,
+		&i.FieldValues,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateAwardStatus = `-- name: UpdateAwardStatus :exec
 UPDATE awards
 SET

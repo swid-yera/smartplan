@@ -15,6 +15,8 @@ export const useAuthBootstrap = (hasSid: boolean) => {
 	const { data, isError } = useQuery({
 		...services.auth.getMeOptions(),
 		enabled: hasSid, // Запрос не пойдет, если куки нет
+		refetchInterval: 15000,
+		refetchIntervalInBackground: true,
 	})
 
 	if (isFirstRender.current) {

@@ -14,6 +14,7 @@ import { type IUpdateStatusRequest, type IVariant, PermissionCodeEnum, StatusEnu
 import { toast } from 'sonner'
 
 import { ApproveSheet } from './components/approve-sheet'
+import { ChangePointsSheet } from './components/change-points-sheet'
 import { AwardFieldValuesCard } from './components/award-field-values-card'
 import { AwardMainInfoCard } from './components/award-main-info-card'
 import { DeleteAlert } from './components/delete-alert'
@@ -33,6 +34,7 @@ const Page = () => {
 	const [generalComment, setGeneralComment] = useState('')
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
 	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
+	const [isChangePointsSheetOpen, setIsChangePointsSheetOpen] = useState(false)
 
 	const { user, authLoading } = useAuthStore()
 
@@ -51,6 +53,7 @@ const Page = () => {
 	})
 
 	const updateStatusMutation = useMutation(services.award.updateStatusOptions())
+	const updatePointsMutation = useMutation(services.award.updatePointsOptions())
 	const deleteMutation = useMutation(services.award.deleteMutationOptions())
 	const backHref = '/kpi/entry'
 
@@ -164,6 +167,7 @@ const Page = () => {
 	const isMethodist = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
 	const isStatusForEdit = award.status === StatusEnum.DRAFT || award.status === StatusEnum.REJECTED
 	const isMethodistReview = (isMethodist || canFullAccess) && award.status === StatusEnum.IN_REVIEW
+	const canChangePoints = award.status === StatusEnum.APPROVED && canFullAccess
 
 	return (
 		<div className='space-y-6 p-6 w-full'>
@@ -173,9 +177,11 @@ const Page = () => {
 						id={String(id)}
 						isAdmin={canFullAccess}
 						isAuthor={isAuthor}
+						canChangePoints={canChangePoints}
 						isMethodistReview={isMethodistReview}
 						isStatusForEdit={isStatusForEdit}
 						onOpenApproveSheet={() => setIsApproveSheetOpen(true)}
+						onOpenChangePointsSheet={() => setIsChangePointsSheetOpen(true)}
 						onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
 						onOpenRejectSheet={() => setIsRejectSheetOpen(true)}
 						onOpenStatusSheet={() => setIsStatusSheetOpen(true)}
@@ -238,6 +244,31 @@ const Page = () => {
 				onStatusChange={(variantId, criteriaId, bonusCriteriaId, totalPoints) =>
 					handleStatusChange(StatusEnum.APPROVED, '', variantId, criteriaId, bonusCriteriaId, totalPoints)
 				}
+			/>
+
+			<ChangePointsSheet
+				award={award}
+				isOpen={isChangePointsSheetOpen}
+				onOpenChange={setIsChangePointsSheetOpen}
+				onSave={(totalPoints) => {
+					const toastId = `award-${award.id}-points-update`
+
+					toast.loading(t.toastChangePointsLoading, { id: toastId })
+
+					updatePointsMutation.mutate(
+						{ id: award.id, totalPoints },
+						{
+							onSuccess: () => {
+								toast.success(t.toastChangePointsSuccess, { id: toastId })
+								setIsChangePointsSheetOpen(false)
+								refetch()
+							},
+							onError: (err) => {
+								toast.error(t.toastChangePointsError, { id: toastId, description: err.message })
+							},
+						},
+					)
+				}}
 			/>
 		</div>
 	)

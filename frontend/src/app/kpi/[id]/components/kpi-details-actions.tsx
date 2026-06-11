@@ -7,6 +7,7 @@ import { Button, ButtonGroup, DropdownMenu, DropdownMenuContent, DropdownMenuIte
 import { useLocaleStore } from '@store'
 import {
 	CheckCircle,
+	BadgeDollarSign,
 	Edit,
 	type LucideIcon,
 	MoreVertical,
@@ -25,11 +26,13 @@ interface IKpiDetailsActionsProps {
 	isAuthor: boolean
 	isStatusForEdit: boolean
 	isMethodistReview: boolean
+	canChangePoints: boolean
 	onOpenStatusSheet: () => void
 	onOpenDeleteDialog: () => void
 	onSendToReview: () => void
 	onOpenRejectSheet: () => void
 	onOpenApproveSheet: () => void
+	onOpenChangePointsSheet: () => void
 }
 
 export const KpiDetailsActions = ({
@@ -38,11 +41,13 @@ export const KpiDetailsActions = ({
 	isAuthor,
 	isStatusForEdit,
 	isMethodistReview,
+	canChangePoints,
 	onOpenStatusSheet,
 	onOpenDeleteDialog,
 	onSendToReview,
 	onOpenRejectSheet,
 	onOpenApproveSheet,
+	onOpenChangePointsSheet,
 }: IKpiDetailsActionsProps) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).actions
@@ -77,6 +82,14 @@ export const KpiDetailsActions = ({
 		})
 	}
 
+	const changePointsAction =
+		canChangePoints && !isMethodistReview ? (
+			<Button size='sm' type='button' variant='outline' onClick={onOpenChangePointsSheet}>
+				<BadgeDollarSign className='mr-2 h-4 w-4' />
+				{t.changePoints}
+			</Button>
+		) : null
+
 	if (isStatusForEdit && isAuthor) {
 		actions.push(
 			{
@@ -103,22 +116,26 @@ export const KpiDetailsActions = ({
 
 	if (isMethodistReview) {
 		return (
-			<ButtonGroup className='flex-wrap'>
-				<Button className='hover:text-destructive' size='sm' variant='outline' onClick={onOpenRejectSheet}>
-					<SendToBack className='mr-2 h-4 w-4' />
-					{t.reject}
-				</Button>
+			<div className='flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto'>
+				{changePointsAction}
+				<ButtonGroup className='flex-wrap'>
+					<Button className='hover:text-destructive' size='sm' variant='outline' onClick={onOpenRejectSheet}>
+						<SendToBack className='mr-2 h-4 w-4' />
+						{t.reject}
+					</Button>
 
-				<Button className='hover:text-primary' size='sm' variant='outline' onClick={onOpenApproveSheet}>
-					<CheckCircle className='mr-2 h-4 w-4' />
-					{t.approve}
-				</Button>
-			</ButtonGroup>
+					<Button className='hover:text-primary' size='sm' variant='outline' onClick={onOpenApproveSheet}>
+						<CheckCircle className='mr-2 h-4 w-4' />
+						{t.approve}
+					</Button>
+				</ButtonGroup>
+			</div>
 		)
 	}
 
 	const visibleActions = actions.length > 2 ? actions.slice(0, 1) : actions
 	const overflowActions = actions.slice(visibleActions.length)
+	const hasOtherActions = actions.length > 0
 
 	const renderAction = (action: IAction) =>
 		action.href ? (
@@ -142,35 +159,40 @@ export const KpiDetailsActions = ({
 		)
 
 	return (
-		<ButtonGroup className='w-full flex-wrap justify-end sm:w-auto'>
-			{visibleActions.map(renderAction)}
+		<div className='flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto'>
+			{changePointsAction}
+			{hasOtherActions ? (
+				<ButtonGroup className='w-full flex-wrap justify-end sm:w-auto'>
+					{visibleActions.map(renderAction)}
 
-			{overflowActions.length > 0 ? (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button aria-label={uiT.moreActions} size='icon-sm' type='button' variant='outline'>
-							<MoreVertical className='h-4 w-4' />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align='end' className='w-56'>
-						{overflowActions.map((action) =>
-							action.href ? (
-								<DropdownMenuItem key={action.id} asChild>
-									<Link href={action.href}>
-										<action.icon className='mr-2 h-4 w-4' />
-										{action.label}
-									</Link>
-								</DropdownMenuItem>
-							) : (
-								<DropdownMenuItem key={action.id} variant={action.variant} onClick={action.onClick}>
-									<action.icon className='mr-2 h-4 w-4' />
-									{action.label}
-								</DropdownMenuItem>
-							),
-						)}
-					</DropdownMenuContent>
-				</DropdownMenu>
+					{overflowActions.length > 0 ? (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button aria-label={uiT.moreActions} size='icon-sm' type='button' variant='outline'>
+									<MoreVertical className='h-4 w-4' />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align='end' className='w-56'>
+								{overflowActions.map((action) =>
+									action.href ? (
+										<DropdownMenuItem key={action.id} asChild>
+											<Link href={action.href}>
+												<action.icon className='mr-2 h-4 w-4' />
+												{action.label}
+											</Link>
+										</DropdownMenuItem>
+									) : (
+										<DropdownMenuItem key={action.id} variant={action.variant} onClick={action.onClick}>
+											<action.icon className='mr-2 h-4 w-4' />
+											{action.label}
+										</DropdownMenuItem>
+									),
+								)}
+							</DropdownMenuContent>
+						</DropdownMenu>
+					) : null}
+				</ButtonGroup>
 			) : null}
-		</ButtonGroup>
+		</div>
 	)
 }

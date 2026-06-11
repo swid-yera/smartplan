@@ -244,6 +244,34 @@ func (h *AwardHandler) UpdateAwardStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, award)
 }
 
+func (h *AwardHandler) UpdateAwardPoints(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid award ID")})
+		return
+	}
+
+	var req struct {
+		TotalPoints int32 `json:"totalPoints"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid request body")})
+		return
+	}
+
+	award, err := h.service.UpdateAwardPoints(c.Request.Context(), id, req.TotalPoints)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	award = h.resolveAwardFieldValues(c.Request.Context(), award)
+
+	c.JSON(http.StatusOK, award)
+}
+
 func (h *AwardHandler) DeleteAward(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := uuid.Parse(idParam)

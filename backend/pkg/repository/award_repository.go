@@ -121,6 +121,14 @@ func (r *AwardRepository) UpdateAward(ctx context.Context, params storage.Update
 	return award, nil
 }
 
+func (r *AwardRepository) UpdateAwardPoints(ctx context.Context, params storage.UpdateAwardPointsParams) (storage.Award, error) {
+	award, err := r.queries.UpdateAwardPoints(ctx, params)
+	if err != nil {
+		return storage.Award{}, err
+	}
+	return award, nil
+}
+
 func (r *AwardRepository) DeleteAward(ctx context.Context, id uuid.UUID) error {
 	return r.queries.DeleteAward(ctx, id)
 }

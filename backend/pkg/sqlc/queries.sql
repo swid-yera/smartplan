@@ -788,6 +788,15 @@ SET
 WHERE
     id = $1 RETURNING *;
 
+-- name: UpdateAwardPoints :one
+UPDATE awards
+SET
+    total_points = $2,
+    updated_at = NOW()
+WHERE
+    id = $1
+RETURNING *;
+
 -- name: DeleteAward :exec
 DELETE FROM awards WHERE id = $1;
 

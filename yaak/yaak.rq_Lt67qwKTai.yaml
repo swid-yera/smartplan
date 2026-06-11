@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_Lt67qwKTai
 createdAt: 2025-11-26T12:01:09.074135900
-updatedAt: 2026-06-09T14:40:17.061290900
+updatedAt: 2026-06-11T09:01:39.006877700
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_wRXcNsMiL3
 authentication: {}
@@ -20,10 +20,10 @@ body:
     value: password
   - enabled: true
     name: username
-    value: just-sain
+    value: kpopov27
   - enabled: true
     name: password
-    value: 20302030#S@ain$
+    value: 1029384756Qq
   - enabled: true
     name: scope
     value: openid
