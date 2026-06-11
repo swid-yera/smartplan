@@ -7,9 +7,10 @@ INSERT INTO
         first_name,
         last_name,
         role,
+        user_type,
         phone
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
 
 -- name: GetUserByKeycloakID :one
 SELECT * FROM users WHERE keycloak_id = $1;
@@ -23,6 +24,7 @@ SET
     last_name = $5,
     phone = $6,
     role = $7,
+    user_type = $8,
     updated_at = NOW()
 WHERE
     keycloak_id = $1;
@@ -70,6 +72,10 @@ WHERE
         COALESCE(u.last_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
         COALESCE(u.username, '') ILIKE '%' || sqlc.arg('search') || '%' OR
         u.email ILIKE '%' || sqlc.arg('search') || '%'
+    )
+    AND (
+        sqlc.arg('user_type') = '' OR
+        u.user_type = sqlc.arg('user_type')::user_type
     )
     AND (
         sqlc.narg('department_id')::uuid IS NULL
@@ -172,6 +178,10 @@ WHERE
         COALESCE(u.last_name, '') ILIKE '%' || sqlc.arg('search') || '%' OR
         COALESCE(u.username, '') ILIKE '%' || sqlc.arg('search') || '%' OR
         u.email ILIKE '%' || sqlc.arg('search') || '%'
+    )
+    AND (
+        sqlc.arg('user_type') = '' OR
+        u.user_type = sqlc.arg('user_type')::user_type
     )
     AND (
         sqlc.narg('department_id')::uuid IS NULL

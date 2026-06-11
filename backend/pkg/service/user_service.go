@@ -30,6 +30,7 @@ type User struct {
 	FirstName          string             `json:"firstName"`
 	LastName           string             `json:"lastName"`
 	Role               string             `json:"role"`
+	UserType           string             `json:"userType"`
 	Phone              string             `json:"phone"`
 	Departments        []UserDepartment   `json:"departments"`
 	Permissions        []PermissionCode   `json:"permissions"`
@@ -90,7 +91,7 @@ type UserService interface {
 	GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error)
 	GetUserByKeycloakID(ctx context.Context, keycloakID uuid.UUID) (*User, error)
 	GetUserBySessionIDFromStorageUser(ctx context.Context, sessionID uuid.UUID) (*storage.User, error)
-	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
+	GetUsersPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string, userType string, departmentID pgtype.UUID) (*PaginatedUsersResponse, error)
 	GetUsersRatingPaginated(ctx context.Context, CurrentPage int, pageSize int, search string, sort string) (*PaginatedUsersResponse, error)
 	GetTeachersRatingWithDepartments(ctx context.Context) ([]*User, error)
 	GetTopTeachersByDepartment(ctx context.Context) ([]DepartmentTopTeachersResponse, error)
@@ -158,6 +159,7 @@ func (s *userService) GetUsersPaginated(
 	pageSize int,
 	search string,
 	sort string,
+	userType string,
 	departmentID pgtype.UUID,
 ) (*PaginatedUsersResponse, error) {
 	if currentPage < 1 {
@@ -169,7 +171,7 @@ func (s *userService) GetUsersPaginated(
 
 	offset := (currentPage - 1) * pageSize
 
-	total, err := s.repo.CountUsersFiltered(ctx, search, departmentID)
+	total, err := s.repo.CountUsersFiltered(ctx, search, userType, departmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -180,6 +182,7 @@ func (s *userService) GetUsersPaginated(
 		int32(offset),
 		search,
 		sort,
+		userType,
 		departmentID,
 	)
 	if err != nil {
@@ -285,6 +288,7 @@ func (s *userService) GetTeachersByDepartment(ctx context.Context, departmentID 
 		0,
 		"",
 		"desc",
+		"",
 		pgtype.UUID{Bytes: departmentID, Valid: true},
 	)
 	if err != nil {
@@ -551,6 +555,7 @@ func (s *userService) toServiceUsers(ctx context.Context, dbUsers []storage.User
 			FirstName:          firstName,
 			LastName:           lastName,
 			Role:               string(dbUser.Role),
+			UserType:           string(dbUser.UserType),
 			Phone:              phone,
 			Departments:        departments,
 			Permissions:        permissions,
@@ -619,6 +624,7 @@ func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*U
 		FirstName:          firstName,
 		LastName:           lastName,
 		Role:               string(user.Role),
+		UserType:           string(user.UserType),
 		Phone:              phone,
 		Departments:        mappedDepartments,
 		Permissions:        permissions,

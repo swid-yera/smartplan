@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_cQruLBCDA5
 createdAt: 2026-01-15T14:31:01.786455
-updatedAt: 2026-05-28T14:26:27.517566900
+updatedAt: 2026-06-11T12:59:39.869428200
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -18,13 +18,28 @@ headers:
 method: GET
 name: user by id
 sortPriority: 2000.0
-url: ${[ url ]}/users/:id
+url: ${[ url ]}/users/:keycloak_id
 urlParameters:
 - enabled: true
-  name: :id
-  value: f2546909-a510-49e7-9185-bd576e76784c
+  name: :keycloak_id
+  value: e03f5d94-1497-4514-9c92-16bb559a1cc8
   id: 4XQnYpq560
 - enabled: true
   name: ''
   value: ''
-  id: FErDcvvcnP
+  id: Mh2E2J0uTX
+settingSendCookies:
+  enabled: false
+  value: true
+settingStoreCookies:
+  enabled: false
+  value: true
+settingValidateCertificates:
+  enabled: false
+  value: true
+settingFollowRedirects:
+  enabled: false
+  value: true
+settingRequestTimeout:
+  enabled: false
+  value: 0
