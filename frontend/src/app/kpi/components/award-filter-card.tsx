@@ -85,6 +85,8 @@ export const AwardFilterCard: FC<IProps> = ({
 		'{count}',
 		String(selectedCategoryIds.length),
 	)
+	const hasSelectedStatuses = selectedStatuses.length > 0
+	const hasSelectedCategories = selectedCategoryIds.length > 0
 	const didMountRef = useRef(false)
 	const compactFiltersSignature = `${selectedStatuses.join('|')}::${hideCategoryFilter ? '' : selectedCategoryIds.join('|')}::${selectedSort}`
 	const lastAppliedCompactFiltersRef = useRef(compactFiltersSignature)
@@ -210,12 +212,14 @@ export const AwardFilterCard: FC<IProps> = ({
 										aria-label={t.awardFilter.status}
 										className='h-8 min-w-36 justify-start gap-2 px-3 text-xs font-normal'
 										role='combobox'
-										title={selectedStatuses.length > 0 ? selectedStatusesText : t.awardFilter.status}
+										title={hasSelectedStatuses ? selectedStatusesText : t.awardFilter.status}
 										variant='outline'
 									>
-										<ListFilter className='h-4 w-4 shrink-0' />
-										<span className='truncate'>
-											{selectedStatuses.length > 0 ? selectedStatusesText : t.awardFilter.status}
+										<ListFilter className={cn('h-4 w-4 shrink-0', hasSelectedStatuses && 'text-primary')} />
+										<span
+											className={cn('truncate', hasSelectedStatuses ? 'text-primary' : 'text-foreground')}
+										>
+											{hasSelectedStatuses ? selectedStatusesText : t.awardFilter.status}
 										</span>
 									</Button>
 								</PopoverTrigger>
@@ -247,12 +251,17 @@ export const AwardFilterCard: FC<IProps> = ({
 											aria-label={t.awardFilter.category}
 											className='h-8 min-w-40 justify-start gap-2 px-3 text-xs font-normal'
 											role='combobox'
-											title={selectedCategories.length > 0 ? selectedCategoriesText : t.awardFilter.category}
+											title={hasSelectedCategories ? selectedCategoriesText : t.awardFilter.category}
 											variant='outline'
 										>
-											<Layers3 className='h-4 w-4 shrink-0' />
-											<span className='truncate'>
-												{selectedCategories.length > 0 ? selectedCategoriesText : t.awardFilter.category}
+											<Layers3 className={cn('h-4 w-4 shrink-0', hasSelectedCategories && 'text-primary')} />
+											<span
+												className={cn(
+													'truncate',
+													hasSelectedCategories ? 'text-primary' : 'text-foreground',
+												)}
+											>
+												{hasSelectedCategories ? selectedCategoriesText : t.awardFilter.category}
 											</span>
 										</Button>
 									</PopoverTrigger>
@@ -380,12 +389,17 @@ export const AwardFilterCard: FC<IProps> = ({
 											role='combobox'
 											variant='outline'
 										>
-											{selectedStatuses.length > 0 ? (
-												<span className='truncate'>{selectedStatusesText}</span>
+											{hasSelectedStatuses ? (
+												<span className='truncate text-primary'>{selectedStatusesText}</span>
 											) : (
 												<span className='text-muted-foreground'>{t.awardFilter.selectStatuses}</span>
 											)}
-											<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+											<ChevronsUpDown
+												className={cn(
+													'ml-2 h-4 w-4 shrink-0 opacity-50',
+													hasSelectedStatuses && 'text-primary',
+												)}
+											/>
 										</Button>
 									</PopoverTrigger>
 									<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-2'>
@@ -417,12 +431,17 @@ export const AwardFilterCard: FC<IProps> = ({
 												role='combobox'
 												variant='outline'
 											>
-												{selectedCategories.length > 0 ? (
-													<span className='truncate'>{selectedCategoriesText}</span>
+												{hasSelectedCategories ? (
+													<span className='truncate text-primary'>{selectedCategoriesText}</span>
 												) : (
 													<span className='text-muted-foreground'>{t.awardFilter.selectCategories}</span>
 												)}
-												<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+												<ChevronsUpDown
+													className={cn(
+														'ml-2 h-4 w-4 shrink-0 opacity-50',
+														hasSelectedCategories && 'text-primary',
+													)}
+												/>
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-0'>

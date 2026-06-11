@@ -5,9 +5,9 @@ import { useEffect } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { AwardsCard, Loader, PageTitle, Pagination, withPermission } from '@components'
-import { getUILocaleSection, hasAnyPermission } from '@helpers'
+import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { useAuthStore, useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, type StatusEnum } from '@types'
 
@@ -31,7 +31,9 @@ const Page = () => {
 
 	// Параметры из URL
 	const page = Number(searchParams.get('page')) || 1
-	const pageSize = Number(searchParams.get('pageSize')) || 10
+	const storedPageSize = usePaginationSettingsStore((state) => state.pageSize)
+	const setStoredPageSize = usePaginationSettingsStore((state) => state.setPageSize)
+	const pageSize = Number(searchParams.get('pageSize')) || storedPageSize
 	const statusParam = searchParams.get('status') ?? '' // "PENDING,APPROVED"
 	const categoryIdParam = searchParams.get('categoryId') ?? '' // "id1,id2"
 	const sortParam = searchParams.get('sort')
@@ -47,7 +49,6 @@ const Page = () => {
 
 	// store
 	const { user, authLoading } = useAuthStore()
-	const canSearchUsers = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
 
 	// query
 	const { data: awardsData, isLoading: isAwardsLoading } = useQuery({
@@ -93,6 +94,8 @@ const Page = () => {
 	}
 
 	const setPageSize = (newSize: number) => {
+		setStoredPageSize(newSize)
+
 		const params = new URLSearchParams(searchParams.toString())
 
 		params.set('pageSize', String(newSize))
@@ -106,7 +109,7 @@ const Page = () => {
 		<section className='p-4 w-full space-y-4'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 
-			{canSearchUsers && <KpiTeachersHubCard />}
+			<KpiTeachersHubCard />
 
 			{/* фильтр и поиск */}
 			<AwardFilterCard compact className='mb-4' />

@@ -124,7 +124,7 @@ export const KpiTeachersHubCard: FC<IProps> = ({ className, profileTab = 'kpi' }
 
 	return (
 		<Card className={cn('w-full', className)}>
-			<CardHeader className='space-y-1 pb-3'>
+			<CardHeader className='space-y-1'>
 				<CardTitle className='flex items-center gap-2 text-base'>
 					<Search className='h-5 w-5 text-primary' />
 					{searchT.title}
@@ -133,7 +133,7 @@ export const KpiTeachersHubCard: FC<IProps> = ({ className, profileTab = 'kpi' }
 			</CardHeader>
 
 			<CardContent className='space-y-6'>
-				<div className='relative w-full max-w-xs sm:max-w-sm'>
+				<div className='relative w-full max-w-lg'>
 					<label className='text-xs font-medium text-muted-foreground'>{searchT.label}</label>
 					<Input
 						autoComplete='off'
@@ -181,7 +181,7 @@ export const KpiTeachersHubCard: FC<IProps> = ({ className, profileTab = 'kpi' }
 					)}
 				</div>
 
-				<div className='space-y-3 rounded-xl border bg-muted/20 p-4'>
+				<div className='space-y-3 rounded-xl'>
 					<div className='flex items-start justify-between gap-3'>
 						<div className='space-y-1'>
 							<div className='flex items-center gap-2'>

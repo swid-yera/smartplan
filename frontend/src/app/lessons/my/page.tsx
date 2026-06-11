@@ -18,7 +18,7 @@ import {
 import { getLessonTypeLabels, getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Alert, AlertDescription, Button } from '@shadcn'
-import { useAuthStore, useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { ILesson, LessonTypeEnum } from '@types'
 
@@ -63,7 +63,9 @@ function MyLessonPlansPage() {
 	const { authLoading, user } = useAuthStore()
 
 	const page = Number(searchParams.get('page')) || 1
-	const pageSize = Number(searchParams.get('pageSize')) || 10
+	const storedPageSize = usePaginationSettingsStore((state) => state.pageSize)
+	const setStoredPageSize = usePaginationSettingsStore((state) => state.setPageSize)
+	const pageSize = Number(searchParams.get('pageSize')) || storedPageSize
 	const search = (searchParams.get('q') || '').trim()
 	const rawType = searchParams.get('type') || ALL_FILTER
 	const rawDiscipline = searchParams.get('discipline') || ALL_FILTER
@@ -196,6 +198,7 @@ function MyLessonPlansPage() {
 	}
 
 	const setPageSize = (newSize: number) => {
+		setStoredPageSize(newSize)
 		updateSearchParams({ pageSize: newSize, page: 1 })
 	}
 

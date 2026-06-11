@@ -5,7 +5,7 @@ import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigati
 import { AwardsCard, Loader, PageTitle, Pagination, UserCard, withNavAccess } from '@components'
 import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
-import { useAuthStore, useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, type StatusEnum } from '@types'
 
@@ -20,7 +20,9 @@ const Page = () => {
 	const pathname = usePathname()
 
 	const page = Number(searchParams.get('page')) || 1
-	const pageSize = Number(searchParams.get('pageSize')) || 10
+	const storedPageSize = usePaginationSettingsStore((state) => state.pageSize)
+	const setStoredPageSize = usePaginationSettingsStore((state) => state.setPageSize)
+	const pageSize = Number(searchParams.get('pageSize')) || storedPageSize
 	const statusParam = searchParams.get('status') ?? ''
 	const categoryIdParam = searchParams.get('categoryId') ?? ''
 	const sortParam = searchParams.get('sort')
@@ -57,6 +59,8 @@ const Page = () => {
 	}
 
 	const setPageSize = (newSize: number) => {
+		setStoredPageSize(newSize)
+
 		const params = new URLSearchParams(searchParams.toString())
 
 		params.set('pageSize', String(newSize))
@@ -68,7 +72,7 @@ const Page = () => {
 	if (!canViewKpi) return notFound()
 
 	return (
-		<section className='mx-auto w-full max-w-6xl space-y-6 p-4'>
+		<section className='mx-auto w-full max-w-7xl space-y-6 p-4'>
 			<PageTitle description={t.profileDescription}>{t.profileTitle}</PageTitle>
 
 			<div className='space-y-4'>
