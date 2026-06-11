@@ -178,6 +178,7 @@ export class AwardService {
 
 			onSuccess: (createdAward) => {
 				const locale = getCurrentBackendLocale()
+
 				queryClient.setQueryData(['award', createdAward.id, locale], createdAward)
 				queryClient.invalidateQueries({ queryKey: ['awards'] })
 			},
@@ -221,6 +222,7 @@ export class AwardService {
 
 			onSuccess: (updatedAward, { id }) => {
 				const locale = getCurrentBackendLocale()
+
 				queryClient.setQueryData(['award', id, locale], updatedAward)
 				queryClient.invalidateQueries({ queryKey: ['awards'] })
 			},
@@ -237,6 +239,7 @@ export class AwardService {
 
 			onSuccess: (updatedAward, { id }) => {
 				const locale = getCurrentBackendLocale()
+
 				queryClient.setQueryData(['award', id, locale], updatedAward)
 				queryClient.invalidateQueries({ queryKey: ['award', id] })
 				queryClient.invalidateQueries({ queryKey: ['awards'] })
@@ -327,6 +330,7 @@ export class AwardService {
 
 			onSuccess: (createdType) => {
 				const locale = getCurrentBackendLocale()
+
 				queryClient.setQueryData(['type', createdType.id, locale], createdType)
 				queryClient.invalidateQueries({ queryKey: ['types'] })
 			},
@@ -343,6 +347,7 @@ export class AwardService {
 
 			onSuccess: (updatedType, { id }) => {
 				const locale = getCurrentBackendLocale()
+
 				queryClient.setQueryData(['type', id, locale], updatedType)
 				queryClient.invalidateQueries({ queryKey: ['types'] })
 			},

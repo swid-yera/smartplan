@@ -38,8 +38,10 @@ const normalizePreviewValue = (value: unknown, locale: 'ru' | 'kk', fieldType?: 
 		}
 
 		const normalizedItems = value.map((item) => normalizePreviewValue(item, locale)).filter((item) => item.length > 0)
+
 		if (normalizedItems.length > 0) {
 			const preview = normalizedItems.slice(0, 2).join(', ')
+
 			return normalizedItems.length > 2 ? `${preview}…` : preview
 		}
 
@@ -48,6 +50,7 @@ const normalizePreviewValue = (value: unknown, locale: 'ru' | 'kk', fieldType?: 
 
 	if (typeof value === 'object') {
 		const localizedText = getLocaleText(value as Parameters<typeof getLocaleText>[0], locale)
+
 		return localizedText?.trim() || ''
 	}
 
@@ -70,6 +73,7 @@ const getAwardPreviewFields = (award: IAward, locale: 'ru' | 'kk') => {
 			if (categoryField?.type === 'file' || categoryField?.type === 'url') return null
 
 			const value = normalizePreviewValue(award.fieldValues?.[fieldKey], locale, categoryField?.type)
+
 			if (!value) return null
 
 			return {
@@ -131,7 +135,9 @@ export const UserKpiAwardsRow: FC<IProps> = ({ award, onSelect }) => {
 							) : null}
 						</div>
 					</TableCell>
-					<TableCell className='whitespace-nowrap font-medium'>{displayPoints}</TableCell>
+					<TableCell className='whitespace-nowrap font-medium'>
+						{award.status === StatusEnum.IN_REVIEW ? `+${displayPoints}` : displayPoints}
+					</TableCell>
 					<TableCell className='text-right'>
 						<StatusBadge className='shrink-0' status={award.status} />
 					</TableCell>

@@ -64,6 +64,7 @@ export const RupsFilterCard: FC<IProps> = ({ className, compact = true, paramPre
 
 	const selectedStatusesText = t.rupsFilter.statusesSelected.replace('{count}', String(selectedStatuses.length))
 	const selectedSortLabel = selectedSort === 'asc' ? t.rupsFilter.sortAsc : t.rupsFilter.sortDesc
+	const hasSelectedStatuses = selectedStatuses.length > 0
 	const hasActiveFilters = Boolean(
 		searchValue.trim() || selectedStatuses.length > 0 || selectedSort !== DEFAULT_RUP_SORT,
 	)
@@ -172,13 +173,17 @@ export const RupsFilterCard: FC<IProps> = ({ className, compact = true, paramPre
 											aria-label={t.rupsFilter.status}
 											className='h-8 min-w-36 justify-start gap-2 px-3 text-xs font-normal'
 											role='combobox'
-											title={selectedStatuses.length > 0 ? selectedStatusesText : t.rupsFilter.status}
+											title={hasSelectedStatuses ? selectedStatusesText : t.rupsFilter.status}
 											type='button'
 											variant='outline'
 										>
-											<ListFilter className='h-4 w-4 shrink-0' />
-											<span className='truncate'>
-												{selectedStatuses.length > 0 ? selectedStatusesText : t.rupsFilter.status}
+											<ListFilter
+												className={cn('h-4 w-4 shrink-0', hasSelectedStatuses && 'text-primary')}
+											/>
+											<span
+												className={cn('truncate', hasSelectedStatuses ? 'text-primary' : 'text-foreground')}
+											>
+												{hasSelectedStatuses ? selectedStatusesText : t.rupsFilter.status}
 											</span>
 										</Button>
 									</PopoverTrigger>
@@ -267,16 +272,21 @@ export const RupsFilterCard: FC<IProps> = ({ className, compact = true, paramPre
 											aria-label={t.rupsFilter.status}
 											className='w-full justify-between font-normal'
 											role='combobox'
-											title={selectedStatuses.length > 0 ? selectedStatusesText : t.rupsFilter.status}
+											title={hasSelectedStatuses ? selectedStatusesText : t.rupsFilter.status}
 											type='button'
 											variant='outline'
 										>
-											{selectedStatuses.length > 0 ? (
-												<span className='truncate'>{selectedStatusesText}</span>
+											{hasSelectedStatuses ? (
+												<span className='truncate text-primary'>{selectedStatusesText}</span>
 											) : (
 												<span className='text-muted-foreground'>{t.rupsFilter.selectStatuses}</span>
 											)}
-											<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+											<ChevronsUpDown
+												className={cn(
+													'ml-2 h-4 w-4 shrink-0 opacity-50',
+													hasSelectedStatuses && 'text-primary',
+												)}
+											/>
 										</Button>
 									</PopoverTrigger>
 									<PopoverContent align='start' className='w-(--radix-popover-trigger-width) p-2'>

@@ -29,7 +29,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@shadcn'
-import { useAuthStore, useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, StatusEnum } from '@types'
 import { Edit, Folder, Info, Plus } from 'lucide-react'
@@ -62,7 +62,9 @@ const Page = () => {
 	})
 	const showAllAwards = canManageOnlyAwards || scope === 'all'
 	const page = Number(searchParams.get('page')) || 1
-	const pageSize = Number(searchParams.get('pageSize')) || 10
+	const storedPageSize = usePaginationSettingsStore((state) => state.pageSize)
+	const setStoredPageSize = usePaginationSettingsStore((state) => state.setPageSize)
+	const pageSize = Number(searchParams.get('pageSize')) || storedPageSize
 	const sortParam = searchParams.get('sort')
 	const statusParam = searchParams.get('status') ?? ''
 	const sort = sortParam === 'asc' || sortParam === 'desc' ? sortParam : 'desc'
@@ -154,6 +156,7 @@ const Page = () => {
 	}
 
 	const setPageSize = (nextPageSize: number) => {
+		setStoredPageSize(nextPageSize)
 		updateSearchParams({ pageSize: nextPageSize, page: 1 })
 	}
 
