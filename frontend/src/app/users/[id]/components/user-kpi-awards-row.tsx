@@ -112,7 +112,7 @@ export const UserKpiAwardsRow: FC<IProps> = ({ award, onSelect }) => {
 					}}
 				>
 					<TableCell className='whitespace-nowrap font-medium'>{createdAt}</TableCell>
-					<TableCell className='py-4 align-top'>
+					<TableCell className='py-4 align-top font-medium whitespace-break-spaces min-w-25'>
 						<div className='space-y-1'>
 							<Link
 								className='flex items-center gap-2 rounded-sm font-medium hover:text-primary hover:underline'

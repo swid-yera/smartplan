@@ -27,7 +27,7 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { PermissionCodeEnum, StatusEnum, ViolationEnum } from '@types'
+import { type IPenalty, PermissionCodeEnum, StatusEnum, ViolationEnum } from '@types'
 import { ArrowLeft, Award, BookOpen, Gavel, Layers3, MoreVertical, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -133,7 +133,7 @@ const Page = () => {
 	})
 
 	// penalties data
-	const { data: penaltiesData = [], isLoading: penaltiesLoading } = useQuery({
+	const { data: penaltiesData, isLoading: penaltiesLoading } = useQuery<IPenalty[]>({
 		...services.user.getAllPenaltiesByTeacherIdOptions(params.id),
 		enabled: !userLoading && !isError && !!params.id,
 	})
@@ -198,7 +198,8 @@ const Page = () => {
 	const canManageUserPermissions = hasAnyPermission(me, [PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.RUP_FULL])
 	const currentViolation = userData.violation || ViolationEnum.NONE
 	const nextViolation = getNextViolationStatus(currentViolation)
-	const showPenaltyCard = penaltiesData.length > 0
+	const penalties = penaltiesData ?? []
+	const showPenaltyCard = penalties.length > 0
 
 	const setCurrentTab = (tab: string) => {
 		const paramsUrl = new URLSearchParams(searchParams.toString())
@@ -330,7 +331,7 @@ const Page = () => {
 				</div>
 				{showPenaltyCard ? (
 					<div className='flex h-full min-h-0 flex-col lg:col-span-1'>
-						<PenaltyCard className='min-h-0 flex-1' isLoading={penaltiesLoading} penalties={penaltiesData} />
+						<PenaltyCard className='min-h-0 flex-1' isLoading={penaltiesLoading} penalties={penalties} />
 					</div>
 				) : null}
 			</div>
@@ -338,7 +339,7 @@ const Page = () => {
 			<PenaltySheet
 				isLoading={penaltiesLoading}
 				open={isPenaltySheetOpen}
-				penalties={penaltiesData}
+				penalties={penalties}
 				teacherId={params.id}
 				onOpenChange={setIsPenaltySheetOpen}
 			/>
