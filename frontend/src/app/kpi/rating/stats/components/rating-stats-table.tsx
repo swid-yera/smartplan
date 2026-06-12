@@ -2,20 +2,43 @@
 
 import Link from 'next/link'
 
-import { Badge, Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shadcn'
-import { type IUser, type Locale } from '@types'
-
 import { DepartmentBadge, UserTypeBadge } from '@components'
 import { getUserTotalPoints } from '@helpers'
+import {
+	Badge,
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@shadcn'
+import { type IUser, type Locale } from '@types'
 
-import { RATING_COLORS, normalizeTeacherName } from '../rating-stats.utils'
 import { type RatingStatsTexts } from '../rating-stats.types'
+import { RATING_COLORS, normalizeTeacherName } from '../rating-stats.utils'
 
 interface IProps {
 	baseTeachersCount: number
 	filteredTeachers: IUser[]
 	locale: Locale
-	t: Pick<RatingStatsTexts, 'emptyDescription' | 'emptyTitle' | 'noMatchesDescription' | 'noMatchesTitle' | 'tableDepartment' | 'tableIndex' | 'tableName' | 'tablePoints' | 'tableTitle' | 'tableType'>
+	t: Pick<
+		RatingStatsTexts,
+		| 'emptyDescription'
+		| 'emptyTitle'
+		| 'noMatchesDescription'
+		| 'noMatchesTitle'
+		| 'tableDepartment'
+		| 'tableIndex'
+		| 'tableName'
+		| 'tablePoints'
+		| 'tableTitle'
+		| 'tableType'
+	>
 }
 
 export const RatingStatsTable = ({ baseTeachersCount, filteredTeachers, locale, t }: IProps) => {
@@ -27,7 +50,7 @@ export const RatingStatsTable = ({ baseTeachersCount, filteredTeachers, locale, 
 			<CardContent className='p-0'>
 				{filteredTeachers.length > 0 ? (
 					<div className='overflow-x-auto'>
-						<Table className='min-w-[860px]'>
+						<Table className='min-w-215'>
 							<TableHeader>
 								<TableRow>
 									<TableHead className='w-14 text-center'>{t.tableIndex}</TableHead>
@@ -61,13 +84,13 @@ export const RatingStatsTable = ({ baseTeachersCount, filteredTeachers, locale, 
 											</TableCell>
 											<TableCell>
 												{teacher.departments?.length ? (
-													<DepartmentBadge departments={teacher.departments} locale={locale} size='sm' />
+													<DepartmentBadge departments={teacher.departments} locale={locale} size='lg' />
 												) : (
 													<Badge variant='outline'>—</Badge>
 												)}
 											</TableCell>
 											<TableCell>
-												<UserTypeBadge locale={locale} size='sm' userType={teacher.userType} />
+												<UserTypeBadge locale={locale} size='lg' userType={teacher.userType} />
 											</TableCell>
 											<TableCell className='text-right font-semibold tabular-nums'>{points}</TableCell>
 										</TableRow>

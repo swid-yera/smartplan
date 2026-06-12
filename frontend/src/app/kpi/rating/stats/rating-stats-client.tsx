@@ -207,7 +207,7 @@ export const RatingStatsClient = ({ locale, teachers, t }: IProps) => {
 	]
 
 	return (
-		<section className='mx-auto flex w-full max-w-6xl flex-col gap-6 p-6'>
+		<section className='mx-auto flex w-full max-w-6xl flex-col gap-3 p-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 			<RatingNav
 				labels={{

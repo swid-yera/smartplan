@@ -8,11 +8,12 @@
 		"departments": "Отделения",
 		"stats": "Статистика",
 		"teacher": "Преподаватель",
+		"type": "Тип",
 		"teachersCount": "преподавателей",
 		"points": "Баллы",
 		"departmentSummary": {
 			"teachers": "{current} из {total} преподавателей",
-			"pointsInline": "Сумма баллов: {points}"
+			"pointsInline": "Баллы отделения"
 		},
 		"emptyTitle": "Преподаватели не найдены",
 		"emptyDescription": "Пока нет отделений с данными для отображения рейтинга."
@@ -26,11 +27,12 @@
 		"departments": "Бөлімдер",
 		"stats": "Статистика",
 		"teacher": "Оқытушы",
+		"type": "Түрі",
 		"teachersCount": "оқытушы",
 		"points": "Ұпай",
 		"departmentSummary": {
 			"teachers": "{total} оқытушының {current}-і көрсетілді",
-			"pointsInline": "Ұпайлардың жиыны: {points}"
+			"pointsInline": "Бөлім баллдары"
 		},
 		"emptyTitle": "Оқытушылар табылмады",
 		"emptyDescription": "Рейтинг көрсету үшін бөлімдер деректері әзірге жоқ."
