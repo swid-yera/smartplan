@@ -17,7 +17,7 @@ func ResolveHighestRole(
 
 	roleSet := make(map[string]struct{}, len(kcRoles))
 	for _, r := range kcRoles {
-		roleSet[r] = struct{}{}
+		roleSet[strings.ToLower(strings.TrimSpace(r))] = struct{}{}
 	}
 
 	// приоритет ВАЖЕН
@@ -37,9 +37,21 @@ func ResolveHighestRole(
 	return "", false
 }
 
+func ResolveHighestRoleFromGroups(groups []string, cfg config.KeycloakConfig) (storage.UserRole, bool) {
+	return ResolveHighestRole(groups, cfg)
+}
+
+func ResolveHighestRoleFromClaims(groups []string, realmRoles []string, cfg config.KeycloakConfig) (storage.UserRole, bool) {
+	if role, ok := ResolveHighestRole(groups, cfg); ok {
+		return role, true
+	}
+
+	return ResolveHighestRole(realmRoles, cfg)
+}
+
 func hasAny(set map[string]struct{}, roles []string) bool {
 	for _, r := range roles {
-		if _, ok := set[r]; ok {
+		if _, ok := set[strings.ToLower(strings.TrimSpace(r))]; ok {
 			return true
 		}
 	}

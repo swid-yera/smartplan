@@ -1615,7 +1615,8 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	}, nil
 }
 
-func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse {	return &GroupResponse{
+func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse {
+	return &GroupResponse{
 		KeycloakID:    group.KeycloakID,
 		Name:          group.Name,
 		Qualification: localization.LocaleTextFromJSONB(group.Qualification),
@@ -2132,10 +2133,6 @@ func (s *rupService) generateLanguageForRup(
 			targetLanguage,
 			overwriteTarget,
 		)
-		if err != nil {
-			fail("translate_exploration", 3, err)
-			return
-		}
 		if err != nil {
 			fail("translate_exploration", 3, err)
 			return

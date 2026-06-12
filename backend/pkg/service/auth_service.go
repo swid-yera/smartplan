@@ -53,29 +53,14 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	lastName, _ := claims["family_name"].(string)
 	phone, _ := claims["phone"].(string)
 
-	realmAccess, ok := claims["realm_access"].(map[string]interface{})
+	groups := claimStrings(claims, "all_groups")
+	realmRoles := extractRealmRoles(claims)
+	role, ok := helpers.ResolveHighestRoleFromClaims(groups, realmRoles, *s.cfg)
 	if !ok {
-		return uuid.Nil, fmt.Errorf("realm_access missing in token claims")
+		return uuid.Nil, fmt.Errorf("user has no allowed groups or realm roles: groups=%v realm_roles=%v", groups, realmRoles)
 	}
 
-	rolesRaw, ok := realmAccess["roles"].([]interface{})
-	if !ok {
-		return uuid.Nil, fmt.Errorf("roles missing in token claims")
-	}
-
-	kcRoles := make([]string, 0, len(rolesRaw))
-	for _, r := range rolesRaw {
-		if role, ok := r.(string); ok {
-			kcRoles = append(kcRoles, role)
-		}
-	}
-
-	role, ok := helpers.ResolveHighestRole(kcRoles, *s.cfg)
-	if !ok {
-		return uuid.Nil, fmt.Errorf("user has no allowed roles from list: %v", kcRoles)
-	}
-
-	userType := helpers.ResolveUserTypeFromGroups(claimStrings(claims, "all_groups"))
+	userType := helpers.ResolveUserTypeFromGroups(groups)
 
 	s.log.WithFields(logrus.Fields{
 		"keycloak_id": keycloakID,
@@ -122,6 +107,27 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	}
 
 	return sessionID, nil
+}
+
+func extractRealmRoles(claims jwt.MapClaims) []string {
+	realmAccess, ok := claims["realm_access"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	rolesRaw, ok := realmAccess["roles"].([]interface{})
+	if !ok {
+		return nil
+	}
+
+	roles := make([]string, 0, len(rolesRaw))
+	for _, r := range rolesRaw {
+		if role, ok := r.(string); ok {
+			roles = append(roles, role)
+		}
+	}
+
+	return roles
 }
 
 func claimStrings(claims jwt.MapClaims, key string) []string {
@@ -525,4 +531,3 @@ func (s *authService) InvalidateAllSessions(ctx context.Context, keycloakID uuid
 	}
 	return err
 }
-
