@@ -16,24 +16,53 @@ import { cleanupDeleteCache } from './query-cache'
 
 export class UserService {
 	// get all
-	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '', sort }: IPaginationRequest) => {
+	getAllOptions = ({ currentPage = 1, pageSize = 10, search = '', sort, departmentId }: IPaginationRequest) => {
 		const text = search.trim()
+		const department = departmentId?.trim()
+
+		const fetchUsersPage = async (page: number) => {
+			const { data } = await api.get<IPagination<IUser>>('/users', {
+				params: {
+					currentPage: page,
+					pageSize,
+					search: text,
+					sort,
+					departmentId: department || undefined,
+				},
+			})
+
+			if (!data) {
+				return { data: [], meta: generateEmptyMetaPagination() }
+			}
+
+			return data
+		}
 
 		return queryOptions<IPagination<IUser>>({
-			queryKey: ['users', { currentPage, pageSize, search: text, sort }],
+			queryKey: ['users', { currentPage, pageSize, search: text, sort, departmentId: department }],
 			queryFn: async () => {
-				const { data } = await api.get<IPagination<IUser>>('/users', {
-					params: {
+				const firstPage = await fetchUsersPage(currentPage)
+
+				if (!department || firstPage.meta.pages <= currentPage) {
+					return firstPage
+				}
+
+				const allUsers = [...firstPage.data]
+
+				for (let page = currentPage + 1; page <= firstPage.meta.pages; page += 1) {
+					const pageData = await fetchUsersPage(page)
+
+					allUsers.push(...pageData.data)
+				}
+
+				return {
+					data: allUsers,
+					meta: {
+						...firstPage.meta,
 						currentPage,
-						pageSize,
-						search: text,
-						sort,
+						total: firstPage.meta.total,
 					},
-				})
-
-				if (!data) return { data: [], meta: generateEmptyMetaPagination() }
-
-				return data
+				}
 			},
 		})
 	}

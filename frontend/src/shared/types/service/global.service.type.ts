@@ -9,6 +9,7 @@ export interface IPaginationRequest {
 	pageSize?: number
 	search?: string
 	sort?: 'asc' | 'desc'
+	departmentId?: string
 }
 
 // update status

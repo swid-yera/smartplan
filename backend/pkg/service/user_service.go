@@ -263,7 +263,35 @@ func (s *userService) GetTeachersRatingWithDepartments(ctx context.Context) ([]*
 		return nil, err
 	}
 
-	return s.toServiceUsers(ctx, dbUsers)
+	users, err := s.toServiceUsers(ctx, dbUsers)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredUsers := make([]*User, 0, len(users))
+	for _, user := range users {
+		if user == nil {
+			continue
+		}
+
+		if len(user.Departments) == 0 {
+			continue
+		}
+
+		if !HasPermissionExact(user.Permissions, PermKPIView) {
+			continue
+		}
+
+		if !isKPIStatsUserType(user.UserType) {
+			continue
+		}
+
+		filteredUsers = append(filteredUsers, user)
+	}
+
+	sortTeachersByScoreAndLastName(filteredUsers)
+
+	return filteredUsers, nil
 }
 
 func (s *userService) GetTopTeachersByDepartment(ctx context.Context) ([]DepartmentTopTeachersResponse, error) {
@@ -431,6 +459,62 @@ func sortTeachersByScoreAndName(teachers []*User) {
 		}
 		return leftID < rightID
 	})
+}
+
+func sortTeachersByScoreAndLastName(teachers []*User) {
+	sort.SliceStable(teachers, func(i, j int) bool {
+		left := teachers[i]
+		right := teachers[j]
+
+		leftPoints := int32(0)
+		rightPoints := int32(0)
+		leftLastName := ""
+		rightLastName := ""
+		leftFirstName := ""
+		rightFirstName := ""
+		leftUsername := ""
+		rightUsername := ""
+		leftID := ""
+		rightID := ""
+
+		if left != nil {
+			leftPoints = sumPointsByCategories(left.PointsByCategories)
+			leftLastName = strings.ToLower(strings.TrimSpace(left.LastName))
+			leftFirstName = strings.ToLower(strings.TrimSpace(left.FirstName))
+			leftUsername = strings.ToLower(strings.TrimSpace(left.Username))
+			leftID = left.KeycloakID.String()
+		}
+		if right != nil {
+			rightPoints = sumPointsByCategories(right.PointsByCategories)
+			rightLastName = strings.ToLower(strings.TrimSpace(right.LastName))
+			rightFirstName = strings.ToLower(strings.TrimSpace(right.FirstName))
+			rightUsername = strings.ToLower(strings.TrimSpace(right.Username))
+			rightID = right.KeycloakID.String()
+		}
+
+		if leftPoints != rightPoints {
+			return leftPoints > rightPoints
+		}
+		if leftLastName != rightLastName {
+			return leftLastName < rightLastName
+		}
+		if leftFirstName != rightFirstName {
+			return leftFirstName < rightFirstName
+		}
+		if leftUsername != rightUsername {
+			return leftUsername < rightUsername
+		}
+		return leftID < rightID
+	})
+}
+
+func isKPIStatsUserType(userType string) bool {
+	switch strings.ToUpper(strings.TrimSpace(userType)) {
+	case "GENERAL", "SPECIALIST", "MASTER":
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *userService) GetTopAwardDepartmentsStats(ctx context.Context) ([]AwardDepartmentResponse, error) {

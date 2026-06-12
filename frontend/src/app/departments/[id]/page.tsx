@@ -48,13 +48,29 @@ const Page = () => {
 	const { id } = useParams<{ id: string }>()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
+	const departmentId = id || ''
 
-	const { data: department, isLoading } = useQuery({
-		...services.statistics.getTeachersByDepartmentOptions(id || ''),
+	const { data: department, isLoading: isDepartmentLoading } = useQuery({
+		...services.statistics.getTeachersByDepartmentOptions(departmentId),
+		enabled: !!id,
+	})
+	const {
+		data: teachersData,
+		isLoading: isTeachersLoading,
+		isFetching: isTeachersFetching,
+		isRefetching: isTeachersRefetching,
+	} = useQuery({
+		...services.user.getAllOptions({
+			currentPage: 1,
+			departmentId,
+			pageSize: 100,
+			search: '',
+			sort: 'desc',
+		}),
 		enabled: !!id,
 	})
 
-	if (isLoading) {
+	if (isDepartmentLoading || isTeachersLoading) {
 		return <Loader type='data' />
 	}
 
@@ -62,8 +78,10 @@ const Page = () => {
 		return <p className='p-6 text-center text-muted-foreground'>Отделение не найдено</p>
 	}
 
-	const sortedTeachers = [...department.teachers].sort((a, b) => getUserTotalPoints(b) - getUserTotalPoints(a))
+	const teachers = teachersData?.data ?? department.teachers
+	const sortedTeachers = [...teachers].sort((a, b) => getUserTotalPoints(b) - getUserTotalPoints(a))
 	const departmentTitle = getLocaleText(department.name, locale)
+	const teachersCount = teachersData?.meta.total ?? department.teachersCount
 
 	return (
 		<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
@@ -81,7 +99,7 @@ const Page = () => {
 					<div>
 						<CardTitle>{departmentTitle}</CardTitle>
 						<CardDescription>
-							{t.teachersCount} {department.teachersCount}
+							{t.teachersCount} {teachersCount}
 						</CardDescription>
 					</div>
 				</CardHeader>
@@ -97,9 +115,8 @@ const Page = () => {
 							<TableRow>
 								<TableHead className='w-12 text-center'>{t.table.index}</TableHead>
 								<TableHead className='min-w-40'>{t.table.username}</TableHead>
-								<TableHead className='min-w-36'>{t.table.login}</TableHead>
-								<TableHead className='min-w-56'>{t.table.contacts}</TableHead>
 								<TableHead className='w-32'>{t.table.types}</TableHead>
+								<TableHead className='min-w-56'>{t.table.contacts}</TableHead>
 								<TableHead className='w-24 text-right'>{t.table.points}</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -128,11 +145,12 @@ const Page = () => {
 													className='block truncate hover:underline'
 													href={`/users/${teacher.keycloakId}?tab=kpi`}
 												>
-													{displayName}
+													<p>{displayName}</p>
+													<p className='truncate'>{teacher.username || '—'}</p>
 												</Link>
 											</TableCell>
-											<TableCell className='text-sm text-muted-foreground'>
-												<div className='truncate'>{teacher.username || '—'}</div>
+											<TableCell>
+												<UserTypeBadge locale={locale} size='lg' userType={teacher.userType} />
 											</TableCell>
 											<TableCell className='py-4'>
 												<div className='space-y-1 text-sm'>
@@ -156,9 +174,7 @@ const Page = () => {
 													)}
 												</div>
 											</TableCell>
-											<TableCell>
-												<UserTypeBadge locale={locale} userType={teacher.userType} />
-											</TableCell>
+
 											<TableCell className='whitespace-nowrap text-right font-semibold'>
 												{totalPoints}
 											</TableCell>
@@ -168,7 +184,7 @@ const Page = () => {
 							) : (
 								<TableRow>
 									<TableCell className='py-10 text-center text-muted-foreground' colSpan={6}>
-										{t.emptyTitle}
+										{isTeachersFetching || isTeachersRefetching ? <Loader type='data' /> : t.emptyTitle}
 									</TableCell>
 								</TableRow>
 							)}

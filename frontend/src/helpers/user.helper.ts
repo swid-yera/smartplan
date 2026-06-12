@@ -158,17 +158,17 @@ export const normalizeUserRole = (role: RoleEnum, locale: Locale = 'ru'): string
 
 const userTypeLabelsByLocale: Record<Locale, Record<UserTypeEnum, string>> = {
 	ru: {
-		GENERAL: 'Общий',
-		HEAD: 'Руководитель',
-		MASTER: 'Мастер',
-		SPECIALIST: 'Специалист',
+		GENERAL: 'Преподаватель общеобразовательных дисциплин',
+		HEAD: 'Заведующий отделением',
+		MASTER: 'Мастер производственного обучения',
+		SPECIALIST: 'Преподаватель специальных дисциплин',
 		NULL: 'Не указан',
 	},
 	kk: {
-		GENERAL: 'Жалпы',
-		HEAD: 'Басшы',
-		MASTER: 'Шебер',
-		SPECIALIST: 'Маман',
+		GENERAL: 'Жалпы білім беру пәндерінің мұғалімі',
+		HEAD: 'Бөлім меңгерушісі',
+		MASTER: 'Өндірістік оқыту магистрі',
+		SPECIALIST: 'Арнайы пәндер оқытушысы',
 		NULL: 'Көрсетілмеген',
 	},
 }

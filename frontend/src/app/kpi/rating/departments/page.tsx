@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Loader, PageTitle, withPermission } from '@components'
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
+import { Card, CardContent, CardHeader, CardTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum } from '@types'
@@ -84,15 +84,6 @@ const Page = () => {
 					top20: t.top20,
 				}}
 			/>
-
-			<Card>
-				<CardHeader>
-					<div>
-						<CardTitle>{t.headerTitle}</CardTitle>
-						<CardDescription>{t.headerDescription}</CardDescription>
-					</div>
-				</CardHeader>
-			</Card>
 
 			<Card>
 				<CardHeader>
