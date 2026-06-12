@@ -184,7 +184,7 @@ const Page = () => {
 						)}
 					</ButtonGroup>
 				}
-				backHref={'/kpi/entry'}
+				backHref='back'
 				description={t.pageDescription}
 			>
 				{categoryName}

@@ -47,7 +47,14 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type IKriptoKeyPayload, type IRup, type IUpdateStatusRequest, type Locale, PermissionCodeEnum, StatusEnum } from '@types'
+import {
+	type IKriptoKeyPayload,
+	type IRup,
+	type IUpdateStatusRequest,
+	type Locale,
+	PermissionCodeEnum,
+	StatusEnum,
+} from '@types'
 import { Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -101,7 +108,7 @@ const hasRupContentForLocale = (rup: IRup, locale: Locale): boolean => {
 }
 
 const Page: FC = () => {
-	const { push, replace } = useRouter()
+	const { push, replace, back } = useRouter()
 	const params = useParams<{ id: string }>()
 	const rupId = params.id ?? ''
 
@@ -130,7 +137,6 @@ const Page: FC = () => {
 	const updateStatusMutation = useMutation(services.rup.updateStatusOptions())
 	const regenerateLanguageMutation = useMutation(services.rup.regenerateLanguageGenerationOptions())
 	const deleteMutation = useMutation(services.rup.deleteMutationOptions())
-	const backHref = '/rups'
 	const isLanguageGenerationInProgress =
 		generationStatus?.status === 'queued' || generationStatus?.status === 'running'
 
@@ -146,7 +152,14 @@ const Page: FC = () => {
 	// change rup status
 	const handleStatusChange = (
 		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean; kripto?: IKriptoKeyPayload },
+		options?: {
+			reason?: string
+			keyId?: string
+			userId?: string
+			password?: string
+			confirmed?: boolean
+			kripto?: IKriptoKeyPayload
+		},
 	) => {
 		if (!rupData) return
 		setIsSheetOpen(false)
@@ -188,7 +201,7 @@ const Page: FC = () => {
 		deleteMutation.mutate(rupData.id, {
 			onSuccess: () => {
 				toast.success(interpolateUILocaleText(t.toasts.deleteSuccess, { name: rupName }), { id: toastId })
-				push(backHref)
+				back()
 			},
 			onError: (err) => {
 				toast.error(interpolateUILocaleText(t.toasts.deleteError, { name: rupName }), {
@@ -257,7 +270,13 @@ const Page: FC = () => {
 	}
 
 	// loading
-	if (authLoading || isLoading || isGenerationStatusLoading || isSignatureArtifactLoading || isLanguageGenerationInProgress)
+	if (
+		authLoading ||
+		isLoading ||
+		isGenerationStatusLoading ||
+		isSignatureArtifactLoading ||
+		isLanguageGenerationInProgress
+	)
 		return <Loader />
 	if (!user || !rupData) return notFound()
 
@@ -281,14 +300,16 @@ const Page: FC = () => {
 		<>
 			<RupView
 				activeLocale={activeLocale}
-				canManage={canManageRups || canFullAccess}
 				canDelete={canDelete}
 				canDownload={canDownload}
 				canEdit={canEdit}
 				canFullAccess={canFullAccess}
+				canManage={canManageRups || canFullAccess}
 				canRegenerateLanguage={canRegenerateLanguage}
 				canSendToReview={canSendToReview}
 				data={rupData}
+				isDeletePending={deleteMutation.isPending}
+				isRegeneratePending={regenerateLanguageMutation.isPending}
 				kriptoArtifact={signatureArtifact ?? undefined}
 				localeNotice={
 					isActiveLocaleMissing ? (
@@ -326,15 +347,13 @@ const Page: FC = () => {
 						</div>
 					) : null
 				}
-				isDeletePending={deleteMutation.isPending}
-				isRegeneratePending={regenerateLanguageMutation.isPending}
+				onActiveLocaleChange={setActiveLocale}
 				onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
 				onOpenDownloadDialog={() => setIsDownloadLanguageDialogOpen(true)}
 				onOpenRegenerateDialog={() => setIsRegenerateDialogOpen(true)}
 				onOpenStatusSheet={() => setIsSheetOpen(true)}
-				onActiveLocaleChange={setActiveLocale}
-				onStatusChange={handleStatusChange}
 				onSendToReview={() => handleStatusChange(StatusEnum.IN_REVIEW)}
+				onStatusChange={handleStatusChange}
 			/>
 
 			<StatusChangeSheet

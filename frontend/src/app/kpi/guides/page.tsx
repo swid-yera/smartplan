@@ -74,7 +74,7 @@ const Page = () => {
 
 	return (
 		<section className='mx-auto w-full max-w-6xl space-y-8 p-4 sm:p-6'>
-			<PageTitle sticky backHref='/dashboard' description={t.pageDescription}>
+			<PageTitle sticky backHref='back' description={t.pageDescription}>
 				{t.pageTitle}
 			</PageTitle>
 

@@ -1,7 +1,7 @@
 'use client'
 
-import { Button } from '@shadcn'
 import { cn } from '@lib'
+import { Button } from '@shadcn'
 
 import { type SummaryCardConfig } from '../rating-stats.types'
 

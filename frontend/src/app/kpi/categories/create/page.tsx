@@ -183,7 +183,7 @@ const Page = () => {
 						</TabsList>
 					</Tabs>
 				}
-				backHref='/kpi/categories'
+				backHref='back'
 				description={t.pageDescription}
 			>
 				{t.pageTitle}

@@ -1,7 +1,6 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-
 import { type IUser } from '@types'
 
 import { RatingDistributionChart } from '../../components/rating-distribution-chart'
@@ -14,7 +13,12 @@ interface IProps {
 	onPointClick: (teacher: RatingStatsChartItem) => void
 	t: Pick<
 		RatingStatsTexts,
-		'distribution' | 'emptyDescription' | 'emptyTitle' | 'headerDescription' | 'noMatchesDescription' | 'noMatchesTitle'
+		| 'distribution'
+		| 'emptyDescription'
+		| 'emptyTitle'
+		| 'headerDescription'
+		| 'noMatchesDescription'
+		| 'noMatchesTitle'
 	>
 	valueLabel: string
 	barColors: readonly string[]

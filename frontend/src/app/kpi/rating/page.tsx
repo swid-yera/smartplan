@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 
 import { Loader, PageTitle, withNavAccess } from '@components'
+import { UserTypeBadge } from '@components'
 import { getLocaleText, getUILocaleSection, getUserTotalPoints, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
@@ -25,7 +26,6 @@ import { useQuery } from '@tanstack/react-query'
 import type { IDepartmentTopTeachersResponse } from '@types'
 import { Sigma, Users2 } from 'lucide-react'
 
-import { UserTypeBadge } from '@components'
 import { RatingNav } from './components/rating-nav'
 import localeDictionary from './locale.json'
 
@@ -183,7 +183,9 @@ const Page = () => {
 												className='border-l-4 transition-colors hover:bg-muted/40'
 												style={getTeacherRowStyle(color)}
 											>
-												<TableCell className='w-12 text-center text-sm font-semibold'>{teacherIndex + 1}</TableCell>
+												<TableCell className='w-12 text-center text-sm font-semibold'>
+													{teacherIndex + 1}
+												</TableCell>
 												<TableCell className='py-2.5'>
 													<Link
 														className='truncate text-sm font-medium hover:underline'

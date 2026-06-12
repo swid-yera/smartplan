@@ -31,14 +31,8 @@ export const ChangePointsSheet = ({ award, isOpen, onOpenChange, onSave }: IChan
 	const t = getUILocaleSection(localeDictionary, locale).changePointsSheet
 	const [draftPoints, setDraftPoints] = useState('')
 
-	const criteriaName = useMemo(
-		() => (award ? getLocaleText(award.criteria.name, locale) : ''),
-		[award, locale],
-	)
-	const criteriaPoints = useMemo(
-		() => (award ? formatCriteriaPoints(award.criteria.points) : ''),
-		[award],
-	)
+	const criteriaName = useMemo(() => (award ? getLocaleText(award.criteria.name, locale) : ''), [award, locale])
+	const criteriaPoints = useMemo(() => (award ? formatCriteriaPoints(award.criteria.points) : ''), [award])
 
 	useEffect(() => {
 		if (!isOpen || !award) return

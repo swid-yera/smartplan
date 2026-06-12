@@ -394,7 +394,7 @@ const Page = () => {
 
 	return (
 		<section className='mx-auto w-full p-6 space-y-6'>
-			<PageTitle backHref={`/kpi/${id}`} description={t.pageDescription}>
+			<PageTitle backHref='back' description={t.pageDescription}>
 				{t.pageTitle}
 			</PageTitle>
 

@@ -225,7 +225,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 						</ButtonGroup>
 					</div>
 				}
-				backHref={`/lessons/${lesson.id}`}
+				backHref='back'
 				description={t.editDescription}
 			>
 				{t.editTitle}

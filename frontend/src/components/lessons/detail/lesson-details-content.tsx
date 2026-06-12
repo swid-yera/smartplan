@@ -40,7 +40,7 @@ export function LessonDetailsContent({
 	userRole,
 }: IProps) {
 	const t = getUILocaleSection(localeDictionary, activeLocale)
-	const { push } = useRouter()
+	const { back, push } = useRouter()
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
 	const [regenerateDescription, setRegenerateDescription] = useState('')
@@ -59,7 +59,6 @@ export function LessonDetailsContent({
 	})
 	const deleteLessonMutation = useMutation(services.lesson.deleteMutationOptions())
 	const regenerateLessonMutation = useMutation(services.lesson.generateLessonOptions())
-	const backHref = '/lessons/my'
 
 	const lessonContext = lesson as ILessonContext
 	const currentRupId = lessonContext.rup_id || lessonContext.rupId || ''
@@ -118,7 +117,7 @@ export function LessonDetailsContent({
 		deleteLessonMutation.mutate(lesson.id, {
 			onSuccess: () => {
 				toast.success(t.lessonDeleted, { id: toastId })
-				push(backHref)
+				back()
 			},
 			onError: (err) => {
 				toast.error(t.deleteLessonError, {
@@ -247,7 +246,7 @@ export function LessonDetailsContent({
 						onRegenerate={handleRegenerateClick}
 					/>
 				}
-				backHref={backHref}
+				backHref='back'
 				description={t.pageDescription}
 			>
 				{getLocaleText(lesson.topic_name, activeLocale) || t.lessonUntitled}

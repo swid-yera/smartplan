@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 
+import { cn } from '@lib'
 import {
 	Button,
 	Input,
@@ -17,10 +18,14 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@shadcn'
-import { cn } from '@lib'
 import { ArrowDownUp, Building2, Check, ChevronsUpDown, RotateCcw, Search, Users } from 'lucide-react'
 
-import { type DepartmentOption, type FilteredUserType, type SortOrder, type RatingStatsTexts } from '../rating-stats.types'
+import {
+	type DepartmentOption,
+	type FilteredUserType,
+	type RatingStatsTexts,
+	type SortOrder,
+} from '../rating-stats.types'
 
 interface IProps {
 	departmentOptions: DepartmentOption[]
@@ -34,7 +39,18 @@ interface IProps {
 	selectedDepartmentIds: string[]
 	selectedSort: SortOrder
 	selectedTypes: FilteredUserType[]
-	t: Pick<RatingStatsTexts, 'allDepartments' | 'allTypes' | 'departmentLabel' | 'resetFilters' | 'searchPlaceholder' | 'sortAsc' | 'sortDesc' | 'sortLabel' | 'typeLabel'>
+	t: Pick<
+		RatingStatsTexts,
+		| 'allDepartments'
+		| 'allTypes'
+		| 'departmentLabel'
+		| 'resetFilters'
+		| 'searchPlaceholder'
+		| 'sortAsc'
+		| 'sortDesc'
+		| 'sortLabel'
+		| 'typeLabel'
+	>
 	typeOptions: Array<{ label: string; value: FilteredUserType }>
 }
 
@@ -57,7 +73,9 @@ export const RatingStatsFilters = ({
 	const selectedDepartmentSet = useMemo(() => new Set(selectedDepartmentIds), [selectedDepartmentIds])
 
 	const selectedTypesText = selectedTypes.length ? `${t.typeLabel} (${selectedTypes.length})` : t.allTypes
-	const selectedDepartmentText = selectedDepartmentIds.length ? `${t.departmentLabel} (${selectedDepartmentIds.length})` : t.allDepartments
+	const selectedDepartmentText = selectedDepartmentIds.length
+		? `${t.departmentLabel} (${selectedDepartmentIds.length})`
+		: t.allDepartments
 
 	const selectedTypeTitle = selectedTypes.length
 		? typeOptions
@@ -104,7 +122,7 @@ export const RatingStatsFilters = ({
 								<ChevronsUpDown className='ml-1 h-4 w-4 shrink-0 opacity-50' />
 							</Button>
 						</PopoverTrigger>
-	<PopoverContent align='start' className='w-(--radix-popover-trigger-width) min-w-80 p-2'>
+						<PopoverContent align='start' className='w-(--radix-popover-trigger-width) min-w-80 p-2'>
 							<div className='flex flex-col gap-1'>
 								{typeOptions.map((option) => (
 									<button
@@ -123,7 +141,10 @@ export const RatingStatsFilters = ({
 											)}
 										/>
 										<Users
-											className={cn('h-3.5 w-3.5 shrink-0', selectedTypeSet.has(option.value) && 'text-primary')}
+											className={cn(
+												'h-3.5 w-3.5 shrink-0',
+												selectedTypeSet.has(option.value) && 'text-primary',
+											)}
 										/>
 										<span className='truncate'>{option.label}</span>
 									</button>
@@ -175,7 +196,10 @@ export const RatingStatsFilters = ({
 											)}
 										/>
 										<Building2
-											className={cn('h-3.5 w-3.5 shrink-0', selectedDepartmentSet.has(department.id) && 'text-primary')}
+											className={cn(
+												'h-3.5 w-3.5 shrink-0',
+												selectedDepartmentSet.has(department.id) && 'text-primary',
+											)}
 										/>
 										<span className='truncate'>{department.label}</span>
 									</button>

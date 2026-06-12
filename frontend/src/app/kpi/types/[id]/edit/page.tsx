@@ -57,7 +57,7 @@ const Page: NextPage = () => {
 	return (
 		<TypeEditorLayout
 			activeLocale={activeLocale}
-			backHref={`/kpi/types/${typeData.id}`}
+			backHref='back'
 			description={t.description}
 			langKkLabel={t.langKk}
 			langRuLabel={t.langRu}

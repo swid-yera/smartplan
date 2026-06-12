@@ -63,7 +63,7 @@ import localeDictionary from './locale.json'
 
 const Page = () => {
 	const { id } = useParams<{ id: string }>()
-	const { push, replace } = useRouter()
+	const { push, back, replace } = useRouter()
 	const { authLoading } = useAuthStore()
 	const [activeLocale, setActiveLocale] = useState<Locale>('ru')
 	const t = getUILocaleSection(localeDictionary, activeLocale)
@@ -75,7 +75,6 @@ const Page = () => {
 	const [fields, setFields] = useState<ICategoryFieldFormState[]>([])
 	const [isInitialized, setIsInitialized] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-	const backHref = `/kpi/categories/${id}`
 	const deleteBackHref = '/kpi/categories'
 
 	const { data: category, isLoading: isCategoryLoading } = useQuery({
@@ -286,7 +285,7 @@ const Page = () => {
 						/>
 					</ButtonGroup>
 				}
-				backHref={backHref}
+				backHref='back'
 				description={t.pageDescription}
 			>
 				{t.pageTitle}
@@ -393,7 +392,7 @@ const Page = () => {
 					</Button>
 
 					<div className='flex gap-2'>
-						<Button variant='outline' onClick={() => replace(backHref)}>
+						<Button variant='outline' onClick={() => back()}>
 							{t.cancel}
 						</Button>
 						<Button disabled={updateMutation.isPending} onClick={handleSubmit}>
