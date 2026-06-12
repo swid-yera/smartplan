@@ -2220,10 +2220,6 @@ func (s *rupService) generateLanguageForRup(
 			fail("translate_exploration", 3, err)
 			return
 		}
-		if err != nil {
-			fail("translate_exploration", 3, err)
-			return
-		}
 		updateReq.ExplorationNote.Competencies, err = s.translateLocaleText(
 			ctx,
 			updateReq.ExplorationNote.Competencies,
