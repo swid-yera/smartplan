@@ -13,7 +13,21 @@
 			"toastStatusError": "Произошла ошибка при изменении статуса",
 			"toastDeleteLoading": "Удаление...",
 			"toastDeleteSuccess": "Успешно удален",
-			"toastDeleteError": "Произошла ошибка при удалений"
+			"toastDeleteError": "Произошла ошибка при удалений",
+			"toastChangePointsLoading": "Изменение баллов...",
+			"toastChangePointsSuccess": "Баллы успешно изменены!",
+			"toastChangePointsError": "Произошла ошибка при изменении баллов"
+		},
+		"changePointsSheet": {
+			"title": "Поменять баллы",
+			"description": "Измените итоговый балл утверждённой награды.",
+			"criteriaLabel": "Критерий",
+			"criteriaPointsLabel": "Баллы критерия",
+			"currentPointsLabel": "Текущий балл",
+			"newPointsLabel": "Новый балл",
+			"cancel": "Отмена",
+			"save": "Сохранить",
+			"empty": "Не выбрано"
 		},
 		"statusSheet": {
 			"title": "Изменить статус",
@@ -67,6 +81,7 @@
 		},
 		"actions": {
 			"changeStatus": "Поменять статус",
+			"changePoints": "Поменять баллы",
 			"delete": "Удалить",
 			"edit": "Редактировать",
 			"sendToReview": "Отправить на проверку",
@@ -108,7 +123,21 @@
 			"toastStatusError": "Мәртебені өзгерту кезінде қате орын алды",
 			"toastDeleteLoading": "Жойылуда...",
 			"toastDeleteSuccess": "Сәтті жойылды",
-			"toastDeleteError": "Жою кезінде қате орын алды"
+			"toastDeleteError": "Жою кезінде қате орын алды",
+			"toastChangePointsLoading": "Ұпайлар өзгертілуде...",
+			"toastChangePointsSuccess": "Ұпайлар сәтті өзгертілді!",
+			"toastChangePointsError": "Ұпайларды өзгерту кезінде қате орын алды"
+		},
+		"changePointsSheet": {
+			"title": "Ұпайларды өзгерту",
+			"description": "Бекітілген жетістіктің қорытынды ұпайын өзгертіңіз.",
+			"criteriaLabel": "Критерий",
+			"criteriaPointsLabel": "Критерий ұпайлары",
+			"currentPointsLabel": "Ағымдағы ұпай",
+			"newPointsLabel": "Жаңа ұпай",
+			"cancel": "Болдырмау",
+			"save": "Сақтау",
+			"empty": "Таңдалмаған"
 		},
 		"statusSheet": {
 			"title": "Мәртебені өзгерту",
@@ -162,6 +191,7 @@
 		},
 		"actions": {
 			"changeStatus": "Мәртебені өзгерту",
+			"changePoints": "Ұпайларды өзгерту",
 			"delete": "Жою",
 			"edit": "Өңдеу",
 			"sendToReview": "Тексеруге жіберу",
