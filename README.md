@@ -92,6 +92,12 @@ npm run lint      # Линтинг
 | `service/keycloak` | Синхронизация групп и пользователей с Keycloak |
 | `localization` | Утилиты для локализованных текстов (ru/kz) |
 
+**RUP approval flow:**
+
+- При `PUT /rups/{id}/status` со статусом `APPROVED` backend сначала проверяет владение ключом через Kripto, затем регистрирует подпись и сохраняет артефакт QR для approved-ревизии.
+- В ответе на approval возвращается `artifact` с `signatureId`, `verificationUrl` и `qrSvg`.
+- `GET /rups/{id}/signature-artifact` отдает последний сохраненный артефакт для approved RUP и используется фронтендом после reload.
+
 **Сборка и запуск:**
 ```bash
 cd backend
@@ -260,6 +266,9 @@ SERVER_PORT=8080
 COOKIE_DOMAIN=example.com
 BASE_URL=https://example.com/api
 FRONTEND_URL=https://example.com
+
+# `FRONTEND_URL` должен быть публично доступен: Kripto использует его как основу для verification URL,
+# который попадает в QR-артефакт approved RUP.
 
 # PostgreSQL
 DB_HOST=localhost

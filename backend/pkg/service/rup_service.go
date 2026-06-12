@@ -19,6 +19,7 @@ import (
 	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,8 @@ type RupService interface {
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
 	GetLanguageGenerationStatus(ctx context.Context, id uuid.UUID) (*RupLanguageGenerationStatus, error)
 	RegenerateLanguageGeneration(ctx context.Context, id uuid.UUID, sourceLanguage string) (*RupLanguageGenerationStatus, error)
-	UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) error
+	UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) (*UpdateRupStatusResponse, error)
+	GetRupSignatureArtifact(ctx context.Context, id uuid.UUID) (*RupSignatureArtifactResponse, error)
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID, language string) (string, error)
@@ -160,6 +162,7 @@ type RupDocumentPayload struct {
 	Group           *RupDocumentGroup          `json:"group"`
 	ExplorationNote RupDocumentExplorationNote `json:"explorationNote"`
 	Disciplines     []*RupDocumentDiscipline   `json:"disciplines"`
+	VerificationURL string                     `json:"verificationUrl,omitempty"`
 }
 
 type ListAllRupsResponse struct {
@@ -284,15 +287,69 @@ type rupService struct {
 }
 
 type UpdateRupStatusRequest struct {
-	ID            uuid.UUID `json:"id"`
-	Status        string    `json:"status"`
-	Reason        string    `json:"reason"`
-	MethodistID   uuid.UUID `json:"methodistId"`
-	CorrelationID string    `json:"correlationId"`
-	KeyID         string    `json:"keyId"`
-	UserID        string    `json:"userId"`
-	Password      string    `json:"password"`
-	Confirmed     bool      `json:"confirmed"`
+	ID            uuid.UUID         `json:"id"`
+	Status        string            `json:"status"`
+	Reason        string            `json:"reason"`
+	MethodistID   uuid.UUID         `json:"methodistId"`
+	CorrelationID string            `json:"correlationId"`
+	KeyID         string            `json:"keyId"`
+	UserID        string            `json:"userId"`
+	Password      string            `json:"password"`
+	Confirmed     bool              `json:"confirmed"`
+	Signature     string            `json:"signature"`
+	SignerName    string            `json:"signerName"`
+	SignerRole    string            `json:"signerRole"`
+	Kripto        *KriptoKeyPayload `json:"kripto"`
+}
+
+type KriptoEncryptedPrivateKey struct {
+	Type       string `json:"type,omitempty"`
+	Version    int    `json:"version,omitempty"`
+	Cipher     string `json:"cipher"`
+	KDF        string `json:"kdf"`
+	Hash       string `json:"hash"`
+	Iterations int    `json:"iterations"`
+	Salt       string `json:"salt"`
+	Nonce      string `json:"nonce"`
+	Value      string `json:"value"`
+	Encoding   string `json:"encoding,omitempty"`
+}
+
+type KriptoKeyPayload struct {
+	Format              string                    `json:"format"`
+	Version             int                       `json:"version"`
+	Purpose             string                    `json:"purpose,omitempty"`
+	KeyID               string                    `json:"keyId"`
+	UserID              string                    `json:"userId"`
+	Algorithm           string                    `json:"algorithm"`
+	DeviceName          string                    `json:"deviceName,omitempty"`
+	CreatedAt           string                    `json:"createdAt,omitempty"`
+	PublicKey           string                    `json:"publicKey"`
+	EncryptedPrivateKey KriptoEncryptedPrivateKey `json:"encryptedPrivateKey"`
+	Comment             any                       `json:"comment,omitempty"`
+}
+
+type RupSignatureArtifactResponse struct {
+	ID              uuid.UUID `json:"id"`
+	RupID           uuid.UUID `json:"rupId"`
+	DocumentID      string    `json:"documentId"`
+	DocumentVersion uuid.UUID `json:"documentVersion"`
+	DocumentHash    string    `json:"documentHash"`
+	KeyID           uuid.UUID `json:"keyId"`
+	UserID          uuid.UUID `json:"userId"`
+	Signature       string    `json:"signature"`
+	SignerName      string    `json:"signerName"`
+	SignerRole      string    `json:"signerRole"`
+	SignatureID     string    `json:"signatureId"`
+	VerificationURL string    `json:"verificationUrl"`
+	QRSvg           string    `json:"qrSvg"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+type UpdateRupStatusResponse struct {
+	Message  string                        `json:"message"`
+	Artifact *RupSignatureArtifactResponse `json:"artifact,omitempty"`
 }
 
 type GetRupsInput struct {
@@ -470,9 +527,9 @@ func cryptoStatusActive(resp *ValidateKeyOwnershipResponse) bool {
 	return strings.ToUpper(strings.TrimSpace(resp.KeyStatus)) == "ACTIVE"
 }
 
-func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) error {
-
+func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusRequest) (*UpdateRupStatusResponse, error) {
 	var rupStatus storage.RupsStatus
+	var approvalArtifact *RupSignatureArtifactResponse
 	switch req.Status {
 	case "DRAFT":
 		rupStatus = storage.RupsStatusDRAFT
@@ -483,125 +540,121 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 	case "REJECTED":
 		rupStatus = storage.RupsStatusREJECTED
 	default:
-		return fmt.Errorf("invalid status: %s", req.Status)
+		return nil, fmt.Errorf("invalid status: %s", req.Status)
 	}
 
-	// 1. если APPROVED — генерируем документ
 	if rupStatus == storage.RupsStatusAPPROVED {
 		if s.crypto == nil {
-			return &HTTPStatusError{
+			return nil, &HTTPStatusError{
 				StatusCode: http.StatusBadGateway,
 				Message:    "kripto client is not configured",
 			}
 		}
 		if strings.TrimSpace(req.KeyID) == "" {
-			return &HTTPStatusError{
+			return nil, &HTTPStatusError{
 				StatusCode: http.StatusBadRequest,
 				Message:    "key_id is required for approved status",
 			}
 		}
 		if strings.TrimSpace(req.UserID) == "" {
-			return &HTTPStatusError{
+			return nil, &HTTPStatusError{
 				StatusCode: http.StatusBadRequest,
 				Message:    "user_id is required for approved status",
 			}
 		}
 
-		var err error
-		var validationResp *ValidateKeyOwnershipResponse
-		if rupStatus == storage.RupsStatusAPPROVED {
-			startedAt := time.Now()
-			validationResp, err = s.crypto.ValidateKeyOwnership(ctx, ValidateKeyOwnershipRequest{
-				KeyID:    req.KeyID,
-				UserID:   req.UserID,
-				Password: req.Password,
-			}, req.CorrelationID)
-			latency := time.Since(startedAt)
-			if err != nil {
-				var httpErr *CryptoHTTPError
-				if errors.As(err, &httpErr) {
-					s.log.WithFields(logrus.Fields{
-						"correlation_id": req.CorrelationID,
-						"key_id":         req.KeyID,
-						"user_id":        req.UserID,
-						"http_status":    httpErr.StatusCode,
-						"latency_ms":     latency.Milliseconds(),
-					}).WithError(err).Error("kripto validate key failed")
-
-					if httpErr.StatusCode == http.StatusNotFound {
-						rupStatus = storage.RupsStatusREJECTED
-						req.Reason = "Ключ не найден в kripto"
-					} else if httpErr.StatusCode == http.StatusUnauthorized || httpErr.StatusCode == http.StatusForbidden {
-						return &HTTPStatusError{StatusCode: httpErr.StatusCode, Message: "kripto authorization failed"}
-					} else if httpErr.StatusCode >= 500 {
-						return &HTTPStatusError{StatusCode: http.StatusBadGateway, Message: "kripto temporary error"}
-					} else {
-						return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: httpErr.Error()}
-					}
-				} else {
-					s.log.WithFields(logrus.Fields{
-						"correlation_id": req.CorrelationID,
-						"key_id":         req.KeyID,
-						"user_id":        req.UserID,
-						"latency_ms":     latency.Milliseconds(),
-					}).WithError(err).Error("kripto validate key network error")
-					return &HTTPStatusError{StatusCode: http.StatusBadGateway, Message: "kripto request failed"}
-				}
-			}
-
-			if validationResp != nil {
+		startedAt := time.Now()
+		validationResp, err := s.crypto.ValidateKeyOwnership(ctx, ValidateKeyOwnershipRequest{
+			KeyID:    req.KeyID,
+			UserID:   req.UserID,
+			Password: req.Password,
+		}, req.CorrelationID)
+		latency := time.Since(startedAt)
+		if err != nil {
+			var httpErr *CryptoHTTPError
+			if errors.As(err, &httpErr) {
 				s.log.WithFields(logrus.Fields{
-					"correlation_id":    req.CorrelationID,
-					"key_id":            req.KeyID,
-					"user_id":           req.UserID,
-					"http_status":       http.StatusOK,
-					"key_status":        validationResp.KeyStatus,
-					"validation_status": validationResp.ValidationStatus,
-					"latency_ms":        latency.Milliseconds(),
-				}).Info("kripto validate key response")
-			}
+					"correlation_id": req.CorrelationID,
+					"key_id":         req.KeyID,
+					"user_id":        req.UserID,
+					"http_status":    httpErr.StatusCode,
+					"latency_ms":     latency.Milliseconds(),
+				}).WithError(err).Error("kripto validate key failed")
 
-			if validationResp != nil {
-				validationStatus := strings.ToUpper(strings.TrimSpace(validationResp.ValidationStatus))
-				if validationResp.KeyID != req.KeyID {
+				if httpErr.StatusCode == http.StatusNotFound {
 					rupStatus = storage.RupsStatusREJECTED
-					req.Reason = "Идентификатор ключа не совпадает с ответом kripto"
-				} else if validationResp.UserID != req.UserID {
-					rupStatus = storage.RupsStatusREJECTED
-					req.Reason = "Ключ не принадлежит текущему пользователю"
-				} else if !cryptoStatusActive(validationResp) ||
-					!validationResp.IsValid ||
-					!validationResp.BelongsToUser ||
-					validationStatus != "VALID" {
-					rupStatus = storage.RupsStatusREJECTED
-					switch validationStatus {
-					case "USER_MISMATCH":
-						req.Reason = "Ключ не принадлежит текущему пользователю"
-					case "KEY_REVOKED":
-						req.Reason = "Ключ отозван"
-					default:
-						req.Reason = "Ключ не прошел проверку"
-					}
-					if !cryptoStatusActive(validationResp) {
-						req.Reason = "Ключ не активен"
-					}
+					req.Reason = "Ключ не найден в kripto"
+				} else if httpErr.StatusCode == http.StatusUnauthorized || httpErr.StatusCode == http.StatusForbidden {
+					return nil, &HTTPStatusError{StatusCode: httpErr.StatusCode, Message: "kripto authorization failed"}
+				} else if httpErr.StatusCode >= 500 {
+					return nil, &HTTPStatusError{StatusCode: http.StatusBadGateway, Message: "kripto temporary error"}
+				} else {
+					return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: httpErr.Error()}
 				}
-			}
-
-			if validationResp == nil {
-				rupStatus = storage.RupsStatusREJECTED
-				req.Reason = "Ключ не прошел проверку"
+			} else {
+				s.log.WithFields(logrus.Fields{
+					"correlation_id": req.CorrelationID,
+					"key_id":         req.KeyID,
+					"user_id":        req.UserID,
+					"latency_ms":     latency.Milliseconds(),
+				}).WithError(err).Error("kripto validate key network error")
+				return nil, &HTTPStatusError{StatusCode: http.StatusBadGateway, Message: "kripto request failed"}
 			}
 		}
 
-		// Генерация документов выполняется только если валидация ключа успешна.
+		if validationResp != nil {
+			s.log.WithFields(logrus.Fields{
+				"correlation_id":    req.CorrelationID,
+				"key_id":            req.KeyID,
+				"user_id":           req.UserID,
+				"http_status":       http.StatusOK,
+				"key_status":        validationResp.KeyStatus,
+				"validation_status": validationResp.ValidationStatus,
+				"latency_ms":        latency.Milliseconds(),
+			}).Info("kripto validate key response")
+
+			validationStatus := strings.ToUpper(strings.TrimSpace(validationResp.ValidationStatus))
+			if validationResp.KeyID != req.KeyID {
+				rupStatus = storage.RupsStatusREJECTED
+				req.Reason = "Идентификатор ключа не совпадает с ответом kripto"
+			} else if validationResp.UserID != req.UserID {
+				rupStatus = storage.RupsStatusREJECTED
+				req.Reason = "Ключ не принадлежит текущему пользователю"
+			} else if !cryptoStatusActive(validationResp) ||
+				!validationResp.IsValid ||
+				!validationResp.BelongsToUser ||
+				validationStatus != "VALID" {
+				rupStatus = storage.RupsStatusREJECTED
+				switch validationStatus {
+				case "USER_MISMATCH":
+					req.Reason = "Ключ не принадлежит текущему пользователю"
+				case "KEY_REVOKED":
+					req.Reason = "Ключ отозван"
+				default:
+					req.Reason = "Ключ не прошел проверку"
+				}
+				if !cryptoStatusActive(validationResp) {
+					req.Reason = "Ключ не активен"
+				}
+			}
+		} else {
+			rupStatus = storage.RupsStatusREJECTED
+			req.Reason = "Ключ не прошел проверку"
+		}
+
 		if rupStatus == storage.RupsStatusAPPROVED {
 			rup, err := s.GetRupByID(ctx, req.ID)
 			if err != nil {
-				return err
+				return nil, err
 			}
+
 			if len(rup.Groups) == 0 {
-				return fmt.Errorf("rup has no groups")
+				return nil, fmt.Errorf("rup has no groups")
+			}
+
+			approvalArtifact, err = s.registerApprovalArtifact(ctx, req, rup, req.SignerName, req.SignerRole)
+			if err != nil {
+				return nil, err
 			}
 
 			for _, group := range rup.Groups {
@@ -609,9 +662,9 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 					continue
 				}
 
-				fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group, "ru")
+				fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group, "ru", approvalArtifact.VerificationURL)
 				if err != nil {
-					return err
+					return nil, err
 				}
 
 				reader := bytes.NewReader(fileBytes)
@@ -623,20 +676,18 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 					creationTime,
 				)
 
-				// 2. сохраняем в MinIO
 				if err := s.fileStorage.UploadFile(
 					ctx,
 					objectName,
 					reader,
 					int64(len(fileBytes)),
 				); err != nil {
-					return err
+					return nil, err
 				}
 			}
 		}
 	}
 
-	// 3. reason
 	var reasonText pgtype.Text
 	if req.Reason != "" {
 		reasonText = pgtype.Text{String: req.Reason, Valid: true}
@@ -648,11 +699,35 @@ func (s *rupService) UpdateRupStatus(ctx context.Context, req UpdateRupStatusReq
 	}
 	_, err := s.repo.GetUserByID(ctx, req.MethodistID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// 4. обновляем статус в БД
-	return s.repo.UpdateRupStatus(ctx, req.ID, rupStatus, reasonText, methodistUUID)
+	if err := s.repo.WithTransaction(ctx, func(txRepo repository.RupRepository) error {
+		if err := txRepo.UpdateRupStatus(ctx, req.ID, rupStatus, reasonText, methodistUUID); err != nil {
+			return err
+		}
+
+		if approvalArtifact != nil {
+			artifact := toRupSignatureArtifactRepository(approvalArtifact)
+			if artifact == nil {
+				return fmt.Errorf("approval artifact is nil")
+			}
+			if _, err := txRepo.CreateRupSignatureArtifact(ctx, *artifact); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	response := &UpdateRupStatusResponse{Message: "RUP status updated successfully"}
+	if approvalArtifact != nil {
+		response.Artifact = approvalArtifact
+	}
+
+	return response, nil
 }
 
 func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error) {
@@ -701,7 +776,7 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 	return s.buildRupResponse(ctx, *updatedRup)
 }
 
-func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResponse, group *GroupResponse, language string) ([]byte, error) {
+func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResponse, group *GroupResponse, language string, verificationURL string) ([]byte, error) {
 	if rup == nil {
 		return nil, fmt.Errorf("rup is nil")
 	}
@@ -710,7 +785,7 @@ func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResp
 	}
 
 	// 1. строим payload для конкретной группы
-	payload := buildPayload(rup, group, language)
+	payload := buildPayload(rup, group, language, verificationURL)
 
 	// 2. JSON
 	body, err := json.Marshal(payload)
@@ -749,7 +824,7 @@ func (s *rupService) generateViaPythonForGroup(ctx context.Context, rup *RupResp
 	return fileBytes, nil
 }
 
-func buildPayload(rup *RupResponse, group *GroupResponse, language string) RupDocumentPayload {
+func buildPayload(rup *RupResponse, group *GroupResponse, language string, verificationURL string) RupDocumentPayload {
 	selectedLanguage := normalizeBackendLanguage(language)
 	if selectedLanguage == "" {
 		selectedLanguage = "ru"
@@ -856,6 +931,7 @@ func buildPayload(rup *RupResponse, group *GroupResponse, language string) RupDo
 		Contacts:        contacts,
 		Disciplines:     disciplines,
 		ExplorationNote: exploration,
+		VerificationURL: strings.TrimSpace(verificationURL),
 	}
 }
 
@@ -873,13 +949,20 @@ func (s *rupService) GetRupDownloadURL(ctx context.Context, id uuid.UUID, langua
 		return "", fmt.Errorf("rup has no groups")
 	}
 
+	verificationURL := ""
+	if artifact, artifactErr := s.repo.GetLatestRupSignatureArtifact(ctx, id); artifactErr == nil {
+		verificationURL = strings.TrimSpace(artifact.VerificationURL)
+	} else if !errors.Is(artifactErr, pgx.ErrNoRows) {
+		return "", artifactErr
+	}
+
 	var latestObjectKey string
 	for _, group := range rup.Groups {
 		if group == nil {
 			continue
 		}
 
-		fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group, selectedLanguage)
+		fileBytes, err := s.generateViaPythonForGroup(ctx, rup, group, selectedLanguage, verificationURL)
 		if err != nil {
 			return "", err
 		}
@@ -1615,7 +1698,8 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 	}, nil
 }
 
-func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse {	return &GroupResponse{
+func (s *rupService) convertToGroupResponse(group storage.Group) *GroupResponse {
+	return &GroupResponse{
 		KeycloakID:    group.KeycloakID,
 		Name:          group.Name,
 		Qualification: localization.LocaleTextFromJSONB(group.Qualification),

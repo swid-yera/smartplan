@@ -12,6 +12,33 @@ export interface IPaginationRequest {
 	departmentId?: string
 }
 
+export interface IKriptoEncryptedPrivateKey {
+	type?: string
+	version?: number
+	cipher: string
+	kdf: string
+	hash: string
+	iterations: number
+	salt: string
+	nonce: string
+	value: string
+	encoding?: string
+}
+
+export interface IKriptoKeyPayload {
+	format: string
+	version: number
+	purpose?: string
+	keyId: string
+	userId: string
+	algorithm: string
+	deviceName?: string
+	createdAt?: string
+	publicKey: string
+	encryptedPrivateKey: IKriptoEncryptedPrivateKey
+	comment?: unknown
+}
+
 // update status
 export interface IUpdateStatusRequest {
 	id: string
@@ -25,4 +52,6 @@ export interface IUpdateStatusRequest {
 	totalPoints?: number
 	password?: string
 	confirmed?: boolean
+	signature?: string
+	kripto?: IKriptoKeyPayload
 }

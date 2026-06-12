@@ -47,7 +47,7 @@ import {
 } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type IRup, type IUpdateStatusRequest, type Locale, PermissionCodeEnum, StatusEnum } from '@types'
+import { type IKriptoKeyPayload, type IRup, type IUpdateStatusRequest, type Locale, PermissionCodeEnum, StatusEnum } from '@types'
 import { Loader2, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -118,6 +118,10 @@ const Page: FC = () => {
 
 	// queries
 	const { data: rupData, isLoading } = useQuery({ ...services.rup.getByIdOptions(rupId), enabled: !!rupId })
+	const { data: signatureArtifact, isLoading: isSignatureArtifactLoading } = useQuery({
+		...services.rup.getSignatureArtifactOptions(rupId),
+		enabled: !!rupId && rupData?.status === StatusEnum.APPROVED,
+	})
 	const { data: generationStatus, isLoading: isGenerationStatusLoading } = useQuery({
 		...services.rup.getLanguageGenerationStatusOptions(rupId),
 		enabled: !!rupId,
@@ -142,7 +146,7 @@ const Page: FC = () => {
 	// change rup status
 	const handleStatusChange = (
 		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean },
+		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean; kripto?: IKriptoKeyPayload },
 	) => {
 		if (!rupData) return
 		setIsSheetOpen(false)
@@ -158,6 +162,7 @@ const Page: FC = () => {
 			user_id: options?.userId,
 			password: options?.password,
 			confirmed: options?.confirmed,
+			kripto: options?.kripto,
 		}
 
 		updateStatusMutation.mutate(updateStatusPayload, {
@@ -252,7 +257,8 @@ const Page: FC = () => {
 	}
 
 	// loading
-	if (authLoading || isLoading || isGenerationStatusLoading || isLanguageGenerationInProgress) return <Loader />
+	if (authLoading || isLoading || isGenerationStatusLoading || isSignatureArtifactLoading || isLanguageGenerationInProgress)
+		return <Loader />
 	if (!user || !rupData) return notFound()
 
 	// bools
@@ -283,6 +289,7 @@ const Page: FC = () => {
 				canRegenerateLanguage={canRegenerateLanguage}
 				canSendToReview={canSendToReview}
 				data={rupData}
+				kriptoArtifact={signatureArtifact ?? undefined}
 				localeNotice={
 					isActiveLocaleMissing ? (
 						<div className='rounded-lg border border-amber-500/40 bg-amber-50 p-4 text-amber-950'>

@@ -101,17 +101,25 @@
 			"rejectConfirm": "Отклонить",
 			"rejectReasonRequired": "Пожалуйста, укажите причину отклонения",
 			"approveSheetTitle": "Подтверждение РУП",
-			"approveSheetDescription": "Загрузите .kripto v3, введите пароль и подпишите challenge для проверки владения ключом.",
+			"approveSheetDescription": "Загрузите .kripto v3, введите пароль и подтвердите владение ключом. Подпись будет сформирована из контейнера ключа автоматически.",
 			"approveFileLabel": "Файл ЭЦП (.kripto)",
 			"chooseFile": "Выбрать файл",
 			"fileLabel": "Файл",
 			"approveKeyIdLabel": "Определенный key_id",
 			"approveKeyIdPlaceholder": "UUID ключа",
+			"approveSignatureLabel": "Публичный ключ",
 			"approvePasswordLabel": "Пароль .kripto",
 			"showPassword": "Показать пароль",
 			"hidePassword": "Скрыть пароль",
 			"approveCheckbox": "Подтверждаю, что ключ должен быть проверен в kripto перед утверждением",
-			"approveConfirm": "Утвердить"
+			"approveConfirm": "Утвердить",
+			"kriptoTitle": "Kripto QR",
+			"kriptoDescription": "Сохраненная подпись и QR-код для публичной проверки.",
+			"signatureIdLabel": "Signature ID",
+			"verificationUrlLabel": "Verification URL",
+			"signerLabel": "Подписант",
+			"openVerification": "Открыть проверку",
+			"downloadQr": "Скачать QR"
 		}
 	},
 	"kk": {
@@ -216,17 +224,25 @@
 			"rejectConfirm": "Қайтару",
 			"rejectReasonRequired": "Бас тарту себебін көрсетіңіз",
 			"approveSheetTitle": "РУП-ты бекіту",
-			"approveSheetDescription": "Кілт иелігін тексеру үшін .kripto v3 жүктеп, құпиясөз енгізіп, challenge-ке қол қойыңыз.",
+			"approveSheetDescription": ".kripto v3 жүктеп, құпиясөз енгізіп, кілт иелігін растаңыз. Қолтаңба кілт контейнерінен автоматты түрде құрастырылады.",
 			"approveFileLabel": "ЭЦҚ файлы (.kripto)",
 			"chooseFile": "Файл таңдау",
 			"fileLabel": "Файл",
 			"approveKeyIdLabel": "Анықталған key_id",
 			"approveKeyIdPlaceholder": "Кілт UUID",
+			"approveSignatureLabel": "Жалпы кілт",
 			"approvePasswordLabel": ".kripto құпиясөзі",
 			"showPassword": "Құпиясөзді көрсету",
 			"hidePassword": "Құпиясөзді жасыру",
 			"approveCheckbox": "Бекіту алдында кілт kripto арқылы тексерілуі керек екенін растаймын",
-			"approveConfirm": "Бекіту"
+			"approveConfirm": "Бекіту",
+			"kriptoTitle": "Kripto QR",
+			"kriptoDescription": "Сақталған қолтаңба және жария тексеру QR-коды.",
+			"signatureIdLabel": "Signature ID",
+			"verificationUrlLabel": "Verification URL",
+			"signerLabel": "Қол қоюшы",
+			"openVerification": "Тексеруді ашу",
+			"downloadQr": "QR жүктеу"
 		}
 	}
 }

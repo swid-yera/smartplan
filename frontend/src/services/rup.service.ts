@@ -1,16 +1,18 @@
 import { generateEmptyMetaPagination } from '@helpers'
 import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import type {
 	BackendLocale,
 	ICreateRupRequest,
 	IDownloadResponse,
 	IGetAllRequest,
-	IMessageResponse,
 	IPagination,
 	IRegenerateLanguageGenerationRequest,
 	IRup,
+	IGetRupSignatureArtifactResponse,
 	IRupLanguageGenerationStatus,
+	IUpdateRupStatusResponse,
 	IUpdateRupRequest,
 	IUpdateStatusRequest,
 } from '@types'
@@ -119,11 +121,33 @@ export class RupService {
 
 		return mutationOptions({
 			mutationFn: ({ id, ...payload }: IUpdateStatusRequest) =>
-				api.put<IMessageResponse>(`/rups/${id}/status`, payload).then((r) => r.data),
+				api.put<IUpdateRupStatusResponse>(`/rups/${id}/status`, payload).then((r) => r.data),
 
 			onSuccess: (messageResponse, { id }) => {
 				queryClient.invalidateQueries({ queryKey: ['rup', id] })
 				queryClient.invalidateQueries({ queryKey: ['rups'] })
+				if (messageResponse?.artifact) {
+					queryClient.setQueryData(['rup-signature-artifact', id], messageResponse.artifact)
+				}
+			},
+		})
+	}
+
+	getSignatureArtifactOptions = (id: string) => {
+		return queryOptions<IGetRupSignatureArtifactResponse | null>({
+			queryKey: ['rup-signature-artifact', id],
+			queryFn: async () => {
+				try {
+					const { data } = await api.get<IGetRupSignatureArtifactResponse>(`/rups/${id}/signature-artifact`)
+
+					return data
+				} catch (error) {
+					if (isAxiosError(error) && error.response?.status === 404) {
+						return null
+					}
+
+					throw error
+				}
 			},
 		})
 	}
