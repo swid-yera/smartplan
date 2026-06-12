@@ -2,7 +2,7 @@ import type { FC } from 'react'
 
 import Link from 'next/link'
 
-import { DepartmentBadge, Loader, UserTypeBadge } from '@components'
+import { DepartmentBadge, Loader, UserRoleBadge, UserTypeBadge } from '@components'
 import { getUILocaleSection, prettifyPhone } from '@helpers'
 import {
 	Badge,
@@ -122,7 +122,12 @@ const UserRow: FC<IUserRow> = ({ user, onManagePermissions }) => {
 				</Link>
 			</TableCell>
 
-			<TableCell>{user.username}</TableCell>
+			<TableCell>
+				<div className='flex min-w-0 flex-col gap-1'>
+					<span className='truncate'>{user.username}</span>
+					<UserRoleBadge locale={locale} role={user.role} size='sm' />
+				</div>
+			</TableCell>
 
 			<TableCell>
 				<div className='space-y-1'>
@@ -179,6 +184,9 @@ const UserMobileCard: FC<IUserMobileCardProps> = ({ user, onManagePermissions })
 							{user.firstName} {user.lastName}
 						</p>
 						<p className='truncate text-xs text-muted-foreground'>{user.username}</p>
+						<div className='mt-1'>
+							<UserRoleBadge locale={locale} role={user.role} size='sm' />
+						</div>
 						<div className='mt-2 flex flex-wrap gap-1.5'>
 							<UserTypeBadge locale={locale} userType={user.userType} />
 							<DepartmentBadge departments={user.departments} locale={locale} />

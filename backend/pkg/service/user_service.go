@@ -120,9 +120,14 @@ func NewUserService(repo repository.UsersRepository, permissions repository.Perm
 func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error) {
 	sessionKey := "session:" + sessionID.String()
 
-	keycloakIDStr, err := s.redis.HGet(ctx, sessionKey, "keycloak_id").Result()
+	sessionData, err := s.redis.HGetAll(ctx, sessionKey).Result()
 	if err != nil {
 		return nil, err
+	}
+
+	keycloakIDStr := strings.TrimSpace(sessionData["keycloak_id"])
+	if keycloakIDStr == "" {
+		return nil, errors.New("session missing keycloak_id")
 	}
 
 	keycloakID, err := uuid.Parse(keycloakIDStr)
@@ -622,7 +627,7 @@ func (s *userService) toServiceUsers(ctx context.Context, dbUsers []storage.User
 			}
 		}
 
-		permissions, err := s.resolveEffectivePermissions(ctx, storage.UserRole(dbUser.Role), dbUser.KeycloakID, departments)
+		permissions, err := s.resolveEffectivePermissions(ctx, storage.UserRole(dbUser.Role), dbUser.UserType, dbUser.KeycloakID, departments)
 		if err != nil {
 			return nil, err
 		}
@@ -691,7 +696,7 @@ func (s *userService) toServiceUser(ctx context.Context, user *storage.User) (*U
 		}
 	}
 
-	permissions, err := s.resolveEffectivePermissions(ctx, user.Role, user.KeycloakID, mappedDepartments)
+	permissions, err := s.resolveEffectivePermissions(ctx, user.Role, user.UserType, user.KeycloakID, mappedDepartments)
 	if err != nil {
 		return nil, err
 	}
@@ -734,10 +739,11 @@ func (s *userService) CountUsers(ctx context.Context) (int64, error) {
 func (s *userService) resolveEffectivePermissions(
 	ctx context.Context,
 	role storage.UserRole,
+	userType storage.UserType,
 	userID uuid.UUID,
 	departments []UserDepartment,
 ) ([]PermissionCode, error) {
-	basePermissions := basePermissionsForRole(role, departments)
+	basePermissions := basePermissionsForRole(role, userType, departments)
 
 	if s.permissions == nil {
 		return basePermissions, nil
@@ -755,25 +761,38 @@ func (s *userService) resolveEffectivePermissions(
 		return nil, err
 	}
 
-	return normalizePermissionCodes(row.Permissions), nil
+	return mergePermissionCodes(basePermissions, row.Permissions), nil
 }
 
-func basePermissionsForRole(role storage.UserRole, departments []UserDepartment) []PermissionCode {
+func basePermissionsForRole(
+	role storage.UserRole,
+	userType storage.UserType,
+	departments []UserDepartment,
+) []PermissionCode {
 	switch role {
 	case storage.UserRoleADMIN:
 		return []PermissionCode{PermRUPFull, PermKPIFull}
+	case storage.UserRoleSPECIAL:
+		return []PermissionCode{PermRUPView}
 	case storage.UserRoleMETHODIST:
 		return []PermissionCode{PermRUPManage, PermKPIManage}
 	case storage.UserRoleTEACHER:
 		perms := []PermissionCode{PermRUPView}
-		if len(departments) > 0 {
+		if len(departments) > 0 && isKPIAccessTeacherType(userType) {
 			perms = append(perms, PermKPIView)
 		}
 		return perms
-	case storage.UserRoleSPECIAL:
-		return defaultSpecialPermissionCodes()
 	default:
 		return []PermissionCode{}
+	}
+}
+
+func isKPIAccessTeacherType(userType storage.UserType) bool {
+	switch userType {
+	case storage.UserTypeGENERAL, storage.UserTypeHEAD, storage.UserTypeMASTER, storage.UserTypeSPECIALIST:
+		return true
+	default:
+		return false
 	}
 }
 

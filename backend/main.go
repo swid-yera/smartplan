@@ -85,7 +85,7 @@ func main() {
 	permissionsRepo := repository.NewPermissionsPostgres(queries)
 
 	// ---------- SERVICES ----------
-	authService := service.NewAuthService(rdb, authRepo, kcSyncClient, kcCfg, log)
+	authService := service.NewAuthService(rdb, authRepo, permissionsRepo, kcSyncClient, kcCfg, log)
 	userService := service.NewUserService(usersRepo, permissionsRepo, rdb)
 
 	// ---------- AI SERVICE ----------
