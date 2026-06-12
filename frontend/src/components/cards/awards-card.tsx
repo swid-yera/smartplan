@@ -247,7 +247,7 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect, showPointsColumn }) => {
 							)}
 						</div>
 					</TableCell>
-					<TableCell className='font-medium whitespace-break-spaces min-w-75 py-4'>
+					<TableCell className='font-medium whitespace-break-spaces min-w-25 py-4'>
 						<div className='space-y-1'>
 							<Link
 								className='flex items-center gap-2 rounded-sm hover:text-primary hover:underline'
@@ -261,8 +261,10 @@ const AwardRow: FC<IAwardRow> = ({ award, onSelect, showPointsColumn }) => {
 								<div className='flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-4 text-muted-foreground'>
 									{previewFields.map((field) => (
 										<span key={field.fieldKey} className='inline-flex min-w-0 gap-1'>
-											<span className='font-medium text-foreground/80'>{field.fieldLabel}:</span>
-											<span className='truncate'>{field.value}</span>
+											<span className='whitespace-nowrap font-medium text-foreground/80'>
+												{field.fieldLabel}:
+											</span>
+											<span className='min-w-0 max-w-40 break-all truncate'>{field.value}</span>
 										</span>
 									))}
 								</div>

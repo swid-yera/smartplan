@@ -3,6 +3,7 @@ package helpers
 import (
 	"eduplan/backend/config"
 	storage "eduplan/backend/pkg/sqlc/generated"
+	"strings"
 )
 
 type UserHelper struct {
@@ -43,4 +44,30 @@ func hasAny(set map[string]struct{}, roles []string) bool {
 		}
 	}
 	return false
+}
+
+func ResolveUserType(rawGroup string) storage.UserType {
+	switch strings.ToUpper(strings.TrimSpace(rawGroup)) {
+	case "GENERAL":
+		return storage.UserTypeGENERAL
+	case "HEAD":
+		return storage.UserTypeHEAD
+	case "MASTER":
+		return storage.UserTypeMASTER
+	case "SPECIALIST":
+		return storage.UserTypeSPECIALIST
+	default:
+		return storage.UserTypeNULL
+	}
+}
+
+func ResolveUserTypeFromGroups(groups []string) storage.UserType {
+	for _, group := range groups {
+		userType := ResolveUserType(group)
+		if userType != storage.UserTypeNULL {
+			return userType
+		}
+	}
+
+	return storage.UserTypeNULL
 }

@@ -1,5 +1,5 @@
 import type { badgeVariants } from '@shadcn'
-import { type IUser, type Locale, PermissionCodeEnum, RoleEnum, ViolationEnum } from '@types'
+import { type IUser, type Locale, PermissionCodeEnum, RoleEnum, UserTypeEnum, ViolationEnum } from '@types'
 import type { VariantProps } from 'class-variance-authority'
 
 // has role
@@ -154,6 +154,31 @@ export const getUserRoleLabels = (locale: Locale = 'ru'): Record<RoleEnum, strin
 
 export const normalizeUserRole = (role: RoleEnum, locale: Locale = 'ru'): string => {
 	return getUserRoleLabels(locale)[role]
+}
+
+const userTypeLabelsByLocale: Record<Locale, Record<UserTypeEnum, string>> = {
+	ru: {
+		GENERAL: 'Преподаватель общеобразовательных дисциплин',
+		HEAD: 'Заведующий отделением',
+		MASTER: 'Мастер производственного обучения',
+		SPECIALIST: 'Преподаватель специальных дисциплин',
+		NULL: 'Не указан',
+	},
+	kk: {
+		GENERAL: 'Жалпы білім беру пәндерінің мұғалімі',
+		HEAD: 'Бөлім меңгерушісі',
+		MASTER: 'Өндірістік оқыту магистрі',
+		SPECIALIST: 'Арнайы пәндер оқытушысы',
+		NULL: 'Көрсетілмеген',
+	},
+}
+
+export const getUserTypeLabels = (locale: Locale = 'ru'): Record<UserTypeEnum, string> => {
+	return userTypeLabelsByLocale[locale] || userTypeLabelsByLocale.ru
+}
+
+export const normalizeUserType = (userType: UserTypeEnum, locale: Locale = 'ru'): string => {
+	return getUserTypeLabels(locale)[userType]
 }
 
 type ViolationKind = Exclude<ViolationEnum, ViolationEnum.NONE>

@@ -2,7 +2,7 @@
 
 import type { DetailedHTMLProps, FC, HTMLAttributes } from 'react'
 
-import { normalizeUserRole } from '@helpers'
+import { getLocaleText, normalizeUserRole, normalizeUserType } from '@helpers'
 import { services } from '@services'
 import {
 	DropdownMenu,
@@ -18,9 +18,10 @@ import {
 	useSidebar,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
-import type { IUser } from '@types'
-import { ChevronsUpDown, LogOut, Mail, Phone, ShieldUser, User } from 'lucide-react'
+import { type IUser, UserTypeEnum } from '@types'
+import { ChevronsUpDown, GroupIcon, LogOut, Mail, Phone, ShieldUser, User, UserCheck } from 'lucide-react'
 
+import { UserTypeBadge } from '../../badges/user-type-badge'
 import sidebarLocale from './locale.json'
 
 interface INavUserProps extends DetailedHTMLProps<HTMLAttributes<HTMLUListElement>, HTMLUListElement> {
@@ -33,6 +34,10 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 	const t = sidebarLocale[locale] ?? sidebarLocale.ru
 	const logoutLabel = t.logout
 	const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username
+	const department = user.departments?.[0]
+	const departmentName = department ? getLocaleText(department.name, locale) : ''
+	const userTypeLabel = user.userType !== UserTypeEnum.NULL ? normalizeUserType(user.userType, locale) : ''
+	const userTypeOrRoleLabel = userTypeLabel || normalizeUserRole(user.role, locale)
 
 	return (
 		<SidebarMenu className={className} {...props}>
@@ -50,9 +55,13 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 
 							<div className='grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden'>
 								<span className='truncate font-medium'>{fullName}</span>
-								<span className='truncate text-xs text-muted-foreground'>
-									{normalizeUserRole(user.role, locale)}
-								</span>
+								<div className='flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground'>
+									{user.userType !== UserTypeEnum.NULL ? (
+										<UserTypeBadge className='h-5 px-1.5' userType={user.userType} />
+									) : (
+										<span className='truncate'>{userTypeOrRoleLabel}</span>
+									)}
+								</div>
 							</div>
 							<ChevronsUpDown className='ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden' />
 						</SidebarMenuButton>
@@ -69,8 +78,10 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 									<User className='h-5 w-5' />
 								</div>
 								<div className='grid flex-1 text-left text-sm leading-tight'>
-									<span className='truncate font-medium'>{user.firstName}</span>
-									<span className='truncate text-xs'>{user.lastName}</span>
+									<span className='truncate font-medium'>{fullName}</span>
+									<span className='truncate text-xs text-muted-foreground'>
+										{[userTypeLabel].filter(Boolean).join(' · ')}
+									</span>
 								</div>
 							</div>
 						</DropdownMenuLabel>
@@ -84,6 +95,18 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 								<ShieldUser />
 								{normalizeUserRole(user.role, locale)}
 							</DropdownMenuItem>
+							{departmentName ? (
+								<DropdownMenuItem>
+									<GroupIcon />
+									<span className='truncate'>{departmentName}</span>
+								</DropdownMenuItem>
+							) : null}
+							{userTypeLabel && (
+								<DropdownMenuItem>
+									<UserCheck />
+									{userTypeLabel}
+								</DropdownMenuItem>
+							)}
 							{user.email && (
 								<DropdownMenuItem>
 									<Mail />

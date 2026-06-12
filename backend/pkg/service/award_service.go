@@ -1217,7 +1217,10 @@ func (s *AwardService) GetUserAwardsSummary(ctx context.Context, userID uuid.UUI
 		pgtype.UUID{Bytes: userID, Valid: true},
 		pgtype.UUID{},
 		nil,
-		nil,
+		[]string{
+			string(storage.AwardsStatusAPPROVED),
+			string(storage.AwardsStatusINREVIEW),
+		},
 	)
 	if err != nil {
 		return AwardUserAwardsSummaryResponse{}, err

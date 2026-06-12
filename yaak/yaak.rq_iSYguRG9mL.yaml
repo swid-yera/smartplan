@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_iSYguRG9mL
 createdAt: 2026-01-15T14:30:12.726977300
-updatedAt: 2026-05-26T13:49:40.256229700
+updatedAt: 2026-06-11T12:55:27.137545800
 workspaceId: wk_yScn9PeBcZ
 folderId: fl_3iv2xvWuAp
 authentication: {}
@@ -28,7 +28,26 @@ urlParameters:
   name: pageSize
   value: '10'
   id: 4YVpQ3YcNa
+- enabled: false
+  name: userType
+  value: GENERAL
+  id: VDi5JYiSfa
 - enabled: true
   name: ''
   value: ''
-  id: yRx9wNBurj
+  id: iiPcV5tjAt
+settingSendCookies:
+  enabled: false
+  value: true
+settingStoreCookies:
+  enabled: false
+  value: true
+settingValidateCertificates:
+  enabled: false
+  value: true
+settingFollowRedirects:
+  enabled: false
+  value: true
+settingRequestTimeout:
+  enabled: false
+  value: 0

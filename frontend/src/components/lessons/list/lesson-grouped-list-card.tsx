@@ -56,7 +56,7 @@ export function LessonGroupedListCard({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead className='w-[96px]'>{labels.planNumber}</TableHead>
+									<TableHead className='w-24'>{labels.planNumber}</TableHead>
 									<TableHead>{labels.topic}</TableHead>
 									<TableHead>{labels.discipline}</TableHead>
 									<TableHead>{labels.group}</TableHead>
@@ -155,7 +155,7 @@ function LessonGroupRows({ group, labels, onRowSelect }: LessonGroupRowsProps) {
 						}}
 					>
 						<TableCell className='font-medium whitespace-nowrap'>{lesson.planNumber}</TableCell>
-						<TableCell className='max-w-[320px] min-w-[240px] py-4'>
+						<TableCell className='max-w-[320px] min-w-60 py-4'>
 							<div className='space-y-1'>
 								<Link
 									className='inline-flex max-w-full rounded-sm font-medium leading-snug hover:text-primary hover:underline'
@@ -170,12 +170,12 @@ function LessonGroupRows({ group, labels, onRowSelect }: LessonGroupRowsProps) {
 								</p>
 							</div>
 						</TableCell>
-						<TableCell className='max-w-[220px] min-w-[160px]'>
+						<TableCell className='max-w-55 min-w-40'>
 							<p className='truncate' title={lesson.discipline || labels.notSpecifiedFemale}>
 								{lesson.discipline || labels.notSpecifiedFemale}
 							</p>
 						</TableCell>
-						<TableCell className='max-w-[180px] min-w-[140px]'>
+						<TableCell className='max-w-45 min-w-35'>
 							<p className='truncate' title={lesson.group || labels.groupNotSpecified}>
 								{lesson.group || labels.groupNotSpecified}
 							</p>

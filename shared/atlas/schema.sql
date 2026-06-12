@@ -17,6 +17,8 @@ CREATE TYPE enum_criteria_method AS ENUM ('NORMAL', 'MEASURING');
 
 CREATE TYPE user_role AS ENUM ('ADMIN', 'TEACHER', 'METHODIST', 'SPECIAL');
 
+CREATE TYPE user_type AS ENUM ('GENERAL', 'HEAD', 'MASTER', 'SPECIALIST', 'NULL');
+
 CREATE TYPE enum_lesson_type AS ENUM ('PRACTICE', 'THEORY');
 
 -- =====================
@@ -32,6 +34,7 @@ CREATE TABLE users (
     phone TEXT,
 
     role user_role NOT NULL,
+    user_type user_type NOT NULL,
     rups TEXT[],
     points_by_categories JSONB NOT NULL DEFAULT '{}'::jsonb,
     awards TEXT[],

@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Loader, PageTitle, Pagination, RupsCard, withPermission } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { services } from '@services'
-import { useAuthStore, useLocaleStore } from '@store'
+import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, type StatusEnum } from '@types'
 
@@ -32,7 +32,9 @@ const Page = () => {
 	const { user, authLoading } = useAuthStore()
 
 	const page = Number(searchParams.get('page')) || 1
-	const pageSize = Number(searchParams.get('pageSize')) || 10
+	const storedPageSize = usePaginationSettingsStore((state) => state.pageSize)
+	const setStoredPageSize = usePaginationSettingsStore((state) => state.setPageSize)
+	const pageSize = Number(searchParams.get('pageSize')) || storedPageSize
 	const filterState = getRupFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
 	const q = filterState.search
 	const status = filterState.statuses as StatusEnum[]
@@ -80,6 +82,8 @@ const Page = () => {
 	}
 
 	const setPageSize = (newSize: number) => {
+		setStoredPageSize(newSize)
+
 		const params = new URLSearchParams(searchParams.toString())
 
 		params.set('pageSize', String(newSize))

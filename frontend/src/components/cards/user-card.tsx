@@ -1,21 +1,15 @@
 import type { FC } from 'react'
 
-import {
-	getLocaleText,
-	getUILocaleSection,
-	getUserTotalPoints,
-	normalizeTotalPoints,
-	normalizeUserRole,
-	prettifyPhone,
-	userRoleButtonVariants,
-} from '@helpers'
+import { getUILocaleSection, getUserTotalPoints, normalizeTotalPoints, prettifyPhone } from '@helpers'
 import { cn } from '@lib'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { type IUser, RoleEnum } from '@types'
 import { Mail, Phone, UserIcon } from 'lucide-react'
 
+import { DepartmentBadge } from '../badges/department-badge'
 import { PermissionBadge } from '../badges/permission-badge'
+import { UserTypeBadge } from '../badges/user-type-badge'
 import { ViolationBadge } from '../badges/violation-badge'
 import localeDictionary from './locale.json'
 
@@ -39,10 +33,6 @@ export const UserCard: FC<IUserMainProps> = ({
 	const t = getUILocaleSection(localeDictionary, locale).userCard
 	const shouldShowTotalPoints = showTotalPoints || me?.role !== RoleEnum.TEACHER
 	const totalPoints = getUserTotalPoints(user)
-	const departmentNames = (user.departments ?? [])
-		.map((department) => getLocaleText(department.name, locale))
-		.filter(Boolean)
-		.join(', ')
 
 	return (
 		<Card className={cn(className)}>
@@ -55,8 +45,8 @@ export const UserCard: FC<IUserMainProps> = ({
 						{user.firstName} {user.lastName}
 					</CardTitle>
 					<CardDescription className='flex flex-wrap items-center gap-2'>
-						<Badge variant={userRoleButtonVariants[user.role]}>{normalizeUserRole(user.role, locale)}</Badge>
-						{departmentNames ? <Badge variant='outline'>{departmentNames}</Badge> : null}
+						<UserTypeBadge locale={locale} userType={user.userType} />
+						<DepartmentBadge departments={user.departments} locale={locale} />
 					</CardDescription>
 				</div>
 

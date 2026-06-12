@@ -109,9 +109,10 @@ func (r *UsersPostgres) GetTopAwardDepartmentsStats(ctx context.Context) ([]stor
 	return r.queries.GetTopAwardDepartmentsStats(ctx)
 }
 
-func (r *UsersPostgres) GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, departmentID pgtype.UUID) ([]storage.User, error) {
+func (r *UsersPostgres) GetUsersPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, userType string, departmentID pgtype.UUID) ([]storage.User, error) {
 	return r.queries.GetUsersPaginated(ctx, storage.GetUsersPaginatedParams{
 		Search:       search,
+		UserType:     userType,
 		Limit:        limit,
 		Offset:       offset,
 		Sort:         sort,
@@ -119,9 +120,10 @@ func (r *UsersPostgres) GetUsersPaginated(ctx context.Context, limit int32, offs
 	})
 }
 
-func (r *UsersPostgres) CountUsersFiltered(ctx context.Context, search string, departmentID pgtype.UUID) (int64, error) {
+func (r *UsersPostgres) CountUsersFiltered(ctx context.Context, search string, userType string, departmentID pgtype.UUID) (int64, error) {
 	return r.queries.CountUsersFiltered(ctx, storage.CountUsersFilteredParams{
 		Search:       search,
+		UserType:     userType,
 		DepartmentID: departmentID,
 	})
 }

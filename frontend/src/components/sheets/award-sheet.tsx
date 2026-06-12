@@ -83,8 +83,10 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 							if (!row || typeof row !== 'object' || Array.isArray(row)) return null
 
 							const normalizedRow: Record<string, string> = {}
+
 							for (const subField of subFields) {
 								const rowValue = row[subField.key]
+
 								normalizedRow[subField.key] =
 									typeof rowValue === 'number'
 										? String(rowValue)
@@ -241,68 +243,69 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 										<p className='font-medium'>{t.award.categoryDescription}:</p>
 										<p>{categoryDescription || t.empty}</p>
 
-										<p className='font-medium'>{t.award.categoryId}:</p>
-										<p className='break-all'>{category?.id || award.categoryId || t.empty}</p>
-
 										<p className='font-medium'>{t.award.categoryAwardTypes}:</p>
 										<p>{categoryAwardTypesText}</p>
 									</div>
 								</div>
 
-								<Separator />
-
 								{multiFieldSections.length > 0 ? (
-									<div className='space-y-3'>
-										<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
-											<Files className='w-4 h-4 mr-2' /> {t.award.multiFields}
-										</h4>
+									<>
+										<Separator />
 
-										<div className='space-y-4'>
-											{multiFieldSections.map(({ fieldKey, fieldLabel, rows, subFields }) => (
-												<div key={fieldKey} className='space-y-3 rounded-md border p-3'>
-													<p className='text-sm font-medium text-muted-foreground'>{fieldLabel}</p>
+										<div className='space-y-3'>
+											<h4 className='font-medium text-sm text-muted-foreground flex items-center'>
+												<Files className='w-4 h-4 mr-2' /> {t.award.multiFields}
+											</h4>
 
-													{rows.length > 0 ? (
-														<div className='space-y-3'>
-															{rows.map((row, rowIndex) => (
-																<div
-																	key={`${fieldKey}-${rowIndex}`}
-																	className='space-y-3 rounded-md bg-muted/30 p-3'
-																>
-																	<p className='text-xs font-medium text-muted-foreground'>
-																		{t.award.multiFieldsRowTitle.replace(
-																			'{index}',
-																			String(rowIndex + 1),
-																		)}
-																	</p>
-																	<div className='grid gap-3 md:grid-cols-2'>
-																		{subFields.map((subField) => (
-																			<div
-																				key={`${fieldKey}-${rowIndex}-${subField.key}`}
-																				className='space-y-1'
-																			>
-																				<p className='text-xs font-medium text-muted-foreground'>
-																					{getLocaleText(
-																						subField.label as Parameters<typeof getLocaleText>[0],
-																						locale,
-																					) || subField.key}
-																				</p>
-																				<p className='text-sm break-all'>
-																					{renderMultiFieldValue(row[subField.key])}
-																				</p>
-																			</div>
-																		))}
+											<div className='space-y-4'>
+												{multiFieldSections.map(({ fieldKey, fieldLabel, rows, subFields }) => (
+													<div key={fieldKey} className='space-y-3 rounded-md border p-3'>
+														<p className='text-sm font-medium text-muted-foreground'>{fieldLabel}</p>
+
+														{rows.length > 0 ? (
+															<div className='space-y-3'>
+																{rows.map((row, rowIndex) => (
+																	<div
+																		key={`${fieldKey}-${rowIndex}`}
+																		className='space-y-3 rounded-md bg-muted/30 p-3'
+																	>
+																		<p className='text-xs font-medium text-muted-foreground'>
+																			{t.award.multiFieldsRowTitle.replace(
+																				'{index}',
+																				String(rowIndex + 1),
+																			)}
+																		</p>
+																		<div className='grid gap-3 md:grid-cols-2'>
+																			{subFields.map((subField) => (
+																				<div
+																					key={`${fieldKey}-${rowIndex}-${subField.key}`}
+																					className='space-y-1'
+																				>
+																					<p className='text-xs font-medium text-muted-foreground'>
+																						{getLocaleText(
+																							subField.label as Parameters<
+																								typeof getLocaleText
+																							>[0],
+																							locale,
+																						) || subField.key}
+																					</p>
+																					<p className='text-sm break-all'>
+																						{renderMultiFieldValue(row[subField.key])}
+																					</p>
+																				</div>
+																			))}
+																		</div>
 																	</div>
-																</div>
-															))}
-														</div>
-													) : (
-														<p className='text-sm text-muted-foreground'>{t.award.multiFieldsEmpty}</p>
-													)}
-												</div>
-											))}
+																))}
+															</div>
+														) : (
+															<p className='text-sm text-muted-foreground'>{t.award.multiFieldsEmpty}</p>
+														)}
+													</div>
+												))}
+											</div>
 										</div>
-									</div>
+									</>
 								) : null}
 
 								<Separator />
@@ -354,7 +357,7 @@ export const AwardSheet: FC<IAwardSheet> = ({ award, onSelect }) => {
 																<FileText className='h-4 w-4 text-muted-foreground' />
 																<a
 																	download
-																	className='truncate max-w-[300px] hover:underline text-primary'
+																	className='truncate max-w-75 hover:underline text-primary'
 																	href={field.value}
 																	rel='noopener noreferrer'
 																	target='_blank'

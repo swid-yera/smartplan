@@ -238,9 +238,9 @@ bash apply.sh     # применить миграции
 ### Бэкап и восстановление БД
 
 ```bash
-cd shared/docker
-bash create_backup.sh    # создать бэкап
-bash restore_backup.sh   # восстановить из бэкапа
+bash shared/scripts/create_category_backup.sh  # мягкий бэкап категорий KPI
+bash shared/scripts/create_backup.sh   # мягкий полный бэкап всей БД
+bash shared/scripts/restore_backup.sh  # восстановить из бэкапа
 ```
 
 ---
@@ -411,9 +411,11 @@ eduplan/
 │   ├── atlas/                      # Миграции БД (Atlas)
 │   │   ├── schema.sql              # Полная схема
 │   │   └── migrations/             # Файлы миграций
-│   └── docker/
-│       ├── docker-compose.yml      # Полный стек
-│       ├── create_backup.sh        # Бэкап БД
+│   ├── docker/
+│   │   └── docker-compose.yml      # Полный стек
+│   └── scripts/
+│       ├── create_category_backup.sh
+│       ├── create_backup.sh        # Мягкий полный бэкап БД
 │       └── restore_backup.sh       # Восстановление БД
 │
 ├── docs/                           # Документация

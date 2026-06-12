@@ -1,80 +1,213 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { PageTitle } from '@components'
-import { getLocaleText, getUserTotalPoints } from '@helpers'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@shadcn'
-import type { IUser, IUserDepartment, Locale } from '@types'
+import { getLocaleText, getUserTotalPoints, normalizeUserType } from '@helpers'
+import { type IUser, type IUserDepartment, type Locale, UserTypeEnum } from '@types'
+import { Building2, Sigma, Users } from 'lucide-react'
 
-import { RatingDistributionChart } from '../components/rating-distribution-chart'
 import { RatingNav } from '../components/rating-nav'
-
-const RATING_COLORS = [
-	'var(--chart-1)',
-	'var(--chart-2)',
-	'var(--chart-3)',
-	'var(--chart-4)',
-	'var(--chart-5)',
-] as const
+import { RatingStatsDistributionCard } from './components/rating-stats-distribution-card'
+import { RatingStatsFilters } from './components/rating-stats-filters'
+import { RatingStatsSummaryCards } from './components/rating-stats-summary-cards'
+import { RatingStatsTable } from './components/rating-stats-table'
+import {
+	type DepartmentOption,
+	type FilteredUserType,
+	type RatingStatsChartItem,
+	type RatingStatsTexts,
+	type SortOrder,
+	type SummaryCardConfig,
+} from './rating-stats.types'
+import { RATING_COLORS, compareTeacherNames, normalizeTeacherName } from './rating-stats.utils'
 
 interface IProps {
 	locale: Locale
 	teachers: IUser[]
-	t: {
-		averageTitle: string
-		departments: string
-		description: string
-		distribution: string
-		emptyDescription: string
-		emptyTitle: string
-		headerDescription: string
-		headerTitle: string
-		points: string
-		stats: string
-		teacher: string
-		teacherTableTitle: string
-		title: string
-		top20: string
-	}
+	t: RatingStatsTexts
 }
 
 export const RatingStatsClient = ({ locale, teachers, t }: IProps) => {
 	const router = useRouter()
+	const [search, setSearch] = useState('')
+	const [selectedTypes, setSelectedTypes] = useState<FilteredUserType[]>([])
+	const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([])
+	const [selectedSort, setSelectedSort] = useState<SortOrder>('desc')
 
-	const sortedTeachers = useMemo(() => {
-		return [...teachers].sort((a, b) => getUserTotalPoints(b) - getUserTotalPoints(a))
-	}, [teachers])
+	const departmentOptions = useMemo<DepartmentOption[]>(() => {
+		const optionsMap = new Map<string, string>()
 
-	const averagePoints =
-		sortedTeachers.reduce((sum, teacher) => sum + getUserTotalPoints(teacher), 0) / (sortedTeachers.length || 1)
+		for (const teacher of teachers) {
+			for (const department of teacher.departments ?? []) {
+				const label = getLocaleText(department.name, locale).trim()
 
-	const chartData = sortedTeachers.map((teacher) => ({
-		keycloakId: teacher.keycloakId,
-		name: `${teacher.firstName} ${teacher.lastName}`.trim(),
-		value: getUserTotalPoints(teacher),
-		departments: (teacher.departments ?? [])
-			.map((department: IUserDepartment) => getLocaleText(department.name, locale))
-			.filter(Boolean),
-	}))
+				if (!label) continue
+
+				optionsMap.set(department.keycloakId, label)
+			}
+		}
+
+		return [...optionsMap.entries()]
+			.map(([id, label]) => ({ id, label }))
+			.sort((a, b) => a.label.localeCompare(b.label, locale, { sensitivity: 'base' }))
+	}, [locale, teachers])
+
+	const teachersCount = teachers.length
+	const averagePoints = useMemo(() => {
+		if (!teachersCount) return 0
+
+		const totalPoints = teachers.reduce((sum, teacher) => sum + getUserTotalPoints(teacher), 0)
+
+		return totalPoints / teachersCount
+	}, [teachers, teachersCount])
+
+	const departmentsCount = departmentOptions.length
+	const typeOptions = useMemo(
+		() =>
+			[
+				{ value: UserTypeEnum.GENERAL, label: normalizeUserType(UserTypeEnum.GENERAL, locale) },
+				{ value: UserTypeEnum.SPECIALIST, label: normalizeUserType(UserTypeEnum.SPECIALIST, locale) },
+				{ value: UserTypeEnum.MASTER, label: normalizeUserType(UserTypeEnum.MASTER, locale) },
+			] as const,
+		[locale],
+	)
+	const typeOptionsMap = useMemo(
+		() =>
+			typeOptions.reduce(
+				(acc, option) => {
+					acc[option.value] = option.label
+
+					return acc
+				},
+				{} as Record<FilteredUserType, string>,
+			),
+		[typeOptions],
+	)
+	const selectedTypeSet = useMemo(() => new Set(selectedTypes), [selectedTypes])
+	const selectedDepartmentIdSet = useMemo(() => new Set(selectedDepartmentIds), [selectedDepartmentIds])
+	const hasActiveFilters = Boolean(
+		search.trim() || selectedTypes.length > 0 || selectedDepartmentIds.length > 0 || selectedSort !== 'desc',
+	)
+
+	const toggleSelectedType = (type: FilteredUserType) => {
+		setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]))
+	}
+
+	const toggleSelectedDepartmentId = (departmentId: string) => {
+		setSelectedDepartmentIds((prev) =>
+			prev.includes(departmentId) ? prev.filter((item) => item !== departmentId) : [...prev, departmentId],
+		)
+	}
+
+	const filteredTeachers = useMemo(() => {
+		const query = search.trim().toLowerCase()
+
+		const result = teachers.filter((teacher) => {
+			if (selectedTypes.length > 0 && !selectedTypeSet.has(teacher.userType as FilteredUserType)) {
+				return false
+			}
+
+			if (selectedDepartmentIds.length > 0) {
+				const hasDepartment = (teacher.departments ?? []).some((department) =>
+					selectedDepartmentIdSet.has(department.keycloakId),
+				)
+
+				if (!hasDepartment) {
+					return false
+				}
+			}
+
+			if (!query) {
+				return true
+			}
+
+			const fullName = normalizeTeacherName(teacher).toLowerCase()
+			const username = (teacher.username ?? '').toLowerCase()
+
+			return fullName.includes(query) || username.includes(query)
+		})
+
+		return result.sort((left, right) => {
+			const leftPoints = getUserTotalPoints(left)
+			const rightPoints = getUserTotalPoints(right)
+
+			if (leftPoints !== rightPoints) {
+				return selectedSort === 'desc' ? rightPoints - leftPoints : leftPoints - rightPoints
+			}
+
+			return compareTeacherNames(left, right, locale)
+		})
+	}, [
+		locale,
+		teachers,
+		search,
+		selectedDepartmentIdSet,
+		selectedSort,
+		selectedTypeSet,
+		selectedTypes.length,
+		selectedDepartmentIds.length,
+	])
+
+	const chartData: RatingStatsChartItem[] = useMemo(
+		() =>
+			filteredTeachers.map((teacher) => ({
+				keycloakId: teacher.keycloakId,
+				name: normalizeTeacherName(teacher),
+				value: getUserTotalPoints(teacher),
+				departments: (teacher.departments ?? [])
+					.map((department: IUserDepartment) => getLocaleText(department.name, locale))
+					.filter(Boolean),
+			})),
+		[filteredTeachers, locale],
+	)
+
+	const summaryCards: SummaryCardConfig[] = [
+		{
+			description: t.averageDescription,
+			icon: Sigma,
+			theme: {
+				accent: 'var(--chart-1)',
+				bg: 'color-mix(in oklch, var(--chart-1) 10%, var(--background))',
+				border: 'color-mix(in oklch, var(--chart-1) 18%, var(--border))',
+				iconBg: 'color-mix(in oklch, var(--chart-1) 18%, transparent)',
+				valueClassName: 'text-3xl md:text-4xl',
+			},
+			title: t.averageTitle,
+			value: averagePoints.toFixed(1),
+		},
+		{
+			description: t.teachersCountDescription,
+			icon: Users,
+			theme: {
+				accent: 'var(--chart-2)',
+				bg: 'color-mix(in oklch, var(--chart-2) 10%, var(--background))',
+				border: 'color-mix(in oklch, var(--chart-2) 18%, var(--border))',
+				iconBg: 'color-mix(in oklch, var(--chart-2) 18%, transparent)',
+				valueClassName: 'text-2xl md:text-3xl',
+			},
+			title: t.teachersCountTitle,
+			value: String(teachersCount),
+		},
+		{
+			description: t.departmentsCountDescription,
+			icon: Building2,
+			theme: {
+				accent: 'var(--chart-3)',
+				bg: 'color-mix(in oklch, var(--chart-3) 10%, var(--background))',
+				border: 'color-mix(in oklch, var(--chart-3) 18%, var(--border))',
+				iconBg: 'color-mix(in oklch, var(--chart-3) 18%, transparent)',
+				valueClassName: 'text-2xl md:text-3xl',
+			},
+			title: t.departmentsCountTitle,
+			value: String(departmentsCount),
+		},
+	]
 
 	return (
-		<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
+		<section className='mx-auto flex w-full max-w-6xl flex-col gap-3 p-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 			<RatingNav
 				labels={{
@@ -84,92 +217,73 @@ export const RatingStatsClient = ({ locale, teachers, t }: IProps) => {
 				}}
 			/>
 
-			<Card>
-				<CardHeader>
-					<div>
-						<CardTitle>{t.headerTitle}</CardTitle>
-						<CardDescription>{t.headerDescription}</CardDescription>
-					</div>
-				</CardHeader>
-			</Card>
+			<RatingStatsSummaryCards cards={summaryCards} />
 
-			<Card>
-				<CardContent className='text-center'>
-					<p className='text-muted-foreground'>{t.averageTitle}</p>
-					<p className='text-3xl font-bold'>{averagePoints.toFixed(1)}</p>
-				</CardContent>
-			</Card>
+			<RatingStatsDistributionCard
+				barColors={RATING_COLORS}
+				baseTeachersCount={teachersCount}
+				chartData={chartData}
+				filteredTeachers={filteredTeachers}
+				t={t}
+				valueLabel={t.points}
+				onPointClick={(teacher) => {
+					if (!teacher.keycloakId) return
 
-			<Card>
-				<CardHeader>
-					<CardTitle>{t.distribution}</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<RatingDistributionChart
-						barColors={RATING_COLORS}
-						data={chartData}
-						valueLabel={t.points}
-						onPointClick={(teacher) => {
-							if (!teacher.keycloakId) return
+					router.push(`/users/${teacher.keycloakId}?tab=kpi`)
+				}}
+			/>
 
-							router.push(`/users/${teacher.keycloakId}?tab=kpi`)
-						}}
-					/>
-				</CardContent>
-			</Card>
+			<RatingStatsFilters
+				departmentOptions={departmentOptions}
+				hasActiveFilters={hasActiveFilters}
+				search={search}
+				selectedDepartmentIds={selectedDepartmentIds}
+				selectedSort={selectedSort}
+				selectedTypes={selectedTypes}
+				t={{
+					allDepartments: t.allDepartments,
+					allTypes: t.allTypes,
+					departmentLabel: t.departmentLabel,
+					resetFilters: t.resetFilters,
+					searchPlaceholder: t.searchPlaceholder,
+					sortAsc: t.sortAsc,
+					sortDesc: t.sortDesc,
+					sortLabel: t.sortLabel,
+					typeLabel: t.typeLabel,
+				}}
+				typeOptions={typeOptions.map((option) => ({
+					label: typeOptionsMap[option.value],
+					value: option.value,
+				}))}
+				onDepartmentToggle={toggleSelectedDepartmentId}
+				onReset={() => {
+					setSearch('')
+					setSelectedTypes([])
+					setSelectedDepartmentIds([])
+					setSelectedSort('desc')
+				}}
+				onSearchChange={setSearch}
+				onSortChange={setSelectedSort}
+				onTypeToggle={toggleSelectedType}
+			/>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>{t.teacherTableTitle}</CardTitle>
-				</CardHeader>
-				<CardContent className='p-0'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead className='w-12 text-center'>#</TableHead>
-								<TableHead className='w-16 text-right'>{t.points}</TableHead>
-								<TableHead>{t.teacher}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{sortedTeachers.map((teacher, index) => {
-								const departmentLabel = (teacher.departments ?? [])
-									.map((department: IUserDepartment) => getLocaleText(department.name, locale))
-									.filter(Boolean)
-									.join(', ')
-								const color = RATING_COLORS[index % RATING_COLORS.length]
-								const rowStyle = {
-									backgroundColor: `color-mix(in oklch, ${color} 10%, var(--background))`,
-									borderLeftColor: color,
-									color,
-								}
-
-								return (
-									<TableRow key={teacher.keycloakId} className='border-l-4 transition-colors' style={rowStyle}>
-										<TableCell className='w-12 text-center font-semibold'>{index + 1}</TableCell>
-										<TableCell className='w-16 text-right font-semibold whitespace-nowrap'>
-											{getUserTotalPoints(teacher)}
-										</TableCell>
-										<TableCell className='py-4'>
-											<div className='space-y-1'>
-												<Link
-													className='block text-base font-medium hover:underline'
-													href={`/users/${teacher.keycloakId}?tab=kpi`}
-												>
-													{teacher.firstName} {teacher.lastName}
-												</Link>
-												{departmentLabel ? (
-													<p className='truncate text-xs text-muted-foreground'>{departmentLabel}</p>
-												) : null}
-											</div>
-										</TableCell>
-									</TableRow>
-								)
-							})}
-						</TableBody>
-					</Table>
-				</CardContent>
-			</Card>
+			<RatingStatsTable
+				baseTeachersCount={teachersCount}
+				filteredTeachers={filteredTeachers}
+				locale={locale}
+				t={{
+					emptyDescription: t.emptyDescription,
+					emptyTitle: t.emptyTitle,
+					noMatchesDescription: t.noMatchesDescription,
+					noMatchesTitle: t.noMatchesTitle,
+					tableDepartment: t.tableDepartment,
+					tableIndex: t.tableIndex,
+					tableName: t.tableName,
+					tablePoints: t.tablePoints,
+					tableTitle: t.tableTitle,
+					tableType: t.tableType,
+				}}
+			/>
 		</section>
 	)
 }

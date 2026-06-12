@@ -25,6 +25,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { IDepartmentTopTeachersResponse } from '@types'
 import { Sigma, Users2 } from 'lucide-react'
 
+import { UserTypeBadge } from '@components'
 import { RatingNav } from './components/rating-nav'
 import localeDictionary from './locale.json'
 
@@ -76,7 +77,7 @@ const Page = () => {
 
 	if (departmentsWithTotalPoints.length === 0) {
 		return (
-			<section className='mx-auto w-full max-w-6xl p-6 space-y-6'>
+			<section className='mx-auto flex w-full max-w-6xl flex-col gap-4 p-6'>
 				<PageTitle description={t.description}>{t.title}</PageTitle>
 				<RatingNav
 					labels={{
@@ -96,7 +97,7 @@ const Page = () => {
 	}
 
 	return (
-		<section className='mx-auto w-full max-w-6xl space-y-6 p-6'>
+		<section className='mx-auto flex w-full max-w-6xl flex-col gap-4 p-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 			<RatingNav
 				labels={{
@@ -106,16 +107,16 @@ const Page = () => {
 				}}
 			/>
 
-			<Card>
-				<CardHeader>
-					<div>
-						<CardTitle>{t.headerTitle}</CardTitle>
-						<CardDescription>{t.headerDescription}</CardDescription>
+			<Card className='overflow-hidden'>
+				<CardHeader className='pb-3 pt-4'>
+					<div className='flex flex-col gap-1'>
+						<CardTitle className='text-lg'>{t.headerTitle}</CardTitle>
+						<CardDescription className='text-sm'>{t.headerDescription}</CardDescription>
 					</div>
 				</CardHeader>
 			</Card>
 
-			<div className='space-y-4'>
+			<div className='flex flex-col gap-3'>
 				{departmentsWithTotalPoints.map((department, departmentIndex) => {
 					const color = getDepartmentColor(departmentIndex)
 					const topTeachersCount = department.teachers.length
@@ -123,35 +124,43 @@ const Page = () => {
 
 					return (
 						<Card key={department.keycloakId} className='overflow-hidden border-l-4' style={style}>
-							<CardHeader className='space-y-4'>
-								<div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
-									<div className='space-y-3'>
-										<div className='flex items-center gap-2'>
-											<span className='h-2.5 w-2.5 rounded-full' style={{ backgroundColor: color }} />
+							<CardHeader className='pb-3 pt-4'>
+								<div className='flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'>
+									<div className='flex min-w-0 flex-1 flex-col gap-2'>
+										<div className='flex min-w-0 items-center gap-2'>
+											<span className='h-2 w-2 shrink-0 rounded-full' style={{ backgroundColor: color }} />
 											<Link
-												className='text-xl font-semibold text-foreground hover:underline'
+												className='truncate text-base font-semibold text-foreground hover:underline'
 												href={`/departments/${department.keycloakId}`}
 											>
 												{getLocaleText(department.name, locale)}
 											</Link>
 										</div>
 
-										<div className='flex flex-wrap gap-2'>
+										<div className='flex flex-wrap gap-1.5'>
 											<div
-												className='inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium'
+												className='inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium leading-none'
 												style={{ borderColor: color, color }}
 											>
-												<Users2 className='h-4 w-4' />
+												<Users2 className='h-3.5 w-3.5' />
 												{interpolateUILocaleText(t.departmentSummary.teachers, {
 													current: topTeachersCount,
 													total: department.teachersCount,
 												})}
 											</div>
-											<div className='inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary shadow-sm'>
-												<Sigma className='h-4 w-4' />
-												{interpolateUILocaleText(t.departmentSummary.pointsInline, {
-													points: department.totalPoints,
-												})}
+										</div>
+									</div>
+
+									<div className='flex shrink-0 items-start lg:items-center lg:justify-end'>
+										<div className='inline-flex flex-col items-end rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-primary shadow-sm'>
+											<span className='text-[11px] font-medium uppercase tracking-wide text-primary/80'>
+												{t.departmentSummary.pointsInline}
+											</span>
+											<div className='flex items-end gap-1.5'>
+												<Sigma className='h-4 w-4 shrink-0' />
+												<span className='text-3xl font-semibold leading-none tabular-nums'>
+													{department.totalPoints}
+												</span>
 											</div>
 										</div>
 									</div>
@@ -161,9 +170,10 @@ const Page = () => {
 								<Table>
 									<TableHeader>
 										<TableRow>
-											<TableHead className='w-12 text-center'>#</TableHead>
-											<TableHead className='w-16 text-right'>{t.points}</TableHead>
+											<TableHead className='w-12 text-center text-xs'>#</TableHead>
 											<TableHead>{t.teacher}</TableHead>
+											<TableHead className='w-36'>{t.type}</TableHead>
+											<TableHead className='w-20 text-right text-xs'>{t.points}</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -173,17 +183,22 @@ const Page = () => {
 												className='border-l-4 transition-colors hover:bg-muted/40'
 												style={getTeacherRowStyle(color)}
 											>
-												<TableCell className='w-12 text-center font-semibold'>{teacherIndex + 1}</TableCell>
-												<TableCell className='w-16 whitespace-nowrap text-right font-semibold'>
-													{getUserTotalPoints(teacher)}
-												</TableCell>
-												<TableCell className='py-4'>
+												<TableCell className='w-12 text-center text-sm font-semibold'>{teacherIndex + 1}</TableCell>
+												<TableCell className='py-2.5'>
 													<Link
-														className='block text-base font-medium hover:underline'
+														className='truncate text-sm font-medium hover:underline'
 														href={`/users/${teacher.keycloakId}?tab=kpi`}
 													>
 														{teacher.firstName} {teacher.lastName}
 													</Link>
+												</TableCell>
+												<TableCell className='py-2.5'>
+													<div className='flex min-w-0 items-center'>
+														<UserTypeBadge locale={locale} size='lg' userType={teacher.userType} />
+													</div>
+												</TableCell>
+												<TableCell className='w-20 whitespace-nowrap text-right text-sm font-semibold'>
+													{getUserTotalPoints(teacher)}
 												</TableCell>
 											</TableRow>
 										))}

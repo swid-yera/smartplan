@@ -35,9 +35,11 @@ export * from './dialogs/rup-language-dialog'
 export * from './dialogs/violation-dialog'
 
 // badges
+export * from './badges/department-badge'
 export * from './badges/permission-badge'
 export * from './badges/status-badge'
 export * from './badges/topic-type-badge'
+export * from './badges/user-type-badge'
 export * from './badges/violation-badge'
 
 // form

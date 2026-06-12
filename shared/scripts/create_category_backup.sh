@@ -1,21 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
-# =========================
-# CONFIG
-# =========================
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_DIR="${COMPOSE_DIR:-$SCRIPT_DIR/../docker}"
 
-SERVICE_NAME="${SERVICE_NAME:-postgres}"
+SERVICE_NAME="${SERVICE_NAME:-db}"
 DB_USER="${DB_USER:-admin}"
 DB_NAME="${DB_NAME:-eduplan}"
 
-BACKUP_DIR="${BACKUP_DIR:-./backups}"
-BACKUP_PREFIX="${BACKUP_PREFIX:-awards_backup}"
+BACKUP_DIR="${BACKUP_DIR:-$SCRIPT_DIR/backups}"
+BACKUP_PREFIX="${BACKUP_PREFIX:-category_backup}"
 TIMESTAMP="$(date +%Y-%m-%d_%H-%M)"
 BACKUP_FILE="${BACKUP_FILE:-${BACKUP_PREFIX}_${TIMESTAMP}.sql}"
 
-# Таблицы по умолчанию как в awards_backup_*.sql
+# Мягкий backup: только данные, без CREATE TABLE/ALTER TABLE для схемы.
 TABLES=(
   "public.award_categories"
   "public.award_category_fields"
@@ -24,24 +23,32 @@ TABLES=(
   "public.award_types"
 )
 
-# =========================
-# SCRIPT
-# =========================
+if [[ ! -f "$COMPOSE_DIR/docker-compose.yml" ]]; then
+  echo "Error: docker-compose.yml not found in $COMPOSE_DIR"
+  exit 1
+fi
 
 echo "Создание папки для backup, если её нет..."
 mkdir -p "$BACKUP_DIR"
+
+cd "$COMPOSE_DIR"
 
 echo "Проверка контейнеров..."
 docker compose ps
 
 OUT_PATH="$BACKUP_DIR/$BACKUP_FILE"
-echo "Режим: только данные таблиц (без CREATE TABLE)"
+echo "Режим: мягкий data-only backup категорий KPI"
+echo "Таблицы:"
+for table in "${TABLES[@]}"; do
+  echo "  - $table"
+done
 echo "Файл: $OUT_PATH"
 
 PG_DUMP_ARGS=(
   --data-only
   --inserts
   --column-inserts
+  --disable-triggers
   -U "$DB_USER"
   -d "$DB_NAME"
 )
