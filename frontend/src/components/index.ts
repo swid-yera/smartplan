@@ -37,6 +37,7 @@ export * from './dialogs/violation-dialog'
 // badges
 export * from './badges/department-badge'
 export * from './badges/permission-badge'
+export * from './badges/user-role-badge'
 export * from './badges/status-badge'
 export * from './badges/topic-type-badge'
 export * from './badges/user-type-badge'

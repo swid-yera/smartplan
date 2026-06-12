@@ -120,9 +120,14 @@ func NewUserService(repo repository.UsersRepository, permissions repository.Perm
 func (s *userService) GetUserBySessionID(ctx context.Context, sessionID uuid.UUID) (*User, error) {
 	sessionKey := "session:" + sessionID.String()
 
-	keycloakIDStr, err := s.redis.HGet(ctx, sessionKey, "keycloak_id").Result()
+	sessionData, err := s.redis.HGetAll(ctx, sessionKey).Result()
 	if err != nil {
 		return nil, err
+	}
+
+	keycloakIDStr := strings.TrimSpace(sessionData["keycloak_id"])
+	if keycloakIDStr == "" {
+		return nil, errors.New("session missing keycloak_id")
 	}
 
 	keycloakID, err := uuid.Parse(keycloakIDStr)
@@ -756,20 +761,19 @@ func (s *userService) resolveEffectivePermissions(
 		return nil, err
 	}
 
-	return normalizePermissionCodes(row.Permissions), nil
+	return mergePermissionCodes(basePermissions, row.Permissions), nil
 }
 
-func basePermissionsForRole(role storage.UserRole, userType storage.UserType, departments []UserDepartment) []PermissionCode {
+func basePermissionsForRole(
+	role storage.UserRole,
+	userType storage.UserType,
+	departments []UserDepartment,
+) []PermissionCode {
 	switch role {
 	case storage.UserRoleADMIN:
 		return []PermissionCode{PermRUPFull, PermKPIFull}
 	case storage.UserRoleSPECIAL:
-		switch strings.ToUpper(string(userType)) {
-		case "METHODIST":
-			return []PermissionCode{PermRUPFull, PermKPIFull}
-		default:
-			return []PermissionCode{PermRUPView}
-		}
+		return []PermissionCode{PermRUPView}
 	case storage.UserRoleMETHODIST:
 		return []PermissionCode{PermRUPManage, PermKPIManage}
 	case storage.UserRoleTEACHER:

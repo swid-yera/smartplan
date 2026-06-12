@@ -241,7 +241,7 @@ func (s *permissionService) GetPermissions(ctx context.Context, userID uuid.UUID
 
 	return &UserPermissions{
 		UserID:      perm.UserID,
-		Permissions: resolveExplicitPermissions(perm.Permissions),
+		Permissions: mergePermissionCodes(basePermissions, perm.Permissions),
 	}, nil
 }
 

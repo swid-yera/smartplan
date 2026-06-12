@@ -28,20 +28,29 @@ type AuthService interface {
 }
 
 type authService struct {
-	redis *redis.Client
-	users repository.AuthRepository
-	kc    *kcservice.Client
-	cfg   *config.KeycloakConfig
-	log   *logrus.Entry
+	redis       *redis.Client
+	users       repository.AuthRepository
+	permissions repository.Permissions
+	kc          *kcservice.Client
+	cfg         *config.KeycloakConfig
+	log         *logrus.Entry
 }
 
-func NewAuthService(redis *redis.Client, users repository.AuthRepository, kc *kcservice.Client, cfg *config.KeycloakConfig, log *logrus.Logger) AuthService {
+func NewAuthService(
+	redis *redis.Client,
+	users repository.AuthRepository,
+	permissions repository.Permissions,
+	kc *kcservice.Client,
+	cfg *config.KeycloakConfig,
+	log *logrus.Logger,
+) AuthService {
 	return &authService{
-		redis: redis,
-		users: users,
-		kc:    kc,
-		cfg:   cfg,
-		log:   log.WithField("service", "AuthService"),
+		redis:       redis,
+		users:       users,
+		permissions: permissions,
+		kc:          kc,
+		cfg:         cfg,
+		log:         log.WithField("service", "AuthService"),
 	}
 }
 
@@ -61,6 +70,7 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	}
 
 	userType := helpers.ResolveUserTypeFromGroups(groups)
+	isMethodistGroup := hasGroupIgnoreCase(groups, "Methodist")
 
 	s.log.WithFields(logrus.Fields{
 		"keycloak_id": keycloakID,
@@ -68,13 +78,11 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 		"user_type":   userType,
 	}).Info("Resolved user role")
 
-	user, err := s.syncUserProfile(ctx, keycloakID, role, userType, email, username, firstName, lastName, phone)
+	_, err := s.syncUserProfile(ctx, keycloakID, role, userType, email, username, firstName, lastName, phone)
 	if err != nil {
 		s.log.WithError(err).Error("Failed to sync user profile")
 		return uuid.Nil, err
 	}
-
-	_ = user
 
 	departments, err := s.resolveUserDepartments(ctx, keycloakID, claims)
 	if err != nil {
@@ -85,6 +93,13 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	if err := s.users.SyncUserDepartments(ctx, keycloakID, departments); err != nil {
 		s.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Failed to sync user departments")
 		return uuid.Nil, err
+	}
+
+	if role == storage.UserRoleSPECIAL && isMethodistGroup {
+		if err := s.syncMethodistPermissions(ctx, keycloakID); err != nil {
+			s.log.WithError(err).WithField("keycloak_id", keycloakID).Error("Failed to sync methodist permissions")
+			return uuid.Nil, err
+		}
 	}
 
 	sessionID := uuid.New()
@@ -107,6 +122,46 @@ func (s *authService) HandleCallback(ctx context.Context, keycloakID uuid.UUID, 
 	}
 
 	return sessionID, nil
+}
+
+func (s *authService) syncMethodistPermissions(ctx context.Context, keycloakID uuid.UUID) error {
+	if s.permissions == nil {
+		return nil
+	}
+
+	requiredPermissions := []storage.PermissionCode{
+		storage.PermissionCodeRUPFull,
+		storage.PermissionCodeKPIFull,
+	}
+
+	currentPermissions := []storage.PermissionCode{}
+	row, err := s.permissions.GetUserPermissions(ctx, keycloakID)
+	switch {
+	case err == nil:
+		currentPermissions = row.Permissions
+	case errors.Is(err, pgx.ErrNoRows):
+	default:
+		return err
+	}
+
+	mergedPermissions := mergePermissionCodes(currentPermissions, requiredPermissions)
+	_, err = s.permissions.UpsertUserPermissions(ctx, keycloakID, mergedPermissions)
+	return err
+}
+
+func hasGroupIgnoreCase(groups []string, target string) bool {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return false
+	}
+
+	for _, group := range groups {
+		if strings.EqualFold(strings.TrimSpace(group), target) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func extractRealmRoles(claims jwt.MapClaims) []string {
