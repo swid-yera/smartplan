@@ -7,16 +7,37 @@ export interface KriptoApprovalMetadata {
 	keyId: string
 	userId: string
 	publicKey: string
+	encryptedPrivateKey: KriptoEncryptedPrivateKey
+	format: string
+	version: number
+	algorithm: string
+}
+
+export interface KriptoEncryptedPrivateKey {
+	type?: string
+	version?: number
+	cipher: string
+	kdf: string
+	hash: string
+	iterations: number
+	salt: string
+	nonce: string
+	value: string
+	encoding?: string
 }
 
 interface KriptoV3Payload {
+	format: string
+	version: number
+	purpose?: string
 	keyId: string
 	userId: string
 	publicKey: string
-	encryptedPrivateKey: string
-	salt: string
-	nonce: string
-	iterations: number
+	algorithm: string
+	deviceName?: string
+	createdAt?: string
+	encryptedPrivateKey: KriptoEncryptedPrivateKey
+	comment?: unknown
 }
 
 export const parseKriptoFileText = (rawText: string): UnknownRecord => {
@@ -48,6 +69,10 @@ export const extractKriptoApprovalMetadata = (payload: UnknownRecord): KriptoApp
 		keyId: kriptoPayload.keyId,
 		userId: kriptoPayload.userId,
 		publicKey: kriptoPayload.publicKey.toLowerCase(),
+		encryptedPrivateKey: kriptoPayload.encryptedPrivateKey,
+		format: kriptoPayload.format,
+		version: kriptoPayload.version,
+		algorithm: kriptoPayload.algorithm,
 	}
 }
 
@@ -97,7 +122,26 @@ const toKriptoV3Payload = (payload: UnknownRecord): KriptoV3Payload => {
 		throw new Error('.kripto v3 содержит некорректный PBKDF2 iterations')
 	}
 
-	return { keyId, userId, publicKey, encryptedPrivateKey, salt, nonce, iterations: iterationsRaw }
+	return {
+		keyId,
+		userId,
+		publicKey,
+		encryptedPrivateKey: {
+			type: pickString(encrypted, ['type']) || undefined,
+			version: typeof encrypted.version === 'number' ? encrypted.version : undefined,
+			cipher: pickString(encrypted, ['cipher']),
+			kdf: pickString(encrypted, ['kdf']),
+			hash: pickString(encrypted, ['hash']),
+			iterations: iterationsRaw,
+			salt,
+			nonce,
+			value: encryptedPrivateKey,
+			encoding: pickString(encrypted, ['encoding']) || undefined,
+		},
+		format: pickString(payload, ['format']),
+		version: typeof version === 'number' ? version : 3,
+		algorithm: pickString(payload, ['algorithm']),
+	}
 }
 
 const asRecord = (value: unknown): UnknownRecord => {

@@ -223,12 +223,14 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status    string `json:"status" binding:"required"`
-		Reason    string `json:"reason"`
-		KeyID     string `json:"key_id"`
-		UserID    string `json:"user_id"`
-		Password  string `json:"password"`
-		Confirmed bool   `json:"confirmed"`
+		Status    string                   `json:"status" binding:"required"`
+		Reason    string                   `json:"reason"`
+		KeyID     string                   `json:"key_id"`
+		UserID    string                   `json:"user_id"`
+		Password  string                   `json:"password"`
+		Confirmed bool                     `json:"confirmed"`
+		Signature string                   `json:"signature"`
+		Kripto    service.KriptoKeyPayload `json:"kripto"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -281,6 +283,14 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		return
 	}
 
+	signerName := strings.TrimSpace(currentUser.FirstName + " " + currentUser.LastName)
+	if signerName == "" {
+		signerName = strings.TrimSpace(currentUser.Username)
+	}
+	if signerName == "" {
+		signerName = currentUser.KeycloakID.String()
+	}
+
 	// Проверка прав по статусу:
 	// IN_REVIEW  — teacher (свой РУП / контакт) или admin
 	// APPROVED / REJECTED — только methodist или admin
@@ -322,7 +332,7 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 	}
 	c.Header("X-Correlation-ID", correlationID)
 
-	err = h.rupService.UpdateRupStatus(c.Request.Context(), service.UpdateRupStatusRequest{
+	response, err := h.rupService.UpdateRupStatus(c.Request.Context(), service.UpdateRupStatusRequest{
 		ID:            id,
 		Status:        req.Status,
 		Reason:        req.Reason,
@@ -332,6 +342,10 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		UserID:        req.UserID,
 		Password:      req.Password,
 		Confirmed:     req.Confirmed,
+		Signature:     req.Signature,
+		SignerName:    signerName,
+		SignerRole:    currentUser.Role,
+		Kripto:        &req.Kripto,
 	})
 	if err != nil {
 		h.log.WithError(err).Error("failed to update RUP status")
@@ -350,7 +364,38 @@ func (h *RupHandler) UpdateRupStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "RUP status updated successfully"})
+	if response == nil {
+		response = &service.UpdateRupStatusResponse{Message: "RUP status updated successfully"}
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *RupHandler) GetRupSignatureArtifact(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		h.log.WithError(err).Error("invalid RUP ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid RUP ID")})
+		return
+	}
+
+	artifact, err := h.rupService.GetRupSignatureArtifact(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": service.TranslateAPIErrorMessage("signature artifact not found")})
+			return
+		}
+
+		h.log.WithError(err).Error("failed to get RUP signature artifact")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   service.TranslateAPIErrorMessage("failed to get RUP signature artifact"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, artifact)
 }
 
 // UpdateRup обновляет данные RUP

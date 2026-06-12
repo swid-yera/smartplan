@@ -264,6 +264,47 @@ components:
           type: string
           format: date-time
 
+    RupSignatureArtifact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        rupId:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+        documentVersion:
+          type: string
+          format: uuid
+        documentHash:
+          type: string
+        keyId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        signature:
+          type: string
+        signerName:
+          type: string
+        signerRole:
+          type: string
+        signatureId:
+          type: string
+        verificationUrl:
+          type: string
+        qrSvg:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     # --- AWARD RELATED ENTITIES ---
 
     # Award Type Criteria
@@ -456,6 +497,36 @@ components:
                 maxItems: 50
                 items:
                   $ref: '#/components/schemas/DisciplineTopic'
+
+    UpdateRupStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        reason:
+          type: string
+        key_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        password:
+          type: string
+        confirmed:
+          type: boolean
+        signature:
+          type: string
+          description: Hex-encoded signature extracted from .kripto
+
+    UpdateRupStatusResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        artifact:
+          $ref: '#/components/schemas/RupSignatureArtifact'
 
     # Award Input (For POST/PUT)
     AwardInput:
@@ -904,7 +975,7 @@ paths:
             application/json:
               example: { 'result': 'rup deleted successfully' }
 
-  /rups/{id}/update-status:
+  /rups/{id}/status:
     put:
       tags: [RUPs]
       security:
@@ -918,16 +989,38 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                status:
-                  $ref: '#/components/schemas/StatusEnum'
+              $ref: '#/components/schemas/UpdateRupStatusRequest'
       responses:
         '200':
           description: Status updated
           content:
             application/json:
-              example: { 'result': 'rup status updated successfully' }
+              schema:
+                $ref: '#/components/schemas/UpdateRupStatusResponse'
+
+  /rups/{id}/signature-artifact:
+    get:
+      tags: [RUPs]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Latest QR/signature artifact for approved RUP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RupSignatureArtifact'
+        '404':
+          description: Signature artifact not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # === AWARDS ===
   /awards:
