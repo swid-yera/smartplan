@@ -376,7 +376,7 @@ const EditPage: FC = () => {
 							/>
 						</ButtonGroup>
 					}
-					backHref={`/rups/${rupData.id}`}
+					backHref='back'
 					description={t.description}
 				>
 					{t.titlePrefix}: {getLocaleText(rupData.name, activeLocale) || t.titleFallback}{' '}

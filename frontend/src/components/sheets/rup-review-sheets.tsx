@@ -62,7 +62,14 @@ interface IRupReviewSheetsProps {
 	onApproveSheetOpenChange: (open: boolean) => void
 	onStatusChange: (
 		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean; kripto?: IKriptoKeyPayload },
+		options?: {
+			reason?: string
+			keyId?: string
+			userId?: string
+			password?: string
+			confirmed?: boolean
+			kripto?: IKriptoKeyPayload
+		},
 	) => void
 }
 
@@ -248,7 +255,11 @@ export const RupReviewSheets = memo(function RupReviewSheets({
 
 							<div className='grid gap-2'>
 								<Label htmlFor='approve-signature'>{t.approveSignatureLabel}</Label>
-								<Input readOnly id='approve-signature' value={publicKey ? `${publicKey.slice(0, 16)}...` : ''} />
+								<Input
+									readOnly
+									id='approve-signature'
+									value={publicKey ? `${publicKey.slice(0, 16)}...` : ''}
+								/>
 							</div>
 
 							<div className='grid gap-2'>

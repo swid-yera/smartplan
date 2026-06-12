@@ -41,7 +41,14 @@ interface IRupViewProps {
 	onActiveLocaleChange: (nextLocale: Locale) => void
 	onStatusChange: (
 		newStatus: StatusEnum,
-		options?: { reason?: string; keyId?: string; userId?: string; password?: string; confirmed?: boolean; kripto?: IKriptoKeyPayload },
+		options?: {
+			reason?: string
+			keyId?: string
+			userId?: string
+			password?: string
+			confirmed?: boolean
+			kripto?: IKriptoKeyPayload
+		},
 	) => void
 	onOpenStatusSheet: () => void
 	onOpenDeleteDialog: () => void

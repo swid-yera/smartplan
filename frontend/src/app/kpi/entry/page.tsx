@@ -22,7 +22,7 @@ const Page = () => {
 
 	return (
 		<section className='p-4 max-w-6xl w-full mx-auto space-y-6'>
-			<PageTitle backHref={'/kpi/my'} description={t.inputDescription}>
+			<PageTitle backHref='back' description={t.inputDescription}>
 				{t.inputTitle}
 			</PageTitle>
 

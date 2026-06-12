@@ -55,7 +55,6 @@ const Page = () => {
 	const updateStatusMutation = useMutation(services.award.updateStatusOptions())
 	const updatePointsMutation = useMutation(services.award.updatePointsOptions())
 	const deleteMutation = useMutation(services.award.deleteMutationOptions())
-	const backHref = '/kpi/entry'
 
 	const fallbackVariant = useMemo(
 		() =>
@@ -154,7 +153,7 @@ const Page = () => {
 		deleteMutation.mutate(award.id, {
 			onSuccess: () => {
 				toast.success(t.toastDeleteSuccess, { id: toastId })
-				router.push(backHref)
+				router.back()
 			},
 			onError: (err) => {
 				toast.error(t.toastDeleteError, { id: toastId, description: err.message })
@@ -188,7 +187,7 @@ const Page = () => {
 						onSendToReview={() => handleStatusChange(StatusEnum.IN_REVIEW)}
 					/>
 				}
-				backHref={backHref}
+				backHref={'back'}
 				backLabel={t.back}
 				description={t.pageDescription}
 			>

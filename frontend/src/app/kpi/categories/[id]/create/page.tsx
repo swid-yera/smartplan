@@ -386,7 +386,7 @@ function CreateAwardPage() {
 
 	return (
 		<section className='mx-auto max-w-7xl w-full p-6 space-y-6'>
-			<PageTitle backHref={`/kpi/categories/${category.id}`} description={t.pageDescription}>
+			<PageTitle backHref='back' description={t.pageDescription}>
 				{t.pageTitle}
 			</PageTitle>
 

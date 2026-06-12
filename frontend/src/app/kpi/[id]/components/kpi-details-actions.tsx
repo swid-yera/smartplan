@@ -6,8 +6,8 @@ import { getUILocaleSection } from '@helpers'
 import { Button, ButtonGroup, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
 import {
-	CheckCircle,
 	BadgeDollarSign,
+	CheckCircle,
 	Edit,
 	type LucideIcon,
 	MoreVertical,
