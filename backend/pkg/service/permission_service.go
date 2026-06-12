@@ -335,7 +335,7 @@ func (s *permissionService) getBasePermissions(ctx context.Context, user *storag
 		})
 	}
 
-	return basePermissionsForRole(user.Role, mappedDepartments), nil
+	return basePermissionsForRole(user.Role, user.UserType, mappedDepartments), nil
 }
 
 func mergePermissionCodes(groups ...[]PermissionCode) []PermissionCode {
