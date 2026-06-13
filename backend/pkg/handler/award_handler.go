@@ -282,7 +282,7 @@ func (h *AwardHandler) DeleteAward(c *gin.Context) {
 
 	err = h.service.DeleteAward(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
+		writeServiceError(c, err)
 		return
 	}
 
