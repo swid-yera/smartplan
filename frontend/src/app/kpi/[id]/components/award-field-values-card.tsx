@@ -1,7 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
+
 import { MediaPreviewerCard } from '@components'
-import { getLocaleText, getUILocaleSection } from '@helpers'
+import { formatCourseFromYearAndGroupName, getLocaleText, getUILocaleSection } from '@helpers'
 import { Card, CardContent, CardHeader, CardTitle, Separator } from '@shadcn'
 import { useLocaleStore } from '@store'
 import type { IAward } from '@types'
@@ -19,6 +21,37 @@ const capitalizeFirstLetter = (value: string) => {
 	if (!trimmedValue) return value
 
 	return `${trimmedValue.charAt(0).toUpperCase()}${trimmedValue.slice(1)}`
+}
+
+const getCurrentAcademicYear = () => {
+	const now = new Date()
+	const currentYear = now.getFullYear()
+	const academicYearStart = now.getMonth() >= 8 ? currentYear : currentYear - 1
+
+	return `${academicYearStart}-${academicYearStart + 1}`
+}
+
+const normalizeStringArray = (value: unknown) => {
+	if (Array.isArray(value)) {
+		return value
+			.filter((item): item is string => typeof item === 'string')
+			.map((item) => item.trim())
+			.filter(Boolean)
+	}
+
+	if (typeof value === 'string') {
+		const trimmed = value.trim()
+
+		return trimmed ? [trimmed] : []
+	}
+
+	return []
+}
+
+const getGroupCourse = (groupName: string) => {
+	const course = formatCourseFromYearAndGroupName(groupName, getCurrentAcademicYear())
+
+	return typeof course === 'number' ? course : null
 }
 
 export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
@@ -79,8 +112,16 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 	}
 
 	const awardFieldValues = Object.entries(award.fieldValues || {}).filter(([fieldKey]) => {
-		return categoryFieldByKey.get(fieldKey)?.type !== 'multi_fields'
+		const fieldType = categoryFieldByKey.get(fieldKey)?.type
+
+		return fieldType !== 'multi_fields' && fieldType !== 'group'
 	})
+
+	const groupFieldEntries = useMemo(() => {
+		return Object.entries(award.fieldValues || {}).filter(([fieldKey]) => {
+			return categoryFieldByKey.get(fieldKey)?.type === 'group'
+		})
+	}, [award.fieldValues, categoryFieldByKey])
 
 	const isFileValue = (value: string) => fileValueRegex.test(value.trim())
 	const isUrlValue = (value: string) => urlValueRegex.test(value.trim())
@@ -116,6 +157,49 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 			url: [] as Array<{ fieldKey: string; fieldLabel: string; values: string[] }>,
 		},
 	)
+
+	const groupSections = useMemo(() => {
+		return groupFieldEntries.map(([fieldKey, rawValue]) => {
+			const values = normalizeStringArray(rawValue)
+			const groupsWithCourses = values.map((groupName) => ({
+				groupName,
+				course: getGroupCourse(groupName),
+			}))
+			const courseBuckets = new Map<number, string[]>()
+			const uncategorized: string[] = []
+
+			for (const item of groupsWithCourses) {
+				if (item.course === null) {
+					uncategorized.push(item.groupName)
+					continue
+				}
+
+				const current = courseBuckets.get(item.course) || []
+
+				current.push(item.groupName)
+				courseBuckets.set(item.course, current)
+			}
+
+			const orderedCourses = Array.from(courseBuckets.entries())
+				.sort(([left], [right]) => left - right)
+				.map(([course, groupNames]) => ({
+					course,
+					groupNames,
+				}))
+
+			const distinctCourseCount = orderedCourses.length
+			const canGroupByCourse = values.length > 1 && distinctCourseCount > 1
+
+			return {
+				fieldKey,
+				fieldLabel: getFieldLabel(fieldKey),
+				values,
+				orderedCourses,
+				uncategorized,
+				canGroupByCourse,
+			}
+		})
+	}, [groupFieldEntries, categoryFieldByKey])
 
 	const multiFieldSections = categoryFields
 		.filter((field) => field.type === 'multi_fields')
@@ -236,7 +320,58 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 		))
 	}
 
+	const renderGroupList = (values: string[]) => {
+		if (values.length === 0) {
+			return <p className='text-sm text-muted-foreground'>{t.emptyValue}</p>
+		}
+
+		return (
+			<div className='grid gap-x-4 gap-y-1 sm:grid-cols-2 xl:grid-cols-3'>
+				{values.map((value, idx) => (
+					<p key={`${value}-${idx}`} className='text-sm whitespace-pre-wrap break-all'>
+						{value}
+					</p>
+				))}
+			</div>
+		)
+	}
+
+	const renderGroupedByCourse = (groupSection: (typeof groupSections)[number]) => {
+		if (!groupSection.canGroupByCourse) {
+			return renderGroupList(groupSection.values)
+		}
+
+		return (
+			<div className='space-y-4'>
+				<div className='grid gap-4 md:grid-cols-2'>
+					{groupSection.orderedCourses.map(({ course, groupNames }) => (
+						<div key={`${groupSection.fieldKey}-course-${course}`} className='space-y-2 rounded-md border p-3'>
+							<p className='text-sm font-medium text-muted-foreground'>
+								{t.courseFull.replace('{course}', String(course))}
+							</p>
+							<div className='grid gap-x-4 gap-y-1 sm:grid-cols-2 xl:grid-cols-3'>
+								{groupNames.map((groupName, idx) => (
+									<p key={`${groupName}-${idx}`} className='text-sm whitespace-pre-wrap break-all'>
+										{groupName}
+									</p>
+								))}
+							</div>
+						</div>
+					))}
+				</div>
+
+				{groupSection.uncategorized.length > 0 ? (
+					<div className='space-y-2 rounded-md border border-dashed p-3'>
+						<p className='text-sm font-medium text-muted-foreground'>{t.noCourse}</p>
+						{renderGroupList(groupSection.uncategorized)}
+					</div>
+				) : null}
+			</div>
+		)
+	}
+
 	const hasAdditionalSections = sections.url.length > 0 || sections.file.length > 0 || multiFieldSections.length > 0
+	const hasGroupSections = groupSections.length > 0
 
 	return (
 		<Card className='md:col-span-3'>
@@ -244,13 +379,13 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 				<CardTitle>{t.title}</CardTitle>
 			</CardHeader>
 			<CardContent className='space-y-6'>
-				{awardFieldValues.length === 0 && multiFieldSections.length === 0 ? (
+				{awardFieldValues.length === 0 && multiFieldSections.length === 0 && groupSections.length === 0 ? (
 					<div className='rounded-md bg-muted/50 p-4 text-sm text-muted-foreground'>{t.noAdditionalFields}</div>
 				) : (
 					<>
 						<div className='space-y-3'>
 							<h3 className='font-semibold'>{t.categoryFields}</h3>
-							{sections.info.length > 0 ? (
+							{sections.info.length > 0 || hasGroupSections ? (
 								<div className='grid gap-4 md:grid-cols-2'>
 									{sections.info.map(({ fieldKey, fieldLabel, values }) => (
 										<div key={fieldKey} className='space-y-2 rounded-md border p-3'>
@@ -262,6 +397,16 @@ export const AwardFieldValuesCard = ({ award }: IAwardFieldValuesCardProps) => {
 														))
 													: renderTextValues(values)}
 											</div>
+										</div>
+									))}
+
+									{groupSections.map((groupSection) => (
+										<div
+											key={groupSection.fieldKey}
+											className='space-y-2 rounded-md border p-3 md:col-span-2'
+										>
+											<p className='text-sm font-medium text-muted-foreground'>{groupSection.fieldLabel}</p>
+											{renderGroupedByCourse(groupSection)}
 										</div>
 									))}
 								</div>

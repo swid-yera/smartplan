@@ -17,8 +17,24 @@ func TestValidateFieldValueTypeGroup(t *testing.T) {
 	t.Run("accepts non-empty string", func(t *testing.T) {
 		t.Parallel()
 
-		if err := validateFieldValueType(field, "10A"); err != nil {
+		value, err := normalizeStringArrayValue("10A", field.Key)
+		if err != nil {
 			t.Fatalf("expected nil, got %v", err)
+		}
+		if len(value) != 1 || value[0] != "10A" {
+			t.Fatalf("unexpected normalized value: %#v", value)
+		}
+	})
+
+	t.Run("accepts array of strings", func(t *testing.T) {
+		t.Parallel()
+
+		value, err := normalizeStringArrayValue([]string{" 10A ", "10B", " "}, field.Key)
+		if err != nil {
+			t.Fatalf("expected nil, got %v", err)
+		}
+		if len(value) != 2 || value[0] != "10A" || value[1] != "10B" {
+			t.Fatalf("unexpected normalized value: %#v", value)
 		}
 	})
 
