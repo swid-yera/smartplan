@@ -50,6 +50,20 @@ func TestBasePermissionsForRoleSpecialSkipsKPIViewWithoutDepartmentOrUnsupported
 	})
 }
 
+func TestBasePermissionsForRoleMethodistDoesNotReceiveKPIView(t *testing.T) {
+	t.Parallel()
+
+	perms := basePermissionsForRole(
+		storage.UserRoleMETHODIST,
+		storage.UserTypeMASTER,
+		[]UserDepartment{{}},
+	)
+
+	if containsPermission(perms, PermKPIView) {
+		t.Fatalf("did not expect KPI view permission, got %v", perms)
+	}
+}
+
 func containsPermission(perms []PermissionCode, target PermissionCode) bool {
 	for _, perm := range perms {
 		if perm == target {

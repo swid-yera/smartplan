@@ -279,6 +279,10 @@ func (s *userService) GetTeachersRatingWithDepartments(ctx context.Context) ([]*
 			continue
 		}
 
+		if user.Role == string(storage.UserRoleMETHODIST) {
+			continue
+		}
+
 		if len(user.Departments) == 0 {
 			continue
 		}

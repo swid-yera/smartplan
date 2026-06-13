@@ -137,6 +137,8 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 SELECT *
 FROM users u
 WHERE
+    u.role <> 'METHODIST'::user_role
+    AND
     EXISTS (
         SELECT 1
         FROM departments d
