@@ -156,10 +156,11 @@ func (r *AwardRepository) CountAwards(ctx context.Context) (int64, error) {
 	return r.queries.CountAwards(ctx)
 }
 
-func (r *AwardRepository) GetAwardsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) ([]storage.Award, error) {
+func (r *AwardRepository) GetAwardsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, statusOrder string, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) ([]storage.Award, error) {
 	return r.queries.GetAwardsPaginated(ctx, storage.GetAwardsPaginatedParams{
 		Search:      search,
 		Sort:        sort,
+		StatusOrder: statusOrder,
 		Offset:      offset,
 		Limit:       limit,
 		Teacher:     teacher,

@@ -185,7 +185,7 @@ type AwardServiceInterface interface {
 	UpdateAwardStatus(ctx context.Context, id uuid.UUID, params UpdateAwardStatusRequest) (AwardResponse, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
 	BuildSelected(ctx context.Context, award storage.Award) (AwardResponse, error)
-	GetAwardPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) (*PaginatedAwardsResponse, error)
+	GetAwardPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, statusOrder string, teacher pgtype.UUID, methodist pgtype.UUID, categoryIDs []uuid.UUID, status []string) (*PaginatedAwardsResponse, error)
 	GetUserAwardsSummary(ctx context.Context, userID uuid.UUID) (AwardUserAwardsSummaryResponse, error)
 	CountAwards(ctx context.Context) (int64, error)
 	GetAwardDepartmentsStats(ctx context.Context) ([]AwardDepartmentResponse, error)
@@ -1126,6 +1126,7 @@ func (s *AwardService) GetAwardPaginated(
 	pageSize int,
 	search string,
 	sort string,
+	statusOrder string,
 	teacher pgtype.UUID,
 	methodist pgtype.UUID,
 	categoryIDs []uuid.UUID,
@@ -1165,6 +1166,7 @@ func (s *AwardService) GetAwardPaginated(
 		int32(offset),
 		search,
 		sort,
+		statusOrder,
 		teacher,
 		methodist,
 		categoryIDs,
@@ -1210,6 +1212,7 @@ func (s *AwardService) GetUserAwardsSummary(ctx context.Context, userID uuid.UUI
 		math.MaxInt32,
 		"",
 		"desc",
+		"manage",
 		pgtype.UUID{Bytes: userID, Valid: true},
 		pgtype.UUID{},
 		nil,
