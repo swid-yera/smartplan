@@ -174,7 +174,7 @@ const UserMobileCard: FC<IUserMobileCardProps> = ({ user, onManagePermissions })
 
 	return (
 		<Card className='overflow-hidden'>
-			<CardContent className='space-y-4 p-4'>
+			<CardContent className='space-y-2'>
 				<Link className='flex items-start gap-3 hover:underline' href={`/users/${user.keycloakId}`}>
 					<div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
 						<User className='h-5 w-5' />
@@ -184,12 +184,10 @@ const UserMobileCard: FC<IUserMobileCardProps> = ({ user, onManagePermissions })
 							{user.firstName} {user.lastName}
 						</p>
 						<p className='truncate text-xs text-muted-foreground'>{user.username}</p>
-						<div className='mt-1'>
+						<div className='mt-1 flex flex-wrap gap-1.5'>
 							<UserRoleBadge locale={locale} role={user.role} size='sm' />
-						</div>
-						<div className='mt-2 flex flex-wrap gap-1.5'>
-							<UserTypeBadge locale={locale} userType={user.userType} />
-							<DepartmentBadge departments={user.departments} locale={locale} />
+							<UserTypeBadge locale={locale} size='sm' userType={user.userType} />
+							<DepartmentBadge departments={user.departments} locale={locale} size='sm' />
 						</div>
 					</div>
 				</Link>

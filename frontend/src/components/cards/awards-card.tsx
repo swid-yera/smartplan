@@ -13,6 +13,7 @@ import {
 	hasAnyPermission,
 } from '@helpers'
 import {
+	Badge,
 	Card,
 	CardContent,
 	CardDescription,
@@ -142,7 +143,7 @@ export const AwardsCard: FC<IProps> = ({
 					{description && <CardDescription>{description}</CardDescription>}
 				</CardHeader>
 				<CardContent>
-					<div className='relative overflow-x-auto min-w-0'>
+					<div className='relative hidden min-w-0 overflow-x-auto md:block'>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -183,11 +184,131 @@ export const AwardsCard: FC<IProps> = ({
 							</TableBody>
 						</Table>
 					</div>
+
+					<div className='space-y-3 md:hidden'>
+						{isExist ? (
+							awards.map((award) => (
+								<AwardMobileCard
+									key={award.id}
+									award={award}
+									showPointsColumn={showPointsColumn}
+									onSelect={setSelectedAward}
+								/>
+							))
+						) : (
+							<div className='flex min-h-44 items-center justify-center rounded-xl border bg-background px-4 text-center text-sm text-muted-foreground'>
+								{isLoading ? (
+									<Loader
+										className='flex flex-col justify-center items-center'
+										fullScreen={false}
+										type='data'
+									/>
+								) : (
+									t.empty
+								)}
+							</div>
+						)}
+					</div>
 				</CardContent>
 			</Card>
 
 			<AwardSheet award={selectedAward} onSelect={(award) => setSelectedAward(award)} />
 		</>
+	)
+}
+
+const AwardMobileCard: FC<IAwardRow> = ({ award, onSelect, showPointsColumn }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const me = useAuthStore((state) => state.user)
+	const t = getUILocaleSection(localeDictionary, locale).awardsCard
+	const dateLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
+	const teacherName = `${award?.teacher?.firstName} ${award?.teacher.lastName}`.trim() || t.unknownTeacher
+	const canOpenTeacherKpi = hasAnyPermission(me, [
+		PermissionCodeEnum.KPI_MANAGE,
+		PermissionCodeEnum.RUP_MANAGE,
+		PermissionCodeEnum.KPI_FULL,
+		PermissionCodeEnum.RUP_FULL,
+	])
+	const categoryIconOption = getCategoryIconOptionByName(award.category?.icon)
+	const CategoryIcon = categoryIconOption?.Icon || Folder
+	const criteriaSummary = `${getLocaleText(award.type.name, locale)} / ${getLocaleText(award.criteria.name, locale)}`
+	const createdAt = new Date(award.createdAt).toLocaleDateString(dateLocale)
+	const updatedAt = new Date(award.updatedAt).toLocaleString(dateLocale)
+	const previewFields = getAwardPreviewFields(award, locale)
+
+	return (
+		<Card
+			className='cursor-pointer overflow-hidden transition-colors hover:bg-muted/40'
+			role='button'
+			tabIndex={0}
+			onClick={() => onSelect(award)}
+			onKeyDown={(event) => {
+				if (event.key !== 'Enter' && event.key !== ' ') return
+				event.preventDefault()
+				onSelect(award)
+			}}
+		>
+			<CardContent className='space-y-3 p-4'>
+				<div className='flex items-start justify-between gap-3'>
+					<div className='min-w-0 space-y-1'>
+						<div className='flex items-center gap-2 text-sm text-muted-foreground'>
+							<span>{createdAt}</span>
+						</div>
+						<div className='flex items-center gap-2'>
+							<CategoryIcon className='h-4 w-4 shrink-0 text-primary' />
+							<Link
+								className='min-w-0 rounded-sm font-medium leading-snug hover:text-primary hover:underline'
+								href={`/kpi/${award.id}`}
+								title={criteriaSummary}
+								onClick={(event) => event.stopPropagation()}
+							>
+								<span className='block truncate'>{criteriaSummary}</span>
+							</Link>
+						</div>
+					</div>
+					{showPointsColumn ? (
+						<Badge className='shrink-0' variant='secondary'>
+							{award.totalPoints || 0}
+						</Badge>
+					) : null}
+				</div>
+				<StatusBadge status={award.status} />
+
+				<div className='grid gap-2 text-sm'>
+					<div className='flex flex-wrap items-center justify-between gap-3'>
+						<span className='inline-flex items-center gap-2 text-muted-foreground'>
+							<UserIcon className='h-4 w-4 shrink-0' />
+							{t.teacher}
+						</span>
+						{canOpenTeacherKpi && award.teacher?.keycloakId ? (
+							<Link
+								className='min-w-0 truncate text-right font-medium hover:text-primary hover:underline'
+								href={`/users/${award.teacher.keycloakId}?tab=kpi`}
+								onClick={(event) => event.stopPropagation()}
+							>
+								{teacherName}
+							</Link>
+						) : (
+							<span className='min-w-0 truncate text-right font-medium'>{teacherName}</span>
+						)}
+					</div>
+					{previewFields.length > 0 && (
+						<div className='space-y-2'>
+							{previewFields.map((field) => (
+								<div key={field.fieldKey} className='flex items-start justify-between gap-3'>
+									<span className='min-w-0 text-muted-foreground'>{field.fieldLabel}:</span>
+									<span className='min-w-0 max-w-[60%] truncate text-right font-medium'>{field.value}</span>
+								</div>
+							))}
+						</div>
+					)}
+					<div className='flex items-center justify-between gap-3'>
+						<span className='text-muted-foreground'>{t.updatedAt}</span>
+						<span className='text-right text-xs font-medium text-muted-foreground'>{updatedAt}</span>
+					</div>
+				</div>
+			</CardContent>
+		</Card>
 	)
 }
 
