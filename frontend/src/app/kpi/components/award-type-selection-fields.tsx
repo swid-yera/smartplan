@@ -89,7 +89,7 @@ export const AwardTypeSelectionFields = ({
 			bonusCriteriaOptionsSource === 'criteria' ? criteriaList : (nextVariant?.bonus_criteria ?? [])
 
 		if (!isCriteriaValidInList(selectedBonusCriteria, bonusCriteriaList)) {
-			setSelectedBonusCriteria(bonusCriteriaList.length === 1 ? bonusCriteriaList[0] : null)
+			setSelectedBonusCriteria(null)
 		}
 	}, [
 		availableTypes,
@@ -128,7 +128,7 @@ export const AwardTypeSelectionFields = ({
 			bonusCriteriaOptionsSource === 'criteria' ? criteriaList : (nextVariant?.bonus_criteria ?? [])
 
 		if (!isCriteriaValidInList(selectedBonusCriteria, bonusCriteriaList)) {
-			setSelectedBonusCriteria(bonusCriteriaList.length === 1 ? bonusCriteriaList[0] : null)
+			setSelectedBonusCriteria(null)
 		}
 	}, [
 		bonusCriteriaOptionsSource,
@@ -247,7 +247,7 @@ export const AwardTypeSelectionFields = ({
 			: (selectedVariant?.bonus_criteria ?? [])
 	const showTypeField = availableTypes.length !== 1
 	const showVariantField = !selectedType || selectedType.variants.length !== 1
-	const showCriteriaField = !selectedVariant || selectedVariant.criteria.length !== 1
+	const showCriteriaField = true
 	const showBonusCriteriaField = bonusCriteriaOptions.length > 0
 
 	return (
