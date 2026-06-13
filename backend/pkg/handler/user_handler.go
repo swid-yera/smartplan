@@ -65,7 +65,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	}
 
 	search := strings.TrimSpace(c.Query("search"))
-	sort, err := parseSortQuery(c, "sort", "desc")
+	sort, err := parseSortQuery(c, "sort", "asc")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": service.TranslateAPIErrorMessage("sort must be 'asc' or 'desc'"),

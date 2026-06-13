@@ -3293,11 +3293,19 @@ WHERE
         )
     )
 ORDER BY
-    CASE WHEN LOWER($4::text) = 'asc' THEN u.created_at END ASC,
-    CASE WHEN LOWER($4::text) = 'asc' THEN u.keycloak_id END ASC,
-    CASE WHEN LOWER($4::text) = 'desc' THEN u.created_at END DESC,
-    CASE WHEN LOWER($4::text) = 'desc' THEN u.keycloak_id END DESC,
-    u.created_at DESC
+    CASE WHEN LOWER($4::text) = 'asc' THEN COALESCE(LOWER(u.last_name), '') END ASC,
+    CASE WHEN LOWER($4::text) = 'asc' THEN COALESCE(LOWER(u.first_name), '') END ASC,
+    CASE WHEN LOWER($4::text) = 'asc' THEN COALESCE(LOWER(u.username), '') END ASC,
+    CASE WHEN LOWER($4::text) = 'asc' THEN LOWER(u.email) END ASC,
+    CASE WHEN LOWER($4::text) = 'desc' THEN COALESCE(LOWER(u.last_name), '') END DESC,
+    CASE WHEN LOWER($4::text) = 'desc' THEN COALESCE(LOWER(u.first_name), '') END DESC,
+    CASE WHEN LOWER($4::text) = 'desc' THEN COALESCE(LOWER(u.username), '') END DESC,
+    CASE WHEN LOWER($4::text) = 'desc' THEN LOWER(u.email) END DESC,
+    COALESCE(LOWER(u.last_name), '') ASC,
+    COALESCE(LOWER(u.first_name), '') ASC,
+    COALESCE(LOWER(u.username), '') ASC,
+    LOWER(u.email) ASC,
+    u.keycloak_id ASC
 LIMIT $6 OFFSET $5
 `
 
