@@ -5,7 +5,7 @@ import { type FC, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { Loader } from '@components'
+import { DepartmentBadge, Loader, UserTypeBadge } from '@components'
 import { getUILocaleSection, getUserTotalPoints, normalizeTotalPoints, normalizeUserRole } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
@@ -115,6 +115,10 @@ export const KpiTeachersHubCard: FC<IProps> = ({ className, profileTab = 'kpi' }
 				<div className='min-w-0 flex-1'>
 					<p className='truncate font-medium hover:underline'>{fullName}</p>
 					<p className='truncate text-xs text-muted-foreground'>{user.username}</p>
+					<div className='mt-1 flex flex-wrap items-center gap-1.5'>
+						<UserTypeBadge className='h-5 px-1.5' locale={locale} size='sm' userType={user.userType} />
+						<DepartmentBadge className='h-5 px-1.5' departments={user.departments} locale={locale} size='sm' />
+					</div>
 				</div>
 
 				<div className='flex shrink-0 items-center gap-2'>
