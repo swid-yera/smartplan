@@ -773,7 +773,11 @@ func basePermissionsForRole(
 	case storage.UserRoleADMIN:
 		return []PermissionCode{PermRUPFull, PermKPIFull}
 	case storage.UserRoleSPECIAL:
-		return []PermissionCode{PermRUPView}
+		perms := []PermissionCode{PermRUPView}
+		if len(departments) > 0 && isKPIAccessSpecialType(userType) {
+			perms = append(perms, PermKPIView)
+		}
+		return perms
 	case storage.UserRoleMETHODIST:
 		return []PermissionCode{PermRUPManage, PermKPIManage}
 	case storage.UserRoleTEACHER:
@@ -790,6 +794,15 @@ func basePermissionsForRole(
 func isKPIAccessTeacherType(userType storage.UserType) bool {
 	switch userType {
 	case storage.UserTypeGENERAL, storage.UserTypeHEAD, storage.UserTypeMASTER, storage.UserTypeSPECIALIST:
+		return true
+	default:
+		return false
+	}
+}
+
+func isKPIAccessSpecialType(userType storage.UserType) bool {
+	switch userType {
+	case storage.UserTypeGENERAL, storage.UserTypeMASTER, storage.UserTypeSPECIALIST:
 		return true
 	default:
 		return false

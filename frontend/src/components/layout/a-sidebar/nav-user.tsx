@@ -98,13 +98,13 @@ export const NavUser: FC<INavUserProps> = ({ user, className, ...props }) => {
 							{departmentName ? (
 								<DropdownMenuItem>
 									<GroupIcon />
-									<span className='truncate'>{departmentName}</span>
+									<span className='text-xs'>{departmentName}</span>
 								</DropdownMenuItem>
 							) : null}
 							{userTypeLabel && (
 								<DropdownMenuItem>
 									<UserCheck />
-									{userTypeLabel}
+									<span className='text-xs'>{userTypeLabel}</span>
 								</DropdownMenuItem>
 							)}
 							{user.email && (
