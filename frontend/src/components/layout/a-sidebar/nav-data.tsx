@@ -45,7 +45,11 @@ export const navMain: INav[] = [
 		titleKey: 'rups',
 		url: '/rups',
 		icon: PenIcon,
-		permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_MANAGE, PermissionCodeEnum.RUP_FULL],
+		permissions: [
+			// PermissionCodeEnum.RUP_VIEW,
+			PermissionCodeEnum.RUP_FULL,
+			PermissionCodeEnum.RUP_MANAGE,
+		],
 		items: [
 			{
 				id: 'rups-my',
@@ -89,7 +93,11 @@ export const navMain: INav[] = [
 		titleKey: 'lessons',
 		url: '/lessons',
 		icon: BookOpen,
-		permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_FULL],
+		permissions: [
+			// PermissionCodeEnum.RUP_VIEW,
+			PermissionCodeEnum.RUP_FULL,
+			PermissionCodeEnum.RUP_MANAGE,
+		],
 		items: [
 			{
 				id: 'lessons-my',
