@@ -195,6 +195,19 @@ const Page = () => {
 				return acc
 			}
 
+			if (field.type === 'group') {
+				acc[field.key] = Array.isArray(rawValue)
+					? rawValue
+							.filter((item): item is string => typeof item === 'string')
+							.map((item) => item.trim())
+							.filter(Boolean)
+					: typeof rawValue === 'string' && rawValue.trim().length > 0
+						? [rawValue.trim()]
+						: []
+
+				return acc
+			}
+
 			if (field.type === 'file') {
 				acc[field.key] = []
 

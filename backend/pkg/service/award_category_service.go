@@ -728,6 +728,22 @@ func normalizeAndValidateFieldValue(field storage.AwardCategoryField, value any)
 		return validateMultiFieldValueType(field, value)
 	}
 
+	if fieldType == "group" {
+		if err := validateFieldValueType(field, value); err != nil {
+			return nil, err
+		}
+
+		normalizedGroups, err := normalizeStringArrayValue(value, field.Key)
+		if err != nil {
+			return nil, err
+		}
+		if field.Required && len(normalizedGroups) == 0 {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", field.Key)}
+		}
+
+		return normalizedGroups, nil
+	}
+
 	if err := validateFieldValueType(field, value); err != nil {
 		return nil, err
 	}
@@ -749,12 +765,22 @@ func validateFieldValueType(field storage.AwardCategoryField, value any) error {
 		}
 	case "group":
 		strValue, ok := value.(string)
-		if !ok {
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string", key)}
+		if ok {
+			if strings.TrimSpace(strValue) == "" {
+				return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
+			}
+			return nil
 		}
-		if strings.TrimSpace(strValue) == "" {
-			return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must not be empty", key)}
+
+		if _, ok := value.([]string); ok {
+			return nil
 		}
+
+		if _, ok := value.([]any); ok {
+			return nil
+		}
+
+		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string or array of strings", key)}
 	case "url":
 		if err := validateURLOrURLArray(value, key); err != nil {
 			return err
@@ -919,6 +945,43 @@ func validateStringOrStringArray(value any, key string, label string) error {
 	default:
 		return &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string or array of strings", key)}
 	}
+}
+
+func normalizeStringArrayValue(value any, key string) ([]string, error) {
+	switch v := value.(type) {
+	case string:
+		trimmed := strings.TrimSpace(v)
+		if trimmed == "" {
+			return []string{}, nil
+		}
+		return []string{trimmed}, nil
+	case []string:
+		return trimAndFilterStrings(v), nil
+	case []any:
+		items := make([]string, 0, len(v))
+		for _, item := range v {
+			str, ok := item.(string)
+			if !ok {
+				return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string or array of strings", key)}
+			}
+			items = append(items, str)
+		}
+		return trimAndFilterStrings(items), nil
+	default:
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: fmt.Sprintf("field %s must be a string or array of strings", key)}
+	}
+}
+
+func trimAndFilterStrings(values []string) []string {
+	normalized := make([]string, 0, len(values))
+	for _, item := range values {
+		trimmed := strings.TrimSpace(item)
+		if trimmed == "" {
+			continue
+		}
+		normalized = append(normalized, trimmed)
+	}
+	return normalized
 }
 
 func hasProvidedValue(value any) bool {
