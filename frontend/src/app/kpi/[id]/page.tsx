@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { Loader, PageTitle, ResponsibleUsersCard, StatusInfoCard, withPermission } from '@components'
 import { getUILocaleSection, hasAnyPermission, hasPermission } from '@helpers'
@@ -21,12 +21,15 @@ import { DeleteAlert } from './components/delete-alert'
 import { KpiDetailsActions } from './components/kpi-details-actions'
 import localeDictionary from './components/locale.json'
 import { RejectSheet } from './components/reject-sheet'
+import { SendToReviewPromptDialog } from './components/send-to-review-prompt-dialog'
 import { StatusChangeSheet } from './components/status-change-sheet'
 import editLocaleDictionary from './edit/locale.json'
 
 const Page = () => {
 	const { id } = useParams()
 	const router = useRouter()
+	const pathname = usePathname()
+	const searchParams = useSearchParams()
 	const locale = useLocaleStore((state) => state.locale)
 	const localeSection = getUILocaleSection(localeDictionary, locale)
 	const t = localeSection.page
@@ -47,6 +50,8 @@ const Page = () => {
 	const [isRejectSheetOpen, setIsRejectSheetOpen] = useState(false)
 	const [isApproveSheetOpen, setIsApproveSheetOpen] = useState(false)
 	const [isChangePointsSheetOpen, setIsChangePointsSheetOpen] = useState(false)
+	const [isSendToReviewPromptOpen, setIsSendToReviewPromptOpen] = useState(false)
+	const sendToReviewHandledForAwardIdRef = useRef<string | null>(null)
 
 	const { user, authLoading } = useAuthStore()
 
@@ -106,6 +111,31 @@ const Page = () => {
 				: null,
 		[award, award?.bonus_criteria, selectedVariant],
 	)
+	const shouldShowSendToReviewPrompt = searchParams.has('sendToReview')
+
+	useEffect(() => {
+		if (!award || authLoading || !user) return
+		if (!shouldShowSendToReviewPrompt) return
+		if (sendToReviewHandledForAwardIdRef.current === award.id) return
+
+		sendToReviewHandledForAwardIdRef.current = award.id
+
+		const nextParams = new URLSearchParams(searchParams.toString())
+
+		nextParams.delete('sendToReview')
+		const nextUrl = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname
+
+		router.replace(nextUrl, { scroll: false })
+
+		if (user.keycloakId === award.teacher?.keycloakId) {
+			setIsSendToReviewPromptOpen(true)
+		}
+	}, [authLoading, award, pathname, router, searchParams, shouldShowSendToReviewPrompt, user])
+
+	const handleSendToReviewConfirm = () => {
+		setIsSendToReviewPromptOpen(false)
+		handleStatusChange(StatusEnum.IN_REVIEW)
+	}
 
 	if (isLoading || authLoading || !user) return <Loader />
 
@@ -117,6 +147,13 @@ const Page = () => {
 			</div>
 		)
 	}
+
+	const canFullAccess = hasPermission(user, PermissionCodeEnum.KPI_FULL)
+	const isAuthor = user.keycloakId === award.teacher.keycloakId || canFullAccess
+	const isMethodist = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
+	const isStatusForEdit = award.status === StatusEnum.DRAFT || award.status === StatusEnum.REJECTED
+	const isMethodistReview = (isMethodist || canFullAccess) && award.status === StatusEnum.IN_REVIEW
+	const canChangePoints = award.status === StatusEnum.APPROVED && canFullAccess
 
 	const handleStatusChange = (
 		newStatus: StatusEnum,
@@ -172,13 +209,6 @@ const Page = () => {
 			},
 		})
 	}
-
-	const canFullAccess = hasPermission(user, PermissionCodeEnum.KPI_FULL)
-	const isAuthor = user.keycloakId === award.teacher.keycloakId || canFullAccess
-	const isMethodist = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
-	const isStatusForEdit = award.status === StatusEnum.DRAFT || award.status === StatusEnum.REJECTED
-	const isMethodistReview = (isMethodist || canFullAccess) && award.status === StatusEnum.IN_REVIEW
-	const canChangePoints = award.status === StatusEnum.APPROVED && canFullAccess
 
 	return (
 		<div className='space-y-6 p-6 w-full'>
@@ -280,6 +310,16 @@ const Page = () => {
 						},
 					)
 				}}
+			/>
+
+			<SendToReviewPromptDialog
+				cancelLabel={t.sendToReviewPromptCancel}
+				confirmLabel={t.sendToReviewPromptConfirm}
+				description={t.sendToReviewPromptDescription}
+				isOpen={isSendToReviewPromptOpen}
+				title={t.sendToReviewPromptTitle}
+				onConfirm={handleSendToReviewConfirm}
+				onOpenChange={setIsSendToReviewPromptOpen}
 			/>
 		</div>
 	)

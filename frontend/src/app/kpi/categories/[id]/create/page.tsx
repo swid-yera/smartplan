@@ -340,7 +340,7 @@ function CreateAwardPage() {
 					toast.success(`Награда успешно создана с типом - ${getLocaleText(createdAward.type.name, locale)}`, {
 						id: toastId,
 					})
-					push(`/kpi/${createdAward.id}`)
+					push(`/kpi/${createdAward.id}?sendToReview=1`)
 				},
 				onError: (error) => {
 					let errorMessage = `Ошибка ввода данных - ${selectedTypeName}`

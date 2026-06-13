@@ -93,16 +93,16 @@ export const KpiDetailsActions = ({
 	if (isStatusForEdit && isAuthor) {
 		actions.push(
 			{
-				id: 'edit',
-				label: t.edit,
-				icon: Edit,
-				href: `/kpi/${id}/edit`,
-			},
-			{
 				id: 'send-to-review',
 				label: t.sendToReview,
 				icon: SendIcon,
 				onClick: onSendToReview,
+			},
+			{
+				id: 'edit',
+				label: t.edit,
+				icon: Edit,
+				href: `/kpi/${id}/edit`,
 			},
 			{
 				id: 'delete',
