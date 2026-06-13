@@ -22,7 +22,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 	}, [error])
 
 	return (
-		<div className='container flex flex-1 flex-col gap-8 py-12 max-w-3xl w-full mx-auto px-2'>
+		<div className='container flex flex-1 flex-col gap-8 py-12 max-w-7xl w-full mx-auto px-2'>
 			<PageTitle backHref='back' description={t.errors.serverDescription}>
 				500
 			</PageTitle>
