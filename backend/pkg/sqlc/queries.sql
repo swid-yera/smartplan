@@ -137,8 +137,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 SELECT *
 FROM users u
 WHERE
-    u.role = 'TEACHER'::user_role
-    AND EXISTS (
+    EXISTS (
         SELECT 1
         FROM departments d
         WHERE u.keycloak_id = ANY(d.users)

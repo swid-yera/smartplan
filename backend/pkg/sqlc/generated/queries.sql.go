@@ -3049,8 +3049,7 @@ const getTeachersRatingWithDepartments = `-- name: GetTeachersRatingWithDepartme
 SELECT keycloak_id, email, username, first_name, last_name, phone, role, user_type, rups, points_by_categories, awards, violation, violation_ids, password_changed_at, last_seen_at, created_at, updated_at
 FROM users u
 WHERE
-    u.role = 'TEACHER'::user_role
-    AND EXISTS (
+    EXISTS (
         SELECT 1
         FROM departments d
         WHERE u.keycloak_id = ANY(d.users)

@@ -238,7 +238,7 @@ func (r *Router) Init() *gin.Engine {
 		if r.statistics != nil {
 			statistics := protected.Group("/statistics")
 			{
-				statistics.GET("/teachers/rating", middleware.RequirePermission(service.PermKPIManage), r.statistics.GetTeachersRating)
+				statistics.GET("/teachers/rating", middleware.RequirePermission(service.PermKPIManage, service.PermKPIFull), r.statistics.GetTeachersRating)
 				statistics.GET("/departments/top", middleware.RequirePermission(service.PermKPIManage), r.statistics.GetTopDepartments)
 				statistics.GET("/departments/top-teachers", middleware.RequirePermission(service.PermKPIManage), r.statistics.GetTopTeachersByDepartment)
 				statistics.GET("/departments/:id/teachers", middleware.RequirePermission(service.PermKPIManage), r.statistics.GetTeachersByDepartment)
