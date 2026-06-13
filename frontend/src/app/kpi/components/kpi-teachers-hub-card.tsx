@@ -79,6 +79,10 @@ export const KpiTeachersHubCard: FC<IProps> = ({ className, profileTab = 'kpi' }
 
 	const teacherUsers = useMemo(() => usersData?.data.filter((user) => user.role) ?? [], [usersData])
 	const hasReviewTeachers = reviewTeachers.length > 0
+	const totalReviewAwardsCount = useMemo(
+		() => reviewTeachers.reduce((sum, teacher) => sum + teacher.reviewAwardsCount, 0),
+		[reviewTeachers],
+	)
 
 	useEffect(() => {
 		let openTimer: ReturnType<typeof setTimeout> | undefined
@@ -182,7 +186,7 @@ export const KpiTeachersHubCard: FC<IProps> = ({ className, profileTab = 'kpi' }
 				</div>
 
 				<div className='space-y-3 rounded-xl'>
-					<div className='flex items-start justify-between gap-3'>
+					<div className='flex flex-wrap items-start justify-between gap-3'>
 						<div className='space-y-1'>
 							<div className='flex items-center gap-2'>
 								<FileSearch className='h-4 w-4 text-primary' />
@@ -190,7 +194,25 @@ export const KpiTeachersHubCard: FC<IProps> = ({ className, profileTab = 'kpi' }
 							</div>
 							<p className='text-xs text-muted-foreground'>{reviewT.description}</p>
 						</div>
-						<Badge variant='secondary'>{reviewTeachers.length}</Badge>
+
+						<div className='flex flex-wrap gap-2'>
+							<div className='rounded-lg border bg-primary/10 px-3 py-2'>
+								<p className='text-[11px] font-medium uppercase tracking-wide text-primary/80'>
+									{reviewT.teacherCountLabel}
+								</p>
+								<Badge className='mt-2 px-3 py-1 text-sm font-semibold' variant='default'>
+									{reviewTeachers.length}
+								</Badge>
+							</div>
+							<div className='rounded-lg border bg-muted/60 px-3 py-2'>
+								<p className='text-[11px] font-medium uppercase tracking-wide text-muted-foreground'>
+									{reviewT.pendingAwardsCountLabel}
+								</p>
+								<Badge className='mt-2 px-3 py-1 text-sm font-semibold' variant='outline'>
+									{totalReviewAwardsCount}
+								</Badge>
+							</div>
+						</div>
 					</div>
 
 					<div className='relative hidden w-full overflow-x-auto md:block'>
@@ -286,10 +308,10 @@ const ReviewTeacherRow: FC<IReviewTeacherRowProps> = ({ teacher }) => {
 			</TableCell>
 			<TableCell className='font-medium'>{teacher.username}</TableCell>
 			<TableCell>
-				<Badge variant='outline'>{teacher.totalPoints.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}</Badge>
+				<Badge variant='default'>{teacher.totalPoints.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}</Badge>
 			</TableCell>
 			<TableCell>
-				<Badge variant='secondary'>
+				<Badge variant='outline'>
 					{teacher.reviewAwardsCount.toLocaleString(locale === 'kk' ? 'kk-KZ' : 'ru-RU')}
 				</Badge>
 			</TableCell>
