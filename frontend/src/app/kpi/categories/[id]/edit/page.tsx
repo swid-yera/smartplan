@@ -259,16 +259,6 @@ const Page = () => {
 				actions={
 					<ButtonGroup className='sm:w-auto'>
 						<Button
-							className='hover:text-primary'
-							disabled={updateMutation.isPending}
-							variant='outline'
-							onClick={handleSubmit}
-						>
-							<Save className='mr-2 h-4 w-4' />
-							{t.save}
-						</Button>
-
-						<Button
 							className='hover:text-destructive'
 							type='button'
 							variant='outline'
@@ -276,6 +266,16 @@ const Page = () => {
 						>
 							<Trash2 className='mr-2 h-4 w-4' />
 							{t.delete}
+						</Button>
+
+						<Button
+							className='hover:text-primary'
+							disabled={updateMutation.isPending}
+							variant='outline'
+							onClick={handleSubmit}
+						>
+							<Save className='mr-2 h-4 w-4' />
+							{t.save}
 						</Button>
 
 						<LocaleToggleButton

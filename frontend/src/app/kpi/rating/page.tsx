@@ -4,8 +4,7 @@ import type { CSSProperties } from 'react'
 
 import Link from 'next/link'
 
-import { Loader, PageTitle, withNavAccess } from '@components'
-import { UserTypeBadge } from '@components'
+import { Loader, PageTitle, UserTypeBadge, withNavAccess } from '@components'
 import { getLocaleText, getUILocaleSection, getUserTotalPoints, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
@@ -77,7 +76,7 @@ const Page = () => {
 
 	if (departmentsWithTotalPoints.length === 0) {
 		return (
-			<section className='mx-auto flex w-full max-w-6xl flex-col gap-4 p-6'>
+			<section className='mx-auto flex w-full max-w-7xl flex-col gap-3 p-6'>
 				<PageTitle description={t.description}>{t.title}</PageTitle>
 				<RatingNav
 					labels={{
@@ -86,6 +85,7 @@ const Page = () => {
 						top20: t.top20,
 					}}
 				/>
+
 				<Card className='border-dashed'>
 					<CardContent className='py-12 text-center'>
 						<p className='text-base font-medium'>{t.emptyTitle}</p>
@@ -97,7 +97,7 @@ const Page = () => {
 	}
 
 	return (
-		<section className='mx-auto flex w-full max-w-6xl flex-col gap-4 p-6'>
+		<section className='mx-auto flex w-full max-w-7xl flex-col gap-3 p-6'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 			<RatingNav
 				labels={{

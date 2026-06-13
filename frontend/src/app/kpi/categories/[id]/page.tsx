@@ -25,14 +25,11 @@ import {
 	CardTitle,
 	Label,
 	Switch,
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
 } from '@shadcn'
 import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, StatusEnum } from '@types'
-import { Edit, Folder, Info, Plus } from 'lucide-react'
+import { Edit, Folder, Plus } from 'lucide-react'
 
 import { AwardFilterCard } from '../../components'
 import { useCategoryAwardsScope } from './award-scope-state'
@@ -218,24 +215,7 @@ const Page = () => {
 					<div className='space-y-1'>
 						<div className='flex items-center gap-2'>
 							<p className='text-sm font-medium'>{showAllAwardsInQuery ? t.awardsAllTitle : t.awardsOwnTitle}</p>
-							{showAllAwardsInQuery ? (
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											aria-label={t.awardsAllDescription}
-											className='size-7 shrink-0'
-											size='icon'
-											type='button'
-											variant='ghost'
-										>
-											<Info className='h-4 w-4' />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent side='top'>{t.awardsAllDescription}</TooltipContent>
-								</Tooltip>
-							) : null}
 						</div>
-						{!showAllAwardsInQuery ? <p className='text-sm text-muted-foreground'>{awardsDescription}</p> : null}
 					</div>
 
 					<div className='flex items-center gap-3'>

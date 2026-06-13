@@ -52,7 +52,7 @@ export function LessonGroupedListCard({
 					{description ? <CardDescription>{description}</CardDescription> : null}
 				</CardHeader>
 				<CardContent>
-					<div className='relative min-w-0 overflow-x-auto'>
+					<div className='relative hidden min-w-0 overflow-x-auto md:block'>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -100,6 +100,39 @@ export function LessonGroupedListCard({
 								)}
 							</TableBody>
 						</Table>
+					</div>
+
+					<div className='space-y-3 md:hidden'>
+						{isExist ? (
+							groups.map((group) => (
+								<LessonMobileGroupCard
+									key={group.id}
+									group={group}
+									labels={labels}
+									onRowSelect={setSelectedLesson}
+								/>
+							))
+						) : (
+							<div className='flex min-h-44 items-center justify-center rounded-xl border bg-background px-4 text-center text-sm text-muted-foreground'>
+								{isLoading ? (
+									<Loader
+										className='flex flex-col items-center justify-center'
+										fullScreen={false}
+										type='data'
+									/>
+								) : (
+									<div className='space-y-3'>
+										<p className='text-base font-medium'>{emptyState.title}</p>
+										<p className='text-sm text-muted-foreground'>{emptyState.description}</p>
+										{emptyState.actionHref && emptyState.actionLabel ? (
+											<Button asChild size='sm' variant='outline'>
+												<Link href={emptyState.actionHref}>{emptyState.actionLabel}</Link>
+											</Button>
+										) : null}
+									</div>
+								)}
+							</div>
+						)}
 					</div>
 				</CardContent>
 
@@ -193,5 +226,85 @@ function LessonGroupRows({ group, labels, onRowSelect }: LessonGroupRowsProps) {
 				)
 			})}
 		</>
+	)
+}
+
+type LessonMobileGroupCardProps = LessonGroupRowsProps
+
+function LessonMobileGroupCard({ group, labels, onRowSelect }: LessonMobileGroupCardProps) {
+	return (
+		<Card className='overflow-hidden'>
+			<CardContent className='space-y-3 p-4'>
+				<div className='flex items-start justify-between gap-3'>
+					<div className='min-w-0'>
+						<p className='text-sm font-semibold'>{group.title}</p>
+					</div>
+					<Badge className='shrink-0' variant='secondary'>
+						{group.count}
+					</Badge>
+				</div>
+
+				<div className='space-y-2'>
+					{group.lessons.map((lesson) => (
+						<div
+							key={lesson.id}
+							className='cursor-pointer rounded-lg border bg-background p-3 transition-colors hover:bg-muted/40'
+							role='button'
+							tabIndex={0}
+							onClick={() => onRowSelect(lesson.lesson)}
+							onKeyDown={(event) => {
+								if (event.key !== 'Enter' && event.key !== ' ') return
+								event.preventDefault()
+								onRowSelect(lesson.lesson)
+							}}
+						>
+							<div className='space-y-2'>
+								<div className='flex items-start justify-between gap-3'>
+									<Link
+										className='min-w-0 rounded-sm font-medium leading-snug hover:text-primary hover:underline'
+										href={`/lessons/${lesson.id}`}
+										title={lesson.topic || labels.notSpecifiedFemale}
+										onClick={(event) => event.stopPropagation()}
+									>
+										<span className='block truncate'>{lesson.topic || labels.notSpecifiedFemale}</span>
+									</Link>
+									<TopicTypeBadge
+										label={lesson.typeLabel}
+										type={(lesson.type === 'PRACTICE' ? 'PRACTICAL' : 'COMBINED') as TopicTypeEnum}
+									/>
+								</div>
+
+								{lesson.description ? (
+									<p className='line-clamp-2 text-sm text-muted-foreground'>{lesson.description}</p>
+								) : null}
+
+								<div className='grid grid-cols-2 gap-2 text-xs text-muted-foreground'>
+									<div className='space-y-1'>
+										<p className='text-[11px]'>{labels.discipline}</p>
+										<p className='truncate font-medium text-foreground'>
+											{lesson.discipline || labels.notSpecifiedFemale}
+										</p>
+									</div>
+									<div className='space-y-1'>
+										<p className='text-[11px]'>{labels.group}</p>
+										<p className='truncate font-medium text-foreground'>
+											{lesson.group || labels.groupNotSpecified}
+										</p>
+									</div>
+									<div className='space-y-1'>
+										<p className='text-[11px]'>{labels.date}</p>
+										<p className='truncate font-medium text-foreground'>{lesson.date}</p>
+									</div>
+									<div className='space-y-1'>
+										<p className='text-[11px]'>{labels.lessonType}</p>
+										<p className='truncate font-medium text-foreground'>{lesson.typeLabel}</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					))}
+				</div>
+			</CardContent>
+		</Card>
 	)
 }

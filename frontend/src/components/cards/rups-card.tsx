@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 import { formatAsDash, getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import {
+	Badge,
 	Button,
 	Card,
 	CardContent,
@@ -23,7 +24,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type IRup } from '@types'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { BookOpen, ChevronLeft, ChevronRight, GraduationCap, User } from 'lucide-react'
 
 import { StatusBadge } from '../badges/status-badge'
 import { RupSheet } from '../sheets/rup-sheet'
@@ -69,7 +70,7 @@ export const RupsCard: FC<IRupsProps> = ({
 					{description && <CardDescription>{description}</CardDescription>}
 				</CardHeader>
 				<CardContent>
-					<div className='relative overflow-x-auto min-w-0'>
+					<div className='relative hidden min-w-0 overflow-x-auto md:block'>
 						<Table className='min-w-[200px]'>
 							<TableHeader>
 								<TableRow>
@@ -102,6 +103,24 @@ export const RupsCard: FC<IRupsProps> = ({
 								)}
 							</TableBody>
 						</Table>
+					</div>
+
+					<div className='space-y-3 md:hidden'>
+						{isExist ? (
+							rups.map((rup) => <RupMobileCard key={rup.id} rup={rup} onSelect={setSelectedRup} />)
+						) : (
+							<div className='flex min-h-40 items-center justify-center rounded-xl border bg-background px-4 text-center text-sm text-muted-foreground'>
+								{isLoading ? (
+									<Loader
+										className='flex flex-col items-center justify-center'
+										fullScreen={false}
+										type='data'
+									/>
+								) : (
+									t.empty
+								)}
+							</div>
+						)}
 					</div>
 				</CardContent>
 
@@ -140,6 +159,71 @@ export const RupsCard: FC<IRupsProps> = ({
 interface IRupRow {
 	rup: IRup
 	onSelect: (rup: IRup) => void
+}
+
+const RupMobileCard: FC<IRupRow> = ({ rup, onSelect }) => {
+	const locale = useLocaleStore((state) => state.locale)
+	const t = getUILocaleSection(localeDictionary, locale).rupsCard
+	const title = getLocaleText(rup?.name, locale) || t.untitled
+	const teacherName = `${rup?.teacher?.firstName || ''} ${rup?.teacher?.lastName || ''}`.trim() || t.unknownTeacher
+	const specialty = formatAsDash(getLocaleText(rup?.groups[0]?.specialty, locale))
+	const qualification = formatAsDash(getLocaleText(rup?.groups[0]?.qualification, locale))
+
+	return (
+		<Card
+			className='cursor-pointer overflow-hidden transition-colors hover:bg-muted/40'
+			role='button'
+			tabIndex={0}
+			onClick={() => onSelect(rup)}
+			onKeyDown={(event) => {
+				if (event.key !== 'Enter' && event.key !== ' ') return
+				event.preventDefault()
+				onSelect(rup)
+			}}
+		>
+			<CardContent className='space-y-3 p-4'>
+				<div className='flex items-start justify-between gap-3'>
+					<Link
+						className='min-w-0 flex-1 rounded-sm font-medium leading-snug hover:text-primary hover:underline'
+						href={`/rups/${rup.id}`}
+						title={title}
+						onClick={(event) => event.stopPropagation()}
+					>
+						<span className='block truncate'>{title}</span>
+					</Link>
+					<StatusBadge status={rup.status} />
+				</div>
+
+				<div className='grid gap-2 rounded-lg bg-muted/20 p-3 text-sm'>
+					<div className='flex items-center justify-between gap-3'>
+						<span className='inline-flex items-center gap-2 text-muted-foreground'>
+							<User className='h-4 w-4 shrink-0' />
+							{t.teacher}
+						</span>
+						<span className='min-w-0 truncate text-right font-medium'>{teacherName}</span>
+					</div>
+					<div className='flex items-center justify-between gap-3'>
+						<span className='inline-flex items-center gap-2 text-muted-foreground'>
+							<BookOpen className='h-4 w-4 shrink-0' />
+							{t.specialty}
+						</span>
+						<span className='min-w-0 truncate text-right font-medium'>{specialty}</span>
+					</div>
+					<div className='flex items-center justify-between gap-3'>
+						<span className='inline-flex items-center gap-2 text-muted-foreground'>
+							<GraduationCap className='h-4 w-4 shrink-0' />
+							{t.qualification}
+						</span>
+						<span className='min-w-0 truncate text-right font-medium'>{qualification}</span>
+					</div>
+					<div className='flex items-center justify-between gap-3'>
+						<span className='text-muted-foreground'>{t.studyYear}</span>
+						<Badge variant='secondary'>{formatAsDash(rup?.studyYear)}</Badge>
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+	)
 }
 
 const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {

@@ -22,12 +22,24 @@ import { KpiDetailsActions } from './components/kpi-details-actions'
 import localeDictionary from './components/locale.json'
 import { RejectSheet } from './components/reject-sheet'
 import { StatusChangeSheet } from './components/status-change-sheet'
+import editLocaleDictionary from './edit/locale.json'
 
 const Page = () => {
 	const { id } = useParams()
 	const router = useRouter()
 	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale).page
+	const localeSection = getUILocaleSection(localeDictionary, locale)
+	const t = localeSection.page
+	const editT = getUILocaleSection(editLocaleDictionary, locale)
+	const awardSelectionLabels = {
+		typeLabel: editT.typeLabel,
+		variantLabel: localeSection.approveSheet.variantLabel,
+		criteriaLabel: localeSection.approveSheet.criteriaLabel,
+		bonusCriteriaLabel: localeSection.approveSheet.bonusCriteriaLabel,
+		methodLabel: localeSection.approveSheet.methodLabel,
+		pointsLabel: localeSection.approveSheet.pointsLabel,
+		noBonusCriteria: localeSection.approveSheet.noBonusCriteria,
+	}
 
 	const [isStatusSheetOpen, setIsStatusSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -205,7 +217,7 @@ const Page = () => {
 			/>
 
 			<div className='mt-6 grid gap-6 md:grid-cols-3'>
-				<AwardMainInfoCard award={award} />
+				<AwardMainInfoCard award={award} labels={awardSelectionLabels} />
 
 				<ResponsibleUsersCard
 					createdAt={award.createdAt}
