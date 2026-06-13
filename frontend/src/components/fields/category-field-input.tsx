@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
-import { getLocaleText } from '@helpers'
+import { formatCourseFromYearAndGroupName, getLocaleText } from '@helpers'
 import { services } from '@services'
 import {
+	Badge,
 	Button,
 	Calendar,
 	Command,
@@ -29,7 +30,7 @@ import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import type { CategoryFieldType, ICategoryFieldResponse } from '@types'
 import { format } from 'date-fns'
-import { Check, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronDown, ChevronsUpDown, X } from 'lucide-react'
 
 import {
 	type ICategoryFieldValue,
@@ -67,6 +68,37 @@ const parseSelectOptions = (options: unknown): { label: string; value: string }[
 		.filter((option): option is { label: string; value: string } => !!option)
 }
 
+const getCurrentAcademicYear = () => {
+	const now = new Date()
+	const currentYear = now.getFullYear()
+	const academicYearStart = now.getMonth() >= 8 ? currentYear : currentYear - 1
+
+	return `${academicYearStart}-${academicYearStart + 1}`
+}
+
+const normalizeGroupFieldValue = (value: ICategoryFieldValue | undefined) => {
+	if (Array.isArray(value)) {
+		return value
+			.filter((item): item is string => typeof item === 'string')
+			.map((item) => item.trim())
+			.filter(Boolean)
+	}
+
+	if (typeof value === 'string') {
+		const trimmedValue = value.trim()
+
+		return trimmedValue ? [trimmedValue] : []
+	}
+
+	return []
+}
+
+const getGroupCourse = (groupName: string) => {
+	const course = formatCourseFromYearAndGroupName(groupName, getCurrentAcademicYear())
+
+	return typeof course === 'number' ? course : null
+}
+
 type CategoryFieldInputProps = {
 	field: ICategoryFieldResponse
 	value: ICategoryFieldValue | undefined
@@ -86,6 +118,127 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 		...services.group.getAllOptions(),
 		enabled: field.type === 'group',
 	})
+	const selectedGroups = useMemo(() => normalizeGroupFieldValue(value), [value])
+	const selectedGroupSet = useMemo(() => new Set(selectedGroups), [selectedGroups])
+	const groupsByCourse = useMemo(() => {
+		const sections = new Map<number, typeof groupsData>()
+		const uncategorizedGroups: typeof groupsData = []
+
+		for (const group of groupsData) {
+			const course = getGroupCourse(group.name)
+
+			if (course === null) {
+				uncategorizedGroups.push(group)
+				continue
+			}
+
+			const courseGroups = sections.get(course) || []
+
+			courseGroups.push(group)
+			sections.set(course, courseGroups)
+		}
+
+		const orderedSections = Array.from(sections.entries())
+			.sort(([leftCourse], [rightCourse]) => leftCourse - rightCourse)
+			.map(([course, courseGroups]) => ({
+				course,
+				groups: courseGroups.sort((left, right) => left.name.localeCompare(right.name, locale)),
+			}))
+
+		const hasUncategorizedGroups = uncategorizedGroups.length > 0
+
+		return {
+			orderedSections,
+			uncategorizedGroups: hasUncategorizedGroups
+				? uncategorizedGroups.sort((left, right) => left.name.localeCompare(right.name, locale))
+				: [],
+		}
+	}, [groupsData, locale])
+
+	const selectedGroupLabels = useMemo(() => {
+		const groupByName = new Map(groupsData.map((group) => [group.name, group]))
+
+		return selectedGroups.map((groupName) => groupByName.get(groupName)?.name || groupName)
+	}, [groupsData, selectedGroups])
+	const isAllGroupsSelected = groupsData.length > 0 && selectedGroups.length === groupsData.length
+	const selectedSummary = useMemo(() => {
+		if (!selectedGroups.length) return ''
+
+		if (isAllGroupsSelected) {
+			return t.allCourses
+		}
+
+		const selectedSet = new Set(selectedGroups)
+		const exactCourseSection = groupsByCourse.orderedSections.find(({ groups }) => {
+			return (
+				groups.length > 0 &&
+				groups.every((group) => selectedSet.has(group.name)) &&
+				groups.length === selectedGroups.length
+			)
+		})
+
+		if (exactCourseSection) {
+			return t.courseFull.replace('{course}', String(exactCourseSection.course))
+		}
+
+		if (selectedGroups.length === 1) {
+			return selectedGroupLabels[0] || selectedGroups[0] || ''
+		}
+
+		return t.selectedCount.replace('{count}', String(selectedGroups.length))
+	}, [
+		groupsByCourse.orderedSections,
+		isAllGroupsSelected,
+		selectedGroupLabels,
+		selectedGroups,
+		t.allCourses,
+		t.courseFull,
+		t.selectedCount,
+	])
+
+	const updateGroupSelection = (nextSelection: string[]) => {
+		const uniqueSelection = Array.from(new Set(nextSelection))
+		const orderedSelection = groupsData
+			.map((group) => group.name)
+			.filter((groupName) => uniqueSelection.includes(groupName))
+			.concat(uniqueSelection.filter((groupName) => !groupsData.some((group) => group.name === groupName)))
+
+		onChange(field.key, orderedSelection)
+	}
+
+	const toggleGroupSelection = (groupName: string) => {
+		const nextSelection = selectedGroups.includes(groupName)
+			? selectedGroups.filter((item) => item !== groupName)
+			: [...selectedGroups, groupName]
+
+		updateGroupSelection(nextSelection)
+	}
+
+	const toggleCourseSelection = (course: number) => {
+		const courseGroupNames =
+			groupsByCourse.orderedSections
+				.find((section) => section.course === course)
+				?.groups.map((group) => group.name) || []
+
+		if (!courseGroupNames.length) return
+
+		const courseSet = new Set(courseGroupNames)
+		const isCourseFullySelected = courseGroupNames.every((groupName) => selectedGroupSet.has(groupName))
+
+		const nextSelection = isCourseFullySelected
+			? selectedGroups.filter((groupName) => !courseSet.has(groupName))
+			: [...selectedGroups, ...courseGroupNames.filter((groupName) => !selectedGroupSet.has(groupName))]
+
+		updateGroupSelection(nextSelection)
+	}
+
+	const toggleAllGroupsSelection = () => {
+		updateGroupSelection(isAllGroupsSelected ? [] : groupsData.map((group) => group.name))
+	}
+
+	const clearGroupSelection = () => {
+		updateGroupSelection([])
+	}
 
 	if (field.type === 'multi_fields') {
 		return null
@@ -136,12 +289,8 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 	}
 
 	if (field.type === 'group') {
-		const selectedGroup = typeof value === 'string' ? groupsData.find((group) => group.name === value) : undefined
-		const hasValue = typeof value === 'string' && value.trim().length > 0
-		const displayValue = hasValue
-			? groupsData.length > 0
-				? selectedGroup?.name || t.groupNotFound
-				: value
+		const displayValue = selectedGroups.length
+			? selectedSummary
 			: isGroupsLoading
 				? t.groupLoading
 				: placeholderText || t.groupPlaceholder
@@ -153,10 +302,10 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 					<PopoverTrigger asChild>
 						<Button
 							className='w-full justify-between font-normal'
+							disabled={isGroupsLoading}
 							id={field.key}
 							role='combobox'
 							variant='outline'
-							disabled={isGroupsLoading}
 						>
 							<span className='truncate'>{displayValue}</span>
 							<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
@@ -167,31 +316,106 @@ export const CategoryFieldInput = ({ field, value, onChange }: CategoryFieldInpu
 							<CommandInput placeholder={t.groupSearch} />
 							<CommandList>
 								<CommandEmpty>{t.groupNotFoundCommand}</CommandEmpty>
-								<CommandGroup>
-									{groupsData.map((group) => (
-										<CommandItem
-											key={group.keycloakId}
-											value={group.name}
-											onSelect={() => {
-												onChange(field.key, group.name)
-												setGroupOpen(false)
-											}}
-										>
-											<Check
-												className={
-													selectedGroup?.keycloakId === group.keycloakId
-														? 'mr-2 h-4 w-4 opacity-100'
-														: 'mr-2 h-4 w-4 opacity-0'
-												}
-											/>
-											{group.name}
+								<CommandGroup heading={t.allCourses}>
+									<CommandItem value={t.allCourses} onSelect={toggleAllGroupsSelection}>
+										<Check
+											className={isAllGroupsSelected ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'}
+										/>
+										{t.allCourses}
+									</CommandItem>
+									{selectedGroups.length > 0 ? (
+										<CommandItem value={t.clearSelection} onSelect={clearGroupSelection}>
+											<X className='mr-2 h-4 w-4' />
+											{t.clearSelection}
 										</CommandItem>
-									))}
+									) : null}
 								</CommandGroup>
+								{groupsByCourse.orderedSections.map(({ course, groups }) => {
+									const courseGroupNames = groups.map((group) => group.name)
+									const isCourseFullySelected =
+										courseGroupNames.length > 0 &&
+										courseGroupNames.every((groupName) => selectedGroupSet.has(groupName))
+
+									return (
+										<CommandGroup key={course} heading={t.courseFull.replace('{course}', String(course))}>
+											<CommandItem
+												value={`${t.courseFull.replace('{course}', String(course))} ${t.allCourses}`}
+												onSelect={() => toggleCourseSelection(course)}
+											>
+												<Check
+													className={
+														isCourseFullySelected ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'
+													}
+												/>
+												{t.courseFull.replace('{course}', String(course))}
+											</CommandItem>
+											{groups.map((group) => {
+												const isSelected = selectedGroupSet.has(group.name)
+
+												return (
+													<CommandItem
+														key={group.keycloakId}
+														value={group.name}
+														onSelect={() => toggleGroupSelection(group.name)}
+													>
+														<Check
+															className={
+																isSelected ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'
+															}
+														/>
+														<div className='flex w-full items-center justify-between gap-2'>
+															<span className='truncate'>{group.name}</span>
+															<span className='shrink-0 text-xs text-muted-foreground'>
+																{t.courseShort.replace('{course}', String(course))}
+															</span>
+														</div>
+													</CommandItem>
+												)
+											})}
+										</CommandGroup>
+									)
+								})}
+								{groupsByCourse.uncategorizedGroups.length > 0 ? (
+									<CommandGroup heading={t.noCourse}>
+										{groupsByCourse.uncategorizedGroups.map((group) => {
+											const isSelected = selectedGroupSet.has(group.name)
+
+											return (
+												<CommandItem
+													key={group.keycloakId}
+													value={group.name}
+													onSelect={() => toggleGroupSelection(group.name)}
+												>
+													<Check
+														className={isSelected ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'}
+													/>
+													{group.name}
+												</CommandItem>
+											)
+										})}
+									</CommandGroup>
+								) : null}
 							</CommandList>
 						</Command>
 					</PopoverContent>
 				</Popover>
+				{selectedGroups.length > 0 ? (
+					<div className='flex flex-wrap gap-2'>
+						{selectedGroupLabels.map((groupName) => (
+							<Badge key={groupName} className='gap-1' variant='secondary'>
+								<span className='max-w-48 truncate'>{groupName}</span>
+								<button
+									aria-label={`${t.clearSelection}: ${groupName}`}
+									className='rounded-sm p-0.5 hover:bg-black/10'
+									type='button'
+									onClick={() => toggleGroupSelection(groupName)}
+								>
+									<X className='h-3 w-3' />
+								</button>
+							</Badge>
+						))}
+					</div>
+				) : null}
 				{helpText && <p className='text-xs text-muted-foreground'>{helpText}</p>}
 			</div>
 		)

@@ -9,7 +9,7 @@ import { isAfter, isValid as isValidDate, parseISO, startOfDay } from 'date-fns'
 
 import locale from './locale.json'
 
-export type ICategoryFieldValue = string | number | File[] | ICategoryMultiFieldRowValue[]
+export type ICategoryFieldValue = string | number | File[] | string[] | ICategoryMultiFieldRowValue[]
 export type ICategoryFieldValues = Record<string, ICategoryFieldValue>
 
 const URL_WITHOUT_PROTOCOL_REGEX =
@@ -26,6 +26,12 @@ export const capitalizeFirstLetter = (value: string) => {
 export const buildInitialCategoryFieldValues = (fields: ICategoryFieldResponse[]): ICategoryFieldValues => {
 	return fields.reduce<ICategoryFieldValues>((acc, field) => {
 		if (field.type === 'file') {
+			acc[field.key] = []
+
+			return acc
+		}
+
+		if (field.type === 'group') {
 			acc[field.key] = []
 
 			return acc
@@ -386,6 +392,23 @@ export const serializeCategoryFieldValue = (
 				return Object.keys(normalizedRow).length > 0 ? normalizedRow : null
 			})
 			.filter((row): row is ICategoryMultiFieldRowValue => !!row)
+	}
+
+	if (field.type === 'group') {
+		if (Array.isArray(value)) {
+			return value
+				.filter((item): item is string => typeof item === 'string')
+				.map((item) => item.trim())
+				.filter(Boolean)
+		}
+
+		if (typeof value === 'string') {
+			const trimmedValue = value.trim()
+
+			return trimmedValue ? [trimmedValue] : []
+		}
+
+		return []
 	}
 
 	if (field.type === 'number') {

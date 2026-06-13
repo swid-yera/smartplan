@@ -686,19 +686,15 @@ func (s *AwardService) resolveAwardSelectionPoints(
 }
 
 func (s *AwardService) DeleteAward(ctx context.Context, id uuid.UUID) error {
-
 	award, err := s.repo.GetAwardByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	if award.Status == storage.AwardsStatusAPPROVED {
-		categoryKey, keyErr := awardCategoryKey(award)
-		if keyErr != nil {
-			return keyErr
-		}
-		if err = s.userRepo.AdjustUserCategoryPoints(ctx, award.Teacher.Bytes, categoryKey, -award.TotalPoints); err != nil {
-			return err
+	if award.Status != storage.AwardsStatusDRAFT && award.Status != storage.AwardsStatusREJECTED {
+		return &HTTPStatusError{
+			StatusCode: 400,
+			Message:    "award can only be deleted from draft or rejected status",
 		}
 	}
 
