@@ -733,7 +733,20 @@ WHERE
         OR status = ANY(sqlc.arg(status)::text[]::awards_status[])
     )
 ORDER BY
-    CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN status::text END ASC,
+    CASE
+        WHEN LOWER(sqlc.arg('status_order')::text) = 'view' THEN CASE status
+            WHEN 'REJECTED'::awards_status THEN 1
+            WHEN 'DRAFT'::awards_status THEN 2
+            WHEN 'IN_REVIEW'::awards_status THEN 3
+            WHEN 'APPROVED'::awards_status THEN 4
+        END
+        ELSE CASE status
+            WHEN 'IN_REVIEW'::awards_status THEN 1
+            WHEN 'REJECTED'::awards_status THEN 2
+            WHEN 'APPROVED'::awards_status THEN 3
+            WHEN 'DRAFT'::awards_status THEN 4
+        END
+    END ASC,
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN created_at END ASC,
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN status::text END DESC,
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN created_at END DESC,

@@ -183,11 +183,16 @@ func (r *Router) Init() *gin.Engine {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 					return
 				}
-				if strings.EqualFold(currentUser.Role, "TEACHER") {
-					q := c.Request.URL.Query()
-					q.Set("teacher", currentUser.KeycloakID.String())
-					c.Request.URL.RawQuery = q.Encode()
+				statusOrder := "view"
+				if service.HasPermissionLevel(currentUser.Permissions, service.PermKPIManage) {
+					statusOrder = "manage"
 				}
+				q := c.Request.URL.Query()
+				if strings.EqualFold(currentUser.Role, "TEACHER") {
+					q.Set("teacher", currentUser.KeycloakID.String())
+				}
+				q.Set("statusOrder", statusOrder)
+				c.Request.URL.RawQuery = q.Encode()
 				r.award.GetAwardsPaginated(c)
 			})
 			awards.GET("/departments", middleware.RequirePermission(service.PermKPIView), r.award.GetAwardDepartments)

@@ -1978,12 +1978,25 @@ WHERE
         OR status = ANY($5::text[]::awards_status[])
     )
 ORDER BY
-    CASE WHEN LOWER($6::text) = 'asc' THEN status::text END ASC,
-    CASE WHEN LOWER($6::text) = 'asc' THEN created_at END ASC,
-    CASE WHEN LOWER($6::text) = 'desc' THEN status::text END DESC,
-    CASE WHEN LOWER($6::text) = 'desc' THEN created_at END DESC,
+    CASE
+        WHEN LOWER($6::text) = 'view' THEN CASE status
+            WHEN 'REJECTED'::awards_status THEN 1
+            WHEN 'DRAFT'::awards_status THEN 2
+            WHEN 'IN_REVIEW'::awards_status THEN 3
+            WHEN 'APPROVED'::awards_status THEN 4
+        END
+        ELSE CASE status
+            WHEN 'IN_REVIEW'::awards_status THEN 1
+            WHEN 'REJECTED'::awards_status THEN 2
+            WHEN 'APPROVED'::awards_status THEN 3
+            WHEN 'DRAFT'::awards_status THEN 4
+        END
+    END ASC,
+    CASE WHEN LOWER($7::text) = 'asc' THEN created_at END ASC,
+    CASE WHEN LOWER($7::text) = 'desc' THEN status::text END DESC,
+    CASE WHEN LOWER($7::text) = 'desc' THEN created_at END DESC,
     created_at DESC
-LIMIT $8 OFFSET $7
+LIMIT $9 OFFSET $8
 `
 
 type GetAwardsPaginatedParams struct {
@@ -1992,6 +2005,7 @@ type GetAwardsPaginatedParams struct {
 	Methodist   pgtype.UUID `json:"methodist"`
 	CategoryIds []uuid.UUID `json:"category_ids"`
 	Status      []string    `json:"status"`
+	StatusOrder string      `json:"status_order"`
 	Sort        string      `json:"sort"`
 	Offset      int32       `json:"offset"`
 	Limit       int32       `json:"limit"`
@@ -2004,6 +2018,7 @@ func (q *Queries) GetAwardsPaginated(ctx context.Context, arg GetAwardsPaginated
 		arg.Methodist,
 		arg.CategoryIds,
 		arg.Status,
+		arg.StatusOrder,
 		arg.Sort,
 		arg.Offset,
 		arg.Limit,
