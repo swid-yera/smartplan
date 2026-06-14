@@ -11,16 +11,14 @@ export const toLocaleText = (value: LocalizedText): LocaleText => {
 	if (!value) return { ...EMPTY_LOCALE_TEXT }
 
 	if (typeof value === 'string') {
-		const trimmed = value.trim()
-
 		return {
-			ru: trimmed,
-			kz: trimmed,
+			ru: value,
+			kz: value,
 		}
 	}
 
-	const ru = (value.ru ?? '').trim()
-	const kz = (value.kz ?? '').trim()
+	const ru = value.ru ?? ''
+	const kz = value.kz ?? ''
 
 	return {
 		ru,

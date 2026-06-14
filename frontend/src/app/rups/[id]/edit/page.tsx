@@ -17,6 +17,7 @@ import {
 } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { cn } from '@lib'
+import { useUnsavedChangesGuard } from '@hooks'
 import { services } from '@services'
 import {
 	Badge,
@@ -190,21 +191,7 @@ const EditPage: FC = () => {
 		return [...new Set(messages)]
 	}
 
-	// Warn user about unsaved changes before leaving the page.
-	// NOTE: This works for page reloads, closing the tab, or navigating away.
-	// It does not prevent client-side navigation via <Link> in Next.js App Router without more complex handling.
-	useEffect(() => {
-		const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-			if (methods.formState.isDirty) {
-				e.preventDefault()
-				e.returnValue = '' // Required for legacy browsers, modern browsers show a generic message.
-			}
-		}
-
-		window.addEventListener('beforeunload', handleBeforeUnload)
-
-		return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-	}, [methods.formState.isDirty])
+	const { confirmNavigation } = useUnsavedChangesGuard(methods.formState.isDirty, t.unsavedChangesMessage)
 
 	const onSubmit = (newData: RUPFormData) => {
 		if (!rupData) return
@@ -378,6 +365,7 @@ const EditPage: FC = () => {
 					}
 					backHref='back'
 					description={t.description}
+					onBackClick={confirmNavigation}
 				>
 					{t.titlePrefix}: {getLocaleText(rupData.name, activeLocale) || t.titleFallback}{' '}
 					<Badge variant='outline'>{t.draft}</Badge>

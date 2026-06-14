@@ -1,11 +1,12 @@
 'use client'
 
 import type { FormEvent } from 'react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
 import { createLocaleText, getUILocaleSection, toBackendLocale } from '@helpers'
+import { useUnsavedChangesGuard } from '@hooks'
 import { services } from '@services'
 import { Button, ButtonGroup } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -52,7 +53,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 	const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
 	const [eventTimeError, setEventTimeError] = useState<string | null>(null)
 
-	const [formData, setFormData] = useState<ILessonFormState>(() => ({
+	const [initialFormData] = useState<ILessonFormState>(() => ({
 		...toEventDateFormState(lesson.event_date),
 		topicName: createLocaleDraft(lesson.topic_name),
 		type: lesson.type,
@@ -64,6 +65,12 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 		internetResources: mapResourcesForForm(lesson.internet_resources),
 		technicalResources: mapResourcesForForm(lesson.technical_resources),
 	}))
+	const [formData, setFormData] = useState<ILessonFormState>(initialFormData)
+	const hasUnsavedChanges = useMemo(
+		() => JSON.stringify(formData) !== JSON.stringify(initialFormData),
+		[formData, initialFormData],
+	)
+	const { confirmNavigation } = useUnsavedChangesGuard(hasUnsavedChanges, t.unsavedChangesMessage)
 
 	const handleResourceChange = (
 		kind: 'internetResources' | 'technicalResources',
@@ -218,7 +225,14 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 								<Save className='mr-2 h-4 w-4' />
 								{t.save}
 							</Button>
-							<Button variant='outline' onClick={() => replace(`/lessons/${lesson.id}`)}>
+							<Button
+								type='button'
+								variant='outline'
+								onClick={() => {
+									if (!confirmNavigation()) return
+									replace(`/lessons/${lesson.id}`)
+								}}
+							>
 								<X className='mr-2 h-4 w-4' />
 								{t.cancel}
 							</Button>
@@ -227,6 +241,7 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 				}
 				backHref='back'
 				description={t.editDescription}
+				onBackClick={confirmNavigation}
 			>
 				{t.editTitle}
 			</PageTitle>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { formatAsDash, getHoursStyle } from '@helpers'
 import { cn } from '@lib'
@@ -15,7 +15,21 @@ function EditableHourCell<TFieldValues extends FieldValues>({
 	fieldName: FieldPath<TFieldValues>
 }) {
 	const [isEditing, setIsEditing] = useState(false)
+	const [draftValue, setDraftValue] = useState('')
+	const skipCommitRef = useRef(false)
 	const hours = useWatch({ control: form.control, name: fieldName })
+
+	const startEditing = () => {
+		skipCommitRef.current = false
+		setDraftValue(String(hours ?? 0))
+		setIsEditing(true)
+	}
+
+	const normalizeDraftValue = (value: string) => {
+		const parsed = parseInt(value, 10)
+
+		return Number.isNaN(parsed) ? 0 : Math.max(0, parsed)
+	}
 
 	if (isEditing) {
 		return (
@@ -30,19 +44,37 @@ function EditableHourCell<TFieldValues extends FieldValues>({
 									autoFocus
 									className='w-16 mx-auto text-center'
 									min='0'
+									inputMode='numeric'
 									placeholder='0'
 									type='text'
 									{...field}
-									value={field.value ?? 0}
+									value={draftValue}
 									onBlur={() => {
 										field.onBlur()
+										if (skipCommitRef.current) {
+											skipCommitRef.current = false
+											return
+										}
+										field.onChange(normalizeDraftValue(draftValue))
 										setIsEditing(false)
 									}}
+									onFocus={(event) => event.currentTarget.select()}
 									onChange={(e) => {
-										const value = parseInt(e.target.value, 10)
-										const newValue = isNaN(value) ? 0 : Math.max(0, value)
+										setDraftValue(e.target.value.replace(/\D/g, ''))
+									}}
+									onKeyDown={(event) => {
+										if (event.key === 'Enter') {
+											event.preventDefault()
+											field.onChange(normalizeDraftValue(draftValue))
+											setIsEditing(false)
+											return
+										}
 
-										field.onChange(newValue)
+										if (event.key === 'Escape') {
+											event.preventDefault()
+											skipCommitRef.current = true
+											setIsEditing(false)
+										}
 									}}
 								/>
 							</FormControl>
@@ -62,7 +94,7 @@ function EditableHourCell<TFieldValues extends FieldValues>({
 					size='sm'
 					type='button'
 					variant='ghost'
-					onClick={() => setIsEditing(true)}
+					onClick={startEditing}
 				>
 					{formatAsDash(hours)}
 				</Button>
