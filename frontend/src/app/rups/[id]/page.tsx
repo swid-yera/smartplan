@@ -121,6 +121,7 @@ const Page: FC = () => {
 
 	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
 	const [isDownloadLanguageDialogOpen, setIsDownloadLanguageDialogOpen] = useState(false)
+	const [isDownloadPending, setIsDownloadPending] = useState(false)
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
@@ -217,23 +218,28 @@ const Page: FC = () => {
 	const onDownload = (downloadLanguage: Locale) => {
 		if (!rupData) return
 
-		setIsDownloadLanguageDialogOpen(false)
+		setIsDownloadPending(true)
 
 		toast.promise(
 			async () => {
-				const data = await queryClient.fetchQuery(
-					services.rup.getDownloadUrlOptions(rupId, toBackendLocale(downloadLanguage)),
-				)
+				try {
+					const data = await queryClient.fetchQuery(
+						services.rup.getDownloadUrlOptions(rupId, toBackendLocale(downloadLanguage)),
+					)
 
-				if (!data) throw new Error(t.toasts.downloadLinkError)
+					if (!data) throw new Error(t.toasts.downloadLinkError)
 
-				const link = document.createElement('a')
+					const link = document.createElement('a')
 
-				link.href = data.url
-				link.setAttribute('download', `RUP_${getLocaleText(rupData.name, downloadLanguage) || 'file'}.docx`)
-				document.body.appendChild(link)
-				link.click()
-				link.remove()
+					link.href = data.url
+					link.setAttribute('download', `RUP_${getLocaleText(rupData.name, downloadLanguage) || 'file'}.docx`)
+					document.body.appendChild(link)
+					link.click()
+					link.remove()
+					setIsDownloadLanguageDialogOpen(false)
+				} finally {
+					setIsDownloadPending(false)
+				}
 			},
 			{
 				loading: t.toasts.downloadFilePreparing,
@@ -311,6 +317,7 @@ const Page: FC = () => {
 				canSendToReview={canSendToReview}
 				data={rupData}
 				isDeletePending={deleteMutation.isPending}
+				isDownloadPending={isDownloadPending}
 				isRegeneratePending={regenerateLanguageMutation.isPending}
 				kriptoArtifact={signatureArtifact ?? undefined}
 				localeNotice={
@@ -377,6 +384,7 @@ const Page: FC = () => {
 					confirmLabel={t.actions.download}
 					currentLanguage={activeLocale}
 					description={t.downloadLanguageDialog.description}
+					isPending={isDownloadPending}
 					languageLabels={{ kk: t.view.languageKk, ru: t.view.languageRu }}
 					open={isDownloadLanguageDialogOpen}
 					title={t.downloadLanguageDialog.title}

@@ -12,6 +12,7 @@ import {
 	Edit,
 	FileDown,
 	type LucideIcon,
+	Loader2,
 	MoreVertical,
 	RefreshCw,
 	Search,
@@ -57,6 +58,7 @@ interface IRupViewProps {
 	onSendToReview: () => void
 	isDeletePending: boolean
 	isRegeneratePending: boolean
+	isDownloadPending: boolean
 }
 
 export const RupView: FC<IRupViewProps> = ({
@@ -79,6 +81,7 @@ export const RupView: FC<IRupViewProps> = ({
 	onSendToReview,
 	isDeletePending,
 	isRegeneratePending,
+	isDownloadPending,
 	kriptoArtifact,
 }) => {
 	const locale = useLocaleStore((state) => state.locale)
@@ -176,12 +179,18 @@ export const RupView: FC<IRupViewProps> = ({
 				key={action.id}
 				className={action.variant === 'destructive' ? 'h-9 hover:text-destructive' : 'h-9 hover:text-primary'}
 				disabled={
-					(action.id === 'regenerate' && isRegeneratePending) || (action.id === 'delete' && isDeletePending)
+					(action.id === 'regenerate' && isRegeneratePending) ||
+					(action.id === 'delete' && isDeletePending) ||
+					(action.id === 'download' && isDownloadPending)
 				}
 				variant='outline'
 				onClick={action.onClick}
 			>
-				<action.icon className='mr-2 h-4 w-4' />
+				{action.id === 'download' && isDownloadPending ? (
+					<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+				) : (
+					<action.icon className='mr-2 h-4 w-4' />
+				)}
 				{action.label}
 			</Button>
 		)
@@ -220,12 +229,17 @@ export const RupView: FC<IRupViewProps> = ({
 												key={action.id}
 												disabled={
 													(action.id === 'regenerate' && isRegeneratePending) ||
-													(action.id === 'delete' && isDeletePending)
+													(action.id === 'delete' && isDeletePending) ||
+													(action.id === 'download' && isDownloadPending)
 												}
 												variant={action.variant}
 												onClick={action.onClick}
 											>
-												<action.icon className='mr-2 h-4 w-4' />
+												{action.id === 'download' && isDownloadPending ? (
+													<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+												) : (
+													<action.icon className='mr-2 h-4 w-4' />
+												)}
 												{action.label}
 											</DropdownMenuItem>
 										),

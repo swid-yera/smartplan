@@ -7,7 +7,7 @@ import { getUILocaleSection } from '@helpers'
 import { Button, ButtonGroup, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type Locale } from '@types'
-import { Edit, FileDown, type LucideIcon, MoreVertical, RefreshCw, Trash } from 'lucide-react'
+import { Edit, FileDown, Loader2, type LucideIcon, MoreVertical, RefreshCw, Trash } from 'lucide-react'
 
 import { LocaleToggleButton } from '../../ui/locale-toggle-button'
 import localeDictionary from './locale.json'
@@ -28,6 +28,7 @@ interface LessonDetailsActionsProps {
 	canEdit: boolean
 	canRegenerate: boolean
 	isDeletePending: boolean
+	isDownloadPending: boolean
 	isRegeneratePending: boolean
 	lessonId: string
 	onActiveLocaleChange: (locale: Locale) => void
@@ -43,6 +44,7 @@ export function LessonDetailsActions({
 	canEdit,
 	canRegenerate,
 	isDeletePending,
+	isDownloadPending,
 	isRegeneratePending,
 	lessonId,
 	onActiveLocaleChange,
@@ -120,11 +122,18 @@ export function LessonDetailsActions({
 				) : (
 					<Button
 						className='h-9 hover:text-primary'
-						disabled={primaryAction.id === 'regenerate' && isRegeneratePending}
+						disabled={
+							(primaryAction.id === 'regenerate' && isRegeneratePending) ||
+							(primaryAction.id === 'download' && isDownloadPending)
+						}
 						variant='outline'
 						onClick={primaryAction.onClick}
 					>
-						<primaryAction.icon className='mr-2 h-4 w-4' />
+						{primaryAction.id === 'download' && isDownloadPending ? (
+							<Loader2 className='mr-2 h-4 w-4 animate-spin' />
+						) : (
+							<primaryAction.icon className='mr-2 h-4 w-4' />
+						)}
 						{primaryAction.label}
 					</Button>
 				)
@@ -141,7 +150,10 @@ export function LessonDetailsActions({
 						{overflowActions.map((action) => (
 							<DropdownMenuItem
 								key={action.id}
-								disabled={action.id === 'delete' && isDeletePending}
+								disabled={
+									(action.id === 'delete' && isDeletePending) ||
+									(action.id === 'download' && isDownloadPending)
+								}
 								variant={action.variant}
 								onClick={action.onClick}
 							>
