@@ -4,7 +4,7 @@ import { type FC, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { LocaleToggleButton, PageTitle, PageTitleActions, type PageTitleAction } from '@components'
+import { LocaleToggleButton, PageTitle, type PageTitleAction, PageTitleActions } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {

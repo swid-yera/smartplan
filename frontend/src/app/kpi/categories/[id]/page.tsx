@@ -4,7 +4,15 @@ import { useMemo } from 'react'
 
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { AwardsCard, Loader, PageTitle, PageTitleActions, type PageTitleAction, Pagination, withPermission } from '@components'
+import {
+	AwardsCard,
+	Loader,
+	PageTitle,
+	type PageTitleAction,
+	PageTitleActions,
+	Pagination,
+	withPermission,
+} from '@components'
 import {
 	getCategoryIconOptionByName,
 	getLocaleText,
@@ -13,17 +21,7 @@ import {
 	hasPermission,
 } from '@helpers'
 import { services } from '@services'
-import {
-	Badge,
-	Button,
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-	Label,
-	Switch,
-} from '@shadcn'
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Switch } from '@shadcn'
 import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, StatusEnum } from '@types'

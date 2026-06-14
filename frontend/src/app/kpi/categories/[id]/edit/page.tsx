@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, LocaleToggleButton, PageTitle, PageTitleActions, type PageTitleAction, withPermission } from '@components'
+import {
+	Loader,
+	LocaleToggleButton,
+	PageTitle,
+	type PageTitleAction,
+	PageTitleActions,
+	withPermission,
+} from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,

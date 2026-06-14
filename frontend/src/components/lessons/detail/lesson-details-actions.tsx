@@ -1,6 +1,6 @@
 'use client'
 
-import { PageTitleActions, type PageTitleAction } from '@components'
+import { type PageTitleAction, PageTitleActions } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { useLocaleStore } from '@store'
 import { type Locale } from '@types'

@@ -68,26 +68,26 @@ function Page() {
 
 	const createQueryString = useCallback(
 		(params: Record<string, string | number | null>) => {
-		const newSearchParams = new URLSearchParams(searchParams.toString())
+			const newSearchParams = new URLSearchParams(searchParams.toString())
 
-		for (const [key, value] of Object.entries(params)) {
-			if (value === null || value === '') {
+			for (const [key, value] of Object.entries(params)) {
+				if (value === null || value === '') {
 					newSearchParams.delete(key)
 				} else {
 					newSearchParams.set(key, String(value))
+				}
 			}
-		}
 
-		if (newSearchParams.has('limit')) {
-			const legacyLimit = Number(newSearchParams.get('limit'))
-			if (Number.isFinite(legacyLimit) && legacyLimit > 0) {
-				newSearchParams.delete('limit')
-				newSearchParams.set('pageSize', String(legacyLimit))
+			if (newSearchParams.has('limit')) {
+				const legacyLimit = Number(newSearchParams.get('limit'))
+				if (Number.isFinite(legacyLimit) && legacyLimit > 0) {
+					newSearchParams.delete('limit')
+					newSearchParams.set('pageSize', String(legacyLimit))
+				}
 			}
-		}
 
-		return newSearchParams.toString()
-	},
+			return newSearchParams.toString()
+		},
 		[searchParams],
 	)
 

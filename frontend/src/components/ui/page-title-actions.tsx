@@ -42,7 +42,10 @@ interface IPageTitleActionsProps {
 const getPrimaryAction = (actions: PageTitleAction[]) => {
 	if (actions.length === 1) return actions[0]
 
-	return actions.find((action) => action.priority === 'primary') ?? actions.find((action) => action.priority !== 'overflow')
+	return (
+		actions.find((action) => action.priority === 'primary') ??
+		actions.find((action) => action.priority !== 'overflow')
+	)
 }
 
 const isActionDisabled = (action: PageTitleAction) => action.disabled || action.pending

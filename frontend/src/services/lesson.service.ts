@@ -7,9 +7,9 @@ import type {
 	IGenerateLessonRequest,
 	IGenerateLessonResponse,
 	ILesson,
-	ILessonUserFilterData,
 	ILessonProgress,
 	ILessonResource,
+	ILessonUserFilterData,
 	IPagination,
 	IUpdateLessonRequest,
 	LocalizedText,
@@ -21,7 +21,12 @@ export class LessonService {
 	private toCommaParam = (values?: string[]) => {
 		if (!values?.length) return undefined
 
-		return values.map((value) => value.trim()).filter(Boolean).join(',') || undefined
+		return (
+			values
+				.map((value) => value.trim())
+				.filter(Boolean)
+				.join(',') || undefined
+		)
 	}
 
 	private isLocalizedTextObject = (value: unknown): value is { ru?: unknown; kz?: unknown } =>

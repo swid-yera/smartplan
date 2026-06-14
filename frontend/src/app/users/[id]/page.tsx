@@ -7,8 +7,8 @@ import { notFound, useParams, usePathname, useRouter, useSearchParams } from 'ne
 import {
 	Loader,
 	PageTitle,
-	PageTitleActions,
 	type PageTitleAction,
+	PageTitleActions,
 	PenaltyCard,
 	PenaltySheet,
 	UserCard,
@@ -23,13 +23,7 @@ import {
 	normalizeViolation,
 } from '@helpers'
 import { services } from '@services'
-import {
-	Button,
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from '@shadcn'
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { type IPenalty, PermissionCodeEnum, StatusEnum, ViolationEnum } from '@types'

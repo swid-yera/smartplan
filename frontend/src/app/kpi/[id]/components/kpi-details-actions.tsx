@@ -1,17 +1,9 @@
 'use client'
 
-import { PageTitleActions, type PageTitleAction } from '@components'
+import { type PageTitleAction, PageTitleActions } from '@components'
 import { getUILocaleSection } from '@helpers'
 import { useLocaleStore } from '@store'
-import {
-	BadgeDollarSign,
-	CheckCircle,
-	Edit,
-	SendIcon,
-	SendToBack,
-	ShieldAlert,
-	Trash,
-} from 'lucide-react'
+import { BadgeDollarSign, CheckCircle, Edit, SendIcon, SendToBack, ShieldAlert, Trash } from 'lucide-react'
 
 import uiLocale from '../../../../components/ui/locale.json'
 import localeDictionary from './locale.json'

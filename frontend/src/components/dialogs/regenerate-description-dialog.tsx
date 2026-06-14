@@ -2,9 +2,6 @@
 
 import { type FC } from 'react'
 
-import { format } from 'date-fns'
-import { CalendarDays, ChevronDown } from 'lucide-react'
-
 import {
 	Button,
 	Calendar,
@@ -19,6 +16,8 @@ import {
 	PopoverTrigger,
 	Textarea,
 } from '@shadcn'
+import { format } from 'date-fns'
+import { CalendarDays, ChevronDown } from 'lucide-react'
 
 interface IRegenerateDescriptionDialogProps {
 	cancelLabel: string
@@ -99,16 +98,16 @@ export const RegenerateDescriptionDialog: FC<IRegenerateDescriptionDialogProps> 
 					) : null}
 
 					<div className='grid gap-2'>
-					<label className='text-sm font-medium' htmlFor={descriptionId}>
-						{descriptionLabel}
-					</label>
-					<Textarea
-						id={descriptionId}
-						placeholder={descriptionPlaceholder}
-						rows={6}
-						value={description}
-						onChange={(event) => onDescriptionChange(event.target.value)}
-					/>
+						<label className='text-sm font-medium' htmlFor={descriptionId}>
+							{descriptionLabel}
+						</label>
+						<Textarea
+							id={descriptionId}
+							placeholder={descriptionPlaceholder}
+							rows={6}
+							value={description}
+							onChange={(event) => onDescriptionChange(event.target.value)}
+						/>
 					</div>
 				</div>
 

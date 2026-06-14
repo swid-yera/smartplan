@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 
 import { LocaleToggleButton } from '../../ui/locale-toggle-button'
 import { PageTitle } from '../../ui/page-title'
-import { PageTitleActions, type PageTitleAction } from '../../ui/page-title-actions'
+import { type PageTitleAction, PageTitleActions } from '../../ui/page-title-actions'
 import type { ILessonFormState } from './lesson-edit.types'
 import {
 	createEmptyResource,

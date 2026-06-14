@@ -9,8 +9,8 @@ import {
 	Loader,
 	LocaleToggleButton,
 	PageTitle,
-	PageTitleActions,
 	type PageTitleAction,
+	PageTitleActions,
 	withPermission,
 } from '@components'
 import {
@@ -23,16 +23,10 @@ import {
 	isAuthor,
 } from '@helpers'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { cn } from '@lib'
 import { useUnsavedChangesGuard } from '@hooks'
+import { cn } from '@lib'
 import { services } from '@services'
-import {
-	Badge,
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from '@shadcn'
+import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
