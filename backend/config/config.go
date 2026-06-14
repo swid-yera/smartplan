@@ -136,6 +136,11 @@ type DocumentRenderConfig struct {
 	ApiKey string
 }
 
+type TranslationConfig struct {
+	BaseURL        string
+	TimeoutSeconds int
+}
+
 type CryptoConfig struct {
 	BaseURL        string
 	AuthToken      string
@@ -313,8 +318,17 @@ func LoadDocumentRenderConfig() *DocumentRenderConfig {
 	ensureEnvLoaded()
 
 	return &DocumentRenderConfig{
-		Url:    getEnv("DOCUMENT_RENDER_URL", "http://localhost:8000"),
+		Url:    getEnv("DOCUMENT_RENDER_URL", "http://localhost:8081"),
 		ApiKey: getEnv("DOCUMENT_RENDER_API_KEY", ""),
+	}
+}
+
+func LoadTranslationConfig() *TranslationConfig {
+	ensureEnvLoaded()
+
+	return &TranslationConfig{
+		BaseURL:        getEnv("TRANSLATION_BASE_URL", "http://localhost:8082"),
+		TimeoutSeconds: getEnvAsInt("TRANSLATION_TIMEOUT_SECONDS", 120),
 	}
 }
 

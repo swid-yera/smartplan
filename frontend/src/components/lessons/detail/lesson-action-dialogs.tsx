@@ -27,10 +27,12 @@ type IDeleteDialogProps = {
 type IRegenerateDialogProps = {
 	canRegenerate: boolean
 	description: string
+	eventDate?: Date
 	isOpen: boolean
 	isPending: boolean
 	onConfirm: () => void
 	onDescriptionChange: (value: string) => void
+	onEventDateChange: (value: Date | undefined) => void
 	onOpenChange: Dispatch<SetStateAction<boolean>>
 }
 
@@ -59,10 +61,12 @@ export function LessonDeleteDialog({ isOpen, onConfirm, onOpenChange }: IDeleteD
 export function LessonRegenerateDialog({
 	canRegenerate,
 	description,
+	eventDate,
 	isOpen,
 	isPending,
 	onConfirm,
 	onDescriptionChange,
+	onEventDateChange,
 	onOpenChange,
 }: IRegenerateDialogProps) {
 	const locale = useLocaleStore((state) => state.locale)
@@ -77,12 +81,16 @@ export function LessonRegenerateDialog({
 			descriptionLabel={t.description}
 			descriptionPlaceholder={t.regeneratePlaceholder}
 			dialogDescription={t.regenerateDialogDescription}
-			isConfirmDisabled={!canRegenerate || description.trim().length === 0}
+			eventDate={eventDate}
+			eventDateLabel={t.eventDateLabel}
+			eventDatePlaceholder={t.eventDatePlaceholder}
+			isConfirmDisabled={!canRegenerate || description.trim().length === 0 || !eventDate}
 			isOpen={isOpen}
 			isPending={isPending}
 			title={t.regenerateLessonTitle}
 			onConfirm={onConfirm}
 			onDescriptionChange={onDescriptionChange}
+			onEventDateChange={onEventDateChange}
 			onOpenChange={onOpenChange}
 		/>
 	)

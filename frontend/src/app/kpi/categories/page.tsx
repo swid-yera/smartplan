@@ -1,10 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-
-import { CategoryCard, Loader, PageTitle, withNavAccess } from '@components'
+import { CategoryCard, Loader, PageTitle, PageTitleActions, withNavAccess } from '@components'
 import { services } from '@services'
-import { Button } from '@shadcn'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 
@@ -20,12 +17,10 @@ const Page = () => {
 			<PageTitle
 				sticky
 				actions={
-					<Button asChild>
-						<Link href='/kpi/categories/create'>
-							<Plus className='mr-2 h-4 w-4' />
-							Создать
-						</Link>
-					</Button>
+					<PageTitleActions
+						actions={[{ id: 'create', label: 'Создать', icon: Plus, href: '/kpi/categories/create' }]}
+						moreLabel='Дополнительные действия'
+					/>
 				}
 				description='Список категорий для KPI достижений'
 			>

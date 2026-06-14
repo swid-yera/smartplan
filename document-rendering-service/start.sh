@@ -1,1 +1,1 @@
-./.venv/bin/uvicorn app.main:app --reload
+./.venv/bin/uvicorn app.main:app --reload --port 8081

@@ -277,9 +277,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV PYTHONUNBUFFERED=1
-EXPOSE 8000
+EXPOSE 8082
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8082"]
 ```
 
 ### requirements.txt
@@ -304,7 +304,7 @@ services:
   backend:
     build: ./backend
     environment:
-      TRANSLATION_BASE_URL: http://translation-service:8000
+      TRANSLATION_BASE_URL: http://translation-service:8082
       TRANSLATION_CACHE_REDIS: redis:6379
     depends_on:
       - translation-service
@@ -314,13 +314,13 @@ services:
     build: ./translation-service
     environment:
       REDIS_URL: redis://redis:6379/0
-      NLLB_MODEL_PATH: /models/nllb-200
+      NLLB_MODEL_PATH: /models/nllb-200-distilled-600M-ct2-int8
       SOURCE_LANG_DEFAULT: ru
       TARGET_LANG_DEFAULT: kz
     volumes:
       - ./models:/models
     ports:
-      - "8001:8000"
+      - "8082:8082"
     depends_on:
       - redis
 

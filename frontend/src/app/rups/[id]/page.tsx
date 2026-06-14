@@ -1,6 +1,6 @@
 'use client'
 
-import { type FC, useEffect, useState } from 'react'
+import { type FC, useCallback, useEffect, useState } from 'react'
 
 import { notFound, useParams, useRouter } from 'next/navigation'
 
@@ -29,6 +29,8 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
+	Card,
+	CardContent,
 	Checkbox,
 	Input,
 	Label,
@@ -119,6 +121,7 @@ const Page: FC = () => {
 
 	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
 	const [isDownloadLanguageDialogOpen, setIsDownloadLanguageDialogOpen] = useState(false)
+	const [isDownloadPending, setIsDownloadPending] = useState(false)
 	const [isSheetOpen, setIsSheetOpen] = useState(false)
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
@@ -150,46 +153,49 @@ const Page: FC = () => {
 	}, [locale])
 
 	// change rup status
-	const handleStatusChange = (
-		newStatus: StatusEnum,
-		options?: {
-			reason?: string
-			keyId?: string
-			userId?: string
-			password?: string
-			confirmed?: boolean
-			kripto?: IKriptoKeyPayload
+	const handleStatusChange = useCallback(
+		(
+			newStatus: StatusEnum,
+			options?: {
+				reason?: string
+				keyId?: string
+				userId?: string
+				password?: string
+				confirmed?: boolean
+				kripto?: IKriptoKeyPayload
+			},
+		) => {
+			if (!rupData) return
+			setIsSheetOpen(false)
+
+			const toastId = `rup-${rupData.id}-status-update-${newStatus}`
+
+			toast.loading(t.toasts.statusLoading, { id: toastId })
+			const updateStatusPayload: IUpdateStatusRequest = {
+				id: rupData.id,
+				status: newStatus,
+				reason: options?.reason,
+				key_id: options?.keyId,
+				user_id: options?.userId,
+				password: options?.password,
+				confirmed: options?.confirmed,
+				kripto: options?.kripto,
+			}
+
+			updateStatusMutation.mutate(updateStatusPayload, {
+				onSuccess: () => {
+					toast.success(t.toasts.statusSuccess, { id: toastId })
+				},
+				onError: (err) => {
+					toast.error(t.toasts.statusError, { id: toastId, description: err.message })
+				},
+			})
 		},
-	) => {
-		if (!rupData) return
-		setIsSheetOpen(false)
-
-		const toastId = `rup-${rupData.id}-status-update-${newStatus}`
-
-		toast.loading(t.toasts.statusLoading, { id: toastId })
-		const updateStatusPayload: IUpdateStatusRequest = {
-			id: rupData.id,
-			status: newStatus,
-			reason: options?.reason,
-			key_id: options?.keyId,
-			user_id: options?.userId,
-			password: options?.password,
-			confirmed: options?.confirmed,
-			kripto: options?.kripto,
-		}
-
-		updateStatusMutation.mutate(updateStatusPayload, {
-			onSuccess: () => {
-				toast.success(t.toasts.statusSuccess, { id: toastId })
-			},
-			onError: (err) => {
-				toast.error(t.toasts.statusError, { id: toastId, description: err.message })
-			},
-		})
-	}
+		[rupData, t.toasts.statusError, t.toasts.statusLoading, t.toasts.statusSuccess, updateStatusMutation],
+	)
 
 	// delete rup
-	const handleDeleteRup = () => {
+	const handleDeleteRup = useCallback(() => {
 		if (!rupData) return
 		setIsDeleteDialogOpen(false)
 
@@ -210,64 +216,105 @@ const Page: FC = () => {
 				})
 			},
 		})
-	}
+	}, [
+		back,
+		deleteMutation,
+		locale,
+		rupData,
+		t.toasts.deleteError,
+		t.toasts.deleteLoading,
+		t.toasts.deleteSuccess,
+		t.view.titleFallback,
+	])
 
-	const onDownload = (downloadLanguage: Locale) => {
-		if (!rupData) return
+	const onDownload = useCallback(
+		(downloadLanguage: Locale) => {
+			if (!rupData) return
 
-		setIsDownloadLanguageDialogOpen(false)
+			setIsDownloadPending(true)
 
-		toast.promise(
-			async () => {
-				const data = await queryClient.fetchQuery(
-					services.rup.getDownloadUrlOptions(rupId, toBackendLocale(downloadLanguage)),
-				)
+			toast.promise(
+				async () => {
+					try {
+						const data = await queryClient.fetchQuery(
+							services.rup.getDownloadUrlOptions(rupId, toBackendLocale(downloadLanguage)),
+						)
 
-				if (!data) throw new Error(t.toasts.downloadLinkError)
+						if (!data) throw new Error(t.toasts.downloadLinkError)
 
-				const link = document.createElement('a')
+						const link = document.createElement('a')
 
-				link.href = data.url
-				link.setAttribute('download', `RUP_${getLocaleText(rupData.name, downloadLanguage) || 'file'}.docx`)
-				document.body.appendChild(link)
-				link.click()
-				link.remove()
-			},
-			{
-				loading: t.toasts.downloadFilePreparing,
-				success: t.toasts.downloadFileSuccess,
-				error: t.toasts.downloadFileError,
-			},
-		)
-	}
-
-	const handleRegenerateLanguage = (sourceLanguage: Locale) => {
-		if (!rupData) return
-		setIsRegenerateDialogOpen(false)
-
-		const toastId = `rup-${rupData.id}-regenerate-language`
-
-		toast.loading(t.toasts.regenerateLoading, { id: toastId })
-		regenerateLanguageMutation.mutate(
-			{
-				id: rupData.id,
-				sourceLanguage: toBackendLocale(sourceLanguage),
-			},
-			{
-				onSuccess: () => {
-					trackLanguageGeneration(rupData.id)
-					toast.success(t.toasts.regenerateSuccess, { id: toastId })
-					replace(`/rups/${rupData.id}/language-generation`)
+						link.href = data.url
+						link.setAttribute('download', `RUP_${getLocaleText(rupData.name, downloadLanguage) || 'file'}.docx`)
+						document.body.appendChild(link)
+						link.click()
+						link.remove()
+						setIsDownloadLanguageDialogOpen(false)
+					} finally {
+						setIsDownloadPending(false)
+					}
 				},
-				onError: (err) => {
-					toast.error(t.toasts.regenerateError, {
-						id: toastId,
-						description: err.message,
-					})
+				{
+					loading: t.toasts.downloadFilePreparing,
+					success: t.toasts.downloadFileSuccess,
+					error: t.toasts.downloadFileError,
 				},
-			},
-		)
-	}
+			)
+		},
+		[
+			queryClient,
+			rupData,
+			rupId,
+			t.toasts.downloadFileError,
+			t.toasts.downloadFilePreparing,
+			t.toasts.downloadFileSuccess,
+			t.toasts.downloadLinkError,
+		],
+	)
+
+	const handleRegenerateLanguage = useCallback(
+		(sourceLanguage: Locale) => {
+			if (!rupData) return
+			setIsRegenerateDialogOpen(false)
+
+			const toastId = `rup-${rupData.id}-regenerate-language`
+
+			toast.loading(t.toasts.regenerateLoading, { id: toastId })
+			regenerateLanguageMutation.mutate(
+				{
+					id: rupData.id,
+					sourceLanguage: toBackendLocale(sourceLanguage),
+				},
+				{
+					onSuccess: () => {
+						trackLanguageGeneration(rupData.id)
+						toast.success(t.toasts.regenerateSuccess, { id: toastId })
+						replace(`/rups/${rupData.id}/language-generation`)
+					},
+					onError: (err) => {
+						toast.error(t.toasts.regenerateError, {
+							id: toastId,
+							description: err.message,
+						})
+					},
+				},
+			)
+		},
+		[
+			regenerateLanguageMutation,
+			replace,
+			rupData,
+			t.toasts.regenerateError,
+			t.toasts.regenerateLoading,
+			t.toasts.regenerateSuccess,
+		],
+	)
+
+	const openDeleteDialog = useCallback(() => setIsDeleteDialogOpen(true), [])
+	const openDownloadDialog = useCallback(() => setIsDownloadLanguageDialogOpen(true), [])
+	const openRegenerateDialog = useCallback(() => setIsRegenerateDialogOpen(true), [])
+	const openStatusSheet = useCallback(() => setIsSheetOpen(true), [])
+	const sendToReview = useCallback(() => handleStatusChange(StatusEnum.IN_REVIEW), [handleStatusChange])
 
 	// loading
 	if (
@@ -309,15 +356,16 @@ const Page: FC = () => {
 				canSendToReview={canSendToReview}
 				data={rupData}
 				isDeletePending={deleteMutation.isPending}
+				isDownloadPending={isDownloadPending}
 				isRegeneratePending={regenerateLanguageMutation.isPending}
 				kriptoArtifact={signatureArtifact ?? undefined}
 				localeNotice={
 					isActiveLocaleMissing ? (
-						<div className='rounded-lg border border-amber-500/40 bg-amber-50 p-4 text-amber-950'>
-							<div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+						<Card>
+							<CardContent className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
 								<div className='space-y-1'>
 									<div className='font-semibold'>{t.view.missingLocaleTitle}</div>
-									<div className='text-sm text-amber-900/90'>
+									<div className='text-sm'>
 										{interpolateUILocaleText(t.view.missingLocaleDescription, {
 											language: selectedLanguageLabel,
 											sourceLanguage: sourceLanguageLabel,
@@ -343,16 +391,16 @@ const Page: FC = () => {
 										)}
 									</Button>
 								)}
-							</div>
-						</div>
+							</CardContent>
+						</Card>
 					) : null
 				}
 				onActiveLocaleChange={setActiveLocale}
-				onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
-				onOpenDownloadDialog={() => setIsDownloadLanguageDialogOpen(true)}
-				onOpenRegenerateDialog={() => setIsRegenerateDialogOpen(true)}
-				onOpenStatusSheet={() => setIsSheetOpen(true)}
-				onSendToReview={() => handleStatusChange(StatusEnum.IN_REVIEW)}
+				onOpenDeleteDialog={openDeleteDialog}
+				onOpenDownloadDialog={openDownloadDialog}
+				onOpenRegenerateDialog={openRegenerateDialog}
+				onOpenStatusSheet={openStatusSheet}
+				onSendToReview={sendToReview}
 				onStatusChange={handleStatusChange}
 			/>
 
@@ -375,6 +423,7 @@ const Page: FC = () => {
 					confirmLabel={t.actions.download}
 					currentLanguage={activeLocale}
 					description={t.downloadLanguageDialog.description}
+					isPending={isDownloadPending}
 					languageLabels={{ kk: t.view.languageKk, ru: t.view.languageRu }}
 					open={isDownloadLanguageDialogOpen}
 					title={t.downloadLanguageDialog.title}

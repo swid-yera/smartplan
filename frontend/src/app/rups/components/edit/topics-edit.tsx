@@ -868,7 +868,9 @@ const TopicRowComponent = ({
 	const topic = useWatch({ control: form.control, name: topicPath }) as Topic
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 	const [isEditingName, setIsEditingName] = useState(false)
+	const [draftName, setDraftName] = useState('')
 	const nameInputRef = useRef<HTMLInputElement | null>(null)
+	const skipNameCommitRef = useRef(false)
 
 	// filter topic type depend from rup type
 	const availableTopicTypes = useMemo(() => {
@@ -926,6 +928,14 @@ const TopicRowComponent = ({
 		nameInputRef.current?.select()
 	}, [isEditingName])
 
+	const currentName = getLocalizedValue(topic?.name as LocaleText, activeLocale)
+
+	const startEditingName = () => {
+		skipNameCommitRef.current = false
+		setDraftName(currentName)
+		setIsEditingName(true)
+	}
+
 	const currentTotal =
 		(Number(topic?.theoryHours) || 0) + (Number(topic?.practiceHours) || 0) + (Number(topic?.individualHours) || 0)
 
@@ -958,17 +968,28 @@ const TopicRowComponent = ({
 								}}
 								className='h-8'
 								placeholder={text.topicPlaceholder}
-								value={getLocalizedValue(field.value as LocaleText, activeLocale)}
-								onChange={(event) =>
-									field.onChange(updateLocaleText(field.value as LocaleText, activeLocale, event.target.value))
-								}
-								onBlur={(event) => {
+								value={draftName}
+								onChange={(event) => setDraftName(event.target.value)}
+								onBlur={() => {
 									field.onBlur()
+									if (skipNameCommitRef.current) {
+										skipNameCommitRef.current = false
+										return
+									}
+									field.onChange(updateLocaleText(field.value as LocaleText, activeLocale, draftName))
 									setIsEditingName(false)
 								}}
 								onKeyDown={(event) => {
-									if (event.key === 'Enter' || event.key === 'Escape') {
+									if (event.key === 'Enter') {
 										event.preventDefault()
+										field.onChange(updateLocaleText(field.value as LocaleText, activeLocale, draftName))
+										setIsEditingName(false)
+										return
+									}
+
+									if (event.key === 'Escape') {
+										event.preventDefault()
+										skipNameCommitRef.current = true
 										setIsEditingName(false)
 									}
 								}}
@@ -977,10 +998,10 @@ const TopicRowComponent = ({
 							<button
 								className='h-8 w-full rounded-md px-3 text-left text-sm hover:bg-muted/40'
 								type='button'
-								onClick={() => setIsEditingName(true)}
+								onClick={startEditingName}
 							>
-								{getLocalizedValue(field.value as LocaleText, activeLocale) ? (
-									getLocalizedValue(field.value as LocaleText, activeLocale)
+								{currentName ? (
+									currentName
 								) : (
 									<span className='text-muted-foreground'>{text.topicPlaceholder}</span>
 								)}

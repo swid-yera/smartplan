@@ -23,7 +23,7 @@
 ┌─────────────────┐     ┌─────────────────┐     ┌──────────────────────────┐
 │   Frontend      │────▶│   Backend API   │────▶│ Document Rendering       │
 │   Next.js :3000 │     │   Go/Gin  :8080 │     │ Service Python/FastAPI   │
-└─────────────────┘     └────────┬────────┘     │ :8000                    │
+└─────────────────┘     └────────┬────────┘     │ :8081                    │
                                  │              └──────────────────────────┘
                          ┌───────┴────────┐
                          │                │
@@ -132,7 +132,7 @@ sqlc generate   # на основе sqlc.yaml и pkg/sqlc/queries.sql
 ```bash
 cd document-rendering-service
 pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8081
 
 # или через скрипт
 bash start.sh
@@ -160,7 +160,9 @@ docker compose up -d
 |---|---|---|
 | `eduplan-ui` | build from `/frontend` | `3000` |
 | `eduplan-api` | build from `/backend` | `8080` |
-| `eduplan-render` | build from `/document-rendering-service` | `8000` |
+| `eduplan-render` | build from `/document-rendering-service` | `8081` |
+| `eduplan-translation-service` | build from `/translation-service` | `8082` |
+| `eduplan-translation-model-prepare` | one-shot model preparation tool | - |
 | `eduplan-db` | `postgres:16` | `5432` |
 | `eduplan-redis` | `redis:7-alpine` | `6379` |
 
@@ -170,7 +172,7 @@ docker compose up -d
 3. Создайте `frontend/.env.local` с переменными:
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:8080
-   NEXT_PUBLIC_RENDER_API_URL=http://localhost:8000
+   NEXT_PUBLIC_RENDER_API_URL=http://localhost:8081
    ```
 
 ```bash
@@ -179,6 +181,13 @@ docker compose down
 
 # Пересобрать после изменений
 docker compose up -d --build
+```
+
+Для переводов РУП модель NLLB нужно подготовить один раз. Она хранится вне git в `models/translation`:
+
+```bash
+docker compose --profile tools run --rm translation-model-prepare
+docker compose up --build -d translation-service api
 ```
 
 ---
@@ -215,7 +224,7 @@ go run main.go
 cd document-rendering-service
 cp .env.example .env.local
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8081
 
 # 5. Frontend
 cd frontend
@@ -292,8 +301,12 @@ MINIO_BUCKET_NAME=eduplan
 MINIO_USE_SSL=true
 
 # Document rendering
-DOCUMENT_RENDER_URL=http://localhost:8000
+DOCUMENT_RENDER_URL=http://localhost:8081
 DOCUMENT_RENDER_API_KEY=your-api-key
+
+# Translation service
+TRANSLATION_BASE_URL=http://localhost:8082
+TRANSLATION_TIMEOUT_SECONDS=120
 
 # AI провайдер: "gemini" или "openai"
 AI_PROVIDER=gemini

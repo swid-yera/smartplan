@@ -4,13 +4,14 @@ import { useMemo, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { getLocaleText, getUILocaleSection, hasRole, toBackendLocale, topicTypeIcons } from '@helpers'
+import { getLocaleText, getUILocaleSection, hasRole, toBackendLocale, toDateOnlyIso, topicTypeIcons } from '@helpers'
 import { services } from '@services'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ILesson, Locale } from '@types'
 import { RoleEnum, TopicTypeEnum } from '@types'
 import { toast } from 'sonner'
 
+import { RupLanguageDialog } from '../../dialogs/rup-language-dialog'
 import { PageTitle } from '../../ui/page-title'
 import { LessonDeleteDialog, LessonRegenerateDialog } from './lesson-action-dialogs'
 import { LessonDetailsActions } from './lesson-details-actions'
@@ -41,13 +42,13 @@ export function LessonDetailsContent({
 }: IProps) {
 	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const { back, push } = useRouter()
+	const queryClient = useQueryClient()
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+	const [isDownloadLanguageDialogOpen, setIsDownloadLanguageDialogOpen] = useState(false)
+	const [isDownloadPending, setIsDownloadPending] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
 	const [regenerateDescription, setRegenerateDescription] = useState('')
-	const { refetch: getDownloadUrl } = useQuery({
-		...services.lesson.getDownloadUrlOptions(lesson.id, toBackendLocale(activeLocale)),
-		enabled: false,
-	})
+	const [regenerateEventDate, setRegenerateEventDate] = useState<Date | undefined>(undefined)
 	const [regenerateFormData, setRegenerateFormData] = useState<IRegenerateFormData>({
 		name: '',
 		theoryHours: 0,
@@ -131,6 +132,9 @@ export function LessonDetailsContent({
 	const handleRegenerateClick = () => {
 		resetRegenerateForm()
 		setRegenerateDescription('')
+		const currentEventDate = lesson.event_date ? new Date(lesson.event_date) : new Date()
+
+		setRegenerateEventDate(Number.isNaN(currentEventDate.getTime()) ? new Date() : currentEventDate)
 		setIsRegenerateDialogOpen(true)
 	}
 
@@ -154,12 +158,13 @@ export function LessonDetailsContent({
 			disciplineId: currentDisciplineId,
 			topicId: currentTopicId,
 			sourceLanguage: toBackendLocale(activeLocale),
+			message: regenerateDescription.trim(),
+			event_date: toDateOnlyIso(regenerateEventDate),
 			updatedTopic: {
 				name: {
 					ru: activeLocale === 'ru' ? regenerateFormData.name.trim() : getLocaleText(lesson.topic_name, 'ru'),
 					kz: activeLocale === 'kk' ? regenerateFormData.name.trim() : getLocaleText(lesson.topic_name, 'kk'),
 				},
-				description: regenerateDescription.trim(),
 				type: regenerateFormData.type,
 				total_hours:
 					regenerateFormData.theoryHours + regenerateFormData.practiceHours + regenerateFormData.individualHours,
@@ -198,20 +203,32 @@ export function LessonDetailsContent({
 		}
 	}
 
-	const handleDownload = () => {
+	const handleDownload = (downloadLanguage: Locale) => {
+		setIsDownloadPending(true)
+
 		toast.promise(
 			async () => {
-				const { data } = await getDownloadUrl()
+				try {
+					const data = await queryClient.fetchQuery(
+						services.lesson.getDownloadUrlOptions(lesson.id, toBackendLocale(downloadLanguage)),
+					)
 
-				if (!data) throw new Error(t.lessonFileLinkError)
+					if (!data) throw new Error(t.lessonFileLinkError)
 
-				const link = document.createElement('a')
+					const link = document.createElement('a')
 
-				link.href = data.url
-				link.setAttribute('download', `${getLocaleText(lesson.topic_name, activeLocale) || 'lesson_plan'}.docx`)
-				document.body.appendChild(link)
-				link.click()
-				link.remove()
+					link.href = data.url
+					link.setAttribute(
+						'download',
+						`${getLocaleText(lesson.topic_name, downloadLanguage) || 'lesson_plan'}.docx`,
+					)
+					document.body.appendChild(link)
+					link.click()
+					link.remove()
+					setIsDownloadLanguageDialogOpen(false)
+				} finally {
+					setIsDownloadPending(false)
+				}
 			},
 			{
 				loading: t.downloadingLessonFile,
@@ -238,11 +255,12 @@ export function LessonDetailsContent({
 						canEdit={canManageLessonResolved}
 						canRegenerate={canManageLessonResolved && canRegenerate}
 						isDeletePending={deleteLessonMutation.isPending}
+						isDownloadPending={isDownloadPending}
 						isRegeneratePending={regenerateLessonMutation.isPending}
 						lessonId={lesson.id}
 						onActiveLocaleChange={onActiveLocaleChange}
 						onDelete={() => setIsDeleteDialogOpen(true)}
-						onDownload={handleDownload}
+						onDownload={() => setIsDownloadLanguageDialogOpen(true)}
 						onRegenerate={handleRegenerateClick}
 					/>
 				}
@@ -282,11 +300,25 @@ export function LessonDetailsContent({
 			<LessonRegenerateDialog
 				canRegenerate={canRegenerate}
 				description={regenerateDescription}
+				eventDate={regenerateEventDate}
 				isOpen={isRegenerateDialogOpen}
 				isPending={regenerateLessonMutation.isPending}
 				onConfirm={handleRegenerate}
 				onDescriptionChange={setRegenerateDescription}
+				onEventDateChange={setRegenerateEventDate}
 				onOpenChange={setIsRegenerateDialogOpen}
+			/>
+
+			<RupLanguageDialog
+				confirmLabel={t.openFile}
+				currentLanguage={activeLocale}
+				description={t.downloadLanguageDialogDescription}
+				isPending={isDownloadPending}
+				languageLabels={{ kk: t.languageKk, ru: t.languageRu }}
+				open={isDownloadLanguageDialogOpen}
+				title={t.downloadLanguageDialogTitle}
+				onConfirm={handleDownload}
+				onOpenChange={setIsDownloadLanguageDialogOpen}
 			/>
 		</section>
 	)

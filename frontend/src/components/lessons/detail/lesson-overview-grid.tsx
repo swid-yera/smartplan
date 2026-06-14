@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shad
 import type { ILesson, Locale, TopicTypeEnum } from '@types'
 import { FileText, Folder, GraduationCap, Grid2X2, type LucideIcon, Phone, Timer, UserRound } from 'lucide-react'
 
-import { formatDate } from './lesson-page.utils'
+import { formatDate, formatDateOnly } from './lesson-page.utils'
 import localeDictionary from './locale.json'
 
 type IProps = {
@@ -78,7 +78,7 @@ export function LessonOverviewGrid({
 							empty={t.empty}
 							icon={<Timer className='h-4 w-4' />}
 							label={t.date}
-							value={formatDate(lesson.event_date, lessonLocale)}
+							value={formatDateOnly(lesson.event_date, lessonLocale)}
 						/>
 					</div>
 				</CardContent>

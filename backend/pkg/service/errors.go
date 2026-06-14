@@ -27,6 +27,7 @@ func (e *HTTPStatusError) Error() string {
 var apiErrorExactTranslations = map[string]string{
 	"admin permissions cannot be modified":                                 "Права администратора нельзя изменять",
 	"AI service is not configured":                                         "AI-сервис не настроен",
+	"translation service is not configured":                                "Сервис перевода не настроен",
 	"award can only be submitted for review from draft or rejected status": "Награду можно отправить на проверку только из статуса черновика или отклонённой",
 	"award can only be deleted from draft or rejected status":              "Награду можно удалить только из статуса черновика или отклонённой",
 	"award type not found":                                                 "Тип награды не найден",

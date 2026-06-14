@@ -50,3 +50,13 @@ export const isCurrentDay = (date: Date | string): boolean => {
 
 	return isToday(date)
 }
+
+export const toDateOnlyIso = (date: Date | undefined): string => {
+	if (!date) return ''
+
+	const normalizedDate = new Date(date)
+
+	normalizedDate.setHours(0, 0, 0, 0)
+
+	return normalizedDate.toISOString()
+}

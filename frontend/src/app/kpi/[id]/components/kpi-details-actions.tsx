@@ -1,21 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-
+import { type PageTitleAction, PageTitleActions } from '@components'
 import { getUILocaleSection } from '@helpers'
-import { Button, ButtonGroup, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shadcn'
 import { useLocaleStore } from '@store'
-import {
-	BadgeDollarSign,
-	CheckCircle,
-	Edit,
-	type LucideIcon,
-	MoreVertical,
-	SendIcon,
-	SendToBack,
-	ShieldAlert,
-	Trash,
-} from 'lucide-react'
+import { BadgeDollarSign, CheckCircle, Edit, SendIcon, SendToBack, ShieldAlert, Trash } from 'lucide-react'
 
 import uiLocale from '../../../../components/ui/locale.json'
 import localeDictionary from './locale.json'
@@ -53,25 +41,7 @@ export const KpiDetailsActions = ({
 	const t = getUILocaleSection(localeDictionary, locale).actions
 	const uiT = getUILocaleSection(uiLocale, locale)
 
-	type IAction =
-		| {
-				id: string
-				label: string
-				icon: LucideIcon
-				href: string
-				onClick?: never
-				variant?: 'default' | 'destructive'
-		  }
-		| {
-				id: string
-				label: string
-				icon: LucideIcon
-				onClick: () => void
-				href?: never
-				variant?: 'default' | 'destructive'
-		  }
-
-	const actions: IAction[] = []
+	const actions: PageTitleAction[] = []
 
 	if (isAdmin) {
 		actions.push({
@@ -79,16 +49,18 @@ export const KpiDetailsActions = ({
 			label: t.changeStatus,
 			icon: ShieldAlert,
 			onClick: onOpenStatusSheet,
+			priority: 'overflow',
 		})
 	}
 
-	const changePointsAction =
-		canChangePoints && !isMethodistReview ? (
-			<Button size='sm' type='button' variant='outline' onClick={onOpenChangePointsSheet}>
-				<BadgeDollarSign className='mr-2 h-4 w-4' />
-				{t.changePoints}
-			</Button>
-		) : null
+	if (canChangePoints && !isMethodistReview) {
+		actions.push({
+			id: 'change-points',
+			label: t.changePoints,
+			icon: BadgeDollarSign,
+			onClick: onOpenChangePointsSheet,
+		})
+	}
 
 	if (isStatusForEdit && isAuthor) {
 		actions.push(
@@ -115,84 +87,22 @@ export const KpiDetailsActions = ({
 	}
 
 	if (isMethodistReview) {
-		return (
-			<div className='flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto'>
-				{changePointsAction}
-				<ButtonGroup className='flex-wrap'>
-					<Button className='hover:text-destructive' size='sm' variant='outline' onClick={onOpenRejectSheet}>
-						<SendToBack className='mr-2 h-4 w-4' />
-						{t.reject}
-					</Button>
-
-					<Button className='hover:text-primary' size='sm' variant='outline' onClick={onOpenApproveSheet}>
-						<CheckCircle className='mr-2 h-4 w-4' />
-						{t.approve}
-					</Button>
-				</ButtonGroup>
-			</div>
+		actions.push(
+			{
+				id: 'approve',
+				label: t.approve,
+				icon: CheckCircle,
+				onClick: onOpenApproveSheet,
+			},
+			{
+				id: 'reject',
+				label: t.reject,
+				icon: SendToBack,
+				onClick: onOpenRejectSheet,
+				variant: 'destructive',
+			},
 		)
 	}
 
-	const visibleActions = actions.length > 2 ? actions.slice(0, 1) : actions
-	const overflowActions = actions.slice(visibleActions.length)
-	const hasOtherActions = actions.length > 0
-
-	const renderAction = (action: IAction) =>
-		action.href ? (
-			<Button asChild key={action.id} className='hover:text-primary' size='sm' variant='outline'>
-				<Link href={action.href}>
-					<action.icon className='mr-2 h-4 w-4' />
-					{action.label}
-				</Link>
-			</Button>
-		) : (
-			<Button
-				key={action.id}
-				className={action.variant === 'destructive' ? 'hover:text-destructive' : 'hover:text-primary'}
-				size='sm'
-				variant='outline'
-				onClick={action.onClick}
-			>
-				<action.icon className='mr-2 h-4 w-4' />
-				{action.label}
-			</Button>
-		)
-
-	return (
-		<div className='flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto'>
-			{changePointsAction}
-			{hasOtherActions ? (
-				<ButtonGroup className='w-full flex-wrap justify-end sm:w-auto'>
-					{visibleActions.map(renderAction)}
-
-					{overflowActions.length > 0 ? (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button aria-label={uiT.moreActions} size='icon-sm' type='button' variant='outline'>
-									<MoreVertical className='h-4 w-4' />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align='end' className='w-56'>
-								{overflowActions.map((action) =>
-									action.href ? (
-										<DropdownMenuItem key={action.id} asChild>
-											<Link href={action.href}>
-												<action.icon className='mr-2 h-4 w-4' />
-												{action.label}
-											</Link>
-										</DropdownMenuItem>
-									) : (
-										<DropdownMenuItem key={action.id} variant={action.variant} onClick={action.onClick}>
-											<action.icon className='mr-2 h-4 w-4' />
-											{action.label}
-										</DropdownMenuItem>
-									),
-								)}
-							</DropdownMenuContent>
-						</DropdownMenu>
-					) : null}
-				</ButtonGroup>
-			) : null}
-		</div>
-	)
+	return <PageTitleActions actions={actions} moreLabel={uiT.moreActions} />
 }

@@ -18,6 +18,7 @@ interface IPageHeadingProps extends ComponentProps<'div'> {
 	actions?: ReactNode
 	backHref?: string | Record<RoleEnum, string>
 	backLabel?: ReactNode
+	onBackClick?: () => boolean
 	sticky?: boolean
 	top?: ReactNode
 }
@@ -30,6 +31,7 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 	backHref,
 	backLabel,
 	sticky = false,
+	onBackClick,
 	...props
 }) => {
 	const router = useRouter()
@@ -59,7 +61,16 @@ export const PageTitle: FC<PropsWithChildren<IPageHeadingProps>> = ({
 		)
 
 		return backHref === 'back' ? (
-			<Button className={className} size='sm' type='button' variant='outline' onClick={() => router.back()}>
+			<Button
+				className={className}
+				size='sm'
+				type='button'
+				variant='outline'
+				onClick={() => {
+					if (onBackClick && !onBackClick()) return
+					router.back()
+				}}
+			>
 				{backButtonContent}
 			</Button>
 		) : resolvedBackHref ? (

@@ -4,8 +4,7 @@ import Link from 'next/link'
 
 import { getLocaleText, getUILocaleSection } from '@helpers'
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shadcn'
-import type { ILesson, ILessonResource } from '@types'
-import type { Locale } from '@types'
+import type { ILesson, ILessonResource, Locale } from '@types'
 import { Grid2X2, Link2 } from 'lucide-react'
 
 import localeDictionary from './locale.json'
@@ -86,21 +85,21 @@ function ResourceList({
 				{items.length ? (
 					<ul className='divide-y divide-border/70'>
 						{items.map((item, index) => (
-							<li key={item.id} className='flex items-start gap-2 px-1 py-3 first:pt-1 last:pb-1'>
+							<li key={item.id} className='flex min-w-0 items-start gap-2 px-1 py-3 first:pt-1 last:pb-1'>
 								<Badge className='mt-0.5 min-w-6' variant='secondary'>
 									{index + 1}
 								</Badge>
-								<div className='space-y-1 text-sm'>
+								<div className='min-w-0 space-y-1 text-sm'>
 									<p className='font-medium'>{getLocaleText(item.name, locale) || empty}</p>
 									{item.link ? (
 										<Link
-											className='inline-flex items-center gap-1 text-primary/90 transition-colors duration-150 hover:text-primary hover:underline'
+											className='inline-flex max-w-full min-w-0 items-center gap-1 text-primary/90 transition-colors duration-150 hover:text-primary hover:underline'
 											href={item.link}
 											rel='noopener noreferrer'
 											target='_blank'
 										>
 											<Link2 className='h-3.5 w-3.5 shrink-0' />
-											{item.link}
+											<span className='truncate'>{item.link}</span>
 										</Link>
 									) : (
 										<p className='text-xs text-muted-foreground'>{linkNotSpecified}</p>
