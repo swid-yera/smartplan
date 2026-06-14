@@ -1,19 +1,36 @@
-import { type FC, type ReactNode, useState } from 'react'
+import { type FC, type ReactNode, memo, useMemo, useState } from 'react'
 
 import Link from 'next/link'
 
 import { LocaleToggleButton, PageTitle, ResponsibleUsersCard, RupReviewSheets, StatusBadge } from '@components'
 import { formatHours, getLocaleText, getUILocaleSection, normalizeStudyForm } from '@helpers'
-import { Button, ButtonGroup, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shadcn'
+import {
+	Badge,
+	Button,
+	ButtonGroup,
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Separator,
+} from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type IKriptoKeyPayload, type IRup, type IRupSignatureArtifact, type Locale, StatusEnum } from '@types'
 import {
 	CheckCircle,
 	Edit,
+	ExternalLink,
 	FileDown,
-	type LucideIcon,
 	Loader2,
+	type LucideIcon,
 	MoreVertical,
+	QrCode,
 	RefreshCw,
 	Search,
 	SendIcon,
@@ -59,6 +76,15 @@ interface IRupViewProps {
 	isDeletePending: boolean
 	isRegeneratePending: boolean
 	isDownloadPending: boolean
+}
+
+type RupViewText = (typeof localeDictionary)['ru']['view']
+
+interface IRupMainContentProps {
+	data: IRup
+	activeLocale: Locale
+	kriptoArtifact?: IRupSignatureArtifact
+	t: RupViewText
 }
 
 export const RupView: FC<IRupViewProps> = ({
@@ -110,65 +136,91 @@ export const RupView: FC<IRupViewProps> = ({
 		disabled?: boolean
 	}
 
-	const availableActions: Array<ILinkAction | IClickAction> = [
-		canFullAccess && {
-			id: 'change-status',
-			label: actionsText.changeStatus,
-			icon: ShieldAlert,
-			onClick: onOpenStatusSheet,
-		},
-		canEdit && {
-			id: 'edit',
-			label: actionsText.edit,
-			icon: Edit,
-			href: `/rups/${data.id}/edit`,
-		},
-		canSendToReview && {
-			id: 'send-to-review',
-			label: actionsText.sendToReview,
-			icon: SendIcon,
-			onClick: onSendToReview,
-		},
-		canDownload && {
-			id: 'download',
-			label: actionsText.download,
-			icon: FileDown,
-			onClick: onOpenDownloadDialog,
-		},
-		canRegenerateLanguage && {
-			id: 'regenerate',
-			label: actionsText.regenerate,
-			icon: RefreshCw,
-			onClick: onOpenRegenerateDialog,
-		},
-		isMethodistReview && {
-			id: 'approve',
-			label: t.approve,
-			icon: CheckCircle,
-			onClick: () => setIsApproveSheetOpen(true),
-		},
-		isMethodistReview && {
-			id: 'reject',
-			label: t.reject,
-			icon: SendToBack,
-			onClick: () => setIsRejectSheetOpen(true),
-			variant: 'destructive',
-		},
-		canDelete && {
-			id: 'delete',
-			label: actionsText.delete,
-			icon: Trash,
-			onClick: onOpenDeleteDialog,
-			variant: 'destructive',
-		},
-	].filter(Boolean) as Array<ILinkAction | IClickAction>
+	const availableActions = useMemo(
+		() =>
+			[
+				canFullAccess && {
+					id: 'change-status',
+					label: actionsText.changeStatus,
+					icon: ShieldAlert,
+					onClick: onOpenStatusSheet,
+				},
+				canEdit && {
+					id: 'edit',
+					label: actionsText.edit,
+					icon: Edit,
+					href: `/rups/${data.id}/edit`,
+				},
+				canSendToReview && {
+					id: 'send-to-review',
+					label: actionsText.sendToReview,
+					icon: SendIcon,
+					onClick: onSendToReview,
+				},
+				canDownload && {
+					id: 'download',
+					label: actionsText.download,
+					icon: FileDown,
+					onClick: onOpenDownloadDialog,
+				},
+				canRegenerateLanguage && {
+					id: 'regenerate',
+					label: actionsText.regenerate,
+					icon: RefreshCw,
+					onClick: onOpenRegenerateDialog,
+				},
+				isMethodistReview && {
+					id: 'approve',
+					label: t.approve,
+					icon: CheckCircle,
+					onClick: () => setIsApproveSheetOpen(true),
+				},
+				isMethodistReview && {
+					id: 'reject',
+					label: t.reject,
+					icon: SendToBack,
+					onClick: () => setIsRejectSheetOpen(true),
+					variant: 'destructive',
+				},
+				canDelete && {
+					id: 'delete',
+					label: actionsText.delete,
+					icon: Trash,
+					onClick: onOpenDeleteDialog,
+					variant: 'destructive',
+				},
+			].filter(Boolean) as Array<ILinkAction | IClickAction>,
+		[
+			actionsText.changeStatus,
+			actionsText.delete,
+			actionsText.download,
+			actionsText.edit,
+			actionsText.regenerate,
+			actionsText.sendToReview,
+			canDelete,
+			canDownload,
+			canEdit,
+			canFullAccess,
+			canRegenerateLanguage,
+			canSendToReview,
+			data.id,
+			isMethodistReview,
+			onOpenDeleteDialog,
+			onOpenDownloadDialog,
+			onOpenRegenerateDialog,
+			onOpenStatusSheet,
+			onSendToReview,
+			t.approve,
+			t.reject,
+		],
+	)
 
 	const primaryAction = availableActions[0] ?? null
 	const overflowActions = availableActions.slice(1)
 
 	const renderAction = (action: ILinkAction | IClickAction) =>
 		action.href ? (
-			<Button asChild key={action.id} className='h-9' variant='outline'>
+			<Button key={action.id} asChild className='h-9' variant='outline'>
 				<Link href={action.href}>
 					<action.icon className='mr-2 h-4 w-4' />
 					{action.label}
@@ -298,97 +350,7 @@ export const RupView: FC<IRupViewProps> = ({
 				)}
 				{localeNotice}
 
-				<div className='mt-6 grid gap-6 xl:grid-cols-4 lg:grid-cols-3'>
-					<BasicView
-						className='xl:col-span-3 lg:col-span-2'
-						rows={[
-							{
-								label: t.moduleName,
-								subLabel: t.moduleNameSub,
-								value: getLocaleText(data.name, activeLocale),
-							},
-							{
-								label: t.specialty,
-								subLabel: t.specialtySub,
-								value: getLocaleText(data.groups[0]?.specialty, activeLocale),
-							},
-							{
-								label: t.qualification,
-								subLabel: t.qualificationSub,
-								value: getLocaleText(data.groups[0]?.qualification, activeLocale),
-							},
-							{
-								label: t.studyForm,
-								value: normalizeStudyForm(data.studyForm, activeLocale),
-							},
-							{
-								label: t.totalHours,
-								value: formatHours(data.totalHours, activeLocale),
-							},
-							{
-								label: t.credits,
-								value: data.totalHours / 24,
-							},
-							{
-								label: t.course,
-								value: `${data.course} ${t.courseSuffix}`,
-							},
-							{
-								label: t.group,
-								value: data.groups[0].name,
-							},
-							{
-								label: t.developers,
-								value: (
-									<ul className='list-decimal ml-3'>
-										{data.contacts.map((c) => (
-											<li key={c.keycloakId}>{`${c.firstName} ${c.lastName}`}</li>
-										))}
-									</ul>
-								),
-							},
-						]}
-						title={t.moduleTitle}
-					/>
-
-					<ResponsibleUsersCard
-						createdAt={data.createdAt}
-						localeCode={activeLocale}
-						methodist={data.methodist}
-						teacher={data.teacher}
-						updatedAt={data.updatedAt}
-					/>
-				</div>
-
-				<ExplorationView activeLocale={activeLocale} data={data} />
-
-				<ContactsView activeLocale={activeLocale} contacts={data.contacts} creatorId={data.teacher.keycloakId} />
-
-				<DisciplineView activeLocale={activeLocale} disciplines={data.disciplines} rupName={data.name} />
-
-				<TopicsView
-					activeLocale={activeLocale}
-					disciplines={data.disciplines}
-					rupId={data.id}
-					rupStatus={data.status}
-					type={data.type}
-				/>
-
-				{kriptoArtifact && (
-					<div className='rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm'>
-						{kriptoArtifact.qrSvg && (
-							<div className='flex justify-center'>
-								<div className='rounded-2xl border bg-background p-3 shadow-sm'>
-									<img
-										alt={t.kriptoTitle}
-										className='h-56 w-56 object-contain'
-										src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(kriptoArtifact.qrSvg)}`}
-									/>
-								</div>
-							</div>
-						)}
-					</div>
-				)}
+				<RupMainContent activeLocale={activeLocale} data={data} kriptoArtifact={kriptoArtifact} t={t} />
 			</div>
 
 			<RupReviewSheets
@@ -404,3 +366,172 @@ export const RupView: FC<IRupViewProps> = ({
 		</div>
 	)
 }
+
+const RupMainContent = memo(({ data, activeLocale, kriptoArtifact, t }: IRupMainContentProps) => (
+	<>
+		<div className='mt-6 grid gap-6 xl:grid-cols-4 lg:grid-cols-3'>
+			<BasicView
+				className='xl:col-span-3 lg:col-span-2'
+				rows={[
+					{
+						label: t.moduleName,
+						subLabel: t.moduleNameSub,
+						value: getLocaleText(data.name, activeLocale),
+					},
+					{
+						label: t.specialty,
+						subLabel: t.specialtySub,
+						value: getLocaleText(data.groups[0]?.specialty, activeLocale),
+					},
+					{
+						label: t.qualification,
+						subLabel: t.qualificationSub,
+						value: getLocaleText(data.groups[0]?.qualification, activeLocale),
+					},
+					{
+						label: t.studyForm,
+						value: normalizeStudyForm(data.studyForm, activeLocale),
+					},
+					{
+						label: t.totalHours,
+						value: formatHours(data.totalHours, activeLocale),
+					},
+					{
+						label: t.credits,
+						value: data.totalHours / 24,
+					},
+					{
+						label: t.course,
+						value: `${data.course} ${t.courseSuffix}`,
+					},
+					{
+						label: t.group,
+						value: data.groups[0].name,
+					},
+					{
+						label: t.developers,
+						value: (
+							<ul className='list-decimal ml-3'>
+								{data.contacts.map((c) => (
+									<li key={c.keycloakId}>{`${c.firstName} ${c.lastName}`}</li>
+								))}
+							</ul>
+						),
+					},
+				]}
+				title={t.moduleTitle}
+			/>
+
+			<ResponsibleUsersCard
+				createdAt={data.createdAt}
+				localeCode={activeLocale}
+				methodist={data.methodist}
+				teacher={data.teacher}
+				updatedAt={data.updatedAt}
+			/>
+		</div>
+
+		<div className='[content-visibility:auto] [contain-intrinsic-size:640px]'>
+			<ExplorationView activeLocale={activeLocale} data={data} />
+		</div>
+
+		<ContactsView activeLocale={activeLocale} contacts={data.contacts} creatorId={data.teacher.keycloakId} />
+
+		<div className='[content-visibility:auto] [contain-intrinsic-size:760px]'>
+			<DisciplineView activeLocale={activeLocale} disciplines={data.disciplines} rupName={data.name} />
+		</div>
+
+		<div className='[content-visibility:auto] [contain-intrinsic-size:1200px]'>
+			<TopicsView
+				activeLocale={activeLocale}
+				disciplines={data.disciplines}
+				rupId={data.id}
+				rupStatus={data.status}
+				type={data.type}
+			/>
+		</div>
+
+		{kriptoArtifact && <KriptoSignatureCard activeLocale={activeLocale} artifact={kriptoArtifact} t={t} />}
+	</>
+))
+
+RupMainContent.displayName = 'RupMainContent'
+
+interface IKriptoSignatureCardProps {
+	artifact: IRupSignatureArtifact
+	activeLocale: Locale
+	t: RupViewText
+}
+
+const KriptoSignatureCard = memo(({ artifact, activeLocale, t }: IKriptoSignatureCardProps) => {
+	const dateLocale = activeLocale === 'kk' ? 'kk-KZ' : 'ru-RU'
+	const signedAt = new Date(artifact.createdAt).toLocaleString(dateLocale)
+	const documentHash =
+		artifact.documentHash.length > 18 ? `${artifact.documentHash.slice(0, 18)}...` : artifact.documentHash
+
+	return (
+		<Card>
+			<CardHeader className='gap-2'>
+				<div className='flex flex-wrap items-start justify-between gap-3'>
+					<div className='flex flex-col gap-1'>
+						<CardTitle className='flex items-center gap-2 text-xl'>
+							<QrCode className='h-5 w-5' />
+							{t.kriptoTitle}
+						</CardTitle>
+						<CardDescription>{t.kriptoDescription}</CardDescription>
+					</div>
+					<Badge variant='secondary'>{t.kriptoSignedBadge}</Badge>
+				</div>
+			</CardHeader>
+
+			<CardContent className='grid gap-6 lg:grid-cols-[280px_1fr]'>
+				{artifact.qrSvg && (
+					<div className='flex justify-center lg:justify-start'>
+						<div className='rounded-lg border bg-background p-3 shadow-sm'>
+							<img
+								alt={t.kriptoTitle}
+								className='h-56 w-56 object-contain'
+								src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(artifact.qrSvg)}`}
+							/>
+						</div>
+					</div>
+				)}
+
+				<div className='flex flex-col gap-4'>
+					<div className='grid gap-3 md:grid-cols-2'>
+						<KriptoInfoItem label={t.signerLabel} value={artifact.signerName || t.empty} />
+						<KriptoInfoItem label={t.signedAtLabel} value={signedAt} />
+						<KriptoInfoItem label={t.signatureIdLabel} value={artifact.signatureId || t.empty} />
+					</div>
+
+					<Separator />
+
+					<div className='grid gap-3 md:grid-cols-2'>
+						<KriptoInfoItem label={t.documentIdLabel} value={artifact.documentId || t.empty} />
+						<KriptoInfoItem label={t.documentVersionLabel} value={artifact.documentVersion || t.empty} />
+						<KriptoInfoItem label={t.documentHashLabel} value={documentHash || t.empty} />
+						<KriptoInfoItem label={t.verificationUrlLabel} value={artifact.verificationUrl || t.empty} />
+					</div>
+				</div>
+			</CardContent>
+
+			<CardFooter className='justify-end'>
+				<Button asChild disabled={!artifact.verificationUrl}>
+					<a href={artifact.verificationUrl || undefined} rel='noreferrer' target='_blank'>
+						<ExternalLink data-icon='inline-start' />
+						{t.openVerification}
+					</a>
+				</Button>
+			</CardFooter>
+		</Card>
+	)
+})
+
+KriptoSignatureCard.displayName = 'KriptoSignatureCard'
+
+const KriptoInfoItem = ({ label, value }: { label: string; value: string }) => (
+	<div className='flex min-w-0 flex-col gap-1'>
+		<div className='text-sm text-muted-foreground'>{label}</div>
+		<div className='break-words text-sm font-medium'>{value}</div>
+	</div>
+)
