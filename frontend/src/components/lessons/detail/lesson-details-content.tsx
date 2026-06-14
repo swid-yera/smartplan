@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
 
-import { getLocaleText, getUILocaleSection, hasRole, toBackendLocale, topicTypeIcons } from '@helpers'
+import { getLocaleText, getUILocaleSection, hasRole, toBackendLocale, toDateOnlyIso, topicTypeIcons } from '@helpers'
 import { services } from '@services'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ILesson, Locale } from '@types'
@@ -48,6 +48,7 @@ export function LessonDetailsContent({
 	const [isDownloadPending, setIsDownloadPending] = useState(false)
 	const [isRegenerateDialogOpen, setIsRegenerateDialogOpen] = useState(false)
 	const [regenerateDescription, setRegenerateDescription] = useState('')
+	const [regenerateEventDate, setRegenerateEventDate] = useState<Date | undefined>(undefined)
 	const [regenerateFormData, setRegenerateFormData] = useState<IRegenerateFormData>({
 		name: '',
 		theoryHours: 0,
@@ -131,6 +132,9 @@ export function LessonDetailsContent({
 	const handleRegenerateClick = () => {
 		resetRegenerateForm()
 		setRegenerateDescription('')
+		const currentEventDate = lesson.event_date ? new Date(lesson.event_date) : new Date()
+
+		setRegenerateEventDate(Number.isNaN(currentEventDate.getTime()) ? new Date() : currentEventDate)
 		setIsRegenerateDialogOpen(true)
 	}
 
@@ -154,12 +158,13 @@ export function LessonDetailsContent({
 			disciplineId: currentDisciplineId,
 			topicId: currentTopicId,
 			sourceLanguage: toBackendLocale(activeLocale),
+			message: regenerateDescription.trim(),
+			event_date: toDateOnlyIso(regenerateEventDate),
 			updatedTopic: {
 				name: {
 					ru: activeLocale === 'ru' ? regenerateFormData.name.trim() : getLocaleText(lesson.topic_name, 'ru'),
 					kz: activeLocale === 'kk' ? regenerateFormData.name.trim() : getLocaleText(lesson.topic_name, 'kk'),
 				},
-				description: regenerateDescription.trim(),
 				type: regenerateFormData.type,
 				total_hours:
 					regenerateFormData.theoryHours + regenerateFormData.practiceHours + regenerateFormData.individualHours,
@@ -295,10 +300,12 @@ export function LessonDetailsContent({
 			<LessonRegenerateDialog
 				canRegenerate={canRegenerate}
 				description={regenerateDescription}
+				eventDate={regenerateEventDate}
 				isOpen={isRegenerateDialogOpen}
 				isPending={regenerateLessonMutation.isPending}
 				onConfirm={handleRegenerate}
 				onDescriptionChange={setRegenerateDescription}
+				onEventDateChange={setRegenerateEventDate}
 				onOpenChange={setIsRegenerateDialogOpen}
 			/>
 

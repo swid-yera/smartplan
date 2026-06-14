@@ -19,6 +19,7 @@ export interface IGenerateLessonRequest {
 	topicId: string
 	sourceLanguage?: BackendLocale
 	message?: string
+	event_date?: string
 	updatedTopic: IGenerateLessonUpdatedTopic
 }
 

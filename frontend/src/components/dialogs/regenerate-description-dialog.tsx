@@ -2,20 +2,30 @@
 
 import { type FC } from 'react'
 
+import { format } from 'date-fns'
+import { CalendarDays, ChevronDown } from 'lucide-react'
+
 import {
 	Button,
+	Calendar,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
 	Textarea,
 } from '@shadcn'
 
 interface IRegenerateDescriptionDialogProps {
 	cancelLabel: string
 	confirmLabel: string
+	eventDate?: Date
+	eventDateLabel?: string
+	eventDatePlaceholder?: string
 	description: string
 	descriptionLabel: string
 	descriptionPlaceholder: string
@@ -26,6 +36,7 @@ interface IRegenerateDescriptionDialogProps {
 	isPending?: boolean
 	onConfirm: () => void
 	onDescriptionChange: (value: string) => void
+	onEventDateChange?: (value: Date | undefined) => void
 	onOpenChange: (open: boolean) => void
 	title: string
 }
@@ -33,6 +44,9 @@ interface IRegenerateDescriptionDialogProps {
 export const RegenerateDescriptionDialog: FC<IRegenerateDescriptionDialogProps> = ({
 	cancelLabel,
 	confirmLabel,
+	eventDate,
+	eventDateLabel,
+	eventDatePlaceholder,
 	description,
 	descriptionLabel,
 	descriptionPlaceholder,
@@ -43,9 +57,12 @@ export const RegenerateDescriptionDialog: FC<IRegenerateDescriptionDialogProps> 
 	isPending = false,
 	onConfirm,
 	onDescriptionChange,
+	onEventDateChange,
 	onOpenChange,
 	title,
 }) => {
+	const shouldShowEventDate = Boolean(eventDateLabel && eventDatePlaceholder && onEventDateChange)
+
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
 			<DialogContent>
@@ -54,7 +71,34 @@ export const RegenerateDescriptionDialog: FC<IRegenerateDescriptionDialogProps> 
 					<DialogDescription>{dialogDescription}</DialogDescription>
 				</DialogHeader>
 
-				<div className='grid gap-2'>
+				<div className='grid gap-4'>
+					{shouldShowEventDate ? (
+						<div className='grid gap-2'>
+							<label className='inline-flex items-center gap-2 text-sm font-medium'>
+								<CalendarDays className='h-4 w-4 text-primary' />
+								{eventDateLabel}
+							</label>
+							<Popover>
+								<PopoverTrigger asChild>
+									<Button className='w-full justify-between font-normal' type='button' variant='outline'>
+										{eventDate ? format(eventDate, 'dd.MM.yyyy') : eventDatePlaceholder}
+										<ChevronDown className='h-4 w-4 opacity-60' />
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent align='start' className='w-auto overflow-hidden p-0'>
+									<Calendar
+										captionLayout='dropdown'
+										defaultMonth={eventDate}
+										mode='single'
+										selected={eventDate}
+										onSelect={onEventDateChange}
+									/>
+								</PopoverContent>
+							</Popover>
+						</div>
+					) : null}
+
+					<div className='grid gap-2'>
 					<label className='text-sm font-medium' htmlFor={descriptionId}>
 						{descriptionLabel}
 					</label>
@@ -65,6 +109,7 @@ export const RegenerateDescriptionDialog: FC<IRegenerateDescriptionDialogProps> 
 						value={description}
 						onChange={(event) => onDescriptionChange(event.target.value)}
 					/>
+					</div>
 				</div>
 
 				<DialogFooter>

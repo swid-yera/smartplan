@@ -135,6 +135,7 @@ type GenerateLessonInput struct {
 	DisciplineID   uuid.UUID                `json:"disciplineId"`
 	TopicID        uuid.UUID                `json:"topicId"`
 	SourceLanguage string                   `json:"sourceLanguage"`
+	EventDate      string                   `json:"event_date"`
 	UpdatedTopic   GenerateLessonTopicInput `json:"updatedTopic"`
 	Message        string                   `json:"message"`
 }
@@ -448,6 +449,17 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		return uuid.Nil, err
 	}
 
+	eventDate := time.Now().UTC()
+	if strings.TrimSpace(input.EventDate) != "" {
+		parsedEventDate, eventDateValid, parseErr := helpers.ParseTimeOptional(input.EventDate)
+		if parseErr != nil {
+			return uuid.Nil, fmt.Errorf("parse event_date: %w", parseErr)
+		}
+		if eventDateValid {
+			eventDate = parsedEventDate
+		}
+	}
+
 	if err := s.rupRepo.UpdateTopic(ctx, storage.UpdateDisciplineTopicParams{
 		ID:              input.TopicID,
 		Name:            input.UpdatedTopic.Name.ToJSONB(),
@@ -537,7 +549,6 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		return uuid.Nil, err
 	}
 
-	eventDate := time.Now().UTC()
 	planNumber := defaultLessonPlanNumber
 	if resolvedPlanNumber, planErr := s.resolveLessonPlanNumber(ctx, rup, updatedTopic.ID); planErr == nil {
 		planNumber = resolvedPlanNumber
