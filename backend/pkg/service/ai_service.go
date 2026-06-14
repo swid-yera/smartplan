@@ -24,7 +24,6 @@ type AIService interface {
 	GenerateDisciplines(ctx context.Context, req GenerateDisciplinesRequest) ([]GeneratedDiscipline, error)
 	GenerateTopicsForDiscipline(ctx context.Context, req GenerateTopicsForDisciplineRequest) ([]GeneratedTopic, error)
 	GenerateLesson(ctx context.Context, req GenerateLessonRequest) (*GenerateLessonResponse, error)
-	TranslateText(ctx context.Context, req TranslateTextRequest) (string, error)
 }
 
 type aiService struct {
@@ -55,13 +54,6 @@ type GeneratedTopic = helpers.GeneratedTopic
 type GenerateLessonRequest = helpers.GenerateLessonRequest
 type GenerateLessonResponse = helpers.GenerateLessonResponse
 type GeneratedLessonProgressStep = helpers.GeneratedLessonProgressStep
-type TranslateTextRequest struct {
-	Text             string
-	SourceLanguage   string
-	TargetLanguage   string
-	Domain           string
-	AdditionalPrompt string
-}
 type geminiGenerateContentRequest = helpers.GeminiGenerateContentRequest
 type geminiContent = helpers.GeminiContent
 type geminiPart = helpers.GeminiPart
@@ -406,42 +398,6 @@ func (s *aiService) GenerateLesson(ctx context.Context, req GenerateLessonReques
 	}
 
 	return &out, nil
-}
-
-func (s *aiService) TranslateText(ctx context.Context, req TranslateTextRequest) (string, error) {
-	text := strings.TrimSpace(req.Text)
-	if text == "" {
-		return "", nil
-	}
-
-	sourceLanguage := strings.TrimSpace(req.SourceLanguage)
-	targetLanguage := strings.TrimSpace(req.TargetLanguage)
-	if sourceLanguage == "" || targetLanguage == "" {
-		return "", fmt.Errorf("sourceLanguage and targetLanguage are required")
-	}
-	if strings.EqualFold(sourceLanguage, targetLanguage) {
-		return text, nil
-	}
-
-	prompt := helpers.BuildTranslateTextPrompt(helpers.TranslateTextPromptInput{
-		Text:             text,
-		SourceLanguage:   sourceLanguage,
-		TargetLanguage:   targetLanguage,
-		Domain:           req.Domain,
-		AdditionalPrompt: req.AdditionalPrompt,
-	})
-
-	responseText, err := s.generateContentWithFallback(ctx, prompt, "text/plain")
-	if err != nil {
-		return "", fmt.Errorf("translate text: %w", err)
-	}
-
-	translatedText := extractTranslationTextResponse(responseText)
-	if translatedText == "" {
-		return "", errors.New("empty translation response")
-	}
-
-	return translatedText, nil
 }
 
 func (s *aiService) generateContentWithFallback(ctx context.Context, prompt string, responseMimeType string) (string, error) {

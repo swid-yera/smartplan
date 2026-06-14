@@ -29,6 +29,8 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
+	Card,
+	CardContent,
 	Checkbox,
 	Input,
 	Label,
@@ -313,11 +315,11 @@ const Page: FC = () => {
 				kriptoArtifact={signatureArtifact ?? undefined}
 				localeNotice={
 					isActiveLocaleMissing ? (
-						<div className='rounded-lg border border-amber-500/40 bg-amber-50 p-4 text-amber-950'>
-							<div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+						<Card>
+							<CardContent className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
 								<div className='space-y-1'>
 									<div className='font-semibold'>{t.view.missingLocaleTitle}</div>
-									<div className='text-sm text-amber-900/90'>
+									<div className='text-sm'>
 										{interpolateUILocaleText(t.view.missingLocaleDescription, {
 											language: selectedLanguageLabel,
 											sourceLanguage: sourceLanguageLabel,
@@ -343,8 +345,8 @@ const Page: FC = () => {
 										)}
 									</Button>
 								)}
-							</div>
-						</div>
+							</CardContent>
+						</Card>
 					) : null
 				}
 				onActiveLocaleChange={setActiveLocale}

@@ -28,6 +28,7 @@ func main() {
 	redisCfg := config.LoadRedisConfig()
 	minioCfg := config.LoadMinioConfig()
 	docCfg := config.LoadDocumentRenderConfig()
+	translationCfg := config.LoadTranslationConfig()
 
 	cryptoCfg := config.LoadCryptoConfig()
 
@@ -91,8 +92,12 @@ func main() {
 	// ---------- AI SERVICE ----------
 	log.Infof("Using Gemini API provider with model %s", aiCfg.Gemini.PrimaryModel)
 	aiService := service.NewAIService(httpClient, aiCfg.Gemini, log)
-	rupService := service.NewRupService(rupRepo, docCfg, httpClient, aiService, minioRepo, cryptoClient, rdb, log)
-	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, docCfg, httpClient, minioRepo, log)
+	translationService := service.NewTranslationService(httpClient, translationCfg, log)
+	if translationService == nil {
+		log.Warn("Translation service is not configured; ru/kz translation jobs will be unavailable")
+	}
+	rupService := service.NewRupService(rupRepo, docCfg, httpClient, aiService, translationService, minioRepo, cryptoClient, rdb, log)
+	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, translationService, docCfg, httpClient, minioRepo, log)
 
 	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)

@@ -211,6 +211,7 @@ type LessonService struct {
 	repo        repository.Lessons
 	rupRepo     repository.RupRepository
 	aiService   AIService
+	translation TranslationService
 	cfg         *config.DocumentRenderConfig
 	httpClient  *http.Client
 	docRender   *DocumentRenderClient
@@ -307,6 +308,7 @@ func NewLessonService(
 	repo repository.Lessons,
 	rupRepo repository.RupRepository,
 	aiService AIService,
+	translationService TranslationService,
 	cfg *config.DocumentRenderConfig,
 	httpClient *http.Client,
 	fileStorage FileStorage,
@@ -316,6 +318,7 @@ func NewLessonService(
 		repo:        repo,
 		rupRepo:     rupRepo,
 		aiService:   aiService,
+		translation: translationService,
 		cfg:         cfg,
 		httpClient:  httpClient,
 		docRender:   NewDocumentRenderClient(httpClient, cfg.ApiKey),
@@ -515,11 +518,15 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		return uuid.Nil, fmt.Errorf("generate lesson via ai: %w", err)
 	}
 
-	if generatedIDs, generated := s.persistGeneratedResources(ctx, aiResult.InternetResources, selectedLanguage); len(generatedIDs) > 0 {
+	if generatedIDs, generated, persistErr := s.persistGeneratedResources(ctx, aiResult.InternetResources, selectedLanguage); persistErr != nil {
+		return uuid.Nil, fmt.Errorf("persist generated internet resources: %w", persistErr)
+	} else if len(generatedIDs) > 0 {
 		internetResourceIDs = generatedIDs
 		internetResources = generated
 	}
-	if generatedIDs, generated := s.persistGeneratedResources(ctx, aiResult.TechnicalResources, selectedLanguage); len(generatedIDs) > 0 {
+	if generatedIDs, generated, persistErr := s.persistGeneratedResources(ctx, aiResult.TechnicalResources, selectedLanguage); persistErr != nil {
+		return uuid.Nil, fmt.Errorf("persist generated technical resources: %w", persistErr)
+	} else if len(generatedIDs) > 0 {
 		technicalResourceIDs = generatedIDs
 		technicalResources = generated
 	}
@@ -542,27 +549,17 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		}
 	}
 
-	goalsText := s.buildBilingualLessonText(
-		ctx,
+	lessonTexts, err := s.buildBilingualLessonTexts(ctx, []string{
 		generatedPlan.Goals,
-		selectedLanguage,
-		"цели поурочного плана колледжа",
-		"Сохрани официальный методический стиль Республики Казахстан.",
-	)
-	tasksText := s.buildBilingualLessonText(
-		ctx,
 		generatedPlan.Tasks,
-		selectedLanguage,
-		"задачи поурочного плана колледжа",
-		"Сохрани официальный методический стиль Республики Казахстан.",
-	)
-	expectedText := s.buildBilingualLessonText(
-		ctx,
 		generatedPlan.Expected,
-		selectedLanguage,
-		"ожидаемые результаты поурочного плана колледжа",
-		"Сохрани официальный методический стиль Республики Казахстан.",
-	)
+	}, selectedLanguage)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("translate lesson summary: %w", err)
+	}
+	goalsText := lessonTexts[0]
+	tasksText := lessonTexts[1]
+	expectedText := lessonTexts[2]
 
 	lessonParams := storage.CreateLessonsParams{
 		RupName:            rup.Name,
@@ -713,13 +710,16 @@ func (s *LessonService) replaceLessonProgress(
 			sourceContent = []string{localeTextByLanguage(canonicalLessonStageDefaultContent(stepOrder), language)}
 		}
 
-		content := s.buildBilingualLessonContent(
+		content, err := s.buildBilingualLessonContent(
 			ctx,
 			sourceContent,
 			language,
 			"содержание этапа поурочного плана колледжа",
 			"Сохрани методический стиль и формат коротких инструкций для преподавателя и обучающихся.",
 		)
+		if err != nil {
+			return fmt.Errorf("translate lesson progress content: %w", err)
+		}
 
 		firstTime, secondTime, thirdTime := canonicalLessonStageTimes(stepOrder)
 		if err := s.repo.CreateLessonProgress(ctx, storage.CreateLessonProgressParams{
@@ -1167,27 +1167,45 @@ func (s *LessonService) GetLessonDownloadURL(ctx context.Context, id uuid.UUID, 
 		return "", err
 	}
 
-	goals, _ := s.resolveLocalizedLessonText(
+	goals, err := s.resolveLocalizedLessonText(
 		ctx,
 		localization.LocaleTextFromJSONB(lesson.Goals),
 		selectedLanguage,
 		"цели поурочного плана колледжа",
 		"Сохрани официальный методический стиль Республики Казахстан.",
 	)
-	tasks, _ := s.resolveLocalizedLessonText(
+	if err != nil {
+		return "", fmt.Errorf("translate lesson goals: %w", err)
+	}
+	tasks, err := s.resolveLocalizedLessonText(
 		ctx,
 		localization.LocaleTextFromJSONB(lesson.Tasks),
 		selectedLanguage,
 		"задачи поурочного плана колледжа",
 		"Сохрани официальный методический стиль Республики Казахстан.",
 	)
-	expected, _ := s.resolveLocalizedLessonText(
+	if err != nil {
+		return "", fmt.Errorf("translate lesson tasks: %w", err)
+	}
+	expected, err := s.resolveLocalizedLessonText(
 		ctx,
 		localization.LocaleTextFromJSONB(lesson.Expected),
 		selectedLanguage,
 		"ожидаемые результаты поурочного плана колледжа",
 		"Сохрани официальный методический стиль Республики Казахстан.",
 	)
+	if err != nil {
+		return "", fmt.Errorf("translate lesson expected results: %w", err)
+	}
+
+	internetResources, err := s.resolveLocalizedLessonResources(ctx, lesson.InternetResources, selectedLanguage)
+	if err != nil {
+		return "", fmt.Errorf("translate lesson internet resources: %w", err)
+	}
+	technicalResources, err := s.resolveLocalizedLessonResources(ctx, lesson.TechnicalResources, selectedLanguage)
+	if err != nil {
+		return "", fmt.Errorf("translate lesson technical resources: %w", err)
+	}
 
 	documentPayload := buildLessonDocumentPayload(
 		selectedLanguage,
@@ -1206,8 +1224,8 @@ func (s *LessonService) GetLessonDownloadURL(ctx context.Context, id uuid.UUID, 
 			Expected:   expected,
 			Progress:   progress,
 		},
-		s.resolveLocalizedLessonResources(ctx, lesson.InternetResources, selectedLanguage),
-		s.resolveLocalizedLessonResources(ctx, lesson.TechnicalResources, selectedLanguage),
+		internetResources,
+		technicalResources,
 	)
 
 	document, err := s.generateLessonViaPython(ctx, documentPayload)
@@ -1474,7 +1492,7 @@ func (s *LessonService) resolveLocalizedLessonResources(
 	ctx context.Context,
 	ids []uuid.UUID,
 	language string,
-) []string {
+) ([]string, error) {
 	resources := make([]string, 0, len(ids))
 
 	for _, id := range ids {
@@ -1493,6 +1511,9 @@ func (s *LessonService) resolveLocalizedLessonResources(
 		if err != nil && s.log != nil {
 			s.log.WithError(err).WithField("resource_id", id.String()).Warn("failed to localize lesson resource name")
 		}
+		if err != nil {
+			return nil, err
+		}
 		name = strings.TrimSpace(name)
 		if name == "" {
 			continue
@@ -1507,7 +1528,7 @@ func (s *LessonService) resolveLocalizedLessonResources(
 		resources = append(resources, name)
 	}
 
-	return resources
+	return resources, nil
 }
 
 func (s *LessonService) resolveLocalizedLessonText(
@@ -1533,24 +1554,18 @@ func (s *LessonService) resolveLocalizedLessonText(
 		return "", nil
 	}
 
-	if s.aiService == nil || sourceLanguage == "" || sourceLanguage == targetLanguage {
+	if sourceLanguage == "" || sourceLanguage == targetLanguage {
 		return sourceText, nil
 	}
 
-	translatedText, err := s.aiService.TranslateText(ctx, TranslateTextRequest{
-		Text:             sourceText,
-		SourceLanguage:   sourceLanguage,
-		TargetLanguage:   targetLanguage,
-		Domain:           domain,
-		AdditionalPrompt: additionalPrompt,
-	})
+	translatedText, err := s.translateLessonText(ctx, sourceText, sourceLanguage, targetLanguage)
 	if err != nil {
 		if s.log != nil {
 			s.log.WithError(err).WithFields(logrus.Fields{
 				"source_language": sourceLanguage,
 				"target_language": targetLanguage,
 				"domain":          domain,
-			}).Warn("failed to translate lesson text, using source value")
+			}).Warn("failed to translate lesson text")
 		}
 		return sourceText, err
 	}
@@ -1558,48 +1573,55 @@ func (s *LessonService) resolveLocalizedLessonText(
 	return strings.TrimSpace(translatedText), nil
 }
 
-func (s *LessonService) translateLessonContentLines(
+func (s *LessonService) translateLessonText(
 	ctx context.Context,
-	lines []string,
+	text string,
 	sourceLanguage string,
 	targetLanguage string,
-	domain string,
-	additionalPrompt string,
-) []string {
-	if len(lines) == 0 || s.aiService == nil || sourceLanguage == "" || sourceLanguage == targetLanguage {
-		return lines
+) (string, error) {
+	translated, err := s.translateLessonTexts(ctx, []string{text}, sourceLanguage, targetLanguage)
+	if err != nil {
+		return "", err
+	}
+	if len(translated) == 0 {
+		return "", nil
+	}
+	return translated[0], nil
+}
+
+func (s *LessonService) translateLessonTexts(
+	ctx context.Context,
+	texts []string,
+	sourceLanguage string,
+	targetLanguage string,
+) ([]string, error) {
+	if len(texts) == 0 {
+		return nil, nil
 	}
 
-	result := make([]string, 0, len(lines))
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			continue
-		}
-
-		translatedText, err := s.aiService.TranslateText(ctx, TranslateTextRequest{
-			Text:             trimmed,
-			SourceLanguage:   sourceLanguage,
-			TargetLanguage:   targetLanguage,
-			Domain:           domain,
-			AdditionalPrompt: additionalPrompt,
-		})
-		if err != nil {
-			if s.log != nil {
-				s.log.WithError(err).WithFields(logrus.Fields{
-					"source_language": sourceLanguage,
-					"target_language": targetLanguage,
-					"domain":          domain,
-				}).Warn("failed to translate lesson content line, using source value")
-			}
-			result = append(result, trimmed)
-			continue
-		}
-
-		result = append(result, strings.TrimSpace(translatedText))
+	sourceLanguage = normalizeBackendLanguage(sourceLanguage)
+	targetLanguage = normalizeBackendLanguage(targetLanguage)
+	if sourceLanguage == "" || targetLanguage == "" || sourceLanguage == targetLanguage {
+		return append([]string(nil), texts...), nil
+	}
+	if s.translation == nil {
+		return nil, fmt.Errorf("translation service is not configured")
 	}
 
-	return result
+	translatedTexts, err := s.translation.TranslateBatch(ctx, TranslateBatchRequest{
+		Texts:          texts,
+		SourceLanguage: sourceLanguage,
+		TargetLanguage: targetLanguage,
+		Domain:         "lesson",
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(translatedTexts) != len(texts) {
+		return nil, fmt.Errorf("translation response count mismatch: got %d, want %d", len(translatedTexts), len(texts))
+	}
+
+	return translatedTexts, nil
 }
 
 func (s *LessonService) buildBilingualLessonText(
@@ -1608,10 +1630,10 @@ func (s *LessonService) buildBilingualLessonText(
 	sourceLanguage string,
 	domain string,
 	additionalPrompt string,
-) localization.LocaleText {
+) (localization.LocaleText, error) {
 	trimmed := strings.TrimSpace(text)
 	if trimmed == "" {
-		return localization.LocaleText{}
+		return localization.LocaleText{}, nil
 	}
 
 	selectedLanguage := normalizeBackendLanguage(sourceLanguage)
@@ -1622,32 +1644,66 @@ func (s *LessonService) buildBilingualLessonText(
 	value := setLocaleValueByLanguage(localization.LocaleText{}, selectedLanguage, trimmed)
 	targetLanguage := oppositeBackendLanguage(selectedLanguage)
 	if targetLanguage == "" {
-		return value
+		return value, nil
 	}
 
-	translated := trimmed
-	if s.aiService != nil {
-		translatedText, err := s.aiService.TranslateText(ctx, TranslateTextRequest{
-			Text:             trimmed,
-			SourceLanguage:   selectedLanguage,
-			TargetLanguage:   targetLanguage,
-			Domain:           domain,
-			AdditionalPrompt: additionalPrompt,
-		})
-		if err != nil {
-			if s.log != nil {
-				s.log.WithError(err).WithFields(logrus.Fields{
-					"source_language": selectedLanguage,
-					"target_language": targetLanguage,
-					"domain":          domain,
-				}).Warn("failed to build bilingual lesson text")
-			}
-		} else if candidate := strings.TrimSpace(translatedText); candidate != "" {
-			translated = candidate
+	translatedText, err := s.translateLessonText(ctx, trimmed, selectedLanguage, targetLanguage)
+	if err != nil {
+		if s.log != nil {
+			s.log.WithError(err).WithFields(logrus.Fields{
+				"source_language": selectedLanguage,
+				"target_language": targetLanguage,
+				"domain":          domain,
+			}).Warn("failed to build bilingual lesson text")
 		}
+		return value, err
 	}
 
-	return setLocaleValueByLanguage(value, targetLanguage, translated)
+	return setLocaleValueByLanguage(value, targetLanguage, strings.TrimSpace(translatedText)), nil
+}
+
+func (s *LessonService) buildBilingualLessonTexts(
+	ctx context.Context,
+	texts []string,
+	sourceLanguage string,
+) ([]localization.LocaleText, error) {
+	selectedLanguage := normalizeBackendLanguage(sourceLanguage)
+	if selectedLanguage == "" {
+		selectedLanguage = "ru"
+	}
+
+	targetLanguage := oppositeBackendLanguage(selectedLanguage)
+	result := make([]localization.LocaleText, len(texts))
+	pendingTexts := make([]string, 0, len(texts))
+	pendingIndexes := make([]int, 0, len(texts))
+
+	for i, text := range texts {
+		trimmed := strings.TrimSpace(text)
+		if trimmed == "" {
+			continue
+		}
+		result[i] = setLocaleValueByLanguage(localization.LocaleText{}, selectedLanguage, trimmed)
+		if targetLanguage == "" {
+			continue
+		}
+		pendingTexts = append(pendingTexts, trimmed)
+		pendingIndexes = append(pendingIndexes, i)
+	}
+
+	if len(pendingTexts) == 0 || targetLanguage == "" {
+		return result, nil
+	}
+
+	translatedTexts, err := s.translateLessonTexts(ctx, pendingTexts, selectedLanguage, targetLanguage)
+	if err != nil {
+		return result, err
+	}
+	for i, translatedText := range translatedTexts {
+		index := pendingIndexes[i]
+		result[index] = setLocaleValueByLanguage(result[index], targetLanguage, strings.TrimSpace(translatedText))
+	}
+
+	return result, nil
 }
 
 func (s *LessonService) buildBilingualLessonContent(
@@ -1656,21 +1712,28 @@ func (s *LessonService) buildBilingualLessonContent(
 	sourceLanguage string,
 	domain string,
 	additionalPrompt string,
-) []localization.LocaleText {
+) ([]localization.LocaleText, error) {
 	if len(lines) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	result := make([]localization.LocaleText, 0, len(lines))
-	for _, line := range lines {
-		translated := s.buildBilingualLessonText(ctx, line, sourceLanguage, domain, additionalPrompt)
-		if translated.Ru == "" && translated.Kz == "" {
+	translatedTexts, err := s.buildBilingualLessonTexts(ctx, lines, sourceLanguage)
+	if err != nil {
+		if s.log != nil {
+			s.log.WithError(err).WithField("domain", domain).Warn("failed to build bilingual lesson content")
+		}
+		return nil, err
+	}
+
+	result := make([]localization.LocaleText, 0, len(translatedTexts))
+	for _, item := range translatedTexts {
+		if item.Ru == "" && item.Kz == "" {
 			continue
 		}
-		result = append(result, translated)
+		result = append(result, item)
 	}
 
-	return result
+	return result, nil
 }
 
 func localizedLessonContentToStrings(content []localization.LocaleText, language string) []string {
@@ -1734,13 +1797,17 @@ func (s *LessonService) persistGeneratedResources(
 	ctx context.Context,
 	generated []GeneratedResource,
 	language string,
-) ([]uuid.UUID, []GeneratedResource) {
+) ([]uuid.UUID, []GeneratedResource, error) {
 	if len(generated) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
-	createdIDs := make([]uuid.UUID, 0, len(generated))
-	createdResources := make([]GeneratedResource, 0, len(generated))
+	type normalizedResource struct {
+		name string
+		link string
+	}
+
+	normalized := make([]normalizedResource, 0, len(generated))
 	seen := make(map[string]struct{}, len(generated))
 
 	for _, item := range generated {
@@ -1759,22 +1826,34 @@ func (s *LessonService) persistGeneratedResources(
 			continue
 		}
 		seen[key] = struct{}{}
+		normalized = append(normalized, normalizedResource{name: name, link: link})
+	}
 
-		localizedName := s.buildBilingualLessonText(
-			ctx,
-			name,
-			language,
-			"название ресурса поурочного плана колледжа",
-			"Сохрани краткость и терминологию учебного ресурса.",
-		)
+	if len(normalized) == 0 {
+		return nil, nil, nil
+	}
+
+	names := make([]string, 0, len(normalized))
+	for _, item := range normalized {
+		names = append(names, item.name)
+	}
+	localizedNames, err := s.buildBilingualLessonTexts(ctx, names, language)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	createdIDs := make([]uuid.UUID, 0, len(normalized))
+	createdResources := make([]GeneratedResource, 0, len(normalized))
+	for i, item := range normalized {
+		localizedName := localizedNames[i]
 
 		resource, err := s.rupRepo.CreateResource(ctx, storage.CreateRupResourceParams{
 			Name: localizedName.ToJSONB(),
-			Link: pgtype.Text{String: link, Valid: link != ""},
+			Link: pgtype.Text{String: item.link, Valid: item.link != ""},
 		})
 		if err != nil {
 			if s.log != nil {
-				s.log.WithError(err).WithField("resource_name", name).Warn("failed to persist generated lesson resource")
+				s.log.WithError(err).WithField("resource_name", item.name).Warn("failed to persist generated lesson resource")
 			}
 			continue
 		}
@@ -1786,7 +1865,7 @@ func (s *LessonService) persistGeneratedResources(
 		})
 	}
 
-	return createdIDs, createdResources
+	return createdIDs, createdResources, nil
 }
 
 func (s *LessonService) generateLessonViaPython(ctx context.Context, payload lessonDocumentPayload) (*generatedLessonDocument, error) {

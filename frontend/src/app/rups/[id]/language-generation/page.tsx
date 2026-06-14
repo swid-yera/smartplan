@@ -18,6 +18,21 @@ import localeDictionary from './locale.json'
 
 const inProgressStatuses = new Set(['queued', 'running'])
 
+const getDisplayError = (error: string | undefined, modelNotReadyMessage: string) => {
+	const trimmedError = error?.trim()
+	if (!trimmedError) return ''
+
+	if (
+		trimmedError.includes('model_not_ready') ||
+		trimmedError.includes('model directory does not exist') ||
+		trimmedError.includes('missing model.bin')
+	) {
+		return modelNotReadyMessage
+	}
+
+	return trimmedError
+}
+
 const LanguageGenerationPage = () => {
 	const { replace } = useRouter()
 	const params = useParams<{ id: string }>()
@@ -58,8 +73,7 @@ const LanguageGenerationPage = () => {
 		if (!generationStatus || generationStatus.status !== 'failed') return
 		untrackLanguageGeneration(params.id)
 		queryClient.invalidateQueries({ queryKey: ['rup', params.id] })
-		replace(`/rups/${params.id}`)
-	}, [generationStatus, params.id, queryClient, replace])
+	}, [generationStatus, params.id, queryClient])
 
 	if (isLoading || !generationStatus) {
 		return <Loader type='data' />
@@ -74,6 +88,7 @@ const LanguageGenerationPage = () => {
 	const totalStages = Math.max(1, generationStatus.totalStages || 1)
 	const rupName = getLocaleText(rupData?.name, locale)
 	const isFailed = generationStatus.status === 'failed'
+	const displayError = getDisplayError(generationStatus.error, t.modelNotReadyError)
 
 	return (
 		<div className='mx-auto max-w-3xl w-full px-4 py-8'>
@@ -107,10 +122,10 @@ const LanguageGenerationPage = () => {
 						<Progress value={progress} />
 					</div>
 
-					{isFailed && generationStatus.error && (
+					{isFailed && displayError && (
 						<div className='rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive'>
 							<p className='font-medium'>{t.errorTitle}</p>
-							<p className='mt-1 whitespace-pre-wrap'>{generationStatus.error}</p>
+							<p className='mt-1 whitespace-pre-wrap'>{displayError}</p>
 						</div>
 					)}
 
