@@ -90,6 +90,17 @@ type PaginatedLessonsResponse struct {
 	Meta PaginationMeta   `json:"meta"`
 }
 
+type LessonFilterOption struct {
+	Value string `json:"value"`
+	Label string `json:"label"`
+}
+
+type LessonUserFilterDataResponse struct {
+	Types       []LessonFilterOption `json:"types"`
+	Disciplines []LessonFilterOption `json:"disciplines"`
+	Groups      []LessonFilterOption `json:"groups"`
+}
+
 type LessonProgressParams struct {
 	ID         uuid.UUID                 `json:"id"`
 	StepOrder  int16                     `json:"step_order"`
@@ -530,15 +541,46 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		return uuid.Nil, fmt.Errorf("generate lesson via ai: %w", err)
 	}
 
+	createdResourceIDs := make([]uuid.UUID, 0)
+	uploadedObjectName := ""
+	lessonID := uuid.Nil
+	createdLesson := false
+	generationCompleted := false
+	defer func() {
+		if generationCompleted {
+			return
+		}
+
+		if uploadedObjectName != "" {
+			if cleanupErr := s.fileStorage.DeleteFile(ctx, uploadedObjectName); cleanupErr != nil && s.log != nil {
+				s.log.WithError(cleanupErr).WithField("object_name", uploadedObjectName).Warn("failed to cleanup generated lesson file")
+			}
+		}
+
+		if createdLesson && lessonID != uuid.Nil {
+			if cleanupErr := s.DeleteLesson(ctx, lessonID); cleanupErr != nil && s.log != nil {
+				s.log.WithError(cleanupErr).WithField("lesson_id", lessonID).Warn("failed to cleanup generated lesson")
+			}
+		}
+
+		for _, resourceID := range createdResourceIDs {
+			if cleanupErr := s.rupRepo.DeleteResource(ctx, resourceID); cleanupErr != nil && s.log != nil {
+				s.log.WithError(cleanupErr).WithField("resource_id", resourceID).Warn("failed to cleanup generated lesson resource")
+			}
+		}
+	}()
+
 	if generatedIDs, generated, persistErr := s.persistGeneratedResources(ctx, aiResult.InternetResources, selectedLanguage); persistErr != nil {
 		return uuid.Nil, fmt.Errorf("persist generated internet resources: %w", persistErr)
 	} else if len(generatedIDs) > 0 {
+		createdResourceIDs = append(createdResourceIDs, generatedIDs...)
 		internetResourceIDs = generatedIDs
 		internetResources = generated
 	}
 	if generatedIDs, generated, persistErr := s.persistGeneratedResources(ctx, aiResult.TechnicalResources, selectedLanguage); persistErr != nil {
 		return uuid.Nil, fmt.Errorf("persist generated technical resources: %w", persistErr)
 	} else if len(generatedIDs) > 0 {
+		createdResourceIDs = append(createdResourceIDs, generatedIDs...)
 		technicalResourceIDs = generatedIDs
 		technicalResources = generated
 	}
@@ -588,7 +630,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		TechnicalResources: technicalResourceIDs,
 	}
 
-	lessonID, err := s.upsertGeneratedLesson(ctx, updatedTopic.LessonID, lessonParams, generatedPlan.Progress, selectedLanguage)
+	lessonID, createdLesson, err = s.upsertGeneratedLesson(ctx, updatedTopic.LessonID, lessonParams, generatedPlan.Progress, selectedLanguage)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -629,6 +671,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 	if err := s.fileStorage.UploadFile(ctx, objectName, bytes.NewReader(document.Content), int64(len(document.Content))); err != nil {
 		return uuid.Nil, fmt.Errorf("upload lesson to minio: %w", err)
 	}
+	uploadedObjectName = objectName
 
 	if err := s.repo.UpdateLessonFileURL(ctx, lessonID, objectName); err != nil {
 		return uuid.Nil, fmt.Errorf("update lesson file_url: %w", err)
@@ -638,6 +681,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		return uuid.Nil, fmt.Errorf("link lesson to topic: %w", err)
 	}
 
+	generationCompleted = true
 	return lessonID, nil
 }
 
@@ -647,7 +691,7 @@ func (s *LessonService) upsertGeneratedLesson(
 	lessonParams storage.CreateLessonsParams,
 	progress []GeneratedLessonProgressStep,
 	language string,
-) (uuid.UUID, error) {
+) (uuid.UUID, bool, error) {
 	if linkedLessonID.Valid {
 		lessonID := linkedLessonID.Bytes
 		if _, err := s.repo.GetLessonByID(ctx, lessonID); err == nil {
@@ -666,29 +710,32 @@ func (s *LessonService) upsertGeneratedLesson(
 				InternetResources:  lessonParams.InternetResources,
 				TechnicalResources: lessonParams.TechnicalResources,
 			}); err != nil {
-				return uuid.Nil, fmt.Errorf("update lesson: %w", err)
+				return uuid.Nil, false, fmt.Errorf("update lesson: %w", err)
 			}
 
 			if err := s.replaceLessonProgress(ctx, lessonID, progress, language); err != nil {
-				return uuid.Nil, err
+				return uuid.Nil, false, err
 			}
 
-			return lessonID, nil
+			return lessonID, false, nil
 		} else if !errors.Is(err, pgx.ErrNoRows) {
-			return uuid.Nil, fmt.Errorf("get linked lesson: %w", err)
+			return uuid.Nil, false, fmt.Errorf("get linked lesson: %w", err)
 		}
 	}
 
 	lessonID, err := s.repo.CreateLesson(ctx, lessonParams)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("create lesson: %w", err)
+		return uuid.Nil, false, fmt.Errorf("create lesson: %w", err)
 	}
 
 	if err := s.replaceLessonProgress(ctx, lessonID, progress, language); err != nil {
-		return uuid.Nil, err
+		if cleanupErr := s.DeleteLesson(ctx, lessonID); cleanupErr != nil && s.log != nil {
+			s.log.WithError(cleanupErr).WithField("lesson_id", lessonID).Warn("failed to cleanup generated lesson after progress error")
+		}
+		return uuid.Nil, false, err
 	}
 
-	return lessonID, nil
+	return lessonID, true, nil
 }
 
 func (s *LessonService) replaceLessonProgress(
@@ -1050,9 +1097,9 @@ func (s *LessonService) GetAllLessons(
 	teacher pgtype.UUID,
 	id pgtype.UUID,
 	search string,
-	lessonType string,
-	discipline string,
-	groupName string,
+	lessonTypes []string,
+	disciplines []string,
+	groupNames []string,
 	sort string,
 ) (*PaginatedLessonsResponse, error) {
 	if currentPage < 1 {
@@ -1064,20 +1111,20 @@ func (s *LessonService) GetAllLessons(
 
 	offset := (currentPage - 1) * pageSize
 	search = strings.TrimSpace(search)
-	lessonType = strings.TrimSpace(lessonType)
-	discipline = strings.TrimSpace(discipline)
-	groupName = strings.TrimSpace(groupName)
+	lessonTypes = normalizeNonEmptyStrings(lessonTypes)
+	disciplines = normalizeNonEmptyStrings(disciplines)
+	groupNames = normalizeNonEmptyStrings(groupNames)
 	sort = strings.ToLower(strings.TrimSpace(sort))
 	if sort != "asc" && sort != "desc" {
 		sort = "desc"
 	}
 
-	total, err := s.repo.CountLessonsFiltered(ctx, search, teacher, id, lessonType, discipline, groupName)
+	total, err := s.repo.CountLessonsFiltered(ctx, search, teacher, id, lessonTypes, disciplines, groupNames)
 	if err != nil {
 		return nil, err
 	}
 
-	dbLessons, err := s.repo.GetLessons(ctx, search, teacher, id, lessonType, discipline, groupName, sort, int32(pageSize), int32(offset))
+	dbLessons, err := s.repo.GetLessons(ctx, search, teacher, id, lessonTypes, disciplines, groupNames, sort, int32(pageSize), int32(offset))
 	if err != nil {
 		return nil, err
 	}
@@ -1102,6 +1149,43 @@ func (s *LessonService) GetAllLessons(
 			PageSize:    pageSize,
 		},
 	}, nil
+}
+
+func (s *LessonService) GetLessonUserFilterData(ctx context.Context, teacher pgtype.UUID, locale string) (*LessonUserFilterDataResponse, error) {
+	locale = strings.ToLower(strings.TrimSpace(locale))
+	if locale != "kk" {
+		locale = "ru"
+	}
+
+	rows, err := s.repo.GetLessonUserFilterData(ctx, teacher, locale)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LessonUserFilterDataResponse{
+		Types:       []LessonFilterOption{},
+		Disciplines: []LessonFilterOption{},
+		Groups:      []LessonFilterOption{},
+	}
+
+	for _, row := range rows {
+		value := strings.TrimSpace(row.Value)
+		if value == "" {
+			continue
+		}
+
+		option := LessonFilterOption{Value: value, Label: value}
+		switch row.Filter {
+		case "type":
+			response.Types = append(response.Types, option)
+		case "discipline":
+			response.Disciplines = append(response.Disciplines, option)
+		case "group":
+			response.Groups = append(response.Groups, option)
+		}
+	}
+
+	return response, nil
 }
 
 func (s *LessonService) GetLessonByID(ctx context.Context, id uuid.UUID) (*LessonResponse, error) {
@@ -2358,6 +2442,31 @@ func containsUUID(values []uuid.UUID, target uuid.UUID) bool {
 	return false
 }
 
+func normalizeNonEmptyStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+
+	result := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+
+	return result
+}
+
 func buildLessonObjectName(lessonID uuid.UUID, lessonName string) string {
 	baseName := sanitizeLessonFileName(lessonName)
 	if baseName == "" {
@@ -2398,7 +2507,7 @@ func extractFileNameFromDisposition(contentDisposition string) string {
 }
 
 func sanitizeLessonFileName(value string) string {
-	name := strings.TrimSpace(value)
+	name := strings.TrimSpace(strings.ToValidUTF8(value, "_"))
 	name = strings.Trim(name, `"'`)
 	if name == "" {
 		return ""
@@ -2415,8 +2524,10 @@ func sanitizeLessonFileName(value string) string {
 		return ""
 	}
 
-	if len(name) > 120 {
-		name = name[:120]
+	const maxFileNameRunes = 120
+	nameRunes := []rune(name)
+	if len(nameRunes) > maxFileNameRunes {
+		name = string(nameRunes[:maxFileNameRunes])
 		name = strings.Trim(name, "._-")
 	}
 

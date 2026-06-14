@@ -7,6 +7,7 @@ import type {
 	IGenerateLessonRequest,
 	IGenerateLessonResponse,
 	ILesson,
+	ILessonUserFilterData,
 	ILessonProgress,
 	ILessonResource,
 	IPagination,
@@ -17,6 +18,12 @@ import type {
 import { cleanupDeleteCache } from './query-cache'
 
 export class LessonService {
+	private toCommaParam = (values?: string[]) => {
+		if (!values?.length) return undefined
+
+		return values.map((value) => value.trim()).filter(Boolean).join(',') || undefined
+	}
+
 	private isLocalizedTextObject = (value: unknown): value is { ru?: unknown; kz?: unknown } =>
 		Boolean(value) &&
 		typeof value === 'object' &&
@@ -192,9 +199,9 @@ export class LessonService {
 		pageSize?: number
 		search?: string
 		teacher?: string
-		type?: string
-		discipline?: string
-		group?: string
+		type?: string[]
+		discipline?: string[]
+		group?: string[]
 		sort?: 'asc' | 'desc'
 	}) => {
 		return queryOptions<IPagination<ILesson>>({
@@ -206,9 +213,9 @@ export class LessonService {
 						pageSize,
 						search,
 						teacher,
-						type,
-						discipline,
-						group,
+						type: this.toCommaParam(type),
+						discipline: this.toCommaParam(discipline),
+						group: this.toCommaParam(group),
 						sort,
 					},
 				})
@@ -228,6 +235,23 @@ export class LessonService {
 				return {
 					...data,
 					data: data.data.map((lesson) => this.normalizeLesson(lesson)),
+				}
+			},
+		})
+	}
+
+	getUserFilterDataOptions = (locale: 'ru' | 'kk') => {
+		return queryOptions<ILessonUserFilterData>({
+			queryKey: ['lessons', 'user-filter-data', locale],
+			queryFn: async () => {
+				const { data } = await api.get<ILessonUserFilterData>('/lessons/user-filter-data', {
+					params: { locale },
+				})
+
+				return {
+					types: Array.isArray(data?.types) ? data.types : [],
+					disciplines: Array.isArray(data?.disciplines) ? data.disciplines : [],
+					groups: Array.isArray(data?.groups) ? data.groups : [],
 				}
 			},
 		})

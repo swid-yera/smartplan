@@ -28,6 +28,17 @@ export interface IGenerateLessonResponse {
 	lessonId?: string
 }
 
+export interface ILessonFilterOption {
+	value: string
+	label: string
+}
+
+export interface ILessonUserFilterData {
+	types: ILessonFilterOption[]
+	disciplines: ILessonFilterOption[]
+	groups: ILessonFilterOption[]
+}
+
 export interface IUpdateLessonResourceRequest {
 	id?: string
 	name: LocaleText

@@ -44,23 +44,23 @@ func (r *LessonRepository) GetLessons(
 	search string,
 	teacher pgtype.UUID,
 	id pgtype.UUID,
-	lessonType string,
-	discipline string,
-	groupName string,
+	lessonTypes []string,
+	disciplines []string,
+	groupNames []string,
 	sort string,
 	limit int32,
 	offset int32,
 ) ([]storage.Lesson, error) {
 	lessons, err := r.queries.GetLessons(ctx, storage.GetLessonsParams{
-		Search:     search,
-		Teacher:    teacher,
-		ID:         id,
-		LessonType: lessonType,
-		Discipline: discipline,
-		GroupName:  groupName,
-		Sort:       sort,
-		Limit:      limit,
-		Offset:     offset,
+		Search:      search,
+		Teacher:     teacher,
+		ID:          id,
+		LessonTypes: lessonTypes,
+		Disciplines: disciplines,
+		GroupNames:  groupNames,
+		Sort:        sort,
+		Limit:       limit,
+		Offset:      offset,
 	})
 	if err != nil {
 		return nil, err
@@ -73,17 +73,24 @@ func (r *LessonRepository) CountLessonsFiltered(
 	search string,
 	teacher pgtype.UUID,
 	id pgtype.UUID,
-	lessonType string,
-	discipline string,
-	groupName string,
+	lessonTypes []string,
+	disciplines []string,
+	groupNames []string,
 ) (int64, error) {
 	return r.queries.CountLessonsFiltered(ctx, storage.CountLessonsFilteredParams{
-		Search:     search,
-		Teacher:    teacher,
-		ID:         id,
-		LessonType: lessonType,
-		Discipline: discipline,
-		GroupName:  groupName,
+		Search:      search,
+		Teacher:     teacher,
+		ID:          id,
+		LessonTypes: lessonTypes,
+		Disciplines: disciplines,
+		GroupNames:  groupNames,
+	})
+}
+
+func (r *LessonRepository) GetLessonUserFilterData(ctx context.Context, teacher pgtype.UUID, locale string) ([]storage.GetLessonUserFilterDataRow, error) {
+	return r.queries.GetLessonUserFilterData(ctx, storage.GetLessonUserFilterDataParams{
+		Teacher: teacher,
+		Locale:  locale,
 	})
 }
 

@@ -24,8 +24,30 @@ import type { ILesson, LessonTypeEnum } from '@types'
 
 import localeDictionary from './locale.json'
 
-const ALL_FILTER = 'ALL'
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
+
+const parseMultiParam = (value: string | null): string[] => {
+	if (!value) return []
+
+	const seen = new Set<string>()
+	return value
+		.split(',')
+		.map((item) => item.trim())
+		.filter((item) => {
+			if (!item || seen.has(item)) return false
+			seen.add(item)
+			return true
+		})
+}
+
+const toMultiParam = (values: string[]) => {
+	const nextValue = values
+		.map((value) => value.trim())
+		.filter(Boolean)
+		.join(',')
+
+	return nextValue || null
+}
 
 const getLessonDescription = (lesson: ILesson, locale: 'ru' | 'kk', fallback: string): string => {
 	const description = [lesson.goals, lesson.tasks, lesson.expected]
@@ -67,30 +89,36 @@ function MyLessonPlansPage() {
 	const setStoredPageSize = usePaginationSettingsStore((state) => state.setPageSize)
 	const pageSize = Number(searchParams.get('pageSize')) || storedPageSize
 	const search = (searchParams.get('q') || '').trim()
-	const rawType = searchParams.get('type') || ALL_FILTER
-	const rawDiscipline = searchParams.get('discipline') || ALL_FILTER
-	const rawGroup = searchParams.get('group') || ALL_FILTER
+	const rawTypes = parseMultiParam(searchParams.get('type'))
+	const rawDisciplines = parseMultiParam(searchParams.get('discipline'))
+	const rawGroups = parseMultiParam(searchParams.get('group'))
 	const sortParam = searchParams.get('sort') || 'desc'
-	const selectedType = Object.keys(lessonTypeLabels).includes(rawType) ? (rawType as LessonTypeEnum) : ALL_FILTER
-	const selectedDiscipline = rawDiscipline
-	const selectedGroup = rawGroup
+	const selectedTypes = rawTypes.filter((value): value is LessonTypeEnum =>
+		Object.keys(lessonTypeLabels).includes(value),
+	)
+	const selectedDisciplines = rawDisciplines
+	const selectedGroups = rawGroups
 	const selectedSort = sortParam === 'asc' || sortParam === 'desc' ? sortParam : 'desc'
 	const hasActiveFilters =
 		Boolean(search) ||
-		selectedType !== ALL_FILTER ||
-		selectedDiscipline !== ALL_FILTER ||
-		selectedGroup !== ALL_FILTER ||
+		selectedTypes.length > 0 ||
+		selectedDisciplines.length > 0 ||
+		selectedGroups.length > 0 ||
 		selectedSort !== 'desc'
+
+	const { data: filterData, isLoading: isFilterDataLoading } = useQuery({
+		...services.lesson.getUserFilterDataOptions(locale),
+		enabled: !authLoading && !!user,
+	})
 
 	const { data, isLoading } = useQuery({
 		...services.lesson.getAllOptions({
 			currentPage: page,
 			pageSize,
 			search: search || undefined,
-			teacher: user?.keycloakId,
-			type: selectedType === ALL_FILTER ? undefined : selectedType,
-			discipline: selectedDiscipline === ALL_FILTER ? undefined : selectedDiscipline,
-			group: selectedGroup === ALL_FILTER ? undefined : selectedGroup,
+			type: selectedTypes,
+			discipline: selectedDisciplines,
+			group: selectedGroups,
 			sort: selectedSort as 'asc' | 'desc',
 		}),
 		enabled: !authLoading && !!user,
@@ -100,35 +128,34 @@ function MyLessonPlansPage() {
 	const localeCode = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
 
 	const lessonTypeOptions = useMemo<LessonListFilterOption[]>(
-		() => Object.entries(lessonTypeLabels).map(([value, label]) => ({ label, value })),
-		[lessonTypeLabels],
+		() =>
+			(filterData?.types?.length
+				? filterData.types
+				: Object.keys(lessonTypeLabels).map((value) => ({ value, label: value }))
+			)
+				.filter((option) => Object.keys(lessonTypeLabels).includes(option.value))
+				.map((option) => ({
+					value: option.value,
+					label: lessonTypeLabels[option.value as LessonTypeEnum] || option.label,
+				})),
+		[filterData?.types, lessonTypeLabels],
 	)
 
-	const disciplineOptions = useMemo<LessonListFilterOption[]>(() => {
-		const values = Array.from(
-			new Set(
-				lessons.map((lesson) => getLessonText(lesson.discipline_name, locale)).filter((value) => Boolean(value)),
-			),
-		).sort((a, b) => a.localeCompare(b, localeCode))
+	const disciplineOptions = useMemo<LessonListFilterOption[]>(
+		() =>
+			(filterData?.disciplines || [])
+				.map((option) => ({ value: option.value, label: option.label || option.value }))
+				.sort((a, b) => a.label.localeCompare(b.label, localeCode)),
+		[filterData?.disciplines, localeCode],
+	)
 
-		if (rawDiscipline !== ALL_FILTER && !values.includes(rawDiscipline)) {
-			return [{ label: rawDiscipline, value: rawDiscipline }, ...values.map((value) => ({ label: value, value }))]
-		}
-
-		return values.map((value) => ({ label: value, value }))
-	}, [lessons, locale, localeCode, rawDiscipline])
-
-	const groupOptions = useMemo<LessonListFilterOption[]>(() => {
-		const values = Array.from(
-			new Set(lessons.map((lesson) => lesson.group?.name).filter((value): value is string => Boolean(value))),
-		).sort((a, b) => a.localeCompare(b, localeCode))
-
-		if (rawGroup !== ALL_FILTER && !values.includes(rawGroup)) {
-			return [{ label: rawGroup, value: rawGroup }, ...values.map((value) => ({ label: value, value }))]
-		}
-
-		return values.map((value) => ({ label: value, value }))
-	}, [lessons, localeCode, rawGroup])
+	const groupOptions = useMemo<LessonListFilterOption[]>(
+		() =>
+			(filterData?.groups || [])
+				.map((option) => ({ value: option.value, label: option.label || option.value }))
+				.sort((a, b) => a.label.localeCompare(b.label, localeCode)),
+		[filterData?.groups, localeCode],
+	)
 
 	const groupedLessons = useMemo<LessonListGroup[]>(() => {
 		const groups = new Map<string, LessonListGroup>()
@@ -213,7 +240,7 @@ function MyLessonPlansPage() {
 		})
 	}
 
-	if (authLoading || isLoading || !user) {
+	if (authLoading || !user) {
 		return <Loader type='data' />
 	}
 
@@ -230,10 +257,8 @@ function MyLessonPlansPage() {
 
 			<LessonListFiltersCard
 				allDisciplinesLabel={t.allDisciplines}
-				allFilterValue={ALL_FILTER}
 				allGroupsLabel={t.allGroups}
 				allTypesLabel={t.allTypes}
-				applyLabel={t.apply}
 				description={t.filterDescription}
 				disciplineOptions={disciplineOptions}
 				disciplinePlaceholder={t.discipline}
@@ -244,52 +269,52 @@ function MyLessonPlansPage() {
 				resetLabel={t.reset}
 				searchDefaultValue={search}
 				searchPlaceholder={t.searchPlaceholder}
-				selectedDiscipline={selectedDiscipline}
-				selectedGroup={selectedGroup}
+				selectedDisciplines={selectedDisciplines}
+				selectedGroups={selectedGroups}
 				selectedSort={selectedSort}
-				selectedType={selectedType}
+				selectedTypes={selectedTypes}
 				sortNewestLabel={t.sortNewest}
 				sortOldestLabel={t.sortOldest}
 				sortPlaceholder={t.sortBy}
 				title={t.filterTitle}
-				onDisciplineChange={(value) =>
-					updateSearchParams({ discipline: value === ALL_FILTER ? null : value, page: 1 })
-				}
-				onGroupChange={(value) => updateSearchParams({ group: value === ALL_FILTER ? null : value, page: 1 })}
+				onDisciplinesChange={(value) => updateSearchParams({ discipline: toMultiParam(value), page: 1 })}
+				onGroupsChange={(value) => updateSearchParams({ group: toMultiParam(value), page: 1 })}
 				onReset={clearFilters}
-				onSearchSubmit={(value) => updateSearchParams({ q: value || null, page: 1 })}
+				onSearchChange={(value) => updateSearchParams({ q: value || null, page: 1 })}
 				onSortChange={(value) => updateSearchParams({ sort: value, page: 1 })}
-				onTypeChange={(value) => updateSearchParams({ type: value === ALL_FILTER ? null : value, page: 1 })}
+				onTypesChange={(value) => updateSearchParams({ type: toMultiParam(value), page: 1 })}
 			/>
 
-			<LessonGroupedListCard
-				currentPage={data?.meta.currentPage || page}
-				description={t.listDescription || t.pageDescription}
-				emptyState={{
-					actionHref: '/rups/all',
-					actionLabel: t.emptyNoDataAction,
-					description: hasActiveFilters ? t.emptyFilteredDescription : t.emptyNoDataDescription,
-					title: hasActiveFilters ? t.emptyFilteredTitle : t.emptyNoDataTitle,
-				}}
-				groups={groupedLessons}
-				isLoading={isLoading}
-				labels={{
-					date: t.date,
-					discipline: t.discipline,
-					group: t.group,
-					groupNotSpecified: t.groupNotSpecified,
-					lessonType: t.lessonType,
-					notSpecifiedFemale: t.notSpecifiedFemale,
-					planNumber: t.planNumber,
-					topic: t.topic,
-				}}
-				pageSize={data?.meta.pageSize || pageSize}
-				pageSizeOptions={PAGE_SIZE_OPTIONS}
-				title={t.listTitle || t.pageTitle}
-				totalPages={data?.meta.pages || 1}
-				onPageChange={setCurrentPage}
-				onPageSizeChange={setPageSize}
-			/>
+			{(!isLoading || isFilterDataLoading) && (
+				<LessonGroupedListCard
+					currentPage={data?.meta.currentPage || page}
+					description={t.listDescription || t.pageDescription}
+					emptyState={{
+						actionHref: '/rups/all',
+						actionLabel: t.emptyNoDataAction,
+						description: hasActiveFilters ? t.emptyFilteredDescription : t.emptyNoDataDescription,
+						title: hasActiveFilters ? t.emptyFilteredTitle : t.emptyNoDataTitle,
+					}}
+					groups={groupedLessons}
+					isLoading={isLoading}
+					labels={{
+						date: t.date,
+						discipline: t.discipline,
+						group: t.group,
+						groupNotSpecified: t.groupNotSpecified,
+						lessonType: t.lessonType,
+						notSpecifiedFemale: t.notSpecifiedFemale,
+						planNumber: t.planNumber,
+						topic: t.topic,
+					}}
+					pageSize={data?.meta.pageSize || pageSize}
+					pageSizeOptions={PAGE_SIZE_OPTIONS}
+					title={t.listTitle || t.pageTitle}
+					totalPages={data?.meta.pages || 1}
+					onPageChange={setCurrentPage}
+					onPageSizeChange={setPageSize}
+				/>
+			)}
 		</section>
 	)
 }

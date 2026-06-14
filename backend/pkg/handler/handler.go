@@ -266,7 +266,7 @@ func (r *Router) Init() *gin.Engine {
 		// --- LESSONS ---
 		lessons := protected.Group("/lessons")
 		{
-			// список уроков — все роли, TEACHER видит только свои
+			// список уроков: RUP_VIEW видит свои/contact, RUP_MANAGE/FULL видят все
 			lessons.GET("", middleware.RequirePermission(service.PermRUPView), func(c *gin.Context) {
 				userInterface, exists := c.Get(middleware.ContextUserKey)
 				if !exists {
@@ -278,13 +278,14 @@ func (r *Router) Init() *gin.Engine {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
 					return
 				}
-				if strings.EqualFold(currentUser.Role, "TEACHER") {
+				if !service.HasPermissionLevel(currentUser.Permissions, service.PermRUPManage) {
 					q := c.Request.URL.Query()
 					q.Set("teacher", currentUser.KeycloakID.String())
 					c.Request.URL.RawQuery = q.Encode()
 				}
 				r.lesson.GetLessons(c)
 			})
+			lessons.GET("/user-filter-data", middleware.RequirePermission(service.PermRUPView), r.lesson.GetLessonUserFilterData)
 			lessons.GET("/:id", middleware.RequirePermission(service.PermRUPView), r.lesson.GetLessonByID)
 			lessons.GET("/:id/download", middleware.RequirePermission(service.PermRUPView), r.lesson.DownloadLesson)
 			lessons.GET("/:id/progress", middleware.RequirePermission(service.PermRUPView), r.lesson.GetLessonProgress)

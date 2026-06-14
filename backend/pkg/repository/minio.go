@@ -40,6 +40,10 @@ func (r *MinioRepository) UploadFile(ctx context.Context, fileName string, reade
 	return err
 }
 
+func (r *MinioRepository) DeleteFile(ctx context.Context, fileName string) error {
+	return r.Client.RemoveObject(ctx, r.Bucket, fileName, minio.RemoveObjectOptions{})
+}
+
 func (r *MinioRepository) DownloadFile(ctx context.Context, fileName string) (io.ReadCloser, error) {
 	object, err := r.Client.GetObject(ctx, r.Bucket, fileName, minio.GetObjectOptions{})
 	if err != nil {
@@ -70,8 +74,6 @@ func (r *MinioRepository) GetDownloadFileURL(ctx context.Context, fileName strin
 	}
 	return presignedURL.String(), nil
 }
-
-
 
 func (r *MinioRepository) ListFiles(ctx context.Context, prefix string) ([]FileInfo, error) {
 	var result []FileInfo

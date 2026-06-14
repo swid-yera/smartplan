@@ -26,6 +26,7 @@ type RupRepository interface {
 
 	CreateExplorationNote(ctx context.Context, params storage.CreateRupExplorationNoteParams) (*storage.RupExplorationNote, error)
 	CreateResource(ctx context.Context, params storage.CreateRupResourceParams) (*storage.RupResource, error)
+	DeleteResource(ctx context.Context, id uuid.UUID) error
 	CreateDiscipline(ctx context.Context, params storage.CreateRupDisciplineParams) (*storage.RupDiscipline, error)
 	CreateSemester(ctx context.Context, params storage.CreateDisciplineSemesterParams) (*storage.DisciplineSemester, error)
 	CreateTopic(ctx context.Context, params storage.CreateDisciplineTopicParams) (*storage.DisciplineTopic, error)
@@ -266,6 +267,10 @@ func (r *RupPostgres) CreateResource(ctx context.Context, params storage.CreateR
 		return nil, err
 	}
 	return &resource, nil
+}
+
+func (r *RupPostgres) DeleteResource(ctx context.Context, id uuid.UUID) error {
+	return r.queries.DeleteRupResource(ctx, id)
 }
 
 func (r *RupPostgres) CreateDiscipline(ctx context.Context, params storage.CreateRupDisciplineParams) (*storage.RupDiscipline, error) {

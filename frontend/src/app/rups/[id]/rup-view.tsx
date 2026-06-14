@@ -1,6 +1,13 @@
 import { type FC, type ReactNode, memo, useMemo, useState } from 'react'
 
-import { LocaleToggleButton, PageTitle, PageTitleActions, ResponsibleUsersCard, RupReviewSheets, StatusBadge } from '@components'
+import {
+	LocaleToggleButton,
+	PageTitle,
+	PageTitleActions,
+	ResponsibleUsersCard,
+	RupReviewSheets,
+	StatusBadge,
+} from '@components'
 import { formatHours, getLocaleText, getUILocaleSection, normalizeStudyForm } from '@helpers'
 import {
 	Badge,
