@@ -1,6 +1,6 @@
 'use client'
 
-import { LocaleToggleButton, PageTitle } from '@components'
+import { LocaleToggleButton, PageTitle, PageTitleActions } from '@components'
 import type { ICreateTypesRequest, ITypeResponse, Locale } from '@types'
 
 import { EditCard } from './edit-card'
@@ -33,10 +33,16 @@ export const TypeEditorLayout = ({
 			<PageTitle
 				sticky
 				actions={
-					<LocaleToggleButton
-						activeLocale={activeLocale}
-						labels={{ kk: langKkLabel, ru: langRuLabel }}
-						onChangeLocale={onLocaleChange}
+					<PageTitleActions
+						actions={[]}
+						moreLabel=''
+						trailing={
+							<LocaleToggleButton
+								activeLocale={activeLocale}
+								labels={{ kk: langKkLabel, ru: langRuLabel }}
+								onChangeLocale={onLocaleChange}
+							/>
+						}
 					/>
 				}
 				backHref={backHref}

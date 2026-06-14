@@ -2,10 +2,17 @@
 
 import { type FC, type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 
-import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 
-import { Forbidden, Loader, LocaleToggleButton, PageTitle, withPermission } from '@components'
+import {
+	Forbidden,
+	Loader,
+	LocaleToggleButton,
+	PageTitle,
+	PageTitleActions,
+	type PageTitleAction,
+	withPermission,
+} from '@components'
 import {
 	createLocaleText,
 	getLocaleText,
@@ -21,12 +28,6 @@ import { useUnsavedChangesGuard } from '@hooks'
 import { services } from '@services'
 import {
 	Badge,
-	Button,
-	ButtonGroup,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -43,7 +44,7 @@ import {
 	StudyFormEnum,
 } from '@types'
 import { isAxiosError } from 'axios'
-import { BookOpen, MoreVertical, RotateCcw, SaveIcon } from 'lucide-react'
+import { BookOpen, RotateCcw, SaveIcon } from 'lucide-react'
 import { type FieldErrors, FormProvider, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -311,6 +312,33 @@ const EditPage: FC = () => {
 		setCurrentStep(newStep)
 	}
 
+	const pageActions: PageTitleAction[] = [
+		{
+			id: 'save',
+			label: t.save,
+			icon: SaveIcon,
+			onClick: methods.handleSubmit(onSubmit, onInvalid),
+			disabled: !methods.formState.isDirty,
+			priority: 'primary',
+		},
+		{
+			id: 'open-view',
+			label: t.openView,
+			icon: BookOpen,
+			href: `/rups/${rupData.id}`,
+			priority: 'overflow',
+		},
+		{
+			id: 'reset',
+			label: t.resetChanges,
+			icon: RotateCcw,
+			onClick: () => methods.reset(),
+			disabled: !methods.formState.isDirty,
+			variant: 'destructive',
+			priority: 'overflow',
+		},
+	]
+
 	return (
 		<FormProvider {...methods}>
 			<form
@@ -321,47 +349,17 @@ const EditPage: FC = () => {
 				<PageTitle
 					sticky
 					actions={
-						<ButtonGroup className=''>
-							<Button
-								className='hover:text-primary'
-								disabled={!methods.formState.isDirty}
-								type='submit'
-								variant='outline'
-							>
-								<SaveIcon className='mr-2 h-4 w-4' />
-								{t.save}
-							</Button>
-
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button aria-label={t.moreActions} className='size-9 px-0' type='button' variant='outline'>
-										<MoreVertical className='h-4 w-4' />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align='end' className='w-56'>
-									<DropdownMenuItem asChild>
-										<Link href={`/rups/${rupData.id}`}>
-											<BookOpen />
-											{t.openView}
-										</Link>
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										disabled={!methods.formState.isDirty}
-										variant='destructive'
-										onClick={() => methods.reset()}
-									>
-										<RotateCcw className='mr-2 h-4 w-4' />
-										{t.resetChanges}
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-
-							<LocaleToggleButton
-								activeLocale={activeLocale}
-								labels={{ kk: t.languages.kk, ru: t.languages.ru }}
-								onChangeLocale={setActiveLocale}
-							/>
-						</ButtonGroup>
+						<PageTitleActions
+							actions={pageActions}
+							moreLabel={t.moreActions}
+							trailing={
+								<LocaleToggleButton
+									activeLocale={activeLocale}
+									labels={{ kk: t.languages.kk, ru: t.languages.ru }}
+									onChangeLocale={setActiveLocale}
+								/>
+							}
+						/>
 					}
 					backHref='back'
 					description={t.description}

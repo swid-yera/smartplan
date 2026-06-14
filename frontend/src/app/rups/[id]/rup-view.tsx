@@ -1,23 +1,16 @@
 import { type FC, type ReactNode, memo, useMemo, useState } from 'react'
 
-import Link from 'next/link'
-
-import { LocaleToggleButton, PageTitle, ResponsibleUsersCard, RupReviewSheets, StatusBadge } from '@components'
+import { LocaleToggleButton, PageTitle, PageTitleActions, ResponsibleUsersCard, RupReviewSheets, StatusBadge } from '@components'
 import { formatHours, getLocaleText, getUILocaleSection, normalizeStudyForm } from '@helpers'
 import {
 	Badge,
 	Button,
-	ButtonGroup,
 	Card,
 	CardContent,
 	CardDescription,
 	CardFooter,
 	CardHeader,
 	CardTitle,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
 	Separator,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
@@ -27,9 +20,7 @@ import {
 	Edit,
 	ExternalLink,
 	FileDown,
-	Loader2,
 	type LucideIcon,
-	MoreVertical,
 	QrCode,
 	RefreshCw,
 	Search,
@@ -123,6 +114,9 @@ export const RupView: FC<IRupViewProps> = ({
 		label: string
 		icon: LucideIcon
 		variant?: 'default' | 'destructive'
+		disabled?: boolean
+		pending?: boolean
+		priority?: 'primary' | 'normal' | 'overflow'
 	}
 
 	type ILinkAction = IActionBase & {
@@ -144,6 +138,7 @@ export const RupView: FC<IRupViewProps> = ({
 					label: actionsText.changeStatus,
 					icon: ShieldAlert,
 					onClick: onOpenStatusSheet,
+					priority: 'overflow',
 				},
 				canEdit && {
 					id: 'edit',
@@ -162,12 +157,16 @@ export const RupView: FC<IRupViewProps> = ({
 					label: actionsText.download,
 					icon: FileDown,
 					onClick: onOpenDownloadDialog,
+					disabled: isDownloadPending,
+					pending: isDownloadPending,
 				},
 				canRegenerateLanguage && {
 					id: 'regenerate',
 					label: actionsText.regenerate,
 					icon: RefreshCw,
 					onClick: onOpenRegenerateDialog,
+					disabled: isRegeneratePending,
+					pending: isRegeneratePending,
 				},
 				isMethodistReview && {
 					id: 'approve',
@@ -188,6 +187,7 @@ export const RupView: FC<IRupViewProps> = ({
 					icon: Trash,
 					onClick: onOpenDeleteDialog,
 					variant: 'destructive',
+					disabled: isDeletePending,
 				},
 			].filter(Boolean) as Array<ILinkAction | IClickAction>,
 		[
@@ -204,7 +204,10 @@ export const RupView: FC<IRupViewProps> = ({
 			canRegenerateLanguage,
 			canSendToReview,
 			data.id,
+			isDeletePending,
+			isDownloadPending,
 			isMethodistReview,
+			isRegeneratePending,
 			onOpenDeleteDialog,
 			onOpenDownloadDialog,
 			onOpenRegenerateDialog,
@@ -215,98 +218,23 @@ export const RupView: FC<IRupViewProps> = ({
 		],
 	)
 
-	const primaryAction = availableActions[0] ?? null
-	const overflowActions = availableActions.slice(1)
-
-	const renderAction = (action: ILinkAction | IClickAction) =>
-		action.href ? (
-			<Button key={action.id} asChild className='h-9' variant='outline'>
-				<Link href={action.href}>
-					<action.icon className='mr-2 h-4 w-4' />
-					{action.label}
-				</Link>
-			</Button>
-		) : (
-			<Button
-				key={action.id}
-				className={action.variant === 'destructive' ? 'h-9 hover:text-destructive' : 'h-9 hover:text-primary'}
-				disabled={
-					(action.id === 'regenerate' && isRegeneratePending) ||
-					(action.id === 'delete' && isDeletePending) ||
-					(action.id === 'download' && isDownloadPending)
-				}
-				variant='outline'
-				onClick={action.onClick}
-			>
-				{action.id === 'download' && isDownloadPending ? (
-					<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-				) : (
-					<action.icon className='mr-2 h-4 w-4' />
-				)}
-				{action.label}
-			</Button>
-		)
-
 	return (
 		<div className='w-full mx-auto relative'>
 			<PageTitle
 				sticky
 				actions={
-					<ButtonGroup className='sm:w-auto'>
-						{primaryAction ? renderAction(primaryAction) : null}
-
-						{overflowActions.length > 0 ? (
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										aria-label={actionsText.moreActions}
-										className='h-9 px-3'
-										type='button'
-										variant='outline'
-									>
-										<MoreVertical className='h-4 w-4' />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align='end' className='w-56'>
-									{overflowActions.map((action) =>
-										action.href ? (
-											<DropdownMenuItem key={action.id} asChild>
-												<Link href={action.href}>
-													<action.icon className='mr-2 h-4 w-4' />
-													{action.label}
-												</Link>
-											</DropdownMenuItem>
-										) : (
-											<DropdownMenuItem
-												key={action.id}
-												disabled={
-													(action.id === 'regenerate' && isRegeneratePending) ||
-													(action.id === 'delete' && isDeletePending) ||
-													(action.id === 'download' && isDownloadPending)
-												}
-												variant={action.variant}
-												onClick={action.onClick}
-											>
-												{action.id === 'download' && isDownloadPending ? (
-													<Loader2 className='mr-2 h-4 w-4 animate-spin' />
-												) : (
-													<action.icon className='mr-2 h-4 w-4' />
-												)}
-												{action.label}
-											</DropdownMenuItem>
-										),
-									)}
-								</DropdownMenuContent>
-							</DropdownMenu>
-						) : null}
-
-						<LocaleToggleButton
-							activeLocale={activeLocale}
-							labels={{ kk: t.languageKk, ru: t.languageRu }}
-							variant='default'
-							onChangeLocale={onActiveLocaleChange}
-						/>
-					</ButtonGroup>
+					<PageTitleActions
+						actions={availableActions}
+						moreLabel={actionsText.moreActions}
+						trailing={
+							<LocaleToggleButton
+								activeLocale={activeLocale}
+								labels={{ kk: t.languageKk, ru: t.languageRu }}
+								variant='default'
+								onChangeLocale={onActiveLocaleChange}
+							/>
+						}
+					/>
 				}
 				description={canManage ? t.reviewDescription : t.readOnlyDescription}
 			>

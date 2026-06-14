@@ -2,10 +2,9 @@
 
 import { useMemo } from 'react'
 
-import Link from 'next/link'
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { AwardsCard, Loader, PageTitle, Pagination, withPermission } from '@components'
+import { AwardsCard, Loader, PageTitle, PageTitleActions, type PageTitleAction, Pagination, withPermission } from '@components'
 import {
 	getCategoryIconOptionByName,
 	getLocaleText,
@@ -17,7 +16,6 @@ import { services } from '@services'
 import {
 	Badge,
 	Button,
-	ButtonGroup,
 	Card,
 	CardContent,
 	CardDescription,
@@ -129,6 +127,22 @@ const Page = () => {
 	const categoryIconOption = getCategoryIconOptionByName(category.icon)
 	const CategoryIcon = categoryIconOption?.Icon || Folder
 	const canEditCategories = hasAnyPermission(user, [PermissionCodeEnum.KPI_FULL])
+	const pageActions: PageTitleAction[] = [
+		canViewAwards && {
+			id: 'create',
+			label: t.create,
+			icon: Plus,
+			href: `/kpi/categories/${category.id}/create`,
+			priority: 'primary',
+		},
+		canEditCategories && {
+			id: 'edit',
+			label: t.edit,
+			icon: Edit,
+			href: `/kpi/categories/${category.id}/edit`,
+			priority: 'overflow',
+		},
+	].filter(Boolean) as PageTitleAction[]
 	const categoryName = getLocaleText(category.name, locale)
 	const categoryDescription = getLocaleText(category.description, locale) || t.missingDescription
 	const awardsDescription = showAllAwardsInQuery ? t.awardsAllDescription : t.awardsOwnDescription
@@ -161,26 +175,7 @@ const Page = () => {
 		<section className='p-4 w-full max-w-6xl mx-auto space-y-6'>
 			<PageTitle
 				sticky
-				actions={
-					<ButtonGroup>
-						{canEditCategories && (
-							<Button asChild size='sm' variant='outline'>
-								<Link href={`/kpi/categories/${category.id}/edit`}>
-									<Edit className='mr-2 h-4 w-4' />
-									{t.edit}
-								</Link>
-							</Button>
-						)}
-						{canViewAwards && (
-							<Button asChild size='sm'>
-								<Link href={`/kpi/categories/${category.id}/create`}>
-									<Plus className='mr-2 h-4 w-4' />
-									{t.create}
-								</Link>
-							</Button>
-						)}
-					</ButtonGroup>
-				}
+				actions={<PageTitleActions actions={pageActions} moreLabel={t.moreActions} />}
 				backHref='back'
 				description={t.pageDescription}
 			>

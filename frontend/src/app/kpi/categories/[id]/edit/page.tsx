@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useParams, useRouter } from 'next/navigation'
 
-import { Loader, LocaleToggleButton, PageTitle, withPermission } from '@components'
+import { Loader, LocaleToggleButton, PageTitle, PageTitleActions, type PageTitleAction, withPermission } from '@components'
 import {
 	CATEGORY_ICON_OPTIONS,
 	createLocaleText,
@@ -23,7 +23,6 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
-	ButtonGroup,
 	Card,
 	CardContent,
 	CardDescription,
@@ -252,38 +251,42 @@ const Page = () => {
 	if (isPageLoading) return <Loader type='data' />
 	if (!category) return <p className='p-6 text-center text-muted-foreground'>{t.notFound}</p>
 
+	const pageActions: PageTitleAction[] = [
+		{
+			id: 'save',
+			label: t.save,
+			icon: Save,
+			onClick: handleSubmit,
+			disabled: updateMutation.isPending,
+			pending: updateMutation.isPending,
+			priority: 'primary',
+		},
+		{
+			id: 'delete',
+			label: t.delete,
+			icon: Trash2,
+			onClick: () => setIsDeleteDialogOpen(true),
+			variant: 'destructive',
+			priority: 'overflow',
+		},
+	]
+
 	return (
 		<section className='mx-auto w-full p-6 space-y-6'>
 			<PageTitle
 				sticky
 				actions={
-					<ButtonGroup className='sm:w-auto'>
-						<Button
-							className='hover:text-destructive'
-							type='button'
-							variant='outline'
-							onClick={() => setIsDeleteDialogOpen(true)}
-						>
-							<Trash2 className='mr-2 h-4 w-4' />
-							{t.delete}
-						</Button>
-
-						<Button
-							className='hover:text-primary'
-							disabled={updateMutation.isPending}
-							variant='outline'
-							onClick={handleSubmit}
-						>
-							<Save className='mr-2 h-4 w-4' />
-							{t.save}
-						</Button>
-
-						<LocaleToggleButton
-							activeLocale={activeLocale}
-							labels={{ kk: t.langKk, ru: t.langRu }}
-							onChangeLocale={setActiveLocale}
-						/>
-					</ButtonGroup>
+					<PageTitleActions
+						actions={pageActions}
+						moreLabel={t.moreActions}
+						trailing={
+							<LocaleToggleButton
+								activeLocale={activeLocale}
+								labels={{ kk: t.langKk, ru: t.langRu }}
+								onChangeLocale={setActiveLocale}
+							/>
+						}
+					/>
 				}
 				backHref='back'
 				description={t.pageDescription}

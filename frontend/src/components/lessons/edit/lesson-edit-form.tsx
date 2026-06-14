@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation'
 import { createLocaleText, getUILocaleSection, toBackendLocale } from '@helpers'
 import { useUnsavedChangesGuard } from '@hooks'
 import { services } from '@services'
-import { Button, ButtonGroup } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useMutation } from '@tanstack/react-query'
 import type { ILesson, IUpdateLessonRequest, Locale } from '@types'
@@ -18,6 +17,7 @@ import { toast } from 'sonner'
 
 import { LocaleToggleButton } from '../../ui/locale-toggle-button'
 import { PageTitle } from '../../ui/page-title'
+import { PageTitleActions, type PageTitleAction } from '../../ui/page-title-actions'
 import type { ILessonFormState } from './lesson-edit.types'
 import {
 	createEmptyResource,
@@ -71,6 +71,25 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 		[formData, initialFormData],
 	)
 	const { confirmNavigation } = useUnsavedChangesGuard(hasUnsavedChanges, t.unsavedChangesMessage)
+	const pageActions: PageTitleAction[] = [
+		{
+			id: 'save',
+			label: t.save,
+			icon: Save,
+			form: 'lesson-edit-form',
+			type: 'submit',
+			priority: 'primary',
+		},
+		{
+			id: 'cancel',
+			label: t.cancel,
+			icon: X,
+			onClick: () => {
+				if (!confirmNavigation()) return
+				replace(`/lessons/${lesson.id}`)
+			},
+		},
+	]
 
 	const handleResourceChange = (
 		kind: 'internetResources' | 'technicalResources',
@@ -214,30 +233,17 @@ export function LessonEditForm({ lesson, activeLocale, onActiveLocaleChange }: I
 		<section className='mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8'>
 			<PageTitle
 				actions={
-					<div className='flex flex-wrap items-center justify-end gap-2'>
-						<LocaleToggleButton
-							activeLocale={activeLocale}
-							labels={{ kk: t.languageKk, ru: t.languageRu }}
-							onChangeLocale={onActiveLocaleChange}
-						/>
-						<ButtonGroup className='w-full flex-wrap justify-end sm:w-auto'>
-							<Button form='lesson-edit-form' type='submit'>
-								<Save className='mr-2 h-4 w-4' />
-								{t.save}
-							</Button>
-							<Button
-								type='button'
-								variant='outline'
-								onClick={() => {
-									if (!confirmNavigation()) return
-									replace(`/lessons/${lesson.id}`)
-								}}
-							>
-								<X className='mr-2 h-4 w-4' />
-								{t.cancel}
-							</Button>
-						</ButtonGroup>
-					</div>
+					<PageTitleActions
+						actions={pageActions}
+						moreLabel={t.moreActions}
+						trailing={
+							<LocaleToggleButton
+								activeLocale={activeLocale}
+								labels={{ kk: t.languageKk, ru: t.languageRu }}
+								onChangeLocale={onActiveLocaleChange}
+							/>
+						}
+					/>
 				}
 				backHref='back'
 				description={t.editDescription}

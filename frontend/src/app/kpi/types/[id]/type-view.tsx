@@ -2,10 +2,9 @@
 
 import { type FC, useState } from 'react'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { LocaleToggleButton, PageTitle } from '@components'
+import { LocaleToggleButton, PageTitle, PageTitleActions, type PageTitleAction } from '@components'
 import { getLocaleText, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import {
@@ -18,7 +17,6 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
-	ButtonGroup,
 	Card,
 	CardContent,
 	CardHeader,
@@ -45,6 +43,23 @@ export const TypeView = ({ type }: IProps) => {
 
 	// query
 	const { mutate: deleteMutate } = useMutation(services.award.deleteTypeMutationOptions())
+	const pageActions: PageTitleAction[] = [
+		{
+			id: 'edit',
+			label: t.edit,
+			icon: Pen,
+			href: `/kpi/types/${type.id}/edit`,
+			priority: 'primary',
+		},
+		{
+			id: 'delete',
+			label: t.delete,
+			icon: Trash,
+			onClick: () => setIsDeleteDialogOpen(true),
+			variant: 'destructive',
+			priority: 'overflow',
+		},
+	]
 
 	// delete
 	const handleDelete = () => {
@@ -75,31 +90,18 @@ export const TypeView = ({ type }: IProps) => {
 			<PageTitle
 				sticky
 				actions={
-					<div className='flex flex-wrap items-center justify-end gap-2'>
-						<ButtonGroup className='sm:w-auto'>
-							<Button asChild className='hover:text-primary' variant='outline'>
-								<Link href={`/kpi/types/${type.id}/edit`}>
-									<Pen />
-									{t.edit}
-								</Link>
-							</Button>
-							<Button
-								className='hover:text-destructive'
-								variant='outline'
-								onClick={() => setIsDeleteDialogOpen(true)}
-							>
-								<Trash />
-								{t.delete}
-							</Button>
-
+					<PageTitleActions
+						actions={pageActions}
+						moreLabel={t.moreActions}
+						trailing={
 							<LocaleToggleButton
 								activeLocale={activeLocale}
 								labels={{ kk: t.langKk, ru: t.langRu }}
 								variant='default'
 								onChangeLocale={setActiveLocale}
 							/>
-						</ButtonGroup>
-					</div>
+						}
+					/>
 				}
 				backHref='back'
 				description={t.description}
