@@ -154,6 +154,7 @@ function Page() {
 					<Pagination
 						page={currentPage}
 						pageSize={itemsPerPage}
+						totalCount={totalUsers}
 						totalPages={totalPages}
 						onPageChange={(page) => handleUrlUpdate({ page })}
 						onPageSizeChange={(value) => handleUrlUpdate({ pageSize: value, page: 1 })}

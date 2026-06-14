@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
-import { AwardsCard } from '@components'
-import { Pagination } from '@components'
+import { AwardsCard, Pagination } from '@components'
 import type { IAward } from '@types'
 
 const AWARDS_PAGE_SIZE = 10
@@ -37,6 +36,7 @@ export const CategoryAwardsClient = ({ awards, description, title }: IProps) => 
 				page={currentPage}
 				pageSize={AWARDS_PAGE_SIZE}
 				totalPages={totalPages}
+				totalCount={awards.length}
 				onPageChange={setCurrentPage}
 			/>
 		</div>

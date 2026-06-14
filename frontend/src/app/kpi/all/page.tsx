@@ -121,6 +121,7 @@ const Page = () => {
 				page={page}
 				pageSize={pageSize}
 				pageSizeOptions={[10, 20, 50]}
+				totalCount={awardsData?.meta.total || 0}
 				totalPages={awardsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 				onPageSizeChange={setPageSize}

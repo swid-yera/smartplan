@@ -14,6 +14,7 @@ interface IProps {
 	totalPages: number
 	pageSize: number
 	pageSizeOptions?: number[]
+	totalCount?: number
 	onPageChange: (page: number) => void
 	onPageSizeChange?: (size: number) => void
 }
@@ -23,6 +24,7 @@ export const Pagination: FC<IProps> = ({
 	totalPages,
 	pageSize,
 	pageSizeOptions = [10, 20, 50],
+	totalCount,
 	onPageChange,
 	onPageSizeChange,
 }) => {
@@ -53,6 +55,12 @@ export const Pagination: FC<IProps> = ({
 
 			{/* Navigation */}
 			<div className='flex items-center gap-2'>
+				{totalCount !== undefined && (
+					<span className='mr-4 text-sm text-muted-foreground'>
+						{t.pagination.totalCount}: {totalCount}
+					</span>
+				)}
+
 				<span className='mr-2 text-sm text-muted-foreground'>
 					{interpolateUILocaleText(t.pagination.pageOf, { page, totalPages: totalPages || 1 })}
 				</span>

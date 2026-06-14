@@ -21,7 +21,7 @@ import {
 	hasPermission,
 } from '@helpers'
 import { services } from '@services'
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Switch } from '@shadcn'
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Switch } from '@shadcn'
 import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, StatusEnum } from '@types'
@@ -232,6 +232,7 @@ const Page = () => {
 					page={awardsData?.meta.currentPage || page}
 					pageSize={awardsData?.meta.pageSize || pageSize}
 					pageSizeOptions={[10, 20, 50]}
+					totalCount={awardsData?.meta.total || 0}
 					totalPages={totalPages}
 					onPageChange={setCurrentPage}
 					onPageSizeChange={setPageSize}

@@ -25,6 +25,7 @@ import {
 	Sparkles,
 	Target,
 	Users,
+	Video,
 } from 'lucide-react'
 
 import localeDictionary from './locale.json'
@@ -77,6 +78,23 @@ const Page = () => {
 			<PageTitle sticky backHref='back' description={t.pageDescription}>
 				{t.pageTitle}
 			</PageTitle>
+
+			<Card className='overflow-hidden border-border/60'>
+				<CardHeader className='pb-4'>
+					<CardTitle className='flex items-center gap-2 text-xl'>
+						<Video className='h-5 w-5 text-primary' />
+						{locale === 'ru' ? 'Видео-инструкция по KPI' : 'KPI бойынша бейне нұсқаулық'}
+					</CardTitle>
+					<CardDescription>
+						{locale === 'ru'
+							? 'В этом видео подробно рассказано, как создавать записи, как правильно заполнять поля и разъясняются сложные моменты.'
+							: 'Бұл бейнеде жазбаларды қалай жасау керектігі, өрістерді қалай дұрыс толтыру керектігі және күрделі сәттер егжей-тегжейлі айтылған.'}
+					</CardDescription>
+				</CardHeader>
+				<CardContent className='p-0'>
+					<video controls className='aspect-video w-full bg-black' src='/guides/kpi-guide.mp4' />
+				</CardContent>
+			</Card>
 
 			<Card className='overflow-hidden border-primary/15 bg-linear-to-br from-primary/8 via-background to-background'>
 				<CardHeader className='space-y-4'>

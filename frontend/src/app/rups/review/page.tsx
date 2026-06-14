@@ -70,6 +70,7 @@ const Page = () => {
 				page={rupsData?.meta.currentPage || 1}
 				pageSize={rupsData?.meta.pageSize || 10}
 				pageSizeOptions={[10, 20, 50]}
+				totalCount={rupsData?.meta.total || 0}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 				onPageSizeChange={setPageSize}
