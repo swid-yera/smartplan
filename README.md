@@ -308,18 +308,10 @@ DOCUMENT_RENDER_API_KEY=your-api-key
 TRANSLATION_BASE_URL=http://localhost:8082
 TRANSLATION_TIMEOUT_SECONDS=120
 
-# AI провайдер: "gemini" или "openai"
-AI_PROVIDER=gemini
-
 # Gemini
 GEMINI_API_KEY=your-gemini-api-key
 GEMINI_PRIMARY_MODEL=gemini-2.5-flash-lite
 GEMINI_FALLBACK_MODEL=gemini-2.5-flash
-
-# OpenAI / OmniRoute (если AI_PROVIDER=openai)
-OPENAI_BASE_URL=http://localhost:20128/v1
-OPENAI_API_KEY=your-api-key
-OPENAI_MODEL=kr/auto
 ```
 
 ---
@@ -352,32 +344,15 @@ OPENAI_MODEL=kr/auto
 
 ## AI-генерация
 
-Бэкенд поддерживает два AI-провайдера для генерации учебного контента (РУПы, планы уроков):
-
-### Gemini (по умолчанию)
+Бэкенд использует только Gemini для генерации учебного контента (РУПы, планы уроков):
 
 ```env
-AI_PROVIDER=gemini
 GEMINI_API_KEY=your-key
 GEMINI_PRIMARY_MODEL=gemini-2.5-flash-lite
 GEMINI_FALLBACK_MODEL=gemini-2.5-flash
 ```
 
 Поддерживается до 5 fallback-ключей (`GEMINI_API_KEY_1` ... `GEMINI_API_KEY_5`).
-
-### OmniRoute / OpenAI-совместимый API
-
-Для использования локального OmniRoute вместо платных токенов:
-
-```env
-AI_PROVIDER=openai
-OPENAI_BASE_URL=http://localhost:20128/v1   # локально
-# OPENAI_BASE_URL=http://host.docker.internal:20128/v1  # в Docker
-OPENAI_API_KEY=your-omniroute-key
-OPENAI_MODEL=kr/claude-sonnet-4.5
-```
-
-Подробнее — в [OMNIROUTE_SETUP.md](../OMNIROUTE_SETUP.md).
 
 ---
 
@@ -438,5 +413,4 @@ eduplan/
 │   ├── schema.sql                  # Схема БД
 │   └── openapi.yaml                # OpenAPI спецификация
 │
-└── OMNIROUTE_SETUP.md              # Настройка OmniRoute для AI
 ```
