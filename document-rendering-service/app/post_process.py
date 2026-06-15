@@ -3,7 +3,12 @@ import zipfile
 
 from docx import Document
 from docx.enum.table import WD_ALIGN_VERTICAL
-from docx.shared import RGBColor
+from docx.oxml.ns import qn
+from docx.shared import RGBColor, Pt
+
+
+LESSON_FONT_NAME = "Times New Roman"
+LESSON_FONT_SIZE = Pt(12)
 
 
 def apply_vertical_merge(file_path: str):
@@ -214,16 +219,69 @@ def apply_kazakh_lesson_template_localization(file_path: str, language: str):
 def apply_lesson_template_formatting(file_path: str):
     doc = Document(file_path)
 
+    if "Normal" in doc.styles:
+        normal_style = doc.styles["Normal"]
+        normal_style.font.name = LESSON_FONT_NAME
+        normal_style.font.size = LESSON_FONT_SIZE
+
+    if "Default Paragraph Font" in doc.styles:
+        default_font_style = doc.styles["Default Paragraph Font"]
+        default_font_style.font.name = LESSON_FONT_NAME
+        default_font_style.font.size = LESSON_FONT_SIZE
+
+    def apply_run_font(run):
+        run.font.color.rgb = RGBColor(0, 0, 0)
+        run.font.name = LESSON_FONT_NAME
+        if run.font.size is None:
+            run.font.size = LESSON_FONT_SIZE
+
+        rPr = run._element.rPr
+        if rPr is None:
+            return
+
+        rFonts = rPr.rFonts
+        if rFonts is None:
+            return
+
+        for attr in ("ascii", "hAnsi", "eastAsia", "cs"):
+            rFonts.set(qn(f"w:{attr}"), LESSON_FONT_NAME)
+
     for paragraph in doc.paragraphs:
         for run in paragraph.runs:
-            run.font.color.rgb = RGBColor(0, 0, 0)
+            apply_run_font(run)
 
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for paragraph in cell.paragraphs:
                     for run in paragraph.runs:
-                        run.font.color.rgb = RGBColor(0, 0, 0)
+                        apply_run_font(run)
+                for nested_table in cell.tables:
+                    for nested_row in nested_table.rows:
+                        for nested_cell in nested_row.cells:
+                            for nested_paragraph in nested_cell.paragraphs:
+                                for run in nested_paragraph.runs:
+                                    apply_run_font(run)
+
+    for section in doc.sections:
+        for paragraph in section.header.paragraphs:
+            for run in paragraph.runs:
+                apply_run_font(run)
+        for table in section.header.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            apply_run_font(run)
+        for paragraph in section.footer.paragraphs:
+            for run in paragraph.runs:
+                apply_run_font(run)
+        for table in section.footer.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            apply_run_font(run)
 
     doc.save(file_path)
     _force_black_xml_colors(file_path)

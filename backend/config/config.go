@@ -157,8 +157,7 @@ type GeminiConfig struct {
 }
 
 type AIConfig struct {
-	Provider string
-	Gemini   *GeminiConfig
+	Gemini *GeminiConfig
 }
 
 var defaultGeminiFallbackModels = []string{
@@ -366,11 +365,8 @@ func LoadGeminiConfig() *GeminiConfig {
 func LoadAIConfig() *AIConfig {
 	ensureEnvLoaded()
 
-	provider := strings.ToLower(strings.TrimSpace(getEnv("AI_PROVIDER", "gemini")))
-
 	return &AIConfig{
-		Provider: provider,
-		Gemini:   LoadGeminiConfig(),
+		Gemini: LoadGeminiConfig(),
 	}
 }
 
