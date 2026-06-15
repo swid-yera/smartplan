@@ -10,6 +10,7 @@ import (
 
 type FileStorage interface {
 	UploadFile(ctx context.Context, fileName string, reader io.Reader, size int64) error
+	DeleteFile(ctx context.Context, fileName string) error
 	DownloadFile(ctx context.Context, fileName string) (io.ReadCloser, error)
 	FileExists(ctx context.Context, fileName string) (bool, error)
 	GetDownloadFileURL(ctx context.Context, fileName string, expiry time.Duration) (string, error)

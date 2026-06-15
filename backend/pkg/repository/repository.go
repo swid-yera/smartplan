@@ -56,6 +56,7 @@ type Rup interface {
 
 	CreateExplorationNote(ctx context.Context, params storage.CreateRupExplorationNoteParams) (*storage.RupExplorationNote, error)
 	CreateResource(ctx context.Context, params storage.CreateRupResourceParams) (*storage.RupResource, error)
+	DeleteResource(ctx context.Context, id uuid.UUID) error
 	CreateDiscipline(ctx context.Context, params storage.CreateRupDisciplineParams) (*storage.RupDiscipline, error)
 	CreateSemester(ctx context.Context, params storage.CreateDisciplineSemesterParams) (*storage.DisciplineSemester, error)
 	CreateTopic(ctx context.Context, params storage.CreateDisciplineTopicParams) (*storage.DisciplineTopic, error)
@@ -83,12 +84,13 @@ type Lessons interface {
 	UpdateLesson(ctx context.Context, params storage.UpdateLessonParams) error
 	UpdateLessonFileURL(ctx context.Context, id uuid.UUID, fileURL string) error
 	DeleteLesson(ctx context.Context, id uuid.UUID) error
-	GetLessons(ctx context.Context, search string, teacher pgtype.UUID, id pgtype.UUID, lessonType string, discipline string, groupName string, sort string, limit int32, offset int32) ([]storage.Lesson, error)
+	GetLessons(ctx context.Context, search string, teacher pgtype.UUID, id pgtype.UUID, lessonTypes []string, disciplines []string, groupNames []string, sort string, limit int32, offset int32) ([]storage.Lesson, error)
 	GetLessonByID(ctx context.Context, id uuid.UUID) (storage.Lesson, error)
 	GetPreviousLessonByCreatedAt(ctx context.Context, createdAt pgtype.Timestamptz, id uuid.UUID) (storage.Lesson, error)
 	GetNextLessonByCreatedAt(ctx context.Context, createdAt pgtype.Timestamptz, id uuid.UUID) (storage.Lesson, error)
 	GetRecentLessonsByDiscipline(ctx context.Context, rupName string, disciplineName string, limit int32) ([]storage.Lesson, error)
-	CountLessonsFiltered(ctx context.Context, search string, teacher pgtype.UUID, id pgtype.UUID, lessonType string, discipline string, groupName string) (int64, error)
+	CountLessonsFiltered(ctx context.Context, search string, teacher pgtype.UUID, id pgtype.UUID, lessonTypes []string, disciplines []string, groupNames []string) (int64, error)
+	GetLessonUserFilterData(ctx context.Context, teacher pgtype.UUID, locale string) ([]storage.GetLessonUserFilterDataRow, error)
 
 	CreateLessonProgress(ctx context.Context, params storage.CreateLessonProgressParams) error
 	UpdateLessonProgress(ctx context.Context, params storage.UpdateLessonProgressParams) error

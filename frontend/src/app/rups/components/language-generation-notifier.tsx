@@ -24,6 +24,21 @@ const getStatusLabel = (t: typeof localeDictionary.ru, status: IRupLanguageGener
 	return status
 }
 
+const getDisplayError = (t: typeof localeDictionary.ru, error: string | undefined): string => {
+	const trimmedError = error?.trim()
+	if (!trimmedError) return t.unknownError
+
+	if (
+		trimmedError.includes('model_not_ready') ||
+		trimmedError.includes('model directory does not exist') ||
+		trimmedError.includes('missing model.bin')
+	) {
+		return t.modelNotReadyError
+	}
+
+	return trimmedError
+}
+
 export const RupsLanguageGenerationNotifier = () => {
 	const pathname = usePathname()
 	const locale = useLocaleStore((state) => state.locale)
@@ -95,7 +110,7 @@ export const RupsLanguageGenerationNotifier = () => {
 					if (generationStatus.status === 'failed') {
 						toast.error(t.failedTitle, {
 							id: toastId,
-							description: generationStatus.error?.trim() || t.unknownError,
+							description: getDisplayError(t, generationStatus.error),
 						})
 					}
 				}),

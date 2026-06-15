@@ -6,7 +6,7 @@ import { cn } from '@lib'
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@shadcn'
 import { useLocaleStore } from '@store'
 import type { Locale } from '@types'
-import { Check } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 
 interface IRupLanguageDialogProps {
 	open: boolean
@@ -16,6 +16,7 @@ interface IRupLanguageDialogProps {
 	description: string
 	languageLabels: Record<Locale, string>
 	confirmLabel?: string
+	isPending?: boolean
 	onOpenChange: (open: boolean) => void
 	onConfirm: (language: Locale) => void
 }
@@ -39,6 +40,7 @@ export const RupLanguageDialog: FC<IRupLanguageDialogProps> = ({
 	description,
 	languageLabels,
 	confirmLabel,
+	isPending = false,
 	onOpenChange,
 	onConfirm,
 }) => {
@@ -55,6 +57,7 @@ export const RupLanguageDialog: FC<IRupLanguageDialogProps> = ({
 		<Dialog
 			open={open}
 			onOpenChange={(nextOpen) => {
+				if (isPending) return
 				if (required && !nextOpen) return
 				onOpenChange(nextOpen)
 			}}
@@ -71,6 +74,7 @@ export const RupLanguageDialog: FC<IRupLanguageDialogProps> = ({
 							'justify-between gap-3 py-6',
 							selectedLanguage === 'ru' && 'border-primary bg-primary/5 text-primary hover:bg-primary/10',
 						)}
+						disabled={isPending}
 						type='button'
 						variant='outline'
 						onClick={() => setSelectedLanguage('ru')}
@@ -84,6 +88,7 @@ export const RupLanguageDialog: FC<IRupLanguageDialogProps> = ({
 							'justify-between gap-3 py-6',
 							selectedLanguage === 'kk' && 'border-primary bg-primary/5 text-primary hover:bg-primary/10',
 						)}
+						disabled={isPending}
 						type='button'
 						variant='outline'
 						onClick={() => setSelectedLanguage('kk')}
@@ -95,11 +100,12 @@ export const RupLanguageDialog: FC<IRupLanguageDialogProps> = ({
 
 				<DialogFooter className='sm:justify-start gap-2'>
 					{!required && (
-						<Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
+						<Button disabled={isPending} type='button' variant='outline' onClick={() => onOpenChange(false)}>
 							{t.cancel}
 						</Button>
 					)}
-					<Button type='button' onClick={() => onConfirm(selectedLanguage)}>
+					<Button disabled={isPending} type='button' onClick={() => onConfirm(selectedLanguage)}>
+						{isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
 						{confirmLabel ?? t.confirm}
 					</Button>
 				</DialogFooter>

@@ -62,11 +62,9 @@ export type LessonListFilterOption = {
 }
 
 export type LessonListFiltersCardProps = {
-	allFilterValue?: string
 	allDisciplinesLabel: string
 	allGroupsLabel: string
 	allTypesLabel: string
-	applyLabel: string
 	className?: string
 	description?: ReactNode
 	disciplineOptions: LessonListFilterOption[]
@@ -75,20 +73,20 @@ export type LessonListFiltersCardProps = {
 	groupPlaceholder: string
 	lessonTypeLabel: string
 	lessonTypeOptions: LessonListFilterOption[]
-	onDisciplineChange: (value: string) => void
-	onGroupChange: (value: string) => void
+	onDisciplinesChange: (value: string[]) => void
+	onGroupsChange: (value: string[]) => void
 	onReset: () => void
-	onSearchSubmit: (search: string) => void
+	onSearchChange: (search: string) => void
 	onSortChange: (value: 'asc' | 'desc') => void
-	onTypeChange: (value: string) => void
+	onTypesChange: (value: string[]) => void
 	pageSizeLabel?: string
 	resetLabel: string
 	searchDefaultValue: string
 	searchPlaceholder: string
-	selectedDiscipline: string
-	selectedGroup: string
+	selectedDisciplines: string[]
+	selectedGroups: string[]
 	selectedSort: 'asc' | 'desc'
-	selectedType: string
+	selectedTypes: string[]
 	sortPlaceholder: string
 	sortNewestLabel: string
 	sortOldestLabel: string

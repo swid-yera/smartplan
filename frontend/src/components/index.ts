@@ -4,6 +4,7 @@ export * from './ui/forbidden'
 export * from './ui/loader'
 export * from './ui/locale-toggle-button'
 export * from './ui/page-title'
+export * from './ui/page-title-actions'
 export * from './ui/pagination'
 export * from './ui/section-title'
 

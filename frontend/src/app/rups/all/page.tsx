@@ -11,7 +11,6 @@ import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, type StatusEnum } from '@types'
 
-import { KpiTeachersHubCard } from '../../kpi/components'
 import { RupsFilterCard } from '../components'
 import {
 	buildRupFilterSearchParams,
@@ -97,8 +96,6 @@ const Page = () => {
 		<section className='p-4 w-full space-y-4'>
 			<PageTitle description={t.description}>{t.title}</PageTitle>
 
-			<KpiTeachersHubCard profileTab='rups' />
-
 			<RupsFilterCard className='mb-4' />
 
 			<RupsCard
@@ -114,6 +111,7 @@ const Page = () => {
 				page={rupsData?.meta.currentPage || 1}
 				pageSize={rupsData?.meta.pageSize || 10}
 				pageSizeOptions={[10, 20, 50]}
+				totalCount={rupsData?.meta.total || 0}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
 				onPageSizeChange={setPageSize}

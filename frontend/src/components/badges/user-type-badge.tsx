@@ -20,7 +20,7 @@ type BadgeSize = 'sm' | 'md' | 'lg'
 const badgeSizeClasses: Record<BadgeSize, { badge: string; label: string; icon: string }> = {
 	sm: {
 		badge: 'h-5 px-1.5 py-0 text-[9px]',
-		label: 'max-w-[90px]',
+		label: 'max-w-[88px]',
 		icon: 'h-2.5 w-2.5',
 	},
 	md: {

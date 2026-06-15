@@ -68,3 +68,15 @@ export function formatDate(value?: string | null, locale: Locale = 'ru') {
 		timeStyle: 'short',
 	}).format(parsed)
 }
+
+export function formatDateOnly(value?: string | null, locale: Locale = 'ru') {
+	if (!value) return locale === 'kk' ? 'Бос' : 'Пусто'
+
+	const parsed = new Date(value)
+
+	if (Number.isNaN(parsed.getTime())) return value
+
+	return new Intl.DateTimeFormat(locale === 'kk' ? 'kk-KZ' : 'ru-RU', {
+		dateStyle: 'long',
+	}).format(parsed)
+}

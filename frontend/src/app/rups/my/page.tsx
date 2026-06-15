@@ -3,13 +3,11 @@
 import { useEffect } from 'react'
 
 import type { NextPage } from 'next'
-import Link from 'next/link'
 import { notFound, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, RupsCard, withNavAccess } from '@components'
+import { Loader, PageTitle, PageTitleActions, RupsCard, withNavAccess } from '@components'
 import { getUILocaleSection, hasAnyPermission } from '@helpers'
 import { services } from '@services'
-import { Button } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, StatusEnum } from '@types'
@@ -94,12 +92,10 @@ const Page: NextPage = () => {
 			<PageTitle
 				actions={
 					canManageRups ? (
-						<Button asChild>
-							<Link href='/rups/create'>
-								<Plus className='mr-2 h-4 w-4' />
-								{t.newRupButton}
-							</Link>
-						</Button>
+						<PageTitleActions
+							actions={[{ id: 'create', label: t.newRupButton, icon: Plus, href: '/rups/create' }]}
+							moreLabel={t.moreActions}
+						/>
 					) : undefined
 				}
 				description={canManageRups ? t.methodistDescription : t.teacherDescription}

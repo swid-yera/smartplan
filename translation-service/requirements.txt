@@ -1,0 +1,8 @@
+ctranslate2>=4.5.0,<5.0.0
+fastapi>=0.114.0,<0.116.0
+httpx>=0.27.0,<0.29.0
+pytest>=8.3.0,<9.0.0
+redis>=5.1.0,<6.0.0
+sentencepiece>=0.2.0,<0.3.0
+transformers>=4.45.0,<5.0.0
+uvicorn[standard]>=0.30.0,<0.34.0

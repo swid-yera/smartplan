@@ -8,7 +8,7 @@ services:
          dockerfile: Dockerfile
          args:
             NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-            NEXT_PUBLIC_RENDER_API_URL: ${NEXT_PUBLIC_RENDER_API_URL:-http://localhost:8000}
+            NEXT_PUBLIC_RENDER_API_URL: ${NEXT_PUBLIC_RENDER_API_URL:-http://localhost:8081}
             GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       restart: unless-stopped
       env_file:
@@ -35,10 +35,11 @@ services:
          SERVER_PORT: '8080'
          DB_HOST: db
          REDIS_ADDR: redis:6379
-         DOCUMENT_RENDER_URL: http://render:8000
+         DOCUMENT_RENDER_URL: http://render:8081
+         TRANSLATION_BASE_URL: http://translation-service:8082
          DB_SSLMODE: disable
       extra_hosts:
-         - "host.docker.internal:192.168.65.254"
+         - 'host.docker.internal:192.168.65.254'
       depends_on:
          db:
             condition: service_healthy
@@ -46,16 +47,10 @@ services:
             condition: service_healthy
          render:
             condition: service_started
+         translation-service:
+            condition: service_healthy
       ports:
          - '8080:8080'
-      networks:
-         - app-network
-
-   omniroute-proxy:
-      container_name: eduplan-omniroute-proxy
-      image: alpine/socat
-      restart: unless-stopped
-      command: TCP-LISTEN:20128,fork,reuseaddr TCP:192.168.65.254:20128
       networks:
          - app-network
 
@@ -68,9 +63,55 @@ services:
       env_file:
          - ../../document-rendering-service/.env.local
       ports:
-         - '8000:8000'
+         - '8081:8081'
       networks:
          - app-network
+
+   translation-service:
+      container_name: eduplan-translation-service
+      build:
+         context: ../../translation-service
+         dockerfile: Dockerfile
+      restart: unless-stopped
+      environment:
+         REDIS_URL: redis://redis:6379/0
+         NLLB_MODEL_PATH: /models/nllb-200-distilled-600M-ct2-int8
+         NLLB_TOKENIZER_NAME: /models/nllb-200-distilled-600M-ct2-int8
+         TRANSLATION_MODEL_NAME: nllb-200-distilled-600M-ct2-int8
+         TRANSLATION_COMPUTE_TYPE: int8
+         TRANSLATION_CACHE_TTL_SECONDS: '2592000'
+      volumes:
+         - ../../models/translation:/models:ro
+      ports:
+         - '8082:8082'
+      depends_on:
+         redis:
+            condition: service_healthy
+      healthcheck:
+         test:
+            [
+               'CMD-SHELL',
+               'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8082/health'', timeout=5).read()"',
+            ]
+         interval: 20s
+         timeout: 10s
+         retries: 6
+         start_period: 20s
+      networks:
+         - app-network
+
+   translation-model-prepare:
+      container_name: eduplan-translation-model-prepare
+      build:
+         context: ../../translation-service
+         dockerfile: Dockerfile.model
+      profiles:
+         - tools
+      environment:
+         TRANSLATION_MODEL_NAME: nllb-200-distilled-600M-ct2-int8
+         NLLB_MODEL_OUTPUT_DIR: /models/nllb-200-distilled-600M-ct2-int8
+      volumes:
+         - ../../models/translation:/models
 
    redis:
       container_name: eduplan-redis

@@ -4,7 +4,17 @@ import { useEffect, useState } from 'react'
 
 import { notFound, useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-import { Loader, PageTitle, PenaltyCard, PenaltySheet, UserCard, ViolationDialog, withPermission } from '@components'
+import {
+	Loader,
+	PageTitle,
+	type PageTitleAction,
+	PageTitleActions,
+	PenaltyCard,
+	PenaltySheet,
+	UserCard,
+	ViolationDialog,
+	withPermission,
+} from '@components'
 import {
 	getNextViolationStatus,
 	getUILocaleSection,
@@ -13,22 +23,11 @@ import {
 	normalizeViolation,
 } from '@helpers'
 import { services } from '@services'
-import {
-	Button,
-	ButtonGroup,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from '@shadcn'
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useAuthStore, useLocaleStore, usePaginationSettingsStore } from '@store'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { type IPenalty, PermissionCodeEnum, StatusEnum, ViolationEnum } from '@types'
-import { ArrowLeft, Award, BookOpen, Gavel, Layers3, MoreVertical, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Award, BookOpen, Gavel, Layers3, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 
 import uiLocale from '../../../components/ui/locale.json'
@@ -232,15 +231,7 @@ const Page = () => {
 		router.push(`${pathname}?${paramsUrl.toString()}`, { scroll: false })
 	}
 
-	type IAction = {
-		id: string
-		label: string
-		icon: typeof ShieldAlert
-		onClick: () => void
-		variant?: 'default' | 'destructive'
-	}
-
-	const actionItems: IAction[] = [
+	const actionItems: PageTitleAction[] = [
 		canManageUserPermissions
 			? {
 					id: 'permissions',
@@ -265,60 +256,17 @@ const Page = () => {
 					onClick: () => setIsViolationDialogOpen(true),
 				}
 			: null,
-	].filter((item): item is IAction => !!item)
-
-	const visibleActions = actionItems.length > 2 ? actionItems.slice(0, 1) : actionItems
-	const overflowActions = actionItems.slice(visibleActions.length)
-
-	const renderActionButton = (action: IAction) => (
-		<Button
-			key={action.id}
-			className={action.variant === 'destructive' ? 'hover:text-destructive' : ''}
-			size='sm'
-			variant='outline'
-			onClick={action.onClick}
-		>
-			<action.icon className='mr-2 h-4 w-4' />
-			{action.label}
-		</Button>
-	)
-
-	const actionButtons =
-		actionItems.length > 0 ? (
-			<ButtonGroup className='w-full flex-wrap justify-end sm:w-auto'>
-				{visibleActions.map(renderActionButton)}
-
-				{overflowActions.length > 0 ? (
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								aria-label={uiT.moreActions}
-								className='px-3'
-								size='icon-sm'
-								type='button'
-								variant='outline'
-							>
-								<MoreVertical className='h-4 w-4' />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align='end' className='w-56'>
-							{overflowActions.map((action) => (
-								<DropdownMenuItem key={action.id} variant={action.variant} onClick={action.onClick}>
-									<action.icon className='mr-2 h-4 w-4' />
-									{action.label}
-								</DropdownMenuItem>
-							))}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				) : null}
-			</ButtonGroup>
-		) : null
+	].filter(Boolean) as PageTitleAction[]
 
 	const pageDescription = activeTab === 'kpi-unsort' ? t.page.kpiUnsortDescription : t.page.profileDescription
 
 	return (
 		<section className='mx-auto w-full max-w-7xl space-y-4 px-4 pb-10 pt-5'>
-			<PageTitle actions={actionButtons} backHref='back' description={pageDescription}>
+			<PageTitle
+				actions={<PageTitleActions actions={actionItems} moreLabel={uiT.moreActions} />}
+				backHref='back'
+				description={pageDescription}
+			>
 				{interpolateUILocaleText(t.page.title, {
 					firstName: userData.firstName,
 					lastName: userData.lastName,

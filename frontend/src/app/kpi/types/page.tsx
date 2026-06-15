@@ -1,10 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-
-import { Loader, PageTitle, withNavAccess } from '@components'
+import { Loader, PageTitle, PageTitleActions, withNavAccess } from '@components'
 import { services } from '@services'
-import { Button } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
@@ -26,12 +23,10 @@ const Page = () => {
 			<PageTitle
 				sticky
 				actions={
-					<Button asChild>
-						<Link href='/kpi/types/create'>
-							<Plus className='mr-2 h-4 w-4' />
-							Создать
-						</Link>
-					</Button>
+					<PageTitleActions
+						actions={[{ id: 'create', label: 'Создать', icon: Plus, href: '/kpi/types/create' }]}
+						moreLabel='Дополнительные действия'
+					/>
 				}
 				description='Критерий оценивание'
 			>

@@ -19,12 +19,24 @@ export interface IGenerateLessonRequest {
 	topicId: string
 	sourceLanguage?: BackendLocale
 	message?: string
+	event_date?: string
 	updatedTopic: IGenerateLessonUpdatedTopic
 }
 
 export interface IGenerateLessonResponse {
 	status: boolean
 	lessonId?: string
+}
+
+export interface ILessonFilterOption {
+	value: string
+	label: string
+}
+
+export interface ILessonUserFilterData {
+	types: ILessonFilterOption[]
+	disciplines: ILessonFilterOption[]
+	groups: ILessonFilterOption[]
 }
 
 export interface IUpdateLessonResourceRequest {

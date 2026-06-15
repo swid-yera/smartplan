@@ -137,8 +137,9 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 SELECT *
 FROM users u
 WHERE
-    u.role = 'TEACHER'::user_role
-    AND EXISTS (
+    u.role <> 'METHODIST'::user_role
+    AND
+    EXISTS (
         SELECT 1
         FROM departments d
         WHERE u.keycloak_id = ANY(d.users)
@@ -1205,23 +1206,73 @@ WHERE
         OR l.id = sqlc.narg('id')::uuid
     ) AND
     (
-        sqlc.arg('lesson_type') = ''
-        OR l.type = sqlc.arg('lesson_type')::enum_lesson_type
+        sqlc.narg('lesson_types')::text[] IS NULL
+        OR l.type = ANY(sqlc.arg('lesson_types')::text[]::enum_lesson_type[])
     ) AND
     (
-        sqlc.arg('discipline') = ''
-        OR COALESCE(l.discipline_name->>'ru', '') = sqlc.arg('discipline')
-        OR COALESCE(l.discipline_name->>'kz', '') = sqlc.arg('discipline')
+        sqlc.narg('disciplines')::text[] IS NULL
+        OR COALESCE(l.discipline_name->>'ru', '') = ANY(sqlc.arg('disciplines')::text[])
+        OR COALESCE(l.discipline_name->>'kz', '') = ANY(sqlc.arg('disciplines')::text[])
     ) AND
     (
-        sqlc.arg('group_name') = ''
-        OR COALESCE(g.name, '') = sqlc.arg('group_name')
+        sqlc.narg('group_names')::text[] IS NULL
+        OR COALESCE(g.name, '') = ANY(sqlc.arg('group_names')::text[])
     )
 ORDER BY
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN l.created_at END ASC,
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'desc' THEN l.created_at END DESC,
     l.created_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: GetLessonUserFilterData :many
+WITH scoped_lessons AS (
+    SELECT
+        l.type,
+        l.discipline_name,
+        g.name AS group_name
+    FROM lessons l
+    LEFT JOIN groups g ON g.keycloak_id = l.group_id
+    WHERE
+        sqlc.narg('teacher')::uuid IS NULL
+        OR l.teacher = sqlc.narg('teacher')::uuid
+        OR EXISTS (
+            SELECT 1 FROM rups r
+            WHERE sqlc.narg('teacher')::uuid = ANY(r.contacts)
+              AND EXISTS (
+                  SELECT 1 FROM rup_disciplines rd
+                  WHERE rd.id = ANY(r.disciplines)
+                    AND EXISTS (
+                        SELECT 1 FROM discipline_topics dt
+                        WHERE dt.id = ANY(rd.topics)
+                          AND dt.lesson_id = l.id
+                    )
+              )
+        )
+)
+SELECT 'type'::text AS filter, type::text AS value
+FROM scoped_lessons
+GROUP BY type
+UNION
+SELECT
+    'discipline'::text AS filter,
+    COALESCE(
+        NULLIF(discipline_name->>sqlc.arg('locale')::text, ''),
+        NULLIF(discipline_name->>'ru', ''),
+        NULLIF(discipline_name->>'kz', '')
+    ) AS value
+FROM scoped_lessons
+WHERE COALESCE(
+    NULLIF(discipline_name->>sqlc.arg('locale')::text, ''),
+    NULLIF(discipline_name->>'ru', ''),
+    NULLIF(discipline_name->>'kz', '')
+) IS NOT NULL
+GROUP BY value
+UNION
+SELECT 'group'::text AS filter, group_name AS value
+FROM scoped_lessons
+WHERE COALESCE(group_name, '') <> ''
+GROUP BY group_name
+ORDER BY filter, value;
 
 -- name: GetRecentLessonsByDiscipline :many
 SELECT *
@@ -1338,15 +1389,15 @@ WHERE
         OR l.id = sqlc.narg('id')::uuid
     )
     AND (
-        sqlc.arg('lesson_type') = ''
-        OR l.type = sqlc.arg('lesson_type')::enum_lesson_type
+        sqlc.narg('lesson_types')::text[] IS NULL
+        OR l.type = ANY(sqlc.arg('lesson_types')::text[]::enum_lesson_type[])
     )
     AND (
-        sqlc.arg('discipline') = ''
-        OR COALESCE(l.discipline_name->>'ru', '') = sqlc.arg('discipline')
-        OR COALESCE(l.discipline_name->>'kz', '') = sqlc.arg('discipline')
+        sqlc.narg('disciplines')::text[] IS NULL
+        OR COALESCE(l.discipline_name->>'ru', '') = ANY(sqlc.arg('disciplines')::text[])
+        OR COALESCE(l.discipline_name->>'kz', '') = ANY(sqlc.arg('disciplines')::text[])
     )
     AND (
-        sqlc.arg('group_name') = ''
-        OR COALESCE(g.name, '') = sqlc.arg('group_name')
+        sqlc.narg('group_names')::text[] IS NULL
+        OR COALESCE(g.name, '') = ANY(sqlc.arg('group_names')::text[])
     );

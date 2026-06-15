@@ -13,6 +13,7 @@ import {
 	getLocaleText,
 	getUILocaleSection,
 	toBackendLocale,
+	toDateOnlyIso,
 } from '@helpers'
 import { cn } from '@lib'
 import { services } from '@services'
@@ -327,9 +328,11 @@ const TopicRowView = ({
 	const generateLessonMutation = useMutation(services.lesson.generateLessonOptions())
 	const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
 	const [regenerateDescription, setRegenerateDescription] = useState('')
+	const [eventDate, setEventDate] = useState<Date | undefined>(undefined)
 
 	const handleGenerateClick = () => {
 		setRegenerateDescription('')
+		setEventDate(new Date())
 		setIsGenerateDialogOpen(true)
 	}
 
@@ -346,6 +349,7 @@ const TopicRowView = ({
 			topicId: topic.id,
 			sourceLanguage: toBackendLocale(activeLocale),
 			message: regenerateDescription.trim(),
+			event_date: toDateOnlyIso(eventDate),
 			updatedTopic: {
 				name: createLocaleText(getLocaleText(topic.name, 'ru'), getLocaleText(topic.name, 'kk')),
 				type: topic.type,
@@ -443,12 +447,16 @@ const TopicRowView = ({
 				descriptionLabel={text.descriptionLabel}
 				descriptionPlaceholder={text.descriptionPlaceholder}
 				dialogDescription={text.generateDialogDescription}
-				isConfirmDisabled={regenerateDescription.trim().length === 0}
+				eventDate={eventDate}
+				eventDateLabel={text.eventDateLabel}
+				eventDatePlaceholder={text.eventDatePlaceholder}
+				isConfirmDisabled={regenerateDescription.trim().length === 0 || !eventDate}
 				isOpen={isGenerateDialogOpen}
 				isPending={generateLessonMutation.isPending}
 				title={text.generateDialogTitle}
 				onConfirm={onSubmit}
 				onDescriptionChange={setRegenerateDescription}
+				onEventDateChange={setEventDate}
 				onOpenChange={setIsGenerateDialogOpen}
 			/>
 		</>

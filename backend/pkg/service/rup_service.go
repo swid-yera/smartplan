@@ -280,6 +280,7 @@ type rupService struct {
 	httpClient  *http.Client
 	docRender   *DocumentRenderClient
 	aiService   AIService
+	translation TranslationService
 	fileStorage FileStorage
 	crypto      CryptoClient
 	log         *logrus.Logger
@@ -366,6 +367,7 @@ func NewRupService(
 	cfg *config.DocumentRenderConfig,
 	httpClient *http.Client,
 	aiService AIService,
+	translationService TranslationService,
 	fileStorage FileStorage,
 	cryptoClient CryptoClient,
 	rdb *redis.Client,
@@ -381,6 +383,7 @@ func NewRupService(
 		httpClient:  httpClient,
 		docRender:   NewDocumentRenderClient(httpClient, cfg.ApiKey),
 		aiService:   aiService,
+		translation: translationService,
 		fileStorage: fileStorage,
 		crypto:      cryptoClient,
 		log:         log,
@@ -434,7 +437,7 @@ func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupR
 	// Запуск фоновой генерации второго языка
 	sourceLanguage := normalizeBackendLanguage(req.SourceLanguage)
 	targetLanguage := oppositeBackendLanguage(sourceLanguage)
-	if sourceLanguage != "" && targetLanguage != "" && s.aiService != nil {
+	if sourceLanguage != "" && targetLanguage != "" && s.translation != nil {
 		s.beginLanguageGeneration(response.ID, sourceLanguage, targetLanguage)
 		go s.generateLanguageForRup(response.ID, sourceLanguage, targetLanguage, false)
 	}
@@ -482,10 +485,10 @@ func (s *rupService) RegenerateLanguageGeneration(
 	id uuid.UUID,
 	sourceLanguage string,
 ) (*RupLanguageGenerationStatus, error) {
-	if s.aiService == nil {
+	if s.translation == nil {
 		return nil, &HTTPStatusError{
 			StatusCode: http.StatusBadGateway,
-			Message:    "AI service is not configured",
+			Message:    "translation service is not configured",
 		}
 	}
 
@@ -2101,38 +2104,81 @@ func (s *rupService) resolveSourceLanguageForRegeneration(rupID uuid.UUID, sourc
 	return "ru"
 }
 
-func (s *rupService) translateLocaleText(
+type rupLocaleTextTranslationRef struct {
+	value *localization.LocaleText
+}
+
+func (s *rupService) translateLocaleTexts(
 	ctx context.Context,
-	value localization.LocaleText,
+	refs []rupLocaleTextTranslationRef,
 	sourceLanguage string,
 	targetLanguage string,
 	overwriteTarget bool,
-) (localization.LocaleText, error) {
-	sourceText := localeValueByLanguage(value, sourceLanguage)
-	targetText := localeValueByLanguage(value, targetLanguage)
-	if sourceText == "" {
-		sourceText = strings.TrimSpace(value.Ru)
-		if sourceText == "" {
-			sourceText = strings.TrimSpace(value.Kz)
+) error {
+	if len(refs) == 0 {
+		return nil
+	}
+	if s.translation == nil {
+		return fmt.Errorf("translation service is not configured")
+	}
+
+	type pendingTranslation struct {
+		value      *localization.LocaleText
+		sourceText string
+	}
+
+	pending := make([]pendingTranslation, 0, len(refs))
+	for _, ref := range refs {
+		if ref.value == nil {
+			continue
 		}
+
+		sourceText := localeValueByLanguage(*ref.value, sourceLanguage)
+		targetText := localeValueByLanguage(*ref.value, targetLanguage)
+		if sourceText == "" {
+			sourceText = strings.TrimSpace(ref.value.Ru)
+			if sourceText == "" {
+				sourceText = strings.TrimSpace(ref.value.Kz)
+			}
+		}
+
+		if sourceText == "" || (!overwriteTarget && targetText != "") {
+			continue
+		}
+
+		pending = append(pending, pendingTranslation{
+			value:      ref.value,
+			sourceText: sourceText,
+		})
 	}
 
-	if sourceText == "" || (!overwriteTarget && targetText != "") {
-		return value, nil
+	if len(pending) == 0 {
+		return nil
 	}
 
-	translatedText, err := s.aiService.TranslateText(ctx, TranslateTextRequest{
-		Text:             sourceText,
-		SourceLanguage:   sourceLanguage,
-		TargetLanguage:   targetLanguage,
-		Domain:           "рабочая учебная программа (РУП) колледжа",
-		AdditionalPrompt: "Сохрани методическую терминологию Республики Казахстан.",
+	texts := make([]string, 0, len(pending))
+	for _, item := range pending {
+		texts = append(texts, item.sourceText)
+	}
+
+	translatedTexts, err := s.translation.TranslateBatch(ctx, TranslateBatchRequest{
+		Texts:          texts,
+		SourceLanguage: sourceLanguage,
+		TargetLanguage: targetLanguage,
+		Domain:         "rup",
 	})
 	if err != nil {
-		return value, err
+		return err
+	}
+	if len(translatedTexts) != len(pending) {
+		return fmt.Errorf("translation response count mismatch: got %d, want %d", len(translatedTexts), len(pending))
 	}
 
-	return setLocaleValueByLanguage(value, targetLanguage, translatedText), nil
+	for i, translatedText := range translatedTexts {
+		*pending[i].value = setLocaleValueByLanguage(*pending[i].value, targetLanguage, translatedText)
+	}
+
+	return nil
 }
 
 func (s *rupService) generateLanguageForRup(
@@ -2166,68 +2212,27 @@ func (s *rupService) generateLanguageForRup(
 	updateReq.SourceLanguage = sourceLanguage
 
 	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "translate_core", 2, totalStages)
-	updateReq.Name, err = s.translateLocaleText(ctx, updateReq.Name, sourceLanguage, targetLanguage, overwriteTarget)
-	if err != nil {
+	coreRefs := []rupLocaleTextTranslationRef{{value: &updateReq.Name}}
+	if updateReq.ExplorationNote != nil {
+		coreRefs = append(
+			coreRefs,
+			rupLocaleTextTranslationRef{value: &updateReq.ExplorationNote.Prerequisites},
+			rupLocaleTextTranslationRef{value: &updateReq.ExplorationNote.Postrequisites},
+		)
+	}
+	if err := s.translateLocaleTexts(ctx, coreRefs, sourceLanguage, targetLanguage, overwriteTarget); err != nil {
 		fail("translate_core", 2, err)
 		return
-	}
-	if updateReq.ExplorationNote != nil {
-		updateReq.ExplorationNote.Prerequisites, err = s.translateLocaleText(
-			ctx,
-			updateReq.ExplorationNote.Prerequisites,
-			sourceLanguage,
-			targetLanguage,
-			overwriteTarget,
-		)
-		if err != nil {
-			fail("translate_core", 2, err)
-			return
-		}
-		updateReq.ExplorationNote.Postrequisites, err = s.translateLocaleText(
-			ctx,
-			updateReq.ExplorationNote.Postrequisites,
-			sourceLanguage,
-			targetLanguage,
-			overwriteTarget,
-		)
-		if err != nil {
-			fail("translate_core", 2, err)
-			return
-		}
 	}
 
 	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "translate_exploration", 3, totalStages)
 	if updateReq.ExplorationNote != nil {
-		updateReq.ExplorationNote.Basis, err = s.translateLocaleText(
-			ctx,
-			updateReq.ExplorationNote.Basis,
-			sourceLanguage,
-			targetLanguage,
-			overwriteTarget,
-		)
-		if err != nil {
-			fail("translate_exploration", 3, err)
-			return
+		explorationRefs := []rupLocaleTextTranslationRef{
+			{value: &updateReq.ExplorationNote.Basis},
+			{value: &updateReq.ExplorationNote.Goals},
+			{value: &updateReq.ExplorationNote.Competencies},
 		}
-		updateReq.ExplorationNote.Goals, err = s.translateLocaleText(
-			ctx,
-			updateReq.ExplorationNote.Goals,
-			sourceLanguage,
-			targetLanguage,
-			overwriteTarget,
-		)
-		if err != nil {
-			fail("translate_exploration", 3, err)
-			return
-		}
-		updateReq.ExplorationNote.Competencies, err = s.translateLocaleText(
-			ctx,
-			updateReq.ExplorationNote.Competencies,
-			sourceLanguage,
-			targetLanguage,
-			overwriteTarget,
-		)
-		if err != nil {
+		if err := s.translateLocaleTexts(ctx, explorationRefs, sourceLanguage, targetLanguage, overwriteTarget); err != nil {
 			fail("translate_exploration", 3, err)
 			return
 		}
@@ -2235,78 +2240,47 @@ func (s *rupService) generateLanguageForRup(
 
 	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "translate_resources", 4, totalStages)
 	if updateReq.ExplorationNote != nil {
+		resourceRefs := make([]rupLocaleTextTranslationRef, 0, len(updateReq.ExplorationNote.InternetResources)+len(updateReq.ExplorationNote.TechnicalResources))
 		for i := range updateReq.ExplorationNote.InternetResources {
 			if updateReq.ExplorationNote.InternetResources[i] == nil {
 				continue
 			}
-
-			updateReq.ExplorationNote.InternetResources[i].Name, err = s.translateLocaleText(
-				ctx,
-				updateReq.ExplorationNote.InternetResources[i].Name,
-				sourceLanguage,
-				targetLanguage,
-				overwriteTarget,
-			)
-			if err != nil {
-				fail("translate_resources", 4, err)
-				return
-			}
+			resourceRefs = append(resourceRefs, rupLocaleTextTranslationRef{value: &updateReq.ExplorationNote.InternetResources[i].Name})
 		}
 
 		for i := range updateReq.ExplorationNote.TechnicalResources {
 			if updateReq.ExplorationNote.TechnicalResources[i] == nil {
 				continue
 			}
+			resourceRefs = append(resourceRefs, rupLocaleTextTranslationRef{value: &updateReq.ExplorationNote.TechnicalResources[i].Name})
+		}
 
-			updateReq.ExplorationNote.TechnicalResources[i].Name, err = s.translateLocaleText(
-				ctx,
-				updateReq.ExplorationNote.TechnicalResources[i].Name,
-				sourceLanguage,
-				targetLanguage,
-				overwriteTarget,
-			)
-			if err != nil {
-				fail("translate_resources", 4, err)
-				return
-			}
+		if err := s.translateLocaleTexts(ctx, resourceRefs, sourceLanguage, targetLanguage, overwriteTarget); err != nil {
+			fail("translate_resources", 4, err)
+			return
 		}
 	}
 
 	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "translate_disciplines_and_topics", 5, totalStages)
+	disciplineRefs := make([]rupLocaleTextTranslationRef, 0)
 	for i := range updateReq.Disciplines {
 		if updateReq.Disciplines[i] == nil {
 			continue
 		}
 
-		updateReq.Disciplines[i].Name, err = s.translateLocaleText(
-			ctx,
-			updateReq.Disciplines[i].Name,
-			sourceLanguage,
-			targetLanguage,
-			overwriteTarget,
-		)
-		if err != nil {
-			fail("translate_disciplines_and_topics", 5, err)
-			return
-		}
+		disciplineRefs = append(disciplineRefs, rupLocaleTextTranslationRef{value: &updateReq.Disciplines[i].Name})
 
 		for j := range updateReq.Disciplines[i].Topics {
 			if updateReq.Disciplines[i].Topics[j] == nil {
 				continue
 			}
 
-			updateReq.Disciplines[i].Topics[j].Name, err = s.translateLocaleText(
-				ctx,
-				updateReq.Disciplines[i].Topics[j].Name,
-				sourceLanguage,
-				targetLanguage,
-				overwriteTarget,
-			)
-			if err != nil {
-				fail("translate_disciplines_and_topics", 5, err)
-				return
-			}
+			disciplineRefs = append(disciplineRefs, rupLocaleTextTranslationRef{value: &updateReq.Disciplines[i].Topics[j].Name})
 		}
+	}
+	if err := s.translateLocaleTexts(ctx, disciplineRefs, sourceLanguage, targetLanguage, overwriteTarget); err != nil {
+		fail("translate_disciplines_and_topics", 5, err)
+		return
 	}
 
 	s.updateLanguageGenerationProgress(rupID, sourceLanguage, targetLanguage, "save_translations", 6, totalStages)

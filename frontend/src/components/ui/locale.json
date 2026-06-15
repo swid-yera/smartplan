@@ -6,6 +6,7 @@
 		"moreActions": "Дополнительные действия",
 		"pagination": {
 			"rowsPerPage": "Строк на странице",
+			"totalCount": "Количество",
 			"pageOf": "Страница {page} из {totalPages}"
 		},
 		"loader": {
@@ -48,6 +49,7 @@
 		"moreActions": "Қосымша әрекеттер",
 		"pagination": {
 			"rowsPerPage": "Беттегі жол саны",
+			"totalCount": "Саны",
 			"pageOf": "{page} / {totalPages} бет"
 		},
 		"loader": {

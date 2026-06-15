@@ -74,6 +74,11 @@ export const createRupFormSchema = (locale: Locale = 'ru', requiredLocales: Loca
 			}
 		})
 
+	const optionalLocaleTextSchema = z.object({
+		ru: z.string().trim(),
+		kz: z.string().trim(),
+	})
+
 	const disciplineSchema = z.object({
 		name: localeTextSchema,
 
@@ -117,8 +122,8 @@ export const createRupFormSchema = (locale: Locale = 'ru', requiredLocales: Loca
 		course: z.number().min(1, 'yes').max(4, 'yes'),
 		groupId: z.string().min(1, m.groupRequired),
 
-		prerequisites: localeTextSchema,
-		postrequisites: localeTextSchema,
+		prerequisites: optionalLocaleTextSchema,
+		postrequisites: optionalLocaleTextSchema,
 
 		// exploration note
 		basis: localeTextSchema,

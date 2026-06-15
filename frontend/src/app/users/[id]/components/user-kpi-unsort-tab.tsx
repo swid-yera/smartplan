@@ -15,6 +15,7 @@ interface IProps {
 	pageSize: number
 	persistedFilterClassName?: string
 	title: string
+	totalCount?: number
 	totalPages: number
 	onPageChange: (page: number) => void
 	onPageSizeChange: (pageSize: number) => void
@@ -28,6 +29,7 @@ export const UserKpiUnsortTab: FC<IProps> = ({
 	pageSize,
 	persistedFilterClassName,
 	title,
+	totalCount,
 	totalPages,
 	onPageChange,
 	onPageSizeChange,
@@ -42,6 +44,7 @@ export const UserKpiUnsortTab: FC<IProps> = ({
 				page={page}
 				pageSize={pageSize}
 				pageSizeOptions={[10, 20, 50]}
+				totalCount={totalCount}
 				totalPages={totalPages}
 				onPageChange={onPageChange}
 				onPageSizeChange={onPageSizeChange}
