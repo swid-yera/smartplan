@@ -25,6 +25,11 @@
 │   Next.js :3000 │     │   Go/Gin  :8080 │     │ Service Python/FastAPI   │
 └─────────────────┘     └────────┬────────┘     │ :8081                    │
                                  │              └──────────────────────────┘
+                                 │
+                                 └──────────────▶┌──────────────────────────┐
+                                                │ Translation Service       │
+                                                │ Python/FastAPI :8082     │
+                                                └──────────────────────────┘
                          ┌───────┴────────┐
                          │                │
                     ┌────▼────┐     ┌─────▼────┐
@@ -145,6 +150,28 @@ API_KEY_RUP_BACKEND=your-super-secret-api-key
 
 ---
 
+### Translation Service (`/translation-service`)
+
+**Стек:** Python 3.14, FastAPI, uvicorn, CTranslate2, NLLB-200
+
+**Назначение:** перевод контента между `ru` и `kz` для RUP и lesson-данных.
+
+**Запуск:**
+```bash
+cd translation-service
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8082
+
+# или через скрипт
+bash start.sh
+```
+
+**Примечание:**
+- модель NLLB нужно подготовить один раз через `prepare-model.*`
+- сервис доступен на `http://localhost:8082`
+
+---
+
 ## Быстрый старт (Docker)
 
 Все сервисы запускаются одной командой через Docker Compose:
@@ -226,7 +253,13 @@ cp .env.example .env.local
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8081
 
-# 5. Frontend
+# 5. Translation service
+cd translation-service
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8082
+
+# 6. Frontend
 cd frontend
 npm install
 npm run dev
@@ -392,6 +425,14 @@ eduplan/
 │   │   ├── services/               # Генераторы (rup, lesson, hik)
 │   │   ├── helpers/                # Вспомогательные функции
 │   │   └── templates/              # .docx шаблоны документов
+│   ├── requirements.txt
+│   └── Dockerfile
+│
+├── translation-service/            # Python сервис перевода ru/kz
+│   ├── app/
+│   │   ├── main.py                 # FastAPI приложение
+│   │   ├── translator.py           # NLLB/CTranslate2 переводчик
+│   │   └── cache.py                # Redis-кэш переводов
 │   ├── requirements.txt
 │   └── Dockerfile
 │
