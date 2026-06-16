@@ -27,6 +27,9 @@ import (
 
 type RupService interface {
 	CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
+	CreateImportedRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error)
+	ParseRupImport(ctx context.Context, fileName string, content []byte, userID uuid.UUID) (*ParseRupImportResponse, error)
+	ConfirmRupImport(ctx context.Context, userID uuid.UUID, req ConfirmRupImportRequest) (*RupResponse, error)
 	GetRupByID(ctx context.Context, id uuid.UUID) (*RupResponse, error)
 	GetLanguageGenerationStatus(ctx context.Context, id uuid.UUID) (*RupLanguageGenerationStatus, error)
 	RegenerateLanguageGeneration(ctx context.Context, id uuid.UUID, sourceLanguage string) (*RupLanguageGenerationStatus, error)
@@ -275,16 +278,17 @@ type TopicResponse struct {
 }
 
 type rupService struct {
-	repo        repository.RupRepository
-	cfg         *config.DocumentRenderConfig
-	httpClient  *http.Client
-	docRender   *DocumentRenderClient
-	aiService   AIService
-	translation TranslationService
-	fileStorage FileStorage
-	crypto      CryptoClient
-	log         *logrus.Logger
-	langGen     langGenStore
+	repo         repository.RupRepository
+	cfg          *config.DocumentRenderConfig
+	httpClient   *http.Client
+	docRender    *DocumentRenderClient
+	aiService    AIService
+	translation  TranslationService
+	fileStorage  FileStorage
+	crypto       CryptoClient
+	log          *logrus.Logger
+	langGen      langGenStore
+	importDrafts rupImportDraftStore
 }
 
 type UpdateRupStatusRequest struct {
@@ -378,20 +382,25 @@ func NewRupService(
 	}
 
 	return &rupService{
-		repo:        repo,
-		cfg:         cfg,
-		httpClient:  httpClient,
-		docRender:   NewDocumentRenderClient(httpClient, cfg.ApiKey),
-		aiService:   aiService,
-		translation: translationService,
-		fileStorage: fileStorage,
-		crypto:      cryptoClient,
-		log:         log,
-		langGen:     newRedisLangGenStore(rdb),
+		repo:         repo,
+		cfg:          cfg,
+		httpClient:   httpClient,
+		docRender:    NewDocumentRenderClient(httpClient, cfg.ApiKey),
+		aiService:    aiService,
+		translation:  translationService,
+		fileStorage:  fileStorage,
+		crypto:       cryptoClient,
+		log:          log,
+		langGen:      newRedisLangGenStore(rdb),
+		importDrafts: newRedisRupImportDraftStore(rdb),
 	}
 }
 
 func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error) {
+	return s.createRup(ctx, req, true)
+}
+
+func (s *rupService) createRup(ctx context.Context, req CreateRupRequest, startLanguageGeneration bool) (*RupResponse, error) {
 	// Валидация (вне транзакции — только чтение)
 	if err := s.validateCreateRupRequest(ctx, req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
@@ -437,7 +446,7 @@ func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupR
 	// Запуск фоновой генерации второго языка
 	sourceLanguage := normalizeBackendLanguage(req.SourceLanguage)
 	targetLanguage := oppositeBackendLanguage(sourceLanguage)
-	if sourceLanguage != "" && targetLanguage != "" && s.translation != nil {
+	if startLanguageGeneration && sourceLanguage != "" && targetLanguage != "" && s.translation != nil {
 		s.beginLanguageGeneration(response.ID, sourceLanguage, targetLanguage)
 		go s.generateLanguageForRup(response.ID, sourceLanguage, targetLanguage, false)
 	}

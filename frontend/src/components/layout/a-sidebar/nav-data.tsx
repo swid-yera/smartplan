@@ -19,6 +19,7 @@ import {
 	PenIcon,
 	Ribbon,
 	ShieldUser,
+	Upload,
 	Users,
 	UsersRound,
 } from 'lucide-react'
@@ -64,6 +65,13 @@ export const navMain: INav[] = [
 				icon: FilePlus,
 				titleKey: 'rupsCreate',
 				url: '/rups/create',
+				permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_FULL],
+			},
+			{
+				id: 'rups-import',
+				icon: Upload,
+				titleKey: 'rupsImport',
+				url: '/rups/import',
 				permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_FULL],
 			},
 

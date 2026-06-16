@@ -11,7 +11,7 @@ import { services } from '@services'
 import { useAuthStore, useLocaleStore } from '@store'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PermissionCodeEnum, StatusEnum } from '@types'
-import { Plus } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 
 import { RupsFilterCard } from '../components'
 import {
@@ -39,6 +39,11 @@ const Page: NextPage = () => {
 	const sort = filterState.sort
 	const canManageRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
 	const canViewRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_VIEW])
+	const canCreateRups = hasAnyPermission(user, [
+		PermissionCodeEnum.RUP_VIEW,
+		PermissionCodeEnum.RUP_MANAGE,
+		PermissionCodeEnum.RUP_FULL,
+	])
 	const teacherId = canViewRups && !canManageRups ? user?.keycloakId : ''
 
 	useEffect(() => {
@@ -91,9 +96,12 @@ const Page: NextPage = () => {
 		<div className='space-y-6 p-6'>
 			<PageTitle
 				actions={
-					canManageRups ? (
+					canCreateRups ? (
 						<PageTitleActions
-							actions={[{ id: 'create', label: t.newRupButton, icon: Plus, href: '/rups/create' }]}
+							actions={[
+								{ id: 'create', label: t.newRupButton, icon: Plus, href: '/rups/create', priority: 'primary' },
+								{ id: 'import', label: t.importRupButton, icon: Upload, href: '/rups/import' },
+							]}
 							moreLabel={t.moreActions}
 						/>
 					) : undefined

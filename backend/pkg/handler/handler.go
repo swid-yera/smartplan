@@ -151,6 +151,8 @@ func (r *Router) Init() *gin.Engine {
 
 			// создание РУП — право управления РУП
 			rups.POST("", middleware.RequirePermission(service.PermRUPView), r.rup.CreateRup)
+			rups.POST("/import/parse", middleware.RequirePermission(service.PermRUPView), r.rup.ParseRupImport)
+			rups.POST("/import/confirm", middleware.RequirePermission(service.PermRUPView), r.rup.ConfirmRupImport)
 
 			// регенерация языка — право управления РУП
 			rups.POST("/:id/language-generation/regenerate", middleware.RequirePermission(service.PermRUPView), r.rup.RegenerateLanguageGeneration)
