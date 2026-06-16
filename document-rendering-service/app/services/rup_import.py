@@ -26,7 +26,7 @@ def parse_rup_docx(content: bytes, filename: str | None = None) -> dict:
 
     info = _parse_info_table(tables, warnings)
     exploration = _parse_exploration_note(paragraphs, warnings)
-    disciplines = _parse_disciplines(tables, warnings)
+    disciplines = _parse_disciplines(blocks, tables, warnings)
 
     study_year_suggestion = _extract_study_year(all_text)
     if not study_year_suggestion:
@@ -100,15 +100,13 @@ def _read_document_blocks(content: bytes) -> list[dict]:
 
 
 def _parse_info_table(tables: list[list[list[str]]], warnings: list[str]) -> dict:
-    info_table = next(
-        (
-            table
-            for table in tables
-            if "специальность" in _normalize(_flatten_table_text(table))
+    info_table = _find_table(
+        tables,
+        lambda table: (
+            "специальность" in _normalize(_flatten_table_text(table))
             and "квалификация" in _normalize(_flatten_table_text(table))
             and "форма обучения" in _normalize(_flatten_table_text(table))
         ),
-        None,
     )
     if not info_table:
         raise RupImportParseError("main information table was not found")
@@ -199,6 +197,19 @@ def _parse_exploration_note(paragraphs: list[str], warnings: list[str]) -> dict:
         elif normalized.startswith("постреквизиты"):
             note["postrequisites"] = _locale_text(_strip_prefix(line, "Постреквизиты:"))
 
+    fallback_texts = [
+        line
+        for line in scoped
+        if _normalize(line)
+        and not _is_note_field_line(_normalize(line))
+        and not _is_resource_heading(_normalize(line))
+        and not _is_empty_placeholder(_normalize(line))
+    ]
+    if not note["basis"]["ru"] and fallback_texts:
+        note["basis"] = _locale_text(fallback_texts[0])
+    if not note["goals"]["ru"] and len(fallback_texts) > 1:
+        note["goals"] = _locale_text(fallback_texts[1])
+
     internet_resources: list[str] = []
     technical_resources: list[str] = []
     current_section = ""
@@ -211,13 +222,15 @@ def _parse_exploration_note(paragraphs: list[str], warnings: list[str]) -> dict:
 
     for line in scoped:
         normalized = _normalize(line)
-        if "учебно-методическое оснащение" in normalized or "интернет-ресурсы" in normalized:
+        if _is_empty_placeholder(normalized):
+            continue
+        if _is_internet_resources_heading(normalized):
             current_section = "internet"
             continue
-        if "технические средства и материалы" in normalized:
+        if _is_technical_resources_heading(normalized):
             current_section = "technical"
             continue
-        if normalized in skip_lines or _is_note_field_line(normalized):
+        if normalized in skip_lines or _is_note_field_line(normalized) or _is_resource_heading(normalized):
             continue
         if current_section == "internet":
             internet_resources.append(line)
@@ -230,35 +243,47 @@ def _parse_exploration_note(paragraphs: list[str], warnings: list[str]) -> dict:
     return note
 
 
-def _parse_disciplines(tables: list[list[list[str]]], warnings: list[str]) -> list[dict]:
-    distribution_table = next(
-        (table for table in tables if "код и название дисциплины" in _normalize(_flatten_table_text(table))),
-        None,
-    )
-    content_table = next(
-        (table for table in tables if "критерии оценки" in _normalize(_flatten_table_text(table))),
-        None,
-    )
+def _parse_disciplines(
+    blocks: list[dict],
+    tables: list[list[list[str]]],
+    warnings: list[str],
+) -> list[dict]:
+    distribution_table = _find_distribution_table(blocks, tables)
+    content_table = _find_content_table(blocks, tables)
 
     disciplines_by_name: dict[str, dict] = {}
     if distribution_table:
-        for row in distribution_table[4:]:
-            cells = _pad(row, 10)
-            name = cells[0]
-            normalized_name = _normalize(name)
-            if not name or "всего" in normalized_name or "общее количество" in normalized_name:
-                continue
-            if not normalized_name.startswith("ро"):
+        layout = _infer_distribution_layout(distribution_table)
+        for row in distribution_table:
+            cells = _pad(row, max(10, len(row)))
+            name_index = _find_learning_result_name_index(cells)
+            if name_index is None:
                 continue
 
+            name = cells[name_index]
+            normalized_name = _normalize(name)
+            if not name or "всего" in normalized_name or "итого" in normalized_name:
+                continue
+            if not _looks_like_learning_result_name(normalized_name):
+                continue
+
+            semester_indexes = layout["semester_indexes"]
+            if not semester_indexes:
+                semester_indexes = list(range(name_index + 2, min(len(cells), name_index + 10)))
+
             semesters = [
-                {"semester": semester_index + 1, "totalHours": _to_int(cells[semester_index + 2])}
-                for semester_index in range(8)
+                {"semester": semester_index + 1, "totalHours": _to_int(cells[cell_index])}
+                for semester_index, cell_index in enumerate(semester_indexes[:8])
             ]
+            total_hours = _to_int(cells[layout["total_index"]]) if layout["total_index"] is not None else 0
+            if not total_hours:
+                total_hours = sum(semester["totalHours"] for semester in semesters)
+
             disciplines_by_name[_discipline_key(name)] = {
                 "name": _locale_text(name),
                 "semesters": semesters,
                 "topics": [],
+                "totalHours": total_hours,
             }
     else:
         warnings.append("semester distribution table was not found")
@@ -266,13 +291,19 @@ def _parse_disciplines(tables: list[list[list[str]]], warnings: list[str]) -> li
     if content_table:
         current_key = ""
         for row in content_table[2:]:
-            cells = _pad(row, 10)
+            cells = _pad(row, max(10, len(row)))
             row_text = _normalize(" ".join(cells))
-            if not row_text or "всего часов" in row_text or "итого часов" in row_text:
+            if (
+                not row_text
+                or "всего часов" in row_text
+                or row_text.startswith("всего")
+                or row_text.startswith("итого")
+                or "общее количество часов" in row_text
+            ):
                 continue
 
             discipline_name = cells[1]
-            if discipline_name and _normalize(discipline_name).startswith("ро"):
+            if discipline_name and not _is_total_row_label(discipline_name):
                 current_key = _discipline_key(discipline_name)
                 disciplines_by_name.setdefault(
                     current_key,
@@ -296,6 +327,8 @@ def _parse_disciplines(tables: list[list[list[str]]], warnings: list[str]) -> li
             srsp_hours = _to_int(cells[7])
             srs_hours = _to_int(cells[8])
             total_hours = _to_int(cells[3]) or theory_hours + practice_hours + individual_hours
+            if not total_hours:
+                total_hours = theory_hours + practice_hours + individual_hours
 
             disciplines_by_name[current_key]["topics"].append(
                 {
@@ -316,6 +349,15 @@ def _parse_disciplines(tables: list[list[list[str]]], warnings: list[str]) -> li
     for discipline in disciplines:
         if not discipline["topics"]:
             warnings.append(f"discipline has no parsed topics: {discipline['name']['ru']}")
+        total_hours = int(discipline.get("totalHours", 0) or 0)
+        topic_hours_total = sum(int(topic.get("totalHours", 0) or 0) for topic in discipline.get("topics", []))
+        if total_hours and topic_hours_total and total_hours != topic_hours_total:
+            warnings.append(
+                f"topic hours total {topic_hours_total} differs from distribution total {total_hours} for discipline: {discipline['name']['ru']}"
+            )
+        if not any(semester.get("totalHours", 0) for semester in discipline.get("semesters", [])):
+            if total_hours:
+                warnings.append(f"semester distribution was empty for discipline: {discipline['name']['ru']}")
 
     return disciplines
 
@@ -339,6 +381,123 @@ def _normalize(value: str) -> str:
 
 def _flatten_table_text(table: list[list[str]]) -> str:
     return " ".join(cell for row in table for cell in row if cell)
+
+
+def _find_table(
+    tables: list[list[list[str]]],
+    predicate,
+) -> list[list[str]] | None:
+    for table in tables:
+        if predicate(table):
+            return table
+    return None
+
+
+def _find_table_after_marker(
+    blocks: list[dict],
+    markers: tuple[str, ...],
+    predicate,
+) -> list[list[str]] | None:
+    for index, block in enumerate(blocks):
+        if block["type"] != "p":
+            continue
+        normalized = _normalize(block["text"])
+        if not any(marker in normalized for marker in markers):
+            continue
+        for next_block in blocks[index + 1 :]:
+            if next_block["type"] == "tbl":
+                rows = next_block["rows"]
+                if predicate(rows):
+                    return rows
+                break
+    return None
+
+
+def _find_distribution_table(blocks: list[dict], tables: list[list[list[str]]]) -> list[list[str]] | None:
+    table = _find_table_after_marker(
+        blocks,
+        ("распределение часов", "часов по семестрам"),
+        _looks_like_distribution_table,
+    )
+    if table:
+        return table
+    return _find_table(tables, _looks_like_distribution_table)
+
+
+def _find_content_table(blocks: list[dict], tables: list[list[list[str]]]) -> list[list[str]] | None:
+    table = _find_table_after_marker(
+        blocks,
+        ("содержание учебной программы", "содержание", "учебная программа"),
+        _looks_like_content_table,
+    )
+    if table:
+        return table
+    return _find_table(tables, _looks_like_content_table)
+
+
+def _looks_like_distribution_table(table: list[list[str]]) -> bool:
+    flat = _normalize(_flatten_table_text(table))
+    return (
+        "семестр" in flat
+        and (
+            "общее количество часов" in flat
+            or "код и название" in flat
+            or "распределение часов" in flat
+            or "в частности" in flat
+            or "из них" in flat
+        )
+    )
+
+
+def _looks_like_content_table(table: list[list[str]]) -> bool:
+    flat = _normalize(_flatten_table_text(table))
+    return (
+        "тип занятия" in flat
+        and (
+            "критерии оценки" in flat
+            or "разделы" in flat
+            or "результаты обучения" in flat
+            or "темы занятий" in flat
+        )
+    )
+
+
+def _infer_distribution_layout(table: list[list[str]]) -> dict:
+    total_index = None
+    semester_indexes: list[int] = []
+
+    for row in table[:4]:
+        for index, cell in enumerate(row):
+            normalized = _normalize(cell)
+            if total_index is None and (
+                "общее количество часов" in normalized
+                or normalized == "всего"
+                or normalized.startswith("всего")
+                or "итого" in normalized
+            ):
+                total_index = index
+            if "семестр" in normalized:
+                semester_indexes.append(index)
+
+    semester_indexes = _dedupe_ints(semester_indexes)
+    if len(semester_indexes) > 8:
+        semester_indexes = semester_indexes[:8]
+
+    if total_index is None:
+        total_index = 1 if table and table[0] else None
+
+    return {"total_index": total_index, "semester_indexes": semester_indexes}
+
+
+def _looks_like_learning_result_name(normalized: str) -> bool:
+    return bool(re.match(r"^(ро|рo)\s*\d", normalized))
+
+
+def _find_learning_result_name_index(cells: list[str]) -> int | None:
+    for index, cell in enumerate(cells[:3]):
+        if _looks_like_learning_result_name(_normalize(cell)):
+            return index
+    return None
 
 
 def _locale_text(value: str) -> dict:
@@ -425,8 +584,37 @@ def _is_note_field_line(normalized: str) -> bool:
     )
 
 
+def _is_resource_heading(normalized: str) -> bool:
+    return _is_internet_resources_heading(normalized) or _is_technical_resources_heading(normalized) or (
+        normalized.startswith("необходимые средства обучения")
+    )
+
+
+def _is_internet_resources_heading(normalized: str) -> bool:
+    return "учебно-методическое оснащение" in normalized or "интернет-ресурсы" in normalized
+
+
+def _is_technical_resources_heading(normalized: str) -> bool:
+    return "технические средства и материалы" in normalized or "технические средства, материалы" in normalized
+
+
+def _is_empty_placeholder(normalized: str) -> bool:
+    return normalized in {"", "—", "-", "отсутвуют", "отсутствуют", "нет", "не требуется", "не предусмотрено"}
+
+
 def _pad(row: list[str], length: int) -> list[str]:
     return row + [""] * max(0, length - len(row))
+
+
+def _dedupe_ints(items: list[int]) -> list[int]:
+    result: list[int] = []
+    seen: set[int] = set()
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        result.append(item)
+    return result
 
 
 def _empty_semesters() -> list[dict]:
@@ -434,7 +622,16 @@ def _empty_semesters() -> list[dict]:
 
 
 def _discipline_key(value: str) -> str:
-    return re.sub(r"\s+", " ", _normalize(value))
+    normalized = re.sub(r"\s+", " ", _normalize(value))
+    match = re.match(r"^(ро\s*\d+(?:\.\d+)?)", normalized)
+    if match:
+        return match.group(1).replace(" ", "")
+    return normalized
+
+
+def _is_total_row_label(value: str) -> bool:
+    normalized = _normalize(value)
+    return normalized.startswith("всего") or normalized.startswith("итого")
 
 
 def _clean_topic_name(value: str) -> str:
