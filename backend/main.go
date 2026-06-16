@@ -84,6 +84,7 @@ func main() {
 	)
 
 	permissionsRepo := repository.NewPermissionsPostgres(queries)
+	kpiSettingsRepo := repository.NewKPIUploadSettingsPostgres(db)
 
 	// ---------- SERVICES ----------
 	authService := service.NewAuthService(rdb, authRepo, permissionsRepo, kcSyncClient, kcCfg, log)
@@ -99,13 +100,14 @@ func main() {
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, aiService, translationService, minioRepo, cryptoClient, rdb, log)
 	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, translationService, docCfg, httpClient, minioRepo, log)
 
-	awardService := service.NewAwardService(awardRepo, usersRepo, minioRepo, log)
+	awardService := service.NewAwardService(awardRepo, usersRepo, kpiSettingsRepo, minioRepo, log)
 	groupsSyncService := kcservice.NewGroupsSyncService(kcSyncClient, groupsRepo)
 	departmentsSyncService := kcservice.NewDepartmentsSyncService(kcSyncClient, db, kcCfg)
 	groupsSyncGuard := service.NewSyncGuard(1 * time.Minute)
 	departmentsSyncGuard := service.NewSyncGuard(1 * time.Minute)
 
 	permissionService := service.NewPermissionService(permissionsRepo, usersRepo)
+	kpiSettingsService := service.NewKpiUploadSettingsService(kpiSettingsRepo)
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(
@@ -133,6 +135,7 @@ func main() {
 	lessonHandler := handler.NewLessonHandler(lessonService, log)
 	aiHandler := handler.NewAIHandler(aiService, log)
 	permissionHandler := handler.NewPermissionHandler(permissionService)
+	kpiSettingsHandler := handler.NewKpiUploadSettingsHandler(kpiSettingsService)
 
 	// ---------- ROUTER ----------
 	sessionAuthMiddleware := middleware.SessionAuth(userService)
@@ -151,6 +154,7 @@ func main() {
 		aiHandler,
 		nil,
 		permissionHandler,
+		kpiSettingsHandler,
 		sessionAuthMiddleware,
 		serverCfg.CORSAllowedOrigins,
 	)

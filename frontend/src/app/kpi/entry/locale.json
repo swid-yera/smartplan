@@ -4,13 +4,15 @@
 		"profileDescription": "Профиль и категории KPI",
 		"inputTitle": "Ввод данных",
 		"inputDescription": "Выберите категорию для создания данных для KPI",
-		"empty": "Категории пока не созданы"
+		"empty": "Категории пока не созданы",
+		"uploadLockMessage": "Загрузка KPI после {date} будет запрещена"
 	},
 	"kk": {
 		"profileTitle": "Менің KPI профилім",
 		"profileDescription": "KPI профилі және санаттары",
 		"inputTitle": "Деректерді енгізу",
 		"inputDescription": "KPI үшін деректер құруға санатты таңдаңыз",
-		"empty": "Санаттар әлі құрылмаған"
+		"empty": "Санаттар әлі құрылмаған",
+		"uploadLockMessage": "KPI жүктеу {date} күнінен кейін тыйым салынады"
 	}
 }

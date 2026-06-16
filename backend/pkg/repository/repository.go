@@ -106,6 +106,11 @@ type Permissions interface {
 	GetUsersWithPermissions(ctx context.Context) ([]storage.GetUsersWithPermissionsRow, error)
 }
 
+type KPIUploadSettings interface {
+	GetKpiUploadBlockDate(ctx context.Context) (*time.Time, error)
+	SetKpiUploadBlockDate(ctx context.Context, blockedAfterDate *time.Time) error
+}
+
 type Repository struct {
 	Users       UsersRepository
 	Auth        Auth

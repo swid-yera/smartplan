@@ -367,7 +367,7 @@ func (h *AwardHandler) CreateAward(c *gin.Context) {
 		return
 	}
 
-	award, err := h.service.CreateAward(c.Request.Context(), &storage.CreateAwardParams{
+	award, err := h.service.CreateAward(c.Request.Context(), currentUser, &storage.CreateAwardParams{
 		ID:            awardID,
 		Status:        storage.AwardsStatusDRAFT,
 		Teacher:       parseUUIDPgtype(currentUser.KeycloakID.String()),
@@ -485,7 +485,7 @@ func (h *AwardHandler) UpdateAward(c *gin.Context) {
 		req.FieldValues = mergedFieldValues
 	}
 
-	award, err := h.service.UpdateAward(c.Request.Context(), id, req)
+	award, err := h.service.UpdateAward(c.Request.Context(), currentUser, id, req)
 	if err != nil {
 		var httpErr *service.HTTPStatusError
 		if errors.As(err, &httpErr) {

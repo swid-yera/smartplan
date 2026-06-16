@@ -60,3 +60,17 @@ export const toDateOnlyIso = (date: Date | undefined): string => {
 
 	return normalizedDate.toISOString()
 }
+
+export const formatDateOnly = (value: string, locale: Locale = 'ru'): string => {
+	const [year, month, day] = value.split('-').map(Number)
+	if (!year || !month || !day) return value
+
+	const date = new Date(year, month - 1, day)
+	const intlLocale = locale === 'kk' ? 'kk-KZ' : 'ru-RU'
+
+	return new Intl.DateTimeFormat(intlLocale, {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+	}).format(date)
+}

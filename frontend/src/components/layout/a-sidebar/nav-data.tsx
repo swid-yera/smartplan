@@ -3,6 +3,7 @@ import {
 	Award,
 	BookCopy,
 	BookOpen,
+	CalendarClock,
 	ChartBar,
 	ClipboardClock,
 	FilePlus,
@@ -165,7 +166,7 @@ export const navMain: INav[] = [
 		titleKey: 'admin',
 		url: '/admin',
 		defaultOpen: false,
-		permissions: [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL],
+		permissions: [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.KPI_FULL, PermissionCodeEnum.KPI_MANAGE],
 		items: [
 			{
 				id: 'users',
@@ -201,6 +202,13 @@ export const navMain: INav[] = [
 				url: '/kpi/types',
 				icon: ListCheck,
 				permissions: [PermissionCodeEnum.KPI_FULL],
+			},
+			{
+				id: 'kpi-upload-lock',
+				titleKey: 'kpiUploadLock',
+				url: '/admin/kpi-upload-lock',
+				icon: CalendarClock,
+				permissions: [PermissionCodeEnum.KPI_MANAGE, PermissionCodeEnum.KPI_FULL],
 			},
 		],
 	},
