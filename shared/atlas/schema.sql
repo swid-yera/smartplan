@@ -471,3 +471,18 @@ CREATE TABLE permissions (
     CONSTRAINT unique_user_permission
         UNIQUE (user_id)
 );
+
+-- =====================
+-- KPI UPLOAD SETTINGS
+-- =====================
+CREATE TABLE kpi_upload_settings (
+    id SMALLINT PRIMARY KEY NOT NULL DEFAULT 1,
+    blocked_after_date DATE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT kpi_upload_settings_singleton CHECK (id = 1)
+);
+
+INSERT INTO kpi_upload_settings (id, blocked_after_date)
+VALUES (1, NULL)
+ON CONFLICT (id) DO NOTHING;

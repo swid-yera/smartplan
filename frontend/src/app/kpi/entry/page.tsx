@@ -1,8 +1,9 @@
 'use client'
 
 import { CategoryCard, Loader, PageTitle, withNavAccess } from '@components'
-import { getUILocaleSection } from '@helpers'
+import { formatDateOnly, getUILocaleSection } from '@helpers'
 import { services } from '@services'
+import { Card, CardContent } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
 
@@ -18,7 +19,16 @@ const Page = () => {
 		enabled: !!user,
 	})
 
+	const { data: kpiLock } = useQuery({
+		...services.kpiSettings.getUploadBlockDateOptions(),
+		enabled: !!user,
+	})
+
 	if (!user || authLoading || isCategoriesLoading) return <Loader type='data' />
+
+	const lockMessage = kpiLock?.blockedAfterDate
+		? t.uploadLockMessage.replace('{date}', formatDateOnly(kpiLock.blockedAfterDate, locale))
+		: ''
 
 	return (
 		<section className='p-4 max-w-6xl w-full mx-auto space-y-6'>
@@ -41,6 +51,12 @@ const Page = () => {
 					</div>
 				)}
 			</div>
+
+			{kpiLock?.blockedAfterDate ? (
+				<Card className='border-dashed border-amber-500/30 bg-amber-500/5'>
+					<CardContent className='p-4 text-sm text-amber-950 dark:text-amber-100'>{lockMessage}</CardContent>
+				</Card>
+			) : null}
 		</section>
 	)
 }

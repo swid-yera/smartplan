@@ -55,3 +55,11 @@ export interface IUpdateStatusRequest {
 	signature?: string
 	kripto?: IKriptoKeyPayload
 }
+
+export interface IKpiUploadBlockDateResponse {
+	blockedAfterDate: string | null
+}
+
+export interface IUpdateKpiUploadBlockDateRequest {
+	blockedAfterDate: string | null
+}

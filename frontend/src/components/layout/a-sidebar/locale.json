@@ -37,6 +37,7 @@
 			"settings": "Настройки",
 			"kpiCategories": "Категорий KPI",
 			"kpiCriteria": "Критерий оценивание KPI",
+			"kpiUploadLock": "Ограничение загрузки KPI",
 			"hik": "HikCentral",
 			"support": "Поддержка"
 		}
@@ -80,6 +81,7 @@
 			"settings": "Баптаулар",
 			"kpiCategories": "KPI санаттары",
 			"kpiCriteria": "KPI бағалау критерийі",
+			"kpiUploadLock": "KPI жүктеу шектеуі",
 			"hik": "HikCentral",
 			"support": "Қолдау"
 		}

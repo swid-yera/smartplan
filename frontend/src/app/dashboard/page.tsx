@@ -10,7 +10,7 @@ import { services } from '@services'
 import { Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQueries } from '@tanstack/react-query'
-import { PermissionCodeEnum, StatusEnum } from '@types'
+import { PermissionCodeEnum, RoleEnum, StatusEnum } from '@types'
 import {
 	Award,
 	BookOpen,
@@ -52,7 +52,7 @@ const Page = () => {
 	const canViewKpi = hasAnyPermission(user, [PermissionCodeEnum.KPI_VIEW])
 	const canManageKpi = hasAnyPermission(user, [PermissionCodeEnum.KPI_MANAGE])
 	const canFullKpi = hasPermission(user, PermissionCodeEnum.KPI_FULL)
-	const canUseAdminShortcuts = canFullRup || canFullKpi
+	const canUseAdminShortcuts = canFullRup || canFullKpi || canManageKpi || user.role === RoleEnum.ADMIN
 
 	const [recentRupsQuery, reviewRupsQuery, recentKpiQuery, reviewKpiQuery] = useQueries({
 		queries: [
@@ -104,7 +104,7 @@ const Page = () => {
 		canManageKpi,
 		canFullKpi,
 	})
-	const adminQuickActions = canUseAdminShortcuts ? buildAdminActions() : []
+	const adminQuickActions = canUseAdminShortcuts ? buildAdminActions(t.kpiUploadLock) : []
 	const hasRupTab = canViewRup || canManageRup || canFullRup
 	const hasKpiTab = canViewKpi || canManageKpi || canFullKpi
 	const visibleTabs = [hasRupTab ? 'rup' : null, hasKpiTab ? 'kpi' : null].filter(
@@ -370,8 +370,9 @@ const buildKpiActions = ({
 	return actions
 }
 
-const buildAdminActions = (): QuickAction[] => [
+const buildAdminActions = (kpiUploadLockLabel: string): QuickAction[] => [
 	{ label: 'Пользователи', href: '/users', icon: Users, variant: 'default' },
 	{ label: 'Группы', href: '/groups', icon: Group, variant: 'outline' },
 	{ label: 'Отделения', href: '/departments', icon: UsersRound, variant: 'outline' },
+	{ label: kpiUploadLockLabel, href: '/admin/kpi-upload-lock', icon: ShieldCheck, variant: 'outline' },
 ]
