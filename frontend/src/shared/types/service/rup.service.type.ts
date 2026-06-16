@@ -57,6 +57,40 @@ export interface ICreateRupRequest {
 	disciplines: ICreateDiscipline[]
 }
 
+export interface IParsedRupPayload {
+	sourceLanguage: BackendLocale
+	name: LocaleText
+	type: RupTypeEnum
+	studyForm: StudyFormEnum
+	totalHours: number
+	courseSuggestion?: number
+	studyYearSuggestion?: string
+	groupsRaw?: string[]
+	specialtyRaw?: string
+	qualificationRaw?: string
+	developersRaw?: string[]
+	explorationNote: ICreateExplorationNote
+	disciplines: ICreateDiscipline[]
+	warnings?: string[]
+}
+
+export interface IParseRupImportResponse {
+	importDraftId: string
+	payload: IParsedRupPayload
+	warnings: string[]
+}
+
+export interface IParseRupImportRequest {
+	file: File
+}
+
+export interface IConfirmRupImportRequest {
+	importDraftId: string
+	groupId: string
+	studyYear: string
+	course: 1 | 2 | 3 | 4
+}
+
 // update
 export interface IUpdateRupRequest extends ICreateRupRequest {
 	methodist?: string // IUser.keycloakId

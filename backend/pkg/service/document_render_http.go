@@ -2,12 +2,12 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
-
-	"context"
 
 	"github.com/google/uuid"
 )
@@ -35,6 +35,69 @@ func (c *DocumentRenderClient) PostJSON(ctx context.Context, endpoint string, bo
 		}
 
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", uuid.NewString())
+		if c.apiKey != "" {
+			req.Header.Set("X-API-Key", c.apiKey)
+		}
+
+		resp, err := c.doWithoutAutoRedirect(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isRedirectStatus(resp.StatusCode) {
+			return resp, nil
+		}
+
+		nextLocation := strings.TrimSpace(resp.Header.Get("Location"))
+		if nextLocation == "" {
+			return resp, nil
+		}
+
+		nextURL, err := resolveRedirectURL(currentURL, nextLocation)
+		resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		currentURL = nextURL
+	}
+
+	return nil, fmt.Errorf("document rendering redirect limit exceeded for %s", endpoint)
+}
+
+func (c *DocumentRenderClient) PostMultipartFile(
+	ctx context.Context,
+	endpoint string,
+	fieldName string,
+	fileName string,
+	content []byte,
+) (*http.Response, error) {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	part, err := writer.CreateFormFile(fieldName, fileName)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = part.Write(content); err != nil {
+		return nil, err
+	}
+	if err = writer.Close(); err != nil {
+		return nil, err
+	}
+
+	const maxRedirects = 5
+	currentURL := endpoint
+	contentType := writer.FormDataContentType()
+	bodyBytes := body.Bytes()
+
+	for i := 0; i <= maxRedirects; i++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, currentURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Content-Type", contentType)
 		req.Header.Set("X-Request-ID", uuid.NewString())
 		if c.apiKey != "" {
 			req.Header.Set("X-API-Key", c.apiKey)

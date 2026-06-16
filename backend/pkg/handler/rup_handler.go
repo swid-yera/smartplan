@@ -77,6 +77,124 @@ func (h *RupHandler) CreateRup(c *gin.Context) {
 	c.JSON(http.StatusCreated, rup)
 }
 
+func (h *RupHandler) ParseRupImport(c *gin.Context) {
+	const maxUploadBytes = 15 * 1024 * 1024
+
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		h.log.Error("User not authenticated")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		h.log.Error("Invalid user context", currentUser)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
+		return
+	}
+
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadBytes)
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		h.log.WithError(err).Error("failed to read import file")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   service.TranslateAPIErrorMessage("failed to parse RUP import"),
+			"details": service.TranslateAPIErrorMessage("file is required"),
+		})
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		h.log.WithError(err).Error("failed to open import file")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   service.TranslateAPIErrorMessage("failed to parse RUP import"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
+		})
+		return
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		h.log.WithError(err).Error("failed to read import file content")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   service.TranslateAPIErrorMessage("failed to parse RUP import"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
+		})
+		return
+	}
+
+	response, err := h.rupService.ParseRupImport(c.Request.Context(), fileHeader.Filename, content, currentUser.KeycloakID)
+	if err != nil {
+		h.log.WithError(err).Error("failed to parse RUP import")
+		var httpErr *service.HTTPStatusError
+		if errors.As(err, &httpErr) {
+			c.JSON(httpErr.StatusCode, gin.H{
+				"error":   service.TranslateAPIErrorMessage("failed to parse RUP import"),
+				"details": service.TranslateAPIErrorMessage(httpErr.Message),
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   service.TranslateAPIErrorMessage("failed to parse RUP import"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *RupHandler) ConfirmRupImport(c *gin.Context) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		h.log.Error("User not authenticated")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage("User not authenticated")})
+		return
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		h.log.Error("Invalid user context", currentUser)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": service.TranslateAPIErrorMessage("Invalid user context")})
+		return
+	}
+
+	var req service.ConfirmRupImportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.log.WithError(err).Error("invalid JSON format")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   service.TranslateAPIErrorMessage("invalid JSON format"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
+		})
+		return
+	}
+
+	rup, err := h.rupService.ConfirmRupImport(c.Request.Context(), currentUser.KeycloakID, req)
+	if err != nil {
+		h.log.WithError(err).Error("failed to confirm RUP import")
+		var httpErr *service.HTTPStatusError
+		if errors.As(err, &httpErr) {
+			c.JSON(httpErr.StatusCode, gin.H{
+				"error":   service.TranslateAPIErrorMessage("failed to confirm RUP import"),
+				"details": service.TranslateAPIErrorMessage(httpErr.Message),
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   service.TranslateAPIErrorMessage("failed to confirm RUP import"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, rup)
+}
+
 // GetRupByID получает RUP по ID
 func (h *RupHandler) GetRupByID(c *gin.Context) {
 	idStr := c.Param("id")

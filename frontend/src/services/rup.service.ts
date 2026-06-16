@@ -3,11 +3,14 @@ import { api } from '@lib'
 import { mutationOptions, queryOptions, useQueryClient } from '@tanstack/react-query'
 import type {
 	BackendLocale,
+	IConfirmRupImportRequest,
 	ICreateRupRequest,
 	IDownloadResponse,
 	IGetAllRequest,
 	IGetRupSignatureArtifactResponse,
 	IPagination,
+	IParseRupImportRequest,
+	IParseRupImportResponse,
 	IRegenerateLanguageGenerationRequest,
 	IRup,
 	IRupLanguageGenerationStatus,
@@ -92,6 +95,36 @@ export class RupService {
 			mutationFn: ({ newRup }: { newRup: ICreateRupRequest }) => {
 				return api.post<IRup>('/rups', newRup).then((r) => r.data)
 			},
+
+			onSuccess: (createdRup) => {
+				queryClient.setQueryData(['rup', createdRup.id], createdRup)
+				queryClient.invalidateQueries({ queryKey: ['rups'] })
+			},
+		})
+	}
+
+	parseImportOptions = () => {
+		return mutationOptions({
+			mutationFn: ({ file }: IParseRupImportRequest) => {
+				const formData = new FormData()
+
+				formData.append('file', file)
+
+				return api
+					.post<IParseRupImportResponse>('/rups/import/parse', formData, {
+						headers: { 'Content-Type': 'multipart/form-data' },
+					})
+					.then((r) => r.data)
+			},
+		})
+	}
+
+	confirmImportOptions = () => {
+		const queryClient = useQueryClient()
+
+		return mutationOptions({
+			mutationFn: (payload: IConfirmRupImportRequest) =>
+				api.post<IRup>('/rups/import/confirm', payload).then((r) => r.data),
 
 			onSuccess: (createdRup) => {
 				queryClient.setQueryData(['rup', createdRup.id], createdRup)
