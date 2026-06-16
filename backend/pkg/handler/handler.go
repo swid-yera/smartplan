@@ -24,6 +24,7 @@ type Router struct {
 	ai                    *AIHandler
 	webhooks              *WebhooksHandler
 	permissions           *PermissionHandler
+	kpiSettings           *KpiUploadSettingsHandler
 	sessionAuthMiddleware gin.HandlerFunc
 	corsAllowedOrigins    []string
 }
@@ -41,6 +42,7 @@ func NewRouter(
 	ai *AIHandler,
 	webhooks *WebhooksHandler,
 	permissions *PermissionHandler,
+	kpiSettings *KpiUploadSettingsHandler,
 	sessionAuthMiddleware gin.HandlerFunc,
 	corsAllowedOrigins []string,
 ) *Router {
@@ -57,6 +59,7 @@ func NewRouter(
 		lesson:                lesson,
 		ai:                    ai,
 		permissions:           permissions,
+		kpiSettings:           kpiSettings,
 		sessionAuthMiddleware: sessionAuthMiddleware,
 		corsAllowedOrigins:    corsAllowedOrigins,
 	}
@@ -321,6 +324,19 @@ func (r *Router) Init() *gin.Engine {
 				perms.GET("/:user_id", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.permissions.GetPermissions)
 				// отзыв прав — full permission holders
 				perms.DELETE("/:user_id", middleware.RequirePermission(service.PermKPIFull, service.PermRUPFull), r.permissions.RevokePermissions)
+			}
+		}
+
+		// --- KPI SETTINGS ---
+		if r.kpiSettings != nil {
+			settings := protected.Group("/settings")
+			{
+				settings.GET("/kpi-upload-block-date", middleware.RequirePermission(service.PermKPIView), r.kpiSettings.GetKpiUploadBlockDate)
+				settings.PUT(
+					"/kpi-upload-block-date",
+					middleware.RequirePermission(service.PermKPIManage, service.PermKPIFull),
+					r.kpiSettings.SetKpiUploadBlockDate,
+				)
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"io"
 	"math"
 	"mime/multipart"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -177,10 +178,10 @@ type UpdateAwardStatusRequest struct {
 // Позволяет подменять реализацию в тестах и сохраняет единообразие с другими сервисами.
 type AwardServiceInterface interface {
 	// Awards
-	CreateAward(ctx context.Context, params *storage.CreateAwardParams) (AwardResponse, error)
+	CreateAward(ctx context.Context, currentUser *User, params *storage.CreateAwardParams) (AwardResponse, error)
 	GetAllAwards(ctx context.Context) ([]AwardResponse, error)
 	GetAwardByID(ctx context.Context, id uuid.UUID) (AwardResponse, error)
-	UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error)
+	UpdateAward(ctx context.Context, currentUser *User, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error)
 	UpdateAwardPoints(ctx context.Context, id uuid.UUID, totalPoints int32) (AwardResponse, error)
 	UpdateAwardStatus(ctx context.Context, id uuid.UUID, params UpdateAwardStatusRequest) (AwardResponse, error)
 	DeleteAward(ctx context.Context, id uuid.UUID) error
@@ -214,16 +215,21 @@ type AwardServiceInterface interface {
 type AwardService struct {
 	repo        *repository.AwardRepository
 	userRepo    repository.UsersRepository
+	kpiSettings repository.KPIUploadSettings
 	log         *logrus.Logger
 	fileStorage FileStorage
 }
 
-func NewAwardService(repo *repository.AwardRepository, userRepo repository.UsersRepository, fileStorage FileStorage, log *logrus.Logger) *AwardService {
-	return &AwardService{repo: repo, userRepo: userRepo, fileStorage: fileStorage, log: log}
+func NewAwardService(repo *repository.AwardRepository, userRepo repository.UsersRepository, kpiSettings repository.KPIUploadSettings, fileStorage FileStorage, log *logrus.Logger) *AwardService {
+	return &AwardService{repo: repo, userRepo: userRepo, kpiSettings: kpiSettings, fileStorage: fileStorage, log: log}
 }
 
 // awards
-func (s *AwardService) CreateAward(ctx context.Context, params *storage.CreateAwardParams) (AwardResponse, error) {
+func (s *AwardService) CreateAward(ctx context.Context, currentUser *User, params *storage.CreateAwardParams) (AwardResponse, error) {
+	if err := s.ensureKpiUploadAllowed(ctx, currentUser); err != nil {
+		return AwardResponse{}, err
+	}
+
 	// check is exist
 	_, err := s.repo.GetAwardTypeByID(ctx, params.Type.Bytes)
 	if err != nil {
@@ -327,9 +333,18 @@ func (s *AwardService) GetAwardByID(ctx context.Context, id uuid.UUID) (AwardRes
 	return res, nil
 }
 
-func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error) {
+func (s *AwardService) UpdateAward(ctx context.Context, currentUser *User, id uuid.UUID, req UpdateAwardRequest) (AwardResponse, error) {
+	existingAward, err := s.repo.GetAwardByID(ctx, id)
+	if err != nil {
+		return AwardResponse{}, err
+	}
+
+	if err := s.ensureKpiUploadAllowed(ctx, currentUser); err != nil {
+		return AwardResponse{}, err
+	}
+
 	// check is exist
-	_, err := s.repo.GetAwardTypeByID(ctx, req.Type.Bytes)
+	_, err = s.repo.GetAwardTypeByID(ctx, req.Type.Bytes)
 	if err != nil {
 		s.log.Error("update award error: get award type by id error: ", err)
 		return AwardResponse{}, err
@@ -356,11 +371,6 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 			s.log.Error("update award error: get award bonus criteria by id error: ", err)
 			return AwardResponse{}, err
 		}
-	}
-
-	existingAward, err := s.repo.GetAwardByID(ctx, id)
-	if err != nil {
-		return AwardResponse{}, err
 	}
 
 	categoryID := existingAward.CategoryID
@@ -430,6 +440,37 @@ func (s *AwardService) UpdateAward(ctx context.Context, id uuid.UUID, req Update
 	}
 
 	return res, nil
+}
+
+func (s *AwardService) ensureKpiUploadAllowed(ctx context.Context, currentUser *User) error {
+	if s.kpiSettings == nil {
+		return nil
+	}
+
+	if currentUser == nil {
+		return &HTTPStatusError{StatusCode: http.StatusUnauthorized, Message: "User not authenticated"}
+	}
+
+	if !HasPermissionExact(currentUser.Permissions, PermKPIView) || HasPermissionLevel(currentUser.Permissions, PermKPIManage) {
+		return nil
+	}
+
+	blockedAfterDate, err := s.kpiSettings.GetKpiUploadBlockDate(ctx)
+	if err != nil {
+		return err
+	}
+
+	if blockedAfterDate == nil {
+		return nil
+	}
+
+	today := time.Now().Format("2006-01-02")
+	cutoff := blockedAfterDate.Format("2006-01-02")
+	if today > cutoff {
+		return &HTTPStatusError{StatusCode: http.StatusForbidden, Message: "kpi uploads are disabled after configured date"}
+	}
+
+	return nil
 }
 
 func (s *AwardService) UpdateAwardPoints(ctx context.Context, id uuid.UUID, totalPoints int32) (AwardResponse, error) {

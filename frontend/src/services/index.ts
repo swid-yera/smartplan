@@ -5,6 +5,7 @@ import { CategoriesService } from './categories.service'
 import { DepartmentService } from './department.service'
 import { GroupService } from './group.service'
 import { HikService } from './hik.service'
+import { KpiSettingsService } from './kpi-settings.service'
 import { LessonService } from './lesson.service'
 import { PermissionService } from './permission.service'
 import { RupService } from './rup.service'
@@ -23,6 +24,7 @@ export const services = {
 	categories: new CategoriesService(),
 	lesson: new LessonService(),
 	permission: new PermissionService(),
+	kpiSettings: new KpiSettingsService(),
 	statistics: new StatisticsService(),
 	hik: new HikService(),
 }
