@@ -6,6 +6,7 @@ import { services } from '@services'
 import { Card, CardContent } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
+import { isBefore, parseISO, startOfToday } from 'date-fns'
 
 import localeDictionary from './locale.json'
 
@@ -26,8 +27,11 @@ const Page = () => {
 
 	if (!user || authLoading || isCategoriesLoading) return <Loader type='data' />
 
-	const lockMessage = kpiLock?.blockedAfterDate
-		? t.uploadLockMessage.replace('{date}', formatDateOnly(kpiLock.blockedAfterDate, locale))
+	const blockedAfterDate = kpiLock?.blockedAfterDate
+	const lockDate = blockedAfterDate ? parseISO(blockedAfterDate) : null
+	const isLockActive = !!lockDate && isBefore(lockDate, startOfToday())
+	const lockMessage = blockedAfterDate
+		? (isLockActive ? t.uploadLockActiveMessage : t.uploadLockMessage).replace('{date}', formatDateOnly(blockedAfterDate, locale))
 		: ''
 
 	return (

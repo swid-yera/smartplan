@@ -208,7 +208,7 @@ export const navMain: INav[] = [
 				titleKey: 'kpiUploadLock',
 				url: '/admin/kpi-upload-lock',
 				icon: CalendarClock,
-				permissions: [PermissionCodeEnum.KPI_MANAGE, PermissionCodeEnum.KPI_FULL],
+				permissions: [PermissionCodeEnum.KPI_FULL],
 			},
 		],
 	},
