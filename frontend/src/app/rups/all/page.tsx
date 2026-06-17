@@ -102,6 +102,7 @@ const Page = () => {
 				currentPage={rupsData?.meta.currentPage || 1}
 				isLoading={isRupsLoading}
 				rups={rupsData?.data || []}
+				showGroupsColumn
 				title={t.listTitle}
 				totalPages={rupsData?.meta.pages || 1}
 				onPageChange={setCurrentPage}
