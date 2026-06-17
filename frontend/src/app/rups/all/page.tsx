@@ -37,6 +37,8 @@ const Page = () => {
 	const filterState = getRupFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
 	const q = filterState.search
 	const status = filterState.statuses as StatusEnum[]
+	const departments = filterState.departments
+	const groups = filterState.groups
 	const sort = filterState.sort
 
 	useEffect(() => {
@@ -66,6 +68,8 @@ const Page = () => {
 			currentPage: page,
 			pageSize: pageSize,
 			search: q,
+			departments,
+			groups,
 			sort,
 			status,
 		}),

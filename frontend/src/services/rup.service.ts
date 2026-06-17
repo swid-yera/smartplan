@@ -24,15 +24,27 @@ import { cleanupDeleteCache } from './query-cache'
 
 export class RupService {
 	// get all
-	getAllOptions = ({ currentPage = 1, pageSize = 10, search, methodist, teacher, status, sort }: IGetAllRequest) => {
+	getAllOptions = ({
+		currentPage = 1,
+		pageSize = 10,
+		search,
+		departments,
+		groups,
+		methodist,
+		teacher,
+		status,
+		sort,
+	}: IGetAllRequest) => {
 		return queryOptions<IPagination<IRup>>({
-			queryKey: ['rups', { currentPage, pageSize, search, methodist, teacher, status, sort }],
+			queryKey: ['rups', { currentPage, pageSize, search, departments, groups, methodist, teacher, status, sort }],
 			queryFn: async () => {
 				const { data } = await api.get<IPagination<IRup>>('/rups', {
 					params: {
 						currentPage,
 						pageSize,
 						search,
+						departments: departments?.join(','),
+						groups: groups?.join(','),
 						methodist,
 						teacher,
 						status: status?.join(','),

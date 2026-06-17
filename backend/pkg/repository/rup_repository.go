@@ -52,8 +52,8 @@ type RupRepository interface {
 	GetTopicsByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.DisciplineTopic, error)
 	GetGroupsByIDs(ctx context.Context, ids []uuid.UUID) ([]storage.Group, error)
 
-	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error)
-	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error)
+	CountRupsFiltered(ctx context.Context, name string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, departments []uuid.UUID, groups []string) (int64, error)
+	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, departments []uuid.UUID, groups []string) ([]storage.Rup, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
@@ -427,24 +427,28 @@ func (r *RupPostgres) CountRups(ctx context.Context) (int64, error) {
 	return r.queries.CountRups(ctx)
 }
 
-func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) ([]storage.Rup, error) {
+func (r *RupPostgres) GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, departments []uuid.UUID, groups []string) ([]storage.Rup, error) {
 	return r.queries.GetRupsPaginated(ctx, storage.GetRupsPaginatedParams{
-		Search:    search,
-		Status:    status,
-		Sort:      sort,
-		Offset:    offset,
-		Limit:     limit,
-		Teacher:   teacher,
-		Methodist: methodist,
+		Search:        search,
+		Status:        status,
+		Sort:          sort,
+		Offset:        offset,
+		Limit:         limit,
+		Teacher:       teacher,
+		Methodist:     methodist,
+		DepartmentIDs: departments,
+		GroupIDs:      groups,
 	})
 }
 
-func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (int64, error) {
+func (r *RupPostgres) CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, departments []uuid.UUID, groups []string) (int64, error) {
 	return r.queries.CountRupsFiltered(ctx, storage.CountRupsFilteredParams{
-		Search:    search,
-		Status:    status,
-		Teacher:   teacher,
-		Methodist: methodist,
+		Search:        search,
+		Status:        status,
+		Teacher:       teacher,
+		Methodist:     methodist,
+		DepartmentIDs: departments,
+		GroupIDs:      groups,
 	})
 }
 

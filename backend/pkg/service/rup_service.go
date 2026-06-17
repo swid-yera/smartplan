@@ -38,7 +38,7 @@ type RupService interface {
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID, language string) (string, error)
-	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (*PaginatedRupsResponse, error)
+	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, departments []uuid.UUID, groups []string) (*PaginatedRupsResponse, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
@@ -1882,6 +1882,8 @@ func (s *rupService) GetRupPaginated(
 	teacher pgtype.UUID,
 	methodist pgtype.UUID,
 	status []string,
+	departments []uuid.UUID,
+	groups []string,
 ) (*PaginatedRupsResponse, error) {
 	if currentPage < 1 {
 		currentPage = 1
@@ -1893,6 +1895,12 @@ func (s *rupService) GetRupPaginated(
 	if len(status) == 0 {
 		status = nil
 	}
+	if len(departments) == 0 {
+		departments = nil
+	}
+	if len(groups) == 0 {
+		groups = nil
+	}
 
 	offset := (currentPage - 1) * pageSize
 
@@ -1902,6 +1910,8 @@ func (s *rupService) GetRupPaginated(
 		teacher,
 		methodist,
 		status,
+		departments,
+		groups,
 	)
 	if err != nil {
 		return nil, err
@@ -1916,6 +1926,8 @@ func (s *rupService) GetRupPaginated(
 		teacher,
 		methodist,
 		status,
+		departments,
+		groups,
 	)
 	if err != nil {
 		return nil, err

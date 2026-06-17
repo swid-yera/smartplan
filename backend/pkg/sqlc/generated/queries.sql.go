@@ -295,16 +295,39 @@ WHERE
         OR methodist = $3::uuid
     )
     AND (
-        $4::text[] IS NULL
-        OR status = ANY($4::text[]::rups_status[])
+        $4::uuid[] IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM departments d
+            WHERE d.keycloak_id = ANY($4::uuid[])
+              AND (
+                  (teacher IS NOT NULL AND teacher = ANY(d.users))
+                  OR (methodist IS NOT NULL AND methodist = ANY(d.users))
+                  OR EXISTS (
+                      SELECT 1
+                      FROM unnest(contacts) AS contact_id
+                      WHERE contact_id = ANY(d.users)
+                  )
+              )
+        )
+    )
+    AND (
+        $5::text[] IS NULL
+        OR group_ids && $5::text[]
+    )
+    AND (
+        $6::text[] IS NULL
+        OR status = ANY($6::text[]::rups_status[])
     )
 `
 
 type CountRupsFilteredParams struct {
-	Search    interface{} `json:"search"`
-	Teacher   pgtype.UUID `json:"teacher"`
-	Methodist pgtype.UUID `json:"methodist"`
-	Status    []string    `json:"status"`
+	Search        interface{} `json:"search"`
+	Teacher       pgtype.UUID `json:"teacher"`
+	Methodist     pgtype.UUID `json:"methodist"`
+	DepartmentIDs []uuid.UUID `json:"department_ids"`
+	GroupIDs      []string    `json:"group_ids"`
+	Status        []string    `json:"status"`
 }
 
 func (q *Queries) CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error) {
@@ -312,6 +335,8 @@ func (q *Queries) CountRupsFiltered(ctx context.Context, arg CountRupsFilteredPa
 		arg.Search,
 		arg.Teacher,
 		arg.Methodist,
+		arg.DepartmentIDs,
+		arg.GroupIDs,
 		arg.Status,
 	)
 	var count int64
@@ -3033,27 +3058,51 @@ FROM rups WHERE
     ) AND (
         $3::uuid IS NULL
         OR methodist = $3::uuid
-    )AND (
-        $4::text[] IS NULL
-        OR status = ANY($4::text[]::rups_status[])
+    )
+    AND (
+        $4::uuid[] IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM departments d
+            WHERE d.keycloak_id = ANY($4::uuid[])
+              AND (
+                  (teacher IS NOT NULL AND teacher = ANY(d.users))
+                  OR (methodist IS NOT NULL AND methodist = ANY(d.users))
+                  OR EXISTS (
+                      SELECT 1
+                      FROM unnest(contacts) AS contact_id
+                      WHERE contact_id = ANY(d.users)
+                  )
+              )
+        )
+    )
+    AND (
+        $5::text[] IS NULL
+        OR group_ids && $5::text[]
+    )
+    AND (
+        $6::text[] IS NULL
+        OR status = ANY($6::text[]::rups_status[])
     )
 ORDER BY
-    CASE WHEN LOWER($5::text) = 'asc' THEN status::text END ASC,
-    CASE WHEN LOWER($5::text) = 'asc' THEN created_at END ASC,
-    CASE WHEN LOWER($5::text) = 'desc' THEN status::text END DESC,
-    CASE WHEN LOWER($5::text) = 'desc' THEN created_at END DESC,
+    CASE WHEN LOWER($7::text) = 'asc' THEN status::text END ASC,
+    CASE WHEN LOWER($7::text) = 'asc' THEN created_at END ASC,
+    CASE WHEN LOWER($7::text) = 'desc' THEN status::text END DESC,
+    CASE WHEN LOWER($7::text) = 'desc' THEN created_at END DESC,
     created_at DESC
-LIMIT $7 OFFSET $6
+LIMIT $9 OFFSET $8
 `
 
 type GetRupsPaginatedParams struct {
-	Search    interface{} `json:"search"`
-	Teacher   pgtype.UUID `json:"teacher"`
-	Methodist pgtype.UUID `json:"methodist"`
-	Status    []string    `json:"status"`
-	Sort      string      `json:"sort"`
-	Offset    int32       `json:"offset"`
-	Limit     int32       `json:"limit"`
+	Search        interface{} `json:"search"`
+	Teacher       pgtype.UUID `json:"teacher"`
+	Methodist     pgtype.UUID `json:"methodist"`
+	DepartmentIDs []uuid.UUID `json:"department_ids"`
+	GroupIDs      []string    `json:"group_ids"`
+	Status        []string    `json:"status"`
+	Sort          string      `json:"sort"`
+	Offset        int32       `json:"offset"`
+	Limit         int32       `json:"limit"`
 }
 
 func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error) {
@@ -3061,6 +3110,8 @@ func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedPara
 		arg.Search,
 		arg.Teacher,
 		arg.Methodist,
+		arg.DepartmentIDs,
+		arg.GroupIDs,
 		arg.Status,
 		arg.Sort,
 		arg.Offset,

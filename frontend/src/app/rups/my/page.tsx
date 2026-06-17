@@ -36,6 +36,8 @@ const Page: NextPage = () => {
 	const filterState = getRupFilterStateFromSearchParams(new URLSearchParams(searchParamsString))
 	const q = filterState.search
 	const status = filterState.statuses as StatusEnum[]
+	const departments = filterState.departments
+	const groups = filterState.groups
 	const sort = filterState.sort
 	const canManageRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_MANAGE])
 	const canViewRups = hasAnyPermission(user, [PermissionCodeEnum.RUP_VIEW])
@@ -74,6 +76,8 @@ const Page: NextPage = () => {
 			currentPage: page,
 			pageSize: 100,
 			search: q,
+			departments,
+			groups,
 			status,
 			sort,
 			teacher: teacherId,

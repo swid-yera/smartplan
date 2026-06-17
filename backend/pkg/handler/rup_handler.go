@@ -679,6 +679,20 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
 		status = strings.Split(raw, ",")
 	}
+	departments, err := parseUUIDListQuery(c.Query("departments"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid department ids")})
+		return
+	}
+	groupIDs, err := parseUUIDListQuery(c.Query("groups"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("invalid group ids")})
+		return
+	}
+	groups := make([]string, 0, len(groupIDs))
+	for _, id := range groupIDs {
+		groups = append(groups, id.String())
+	}
 
 	if v := c.Query("currentPage"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
@@ -728,6 +742,8 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 		teacherID,
 		methodistID,
 		status,
+		departments,
+		groups,
 	)
 	if err != nil {
 		c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
