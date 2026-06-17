@@ -56,10 +56,22 @@ export interface IUpdateStatusRequest {
 	kripto?: IKriptoKeyPayload
 }
 
+export interface IKpiUploadExceptionUser {
+	keycloakId: string
+	username: string
+	email: string
+	firstName: string
+	lastName: string
+}
+
 export interface IKpiUploadBlockDateResponse {
 	blockedAfterDate: string | null
+	exceptionUserIds: string[]
+	exceptionUsers?: IKpiUploadExceptionUser[]
+	canBypassUploadLock: boolean
 }
 
 export interface IUpdateKpiUploadBlockDateRequest {
 	blockedAfterDate: string | null
+	exceptionUserIds: string[]
 }

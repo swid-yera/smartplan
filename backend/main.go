@@ -107,7 +107,7 @@ func main() {
 	departmentsSyncGuard := service.NewSyncGuard(1 * time.Minute)
 
 	permissionService := service.NewPermissionService(permissionsRepo, usersRepo)
-	kpiSettingsService := service.NewKpiUploadSettingsService(kpiSettingsRepo)
+	kpiSettingsService := service.NewKpiUploadSettingsService(kpiSettingsRepo, usersRepo)
 
 	// ---------- MIDDLEWARE ----------
 	authMiddleware, err := middleware.NewAuthMiddleware(

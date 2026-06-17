@@ -9,7 +9,7 @@ export class KpiSettingsService {
 			queryFn: async () => {
 				const { data } = await api.get<IKpiUploadBlockDateResponse>('/settings/kpi-upload-block-date')
 
-				return data ?? { blockedAfterDate: null }
+				return data ?? { blockedAfterDate: null, exceptionUserIds: [], canBypassUploadLock: false }
 			},
 		})
 	}

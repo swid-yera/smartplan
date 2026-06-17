@@ -10,6 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type KPIUploadSettingsData struct {
+	BlockedAfterDate *time.Time
+	ExceptionUserIDs []uuid.UUID
+}
+
 type UsersRepository interface {
 	DeleteByKeycloakID(ctx context.Context, keycloakID uuid.UUID) error
 	UpdateLastSeenAt(ctx context.Context, keycloakID uuid.UUID, at time.Time) error
@@ -107,8 +112,8 @@ type Permissions interface {
 }
 
 type KPIUploadSettings interface {
-	GetKpiUploadBlockDate(ctx context.Context) (*time.Time, error)
-	SetKpiUploadBlockDate(ctx context.Context, blockedAfterDate *time.Time) error
+	GetKpiUploadSettings(ctx context.Context) (*KPIUploadSettingsData, error)
+	SetKpiUploadSettings(ctx context.Context, settings KPIUploadSettingsData) error
 }
 
 type Repository struct {

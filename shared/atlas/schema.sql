@@ -478,11 +478,12 @@ CREATE TABLE permissions (
 CREATE TABLE kpi_upload_settings (
     id SMALLINT PRIMARY KEY NOT NULL DEFAULT 1,
     blocked_after_date DATE,
+    exception_user_ids UUID[] NOT NULL DEFAULT '{}',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT kpi_upload_settings_singleton CHECK (id = 1)
 );
 
-INSERT INTO kpi_upload_settings (id, blocked_after_date)
-VALUES (1, NULL)
+INSERT INTO kpi_upload_settings (id, blocked_after_date, exception_user_ids)
+VALUES (1, NULL, '{}')
 ON CONFLICT (id) DO NOTHING;
