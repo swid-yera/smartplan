@@ -27,6 +27,9 @@ type redisRupImportDraftStore struct {
 }
 
 func newRedisRupImportDraftStore(rdb *redis.Client) rupImportDraftStore {
+	if rdb == nil {
+		return nil
+	}
 	return &redisRupImportDraftStore{rdb: rdb}
 }
 
@@ -35,6 +38,9 @@ func (s *redisRupImportDraftStore) key(id uuid.UUID) string {
 }
 
 func (s *redisRupImportDraftStore) Set(ctx context.Context, draft RupImportDraft) error {
+	if s == nil || s.rdb == nil {
+		return fmt.Errorf("rup import draft store redis client is not configured")
+	}
 	data, err := json.Marshal(draft)
 	if err != nil {
 		return fmt.Errorf("rup import draft marshal: %w", err)
@@ -43,6 +49,9 @@ func (s *redisRupImportDraftStore) Set(ctx context.Context, draft RupImportDraft
 }
 
 func (s *redisRupImportDraftStore) Get(ctx context.Context, id uuid.UUID) (RupImportDraft, bool, error) {
+	if s == nil || s.rdb == nil {
+		return RupImportDraft{}, false, fmt.Errorf("rup import draft store redis client is not configured")
+	}
 	data, err := s.rdb.Get(ctx, s.key(id)).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -60,5 +69,8 @@ func (s *redisRupImportDraftStore) Get(ctx context.Context, id uuid.UUID) (RupIm
 }
 
 func (s *redisRupImportDraftStore) Delete(ctx context.Context, id uuid.UUID) error {
+	if s == nil || s.rdb == nil {
+		return fmt.Errorf("rup import draft store redis client is not configured")
+	}
 	return s.rdb.Del(ctx, s.key(id)).Err()
 }

@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation'
 
 import { PageTitle, withPermission } from '@components'
 import {
+	formatCourseFromYearAndGroupName,
+	generateStudyYears,
+	getGroupYear,
 	getLocaleText,
 	getUILocaleSection,
 	interpolateUILocaleText,
@@ -35,7 +38,6 @@ import {
 	Dropzone,
 	DropzoneContent,
 	DropzoneEmptyState,
-	Input,
 	Label,
 	Popover,
 	PopoverContent,
@@ -51,7 +53,7 @@ import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type IParseRupImportResponse, PermissionCodeEnum } from '@types'
 import { isAxiosError } from 'axios'
-import { AlertTriangle, Check, ChevronsUpDown, FileText, Loader2, RefreshCw, Upload } from 'lucide-react'
+import { AlertTriangle, Check, ChevronsUpDown, FileText, Loader2, RefreshCw, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import localeDictionary from './locale.json'
@@ -97,6 +99,14 @@ const joinValues = (values: string[] | undefined, emptyValue: string) => {
 	return filtered.length ? filtered.join(', ') : emptyValue
 }
 
+const getCurrentAcademicYear = () => {
+	const now = new Date()
+	const currentYear = now.getFullYear()
+	const academicYearStart = now.getMonth() >= 8 ? currentYear : currentYear - 1
+
+	return `${academicYearStart}-${academicYearStart + 1}`
+}
+
 const Metric = ({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) => (
 	<div className='rounded-lg border bg-card p-3'>
 		<p className='text-xs text-muted-foreground'>{label}</p>
@@ -112,7 +122,7 @@ const Page: NextPage = () => {
 
 	const [files, setFiles] = useState<File[]>([])
 	const [parseResult, setParseResult] = useState<IParseRupImportResponse | null>(null)
-	const [selectedGroupId, setSelectedGroupId] = useState('')
+	const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
 	const [studyYear, setStudyYear] = useState('')
 	const [course, setCourse] = useState('')
 	const [groupOpen, setGroupOpen] = useState(false)
@@ -127,27 +137,129 @@ const Page: NextPage = () => {
 	const file = files[0]
 	const payload = parseResult?.payload
 	const warnings = parseResult?.warnings?.length ? parseResult.warnings : (payload?.warnings ?? [])
-	const selectedGroup = groupsData.find((group) => group.keycloakId === selectedGroupId)
+	const selectedGroups = groupsData.filter((group) => selectedGroupIds.includes(group.keycloakId))
+	const selectedGroupSet = new Set(selectedGroupIds)
+	const groupsByCourse = (() => {
+		const sections = new Map<number, typeof groupsData>()
+		const uncategorizedGroups: typeof groupsData = []
+
+		for (const group of groupsData) {
+			const courseValue = formatCourseFromYearAndGroupName(group.name, getCurrentAcademicYear())
+
+			if (typeof courseValue !== 'number') {
+				uncategorizedGroups.push(group)
+				continue
+			}
+
+			const courseGroups = sections.get(courseValue) || []
+
+			courseGroups.push(group)
+			sections.set(courseValue, courseGroups)
+		}
+
+		return {
+			orderedSections: Array.from(sections.entries())
+				.sort(([leftCourse], [rightCourse]) => leftCourse - rightCourse)
+				.map(([courseValue, sectionGroups]) => ({
+					course: courseValue,
+					groups: sectionGroups.sort((left, right) => left.name.localeCompare(right.name, locale)),
+				})),
+			uncategorizedGroups: uncategorizedGroups.sort((left, right) => left.name.localeCompare(right.name, locale)),
+		}
+	})()
+	const availableStudyYears = Array.from(
+		new Set(
+			selectedGroups.flatMap((group) => {
+				const groupYear = getGroupYear(group.name)
+
+				return typeof groupYear === 'number' ? generateStudyYears(groupYear) : []
+			}),
+		),
+	).sort()
 	const parsedName = payload ? getLocaleText(payload.name, locale) : ''
 	const topicCount = payload?.disciplines.reduce((count, discipline) => count + discipline.topics.length, 0) ?? 0
 	const canConfirm =
-		!!parseResult && !!selectedGroupId && STUDY_YEAR_PATTERN.test(studyYear.trim()) && isCourseOption(Number(course))
+		!!parseResult && selectedGroupIds.length > 0 && STUDY_YEAR_PATTERN.test(studyYear.trim()) && isCourseOption(Number(course))
 
 	useEffect(() => {
 		if (!parseResult) return
 
 		const courseSuggestion = Number(parseResult.payload.courseSuggestion)
 
-		setSelectedGroupId('')
+		setSelectedGroupIds([])
 		setStudyYear(parseResult.payload.studyYearSuggestion || '')
 		setCourse(isCourseOption(courseSuggestion) ? String(courseSuggestion) : '')
 	}, [parseResult])
 
+	useEffect(() => {
+		if (!selectedGroups.length) {
+			setStudyYear('')
+			return
+		}
+
+		if (!availableStudyYears.length) {
+			setStudyYear('')
+			return
+		}
+
+		if (studyYear && availableStudyYears.includes(studyYear)) {
+			return
+		}
+
+		if (payload?.studyYearSuggestion && availableStudyYears.includes(payload.studyYearSuggestion)) {
+			setStudyYear(payload.studyYearSuggestion)
+			return
+		}
+
+		setStudyYear(availableStudyYears[0])
+	}, [availableStudyYears, payload?.studyYearSuggestion, selectedGroups.length, studyYear])
+
 	const resetParsedState = () => {
 		setParseResult(null)
-		setSelectedGroupId('')
+		setSelectedGroupIds([])
 		setStudyYear('')
 		setCourse('')
+	}
+
+	const updateGroupSelection = (nextSelection: string[]) => {
+		const uniqueSelection = Array.from(new Set(nextSelection))
+		const orderedSelection = groupsData
+			.map((group) => group.keycloakId)
+			.filter((groupId) => uniqueSelection.includes(groupId))
+
+		setSelectedGroupIds(orderedSelection)
+	}
+
+	const toggleGroupSelection = (groupId: string) => {
+		const nextSelection = selectedGroupIds.includes(groupId)
+			? selectedGroupIds.filter((item) => item !== groupId)
+			: [...selectedGroupIds, groupId]
+
+		updateGroupSelection(nextSelection)
+	}
+
+	const toggleCourseSelection = (courseValue: number) => {
+		const courseGroupIds =
+			groupsByCourse.orderedSections
+				.find((section) => section.course === courseValue)
+				?.groups.map((group) => group.keycloakId) || []
+
+		if (!courseGroupIds.length) return
+
+		const courseSet = new Set(courseGroupIds)
+		const isCourseFullySelected = courseGroupIds.every((groupId) => selectedGroupSet.has(groupId))
+
+		const nextSelection = isCourseFullySelected
+			? selectedGroupIds.filter((groupId) => !courseSet.has(groupId))
+			: [...selectedGroupIds, ...courseGroupIds.filter((groupId) => !selectedGroupSet.has(groupId))]
+
+		updateGroupSelection(nextSelection)
+	}
+
+	const isAllGroupsSelected = groupsData.length > 0 && selectedGroupIds.length === groupsData.length
+
+	const toggleAllGroupsSelection = () => {
+		updateGroupSelection(isAllGroupsSelected ? [] : groupsData.map((group) => group.keycloakId))
 	}
 
 	const handleDrop = (acceptedFiles: File[]) => {
@@ -187,7 +299,7 @@ const Page: NextPage = () => {
 
 			return
 		}
-		if (!selectedGroupId) {
+		if (!selectedGroupIds.length) {
 			toast.error(t.missingGroup)
 
 			return
@@ -212,7 +324,7 @@ const Page: NextPage = () => {
 		confirmMutation.mutate(
 			{
 				importDraftId: parseResult.importDraftId,
-				groupId: selectedGroupId,
+				groupIds: selectedGroupIds,
 				studyYear: studyYear.trim(),
 				course: numericCourse,
 			},
@@ -386,13 +498,19 @@ const Page: NextPage = () => {
 									<Popover open={groupOpen} onOpenChange={setGroupOpen}>
 										<PopoverTrigger asChild>
 											<Button
-												className={cn('w-full justify-between', !selectedGroup && 'text-muted-foreground')}
+												className={cn('w-full justify-between', !selectedGroups.length && 'text-muted-foreground')}
 												disabled={isGroupsLoading || confirmMutation.isPending}
 												role='combobox'
 												type='button'
 												variant='outline'
 											>
-												{selectedGroup?.name || (isGroupsLoading ? t.groupsLoading : t.groupPlaceholder)}
+												{selectedGroups.length
+													? selectedGroups.length === 1
+														? selectedGroups[0]?.name
+														: interpolateUILocaleText(t.selectedGroupsCount, { count: selectedGroups.length })
+													: isGroupsLoading
+														? t.groupsLoading
+														: t.groupPlaceholder}
 												<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
 											</Button>
 										</PopoverTrigger>
@@ -401,31 +519,93 @@ const Page: NextPage = () => {
 												<CommandInput placeholder={t.groupSearch} />
 												<CommandList>
 													<CommandEmpty>{t.groupNotFound}</CommandEmpty>
-													<CommandGroup>
-														{groupsData.map((group) => (
-															<CommandItem
-																key={group.keycloakId}
-																value={`${group.name} ${getLocaleText(group.specialty, locale)} ${getLocaleText(
-																	group.qualification,
-																	locale,
-																)}`}
-																onSelect={() => {
-																	setSelectedGroupId(group.keycloakId)
-																	setGroupOpen(false)
-																}}
-															>
-																<Check
-																	className={cn(
-																		'mr-2 h-4 w-4',
-																		group.keycloakId === selectedGroupId
-																			? 'opacity-100'
-																			: 'opacity-0',
-																	)}
-																/>
-																<span>{group.name}</span>
+													<CommandGroup heading={t.allCourses}>
+														<CommandItem value={t.allCourses} onSelect={toggleAllGroupsSelection}>
+															<Check
+																className={cn(
+																	'mr-2 h-4 w-4',
+																	isAllGroupsSelected ? 'opacity-100' : 'opacity-0',
+																)}
+															/>
+															{t.allCourses}
+														</CommandItem>
+														{selectedGroupIds.length > 0 ? (
+															<CommandItem value={t.clearSelection} onSelect={() => updateGroupSelection([])}>
+																<X className='mr-2 h-4 w-4' />
+																{t.clearSelection}
 															</CommandItem>
-														))}
+														) : null}
 													</CommandGroup>
+													{groupsByCourse.orderedSections.map(({ course: courseValue, groups }) => {
+														const courseGroupIds = groups.map((group) => group.keycloakId)
+														const isCourseFullySelected =
+															courseGroupIds.length > 0 &&
+															courseGroupIds.every((groupId) => selectedGroupSet.has(groupId))
+
+														return (
+															<CommandGroup
+																key={courseValue}
+																heading={interpolateUILocaleText(t.courseFull, { course: courseValue })}
+															>
+																<CommandItem
+																	value={`${interpolateUILocaleText(t.courseFull, { course: courseValue })} ${t.allCourses}`}
+																	onSelect={() => toggleCourseSelection(courseValue)}
+																>
+																	<Check
+																		className={cn(
+																			'mr-2 h-4 w-4',
+																			isCourseFullySelected ? 'opacity-100' : 'opacity-0',
+																		)}
+																	/>
+																	{interpolateUILocaleText(t.courseFull, { course: courseValue })}
+																</CommandItem>
+																{groups.map((group) => (
+																	<CommandItem
+																		key={group.keycloakId}
+																		value={`${group.name} ${getLocaleText(group.specialty, locale)} ${getLocaleText(
+																			group.qualification,
+																			locale,
+																		)}`}
+																		onSelect={() => toggleGroupSelection(group.keycloakId)}
+																	>
+																		<Check
+																			className={cn(
+																				'mr-2 h-4 w-4',
+																				selectedGroupSet.has(group.keycloakId)
+																					? 'opacity-100'
+																					: 'opacity-0',
+																			)}
+																		/>
+																		<div className='flex w-full items-center justify-between gap-2'>
+																			<span>{group.name}</span>
+																			<span className='shrink-0 text-xs text-muted-foreground'>
+																				{interpolateUILocaleText(t.courseShort, { course: courseValue })}
+																			</span>
+																		</div>
+																	</CommandItem>
+																))}
+															</CommandGroup>
+														)
+													})}
+													{groupsByCourse.uncategorizedGroups.length > 0 ? (
+														<CommandGroup heading={t.noCourse}>
+															{groupsByCourse.uncategorizedGroups.map((group) => (
+																<CommandItem
+																	key={group.keycloakId}
+																	value={group.name}
+																	onSelect={() => toggleGroupSelection(group.keycloakId)}
+																>
+																	<Check
+																		className={cn(
+																			'mr-2 h-4 w-4',
+																			selectedGroupSet.has(group.keycloakId) ? 'opacity-100' : 'opacity-0',
+																		)}
+																	/>
+																	{group.name}
+																</CommandItem>
+															))}
+														</CommandGroup>
+													) : null}
 												</CommandList>
 											</Command>
 										</PopoverContent>
@@ -440,27 +620,38 @@ const Page: NextPage = () => {
 								</div>
 
 								<div className='space-y-2'>
-									<Label htmlFor='rup-import-study-year'>{t.studyYearLabel}</Label>
-									<Input
-										disabled={confirmMutation.isPending}
-										id='rup-import-study-year'
-										placeholder={t.studyYearPlaceholder}
+									<Label>{t.studyYearLabel}</Label>
+									<Select
+										disabled={!selectedGroups.length || !availableStudyYears.length || confirmMutation.isPending}
 										value={studyYear}
-										onChange={(event) => setStudyYear(event.target.value)}
-									/>
+										onValueChange={setStudyYear}
+									>
+										<SelectTrigger className='w-full'>
+											<SelectValue placeholder={t.studyYearPlaceholder} />
+										</SelectTrigger>
+										<SelectContent>
+											{availableStudyYears.map((year) => (
+												<SelectItem key={year} value={year}>
+													{year}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 									{payload.studyYearSuggestion ? (
 										<div className='flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
 											<span>
 												{interpolateUILocaleText(t.suggestion, { value: payload.studyYearSuggestion })}
 											</span>
-											<Button
-												size='sm'
-												type='button'
-												variant='ghost'
-												onClick={() => setStudyYear(payload.studyYearSuggestion || '')}
-											>
-												{t.useSuggestion}
-											</Button>
+											{availableStudyYears.includes(payload.studyYearSuggestion) ? (
+												<Button
+													size='sm'
+													type='button'
+													variant='ghost'
+													onClick={() => setStudyYear(payload.studyYearSuggestion || '')}
+												>
+													{t.useSuggestion}
+												</Button>
+											) : null}
 										</div>
 									) : null}
 								</div>
@@ -498,22 +689,23 @@ const Page: NextPage = () => {
 									) : null}
 								</div>
 
-								{selectedGroup ? (
+								{selectedGroups.length > 0 ? (
 									<div className='rounded-lg border bg-muted/30 p-4'>
-										<p className='text-sm font-medium'>{t.selectedGroupTitle}</p>
-										<div className='mt-3 space-y-3 text-sm'>
-											<div>
-												<p className='text-xs text-muted-foreground'>{t.groupLabel}</p>
-												<p className='font-medium'>{selectedGroup.name}</p>
-											</div>
-											<div>
-												<p className='text-xs text-muted-foreground'>{t.specialtyLabel}</p>
-												<p>{getLocaleText(selectedGroup.specialty, locale) || t.emptyValue}</p>
-											</div>
-											<div>
-												<p className='text-xs text-muted-foreground'>{t.qualificationLabel}</p>
-												<p>{getLocaleText(selectedGroup.qualification, locale) || t.emptyValue}</p>
-											</div>
+										<p className='text-sm font-medium'>{t.selectedGroupsTitle}</p>
+										<div className='mt-3 flex flex-wrap gap-2 text-sm'>
+											{selectedGroups.map((group) => (
+												<Badge key={group.keycloakId} className='gap-1' variant='secondary'>
+													<span className='max-w-48 truncate'>{group.name}</span>
+													<button
+														aria-label={`${t.clearSelection}: ${group.name}`}
+														className='rounded-sm p-0.5 hover:bg-black/10'
+														type='button'
+														onClick={() => toggleGroupSelection(group.keycloakId)}
+													>
+														<X className='h-3 w-3' />
+													</button>
+												</Badge>
+											))}
 										</div>
 									</div>
 								) : null}

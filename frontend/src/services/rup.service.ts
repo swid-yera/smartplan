@@ -127,7 +127,7 @@ export class RupService {
 				api.post<IRup>('/rups/import/confirm', payload).then((r) => r.data),
 
 			onSuccess: (createdRup) => {
-				queryClient.setQueryData(['rup', createdRup.id], createdRup)
+				queryClient.removeQueries({ queryKey: ['rup', createdRup.id], exact: true })
 				queryClient.invalidateQueries({ queryKey: ['rups'] })
 			},
 		})
