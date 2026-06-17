@@ -42,6 +42,7 @@ interface IRupsProps {
 	isLoading: boolean
 	className?: string
 	showCreateOnEmpty?: boolean
+	showGroupsColumn?: boolean
 }
 
 export const RupsCard: FC<IRupsProps> = ({
@@ -54,6 +55,7 @@ export const RupsCard: FC<IRupsProps> = ({
 	isLoading,
 	className,
 	showCreateOnEmpty = false,
+	showGroupsColumn = false,
 }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).rupsCard
@@ -76,6 +78,7 @@ export const RupsCard: FC<IRupsProps> = ({
 								<TableRow>
 									<TableHead>{t.name}</TableHead>
 									<TableHead>{t.teacher}</TableHead>
+									{showGroupsColumn && <TableHead>{t.groups}</TableHead>}
 									<TableHead>{t.specialty}</TableHead>
 									<TableHead>{t.qualification}</TableHead>
 									<TableHead>{t.studyYear}</TableHead>
@@ -85,10 +88,17 @@ export const RupsCard: FC<IRupsProps> = ({
 
 							<TableBody>
 								{isExist ? (
-									rups.map((item) => <RupRow key={item.id} rup={item} onSelect={setSelectedRup} />)
+									rups.map((item) => (
+										<RupRow
+											key={item.id}
+											rup={item}
+											showGroupsColumn={showGroupsColumn}
+											onSelect={setSelectedRup}
+										/>
+									))
 								) : (
 									<TableRow>
-										<TableCell className='h-40 text-center' colSpan={6}>
+										<TableCell className='h-40 text-center' colSpan={showGroupsColumn ? 7 : 6}>
 											{isLoading ? (
 												<Loader
 													className='flex flex-col justify-center items-center'
@@ -107,7 +117,14 @@ export const RupsCard: FC<IRupsProps> = ({
 
 					<div className='space-y-3 md:hidden'>
 						{isExist ? (
-							rups.map((rup) => <RupMobileCard key={rup.id} rup={rup} onSelect={setSelectedRup} />)
+							rups.map((rup) => (
+								<RupMobileCard
+									key={rup.id}
+									rup={rup}
+									showGroupsColumn={showGroupsColumn}
+									onSelect={setSelectedRup}
+								/>
+							))
 						) : (
 							<div className='flex min-h-40 items-center justify-center rounded-xl border bg-background px-4 text-center text-sm text-muted-foreground'>
 								{isLoading ? (
@@ -159,13 +176,15 @@ export const RupsCard: FC<IRupsProps> = ({
 interface IRupRow {
 	rup: IRup
 	onSelect: (rup: IRup) => void
+	showGroupsColumn?: boolean
 }
 
-const RupMobileCard: FC<IRupRow> = ({ rup, onSelect }) => {
+const RupMobileCard: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).rupsCard
 	const title = getLocaleText(rup?.name, locale) || t.untitled
 	const teacherName = `${rup?.teacher?.firstName || ''} ${rup?.teacher?.lastName || ''}`.trim() || t.unknownTeacher
+	const groups = formatAsDash(rup?.groups?.map((group) => group.name).filter(Boolean).join(', '))
 	const specialty = formatAsDash(getLocaleText(rup?.groups[0]?.specialty, locale))
 	const qualification = formatAsDash(getLocaleText(rup?.groups[0]?.qualification, locale))
 
@@ -202,6 +221,15 @@ const RupMobileCard: FC<IRupRow> = ({ rup, onSelect }) => {
 						</span>
 						<span className='min-w-0 truncate text-right font-medium'>{teacherName}</span>
 					</div>
+					{showGroupsColumn && (
+						<div className='flex items-center justify-between gap-3'>
+							<span className='inline-flex items-center gap-2 text-muted-foreground'>
+								<BookOpen className='h-4 w-4 shrink-0' />
+								{t.groups}
+							</span>
+							<span className='min-w-0 truncate text-right font-medium'>{groups}</span>
+						</div>
+					)}
 					<div className='flex items-center justify-between gap-3'>
 						<span className='inline-flex items-center gap-2 text-muted-foreground'>
 							<BookOpen className='h-4 w-4 shrink-0' />
@@ -226,9 +254,10 @@ const RupMobileCard: FC<IRupRow> = ({ rup, onSelect }) => {
 	)
 }
 
-const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {
+const RupRow: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).rupsCard
+	const groups = formatAsDash(rup?.groups?.map((group) => group.name).filter(Boolean).join(', '))
 
 	return (
 		<TableRow
@@ -255,6 +284,7 @@ const RupRow: FC<IRupRow> = ({ rup, onSelect }) => {
 			<TableCell className='whitespace-break-spaces min-w-[100px]'>
 				{rup?.teacher?.firstName || t.unknownTeacher}
 			</TableCell>
+			{showGroupsColumn && <TableCell className='whitespace-break-spaces min-w-[200px]'>{groups}</TableCell>}
 			<TableCell className='whitespace-break-spaces min-w-[200px]'>
 				{formatAsDash(getLocaleText(rup?.groups[0]?.specialty, locale))}
 			</TableCell>

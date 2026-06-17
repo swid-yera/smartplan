@@ -53,6 +53,7 @@
 		"rupsCard": {
 			"name": "Наименование",
 			"teacher": "Преподаватель",
+			"groups": "Группы",
 			"specialty": "Специальность",
 			"qualification": "Квалификация",
 			"studyYear": "Учебный год",
@@ -132,6 +133,7 @@
 		"rupsCard": {
 			"name": "Атауы",
 			"teacher": "Мұғалім",
+			"groups": "Топтар",
 			"specialty": "Мамандық",
 			"qualification": "Біліктілік",
 			"studyYear": "Оқу жылы",
