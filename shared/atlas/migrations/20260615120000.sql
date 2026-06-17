@@ -1,5 +1,31 @@
 -- feat(kpi): add custom organization entry for gratitude letters
 
+INSERT INTO award_categories (
+    id,
+    award_types,
+    name,
+    icon,
+    description,
+    created_at,
+    updated_at
+)
+VALUES (
+    'cced00d7-ee5f-48c9-8fd8-e885ad6bffcb',
+    '{155f99cb-ff4c-4e0f-8ee1-677e4b7c4f52}',
+    '{"kz": "Алғыс хаттар", "ru": "Благодарственные письма"}'::jsonb,
+    'star',
+    '{"kz": "Сертификаттарды, алғыс хаттарды, мақтау қағаздарын және басқа да мұғалімдерге берілетін марапаттарды қосуға арналған бөлім.", "ru": "Раздел для добавления грамот, благодарственных писем, похвальных листов и других наград преподавателя."}'::jsonb,
+    '2026-05-25 11:53:07.09105+00',
+    '2026-06-08 10:54:00.82562+00'
+)
+ON CONFLICT (id) DO UPDATE
+SET
+    award_types = EXCLUDED.award_types,
+    name = EXCLUDED.name,
+    icon = EXCLUDED.icon,
+    description = EXCLUDED.description,
+    updated_at = NOW();
+
 INSERT INTO award_category_fields (
     id,
     category_id,
