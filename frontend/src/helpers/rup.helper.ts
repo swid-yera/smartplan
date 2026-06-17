@@ -61,12 +61,12 @@ export const normalizeStudyForm = (studyForm: StudyFormEnum, locale: Locale = 'r
 const topicTypeLabelsByLocale: Record<Locale, Record<TopicTypeEnum, string>> = {
 	ru: {
 		COMBINED: 'Комбинированный',
-		PRACTICAL: 'Практический',
+		PRACTICAL: 'Лабораторно-практический',
 		SNZ: 'СНЗ',
 	},
 	kk: {
 		COMBINED: 'Аралас',
-		PRACTICAL: 'Практикалық',
+		PRACTICAL: 'Зертханалық-практикалық',
 		SNZ: 'СӨЖ',
 	},
 }

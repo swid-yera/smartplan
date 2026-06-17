@@ -38,12 +38,12 @@ def short_name(first_name: str | None, last_name: str | None) -> str:
 LESSON_TYPE_MAP = {
     "ru": {
         "COMBINED": "комбинированный",
-        "PRACTICAL": "практический",
+        "PRACTICAL": "лабораторно-практический",
         "SNZ": "СНЗ",
     },
     "kz": {
         "COMBINED": "аралас",
-        "PRACTICAL": "практикалық",
+        "PRACTICAL": "зертханалық-практикалық",
         "SNZ": "ОӨЖ",
     },
 }
