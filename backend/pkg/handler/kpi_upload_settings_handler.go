@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"eduplan/backend/pkg/middleware"
 	"eduplan/backend/pkg/service"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,13 @@ func NewKpiUploadSettingsHandler(service service.KpiUploadSettingsService) *KpiU
 }
 
 func (h *KpiUploadSettingsHandler) GetKpiUploadBlockDate(c *gin.Context) {
-	result, err := h.service.GetKpiUploadBlockDate(c.Request.Context())
+	currentUser, err := getCurrentUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
+		return
+	}
+
+	result, err := h.service.GetKpiUploadSettings(c.Request.Context(), currentUser)
 	if err != nil {
 		writeServiceError(c, err)
 		return
@@ -33,11 +40,31 @@ func (h *KpiUploadSettingsHandler) SetKpiUploadBlockDate(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.SetKpiUploadBlockDate(c.Request.Context(), req.BlockedAfterDate)
+	currentUser, err := getCurrentUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
+		return
+	}
+
+	result, err := h.service.SetKpiUploadSettings(c.Request.Context(), currentUser, req)
 	if err != nil {
 		writeServiceError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+func getCurrentUserFromContext(c *gin.Context) (*service.User, error) {
+	userInterface, exists := c.Get(middleware.ContextUserKey)
+	if !exists {
+		return nil, &service.HTTPStatusError{StatusCode: http.StatusUnauthorized, Message: "User not authenticated"}
+	}
+
+	currentUser, ok := userInterface.(*service.User)
+	if !ok {
+		return nil, &service.HTTPStatusError{StatusCode: http.StatusInternalServerError, Message: "Invalid user context"}
+	}
+
+	return currentUser, nil
 }

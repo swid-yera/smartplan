@@ -31,7 +31,12 @@ const Page = () => {
 	const lockDate = blockedAfterDate ? parseISO(blockedAfterDate) : null
 	const isLockActive = !!lockDate && isBefore(lockDate, startOfToday())
 	const lockMessage = blockedAfterDate
-		? (isLockActive ? t.uploadLockActiveMessage : t.uploadLockMessage).replace('{date}', formatDateOnly(blockedAfterDate, locale))
+		? (kpiLock?.canBypassUploadLock
+				? t.uploadLockExceptionMessage
+				: isLockActive
+					? t.uploadLockActiveMessage
+					: t.uploadLockMessage
+			).replace('{date}', formatDateOnly(blockedAfterDate, locale))
 		: ''
 
 	return (

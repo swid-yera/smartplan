@@ -455,11 +455,20 @@ func (s *AwardService) ensureKpiUploadAllowed(ctx context.Context, currentUser *
 		return nil
 	}
 
-	blockedAfterDate, err := s.kpiSettings.GetKpiUploadBlockDate(ctx)
+	settings, err := s.kpiSettings.GetKpiUploadSettings(ctx)
 	if err != nil {
 		return err
 	}
 
+	if settings == nil {
+		return nil
+	}
+
+	if hasKpiUploadException(currentUser.KeycloakID, settings.ExceptionUserIDs) {
+		return nil
+	}
+
+	blockedAfterDate := settings.BlockedAfterDate
 	if blockedAfterDate == nil {
 		return nil
 	}
