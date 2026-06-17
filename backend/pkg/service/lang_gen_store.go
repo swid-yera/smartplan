@@ -30,6 +30,9 @@ type redisLangGenStore struct {
 }
 
 func newRedisLangGenStore(rdb *redis.Client) langGenStore {
+	if rdb == nil {
+		return nil
+	}
 	return &redisLangGenStore{rdb: rdb}
 }
 
@@ -38,6 +41,9 @@ func (s *redisLangGenStore) key(rupID uuid.UUID) string {
 }
 
 func (s *redisLangGenStore) Set(ctx context.Context, state RupLanguageGenerationStatus) error {
+	if s == nil || s.rdb == nil {
+		return fmt.Errorf("lang gen store redis client is not configured")
+	}
 	data, err := json.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("lang gen store marshal: %w", err)
@@ -46,6 +52,9 @@ func (s *redisLangGenStore) Set(ctx context.Context, state RupLanguageGeneration
 }
 
 func (s *redisLangGenStore) Get(ctx context.Context, rupID uuid.UUID) (RupLanguageGenerationStatus, bool, error) {
+	if s == nil || s.rdb == nil {
+		return RupLanguageGenerationStatus{}, false, fmt.Errorf("lang gen store redis client is not configured")
+	}
 	data, err := s.rdb.Get(ctx, s.key(rupID)).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -62,5 +71,8 @@ func (s *redisLangGenStore) Get(ctx context.Context, rupID uuid.UUID) (RupLangua
 }
 
 func (s *redisLangGenStore) Delete(ctx context.Context, rupID uuid.UUID) error {
+	if s == nil || s.rdb == nil {
+		return fmt.Errorf("lang gen store redis client is not configured")
+	}
 	return s.rdb.Del(ctx, s.key(rupID)).Err()
 }

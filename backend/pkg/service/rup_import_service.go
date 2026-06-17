@@ -52,10 +52,10 @@ type ParseRupImportResponse struct {
 }
 
 type ConfirmRupImportRequest struct {
-	ImportDraftID uuid.UUID `json:"importDraftId"`
-	GroupID       uuid.UUID `json:"groupId"`
-	StudyYear     string    `json:"studyYear"`
-	Course        int32     `json:"course"`
+	ImportDraftID uuid.UUID   `json:"importDraftId"`
+	GroupIDs      []uuid.UUID `json:"groupIds"`
+	StudyYear     string      `json:"studyYear"`
+	Course        int32       `json:"course"`
 }
 
 func (s *rupService) ParseRupImport(
@@ -134,8 +134,13 @@ func (s *rupService) ConfirmRupImport(
 	if req.ImportDraftID == uuid.Nil {
 		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "importDraftId is required"}
 	}
-	if req.GroupID == uuid.Nil {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "groupId is required"}
+	if len(req.GroupIDs) == 0 {
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "groupIds is required"}
+	}
+	for _, groupID := range req.GroupIDs {
+		if groupID == uuid.Nil {
+			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "groupIds contains invalid value"}
+		}
 	}
 	if !studyYearPattern.MatchString(strings.TrimSpace(req.StudyYear)) {
 		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "studyYear must be in YYYY-YYYY format"}
@@ -158,6 +163,11 @@ func (s *rupService) ConfirmRupImport(
 		return nil, &HTTPStatusError{StatusCode: http.StatusForbidden, Message: "forbidden"}
 	}
 
+	groupIDs := make([]string, 0, len(req.GroupIDs))
+	for _, groupID := range req.GroupIDs {
+		groupIDs = append(groupIDs, groupID.String())
+	}
+
 	createReq := CreateRupRequest{
 		Name:            draft.Payload.Name.Normalized(),
 		Type:            normalizeImportedRupType(draft.Payload.Type),
@@ -165,11 +175,11 @@ func (s *rupService) ConfirmRupImport(
 		StudyYear:       strings.TrimSpace(req.StudyYear),
 		Course:          req.Course,
 		Contacts:        []string{},
-		Groups:          []string{req.GroupID.String()},
+		Groups:          groupIDs,
 		Teacher:         userID.String(),
-		SourceLanguage:  "",
+		SourceLanguage:  strings.TrimSpace(draft.Payload.SourceLanguage),
 		ExplorationNote: normalizeImportedExplorationNote(draft.Payload.ExplorationNote),
-		Disciplines:     normalizeImportedDisciplines(draft.Payload.Disciplines),
+		Disciplines:     normalizeImportedDisciplines(draft.Payload.Disciplines, req.Course),
 	}
 
 	rup, err := s.CreateImportedRup(ctx, createReq)
@@ -183,7 +193,7 @@ func (s *rupService) ConfirmRupImport(
 }
 
 func (s *rupService) CreateImportedRup(ctx context.Context, req CreateRupRequest) (*RupResponse, error) {
-	return s.createRup(ctx, req, false)
+	return s.createRup(ctx, req, true)
 }
 
 func validateParsedRupPayload(payload ParsedRupPayload) error {
@@ -246,26 +256,56 @@ func normalizeImportedExplorationNote(note *ExplorationNoteRequest) *Exploration
 	}
 }
 
-func normalizeImportedDisciplines(disciplines []*DisciplineRequest) []*DisciplineRequest {
+func normalizeImportedDisciplines(disciplines []*DisciplineRequest, fallbackCourse int32) []*DisciplineRequest {
 	result := make([]*DisciplineRequest, 0, len(disciplines))
 	for _, discipline := range disciplines {
 		if discipline == nil {
 			continue
 		}
-		if len(discipline.Semesters) != 8 {
-			semesters := make([]*SemesterRequest, 8)
-			for i := range semesters {
-				semesters[i] = &SemesterRequest{Semester: int32(i + 1), TotalHours: 0}
-			}
-			for _, semester := range discipline.Semesters {
-				if semester == nil || semester.Semester < 1 || semester.Semester > 8 {
-					continue
-				}
-				semesters[int(semester.Semester)-1] = semester
-			}
-			discipline.Semesters = semesters
+		semesters := make([]*SemesterRequest, 8)
+		for i := range semesters {
+			semesters[i] = &SemesterRequest{Semester: int32(i + 1), TotalHours: 0}
 		}
+		for _, semester := range discipline.Semesters {
+			if semester == nil || semester.Semester < 1 || semester.Semester > 8 {
+				continue
+			}
+			semesters[int(semester.Semester)-1] = semester
+		}
+		if !hasSemesterHours(semesters) {
+			if topicHours := sumTopicHours(discipline.Topics); topicHours > 0 {
+				semesters[fallbackSemesterIndex(fallbackCourse)].TotalHours = topicHours
+			}
+		}
+		discipline.Semesters = semesters
 		result = append(result, discipline)
 	}
 	return result
+}
+
+func hasSemesterHours(semesters []*SemesterRequest) bool {
+	for _, semester := range semesters {
+		if semester != nil && semester.TotalHours > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func sumTopicHours(topics []*TopicRequest) int32 {
+	var total int32
+	for _, topic := range topics {
+		if topic == nil {
+			continue
+		}
+		total += topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
+	}
+	return total
+}
+
+func fallbackSemesterIndex(course int32) int {
+	if course < 1 || course > 4 {
+		return 0
+	}
+	return int((course - 1) * 2)
 }

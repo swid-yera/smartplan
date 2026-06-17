@@ -86,7 +86,7 @@ export interface IParseRupImportRequest {
 
 export interface IConfirmRupImportRequest {
 	importDraftId: string
-	groupId: string
+	groupIds: string[]
 	studyYear: string
 	course: 1 | 2 | 3 | 4
 }

@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Body, File, HTTPException, UploadFile
+from fastapi import FastAPI, Body, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -62,11 +62,16 @@ def generate_document(payload: dict = Body(...)):
 
 
 @app.post("/parse-rup-docx")
-async def parse_rup_docx_endpoint(file: UploadFile = File(...)):
+async def parse_rup_docx_endpoint(
+    file: UploadFile = File(...), original_filename: str | None = Form(default=None)
+):
     try:
-        logger.info("/parse-rup-docx, request received for file: %s", file.filename)
+        logger.info(
+            "/parse-rup-docx, request received for file: %s",
+            original_filename or file.filename,
+        )
 
-        filename = file.filename or ""
+        filename = original_filename or file.filename or ""
         if not filename.lower().endswith(".docx"):
             raise HTTPException(status_code=400, detail="only .docx files are supported")
 
