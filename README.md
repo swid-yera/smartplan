@@ -168,6 +168,7 @@ bash start.sh
 
 **Примечание:**
 - модель NLLB нужно подготовить один раз через `prepare-model.*`
+- на Windows для локальной подготовки используйте `prepare-model.ps1`
 - сервис доступен на `http://localhost:8082`
 
 ---
@@ -213,8 +214,24 @@ docker compose up -d --build
 Для переводов РУП модель NLLB нужно подготовить один раз. Она хранится вне git в `models/translation`:
 
 ```bash
+docker compose build --no-cache translation-model-prepare
 docker compose --profile tools run --rm translation-model-prepare
 docker compose up --build -d translation-service api
+```
+
+Если ранее `translation-model-prepare` падал с ошибкой `/usr/bin/env: 'bash\r': No such file or directory`, пересборка `translation-model-prepare` обязательна, чтобы Docker взял исправленный образ.
+
+На Windows можно подготовить модель и без Docker:
+
+```powershell
+cd translation-service
+.\prepare-model.ps1
+```
+
+После успешной подготовки файлы модели должны лежать в:
+
+```text
+models/translation/nllb-200-distilled-600M-ct2-int8
 ```
 
 ---
