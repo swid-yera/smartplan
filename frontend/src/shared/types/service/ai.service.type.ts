@@ -8,6 +8,7 @@ export interface IAiResourceInput {
 export interface IAiDisciplineTopicInput {
 	name: string
 	type: TopicTypeEnum
+	durationHours?: number
 	theoryHours: number
 	practiceHours: number
 	individualHours?: number
@@ -113,6 +114,7 @@ export interface IGenerateTopicsForDiscipline {
 	preferredPracticalCount?: number
 	preferredSnzCount?: number
 	preferredCombinedCount?: number
+	preferredSrspCount?: number
 }
 
 export type IGenerateTopicsForDisciplineResponse = IAiDisciplineTopicInput[]

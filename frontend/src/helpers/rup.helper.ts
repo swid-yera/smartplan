@@ -2,18 +2,10 @@ import type { ForwardRefExoticComponent, RefAttributes } from 'react'
 
 import { cn } from '@lib'
 import type { badgeVariants } from '@shadcn'
-import type {
-	ICreateDiscipline,
-	ICreateSemester,
-	IDiscipline,
-	ISemester,
-	Locale,
-	RupTypeEnum,
-	StudyFormEnum,
-	TopicTypeEnum,
-} from '@types'
+import type { ICreateDiscipline, ICreateSemester, IDiscipline, ISemester, ITopics, Locale } from '@types'
+import { RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '@types'
 import type { VariantProps } from 'class-variance-authority'
-import { Combine, FlaskConical, type LucideProps, NotebookPen } from 'lucide-react'
+import { Combine, FlaskConical, type LucideProps, NotebookPen, UsersRound } from 'lucide-react'
 
 // rup type
 const rupTypeLabelsByLocale: Record<Locale, Record<RupTypeEnum, string>> = {
@@ -62,12 +54,14 @@ const topicTypeLabelsByLocale: Record<Locale, Record<TopicTypeEnum, string>> = {
 	ru: {
 		COMBINED: 'Комбинированный',
 		PRACTICAL: 'Лабораторно-практический',
-		SNZ: 'СНЗ',
+		SNZ: 'Индивидуальный',
+		SRSP: 'СРСП',
 	},
 	kk: {
 		COMBINED: 'Аралас',
 		PRACTICAL: 'Зертханалық-практикалық',
 		SNZ: 'СӨЖ',
+		SRSP: 'СРСП',
 	},
 }
 
@@ -80,6 +74,7 @@ export const topicTypeVariants: Record<TopicTypeEnum, VariantProps<typeof badgeV
 	COMBINED: 'default',
 	PRACTICAL: 'secondary',
 	SNZ: 'outline',
+	SRSP: 'destructive',
 }
 
 export const topicTypeIcons: Record<
@@ -89,10 +84,76 @@ export const topicTypeIcons: Record<
 	COMBINED: Combine,
 	PRACTICAL: FlaskConical,
 	SNZ: NotebookPen,
+	SRSP: UsersRound,
+}
+
+export const topicTypeIconColorClasses: Record<TopicTypeEnum, string> = {
+	COMBINED: 'text-primary',
+	PRACTICAL: 'text-emerald-600 dark:text-emerald-400',
+	SNZ: 'text-foreground',
+	SRSP: 'text-blue-500 dark:text-blue-400',
 }
 
 export const normalizeTopicType = (studyForm: TopicTypeEnum, locale: Locale = 'ru'): string => {
 	return getTopicTypeLabels(locale)[studyForm] ?? ''
+}
+
+export const getTopicDurationHours = (
+	topic: Pick<ITopics, 'type' | 'durationHours' | 'theoryHours' | 'practiceHours'> &
+		Partial<Pick<ITopics, 'individualHours' | 'srspHours'>>,
+): number => {
+	const totalHours =
+		(Number(topic.theoryHours) || 0) +
+		(Number(topic.practiceHours) || 0) +
+		(Number(topic.individualHours) || 0) +
+		(Number(topic.srspHours) || 0)
+
+	if (topic.type === 'PRACTICAL') {
+		if (topic.durationHours === 6) return 6
+		if (topic.durationHours === 2) return 2
+
+		return totalHours >= 6 ? 6 : 2
+	}
+
+	return 2
+}
+
+export const getTopicHoursByType = (
+	type: TopicTypeEnum,
+	durationHours: number = 2,
+): Pick<ITopics, 'theoryHours' | 'practiceHours' | 'individualHours' | 'srspHours'> => {
+	const normalizedDuration = type === TopicTypeEnum.PRACTICAL && durationHours === 6 ? 6 : 2
+
+	switch (type) {
+		case TopicTypeEnum.PRACTICAL:
+			return {
+				theoryHours: 0,
+				practiceHours: normalizedDuration,
+				individualHours: 0,
+				srspHours: 0,
+			}
+		case TopicTypeEnum.SNZ:
+			return {
+				theoryHours: 0,
+				practiceHours: 0,
+				individualHours: 2,
+				srspHours: 0,
+			}
+		case TopicTypeEnum.SRSP:
+			return {
+				theoryHours: 0,
+				practiceHours: 0,
+				individualHours: 0,
+				srspHours: 2,
+			}
+		default:
+			return {
+				theoryHours: normalizedDuration,
+				practiceHours: 0,
+				individualHours: 0,
+				srspHours: 0,
+			}
+	}
 }
 
 // hours styles

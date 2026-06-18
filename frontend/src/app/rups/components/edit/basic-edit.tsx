@@ -18,13 +18,9 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type Locale, type LocaleText, RupTypeEnum, StudyFormEnum } from '@types'
-import { Info } from 'lucide-react'
 import type { FieldValues, Path } from 'react-hook-form'
 import { useFormContext } from 'react-hook-form'
 
@@ -45,7 +41,6 @@ export function BasicEdit<T extends IProps>({ activeLocale }: { activeLocale: Lo
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
 	const { control } = useFormContext<T>()
-	const rupTypeTips = t.basic.rupTypeTips as Record<RupTypeEnum, string>
 	const localeKey = toLocaleKey(activeLocale)
 
 	const getRawLocaleTextValue = (value: unknown): LocaleText => {
@@ -106,25 +101,7 @@ export function BasicEdit<T extends IProps>({ activeLocale }: { activeLocale: Lo
 						name={'type' as Path<T>}
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className='flex items-center'>
-									{t.basic.moduleTypeLabel}
-									<Tooltip>
-										<TooltipTrigger className='ml-1' type='button'>
-											<Info size='14' />
-										</TooltipTrigger>
-										<TooltipContent side='top'>
-											{Object.entries(rupTypeTips).map((obj) => (
-												<p key={obj[0]}>
-													<span className='font-bold'>
-														{normalizeRupType(obj[0] as RupTypeEnum, locale)}:
-													</span>
-													<br />
-													{obj[1]}
-												</p>
-											))}
-										</TooltipContent>
-									</Tooltip>
-								</FormLabel>
+								<FormLabel className='flex items-center'>{t.basic.moduleTypeLabel}</FormLabel>
 								<FormControl>
 									<Select key={field.value} value={field.value} onValueChange={field.onChange}>
 										<SelectTrigger className='w-full'>

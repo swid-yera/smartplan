@@ -20,8 +20,12 @@ import {
 	formatHours,
 	getHoursStyle,
 	getLocaleText,
+	getTopicDurationHours,
+	getTopicHoursByType,
 	getUILocaleSection,
 	normalizeTopicType,
+	topicTypeIconColorClasses,
+	topicTypeIcons,
 } from '@helpers'
 import { cn } from '@lib'
 import {
@@ -52,7 +56,7 @@ import {
 	Textarea,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { type Locale, type LocaleText, RupTypeEnum, TopicTypeEnum } from '@types'
+import { type Locale, type LocaleText, TopicTypeEnum } from '@types'
 import { ChevronDown, GripVertical, Plus } from 'lucide-react'
 import {
 	type ArrayPath,
@@ -71,6 +75,7 @@ import localeDictionary from './locale.json'
 type Topic = {
 	name: LocaleText
 	type: TopicTypeEnum
+	durationHours?: number
 	theoryHours: number
 	practiceHours: number
 	individualHours: number
@@ -87,7 +92,6 @@ type Discipline = {
 }
 
 type IProps = FieldValues & {
-	type: string
 	disciplines: Discipline[]
 }
 
@@ -97,6 +101,7 @@ export type TopicsDisciplineGenerateOptions = {
 	preferredPracticalCount?: number
 	preferredSnzCount?: number
 	preferredCombinedCount?: number
+	preferredSrspCount?: number
 }
 
 type TopicTotals = {
@@ -120,6 +125,7 @@ const EMPTY_TOTALS: TopicTotals = {
 const newTopic: Topic = {
 	name: { ru: '', kz: '' },
 	type: TopicTypeEnum.PRACTICAL,
+	durationHours: 2,
 	theoryHours: 0,
 	practiceHours: 0,
 	individualHours: 0,
@@ -140,7 +146,6 @@ export function TopicsEdit<T extends IProps>({
 	const form = useFormContext<T>()
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale)
-	const rupType = useWatch({ control: form.control, name: 'type' as Path<T> }) ?? ''
 	const { fields: disciplineFields } = useFieldArray({
 		control: form.control,
 		name: 'disciplines' as ArrayPath<T>,
@@ -155,7 +160,6 @@ export function TopicsEdit<T extends IProps>({
 					key={field.key}
 					disciplineIndex={index}
 					generatingDisciplineIndex={generatingDisciplineIndex}
-					rupType={rupType as RupTypeEnum | ''}
 					text={t.topics}
 					onGenerateDiscipline={onGenerateDiscipline}
 				/>
@@ -174,7 +178,10 @@ function getTotalsFromTopics(topics: Topic[]): TopicTotals {
 			acc.srspHours += Number(t.srspHours) || 0
 			acc.srsHours += Number(t.srsHours) || 0
 			acc.totalHours +=
-				(Number(t.theoryHours) || 0) + (Number(t.practiceHours) || 0) + (Number(t.individualHours) || 0)
+				(Number(t.theoryHours) || 0) +
+				(Number(t.practiceHours) || 0) +
+				(Number(t.individualHours) || 0) +
+				(Number(t.srspHours) || 0)
 
 			return acc
 		},
@@ -208,10 +215,12 @@ function TopicsSummary<T extends IProps>({
 	)
 	const totalDeclaredHours = useMemo(
 		() =>
-			disciplines.reduce(
-				(sum, d) => sum + (d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0),
-				0,
-			),
+			disciplines.reduce((sum, d) => {
+				const semesterHours = d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0
+				const srspHours = d.topics?.reduce((acc, topic) => acc + (Number(topic.srspHours) || 0), 0) || 0
+
+				return sum + semesterHours + srspHours
+			}, 0),
 		[disciplines],
 	)
 
@@ -291,14 +300,12 @@ function DisciplineBlock<T extends IProps>({
 	disciplineIndex,
 	onGenerateDiscipline,
 	generatingDisciplineIndex,
-	rupType,
 	text,
 }: {
 	activeLocale: Locale
 	disciplineIndex: number
 	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
 	generatingDisciplineIndex: number | null
-	rupType: RupTypeEnum | ''
 	text: {
 		deleteSelected: string
 		addTopic: string
@@ -310,6 +317,7 @@ function DisciplineBlock<T extends IProps>({
 		srsp: string
 		srs: string
 		tableType: string
+		durationHours: string
 		empty: string
 		totalHours: string
 		declared: string
@@ -320,6 +328,7 @@ function DisciplineBlock<T extends IProps>({
 		practical: string
 		snz: string
 		combined: string
+		srspTopic: string
 		example: string
 		topicsCount: string
 		hourUnit: string
@@ -337,6 +346,7 @@ function DisciplineBlock<T extends IProps>({
 	}
 }) {
 	const form = useFormContext<T>()
+	const locale = useLocaleStore((state) => state.locale)
 	const [isCollapsed, setIsCollapsed] = useState(false)
 	const [isSticky, setIsSticky] = useState(false)
 	const [additionalMessage, setAdditionalMessage] = useState('')
@@ -344,6 +354,7 @@ function DisciplineBlock<T extends IProps>({
 	const [preferredPracticalCount, setPreferredPracticalCount] = useState<number | ''>(0)
 	const [preferredSnzCount, setPreferredSnzCount] = useState<number | ''>(0)
 	const [preferredCombinedCount, setPreferredCombinedCount] = useState<number | ''>(0)
+	const [preferredSrspCount, setPreferredSrspCount] = useState<number | ''>(0)
 	const headerRef = useRef<HTMLDivElement | null>(null)
 	const {
 		fields: topicFields,
@@ -374,9 +385,13 @@ function DisciplineBlock<T extends IProps>({
 		}) as Semester[] | undefined) ?? []
 
 	const sectionTotal = useMemo(() => getTotalsFromTopics(disciplineTopics), [disciplineTopics])
-	const declaredForThisDiscipline = useMemo(
+	const baseDeclaredHours = useMemo(
 		() => disciplineSemesters.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0),
 		[disciplineSemesters],
+	)
+	const declaredForThisDiscipline = useMemo(
+		() => baseDeclaredHours + sectionTotal.srspHours,
+		[baseDeclaredHours, sectionTotal.srspHours],
 	)
 	const hasError = sectionTotal.totalHours !== declaredForThisDiscipline
 	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(KeyboardSensor))
@@ -384,8 +399,7 @@ function DisciplineBlock<T extends IProps>({
 	const [stickyTopPx, setStickyTopPx] = useState(100)
 	const isGeneratingCurrentDiscipline = generatingDisciplineIndex === disciplineIndex
 	const isGenerateButtonDisabled = generatingDisciplineIndex !== null
-	const isPracticeModule = rupType === RupTypeEnum.PRACTICE
-	const hoursPerTopic = isPracticeModule ? 6 : 2
+	const hoursPerTopic = 2
 	const hasSelectedTopics = selectedTopicKeys.length > 0
 	const isAllSelected = topicFields.length > 0 && selectedTopicKeys.length === topicFields.length
 	const isIndeterminate = selectedTopicKeys.length > 0 && selectedTopicKeys.length < topicFields.length
@@ -404,38 +418,21 @@ function DisciplineBlock<T extends IProps>({
 	const practicalCount = preferredPracticalCount === '' ? 0 : preferredPracticalCount
 	const snzCount = preferredSnzCount === '' ? 0 : preferredSnzCount
 	const combinedCount = preferredCombinedCount === '' ? 0 : preferredCombinedCount
+	const srspCount = preferredSrspCount === '' ? 0 : preferredSrspCount
 
-	const practicalMax = Math.max(
-		0,
-		Math.floor(
-			(declaredForThisDiscipline -
-				combinedCount * hoursPerTopic -
-				(isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
-				hoursPerTopic,
-		),
-	)
-	const snzMax = Math.max(
-		0,
-		Math.floor(
-			(declaredForThisDiscipline - practicalCount * hoursPerTopic - combinedCount * hoursPerTopic) / hoursPerTopic,
-		),
-	)
-	const combinedMax = Math.max(
-		0,
-		Math.floor(
-			(declaredForThisDiscipline -
-				practicalCount * hoursPerTopic -
-				(isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
-				hoursPerTopic,
-		),
-	)
+	const practicalMax = Math.max(0, Math.floor(baseDeclaredHours / hoursPerTopic))
+	const snzMax = Math.max(0, Math.floor(baseDeclaredHours / hoursPerTopic))
+	const combinedMax = Math.max(0, Math.floor(baseDeclaredHours / hoursPerTopic))
+	const srspMax = Math.max(0, Math.floor(baseDeclaredHours / hoursPerTopic))
 
 	const practicalHoursTotal = practicalCount * hoursPerTopic
 	const snzHoursTotal = snzCount * hoursPerTopic
 	const combinedHoursTotal = combinedCount * hoursPerTopic
+	const srspHoursTotal = srspCount * hoursPerTopic
 
-	const preferredHoursTotal = practicalHoursTotal + combinedHoursTotal + (isPracticeModule ? 0 : snzHoursTotal)
-	const isPreferredHoursValid = preferredHoursTotal === declaredForThisDiscipline
+	const preferredHoursTotal = practicalHoursTotal + combinedHoursTotal + snzHoursTotal + srspHoursTotal
+	const declaredHoursForGeneration = baseDeclaredHours + srspHoursTotal
+	const isPreferredHoursValid = preferredHoursTotal === declaredHoursForGeneration
 
 	const toPositiveNumber = (value: number | '') => {
 		if (value === '' || value <= 0) return undefined
@@ -451,7 +448,8 @@ function DisciplineBlock<T extends IProps>({
 			includeCurrentContent,
 			preferredCombinedCount: toPositiveNumber(preferredCombinedCount),
 			preferredPracticalCount: toPositiveNumber(preferredPracticalCount),
-			preferredSnzCount: isPracticeModule ? undefined : toPositiveNumber(preferredSnzCount),
+			preferredSnzCount: toPositiveNumber(preferredSnzCount),
+			preferredSrspCount: toPositiveNumber(preferredSrspCount),
 		})
 	}
 
@@ -563,20 +561,26 @@ function DisciplineBlock<T extends IProps>({
 			setPreferredPracticalCount(practicalMax)
 		}
 
-		if (!isPracticeModule && preferredSnzCount !== '' && preferredSnzCount > snzMax) {
+		if (preferredSnzCount !== '' && preferredSnzCount > snzMax) {
 			setPreferredSnzCount(snzMax)
 		}
 
 		if (preferredCombinedCount !== '' && preferredCombinedCount > combinedMax) {
 			setPreferredCombinedCount(combinedMax)
 		}
+
+		if (preferredSrspCount !== '' && preferredSrspCount > srspMax) {
+			setPreferredSrspCount(srspMax)
+		}
 	}, [
+		baseDeclaredHours,
 		combinedMax,
-		isPracticeModule,
 		practicalMax,
 		preferredCombinedCount,
 		preferredPracticalCount,
+		preferredSrspCount,
 		preferredSnzCount,
+		srspMax,
 		snzMax,
 	])
 
@@ -664,7 +668,6 @@ function DisciplineBlock<T extends IProps>({
 												disciplineIndex={disciplineIndex}
 												id={field.key}
 												isSelected={selectedTopicKeys.includes(field.key)}
-												rupType={rupType}
 												text={text}
 												toggleSelectTopic={toggleSelectTopic}
 												topicIndex={index}
@@ -672,7 +675,7 @@ function DisciplineBlock<T extends IProps>({
 										))
 									) : (
 										<TableRow>
-											<TableCell className='h-56 text-center text-muted-foreground' colSpan={10}>
+											<TableCell className='h-56 text-center text-muted-foreground' colSpan={11}>
 												{text.empty}
 											</TableCell>
 										</TableRow>
@@ -721,9 +724,7 @@ function DisciplineBlock<T extends IProps>({
 														/>
 													</div>
 
-													<div
-														className={cn('grid gap-2', isPracticeModule ? 'grid-cols-2' : 'grid-cols-3')}
-													>
+													<div className='grid grid-cols-4 gap-2'>
 														<div className='flex flex-col gap-2'>
 															<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>
 																{text.practical}
@@ -742,26 +743,24 @@ function DisciplineBlock<T extends IProps>({
 																{text.hourUnit}
 															</p>
 														</div>
-														{!isPracticeModule && (
-															<div className='flex flex-col gap-2'>
-																<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>
-																	{text.snz}
-																</Label>
-																<NumericInput
-																	id={`discipline-${disciplineIndex}-snz-count`}
-																	max={snzMax}
-																	min={0}
-																	placeholder={`${text.example} 2`}
-																	value={preferredSnzCount}
-																	onChange={(value) => setPreferredSnzCount(value)}
-																/>
-																<p className='text-xs text-muted-foreground'>
-																	{text.topicsCount}: {snzCount} × {hoursPerTopic}
-																	{text.hourUnit} = {snzHoursTotal}
-																	{text.hourUnit}
-																</p>
-															</div>
-														)}
+														<div className='flex flex-col gap-2'>
+															<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>
+																{text.snz}
+															</Label>
+															<NumericInput
+																id={`discipline-${disciplineIndex}-snz-count`}
+																max={snzMax}
+																min={0}
+																placeholder={`${text.example} 2`}
+																value={preferredSnzCount}
+																onChange={(value) => setPreferredSnzCount(value)}
+															/>
+															<p className='text-xs text-muted-foreground'>
+																{text.topicsCount}: {snzCount} × {hoursPerTopic}
+																{text.hourUnit} = {snzHoursTotal}
+																{text.hourUnit}
+															</p>
+														</div>
 														<div className='flex flex-col gap-2'>
 															<Label htmlFor={`discipline-${disciplineIndex}-combined-count`}>
 																{text.combined}
@@ -777,6 +776,24 @@ function DisciplineBlock<T extends IProps>({
 															<p className='text-xs text-muted-foreground'>
 																{text.topicsCount}: {combinedCount} × {hoursPerTopic}
 																{text.hourUnit} = {combinedHoursTotal}
+																{text.hourUnit}
+															</p>
+														</div>
+														<div className='flex flex-col gap-2'>
+															<Label htmlFor={`discipline-${disciplineIndex}-srsp-count`}>
+																{text.srspTopic}
+															</Label>
+															<NumericInput
+																id={`discipline-${disciplineIndex}-srsp-count`}
+																max={srspMax}
+																min={0}
+																placeholder={`${text.example} 1`}
+																value={preferredSrspCount}
+																onChange={(value) => setPreferredSrspCount(value)}
+															/>
+															<p className='text-xs text-muted-foreground'>
+																{text.topicsCount}: {srspCount} × {hoursPerTopic}
+																{text.hourUnit} = {srspHoursTotal}
 																{text.hourUnit}
 															</p>
 														</div>
@@ -796,7 +813,7 @@ function DisciplineBlock<T extends IProps>({
 														<p className='text-muted-foreground'>
 															{text.declaredHours}:{' '}
 															<span className='font-medium text-foreground'>
-																{declaredForThisDiscipline}
+																{declaredHoursForGeneration}
 															</span>
 														</p>
 														<p className='text-muted-foreground'>
@@ -846,81 +863,64 @@ interface ITopicRowProps {
 	id: string
 	disciplineIndex: number
 	topicIndex: number
-	rupType: RupTypeEnum | ''
 	activeLocale: Locale
 	isSelected: boolean
 	text: { topicPlaceholder: string }
 	toggleSelectTopic: (key: string, checked: boolean) => void
 }
 
-const TopicRowComponent = ({
+const TopicRowComponent = <T extends IProps>({
 	id,
 	disciplineIndex,
 	topicIndex,
-	rupType,
 	activeLocale,
 	isSelected,
 	text,
 	toggleSelectTopic,
 }: ITopicRowProps) => {
-	const form = useFormContext()
+	const form = useFormContext<T>()
 	const topicPath = `disciplines.${disciplineIndex}.topics.${topicIndex}`
-	const topic = useWatch({ control: form.control, name: topicPath }) as Topic
+	const topic = useWatch({ control: form.control, name: topicPath as Path<T> }) as unknown as Topic | undefined
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 	const [isEditingName, setIsEditingName] = useState(false)
 	const [draftName, setDraftName] = useState('')
 	const nameInputRef = useRef<HTMLInputElement | null>(null)
 	const skipNameCommitRef = useRef(false)
 
-	// filter topic type depend from rup type
-	const availableTopicTypes = useMemo(() => {
-		const allTypes = Object.values(TopicTypeEnum)
+	const currentTopic = topic ?? newTopic
+	const normalizedDurationHours = getTopicDurationHours(currentTopic)
 
-		if (rupType === RupTypeEnum.PRACTICE) {
-			// remove SNZ if practice module
-			return allTypes.filter((type) => type !== TopicTypeEnum.SNZ)
-		}
+	const applyTopicHours = useCallback(
+		(nextType: TopicTypeEnum, nextDurationHours?: number) => {
+			const resolvedDurationHours = nextType === TopicTypeEnum.PRACTICAL && nextDurationHours === 6 ? 6 : 2
+			const nextHours = getTopicHoursByType(nextType, resolvedDurationHours)
+			const nextValues = {
+				type: nextType,
+				durationHours: resolvedDurationHours,
+				theoryHours: nextHours.theoryHours,
+				practiceHours: nextHours.practiceHours,
+				individualHours: nextHours.individualHours,
+				srspHours: nextHours.srspHours,
+			}
 
-		return allTypes
-	}, [rupType])
+			Object.entries(nextValues).forEach(([key, value]) => {
+				const path = `${topicPath}.${key}` as Path<T>
 
-	// logic for automatic distribution of hours when changing the rup type
-	useEffect(() => {
-		if (!topic?.type || !rupType) return
-
-		const hours = rupType === RupTypeEnum.PRACTICE ? 6 : 2
-
-		// snz
-		const snzPracticalHours = rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ ? 6 : 0
-		const snzIndividualHours = rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ ? 0 : 2
-		const snzType =
-			rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ
-				? TopicTypeEnum.PRACTICAL
-				: TopicTypeEnum.SNZ
-
-		const mapHours: Record<string, Partial<Topic>> = {
-			[TopicTypeEnum.SNZ]: {
-				theoryHours: 0,
-				practiceHours: snzPracticalHours,
-				individualHours: snzIndividualHours,
-				type: snzType,
-			},
-			[TopicTypeEnum.COMBINED]: { theoryHours: hours, practiceHours: 0, individualHours: 0 },
-			[TopicTypeEnum.PRACTICAL]: { theoryHours: 0, practiceHours: hours, individualHours: 0 },
-		}
-
-		const updatesHours = mapHours[topic.type]
-
-		if (updatesHours) {
-			Object.entries(updatesHours).forEach(([key, val]) => {
-				const path = `disciplines.${disciplineIndex}.topics.${topicIndex}.${key}`
-
-				if (form.getValues(path) !== val) {
-					form.setValue(path, val)
+				if (form.getValues(path) !== value) {
+					form.setValue(path, value as never, { shouldDirty: true })
 				}
 			})
-		}
-	}, [disciplineIndex, form, rupType, topic?.type, topicIndex])
+		},
+		[form, topicPath],
+	)
+
+	useEffect(() => {
+		if (!topic) return
+
+		const nextDurationHours = getTopicDurationHours(topic)
+
+		applyTopicHours(topic.type, nextDurationHours)
+	}, [applyTopicHours, topic])
 
 	useEffect(() => {
 		if (!isEditingName) return
@@ -937,7 +937,11 @@ const TopicRowComponent = ({
 	}
 
 	const currentTotal =
-		(Number(topic?.theoryHours) || 0) + (Number(topic?.practiceHours) || 0) + (Number(topic?.individualHours) || 0)
+		(Number(topic?.theoryHours) || 0) +
+		(Number(topic?.practiceHours) || 0) +
+		(Number(topic?.individualHours) || 0) +
+		(Number(topic?.srspHours) || 0) +
+		(Number(topic?.srsHours) || 0)
 
 	return (
 		<TableRow
@@ -958,7 +962,7 @@ const TopicRowComponent = ({
 			<TableCell>
 				<FormField
 					control={form.control}
-					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.name`}
+					name={`${topicPath}.name` as Path<T>}
 					render={({ field }) =>
 						isEditingName ? (
 							<Input
@@ -969,21 +973,23 @@ const TopicRowComponent = ({
 								className='h-8'
 								placeholder={text.topicPlaceholder}
 								value={draftName}
-								onChange={(event) => setDraftName(event.target.value)}
 								onBlur={() => {
 									field.onBlur()
 									if (skipNameCommitRef.current) {
 										skipNameCommitRef.current = false
+
 										return
 									}
 									field.onChange(updateLocaleText(field.value as LocaleText, activeLocale, draftName))
 									setIsEditingName(false)
 								}}
+								onChange={(event) => setDraftName(event.target.value)}
 								onKeyDown={(event) => {
 									if (event.key === 'Enter') {
 										event.preventDefault()
 										field.onChange(updateLocaleText(field.value as LocaleText, activeLocale, draftName))
 										setIsEditingName(false)
+
 										return
 									}
 
@@ -1016,26 +1022,85 @@ const TopicRowComponent = ({
 			<TableCell className={getHoursStyle(topic?.theoryHours)}>{formatAsDash(topic?.theoryHours)}</TableCell>
 			<TableCell className={getHoursStyle(topic?.practiceHours)}>{formatAsDash(topic?.practiceHours)}</TableCell>
 			<TableCell className={getHoursStyle(topic?.individualHours)}>{formatAsDash(topic?.individualHours)}</TableCell>
-			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srspHours`} form={form} />
-			<EditableHourCell fieldName={`disciplines.${disciplineIndex}.topics.${topicIndex}.srsHours`} form={form} />
-			<TableCell>
+			<TableCell className={getHoursStyle(topic?.srspHours)}>{formatAsDash(topic?.srspHours)}</TableCell>
+			<EditableHourCell fieldName={`${topicPath}.srsHours` as Path<T>} form={form} />
+			<TableCell className='flex space-x-2'>
 				<FormField
 					control={form.control}
-					name={`disciplines.${disciplineIndex}.topics.${topicIndex}.type`}
-					render={({ field }) => (
-						<Select value={field.value} onValueChange={field.onChange}>
-							<SelectTrigger className='h-8 w-full'>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{availableTopicTypes.map((type) => (
-									<SelectItem key={type} value={type}>
-										{normalizeTopicType(type)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					)}
+					name={`${topicPath}.type` as Path<T>}
+					render={({ field }) => {
+						const resolvedType = (field.value as TopicTypeEnum | undefined) ?? TopicTypeEnum.COMBINED
+
+						return (
+							<Select
+								value={resolvedType}
+								onValueChange={(value) => {
+									applyTopicHours(
+										value as TopicTypeEnum,
+										value === TopicTypeEnum.PRACTICAL ? normalizedDurationHours : 2,
+									)
+								}}
+							>
+								<SelectTrigger
+									className='h-8 min-w-20 w-full'
+									title={normalizeTopicType(resolvedType, activeLocale)}
+								>
+									<SelectValue
+										aria-label={normalizeTopicType(resolvedType, activeLocale)}
+										className='sr-only'
+									/>
+								</SelectTrigger>
+								<SelectContent>
+									{Object.values(TopicTypeEnum).map((type) => {
+										const TypeIcon = topicTypeIcons[type]
+										const itemToneClassName = topicTypeIconColorClasses[type] ?? ''
+
+										return (
+											<SelectItem key={type} value={type}>
+												<span className='flex items-center gap-2'>
+													<TypeIcon className={cn('h-4 w-4', itemToneClassName)} />
+													{normalizeTopicType(type, activeLocale)}
+												</span>
+											</SelectItem>
+										)
+									})}
+								</SelectContent>
+							</Select>
+						)
+					}}
+				/>
+
+				<FormField
+					control={form.control}
+					name={`${topicPath}.durationHours` as Path<T>}
+					render={({ field }) => {
+						const resolvedDuration = Number(field.value) || (normalizedDurationHours === 6 ? 6 : 2)
+						const isPractical = currentTopic.type === TopicTypeEnum.PRACTICAL
+
+						return (
+							<Select
+								disabled={!isPractical}
+								value={String(resolvedDuration)}
+								onValueChange={(value) => {
+									const nextDurationHours = Number(value) === 6 ? 6 : 2
+
+									applyTopicHours(currentTopic.type, nextDurationHours)
+									field.onChange(nextDurationHours)
+								}}
+							>
+								<SelectTrigger className='h-8 min-w-26 disabled:hidden'>
+									<SelectValue aria-label={formatHours(resolvedDuration, activeLocale)} />
+								</SelectTrigger>
+								<SelectContent>
+									{(isPractical ? [2, 6] : [2]).map((hours) => (
+										<SelectItem key={hours} value={String(hours)}>
+											{formatHours(hours, activeLocale)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)
+					}}
 				/>
 			</TableCell>
 		</TableRow>
@@ -1048,7 +1113,6 @@ const TopicRow = memo(
 		prev.id === next.id &&
 		prev.disciplineIndex === next.disciplineIndex &&
 		prev.topicIndex === next.topicIndex &&
-		prev.rupType === next.rupType &&
 		prev.activeLocale === next.activeLocale &&
 		prev.isSelected === next.isSelected &&
 		prev.toggleSelectTopic === next.toggleSelectTopic,

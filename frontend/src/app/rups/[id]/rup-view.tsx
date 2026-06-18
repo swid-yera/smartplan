@@ -108,6 +108,8 @@ export const RupView: FC<IRupViewProps> = ({
 	isDownloadPending,
 	kriptoArtifact,
 }) => {
+	console.log(data)
+
 	const locale = useLocaleStore((state) => state.locale)
 	const localeText = getUILocaleSection(localeDictionary, locale)
 	const t = getUILocaleSection(localeDictionary, activeLocale).view
@@ -302,93 +304,110 @@ export const RupView: FC<IRupViewProps> = ({
 	)
 }
 
-const RupMainContent = memo(({ data, activeLocale, kriptoArtifact, t }: IRupMainContentProps) => (
-	<>
-		<div className='mt-6 grid gap-6 xl:grid-cols-4 lg:grid-cols-3'>
-			<BasicView
-				className='xl:col-span-3 lg:col-span-2'
-				rows={[
-					{
-						label: t.moduleName,
-						subLabel: t.moduleNameSub,
-						value: getLocaleText(data.name, activeLocale),
-					},
-					{
-						label: t.specialty,
-						subLabel: t.specialtySub,
-						value: getLocaleText(data.groups[0]?.specialty, activeLocale),
-					},
-					{
-						label: t.qualification,
-						subLabel: t.qualificationSub,
-						value: getLocaleText(data.groups[0]?.qualification, activeLocale),
-					},
-					{
-						label: t.studyForm,
-						value: normalizeStudyForm(data.studyForm, activeLocale),
-					},
-					{
-						label: t.totalHours,
-						value: formatHours(data.totalHours, activeLocale),
-					},
-					{
-						label: t.credits,
-						value: data.totalHours / 24,
-					},
-					{
-						label: t.course,
-						value: `${data.course} ${t.courseSuffix}`,
-					},
-					{
-						label: t.group,
-						value: data.groups[0].name,
-					},
-					{
-						label: t.developers,
-						value: (
-							<ul className='list-decimal ml-3'>
-								{data.contacts.map((c) => (
-									<li key={c.keycloakId}>{`${c.firstName} ${c.lastName}`}</li>
-								))}
-							</ul>
-						),
-					},
-				]}
-				title={t.moduleTitle}
-			/>
+const RupMainContent = memo(({ data, activeLocale, kriptoArtifact, t }: IRupMainContentProps) => {
+	const totalHours = useMemo(() => {
+		const calculatedTotalHours = data.disciplines.reduce((sum, discipline) => {
+			const semesterHours = discipline.semesters.reduce((disciplineSum, semester) => {
+				return disciplineSum + (semester.totalHours || 0)
+			}, 0)
+			const srspHours = discipline.topics.reduce((disciplineSum, topic) => {
+				return disciplineSum + (topic.srspHours || 0)
+			}, 0)
 
-			<ResponsibleUsersCard
-				createdAt={data.createdAt}
-				localeCode={activeLocale}
-				methodist={data.methodist}
-				teacher={data.teacher}
-				updatedAt={data.updatedAt}
-			/>
-		</div>
+			return sum + semesterHours + srspHours
+		}, 0)
 
-		<div className='[content-visibility:auto] [contain-intrinsic-size:640px]'>
-			<ExplorationView activeLocale={activeLocale} data={data} />
-		</div>
+		return calculatedTotalHours || data.totalHours
+	}, [data.disciplines, data.totalHours])
 
-		<ContactsView activeLocale={activeLocale} contacts={data.contacts} creatorId={data.teacher.keycloakId} />
+	return (
+		<>
+			<div className='mt-6 grid gap-6 xl:grid-cols-4 lg:grid-cols-3'>
+				<BasicView
+					className='xl:col-span-3 lg:col-span-2'
+					rows={[
+						{
+							label: t.moduleName,
+							subLabel: t.moduleNameSub,
+							value: getLocaleText(data.name, activeLocale),
+						},
+						{
+							label: t.specialty,
+							subLabel: t.specialtySub,
+							value: getLocaleText(data.groups[0]?.specialty, activeLocale),
+						},
+						{
+							label: t.qualification,
+							subLabel: t.qualificationSub,
+							value: getLocaleText(data.groups[0]?.qualification, activeLocale),
+						},
+						{
+							label: t.studyForm,
+							value: normalizeStudyForm(data.studyForm, activeLocale),
+						},
+						{
+							label: t.totalHours,
+							value: formatHours(totalHours, activeLocale),
+						},
+						{
+							label: t.credits,
+							value: totalHours / 24,
+						},
+						{
+							label: t.course,
+							value: `${data.course} ${t.courseSuffix}`,
+						},
+						{
+							label: t.group,
+							value: data.groups[0].name,
+						},
+						{
+							label: t.developers,
+							value: (
+								<ul className='list-decimal ml-3'>
+									{data.contacts.map((c) => (
+										<li key={c.keycloakId}>{`${c.firstName} ${c.lastName}`}</li>
+									))}
+								</ul>
+							),
+						},
+					]}
+					title={t.moduleTitle}
+				/>
 
-		<div className='[content-visibility:auto] [contain-intrinsic-size:760px]'>
-			<DisciplineView activeLocale={activeLocale} disciplines={data.disciplines} rupName={data.name} />
-		</div>
+				<ResponsibleUsersCard
+					createdAt={data.createdAt}
+					localeCode={activeLocale}
+					methodist={data.methodist}
+					teacher={data.teacher}
+					updatedAt={data.updatedAt}
+				/>
+			</div>
 
-		<div className='[content-visibility:auto] [contain-intrinsic-size:1200px]'>
-			<TopicsView
-				activeLocale={activeLocale}
-				disciplines={data.disciplines}
-				rupId={data.id}
-				rupStatus={data.status}
-				type={data.type}
-			/>
-		</div>
+			<div className='[content-visibility:auto] [contain-intrinsic-size:640px]'>
+				<ExplorationView activeLocale={activeLocale} data={data} />
+			</div>
 
-		{kriptoArtifact && <KriptoSignatureCard activeLocale={activeLocale} artifact={kriptoArtifact} t={t} />}
-	</>
-))
+			<ContactsView activeLocale={activeLocale} contacts={data.contacts} creatorId={data.teacher.keycloakId} />
+
+			<div className='[content-visibility:auto] [contain-intrinsic-size:760px]'>
+				<DisciplineView activeLocale={activeLocale} disciplines={data.disciplines} rupName={data.name} />
+			</div>
+
+			<div className='[content-visibility:auto] [contain-intrinsic-size:1200px]'>
+				<TopicsView
+					activeLocale={activeLocale}
+					disciplines={data.disciplines}
+					rupId={data.id}
+					rupStatus={data.status}
+					type={data.type}
+				/>
+			</div>
+
+			{kriptoArtifact && <KriptoSignatureCard activeLocale={activeLocale} artifact={kriptoArtifact} t={t} />}
+		</>
+	)
+})
 
 RupMainContent.displayName = 'RupMainContent'
 

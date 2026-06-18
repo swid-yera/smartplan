@@ -62,6 +62,7 @@ const (
 	DisciplineTopicTypeSNZ       DisciplineTopicType = "SNZ"
 	DisciplineTopicTypePRACTICAL DisciplineTopicType = "PRACTICAL"
 	DisciplineTopicTypeCOMBINED  DisciplineTopicType = "COMBINED"
+	DisciplineTopicTypeSRSP      DisciplineTopicType = "SRSP"
 )
 
 func (e *DisciplineTopicType) Scan(src interface{}) error {

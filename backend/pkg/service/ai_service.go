@@ -189,16 +189,14 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 
 func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req GenerateTopicsForDisciplineRequest) ([]GeneratedTopic, error) {
 	topicHours := 2
-	if strings.EqualFold(req.RupType, "PRACTICE") {
-		topicHours = 6
-	}
-	hasPreferredTopicCounts := req.PreferredPracticalCount > 0 || req.PreferredSnzCount > 0 || req.PreferredCombinedCount > 0
-	preferredTopicCount := req.PreferredPracticalCount + req.PreferredSnzCount + req.PreferredCombinedCount
-	shouldUsePreferredTopicCount := !strings.EqualFold(req.RupType, "PRACTICE") && hasPreferredTopicCounts && preferredTopicCount > 0
 	baseTopicCount := req.DisciplineHours / topicHours
-	topicCount := baseTopicCount
-	if shouldUsePreferredTopicCount && preferredTopicCount == baseTopicCount {
-		topicCount = preferredTopicCount
+	if baseTopicCount <= 0 && req.DisciplineHours > 0 {
+		baseTopicCount = 1
+	}
+	extraSrspTopicCount := maxInt(req.PreferredSrspCount, 0)
+	topicCount := baseTopicCount + extraSrspTopicCount
+	if topicCount <= 0 {
+		return nil, nil
 	}
 
 	currentValuesContext := helpers.BuildCurrentValuesContext(
@@ -207,35 +205,12 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 		"СТАРЫЕ ДАННЫЕ (currentValues) ПО ДИСЦИПЛИНЕ ДЛЯ ПЕРЕГЕНЕРАЦИИ",
 	)
 
-	chunks := splitTopicCountInHalf(topicCount)
-	result := make([]GeneratedTopic, 0, topicCount)
-	for idx, chunkCount := range chunks {
-		if chunkCount <= 0 {
-			continue
-		}
-
-		partReq := req
-		partReq.DisciplineHours = chunkCount * topicHours
-		partReq.PreferredPracticalCount = splitPreferredCountForChunk(req.PreferredPracticalCount, idx, chunkCount, topicCount)
-		partReq.PreferredSnzCount = splitPreferredCountForChunk(req.PreferredSnzCount, idx, chunkCount, topicCount)
-		partReq.PreferredCombinedCount = splitPreferredCountForChunk(req.PreferredCombinedCount, idx, chunkCount, topicCount)
-
-		batchContext := fmt.Sprintf(
-			"Сейчас генерируется часть %d из %d. Верни ровно %d тем только для этой части.",
-			idx+1,
-			len(chunks),
-			chunkCount,
-		)
-
-		partTopics, err := s.generateTopicsChunk(ctx, partReq, chunkCount, currentValuesContext, batchContext)
-		if err != nil {
-			return nil, fmt.Errorf("generate topics for discipline (part %d/%d): %w", idx+1, len(chunks), err)
-		}
-
-		result = append(result, partTopics...)
+	partTopics, err := s.generateTopicsChunk(ctx, req, topicCount, currentValuesContext, "")
+	if err != nil {
+		return nil, fmt.Errorf("generate topics for discipline: %w", err)
 	}
 
-	return normalizeGeneratedTopics(result, req, topicHours), nil
+	return normalizeGeneratedTopics(partTopics, req, topicHours), nil
 }
 
 func (s *aiService) generateTopicsChunk(
@@ -259,6 +234,7 @@ func (s *aiService) generateTopicsChunk(
 		PreferredPracticalCount: req.PreferredPracticalCount,
 		PreferredSnzCount:       req.PreferredSnzCount,
 		PreferredCombinedCount:  req.PreferredCombinedCount,
+		PreferredSrspCount:      req.PreferredSrspCount,
 		CurrentValuesContext:    currentValuesContext,
 	})
 
@@ -270,6 +246,7 @@ func (s *aiService) generateTopicsChunk(
 	var rawTopics []struct {
 		Name          string `json:"name"`
 		Type          string `json:"type"`
+		DurationHours int    `json:"durationHours"`
 		TheoryHours   int    `json:"theoryHours"`
 		PracticeHours int    `json:"practiceHours"`
 	}
@@ -279,6 +256,7 @@ func (s *aiService) generateTopicsChunk(
 			Topics []struct {
 				Name          string `json:"name"`
 				Type          string `json:"type"`
+				DurationHours int    `json:"durationHours"`
 				TheoryHours   int    `json:"theoryHours"`
 				PracticeHours int    `json:"practiceHours"`
 			} `json:"topics"`
@@ -291,9 +269,12 @@ func (s *aiService) generateTopicsChunk(
 
 	result := make([]GeneratedTopic, 0, len(rawTopics))
 	for _, topic := range rawTopics {
+		topicType := normalizeTopicType(topic.Type)
+		durationHours := normalizeTopicDurationHours(topicType, topic.DurationHours)
 		result = append(result, GeneratedTopic{
 			Name:            topic.Name,
-			Type:            strings.ToUpper(strings.TrimSpace(topic.Type)),
+			Type:            topicType,
+			DurationHours:   durationHours,
 			TheoryHours:     topic.TheoryHours,
 			PracticeHours:   topic.PracticeHours,
 			IndividualHours: 0,
@@ -675,46 +656,52 @@ func normalizeSemesterHours(hours []int) []int {
 }
 
 func normalizeGeneratedTopics(rawTopics []GeneratedTopic, req GenerateTopicsForDisciplineRequest, topicHours int) []GeneratedTopic {
-	targetTopicCount := 0
+	baseTopicCount := 0
 	if topicHours > 0 {
-		targetTopicCount = req.DisciplineHours / topicHours
+		baseTopicCount = req.DisciplineHours / topicHours
 	}
-	if targetTopicCount <= 0 && req.DisciplineHours > 0 {
-		targetTopicCount = 1
+	if baseTopicCount <= 0 && req.DisciplineHours > 0 {
+		baseTopicCount = 1
 	}
+	targetTopicCount := baseTopicCount + maxInt(req.PreferredSrspCount, countTopicType(rawTopics, "SRSP"))
 	if targetTopicCount <= 0 {
 		return nil
 	}
 
-	isPracticeRup := strings.EqualFold(req.RupType, "PRACTICE")
-	names := buildOrderedTopicNames(rawTopics, isPracticeRup)
-
-	types := buildNormalizedTopicTypes(rawTopics, req, targetTopicCount, isPracticeRup)
+	names := buildOrderedTopicNames(rawTopics)
+	types := buildNormalizedTopicTypes(rawTopics, req, baseTopicCount, targetTopicCount)
 	result := make([]GeneratedTopic, 0, targetTopicCount)
 	namePrefix := "Тема"
 	if strings.EqualFold(req.SourceLanguage, "kk") {
 		namePrefix = "Тақырып"
 	}
+
 	for i := 0; i < targetTopicCount; i++ {
 		name := fmt.Sprintf("%s %d", namePrefix, i+1)
 		if i < len(names) {
 			name = names[i]
 		}
 
-		topicType := types[i]
-		total := topicHours
-		if targetTopicCount == 1 && req.DisciplineHours > 0 {
-			total = req.DisciplineHours
+		topicType := "COMBINED"
+		if i < len(types) {
+			topicType = types[i]
 		}
 
-		theoryHours, practiceHours := normalizeTopicHours(topicType, total, isPracticeRup)
+		durationHours := topicHours
+		if i < len(rawTopics) && rawTopics[i].DurationHours > 0 {
+			durationHours = rawTopics[i].DurationHours
+		}
+		durationHours = normalizeTopicDurationHours(topicType, durationHours)
+		theoryHours, practiceHours, individualHours, srspHours := normalizeTopicHours(topicType, durationHours)
+
 		result = append(result, GeneratedTopic{
 			Name:            name,
 			Type:            topicType,
+			DurationHours:   durationHours,
 			TheoryHours:     theoryHours,
 			PracticeHours:   practiceHours,
-			IndividualHours: 0,
-			SrspHours:       0,
+			IndividualHours: individualHours,
+			SrspHours:       srspHours,
 			SrsHours:        0,
 		})
 	}
@@ -722,20 +709,20 @@ func normalizeGeneratedTopics(rawTopics []GeneratedTopic, req GenerateTopicsForD
 	return result
 }
 
-func buildNormalizedTopicTypes(rawTopics []GeneratedTopic, req GenerateTopicsForDisciplineRequest, targetTopicCount int, isPracticeRup bool) []string {
-	result := make([]string, 0, targetTopicCount)
-	if isPracticeRup {
-		for i := 0; i < targetTopicCount; i++ {
-			result = append(result, "PRACTICAL")
-		}
-		return result
-	}
-
+func buildNormalizedTopicTypes(rawTopics []GeneratedTopic, req GenerateTopicsForDisciplineRequest, baseTopicCount int, targetTopicCount int) []string {
 	prefPractical := maxInt(req.PreferredPracticalCount, 0)
 	prefSnz := maxInt(req.PreferredSnzCount, 0)
 	prefCombined := maxInt(req.PreferredCombinedCount, 0)
-	if prefPractical+prefSnz+prefCombined > 0 {
-		practical, snz, combined := adjustPreferredTopicCounts(prefPractical, prefSnz, prefCombined, targetTopicCount)
+	prefSrsp := maxInt(req.PreferredSrspCount, 0)
+
+	result := make([]string, 0, targetTopicCount)
+	if prefPractical+prefSnz+prefCombined+prefSrsp > 0 {
+		practical, snz, combined := adjustPreferredTopicCounts(
+			prefPractical,
+			prefSnz,
+			prefCombined,
+			baseTopicCount,
+		)
 		for i := 0; i < combined; i++ {
 			result = append(result, "COMBINED")
 		}
@@ -745,25 +732,29 @@ func buildNormalizedTopicTypes(rawTopics []GeneratedTopic, req GenerateTopicsFor
 		for i := 0; i < practical; i++ {
 			result = append(result, "PRACTICAL")
 		}
-		return reorderTypesPracticeAfterTheory(result)
 	}
 
 	for _, topic := range rawTopics {
-		topicType := normalizeTopicType(topic.Type, false)
+		if len(result) >= targetTopicCount {
+			break
+		}
+
+		topicType := inferTopicType(topic)
 		if topicType == "" {
 			topicType = "COMBINED"
 		}
 		result = append(result, topicType)
-		if len(result) == targetTopicCount {
-			return result
-		}
 	}
 
-	for len(result) < targetTopicCount {
+	for len(result) < baseTopicCount {
 		result = append(result, "COMBINED")
 	}
 
-	return reorderTypesPracticeAfterTheory(result)
+	for len(result) < targetTopicCount {
+		result = append(result, "SRSP")
+	}
+
+	return result[:targetTopicCount]
 }
 
 func adjustPreferredTopicCounts(practical int, snz int, combined int, target int) (int, int, int) {
@@ -791,12 +782,10 @@ func adjustPreferredTopicCounts(practical int, snz int, combined int, target int
 	return practical, snz, combined
 }
 
-func normalizeTopicType(value string, isPracticeRup bool) string {
-	if isPracticeRup {
-		return "PRACTICAL"
-	}
-
+func normalizeTopicType(value string) string {
 	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "SRSP":
+		return "SRSP"
 	case "PRACTICAL", "PRACTICE":
 		return "PRACTICAL"
 	case "SNZ":
@@ -808,23 +797,36 @@ func normalizeTopicType(value string, isPracticeRup bool) string {
 	}
 }
 
-func normalizeTopicHours(topicType string, totalHours int, isPracticeRup bool) (int, int) {
-	if totalHours <= 0 {
-		return 0, 0
+func normalizeTopicDurationHours(topicType string, durationHours int) int {
+	switch topicType {
+	case "PRACTICAL":
+		if durationHours == 6 {
+			return 6
+		}
+		return 2
+	case "COMBINED", "SNZ", "SRSP":
+		return 2
+	default:
+		return 2
 	}
-	if isPracticeRup {
-		return 0, totalHours
+}
+
+func normalizeTopicHours(topicType string, durationHours int) (int, int, int, int) {
+	if durationHours <= 0 {
+		return 0, 0, 0, 0
 	}
 
 	switch topicType {
 	case "PRACTICAL":
-		return 0, totalHours
+		return 0, durationHours, 0, 0
 	case "SNZ":
-		return totalHours, 0
+		return 0, 0, durationHours, 0
+	case "SRSP":
+		return 0, 0, 0, durationHours
 	default:
-		theory := totalHours / 2
-		practice := totalHours - theory
-		return theory, practice
+		theory := durationHours / 2
+		practice := durationHours - theory
+		return theory, practice, 0, 0
 	}
 }
 
@@ -842,55 +844,46 @@ func maxInt(a int, b int) int {
 	return b
 }
 
-func buildOrderedTopicNames(rawTopics []GeneratedTopic, isPracticeRup bool) []string {
-	names := make([]string, 0, len(rawTopics))
-	if isPracticeRup {
-		for _, topic := range rawTopics {
-			name := strings.TrimSpace(topic.Name)
-			if name != "" {
-				names = append(names, name)
-			}
+func countTopicType(topics []GeneratedTopic, topicType string) int {
+	count := 0
+	for _, topic := range topics {
+		if normalizeTopicType(topic.Type) == topicType {
+			count++
 		}
-		return names
 	}
+	return count
+}
 
-	theoryNames := make([]string, 0, len(rawTopics))
-	practicalNames := make([]string, 0, len(rawTopics))
+func buildOrderedTopicNames(rawTopics []GeneratedTopic) []string {
+	names := make([]string, 0, len(rawTopics))
 	for _, topic := range rawTopics {
 		name := strings.TrimSpace(topic.Name)
 		if name == "" {
 			continue
 		}
-
-		topicType := normalizeTopicType(topic.Type, false)
-		if topicType == "PRACTICAL" {
-			practicalNames = append(practicalNames, name)
-			continue
-		}
-
-		theoryNames = append(theoryNames, name)
+		names = append(names, name)
 	}
 
-	names = append(names, theoryNames...)
-	names = append(names, practicalNames...)
 	return names
 }
 
-func reorderTypesPracticeAfterTheory(types []string) []string {
-	theoryTypes := make([]string, 0, len(types))
-	practicalTypes := make([]string, 0, len(types))
-	for _, topicType := range types {
-		if topicType == "PRACTICAL" {
-			practicalTypes = append(practicalTypes, topicType)
-			continue
-		}
-		theoryTypes = append(theoryTypes, topicType)
+func inferTopicType(topic GeneratedTopic) string {
+	if topicType := normalizeTopicType(topic.Type); topicType != "" {
+		return topicType
 	}
-
-	result := make([]string, 0, len(types))
-	result = append(result, theoryTypes...)
-	result = append(result, practicalTypes...)
-	return result
+	if topic.SrspHours > 0 {
+		return "SRSP"
+	}
+	if topic.IndividualHours > 0 && topic.TheoryHours == 0 && topic.PracticeHours == 0 {
+		return "SNZ"
+	}
+	if topic.PracticeHours > 0 && topic.TheoryHours == 0 && topic.IndividualHours == 0 {
+		return "PRACTICAL"
+	}
+	if topic.DurationHours >= 6 {
+		return "PRACTICAL"
+	}
+	return "COMBINED"
 }
 
 func normalizeGeneratedResources(resources []GeneratedResource) []GeneratedResource {

@@ -5,10 +5,15 @@ from app.services.rup_import import parse_rup_docx
 
 
 RUPS_DIR = Path(__file__).resolve().parents[2] / "docs" / "RUPs"
+ROOT_DOCS_DIR = Path(__file__).resolve().parents[2] / "docs"
 
 
 def _fixture(name: str) -> Path:
     return RUPS_DIR / name
+
+
+def _root_fixture(name: str) -> Path:
+    return ROOT_DOCS_DIR / name
 
 
 def _display_name(payload: dict) -> str:
@@ -132,6 +137,26 @@ class RupImportParserTest(unittest.TestCase):
             [0, 0, 0, 0, 0, 0, 24, 0],
         )
         self.assertEqual(len(payload["disciplines"][0]["topics"]), 12)
+
+
+class RupImportRealExampleTest(unittest.TestCase):
+    def test_parses_real_example_first_discipline_hours_from_distribution(self):
+        docx = _root_fixture("rup-real-example.docx")
+        payload = parse_rup_docx(docx.read_bytes(), docx.name)
+
+        first_discipline = payload["disciplines"][0]
+        first_discipline_name = first_discipline["name"]["ru"] or first_discipline["name"]["kz"]
+
+        self.assertEqual(
+            first_discipline_name,
+            "ОН 2.1. Компьютерлік және перифериялық жабдықтарға қызмет көрсету",
+        )
+        self.assertEqual(first_discipline["totalHours"], 120)
+        self.assertEqual(
+            [semester["totalHours"] for semester in first_discipline["semesters"]],
+            [0, 0, 0, 96, 24, 0, 0, 0],
+        )
+        self.assertEqual(sum(topic["totalHours"] for topic in first_discipline["topics"]), 120)
 
 
 if __name__ == "__main__":

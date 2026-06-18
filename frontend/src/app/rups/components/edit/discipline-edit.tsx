@@ -32,7 +32,7 @@ import {
 	TableRow,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
-import type { Locale, LocaleText } from '@types'
+import { type Locale, type LocaleText } from '@types'
 import { Plus, Trash } from 'lucide-react'
 import {
 	type ArrayPath,

@@ -52,10 +52,10 @@ type ParseRupImportResponse struct {
 }
 
 type ConfirmRupImportRequest struct {
-	ImportDraftID uuid.UUID   `json:"importDraftId"`
-	GroupIDs      []uuid.UUID `json:"groupIds"`
-	StudyYear     string      `json:"studyYear"`
-	Course        int32       `json:"course"`
+	ImportDraftID uuid.UUID `json:"importDraftId"`
+	GroupID       uuid.UUID `json:"groupId"`
+	StudyYear     string    `json:"studyYear"`
+	Course        int32     `json:"course"`
 }
 
 func (s *rupService) ParseRupImport(
@@ -134,13 +134,8 @@ func (s *rupService) ConfirmRupImport(
 	if req.ImportDraftID == uuid.Nil {
 		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "importDraftId is required"}
 	}
-	if len(req.GroupIDs) == 0 {
-		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "groupIds is required"}
-	}
-	for _, groupID := range req.GroupIDs {
-		if groupID == uuid.Nil {
-			return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "groupIds contains invalid value"}
-		}
+	if req.GroupID == uuid.Nil {
+		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "groupId is required"}
 	}
 	if !studyYearPattern.MatchString(strings.TrimSpace(req.StudyYear)) {
 		return nil, &HTTPStatusError{StatusCode: http.StatusBadRequest, Message: "studyYear must be in YYYY-YYYY format"}
@@ -163,11 +158,6 @@ func (s *rupService) ConfirmRupImport(
 		return nil, &HTTPStatusError{StatusCode: http.StatusForbidden, Message: "forbidden"}
 	}
 
-	groupIDs := make([]string, 0, len(req.GroupIDs))
-	for _, groupID := range req.GroupIDs {
-		groupIDs = append(groupIDs, groupID.String())
-	}
-
 	createReq := CreateRupRequest{
 		Name:            draft.Payload.Name.Normalized(),
 		Type:            normalizeImportedRupType(draft.Payload.Type),
@@ -175,7 +165,7 @@ func (s *rupService) ConfirmRupImport(
 		StudyYear:       strings.TrimSpace(req.StudyYear),
 		Course:          req.Course,
 		Contacts:        []string{},
-		Groups:          groupIDs,
+		Groups:          []string{req.GroupID.String()},
 		Teacher:         userID.String(),
 		SourceLanguage:  strings.TrimSpace(draft.Payload.SourceLanguage),
 		ExplorationNote: normalizeImportedExplorationNote(draft.Payload.ExplorationNote),
@@ -298,7 +288,7 @@ func sumTopicHours(topics []*TopicRequest) int32 {
 		if topic == nil {
 			continue
 		}
-		total += topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
+		total += topic.TheoryHours + topic.PracticeHours + topic.IndividualHours + topic.SrspHours
 	}
 	return total
 }

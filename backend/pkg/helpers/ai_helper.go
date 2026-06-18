@@ -84,6 +84,7 @@ type GenerateTopicsForDisciplineRequest struct {
 	PreferredPracticalCount int             `json:"preferredPracticalCount"`
 	PreferredSnzCount       int             `json:"preferredSnzCount"`
 	PreferredCombinedCount  int             `json:"preferredCombinedCount"`
+	PreferredSrspCount      int             `json:"preferredSrspCount"`
 }
 
 type GeneratedDiscipline struct {
@@ -100,6 +101,7 @@ type GeneratedSemester struct {
 type GeneratedTopic struct {
 	Name            string `json:"name"`
 	Type            string `json:"type"`
+	DurationHours   int    `json:"durationHours"`
 	TheoryHours     int    `json:"theoryHours"`
 	PracticeHours   int    `json:"practiceHours"`
 	IndividualHours int    `json:"individualHours"`
@@ -259,6 +261,7 @@ type GenerateTopicsForDisciplinePromptInput struct {
 	PreferredPracticalCount int
 	PreferredSnzCount       int
 	PreferredCombinedCount  int
+	PreferredSrspCount      int
 	CurrentValuesContext    string
 }
 
@@ -597,20 +600,20 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
   - PRACTICAL: %d
   - SNZ: %d
   - COMBINED: %d
+  - SRSP: %d
 - Если переданы currentValues, считай их старой версией тем и перегенерируй темы как новую версию, учитывая актуальный контекст.
 
 ПРАВИЛА ГЕНЕРАЦИИ ТЕМ:
 
 1. Количество и длительность тем:
-- Если тип РУП = PRACTICE:
-  - каждая тема = 6 часов
-  - все темы = "PRACTICAL"
-  - theoryHours = 0
-  - practiceHours = 6
-- Если тип РУП = THEORY:
-  - каждая тема = 2 часа
-  - темы могут быть "COMBINED", "PRACTICAL" или "SNZ"
-  - суммарно theoryHours + practiceHours = 2
+- Каждая обычная тема = 2 часа.
+- Темы типа "PRACTICAL" могут иметь durationHours = 2 или 6.
+- Для "PRACTICAL": theoryHours = 0, practiceHours = durationHours.
+- Для "COMBINED": durationHours = 2, theoryHours + practiceHours = 2.
+- Для "SNZ": durationHours = 2, individualHours = 2.
+- Для "SRSP": durationHours = 2, srspHours = 2.
+- Темы типа "SRSP" являются ДОПОЛНИТЕЛЬНЫМИ и не должны уменьшать количество обычных тем по totalHours.
+- totalHours покрывает только обычные темы, а темы "SRSP" добавляются сверх этого объема как отдельные темы.
 
 2. Названия тем (КРИТИЧЕСКИ ВАЖНО):
 - Название темы ДОЛЖНО:
@@ -646,7 +649,8 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 3. Структура каждой темы — строго объект:
 {
   "name": string,
-  "type": "COMBINED" | "PRACTICAL" | "SNZ",
+  "type": "COMBINED" | "PRACTICAL" | "SNZ" | "SRSP",
+  "durationHours": number,
   "theoryHours": number,
   "practiceHours": number
 }
@@ -659,8 +663,9 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 5. Ограничения:
 - Все часы суммируются строго в totalHours = %d
 - Количество тем = %d
-- Для PRACTICE все темы = "PRACTICAL"
-- Для THEORY допускается mix, но каждая тема = 2 часа, темы подходящие по смыслу к практическим могут иметь тип "PRACTICAL", а остальные "COMBINED" или "SNZ"
+- Для каждой темы обязательно указывай durationHours
+- durationHours может быть только 2 или 6 для "PRACTICAL"
+- Для "COMBINED", "SNZ" и "SRSP" durationHours всегда 2
 - Если переданы предпочтения по количеству типов тем, старайся их соблюдать без нарушения ограничений по сумме часов.
 
 6. Формат ответа:
@@ -683,6 +688,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 		in.PreferredPracticalCount,
 		in.PreferredSnzCount,
 		in.PreferredCombinedCount,
+		in.PreferredSrspCount,
 		responseLanguage,
 		in.DisciplineHours,
 		in.TopicCount,
@@ -715,7 +721,7 @@ func BuildGenerateLessonPrompt(in GenerateLessonPromptInput) string {
 - Название РУП: "%s"
 - Дисциплина: "%s"
 - Тема: "%s"
-- Тип темы: "%s" (SNZ / PRACTICAL / COMBINED)
+- Тип темы: "%s" (SNZ / PRACTICAL / COMBINED / SRSP)
 - Часы темы: total=%d, theory=%d, practice=%d, individual=%d, srsp=%d, srs=%d
 - Группа: "%s"
 - Специальность: "%s"

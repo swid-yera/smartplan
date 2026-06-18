@@ -135,6 +135,7 @@ type SemesterRequest struct {
 type TopicRequest struct {
 	Name            localization.LocaleText `json:"name"`
 	Type            string                  `json:"type"`
+	DurationHours   int32                   `json:"durationHours"`
 	TheoryHours     int32                   `json:"theoryHours"`
 	PracticeHours   int32                   `json:"practiceHours"`
 	IndividualHours int32                   `json:"individualHours"`
@@ -416,13 +417,7 @@ func (s *rupService) createRup(ctx context.Context, req CreateRupRequest, startL
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Calculate total hours
-	var totalHours int32
-	for _, d := range req.Disciplines {
-		for _, sem := range d.Semesters {
-			totalHours += sem.TotalHours
-		}
-	}
+	totalHours := calculateRupTotalHours(req.Disciplines)
 
 	// Все мутирующие операции — внутри одной транзакции
 	var rup *storage.Rup
@@ -764,13 +759,7 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Calculate total hours
-	var totalHours int32
-	for _, d := range req.Disciplines {
-		for _, sem := range d.Semesters {
-			totalHours += sem.TotalHours
-		}
-	}
+	totalHours := calculateRupTotalHours(req.Disciplines)
 
 	// 3. Все мутирующие операции — внутри одной транзакции
 	var updatedRup *storage.Rup
@@ -1110,6 +1099,20 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 				return fmt.Errorf("semester number must be %d, got %d", i+1, sem.Semester)
 			}
 		}
+		for _, topic := range disc.Topics {
+			switch strings.ToUpper(strings.TrimSpace(topic.Type)) {
+			case "PRACTICAL":
+				if topic.DurationHours != 0 && topic.DurationHours != 2 && topic.DurationHours != 6 {
+					return fmt.Errorf("practical topic duration must be 2 or 6")
+				}
+			case "COMBINED", "SNZ", "SRSP":
+				if topic.DurationHours != 0 && topic.DurationHours != 2 {
+					return fmt.Errorf("%s topic duration must be 2", strings.ToLower(strings.TrimSpace(topic.Type)))
+				}
+			default:
+				return fmt.Errorf("invalid topic type %q", topic.Type)
+			}
+		}
 	}
 
 	return nil
@@ -1177,14 +1180,9 @@ func (s *rupService) createDisciplinesInRepo(ctx context.Context, repo repositor
 			return nil, err
 		}
 
-		var discTotalHours int32
-		for _, sem := range disc.Semesters {
-			discTotalHours += sem.TotalHours
-		}
-
 		params := storage.CreateRupDisciplineParams{
 			Name:       disc.Name.ToJSONB(),
-			TotalHours: discTotalHours,
+			TotalHours: calculateDisciplineTotalHours(disc),
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
 		}
@@ -1215,16 +1213,11 @@ func (s *rupService) createSemestersInRepo(ctx context.Context, repo repository.
 func (s *rupService) createTopicsInRepo(ctx context.Context, repo repository.RupRepository, topics []*TopicRequest) ([]uuid.UUID, error) {
 	var ids []uuid.UUID
 	for _, topic := range topics {
-		var topicType storage.DisciplineTopicType
-		switch topic.Type {
-		case "SNZ":
-			topicType = storage.DisciplineTopicTypeSNZ
-		case "PRACTICAL":
-			topicType = storage.DisciplineTopicTypePRACTICAL
-		case "COMBINED":
-			topicType = storage.DisciplineTopicTypeCOMBINED
+		topicType, err := parseRupTopicType(topic.Type)
+		if err != nil {
+			return nil, err
 		}
-		totalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
+		totalHours := calculateTopicTotalHours(topic)
 		t, err := repo.CreateTopic(ctx, storage.CreateDisciplineTopicParams{
 			Name:            topic.Name.ToJSONB(),
 			Type:            topicType,
@@ -1241,6 +1234,55 @@ func (s *rupService) createTopicsInRepo(ctx context.Context, repo repository.Rup
 		ids = append(ids, t.ID)
 	}
 	return ids, nil
+}
+
+func calculateRupTotalHours(disciplines []*DisciplineRequest) int32 {
+	var totalHours int32
+	for _, discipline := range disciplines {
+		totalHours += calculateDisciplineTotalHours(discipline)
+	}
+	return totalHours
+}
+
+func calculateDisciplineTotalHours(discipline *DisciplineRequest) int32 {
+	if discipline == nil {
+		return 0
+	}
+
+	var semesterHours int32
+	for _, semester := range discipline.Semesters {
+		semesterHours += semester.TotalHours
+	}
+
+	var srspHours int32
+	for _, topic := range discipline.Topics {
+		srspHours += topic.SrspHours
+	}
+
+	return semesterHours + srspHours
+}
+
+func calculateTopicTotalHours(topic *TopicRequest) int32 {
+	if topic == nil {
+		return 0
+	}
+
+	return topic.TheoryHours + topic.PracticeHours + topic.IndividualHours + topic.SrspHours
+}
+
+func parseRupTopicType(value string) (storage.DisciplineTopicType, error) {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "SNZ":
+		return storage.DisciplineTopicTypeSNZ, nil
+	case "PRACTICAL", "PRACTICE":
+		return storage.DisciplineTopicTypePRACTICAL, nil
+	case "COMBINED", "THEORY":
+		return storage.DisciplineTopicTypeCOMBINED, nil
+	case "SRSP":
+		return storage.DisciplineTopicTypeSRSP, nil
+	default:
+		return "", fmt.Errorf("unsupported topic type: %s", value)
+	}
 }
 
 func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID, totalHours int32) storage.CreateRupsParams {
@@ -1433,15 +1475,9 @@ func (s *rupService) createDisciplines(ctx context.Context, disciplines []*Disci
 			return nil, err
 		}
 
-		// Calculate discipline total hours
-		var discTotalHours int32
-		for _, sem := range disc.Semesters {
-			discTotalHours += sem.TotalHours
-		}
-
 		params := storage.CreateRupDisciplineParams{
 			Name:       disc.Name.ToJSONB(),
-			TotalHours: discTotalHours,
+			TotalHours: calculateDisciplineTotalHours(disc),
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
 		}
@@ -1481,17 +1517,12 @@ func (s *rupService) createTopics(ctx context.Context, topics []*TopicRequest) (
 	var ids []uuid.UUID
 
 	for _, topic := range topics {
-		var topicType storage.DisciplineTopicType
-		switch topic.Type {
-		case "SNZ":
-			topicType = storage.DisciplineTopicTypeSNZ
-		case "PRACTICAL":
-			topicType = storage.DisciplineTopicTypePRACTICAL
-		case "COMBINED":
-			topicType = storage.DisciplineTopicTypeCOMBINED
+		topicType, err := parseRupTopicType(topic.Type)
+		if err != nil {
+			return nil, err
 		}
 
-		TotalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
+		TotalHours := calculateTopicTotalHours(topic)
 
 		params := storage.CreateDisciplineTopicParams{
 			Name:            topic.Name.ToJSONB(),
@@ -1707,7 +1738,6 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 		Course:          rup.Course,
 		StudyForm:       string(rup.StudyForm),
 		StudyYear:       rup.StudyYear,
-		Type:            string(rup.Type),
 		TotalHours:      rup.TotalHours,
 		Contacts:        contacts,
 		Groups:          groups,

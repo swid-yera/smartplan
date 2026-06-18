@@ -290,7 +290,7 @@ const Page: NextPage = () => {
 		confirmMutation.mutate(
 			{
 				importDraftId: parseResult.importDraftId,
-				groupIds: [selectedGroupId],
+				groupId: selectedGroupId,
 				studyYear: studyYear.trim(),
 				course: numericCourse,
 			},

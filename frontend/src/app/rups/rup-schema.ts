@@ -10,6 +10,7 @@ const schemaMessages: Record<
 		hoursNonNegative: string
 		semestersRequired: string
 		topicTypeInvalid: string
+		topicDurationInvalid: string
 		moduleTypeInvalid: string
 		studyFormInvalid: string
 		studyYearRequired: string
@@ -25,6 +26,7 @@ const schemaMessages: Record<
 		hoursNonNegative: 'Количество часов не может быть отрицательным',
 		semestersRequired: 'Должно быть 8 семестров',
 		topicTypeInvalid: 'Выберите корректный тип занятия',
+		topicDurationInvalid: 'Выберите корректное количество часов',
 		moduleTypeInvalid: 'Выберите корректный тип модуля',
 		studyFormInvalid: 'Выберите корректный тип формы обучения',
 		studyYearRequired: 'Учебный год обязателен',
@@ -39,6 +41,7 @@ const schemaMessages: Record<
 		hoursNonNegative: 'Сағат саны теріс болмауы керек',
 		semestersRequired: '8 семестр болуы керек',
 		topicTypeInvalid: 'Сабақтың дұрыс түрін таңдаңыз',
+		topicDurationInvalid: 'Сағаттың дұрыс мәнін таңдаңыз',
 		moduleTypeInvalid: 'Модульдің дұрыс түрін таңдаңыз',
 		studyFormInvalid: 'Оқу түрінің дұрыс мәнін таңдаңыз',
 		studyYearRequired: 'Оқу жылы міндетті',
@@ -93,20 +96,43 @@ export const createRupFormSchema = (locale: Locale = 'ru', requiredLocales: Loca
 			.max(8, m.semestersRequired),
 	})
 
-	const disciplineWithTopicsSchema = disciplineSchema.extend({
-		topics: z.array(
-			z.object({
-				name: localeTextSchema,
-				type: z.enum(TopicTypeEnum, {
-					error: () => ({ message: m.topicTypeInvalid }),
-				}),
-				theoryHours: z.number().nonnegative(m.hoursNonNegative),
-				practiceHours: z.number().nonnegative(m.hoursNonNegative),
-				individualHours: z.number().nonnegative(m.hoursNonNegative).optional(),
-				srspHours: z.number().nonnegative(m.hoursNonNegative).optional(),
-				srsHours: z.number().nonnegative(m.hoursNonNegative).optional(),
+	const topicSchema = z
+		.object({
+			name: localeTextSchema,
+			type: z.enum(TopicTypeEnum, {
+				error: () => ({ message: m.topicTypeInvalid }),
 			}),
-		),
+			durationHours: z.number().int().nonnegative(m.hoursNonNegative),
+			theoryHours: z.number().nonnegative(m.hoursNonNegative),
+			practiceHours: z.number().nonnegative(m.hoursNonNegative),
+			individualHours: z.number().nonnegative(m.hoursNonNegative).optional(),
+			srspHours: z.number().nonnegative(m.hoursNonNegative).optional(),
+			srsHours: z.number().nonnegative(m.hoursNonNegative).optional(),
+		})
+		.superRefine((value, ctx) => {
+			if (value.type === TopicTypeEnum.PRACTICAL) {
+				if (value.durationHours !== 2 && value.durationHours !== 6) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						message: m.topicDurationInvalid,
+						path: ['durationHours'],
+					})
+				}
+
+				return
+			}
+
+			if (value.durationHours !== 2) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message: m.topicDurationInvalid,
+					path: ['durationHours'],
+				})
+			}
+		})
+
+	const disciplineWithTopicsSchema = disciplineSchema.extend({
+		topics: z.array(topicSchema),
 	})
 
 	return z.object({

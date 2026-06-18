@@ -76,6 +76,7 @@ export class AiService {
 			preferredPracticalCount: baseData.preferredPracticalCount,
 			preferredSnzCount: baseData.preferredSnzCount,
 			preferredCombinedCount: baseData.preferredCombinedCount,
+			preferredSrspCount: baseData.preferredSrspCount,
 		}
 
 		try {
