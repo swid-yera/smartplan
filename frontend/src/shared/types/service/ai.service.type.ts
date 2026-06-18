@@ -100,6 +100,7 @@ export interface IGenerateTopicsForDiscipline {
 	sourceLanguage?: 'ru' | 'kk'
 	rupName: string
 	rupType: RupTypeEnum
+	disciplineType: RupTypeEnum
 	goals: string
 	competencies: string
 	disciplineName: string
@@ -113,6 +114,7 @@ export interface IGenerateTopicsForDiscipline {
 	preferredPracticalCount?: number
 	preferredSnzCount?: number
 	preferredCombinedCount?: number
+	preferredSrspCount?: number
 }
 
 export type IGenerateTopicsForDisciplineResponse = IAiDisciplineTopicInput[]

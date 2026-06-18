@@ -65,6 +65,15 @@ type Discipline = {
 	topics: Topic[]
 }
 
+function getTopicTotalHours(topic: Topic): number {
+	return (
+		(topic.theoryHours || 0) +
+		(topic.practiceHours || 0) +
+		(topic.individualHours || 0) +
+		(topic.srspHours || 0)
+	)
+}
+
 interface IProps {
 	rupId: string
 	type: RupTypeEnum
@@ -87,7 +96,7 @@ export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus,
 
 	disciplines.forEach((discipline) => {
 		discipline.topics.forEach((topic) => {
-			total.totalHours += topic.totalHours || 0
+			total.totalHours += getTopicTotalHours(topic)
 			total.theoryHours += topic.theoryHours || 0
 			total.practiceHours += topic.practiceHours || 0
 			total.individualHours += topic.individualHours || 0
@@ -171,7 +180,7 @@ function DisciplineBlockView({
 	}
 
 	discipline.topics.forEach((topic) => {
-		sectionTotal.totalHours += topic.totalHours || 0
+		sectionTotal.totalHours += getTopicTotalHours(topic)
 		sectionTotal.theoryHours += topic.theoryHours || 0
 		sectionTotal.practiceHours += topic.practiceHours || 0
 		sectionTotal.individualHours += topic.individualHours || 0
@@ -353,7 +362,7 @@ const TopicRowView = ({
 			updatedTopic: {
 				name: createLocaleText(getLocaleText(topic.name, 'ru'), getLocaleText(topic.name, 'kk')),
 				type: topic.type,
-				total_hours: topic.theoryHours + topic.practiceHours + topic.individualHours,
+				total_hours: topic.totalHours,
 				theory_hours: topic.theoryHours,
 				practice_hours: topic.practiceHours,
 				individual_hours: topic.individualHours,
@@ -418,7 +427,7 @@ const TopicRowView = ({
 						)}
 					</div>
 				</TableCell>
-				<TableCell className='align-middle text-center border-r'>{topic.totalHours}</TableCell>
+				<TableCell className='align-middle text-center border-r'>{getTopicTotalHours(topic)}</TableCell>
 				<TableCell className='align-middle text-center font-medium border-r p-4'>
 					{formatAsDash(topic.theoryHours)}
 				</TableCell>

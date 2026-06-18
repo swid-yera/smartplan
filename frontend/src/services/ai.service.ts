@@ -64,6 +64,7 @@ export class AiService {
 		const payload = {
 			rupName: baseData.rupName,
 			rupType: baseData.rupType,
+			disciplineType: baseData.disciplineType,
 			goals: baseData.goals,
 			competencies: baseData.competencies,
 			sourceLanguage: baseData.sourceLanguage,
@@ -76,6 +77,7 @@ export class AiService {
 			preferredPracticalCount: baseData.preferredPracticalCount,
 			preferredSnzCount: baseData.preferredSnzCount,
 			preferredCombinedCount: baseData.preferredCombinedCount,
+			preferredSrspCount: baseData.preferredSrspCount,
 		}
 
 		try {

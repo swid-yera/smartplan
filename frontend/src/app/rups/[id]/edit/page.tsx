@@ -138,6 +138,7 @@ const EditPage: FC = () => {
 				rupData.disciplines?.map((discipline) => ({
 					...discipline,
 					name: toLocaleText(discipline.name),
+					type: discipline.type,
 					topics: discipline.topics.map((topic) => ({
 						...topic,
 						name: toLocaleText(topic.name),

@@ -117,6 +117,8 @@ const normalizeStoredRupData = (raw: unknown): RUPFormData => {
 			return {
 				...typedDiscipline,
 				name: toLocaleText(typedDiscipline.name as Parameters<typeof toLocaleText>[0]),
+				type:
+					(typedDiscipline.type as RupTypeEnum | undefined) ?? (draft.type as RupTypeEnum) ?? RupTypeEnum.THEORY,
 				semesters: semesters.map((semester) => ({
 					semester: Number((semester as { semester?: number }).semester) || 0,
 					totalHours: Number((semester as { totalHours?: number }).totalHours) || 0,

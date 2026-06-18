@@ -81,6 +81,9 @@ export const createRupFormSchema = (locale: Locale = 'ru', requiredLocales: Loca
 
 	const disciplineSchema = z.object({
 		name: localeTextSchema,
+		type: z.enum(RupTypeEnum, {
+			error: () => ({ message: m.moduleTypeInvalid }),
+		}),
 
 		semesters: z
 			.array(

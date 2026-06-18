@@ -7,7 +7,7 @@ CREATE TYPE study_form_enum AS ENUM ('CORRESPONDENCE', 'FULL_TIME');
 
 CREATE TYPE rups_type_enum AS ENUM ('PRACTICE', 'THEORY');
 
-CREATE TYPE discipline_topic_type AS ENUM ('SNZ', 'PRACTICAL', 'COMBINED');
+CREATE TYPE discipline_topic_type AS ENUM ('SNZ', 'PRACTICAL', 'COMBINED', 'SRSP');
 
 CREATE TYPE awards_status AS ENUM ('DRAFT', 'IN_REVIEW', 'APPROVED', 'REJECTED');
 
@@ -184,6 +184,7 @@ CREATE TABLE discipline_topics (
 CREATE TABLE rup_disciplines (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    type rups_type_enum NOT NULL DEFAULT 'THEORY',
     total_hours INT NOT NULL DEFAULT 0,
 
     semesters UUID[],

@@ -24,6 +24,7 @@ type Semester = { semester: number; totalHours: number }
 
 type Discipline = {
 	name: LocaleText
+	type: RupTypeEnum
 	semesters: Semester[]
 	topics: Topic[]
 }
@@ -58,6 +59,7 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			sourceLanguage: activeLocale,
 			rupName: getLocaleText(values.name, activeLocale),
 			rupType: values.type,
+			disciplineType: discipline.type,
 			goals: getLocaleText(values.goals, activeLocale),
 			competencies: getLocaleText(values.competencies, activeLocale),
 
@@ -84,6 +86,7 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			preferredCombinedCount: options?.preferredCombinedCount,
 			preferredPracticalCount: options?.preferredPracticalCount,
 			preferredSnzCount: options?.preferredSnzCount,
+			preferredSrspCount: options?.preferredSrspCount,
 		}
 	}
 

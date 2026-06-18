@@ -524,11 +524,12 @@ WHERE
 INSERT INTO
     rup_disciplines (
         name,
+        type,
         total_hours,
         semesters,
         topics
     )
-VALUES ($1, $2, $3, $4) RETURNING *;
+VALUES ($1, $2, $3, $4, $5) RETURNING *;
 
 -- name: GetRupDisciplineByID :one
 SELECT * FROM rup_disciplines WHERE id = $1;
