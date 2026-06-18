@@ -587,6 +587,13 @@ type Group struct {
 	Specialty     []byte    `json:"specialty"`
 }
 
+type KpiUploadSetting struct {
+	ID               int16              `json:"id"`
+	BlockedAfterDate pgtype.Date        `json:"blocked_after_date"`
+	ExceptionUserIds []uuid.UUID        `json:"exception_user_ids"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Lesson struct {
 	ID                 uuid.UUID          `json:"id"`
 	RupName            []byte             `json:"rup_name"`

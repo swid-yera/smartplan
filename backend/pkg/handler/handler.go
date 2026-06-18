@@ -146,6 +146,8 @@ func (r *Router) Init() *gin.Engine {
 				}
 				r.rup.GetRupsPaginated(c)
 			})
+			rups.GET("/study-years", middleware.RequirePermission(service.PermRUPView), r.rup.GetRupStudyYears)
+			rups.GET("/review-teachers", middleware.RequirePermission(service.PermRUPView), r.rup.GetRupReviewTeachers)
 			rups.GET("/:id", middleware.RequirePermission(service.PermRUPView), r.rup.GetRupByID)
 			rups.GET("/:id/language-generation", middleware.RequirePermission(service.PermRUPView), r.rup.GetLanguageGenerationStatus)
 

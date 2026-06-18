@@ -671,6 +671,36 @@ func (h *RupHandler) DeleteRup(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *RupHandler) GetRupStudyYears(c *gin.Context) {
+	studyYears, err := h.rupService.GetRupStudyYears(c.Request.Context())
+	if err != nil {
+		h.log.WithError(err).Error("failed to get RUP study years")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   service.TranslateAPIErrorMessage("failed to get RUP study years"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, studyYears)
+}
+
+func (h *RupHandler) GetRupReviewTeachers(c *gin.Context) {
+	search := strings.TrimSpace(c.Query("search"))
+
+	teachers, err := h.rupService.GetRupReviewTeachers(c.Request.Context(), search)
+	if err != nil {
+		h.log.WithError(err).Error("failed to get RUP review teachers")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   service.TranslateAPIErrorMessage("failed to get RUP review teachers"),
+			"details": service.TranslateAPIErrorMessage(err.Error()),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, teachers)
+}
+
 func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	currentPage := 1
 	pageSize := 10
@@ -679,6 +709,8 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	if raw := strings.TrimSpace(c.Query("status")); raw != "" {
 		status = strings.Split(raw, ",")
 	}
+
+	groupIDs := parseCommaSeparatedQuery(c.Query("groups"))
 
 	if v := c.Query("currentPage"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil && p > 0 {
@@ -693,6 +725,7 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 	}
 
 	search := strings.TrimSpace(c.Query("search"))
+	studyYear := strings.TrimSpace(c.Query("studyYear"))
 	sort, err := parseSortQuery(c, "sort", "desc")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": service.TranslateAPIErrorMessage("sort must be 'asc' or 'desc'")})
@@ -728,6 +761,8 @@ func (h *RupHandler) GetRupsPaginated(c *gin.Context) {
 		teacherID,
 		methodistID,
 		status,
+		groupIDs,
+		studyYear,
 	)
 	if err != nil {
 		c.JSON(400, gin.H{"error": service.TranslateAPIErrorMessage(err.Error())})
