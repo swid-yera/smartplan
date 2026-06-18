@@ -412,6 +412,8 @@ func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupR
 }
 
 func (s *rupService) createRup(ctx context.Context, req CreateRupRequest, startLanguageGeneration bool) (*RupResponse, error) {
+	req.Type = normalizeRupTypeValue(req.Type)
+
 	// Валидация (вне транзакции — только чтение)
 	if err := s.validateCreateRupRequest(ctx, req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
@@ -754,6 +756,8 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 		return nil, fmt.Errorf("rup not found: %w", err)
 	}
 
+	req.Type = normalizeRupTypeValue(req.Type)
+
 	// 2. Валидация (вне транзакции — только чтение)
 	if err := s.validateCreateRupRequest(ctx, req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
@@ -1035,6 +1039,8 @@ func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRupRequest) error {
+	normalizedRupType := normalizeRupTypeValue(req.Type)
+
 	if req.Name.Ru == "" && req.Name.Kz == "" {
 		return fmt.Errorf("name is required")
 	}
@@ -1044,7 +1050,7 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 	if req.Course < 1 || req.Course > 4 {
 		return fmt.Errorf("course must be between 1 and 4")
 	}
-	if req.Type != "PRACTICE" && req.Type != "THEORY" {
+	if normalizedRupType != "PRACTICE" && normalizedRupType != "THEORY" {
 		return fmt.Errorf("type must be PRACTICE or THEORY")
 	}
 	if req.StudyForm != "CORRESPONDENCE" && req.StudyForm != "FULL_TIME" {
@@ -1116,6 +1122,35 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 	}
 
 	return nil
+}
+
+func normalizeRupTypeValue(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+
+	normalizedUpper := strings.ToUpper(trimmed)
+	switch normalizedUpper {
+	case "PRACTICE", "PRACTICAL":
+		return "PRACTICE"
+	case "THEORY", "THEORETICAL", "COMBINED":
+		return "THEORY"
+	}
+
+	normalizedLower := strings.ToLower(trimmed)
+	switch {
+	case strings.Contains(normalizedLower, "практ"),
+		strings.Contains(normalizedLower, "производ"),
+		strings.Contains(normalizedLower, "өндір"),
+		strings.Contains(normalizedLower, "practice"):
+		return "PRACTICE"
+	case strings.Contains(normalizedLower, "теор"),
+		strings.Contains(normalizedLower, "theory"):
+		return "THEORY"
+	default:
+		return normalizedUpper
+	}
 }
 
 // createExplorationNoteInRepo — tx-safe версия createExplorationNote, использует переданный repo
@@ -1738,6 +1773,7 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 		Course:          rup.Course,
 		StudyForm:       string(rup.StudyForm),
 		StudyYear:       rup.StudyYear,
+		Type:            string(rup.Type),
 		TotalHours:      rup.TotalHours,
 		Contacts:        contacts,
 		Groups:          groups,
@@ -2481,7 +2517,7 @@ func mapRupResponseToCreateRequest(rup *RupResponse) CreateRupRequest {
 
 	return CreateRupRequest{
 		Name:      rup.Name,
-		Type:      rup.Type,
+		Type:      normalizeRupTypeValue(rup.Type),
 		StudyYear: rup.StudyYear,
 		Course:    rup.Course,
 		StudyForm: rup.StudyForm,

@@ -214,13 +214,7 @@ function TopicsSummary<T extends IProps>({
 		[disciplines],
 	)
 	const totalDeclaredHours = useMemo(
-		() =>
-			disciplines.reduce((sum, d) => {
-				const semesterHours = d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0
-				const srspHours = d.topics?.reduce((acc, topic) => acc + (Number(topic.srspHours) || 0), 0) || 0
-
-				return sum + semesterHours + srspHours
-			}, 0),
+		() => disciplines.reduce((sum, d) => sum + (d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0), 0),
 		[disciplines],
 	)
 
@@ -389,10 +383,7 @@ function DisciplineBlock<T extends IProps>({
 		() => disciplineSemesters.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0),
 		[disciplineSemesters],
 	)
-	const declaredForThisDiscipline = useMemo(
-		() => baseDeclaredHours + sectionTotal.srspHours,
-		[baseDeclaredHours, sectionTotal.srspHours],
-	)
+	const declaredForThisDiscipline = useMemo(() => baseDeclaredHours, [baseDeclaredHours])
 	const hasError = sectionTotal.totalHours !== declaredForThisDiscipline
 	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(KeyboardSensor))
 	const sortableItems = useMemo(() => topicFields.map((f) => f.key), [topicFields])
@@ -638,7 +629,7 @@ function DisciplineBlock<T extends IProps>({
 							}
 						}}
 					>
-						<Table>
+						<Table className='table-fixed w-full'>
 							<TableHeader>
 								<TableRow className='bg-muted/20'>
 									<TableHead className='w-12 bg-muted/20 text-center'>
@@ -648,14 +639,14 @@ function DisciplineBlock<T extends IProps>({
 										/>
 									</TableHead>
 									<TableHead className='w-12 bg-muted/20 text-center'>№</TableHead>
-									<TableHead className='min-w-[450px] w-full bg-muted/20'>{text.tableTopicTitle}</TableHead>
+									<TableHead className='w-lg bg-muted/20'>{text.tableTopicTitle}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center'>{text.total}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center'>{text.theory}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center'>{text.practice}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center'>{text.individual}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center text-xs'>{text.srsp}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center text-xs'>{text.srs}</TableHead>
-									<TableHead className='min-w-48 bg-muted/20'>{text.tableType}</TableHead>
+									<TableHead className='text-right bg-muted/20'>{text.tableType}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
@@ -940,8 +931,7 @@ const TopicRowComponent = <T extends IProps>({
 		(Number(topic?.theoryHours) || 0) +
 		(Number(topic?.practiceHours) || 0) +
 		(Number(topic?.individualHours) || 0) +
-		(Number(topic?.srspHours) || 0) +
-		(Number(topic?.srsHours) || 0)
+		(Number(topic?.srspHours) || 0)
 
 	return (
 		<TableRow
@@ -959,7 +949,7 @@ const TopicRowComponent = <T extends IProps>({
 					{topicIndex + 1}
 				</div>
 			</TableCell>
-			<TableCell>
+			<TableCell className='max-w-0'>
 				<FormField
 					control={form.control}
 					name={`${topicPath}.name` as Path<T>}
@@ -1002,7 +992,8 @@ const TopicRowComponent = <T extends IProps>({
 							/>
 						) : (
 							<button
-								className='h-8 w-full rounded-md px-3 text-left text-sm hover:bg-muted/40'
+								className='h-8 w-full truncate rounded-md px-3 text-left text-sm hover:bg-muted/40'
+								title={currentName}
 								type='button'
 								onClick={startEditingName}
 							>
@@ -1024,7 +1015,7 @@ const TopicRowComponent = <T extends IProps>({
 			<TableCell className={getHoursStyle(topic?.individualHours)}>{formatAsDash(topic?.individualHours)}</TableCell>
 			<TableCell className={getHoursStyle(topic?.srspHours)}>{formatAsDash(topic?.srspHours)}</TableCell>
 			<EditableHourCell fieldName={`${topicPath}.srsHours` as Path<T>} form={form} />
-			<TableCell className='flex space-x-2'>
+			<TableCell className='flex gap-2'>
 				<FormField
 					control={form.control}
 					name={`${topicPath}.type` as Path<T>}
@@ -1042,7 +1033,7 @@ const TopicRowComponent = <T extends IProps>({
 								}}
 							>
 								<SelectTrigger
-									className='h-8 min-w-20 w-full'
+									className='h-8 min-w-40 w-full justify-center px-2'
 									title={normalizeTopicType(resolvedType, activeLocale)}
 								>
 									<SelectValue
@@ -1088,7 +1079,7 @@ const TopicRowComponent = <T extends IProps>({
 									field.onChange(nextDurationHours)
 								}}
 							>
-								<SelectTrigger className='h-8 min-w-26 disabled:hidden'>
+								<SelectTrigger className='h-8 min-w-26'>
 									<SelectValue aria-label={formatHours(resolvedDuration, activeLocale)} />
 								</SelectTrigger>
 								<SelectContent>

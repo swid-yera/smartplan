@@ -73,6 +73,35 @@ const defaultValues: RUPFormData = {
 	disciplines: [],
 }
 
+const hasLocaleContent = (value: unknown, localeKey: 'ru' | 'kz'): boolean => {
+	if (typeof value === 'string') return value.trim().length > 0
+
+	if (!value || typeof value !== 'object') return false
+
+	if ('ru' in value && 'kz' in value) {
+		const localized = value as Partial<Record<'ru' | 'kz', unknown>>
+
+		return typeof localized[localeKey] === 'string' && localized[localeKey]!.trim().length > 0
+	}
+
+	if (Array.isArray(value)) {
+		return value.some((item) => hasLocaleContent(item, localeKey))
+	}
+
+	return Object.values(value).some((nested) => hasLocaleContent(nested, localeKey))
+}
+
+const getPreferredEditLocale = (value: RUPFormData, requestedLocale: Locale): Locale => {
+	const localeKey = requestedLocale === 'kk' ? 'kz' : 'ru'
+	const fallbackLocale: Locale = requestedLocale === 'kk' ? 'ru' : 'kk'
+	const fallbackLocaleKey = fallbackLocale === 'kk' ? 'kz' : 'ru'
+
+	if (hasLocaleContent(value, localeKey)) return requestedLocale
+	if (hasLocaleContent(value, fallbackLocaleKey)) return fallbackLocale
+
+	return requestedLocale
+}
+
 const EditPage: FC = () => {
 	const { replace } = useRouter()
 	const { id } = useParams<{ id: string }>()
@@ -160,7 +189,8 @@ const EditPage: FC = () => {
 		if (!mappedRupValues) return
 
 		methods.reset(mappedRupValues, { keepDirty: false, keepTouched: false })
-	}, [mappedRupValues, methods])
+		setActiveLocale(getPreferredEditLocale(mappedRupValues, locale))
+	}, [locale, mappedRupValues, methods])
 
 	const collectFieldMessages = (errors: FieldErrors<RUPFormData>): string[] => {
 		const messages: string[] = []

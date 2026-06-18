@@ -20,17 +20,19 @@ def build_disciplines_table(disciplines_data: dict, language: str = "ru") -> tup
     semesters_total: list[int] = [0] * 8
 
     for discipline in disciplines_data:
+        discipline_semesters = discipline.get("semesters", [])
+        discipline_total_hours = sum(int(semester.get("totalHours", 0) or 0) for semester in discipline_semesters)
 
         row = {
             "name": locale_text(discipline.get("name", ""), language),
-            "total": zero_to_empty(discipline.get("totalHours", 0)),
+            "total": zero_to_empty(discipline_total_hours),
         }
 
         # sem1 ... sem8 zero to empty
         for sem in range(1, 9):
             row[f"sem{sem}"] = ""
 
-        for semester in discipline.get("semesters", []):
+        for semester in discipline_semesters:
             sem_num = semester.get("semester")
             hours = semester.get("totalHours", 0)
 

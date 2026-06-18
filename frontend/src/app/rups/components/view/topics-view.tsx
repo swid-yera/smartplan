@@ -62,11 +62,39 @@ type Discipline = {
 	id?: string
 	name: LocalizedText
 	totalHours: number
+	semesters: { semester: number; totalHours: number }[]
 	topics: Topic[]
 }
 
 function getTopicTotalHours(topic: Topic): number {
 	return (topic.theoryHours || 0) + (topic.practiceHours || 0) + (topic.individualHours || 0) + (topic.srspHours || 0)
+}
+
+function getTopicTotals(topics: Topic[]) {
+	return topics.reduce(
+		(total, topic) => {
+			total.totalHours += getTopicTotalHours(topic)
+			total.theoryHours += topic.theoryHours || 0
+			total.practiceHours += topic.practiceHours || 0
+			total.individualHours += topic.individualHours || 0
+			total.srspHours += topic.srspHours || 0
+			total.srsHours += topic.srsHours || 0
+
+			return total
+		},
+		{
+			totalHours: 0,
+			theoryHours: 0,
+			practiceHours: 0,
+			individualHours: 0,
+			srspHours: 0,
+			srsHours: 0,
+		},
+	)
+}
+
+function getDeclaredDisciplineHours(discipline: Discipline): number {
+	return discipline.semesters.reduce((sum, semester) => sum + (semester.totalHours || 0), 0)
 }
 
 interface IProps {
@@ -80,25 +108,29 @@ interface IProps {
 export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus, activeLocale }: IProps) {
 	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const tv = t.topics
-	const total = {
-		totalHours: 0,
-		theoryHours: 0,
-		practiceHours: 0,
-		individualHours: 0,
-		srspHours: 0,
-		srsHours: 0,
-	}
+	const total = disciplines.reduce(
+		(acc, discipline) => {
+			const next = getTopicTotals(discipline.topics)
 
-	disciplines.forEach((discipline) => {
-		discipline.topics.forEach((topic) => {
-			total.totalHours += getTopicTotalHours(topic)
-			total.theoryHours += topic.theoryHours || 0
-			total.practiceHours += topic.practiceHours || 0
-			total.individualHours += topic.individualHours || 0
-			total.srspHours += topic.srspHours || 0
-			total.srsHours += topic.srsHours || 0
-		})
-	})
+			acc.totalHours += next.totalHours
+			acc.theoryHours += next.theoryHours
+			acc.practiceHours += next.practiceHours
+			acc.individualHours += next.individualHours
+			acc.srspHours += next.srspHours
+			acc.srsHours += next.srsHours
+
+			return acc
+		},
+		{
+			totalHours: 0,
+			theoryHours: 0,
+			practiceHours: 0,
+			individualHours: 0,
+			srspHours: 0,
+			srsHours: 0,
+		},
+	)
+	const totalDeclaredHours = disciplines.reduce((sum, discipline) => sum + getDeclaredDisciplineHours(discipline), 0)
 
 	return (
 		<Card>
@@ -126,14 +158,13 @@ export function TopicsView({ rupId, type: rupModuleType, disciplines, rupStatus,
 				<div className='flex justify-end items-center pt-4 pr-6 space-x-4'>
 					<div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-right'>
 						<p className='font-medium'>{tv.declaredHours}:</p>
-						<p className='font-bold text-2xl'>{disciplines.reduce((sum, d) => sum + d.totalHours, 0)}</p>
+						<p className='font-bold text-2xl'>{totalDeclaredHours}</p>
 
 						<p className='font-medium'>{tv.currentHours}:</p>
 						<div
 							className={cn(
 								'font-bold text-right text-2xl',
-								total.totalHours !== disciplines.reduce((sum, d) => sum + d.totalHours, 0) &&
-									'text-destructive',
+								total.totalHours !== totalDeclaredHours && 'text-destructive',
 							)}
 						>
 							<p>{total.totalHours}</p>
@@ -165,27 +196,9 @@ function DisciplineBlockView({
 	text: TopicsLocaleText
 }) {
 	const [isCollapsed, setIsCollapsed] = useState(false)
-	const sectionTotal = {
-		totalHours: 0,
-		theoryHours: 0,
-		practiceHours: 0,
-		individualHours: 0,
-		srspHours: 0,
-		srsHours: 0,
-	}
-
-	console.log(sectionTotal)
-
-	discipline.topics.forEach((topic) => {
-		sectionTotal.totalHours += getTopicTotalHours(topic)
-		sectionTotal.theoryHours += topic.theoryHours || 0
-		sectionTotal.practiceHours += topic.practiceHours || 0
-		sectionTotal.individualHours += topic.individualHours || 0
-		sectionTotal.srspHours += topic.srspHours || 0
-		sectionTotal.srsHours += topic.srsHours || 0
-	})
-
-	const hasError = sectionTotal.totalHours !== discipline.totalHours
+	const sectionTotal = getTopicTotals(discipline.topics)
+	const declaredForThisDiscipline = getDeclaredDisciplineHours(discipline)
+	const hasError = sectionTotal.totalHours !== declaredForThisDiscipline
 
 	return (
 		<div className='border rounded-xl overflow-hidden'>
@@ -204,13 +217,13 @@ function DisciplineBlockView({
 				)}
 			>
 				<div className='min-h-0 overflow-hidden'>
-					<Table>
+					<Table className='table-fixed w-full'>
 						<TableHeader>
 							<TableRow>
 								<TableHead className='p-4 pr-2 text-center font-semibold align-bottom' rowSpan={2}>
 									№
 								</TableHead>
-								<TableHead className='w-full font-semibold align-bottom p-4' rowSpan={2}>
+								<TableHead className='w-[32rem] font-semibold align-bottom p-4' rowSpan={2}>
 									{text.tableTopic}
 								</TableHead>
 								<TableHead
@@ -246,7 +259,7 @@ function DisciplineBlockView({
 										</Tooltip>
 									</TooltipProvider>
 								</TableHead>
-								<TableHead className='p-4 font-semibold text-end align-bottom pb-4' rowSpan={2}>
+								<TableHead className='w-32 p-4 font-semibold text-end align-bottom pb-4' rowSpan={2}>
 									{text.type}
 								</TableHead>
 							</TableRow>
@@ -297,7 +310,7 @@ function DisciplineBlockView({
 								<TableCell className='font-bold text-center border-r'>{sectionTotal.srspHours}</TableCell>
 								<TableCell className='font-bold text-center border-r'>{sectionTotal.srsHours}</TableCell>
 								<TableCell className={cn('text-right font-bold', hasError && 'text-destructive')}>
-									{text.declared}: {formatHours(discipline.totalHours, activeLocale)}
+									{text.declared}: {formatHours(declaredForThisDiscipline, activeLocale)}
 								</TableCell>
 							</TableRow>
 						</TableFooter>
@@ -359,7 +372,7 @@ const TopicRowView = ({
 			updatedTopic: {
 				name: createLocaleText(getLocaleText(topic.name, 'ru'), getLocaleText(topic.name, 'kk')),
 				type: topic.type,
-				total_hours: topic.totalHours,
+				total_hours: getTopicTotalHours(topic),
 				theory_hours: topic.theoryHours,
 				practice_hours: topic.practiceHours,
 				individual_hours: topic.individualHours,
@@ -397,9 +410,11 @@ const TopicRowView = ({
 				<TableCell className='align-middle font-semibold text-center p-4 pr-2'>
 					<span>{topicIndex + 1}</span>
 				</TableCell>
-				<TableCell className='align-middle py-4 px-2 border-r whitespace-break-spaces min-w-50'>
-					<div className='flex justify-between items-center gap-2'>
-						<span>{getLocaleText(topic.name, activeLocale)}</span>
+				<TableCell className='max-w-0 align-middle py-4 px-2 border-r'>
+					<div className='flex min-w-0 items-center justify-between gap-2'>
+						<span className='min-w-0 break-words whitespace-normal'>
+							{getLocaleText(topic.name, activeLocale)}
+						</span>
 						{isApproved && (
 							<TooltipProvider>
 								<Tooltip>

@@ -30,9 +30,7 @@ interface IProps {
 export const DisciplineView: FC<IProps> = ({ disciplines = [], rupName, activeLocale }) => {
 	const t = getUILocaleSection(localeDictionary, activeLocale)
 	const getDisciplineTotalHours = (discipline: IDiscipline) => {
-		const semesterTotalHours = discipline.semesters.reduce((acc, semester) => acc + (semester.totalHours || 0), 0)
-
-		return discipline.totalHours || semesterTotalHours
+		return discipline.semesters.reduce((acc, semester) => acc + (semester.totalHours || 0), 0)
 	}
 	const totalModuleHours = disciplines.reduce((acc, discipline) => acc + getDisciplineTotalHours(discipline), 0)
 

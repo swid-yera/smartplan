@@ -339,9 +339,7 @@ def _parse_disciplines(
                 {"semester": semester_index + 1, "totalHours": _to_int(cells[cell_index])}
                 for semester_index, cell_index in enumerate(semester_indexes[:8])
             ]
-            total_hours = _to_int(cells[layout["total_index"]]) if layout["total_index"] is not None else 0
-            if not total_hours:
-                total_hours = sum(semester["totalHours"] for semester in semesters)
+            total_hours = sum(semester["totalHours"] for semester in semesters)
             if not total_hours and not any(semester["totalHours"] for semester in semesters):
                 continue
 
@@ -352,7 +350,9 @@ def _parse_disciplines(
                 for index, semester in enumerate(semesters[:8]):
                     existing_semesters[index]["totalHours"] += semester["totalHours"]
                 existing_discipline["semesters"] = existing_semesters
-                existing_discipline["totalHours"] = int(existing_discipline.get("totalHours", 0) or 0) + total_hours
+                existing_discipline["totalHours"] = sum(
+                    int(semester.get("totalHours", 0) or 0) for semester in existing_semesters
+                )
                 continue
 
             disciplines_by_name[discipline_key] = {
@@ -442,14 +442,11 @@ def _parse_disciplines(
     for discipline in disciplines:
         discipline_name = _locale_display_text(discipline["name"])
         semester_total = sum(int(semester.get("totalHours", 0) or 0) for semester in discipline.get("semesters", []))
-        if semester_total > 0:
-            discipline["totalHours"] = semester_total
+        discipline["totalHours"] = semester_total
         if not discipline["topics"]:
             warnings.append(f"discipline has no parsed topics: {discipline_name}")
-        total_hours = int(discipline.get("totalHours", 0) or 0)
         if not any(semester.get("totalHours", 0) for semester in discipline.get("semesters", [])):
-            if total_hours:
-                warnings.append(f"semester distribution was empty for discipline: {discipline_name}")
+            warnings.append(f"semester distribution was empty for discipline: {discipline_name}")
 
     return disciplines
 
