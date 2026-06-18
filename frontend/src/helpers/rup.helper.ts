@@ -13,7 +13,7 @@ import type {
 	TopicTypeEnum,
 } from '@types'
 import type { VariantProps } from 'class-variance-authority'
-import { Combine, FlaskConical, type LucideProps, NotebookPen } from 'lucide-react'
+import { Combine, FlaskConical, type LucideProps, NotebookPen, UsersRound } from 'lucide-react'
 
 // rup type
 const rupTypeLabelsByLocale: Record<Locale, Record<RupTypeEnum, string>> = {
@@ -63,11 +63,13 @@ const topicTypeLabelsByLocale: Record<Locale, Record<TopicTypeEnum, string>> = {
 		COMBINED: 'Комбинированный',
 		PRACTICAL: 'Лабораторно-практический',
 		SNZ: 'СНЗ',
+		SRSP: 'СРСП',
 	},
 	kk: {
 		COMBINED: 'Аралас',
 		PRACTICAL: 'Зертханалық-практикалық',
 		SNZ: 'СӨЖ',
+		SRSP: 'СРСП',
 	},
 }
 
@@ -80,6 +82,7 @@ export const topicTypeVariants: Record<TopicTypeEnum, VariantProps<typeof badgeV
 	COMBINED: 'default',
 	PRACTICAL: 'secondary',
 	SNZ: 'outline',
+	SRSP: 'destructive',
 }
 
 export const topicTypeIcons: Record<
@@ -89,6 +92,7 @@ export const topicTypeIcons: Record<
 	COMBINED: Combine,
 	PRACTICAL: FlaskConical,
 	SNZ: NotebookPen,
+	SRSP: UsersRound,
 }
 
 export const normalizeTopicType = (studyForm: TopicTypeEnum, locale: Locale = 'ru'): string => {

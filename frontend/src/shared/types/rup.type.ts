@@ -15,6 +15,7 @@ export enum TopicTypeEnum {
 	SNZ = 'SNZ',
 	PRACTICAL = 'PRACTICAL',
 	COMBINED = 'COMBINED',
+	SRSP = 'SRSP',
 }
 
 // rup

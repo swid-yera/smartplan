@@ -298,7 +298,7 @@ func sumTopicHours(topics []*TopicRequest) int32 {
 		if topic == nil {
 			continue
 		}
-		total += topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
+		total += topic.TheoryHours + topic.PracticeHours + topic.IndividualHours + topic.SrspHours
 	}
 	return total
 }

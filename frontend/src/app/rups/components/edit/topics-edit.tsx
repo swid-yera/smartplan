@@ -97,6 +97,7 @@ export type TopicsDisciplineGenerateOptions = {
 	preferredPracticalCount?: number
 	preferredSnzCount?: number
 	preferredCombinedCount?: number
+	preferredSrspCount?: number
 }
 
 type TopicTotals = {
@@ -174,7 +175,10 @@ function getTotalsFromTopics(topics: Topic[]): TopicTotals {
 			acc.srspHours += Number(t.srspHours) || 0
 			acc.srsHours += Number(t.srsHours) || 0
 			acc.totalHours +=
-				(Number(t.theoryHours) || 0) + (Number(t.practiceHours) || 0) + (Number(t.individualHours) || 0)
+				(Number(t.theoryHours) || 0) +
+				(Number(t.practiceHours) || 0) +
+				(Number(t.individualHours) || 0) +
+				(Number(t.srspHours) || 0)
 
 			return acc
 		},
@@ -208,10 +212,12 @@ function TopicsSummary<T extends IProps>({
 	)
 	const totalDeclaredHours = useMemo(
 		() =>
-			disciplines.reduce(
-				(sum, d) => sum + (d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0),
-				0,
-			),
+			disciplines.reduce((sum, d) => {
+				const semesterHours = d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0
+				const srspHours = d.topics?.reduce((acc, topic) => acc + (Number(topic.srspHours) || 0), 0) || 0
+
+				return sum + semesterHours + srspHours
+			}, 0),
 		[disciplines],
 	)
 
@@ -320,6 +326,7 @@ function DisciplineBlock<T extends IProps>({
 		practical: string
 		snz: string
 		combined: string
+		srspTopic: string
 		example: string
 		topicsCount: string
 		hourUnit: string
@@ -344,6 +351,7 @@ function DisciplineBlock<T extends IProps>({
 	const [preferredPracticalCount, setPreferredPracticalCount] = useState<number | ''>(0)
 	const [preferredSnzCount, setPreferredSnzCount] = useState<number | ''>(0)
 	const [preferredCombinedCount, setPreferredCombinedCount] = useState<number | ''>(0)
+	const [preferredSrspCount, setPreferredSrspCount] = useState<number | ''>(0)
 	const headerRef = useRef<HTMLDivElement | null>(null)
 	const {
 		fields: topicFields,
@@ -374,9 +382,13 @@ function DisciplineBlock<T extends IProps>({
 		}) as Semester[] | undefined) ?? []
 
 	const sectionTotal = useMemo(() => getTotalsFromTopics(disciplineTopics), [disciplineTopics])
-	const declaredForThisDiscipline = useMemo(
+	const baseDeclaredHours = useMemo(
 		() => disciplineSemesters.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0),
 		[disciplineSemesters],
+	)
+	const declaredForThisDiscipline = useMemo(
+		() => baseDeclaredHours + sectionTotal.srspHours,
+		[baseDeclaredHours, sectionTotal.srspHours],
 	)
 	const hasError = sectionTotal.totalHours !== declaredForThisDiscipline
 	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(KeyboardSensor))
@@ -404,11 +416,12 @@ function DisciplineBlock<T extends IProps>({
 	const practicalCount = preferredPracticalCount === '' ? 0 : preferredPracticalCount
 	const snzCount = preferredSnzCount === '' ? 0 : preferredSnzCount
 	const combinedCount = preferredCombinedCount === '' ? 0 : preferredCombinedCount
+	const srspCount = preferredSrspCount === '' ? 0 : preferredSrspCount
 
 	const practicalMax = Math.max(
 		0,
 		Math.floor(
-			(declaredForThisDiscipline -
+			(baseDeclaredHours -
 				combinedCount * hoursPerTopic -
 				(isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
 				hoursPerTopic,
@@ -417,25 +430,29 @@ function DisciplineBlock<T extends IProps>({
 	const snzMax = Math.max(
 		0,
 		Math.floor(
-			(declaredForThisDiscipline - practicalCount * hoursPerTopic - combinedCount * hoursPerTopic) / hoursPerTopic,
+			(baseDeclaredHours - practicalCount * hoursPerTopic - combinedCount * hoursPerTopic) / hoursPerTopic,
 		),
 	)
 	const combinedMax = Math.max(
 		0,
 		Math.floor(
-			(declaredForThisDiscipline -
+			(baseDeclaredHours -
 				practicalCount * hoursPerTopic -
 				(isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
 				hoursPerTopic,
 		),
 	)
+	const srspMax = Math.max(0, Math.floor(baseDeclaredHours / hoursPerTopic))
 
 	const practicalHoursTotal = practicalCount * hoursPerTopic
 	const snzHoursTotal = snzCount * hoursPerTopic
 	const combinedHoursTotal = combinedCount * hoursPerTopic
+	const srspHoursTotal = srspCount * hoursPerTopic
 
-	const preferredHoursTotal = practicalHoursTotal + combinedHoursTotal + (isPracticeModule ? 0 : snzHoursTotal)
-	const isPreferredHoursValid = preferredHoursTotal === declaredForThisDiscipline
+	const preferredHoursTotal =
+		practicalHoursTotal + combinedHoursTotal + (isPracticeModule ? 0 : snzHoursTotal) + srspHoursTotal
+	const declaredHoursForGeneration = baseDeclaredHours + srspHoursTotal
+	const isPreferredHoursValid = preferredHoursTotal === declaredHoursForGeneration
 
 	const toPositiveNumber = (value: number | '') => {
 		if (value === '' || value <= 0) return undefined
@@ -452,6 +469,7 @@ function DisciplineBlock<T extends IProps>({
 			preferredCombinedCount: toPositiveNumber(preferredCombinedCount),
 			preferredPracticalCount: toPositiveNumber(preferredPracticalCount),
 			preferredSnzCount: isPracticeModule ? undefined : toPositiveNumber(preferredSnzCount),
+			preferredSrspCount: toPositiveNumber(preferredSrspCount),
 		})
 	}
 
@@ -570,13 +588,20 @@ function DisciplineBlock<T extends IProps>({
 		if (preferredCombinedCount !== '' && preferredCombinedCount > combinedMax) {
 			setPreferredCombinedCount(combinedMax)
 		}
+
+		if (preferredSrspCount !== '' && preferredSrspCount > srspMax) {
+			setPreferredSrspCount(srspMax)
+		}
 	}, [
+		baseDeclaredHours,
 		combinedMax,
 		isPracticeModule,
 		practicalMax,
 		preferredCombinedCount,
 		preferredPracticalCount,
+		preferredSrspCount,
 		preferredSnzCount,
+		srspMax,
 		snzMax,
 	])
 
@@ -722,7 +747,7 @@ function DisciplineBlock<T extends IProps>({
 													</div>
 
 													<div
-														className={cn('grid gap-2', isPracticeModule ? 'grid-cols-2' : 'grid-cols-3')}
+														className={cn('grid gap-2', isPracticeModule ? 'grid-cols-3' : 'grid-cols-4')}
 													>
 														<div className='flex flex-col gap-2'>
 															<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>
@@ -780,6 +805,24 @@ function DisciplineBlock<T extends IProps>({
 																{text.hourUnit}
 															</p>
 														</div>
+														<div className='flex flex-col gap-2'>
+															<Label htmlFor={`discipline-${disciplineIndex}-srsp-count`}>
+																{text.srspTopic}
+															</Label>
+															<NumericInput
+																id={`discipline-${disciplineIndex}-srsp-count`}
+																max={srspMax}
+																min={0}
+																placeholder={`${text.example} 1`}
+																value={preferredSrspCount}
+																onChange={(value) => setPreferredSrspCount(value)}
+															/>
+															<p className='text-xs text-muted-foreground'>
+																{text.topicsCount}: {srspCount} × {hoursPerTopic}
+																{text.hourUnit} = {srspHoursTotal}
+																{text.hourUnit}
+															</p>
+														</div>
 													</div>
 
 													<div className='flex items-center gap-2'>
@@ -796,7 +839,7 @@ function DisciplineBlock<T extends IProps>({
 														<p className='text-muted-foreground'>
 															{text.declaredHours}:{' '}
 															<span className='font-medium text-foreground'>
-																{declaredForThisDiscipline}
+																{declaredHoursForGeneration}
 															</span>
 														</p>
 														<p className='text-muted-foreground'>
@@ -903,10 +946,12 @@ const TopicRowComponent = ({
 				theoryHours: 0,
 				practiceHours: snzPracticalHours,
 				individualHours: snzIndividualHours,
+				srspHours: 0,
 				type: snzType,
 			},
-			[TopicTypeEnum.COMBINED]: { theoryHours: hours, practiceHours: 0, individualHours: 0 },
-			[TopicTypeEnum.PRACTICAL]: { theoryHours: 0, practiceHours: hours, individualHours: 0 },
+			[TopicTypeEnum.COMBINED]: { theoryHours: hours, practiceHours: 0, individualHours: 0, srspHours: 0 },
+			[TopicTypeEnum.PRACTICAL]: { theoryHours: 0, practiceHours: hours, individualHours: 0, srspHours: 0 },
+			[TopicTypeEnum.SRSP]: { theoryHours: 0, practiceHours: 0, individualHours: 0, srspHours: hours },
 		}
 
 		const updatesHours = mapHours[topic.type]
@@ -937,7 +982,10 @@ const TopicRowComponent = ({
 	}
 
 	const currentTotal =
-		(Number(topic?.theoryHours) || 0) + (Number(topic?.practiceHours) || 0) + (Number(topic?.individualHours) || 0)
+		(Number(topic?.theoryHours) || 0) +
+		(Number(topic?.practiceHours) || 0) +
+		(Number(topic?.individualHours) || 0) +
+		(Number(topic?.srspHours) || 0)
 
 	return (
 		<TableRow

@@ -167,7 +167,10 @@ export function LessonDetailsContent({
 				},
 				type: regenerateFormData.type,
 				total_hours:
-					regenerateFormData.theoryHours + regenerateFormData.practiceHours + regenerateFormData.individualHours,
+					regenerateFormData.theoryHours +
+					regenerateFormData.practiceHours +
+					regenerateFormData.individualHours +
+					regenerateFormData.srspHours,
 				theory_hours: regenerateFormData.theoryHours,
 				practice_hours: regenerateFormData.practiceHours,
 				individual_hours: regenerateFormData.individualHours,

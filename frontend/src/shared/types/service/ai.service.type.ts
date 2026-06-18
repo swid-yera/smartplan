@@ -113,6 +113,7 @@ export interface IGenerateTopicsForDiscipline {
 	preferredPracticalCount?: number
 	preferredSnzCount?: number
 	preferredCombinedCount?: number
+	preferredSrspCount?: number
 }
 
 export type IGenerateTopicsForDisciplineResponse = IAiDisciplineTopicInput[]

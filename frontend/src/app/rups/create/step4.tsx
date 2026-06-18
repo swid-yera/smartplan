@@ -84,6 +84,7 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			preferredCombinedCount: options?.preferredCombinedCount,
 			preferredPracticalCount: options?.preferredPracticalCount,
 			preferredSnzCount: options?.preferredSnzCount,
+			preferredSrspCount: options?.preferredSrspCount,
 		}
 	}
 

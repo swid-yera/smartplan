@@ -419,14 +419,14 @@ def _parse_disciplines(
             individual_hours = _to_int(cells[6])
             srsp_hours = _to_int(cells[7])
             srs_hours = _to_int(cells[8])
-            total_hours = _to_int(cells[3]) or theory_hours + practice_hours + individual_hours
+            total_hours = _to_int(cells[3]) or theory_hours + practice_hours + individual_hours + srsp_hours
             if not total_hours:
-                total_hours = theory_hours + practice_hours + individual_hours
+                total_hours = theory_hours + practice_hours + individual_hours + srsp_hours
 
             disciplines_by_name[current_key]["topics"].append(
                 {
                     "name": _locale_text(topic_name, source_language),
-                    "type": _map_topic_type(cells[9], theory_hours, practice_hours, individual_hours),
+                    "type": _map_topic_type(cells[9], theory_hours, practice_hours, individual_hours, srsp_hours),
                     "theoryHours": theory_hours,
                     "practiceHours": practice_hours,
                     "individualHours": individual_hours,
@@ -901,14 +901,18 @@ def _map_study_form(value: str) -> str:
     return "FULL_TIME"
 
 
-def _map_topic_type(value: str, theory: int, practice: int, individual: int) -> str:
+def _map_topic_type(value: str, theory: int, practice: int, individual: int, srsp: int) -> str:
     normalized = _normalize(value)
+    if _has_any(normalized, ("срсп", "соөж")):
+        return "SRSP"
     if _has_any(normalized, ("практи", "тәжіриб", "зертхан", "лаборатор")):
         return "PRACTICAL"
     if _has_any(normalized, ("снз", "сөж", "соөж")):
         return "SNZ"
     if _has_any(normalized, ("комбин", "аралас")):
         return "COMBINED"
+    if srsp > 0 and theory == 0 and practice == 0 and individual == 0:
+        return "SRSP"
     if practice > 0 and theory == 0 and individual == 0:
         return "PRACTICAL"
     return "COMBINED"

@@ -2013,6 +2013,8 @@ func parseDisciplineTopicType(value string) (storage.DisciplineTopicType, error)
 		return storage.DisciplineTopicTypePRACTICAL, nil
 	case "COMBINED", "THEORY":
 		return storage.DisciplineTopicTypeCOMBINED, nil
+	case "SRSP":
+		return storage.DisciplineTopicTypeSRSP, nil
 	default:
 		return "", fmt.Errorf("unsupported topic type: %s", value)
 	}
