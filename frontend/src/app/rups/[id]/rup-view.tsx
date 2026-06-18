@@ -467,6 +467,6 @@ KriptoSignatureCard.displayName = 'KriptoSignatureCard'
 const KriptoInfoItem = ({ label, value }: { label: string; value: string }) => (
 	<div className='flex min-w-0 flex-col gap-1'>
 		<div className='text-sm text-muted-foreground'>{label}</div>
-		<div className='break-words text-sm font-medium'>{value}</div>
+		<div className='wrap-break-word text-sm font-medium'>{value}</div>
 	</div>
 )

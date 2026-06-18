@@ -391,7 +391,7 @@ const TopicRowView = ({
 				<TableCell className='align-middle font-semibold text-center p-4 pr-2'>
 					<span>{topicIndex + 1}</span>
 				</TableCell>
-				<TableCell className='align-middle py-4 px-2 border-r whitespace-break-spaces min-w-[200px]'>
+				<TableCell className='align-middle py-4 px-2 border-r whitespace-break-spaces min-w-50'>
 					<div className='flex justify-between items-center gap-2'>
 						<span>{getLocaleText(topic.name, activeLocale)}</span>
 						{isApproved && (
