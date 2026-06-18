@@ -202,7 +202,7 @@ function DisciplineBlockView({
 
 	return (
 		<div className='border rounded-xl overflow-hidden'>
-			<div className='flex items-center justify-between p-4 bg-muted z-10 sticky top-0'>
+			<div className='flex items-center justify-between p-2 bg-muted z-10 sticky top-0'>
 				<div className='font-semibold pr-4'>{getLocaleText(discipline.name, activeLocale)}</div>
 				<Button size='sm' type='button' variant='ghost' onClick={() => setIsCollapsed((prev) => !prev)}>
 					<ChevronDown className={cn('transition-transform', isCollapsed && '-rotate-90')} />
@@ -218,16 +218,27 @@ function DisciplineBlockView({
 			>
 				<div className='min-h-0 overflow-hidden'>
 					<Table className='table-fixed w-full'>
+						<colgroup>
+							<col className='w-10' />
+							<col />
+							<col className='w-24' />
+							<col className='w-28' />
+							<col className='w-28' />
+							<col className='w-28' />
+							<col className='w-20' />
+							<col className='w-20' />
+							<col className='w-40' />
+						</colgroup>
 						<TableHeader>
 							<TableRow>
-								<TableHead className='p-4 pr-2 text-center font-semibold align-bottom' rowSpan={2}>
+								<TableHead className='p-2 text-left font-semibold align-bottom' rowSpan={2}>
 									№
 								</TableHead>
-								<TableHead className='w-[32rem] font-semibold align-bottom p-4' rowSpan={2}>
+								<TableHead className='p-2 font-semibold align-bottom' rowSpan={2}>
 									{text.tableTopic}
 								</TableHead>
 								<TableHead
-									className='p-4 font-semibold align-bottom wrap-break-words whitespace-normal text-center border-x'
+									className='p-2 font-semibold align-bottom text-center  whitespace-break-spaces border-x'
 									rowSpan={2}
 								>
 									{text.tableTotal}
@@ -235,7 +246,7 @@ function DisciplineBlockView({
 								<TableHead className='text-center align-center font-semibold' colSpan={3}>
 									{text.including}
 								</TableHead>
-								<TableHead className='p-4 border-x align-bottom font-semibold text-center' rowSpan={2}>
+								<TableHead className='p-2 border-x align-bottom font-semibold text-center' rowSpan={2}>
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
@@ -247,7 +258,7 @@ function DisciplineBlockView({
 										</Tooltip>
 									</TooltipProvider>
 								</TableHead>
-								<TableHead className='p-4 border-r align-bottom font-semibold text-center' rowSpan={2}>
+								<TableHead className='p-2 border-r align-bottom font-semibold text-center' rowSpan={2}>
 									<TooltipProvider>
 										<Tooltip>
 											<TooltipTrigger className='flex items-center justify-center w-full gap-1'>
@@ -259,16 +270,21 @@ function DisciplineBlockView({
 										</Tooltip>
 									</TooltipProvider>
 								</TableHead>
-								<TableHead className='w-32 p-4 font-semibold text-end align-bottom pb-4' rowSpan={2}>
+								<TableHead className='p-2 font-semibold text-center align-bottom pb-4' rowSpan={2}>
 									{text.type}
 								</TableHead>
 							</TableRow>
+
 							<TableRow>
-								<TableHead className='p-4 font-semibold border-r text-center' colSpan={1}>
+								<TableHead className='font-semibold border-r text-center py-2 break-all'>
 									{text.theory}
 								</TableHead>
-								<TableHead className='p-4 font-semibold border-r text-center'>{text.practice}</TableHead>
-								<TableHead className='p-4 font-semibold text-center'>{text.individual}</TableHead>
+								<TableHead className='font-semibold border-r text-center whitespace-break-spaces py-2 break-all'>
+									{text.practice}
+								</TableHead>
+								<TableHead className='font-semibold text-center py-2 whitespace-break-spaces break-all'>
+									{text.individual}
+								</TableHead>
 							</TableRow>
 						</TableHeader>
 
@@ -407,12 +423,12 @@ const TopicRowView = ({
 	return (
 		<>
 			<TableRow>
-				<TableCell className='align-middle font-semibold text-center p-4 pr-2'>
+				<TableCell className='align-middle font-semibold text-left p-2'>
 					<span>{topicIndex + 1}</span>
 				</TableCell>
-				<TableCell className='max-w-0 align-middle py-4 px-2 border-r'>
+				<TableCell className='align-middle py-4 px-2 border-r'>
 					<div className='flex min-w-0 items-center justify-between gap-2'>
-						<span className='min-w-0 break-words whitespace-normal'>
+						<span className='min-w-0 wrap-break-word whitespace-normal'>
 							{getLocaleText(topic.name, activeLocale)}
 						</span>
 						{isApproved && (
@@ -440,23 +456,23 @@ const TopicRowView = ({
 					</div>
 				</TableCell>
 				<TableCell className='align-middle text-center border-r'>{getTopicTotalHours(topic)}</TableCell>
-				<TableCell className='align-middle text-center font-medium border-r p-4'>
+				<TableCell className='align-middle text-center font-medium border-r p-2'>
 					{formatAsDash(topic.theoryHours)}
 				</TableCell>
-				<TableCell className='align-middle text-center font-medium border-r p-4'>
+				<TableCell className='align-middle text-center font-medium border-r p-2'>
 					{formatAsDash(topic.practiceHours)}
 				</TableCell>
-				<TableCell className='align-middle text-center font-medium border-r p-4'>
+				<TableCell className='align-middle text-center font-medium border-r p-2'>
 					<p>{formatAsDash(topic.individualHours)}</p>
 				</TableCell>
-				<TableCell className='align-middle text-center font-medium border-r p-4'>
+				<TableCell className='align-middle text-center font-medium border-r p-2'>
 					{formatAsDash(topic.srspHours)}
 				</TableCell>
-				<TableCell className='align-middle text-center font-medium border-r p-4'>
+				<TableCell className='align-middle text-center font-medium border-r p-2'>
 					{formatAsDash(topic.srsHours)}
 				</TableCell>
-				<TableCell className='align-middle text-end p-4'>
-					<TopicTypeBadge locale={activeLocale} type={topic.type} />
+				<TableCell className='align-middle text-left p-2'>
+					<TopicTypeBadge className='whitespace-break-spaces' locale={activeLocale} type={topic.type} />
 				</TableCell>
 			</TableRow>
 

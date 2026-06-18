@@ -74,7 +74,7 @@ export const topicTypeVariants: Record<TopicTypeEnum, VariantProps<typeof badgeV
 	COMBINED: 'default',
 	PRACTICAL: 'secondary',
 	SNZ: 'outline',
-	SRSP: 'destructive',
+	SRSP: 'outline',
 }
 
 export const topicTypeIcons: Record<

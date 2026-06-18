@@ -57,7 +57,7 @@ import {
 } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { type Locale, type LocaleText, TopicTypeEnum } from '@types'
-import { ChevronDown, GripVertical, Plus } from 'lucide-react'
+import { ChevronDown, Clock3, GripVertical, Plus } from 'lucide-react'
 import {
 	type ArrayPath,
 	type FieldArray,
@@ -214,7 +214,11 @@ function TopicsSummary<T extends IProps>({
 		[disciplines],
 	)
 	const totalDeclaredHours = useMemo(
-		() => disciplines.reduce((sum, d) => sum + (d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0), 0),
+		() =>
+			disciplines.reduce(
+				(sum, d) => sum + (d.semesters?.reduce((acc, s) => acc + (Number(s.totalHours) || 0), 0) || 0),
+				0,
+			),
 		[disciplines],
 	)
 
@@ -444,6 +448,121 @@ function DisciplineBlock<T extends IProps>({
 		})
 	}
 
+	const generateButton = (
+		<GenerateConfirmButton
+			buttonText={isGeneratingCurrentDiscipline ? text.generatingButton : text.generateButton}
+			confirmButtonText={text.generateButton}
+			confirmContent={
+				<div className='grid gap-4'>
+					<div className='flex flex-col gap-2'>
+						<Label htmlFor={`discipline-${disciplineIndex}-additional-message`}>{text.additionalMessage}</Label>
+						<Textarea
+							id={`discipline-${disciplineIndex}-additional-message`}
+							placeholder={text.additionalPlaceholder}
+							rows={4}
+							value={additionalMessage}
+							onChange={(event) => setAdditionalMessage(event.target.value)}
+						/>
+					</div>
+
+					<div className='grid grid-cols-4 gap-2'>
+						<div className='flex flex-col gap-2'>
+							<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>{text.practical}</Label>
+							<NumericInput
+								id={`discipline-${disciplineIndex}-practical-count`}
+								max={practicalMax}
+								min={0}
+								placeholder={`${text.example} 8`}
+								value={preferredPracticalCount}
+								onChange={(value) => setPreferredPracticalCount(value)}
+							/>
+							<p className='text-xs text-muted-foreground'>
+								{text.topicsCount}: {practicalCount} × {hoursPerTopic}
+								{text.hourUnit} = {practicalHoursTotal}
+								{text.hourUnit}
+							</p>
+						</div>
+						<div className='flex flex-col gap-2'>
+							<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>{text.snz}</Label>
+							<NumericInput
+								id={`discipline-${disciplineIndex}-snz-count`}
+								max={snzMax}
+								min={0}
+								placeholder={`${text.example} 2`}
+								value={preferredSnzCount}
+								onChange={(value) => setPreferredSnzCount(value)}
+							/>
+							<p className='text-xs text-muted-foreground'>
+								{text.topicsCount}: {snzCount} × {hoursPerTopic}
+								{text.hourUnit} = {snzHoursTotal}
+								{text.hourUnit}
+							</p>
+						</div>
+						<div className='flex flex-col gap-2'>
+							<Label htmlFor={`discipline-${disciplineIndex}-combined-count`}>{text.combined}</Label>
+							<NumericInput
+								id={`discipline-${disciplineIndex}-combined-count`}
+								max={combinedMax}
+								min={0}
+								placeholder={`${text.example} 4`}
+								value={preferredCombinedCount}
+								onChange={(value) => setPreferredCombinedCount(value)}
+							/>
+							<p className='text-xs text-muted-foreground'>
+								{text.topicsCount}: {combinedCount} × {hoursPerTopic}
+								{text.hourUnit} = {combinedHoursTotal}
+								{text.hourUnit}
+							</p>
+						</div>
+						<div className='flex flex-col gap-2'>
+							<Label htmlFor={`discipline-${disciplineIndex}-srsp-count`}>{text.srspTopic}</Label>
+							<NumericInput
+								id={`discipline-${disciplineIndex}-srsp-count`}
+								max={srspMax}
+								min={0}
+								placeholder={`${text.example} 1`}
+								value={preferredSrspCount}
+								onChange={(value) => setPreferredSrspCount(value)}
+							/>
+							<p className='text-xs text-muted-foreground'>
+								{text.topicsCount}: {srspCount} × {hoursPerTopic}
+								{text.hourUnit} = {srspHoursTotal}
+								{text.hourUnit}
+							</p>
+						</div>
+					</div>
+
+					<div className='flex items-center gap-2'>
+						<Checkbox
+							checked={includeCurrentContent}
+							id={`discipline-${disciplineIndex}-include-current-content`}
+							onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
+						/>
+						<Label htmlFor={`discipline-${disciplineIndex}-include-current-content`}>{text.includeCurrent}</Label>
+					</div>
+					<div className='space-y-1 text-sm'>
+						<p className='text-muted-foreground'>
+							{text.declaredHours}:{' '}
+							<span className='font-medium text-foreground'>{declaredHoursForGeneration}</span>
+						</p>
+						<p className='text-muted-foreground'>
+							{text.selectedHours}: <span className='font-medium text-foreground'>{preferredHoursTotal}</span>
+						</p>
+						{!isPreferredHoursValid && <p className='text-destructive'>{text.hoursValidation}</p>}
+					</div>
+				</div>
+			}
+			confirmDescription={text.generateConfirmDescription}
+			confirmDisabled={!isPreferredHoursValid}
+			confirmTitle={text.generateConfirmTitle}
+			disabled={isGenerateButtonDisabled}
+			disabledReason={text.generateDisabledReason}
+			triggerClassName='h-8'
+			triggerSize='sm'
+			onClick={handleGenerateDiscipline}
+		/>
+	)
+
 	const toggleSelectTopic = useCallback((key: string, checked: boolean) => {
 		setSelectedTopicKeys((prev) => {
 			if (checked) {
@@ -630,6 +749,18 @@ function DisciplineBlock<T extends IProps>({
 						}}
 					>
 						<Table className='table-fixed w-full'>
+							<colgroup>
+								<col className='w-12' />
+								<col className='w-12' />
+								<col className='min-w-[320px]' />
+								<col className='w-20' />
+								<col className='w-20' />
+								<col className='w-20' />
+								<col className='w-20' />
+								<col className='w-20' />
+								<col className='w-20' />
+								<col className='w-[320px]' />
+							</colgroup>
 							<TableHeader>
 								<TableRow className='bg-muted/20'>
 									<TableHead className='w-12 bg-muted/20 text-center'>
@@ -639,7 +770,7 @@ function DisciplineBlock<T extends IProps>({
 										/>
 									</TableHead>
 									<TableHead className='w-12 bg-muted/20 text-center'>№</TableHead>
-									<TableHead className='w-lg bg-muted/20'>{text.tableTopicTitle}</TableHead>
+									<TableHead className='bg-muted/20'>{text.tableTopicTitle}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center'>{text.total}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center'>{text.theory}</TableHead>
 									<TableHead className='w-20 bg-muted/20 text-center'>{text.practice}</TableHead>
@@ -654,8 +785,8 @@ function DisciplineBlock<T extends IProps>({
 									{topicFields.length > 0 ? (
 										topicFields.map((field, index) => (
 											<TopicRow
-												activeLocale={activeLocale}
 												key={field.key}
+												activeLocale={activeLocale}
 												disciplineIndex={disciplineIndex}
 												id={field.key}
 												isSelected={selectedTopicKeys.includes(field.key)}
@@ -675,10 +806,10 @@ function DisciplineBlock<T extends IProps>({
 							</SortableContext>
 							<TableFooter>
 								<TableRow className={cn('bg-muted/5', hasError && 'bg-destructive/10 hover:bg-destructive/20')}>
-									<TableCell
-										className={cn('py-5 text-right font-bold', hasError && 'text-destructive')}
-										colSpan={2}
-									>
+									<TableCell className='py-3 text-left' colSpan={2}>
+										{generateButton}
+									</TableCell>
+									<TableCell className={cn('py-5 text-right font-bold', hasError && 'text-destructive')}>
 										{text.totalHours}:
 									</TableCell>
 									<TableCell className='text-center font-bold'>
@@ -693,139 +824,6 @@ function DisciplineBlock<T extends IProps>({
 										className={cn('text-right font-medium', hasError && 'text-destructive font-bold')}
 									>
 										{text.declared}: {formatHours(declaredForThisDiscipline)}
-									</TableCell>
-									<TableCell className='text-right'>
-										<GenerateConfirmButton
-											buttonText={
-												isGeneratingCurrentDiscipline ? text.generatingButton : text.generateButton
-											}
-											confirmButtonText={text.generateButton}
-											confirmContent={
-												<div className='grid gap-4'>
-													<div className='flex flex-col gap-2'>
-														<Label htmlFor={`discipline-${disciplineIndex}-additional-message`}>
-															{text.additionalMessage}
-														</Label>
-														<Textarea
-															id={`discipline-${disciplineIndex}-additional-message`}
-															placeholder={text.additionalPlaceholder}
-															rows={4}
-															value={additionalMessage}
-															onChange={(event) => setAdditionalMessage(event.target.value)}
-														/>
-													</div>
-
-													<div className='grid grid-cols-4 gap-2'>
-														<div className='flex flex-col gap-2'>
-															<Label htmlFor={`discipline-${disciplineIndex}-practical-count`}>
-																{text.practical}
-															</Label>
-															<NumericInput
-																id={`discipline-${disciplineIndex}-practical-count`}
-																max={practicalMax}
-																min={0}
-																placeholder={`${text.example} 8`}
-																value={preferredPracticalCount}
-																onChange={(value) => setPreferredPracticalCount(value)}
-															/>
-															<p className='text-xs text-muted-foreground'>
-																{text.topicsCount}: {practicalCount} × {hoursPerTopic}
-																{text.hourUnit} = {practicalHoursTotal}
-																{text.hourUnit}
-															</p>
-														</div>
-														<div className='flex flex-col gap-2'>
-															<Label htmlFor={`discipline-${disciplineIndex}-snz-count`}>
-																{text.snz}
-															</Label>
-															<NumericInput
-																id={`discipline-${disciplineIndex}-snz-count`}
-																max={snzMax}
-																min={0}
-																placeholder={`${text.example} 2`}
-																value={preferredSnzCount}
-																onChange={(value) => setPreferredSnzCount(value)}
-															/>
-															<p className='text-xs text-muted-foreground'>
-																{text.topicsCount}: {snzCount} × {hoursPerTopic}
-																{text.hourUnit} = {snzHoursTotal}
-																{text.hourUnit}
-															</p>
-														</div>
-														<div className='flex flex-col gap-2'>
-															<Label htmlFor={`discipline-${disciplineIndex}-combined-count`}>
-																{text.combined}
-															</Label>
-															<NumericInput
-																id={`discipline-${disciplineIndex}-combined-count`}
-																max={combinedMax}
-																min={0}
-																placeholder={`${text.example} 4`}
-																value={preferredCombinedCount}
-																onChange={(value) => setPreferredCombinedCount(value)}
-															/>
-															<p className='text-xs text-muted-foreground'>
-																{text.topicsCount}: {combinedCount} × {hoursPerTopic}
-																{text.hourUnit} = {combinedHoursTotal}
-																{text.hourUnit}
-															</p>
-														</div>
-														<div className='flex flex-col gap-2'>
-															<Label htmlFor={`discipline-${disciplineIndex}-srsp-count`}>
-																{text.srspTopic}
-															</Label>
-															<NumericInput
-																id={`discipline-${disciplineIndex}-srsp-count`}
-																max={srspMax}
-																min={0}
-																placeholder={`${text.example} 1`}
-																value={preferredSrspCount}
-																onChange={(value) => setPreferredSrspCount(value)}
-															/>
-															<p className='text-xs text-muted-foreground'>
-																{text.topicsCount}: {srspCount} × {hoursPerTopic}
-																{text.hourUnit} = {srspHoursTotal}
-																{text.hourUnit}
-															</p>
-														</div>
-													</div>
-
-													<div className='flex items-center gap-2'>
-														<Checkbox
-															checked={includeCurrentContent}
-															id={`discipline-${disciplineIndex}-include-current-content`}
-															onCheckedChange={(checked) => setIncludeCurrentContent(checked === true)}
-														/>
-														<Label htmlFor={`discipline-${disciplineIndex}-include-current-content`}>
-															{text.includeCurrent}
-														</Label>
-													</div>
-													<div className='space-y-1 text-sm'>
-														<p className='text-muted-foreground'>
-															{text.declaredHours}:{' '}
-															<span className='font-medium text-foreground'>
-																{declaredHoursForGeneration}
-															</span>
-														</p>
-														<p className='text-muted-foreground'>
-															{text.selectedHours}:{' '}
-															<span className='font-medium text-foreground'>{preferredHoursTotal}</span>
-														</p>
-														{!isPreferredHoursValid && (
-															<p className='text-destructive'>{text.hoursValidation}</p>
-														)}
-													</div>
-												</div>
-											}
-											confirmDescription={text.generateConfirmDescription}
-											confirmDisabled={!isPreferredHoursValid}
-											confirmTitle={text.generateConfirmTitle}
-											disabled={isGenerateButtonDisabled}
-											disabledReason={text.generateDisabledReason}
-											triggerClassName='h-8'
-											triggerSize='sm'
-											onClick={handleGenerateDiscipline}
-										/>
 									</TableCell>
 								</TableRow>
 							</TableFooter>
@@ -949,7 +947,7 @@ const TopicRowComponent = <T extends IProps>({
 					{topicIndex + 1}
 				</div>
 			</TableCell>
-			<TableCell className='max-w-0'>
+			<TableCell className='min-w-0'>
 				<FormField
 					control={form.control}
 					name={`${topicPath}.name` as Path<T>}
@@ -992,7 +990,7 @@ const TopicRowComponent = <T extends IProps>({
 							/>
 						) : (
 							<button
-								className='h-8 w-full truncate rounded-md px-3 text-left text-sm hover:bg-muted/40'
+								className='h-8 w-full overflow-hidden truncate whitespace-nowrap rounded-md px-3 text-left text-sm hover:bg-muted/40'
 								title={currentName}
 								type='button'
 								onClick={startEditingName}
@@ -1015,84 +1013,92 @@ const TopicRowComponent = <T extends IProps>({
 			<TableCell className={getHoursStyle(topic?.individualHours)}>{formatAsDash(topic?.individualHours)}</TableCell>
 			<TableCell className={getHoursStyle(topic?.srspHours)}>{formatAsDash(topic?.srspHours)}</TableCell>
 			<EditableHourCell fieldName={`${topicPath}.srsHours` as Path<T>} form={form} />
-			<TableCell className='flex gap-2'>
-				<FormField
-					control={form.control}
-					name={`${topicPath}.type` as Path<T>}
-					render={({ field }) => {
-						const resolvedType = (field.value as TopicTypeEnum | undefined) ?? TopicTypeEnum.COMBINED
+			<TableCell className='min-w-0 w-full overflow-hidden'>
+				<div className='grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 overflow-hidden'>
+					<FormField
+						control={form.control}
+						name={`${topicPath}.type` as Path<T>}
+						render={({ field }) => {
+							const resolvedType = (field.value as TopicTypeEnum | undefined) ?? TopicTypeEnum.COMBINED
 
-						return (
-							<Select
-								value={resolvedType}
-								onValueChange={(value) => {
-									applyTopicHours(
-										value as TopicTypeEnum,
-										value === TopicTypeEnum.PRACTICAL ? normalizedDurationHours : 2,
-									)
-								}}
-							>
-								<SelectTrigger
-									className='h-8 min-w-40 w-full justify-center px-2'
-									title={normalizeTopicType(resolvedType, activeLocale)}
-								>
-									<SelectValue
-										aria-label={normalizeTopicType(resolvedType, activeLocale)}
-										className='sr-only'
-									/>
-								</SelectTrigger>
-								<SelectContent>
-									{Object.values(TopicTypeEnum).map((type) => {
-										const TypeIcon = topicTypeIcons[type]
-										const itemToneClassName = topicTypeIconColorClasses[type] ?? ''
-
-										return (
-											<SelectItem key={type} value={type}>
-												<span className='flex items-center gap-2'>
-													<TypeIcon className={cn('h-4 w-4', itemToneClassName)} />
-													{normalizeTopicType(type, activeLocale)}
-												</span>
-											</SelectItem>
+							return (
+								<Select
+									key={resolvedType}
+									value={resolvedType}
+									onValueChange={(value) => {
+										field.onChange(value)
+										applyTopicHours(
+											value as TopicTypeEnum,
+											value === TopicTypeEnum.PRACTICAL ? normalizedDurationHours : 2,
 										)
-									})}
-								</SelectContent>
-							</Select>
-						)
-					}}
-				/>
+									}}
+								>
+									<SelectTrigger
+										className='h-8 w-full justify-start'
+										title={normalizeTopicType(resolvedType, activeLocale)}
+									>
+										<SelectValue aria-label={normalizeTopicType(resolvedType, activeLocale)} />
+									</SelectTrigger>
+									<SelectContent align='center' side='left' sideOffset={8}>
+										{Object.values(TopicTypeEnum).map((type) => {
+											const TypeIcon = topicTypeIcons[type]
+											const itemToneClassName = topicTypeIconColorClasses[type] ?? ''
 
-				<FormField
-					control={form.control}
-					name={`${topicPath}.durationHours` as Path<T>}
-					render={({ field }) => {
-						const resolvedDuration = Number(field.value) || (normalizedDurationHours === 6 ? 6 : 2)
-						const isPractical = currentTopic.type === TopicTypeEnum.PRACTICAL
+											return (
+												<SelectItem key={type} value={type}>
+													<span className='flex items-center gap-2'>
+														<TypeIcon className={cn('h-4 w-4', itemToneClassName)} />
+														{normalizeTopicType(type, activeLocale)}
+													</span>
+												</SelectItem>
+											)
+										})}
+									</SelectContent>
+								</Select>
+							)
+						}}
+					/>
 
-						return (
-							<Select
-								disabled={!isPractical}
-								value={String(resolvedDuration)}
-								onValueChange={(value) => {
-									const nextDurationHours = Number(value) === 6 ? 6 : 2
+					<FormField
+						control={form.control}
+						name={`${topicPath}.durationHours` as Path<T>}
+						render={({ field }) => {
+							const resolvedDuration = Number(field.value) || (normalizedDurationHours === 6 ? 6 : 2)
+							const isPractical = currentTopic.type === TopicTypeEnum.PRACTICAL
 
-									applyTopicHours(currentTopic.type, nextDurationHours)
-									field.onChange(nextDurationHours)
-								}}
-							>
-								<SelectTrigger className='h-8 min-w-26'>
-									<SelectValue aria-label={formatHours(resolvedDuration, activeLocale)} />
-								</SelectTrigger>
-								<SelectContent>
-									{(isPractical ? [2, 6] : [2]).map((hours) => (
-										<SelectItem key={hours} value={String(hours)}>
-											{formatHours(hours, activeLocale)}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						)
-					}}
-				/>
+							if (!isPractical) {
+								return <div aria-hidden='true' className='h-8 w-0 justify-self-end' />
+							}
+
+							return (
+								<Select
+									value={String(resolvedDuration)}
+									onValueChange={(value) => {
+										const nextDurationHours = Number(value) === 6 ? 6 : 2
+
+										applyTopicHours(currentTopic.type, nextDurationHours)
+										field.onChange(nextDurationHours)
+									}}
+								>
+									<SelectTrigger className='h-8 justify-self-end [&>svg]:hidden'>
+										<span className='flex items-center gap-1'>
+											<Clock3 className='h-4 w-4 shrink-0' />
+											<span className='text-sm font-medium tabular-nums'>{resolvedDuration}</span>
+										</span>
+										<span className='sr-only'>{formatHours(resolvedDuration, activeLocale)}</span>
+									</SelectTrigger>
+									<SelectContent align='center' side='left' sideOffset={8}>
+										{[2, 6].map((hours) => (
+											<SelectItem key={hours} value={String(hours)}>
+												{formatHours(hours, activeLocale)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							)
+						}}
+					/>
+				</div>
 			</TableCell>
 		</TableRow>
 	)
