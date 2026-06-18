@@ -38,13 +38,23 @@ type RupService interface {
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID, language string) (string, error)
-	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string) (*PaginatedRupsResponse, error)
+	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, groupIDs []string, studyYear string) (*PaginatedRupsResponse, error)
+	GetRupStudyYears(ctx context.Context) ([]string, error)
+	GetRupReviewTeachers(ctx context.Context, search string) ([]RupReviewTeacherResponse, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
 type PaginatedRupsResponse struct {
 	Data []*ListAllRupsResponse `json:"data"`
 	Meta PaginationMeta         `json:"meta"`
+}
+
+type RupReviewTeacherResponse struct {
+	KeycloakID      uuid.UUID `json:"keycloakId"`
+	FirstName       string    `json:"firstName"`
+	LastName        string    `json:"lastName"`
+	Username        string    `json:"username"`
+	ReviewRupsCount int       `json:"reviewRupsCount"`
 }
 
 const (
@@ -1882,6 +1892,8 @@ func (s *rupService) GetRupPaginated(
 	teacher pgtype.UUID,
 	methodist pgtype.UUID,
 	status []string,
+	groupIDs []string,
+	studyYear string,
 ) (*PaginatedRupsResponse, error) {
 	if currentPage < 1 {
 		currentPage = 1
@@ -1893,6 +1905,10 @@ func (s *rupService) GetRupPaginated(
 	if len(status) == 0 {
 		status = nil
 	}
+	groupIDs = normalizeNonEmptyStrings(groupIDs)
+	if len(groupIDs) == 0 {
+		groupIDs = nil
+	}
 
 	offset := (currentPage - 1) * pageSize
 
@@ -1902,6 +1918,8 @@ func (s *rupService) GetRupPaginated(
 		teacher,
 		methodist,
 		status,
+		groupIDs,
+		studyYear,
 	)
 	if err != nil {
 		return nil, err
@@ -1916,6 +1934,8 @@ func (s *rupService) GetRupPaginated(
 		teacher,
 		methodist,
 		status,
+		groupIDs,
+		studyYear,
 	)
 	if err != nil {
 		return nil, err
@@ -1940,6 +1960,45 @@ func (s *rupService) GetRupPaginated(
 			PageSize:    pageSize,
 		},
 	}, nil
+}
+
+func (s *rupService) GetRupStudyYears(ctx context.Context) ([]string, error) {
+	studyYears, err := s.repo.GetRupStudyYears(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, 0, len(studyYears))
+	for _, studyYear := range studyYears {
+		trimmed := strings.TrimSpace(studyYear)
+		if trimmed == "" {
+			continue
+		}
+
+		result = append(result, trimmed)
+	}
+
+	return result, nil
+}
+
+func (s *rupService) GetRupReviewTeachers(ctx context.Context, search string) ([]RupReviewTeacherResponse, error) {
+	rows, err := s.repo.GetRupReviewTeachers(ctx, strings.TrimSpace(search))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]RupReviewTeacherResponse, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, RupReviewTeacherResponse{
+			KeycloakID:      row.KeycloakID,
+			FirstName:       strings.TrimSpace(row.FirstName),
+			LastName:        strings.TrimSpace(row.LastName),
+			Username:        strings.TrimSpace(row.Username),
+			ReviewRupsCount: int(row.ReviewRupsCount),
+		})
+	}
+
+	return result, nil
 }
 
 func normalizeBackendLanguage(value string) string {
