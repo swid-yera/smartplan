@@ -271,14 +271,16 @@ const RupRow: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false }) => {
 				onSelect(rup)
 			}}
 		>
-			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
+			<TableCell className='align-top font-medium whitespace-normal py-4 w-[18rem] max-w-[18rem]'>
 				<Link
-					className='inline-flex max-w-full items-center rounded-sm hover:text-primary hover:underline'
+					className='block max-w-full rounded-sm hover:text-primary hover:underline'
 					href={`/rups/${rup.id}`}
 					title={getLocaleText(rup?.name, locale) || t.untitled}
 					onClick={(event) => event.stopPropagation()}
 				>
-					<span className='truncate'>{getLocaleText(rup?.name, locale) || t.untitled}</span>
+					<span className='block whitespace-normal break-words leading-6'>
+						{getLocaleText(rup?.name, locale) || t.untitled}
+					</span>
 				</Link>
 			</TableCell>
 			<TableCell className='whitespace-break-spaces min-w-[100px]'>
