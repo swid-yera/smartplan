@@ -133,6 +133,9 @@ const newTopic: Topic = {
 	srsHours: 0,
 }
 
+const TOPIC_TYPE_VALUES = Object.values(TopicTypeEnum) as TopicTypeEnum[]
+const PRACTICAL_DURATION_VALUES = [2, 6] as const
+
 export function TopicsEdit<T extends IProps>({
 	activeLocale,
 	onGenerateDiscipline,
@@ -145,7 +148,7 @@ export function TopicsEdit<T extends IProps>({
 }) {
 	const form = useFormContext<T>()
 	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale)
+	const topicsText = useMemo(() => getUILocaleSection(localeDictionary, locale).topics, [locale])
 	const { fields: disciplineFields } = useFieldArray({
 		control: form.control,
 		name: 'disciplines' as ArrayPath<T>,
@@ -156,15 +159,16 @@ export function TopicsEdit<T extends IProps>({
 		<div className='space-y-16'>
 			{disciplineFields.map((field, index) => (
 				<DisciplineBlock
-					activeLocale={activeLocale}
 					key={field.key}
+					activeLocale={activeLocale}
 					disciplineIndex={index}
-					generatingDisciplineIndex={generatingDisciplineIndex}
-					text={t.topics}
+					isGenerateButtonDisabled={generatingDisciplineIndex !== null}
+					isGeneratingCurrentDiscipline={generatingDisciplineIndex === index}
+					text={topicsText}
 					onGenerateDiscipline={onGenerateDiscipline}
 				/>
 			))}
-			<TopicsSummary text={t.topics} />
+			<TopicsSummary text={topicsText} />
 		</div>
 	)
 }
@@ -293,17 +297,19 @@ function mergeTotals(base: TopicTotals, next: TopicTotals): TopicTotals {
 	}
 }
 
-function DisciplineBlock<T extends IProps>({
+function DisciplineBlockComponent<T extends IProps>({
 	activeLocale,
 	disciplineIndex,
+	isGenerateButtonDisabled,
+	isGeneratingCurrentDiscipline,
 	onGenerateDiscipline,
-	generatingDisciplineIndex,
 	text,
 }: {
 	activeLocale: Locale
 	disciplineIndex: number
 	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
-	generatingDisciplineIndex: number | null
+	isGenerateButtonDisabled: boolean
+	isGeneratingCurrentDiscipline: boolean
 	text: {
 		deleteSelected: string
 		addTopic: string
@@ -344,7 +350,6 @@ function DisciplineBlock<T extends IProps>({
 	}
 }) {
 	const form = useFormContext<T>()
-	const locale = useLocaleStore((state) => state.locale)
 	const [isCollapsed, setIsCollapsed] = useState(false)
 	const [isSticky, setIsSticky] = useState(false)
 	const [additionalMessage, setAdditionalMessage] = useState('')
@@ -392,8 +397,6 @@ function DisciplineBlock<T extends IProps>({
 	const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(KeyboardSensor))
 	const sortableItems = useMemo(() => topicFields.map((f) => f.key), [topicFields])
 	const [stickyTopPx, setStickyTopPx] = useState(100)
-	const isGeneratingCurrentDiscipline = generatingDisciplineIndex === disciplineIndex
-	const isGenerateButtonDisabled = generatingDisciplineIndex !== null
 	const hoursPerTopic = 2
 	const hasSelectedTopics = selectedTopicKeys.length > 0
 	const isAllSelected = topicFields.length > 0 && selectedTopicKeys.length === topicFields.length
@@ -759,7 +762,7 @@ function DisciplineBlock<T extends IProps>({
 								<col className='w-20' />
 								<col className='w-20' />
 								<col className='w-20' />
-								<col className='w-[320px]' />
+								<col className='w-60' />
 							</colgroup>
 							<TableHeader>
 								<TableRow className='bg-muted/20'>
@@ -909,7 +912,7 @@ const TopicRowComponent = <T extends IProps>({
 		const nextDurationHours = getTopicDurationHours(topic)
 
 		applyTopicHours(topic.type, nextDurationHours)
-	}, [applyTopicHours, topic])
+	}, [applyTopicHours, topic?.durationHours, topic?.type])
 
 	useEffect(() => {
 		if (!isEditingName) return
@@ -1040,7 +1043,7 @@ const TopicRowComponent = <T extends IProps>({
 										<SelectValue aria-label={normalizeTopicType(resolvedType, activeLocale)} />
 									</SelectTrigger>
 									<SelectContent align='center' side='left' sideOffset={8}>
-										{Object.values(TopicTypeEnum).map((type) => {
+										{TOPIC_TYPE_VALUES.map((type) => {
 											const TypeIcon = topicTypeIcons[type]
 											const itemToneClassName = topicTypeIconColorClasses[type] ?? ''
 
@@ -1088,7 +1091,7 @@ const TopicRowComponent = <T extends IProps>({
 										<span className='sr-only'>{formatHours(resolvedDuration, activeLocale)}</span>
 									</SelectTrigger>
 									<SelectContent align='center' side='left' sideOffset={8}>
-										{[2, 6].map((hours) => (
+										{PRACTICAL_DURATION_VALUES.map((hours) => (
 											<SelectItem key={hours} value={String(hours)}>
 												{formatHours(hours, activeLocale)}
 											</SelectItem>
@@ -1114,3 +1117,5 @@ const TopicRow = memo(
 		prev.isSelected === next.isSelected &&
 		prev.toggleSelectTopic === next.toggleSelectTopic,
 )
+
+const DisciplineBlock = memo(DisciplineBlockComponent) as typeof DisciplineBlockComponent
