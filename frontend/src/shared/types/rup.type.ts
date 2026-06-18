@@ -83,6 +83,7 @@ export interface ISemester {
 export interface IDiscipline {
 	id: string
 	name: LocalizedText
+	type: RupTypeEnum
 	totalHours: number
 	semesters: ISemester[]
 	topics: ITopics[]

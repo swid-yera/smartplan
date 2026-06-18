@@ -188,8 +188,13 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 }
 
 func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req GenerateTopicsForDisciplineRequest) ([]GeneratedTopic, error) {
+	disciplineType := strings.TrimSpace(req.DisciplineType)
+	if disciplineType == "" {
+		disciplineType = req.RupType
+	}
+
 	topicHours := 2
-	if strings.EqualFold(req.RupType, "PRACTICE") {
+	if strings.EqualFold(disciplineType, "PRACTICE") {
 		topicHours = 6
 	}
 	baseTopicCount := req.DisciplineHours / topicHours
@@ -201,6 +206,8 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 	if topicCount <= 0 {
 		return nil, nil
 	}
+
+	req.DisciplineType = disciplineType
 
 	currentValuesContext := helpers.BuildCurrentValuesContext(
 		req.IncludeCurrentContent,
@@ -229,6 +236,7 @@ func (s *aiService) generateTopicsChunk(
 		RupName:                 req.RupName,
 		DisciplineHours:         req.DisciplineHours,
 		RupType:                 req.RupType,
+		DisciplineType:          req.DisciplineType,
 		Goals:                   req.Goals,
 		Competencies:            req.Competencies,
 		Message:                 req.Message,
@@ -666,10 +674,10 @@ func normalizeGeneratedTopics(rawTopics []GeneratedTopic, req GenerateTopicsForD
 		return nil
 	}
 
-	isPracticeRup := strings.EqualFold(req.RupType, "PRACTICE")
-	names := buildOrderedTopicNames(rawTopics, isPracticeRup)
+	isPracticeDiscipline := strings.EqualFold(req.DisciplineType, "PRACTICE")
+	names := buildOrderedTopicNames(rawTopics, isPracticeDiscipline)
 
-	types := buildNormalizedTopicTypes(rawTopics, req, targetTopicCount, isPracticeRup)
+	types := buildNormalizedTopicTypes(rawTopics, req, targetTopicCount, isPracticeDiscipline)
 	result := make([]GeneratedTopic, 0, targetTopicCount)
 	namePrefix := "Тема"
 	if strings.EqualFold(req.SourceLanguage, "kk") {
@@ -687,7 +695,7 @@ func normalizeGeneratedTopics(rawTopics []GeneratedTopic, req GenerateTopicsForD
 			total = req.DisciplineHours
 		}
 
-		theoryHours, practiceHours := normalizeTopicHours(topicType, total, isPracticeRup)
+		theoryHours, practiceHours := normalizeTopicHours(topicType, total, isPracticeDiscipline)
 		srspHours := 0
 		if topicType == "SRSP" {
 			srspHours = total

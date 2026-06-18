@@ -136,6 +136,7 @@ export const generateTemplateDisciplines = (
 	for (let i = 0; i < count; i++) {
 		result.push({
 			name: { ru: '', kz: '' },
+			type: 'THEORY' as RupTypeEnum,
 			totalHours: 0,
 			semesters: [],
 			topics: [],

@@ -32,7 +32,7 @@ import {
 	TableRow,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
-import type { Locale, LocaleText } from '@types'
+import { type Locale, type LocaleText, RupTypeEnum } from '@types'
 import { Plus, Trash } from 'lucide-react'
 import {
 	type ArrayPath,
@@ -50,6 +50,7 @@ type Semester = { semester: number; totalHours: number }
 
 type Discipline = {
 	name: LocaleText
+	type: RupTypeEnum
 	totalHours: number
 	semesters: Semester[]
 }
@@ -74,6 +75,7 @@ export function DisciplineEdit<T extends IProps>({ activeLocale }: { activeLocal
 	const t = getUILocaleSection(localeDictionary, locale)
 	const form = useFormContext<T>()
 	const { control } = form
+	const rupType = useWatch({ control, name: 'type' as Path<T> }) as RupTypeEnum | undefined
 
 	const {
 		fields: disciplineFields,
@@ -95,6 +97,7 @@ export function DisciplineEdit<T extends IProps>({ activeLocale }: { activeLocal
 
 	const newDiscipline = {
 		name: { ru: '', kz: '' },
+		type: rupType ?? RupTypeEnum.THEORY,
 		totalHours: 0,
 		semesters: Array.from({ length: 8 }, (_, i) => ({
 			semester: i + 1,

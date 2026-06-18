@@ -184,6 +184,7 @@ CREATE TABLE discipline_topics (
 CREATE TABLE rup_disciplines (
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     name JSONB NOT NULL DEFAULT '{"ru": "", "kz": ""}'::jsonb,
+    type rups_type_enum NOT NULL DEFAULT 'THEORY',
     total_hours INT NOT NULL DEFAULT 0,
 
     semesters UUID[],

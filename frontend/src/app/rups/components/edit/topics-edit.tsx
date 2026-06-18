@@ -21,6 +21,7 @@ import {
 	getHoursStyle,
 	getLocaleText,
 	getUILocaleSection,
+	normalizeRupType,
 	normalizeTopicType,
 } from '@helpers'
 import { cn } from '@lib'
@@ -82,6 +83,7 @@ type Semester = { semester: number; totalHours: number }
 
 type Discipline = {
 	name: LocaleText
+	type: RupTypeEnum
 	semesters: Semester[]
 	topics: Topic[]
 }
@@ -154,9 +156,9 @@ export function TopicsEdit<T extends IProps>({
 				<DisciplineBlock
 					activeLocale={activeLocale}
 					key={field.key}
+					currentRupType={rupType as RupTypeEnum | ''}
 					disciplineIndex={index}
 					generatingDisciplineIndex={generatingDisciplineIndex}
-					rupType={rupType as RupTypeEnum | ''}
 					text={t.topics}
 					onGenerateDiscipline={onGenerateDiscipline}
 				/>
@@ -294,19 +296,20 @@ function mergeTotals(base: TopicTotals, next: TopicTotals): TopicTotals {
 
 function DisciplineBlock<T extends IProps>({
 	activeLocale,
+	currentRupType,
 	disciplineIndex,
 	onGenerateDiscipline,
 	generatingDisciplineIndex,
-	rupType,
 	text,
 }: {
 	activeLocale: Locale
+	currentRupType: RupTypeEnum | ''
 	disciplineIndex: number
 	onGenerateDiscipline?: (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => void
 	generatingDisciplineIndex: number | null
-	rupType: RupTypeEnum | ''
 	text: {
 		deleteSelected: string
+		disciplineType: string
 		addTopic: string
 		tableTopicTitle: string
 		total: string
@@ -344,6 +347,7 @@ function DisciplineBlock<T extends IProps>({
 	}
 }) {
 	const form = useFormContext<T>()
+	const locale = useLocaleStore((state) => state.locale)
 	const [isCollapsed, setIsCollapsed] = useState(false)
 	const [isSticky, setIsSticky] = useState(false)
 	const [additionalMessage, setAdditionalMessage] = useState('')
@@ -375,6 +379,16 @@ function DisciplineBlock<T extends IProps>({
 			control: form.control,
 			name: `disciplines.${disciplineIndex}.topics` as Path<T>,
 		}) as Topic[] | undefined) ?? []
+	const watchedDisciplineType = useWatch({
+		control: form.control,
+		name: `disciplines.${disciplineIndex}.type` as Path<T>,
+	}) as RupTypeEnum | undefined
+	const disciplineType: RupTypeEnum =
+		watchedDisciplineType === RupTypeEnum.PRACTICE || watchedDisciplineType === RupTypeEnum.THEORY
+			? watchedDisciplineType
+			: currentRupType === RupTypeEnum.PRACTICE || currentRupType === RupTypeEnum.THEORY
+				? currentRupType
+				: RupTypeEnum.THEORY
 	const disciplineSemesters =
 		(useWatch({
 			control: form.control,
@@ -396,7 +410,7 @@ function DisciplineBlock<T extends IProps>({
 	const [stickyTopPx, setStickyTopPx] = useState(100)
 	const isGeneratingCurrentDiscipline = generatingDisciplineIndex === disciplineIndex
 	const isGenerateButtonDisabled = generatingDisciplineIndex !== null
-	const isPracticeModule = rupType === RupTypeEnum.PRACTICE
+	const isPracticeModule = disciplineType === RupTypeEnum.PRACTICE
 	const hoursPerTopic = isPracticeModule ? 6 : 2
 	const hasSelectedTopics = selectedTopicKeys.length > 0
 	const isAllSelected = topicFields.length > 0 && selectedTopicKeys.length === topicFields.length
@@ -421,24 +435,18 @@ function DisciplineBlock<T extends IProps>({
 	const practicalMax = Math.max(
 		0,
 		Math.floor(
-			(baseDeclaredHours -
-				combinedCount * hoursPerTopic -
-				(isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
+			(baseDeclaredHours - combinedCount * hoursPerTopic - (isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
 				hoursPerTopic,
 		),
 	)
 	const snzMax = Math.max(
 		0,
-		Math.floor(
-			(baseDeclaredHours - practicalCount * hoursPerTopic - combinedCount * hoursPerTopic) / hoursPerTopic,
-		),
+		Math.floor((baseDeclaredHours - practicalCount * hoursPerTopic - combinedCount * hoursPerTopic) / hoursPerTopic),
 	)
 	const combinedMax = Math.max(
 		0,
 		Math.floor(
-			(baseDeclaredHours -
-				practicalCount * hoursPerTopic -
-				(isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
+			(baseDeclaredHours - practicalCount * hoursPerTopic - (isPracticeModule ? 0 : snzCount * hoursPerTopic)) /
 				hoursPerTopic,
 		),
 	)
@@ -577,6 +585,12 @@ function DisciplineBlock<T extends IProps>({
 	}, [topicFields])
 
 	useEffect(() => {
+		if (!watchedDisciplineType && currentRupType) {
+			form.setValue(`disciplines.${disciplineIndex}.type` as Path<T>, currentRupType as never)
+		}
+	}, [currentRupType, disciplineIndex, form, watchedDisciplineType])
+
+	useEffect(() => {
 		if (preferredPracticalCount !== '' && preferredPracticalCount > practicalMax) {
 			setPreferredPracticalCount(practicalMax)
 		}
@@ -623,6 +637,25 @@ function DisciplineBlock<T extends IProps>({
 							{text.deleteSelected} ({selectedTopicCount})
 						</Button>
 					)}
+					<Select
+						value={disciplineType}
+						onValueChange={(value) =>
+							form.setValue(`disciplines.${disciplineIndex}.type` as Path<T>, value as never, {
+								shouldDirty: true,
+							})
+						}
+					>
+						<SelectTrigger className='h-8 w-[210px]'>
+							<SelectValue aria-label={text.disciplineType} />
+						</SelectTrigger>
+						<SelectContent>
+							{Object.values(RupTypeEnum).map((value) => (
+								<SelectItem key={value} value={value}>
+									{normalizeRupType(value, locale)}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 					<Button
 						size='sm'
 						type='button'
@@ -685,11 +718,11 @@ function DisciplineBlock<T extends IProps>({
 										topicFields.map((field, index) => (
 											<TopicRow
 												activeLocale={activeLocale}
+												disciplineType={disciplineType}
 												key={field.key}
 												disciplineIndex={disciplineIndex}
 												id={field.key}
 												isSelected={selectedTopicKeys.includes(field.key)}
-												rupType={rupType}
 												text={text}
 												toggleSelectTopic={toggleSelectTopic}
 												topicIndex={index}
@@ -889,7 +922,7 @@ interface ITopicRowProps {
 	id: string
 	disciplineIndex: number
 	topicIndex: number
-	rupType: RupTypeEnum | ''
+	disciplineType: RupTypeEnum
 	activeLocale: Locale
 	isSelected: boolean
 	text: { topicPlaceholder: string }
@@ -900,7 +933,7 @@ const TopicRowComponent = ({
 	id,
 	disciplineIndex,
 	topicIndex,
-	rupType,
+	disciplineType,
 	activeLocale,
 	isSelected,
 	text,
@@ -919,25 +952,25 @@ const TopicRowComponent = ({
 	const availableTopicTypes = useMemo(() => {
 		const allTypes = Object.values(TopicTypeEnum)
 
-		if (rupType === RupTypeEnum.PRACTICE) {
+		if (disciplineType === RupTypeEnum.PRACTICE) {
 			// remove SNZ if practice module
 			return allTypes.filter((type) => type !== TopicTypeEnum.SNZ)
 		}
 
 		return allTypes
-	}, [rupType])
+	}, [disciplineType])
 
 	// logic for automatic distribution of hours when changing the rup type
 	useEffect(() => {
-		if (!topic?.type || !rupType) return
+		if (!topic?.type || !disciplineType) return
 
-		const hours = rupType === RupTypeEnum.PRACTICE ? 6 : 2
+		const hours = disciplineType === RupTypeEnum.PRACTICE ? 6 : 2
 
 		// snz
-		const snzPracticalHours = rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ ? 6 : 0
-		const snzIndividualHours = rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ ? 0 : 2
+		const snzPracticalHours = disciplineType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ ? 6 : 0
+		const snzIndividualHours = disciplineType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ ? 0 : 2
 		const snzType =
-			rupType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ
+			disciplineType === RupTypeEnum.PRACTICE && topic.type === TopicTypeEnum.SNZ
 				? TopicTypeEnum.PRACTICAL
 				: TopicTypeEnum.SNZ
 
@@ -965,7 +998,7 @@ const TopicRowComponent = ({
 				}
 			})
 		}
-	}, [disciplineIndex, form, rupType, topic?.type, topicIndex])
+	}, [disciplineIndex, disciplineType, form, topic?.type, topicIndex])
 
 	useEffect(() => {
 		if (!isEditingName) return
@@ -1096,7 +1129,7 @@ const TopicRow = memo(
 		prev.id === next.id &&
 		prev.disciplineIndex === next.disciplineIndex &&
 		prev.topicIndex === next.topicIndex &&
-		prev.rupType === next.rupType &&
+		prev.disciplineType === next.disciplineType &&
 		prev.activeLocale === next.activeLocale &&
 		prev.isSelected === next.isSelected &&
 		prev.toggleSelectTopic === next.toggleSelectTopic,

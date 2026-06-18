@@ -123,6 +123,7 @@ type ResourceRequest struct {
 
 type DisciplineRequest struct {
 	Name      localization.LocaleText `json:"name"`
+	Type      string                  `json:"type"`
 	Semesters []*SemesterRequest      `json:"semesters"`
 	Topics    []*TopicRequest         `json:"topics"`
 }
@@ -244,6 +245,7 @@ type RupDocumentGroup struct {
 
 type RupDocumentDiscipline struct {
 	Name      string              `json:"name"`
+	Type      string              `json:"type"`
 	Semesters []*SemesterResponse `json:"semesters"`
 	Topics    []*RupDocumentTopic `json:"topics"`
 }
@@ -263,6 +265,7 @@ type RupDocumentTopic struct {
 type DisciplineResponse struct {
 	ID         uuid.UUID               `json:"id"`
 	Name       localization.LocaleText `json:"name"`
+	Type       string                  `json:"type"`
 	TotalHours int32                   `json:"totalHours"`
 	Semesters  []*SemesterResponse     `json:"semesters"`
 	Topics     []*TopicResponse        `json:"topics"`
@@ -894,6 +897,7 @@ func buildPayload(rup *RupResponse, group *GroupResponse, language string, verif
 
 		disciplines = append(disciplines, &RupDocumentDiscipline{
 			Name:      localeTextByLanguage(d.Name, selectedLanguage),
+			Type:      d.Type,
 			Semesters: semesters,
 			Topics:    topics,
 		})
@@ -1089,6 +1093,9 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 
 	// Validate disciplines have exactly 8 semesters
 	for _, disc := range req.Disciplines {
+		if disc.Type != "PRACTICE" && disc.Type != "THEORY" {
+			return fmt.Errorf("discipline type must be PRACTICE or THEORY")
+		}
 		if len(disc.Semesters) != 8 {
 			return fmt.Errorf("discipline must have exactly 8 semesters, got %d", len(disc.Semesters))
 		}
@@ -1165,8 +1172,14 @@ func (s *rupService) createDisciplinesInRepo(ctx context.Context, repo repositor
 			return nil, err
 		}
 
+		disciplineType := storage.RupsTypeEnumTHEORY
+		if strings.EqualFold(disc.Type, "PRACTICE") {
+			disciplineType = storage.RupsTypeEnumPRACTICE
+		}
+
 		params := storage.CreateRupDisciplineParams{
 			Name:       disc.Name.ToJSONB(),
+			Type:       disciplineType,
 			TotalHours: calculateDisciplineTotalHours(disc),
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
@@ -1460,8 +1473,14 @@ func (s *rupService) createDisciplines(ctx context.Context, disciplines []*Disci
 			return nil, err
 		}
 
+		disciplineType := storage.RupsTypeEnumTHEORY
+		if strings.EqualFold(disc.Type, "PRACTICE") {
+			disciplineType = storage.RupsTypeEnumPRACTICE
+		}
+
 		params := storage.CreateRupDisciplineParams{
 			Name:       disc.Name.ToJSONB(),
+			Type:       disciplineType,
 			TotalHours: calculateDisciplineTotalHours(disc),
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
@@ -1707,6 +1726,7 @@ func (s *rupService) buildRupResponse(ctx context.Context, rup storage.Rup) (*Ru
 				disciplines = append(disciplines, &DisciplineResponse{
 					ID:         disc.ID,
 					Name:       localization.LocaleTextFromJSONB(disc.Name),
+					Type:       string(disc.Type),
 					TotalHours: disc.TotalHours,
 					Semesters:  semesters,
 					Topics:     topics,
@@ -1889,6 +1909,7 @@ func (s *rupService) convertToDisciplineResponse(ctx context.Context, disc stora
 	return &DisciplineResponse{
 		ID:         disc.ID,
 		Name:       localization.LocaleTextFromJSONB(disc.Name),
+		Type:       string(disc.Type),
 		TotalHours: disc.TotalHours,
 		Semesters:  semesters,
 		Topics:     topics,
@@ -2460,6 +2481,7 @@ func mapRupResponseToCreateRequest(rup *RupResponse) CreateRupRequest {
 
 		disciplines = append(disciplines, &DisciplineRequest{
 			Name:      discipline.Name,
+			Type:      discipline.Type,
 			Semesters: semesters,
 			Topics:    topics,
 		})

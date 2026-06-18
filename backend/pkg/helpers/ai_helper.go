@@ -74,6 +74,7 @@ type GenerateTopicsForDisciplineRequest struct {
 	SourceLanguage          string          `json:"sourceLanguage"`
 	RupName                 string          `json:"rupName"`
 	RupType                 string          `json:"rupType"`
+	DisciplineType          string          `json:"disciplineType"`
 	Goals                   string          `json:"goals"`
 	Competencies            string          `json:"competencies"`
 	DisciplineName          string          `json:"disciplineName"`
@@ -252,6 +253,7 @@ type GenerateTopicsForDisciplinePromptInput struct {
 	RupName                 string
 	DisciplineHours         int
 	RupType                 string
+	DisciplineType          string
 	Goals                   string
 	Competencies            string
 	Message                 string
@@ -589,6 +591,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 ДАННЫЕ ПРОФЕССИОНАЛЬНОГО МОДУЛЯ:
 - Название: "%s"
 - Тип РУП: %s
+- Тип дисциплины: %s
 - Цели освоения профессионального модуля: "%s"
 - Формируемые компетенции: "%s"
 - Название дисциплины: "%s"
@@ -605,12 +608,12 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 ПРАВИЛА ГЕНЕРАЦИИ ТЕМ:
 
 1. Количество и длительность тем:
-- Если тип РУП = PRACTICE:
+- Если тип дисциплины = PRACTICE:
   - каждая тема = 6 часов
   - темы могут быть "PRACTICAL" или "SRSP"
   - для "PRACTICAL": theoryHours = 0, practiceHours = 6
   - для "SRSP": theoryHours = 0, practiceHours = 0
-- Если тип РУП = THEORY:
+- Если тип дисциплины = THEORY:
   - каждая тема = 2 часа
   - темы могут быть "COMBINED", "PRACTICAL", "SNZ" или "SRSP"
   - для "SRSP": theoryHours = 0, practiceHours = 0
@@ -680,6 +683,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 		in.DisciplineHours,
 		escapePromptValue(in.RupName),
 		escapePromptValue(in.RupType),
+		escapePromptValue(in.DisciplineType),
 		escapePromptValue(in.Goals),
 		escapePromptValue(in.Competencies),
 		escapePromptValue(in.DisciplineName),

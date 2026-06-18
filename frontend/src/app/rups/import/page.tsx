@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 
 import { PageTitle, withPermission } from '@components'
 import {
-	formatCourseFromYearAndGroupName,
 	generateStudyYears,
 	getGroupYear,
 	getLocaleText,
@@ -53,7 +52,7 @@ import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type IParseRupImportResponse, PermissionCodeEnum } from '@types'
 import { isAxiosError } from 'axios'
-import { AlertTriangle, Check, ChevronsUpDown, FileText, Loader2, RefreshCw, Upload, X } from 'lucide-react'
+import { AlertTriangle, Check, ChevronsUpDown, FileText, Loader2, RefreshCw, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 import localeDictionary from './locale.json'
@@ -99,14 +98,6 @@ const joinValues = (values: string[] | undefined, emptyValue: string) => {
 	return filtered.length ? filtered.join(', ') : emptyValue
 }
 
-const getCurrentAcademicYear = () => {
-	const now = new Date()
-	const currentYear = now.getFullYear()
-	const academicYearStart = now.getMonth() >= 8 ? currentYear : currentYear - 1
-
-	return `${academicYearStart}-${academicYearStart + 1}`
-}
-
 const Metric = ({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) => (
 	<div className='rounded-lg border bg-card p-3'>
 		<p className='text-xs text-muted-foreground'>{label}</p>
@@ -122,7 +113,7 @@ const Page: NextPage = () => {
 
 	const [files, setFiles] = useState<File[]>([])
 	const [parseResult, setParseResult] = useState<IParseRupImportResponse | null>(null)
-	const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([])
+	const [selectedGroupId, setSelectedGroupId] = useState('')
 	const [studyYear, setStudyYear] = useState('')
 	const [course, setCourse] = useState('')
 	const [groupOpen, setGroupOpen] = useState(false)
@@ -137,62 +128,27 @@ const Page: NextPage = () => {
 	const file = files[0]
 	const payload = parseResult?.payload
 	const warnings = parseResult?.warnings?.length ? parseResult.warnings : (payload?.warnings ?? [])
-	const selectedGroups = groupsData.filter((group) => selectedGroupIds.includes(group.keycloakId))
-	const selectedGroupSet = new Set(selectedGroupIds)
-	const groupsByCourse = (() => {
-		const sections = new Map<number, typeof groupsData>()
-		const uncategorizedGroups: typeof groupsData = []
-
-		for (const group of groupsData) {
-			const courseValue = formatCourseFromYearAndGroupName(group.name, getCurrentAcademicYear())
-
-			if (typeof courseValue !== 'number') {
-				uncategorizedGroups.push(group)
-				continue
-			}
-
-			const courseGroups = sections.get(courseValue) || []
-
-			courseGroups.push(group)
-			sections.set(courseValue, courseGroups)
-		}
-
-		return {
-			orderedSections: Array.from(sections.entries())
-				.sort(([leftCourse], [rightCourse]) => leftCourse - rightCourse)
-				.map(([courseValue, sectionGroups]) => ({
-					course: courseValue,
-					groups: sectionGroups.sort((left, right) => left.name.localeCompare(right.name, locale)),
-				})),
-			uncategorizedGroups: uncategorizedGroups.sort((left, right) => left.name.localeCompare(right.name, locale)),
-		}
-	})()
-	const availableStudyYears = Array.from(
-		new Set(
-			selectedGroups.flatMap((group) => {
-				const groupYear = getGroupYear(group.name)
-
-				return typeof groupYear === 'number' ? generateStudyYears(groupYear) : []
-			}),
-		),
-	).sort()
+	const selectedGroup = groupsData.find((group) => group.keycloakId === selectedGroupId)
+	const selectedGroupYear = selectedGroup ? getGroupYear(selectedGroup.name) : undefined
+	const availableStudyYears =
+		typeof selectedGroupYear === 'number' ? generateStudyYears(selectedGroupYear).sort() : []
 	const parsedName = payload ? getLocaleText(payload.name, locale) : ''
 	const topicCount = payload?.disciplines.reduce((count, discipline) => count + discipline.topics.length, 0) ?? 0
 	const canConfirm =
-		!!parseResult && selectedGroupIds.length > 0 && STUDY_YEAR_PATTERN.test(studyYear.trim()) && isCourseOption(Number(course))
+		!!parseResult && !!selectedGroupId && STUDY_YEAR_PATTERN.test(studyYear.trim()) && isCourseOption(Number(course))
 
 	useEffect(() => {
 		if (!parseResult) return
 
 		const courseSuggestion = Number(parseResult.payload.courseSuggestion)
 
-		setSelectedGroupIds([])
+		setSelectedGroupId('')
 		setStudyYear(parseResult.payload.studyYearSuggestion || '')
 		setCourse(isCourseOption(courseSuggestion) ? String(courseSuggestion) : '')
 	}, [parseResult])
 
 	useEffect(() => {
-		if (!selectedGroups.length) {
+		if (!selectedGroup) {
 			setStudyYear('')
 			return
 		}
@@ -212,54 +168,13 @@ const Page: NextPage = () => {
 		}
 
 		setStudyYear(availableStudyYears[0])
-	}, [availableStudyYears, payload?.studyYearSuggestion, selectedGroups.length, studyYear])
+	}, [availableStudyYears, payload?.studyYearSuggestion, selectedGroup, studyYear])
 
 	const resetParsedState = () => {
 		setParseResult(null)
-		setSelectedGroupIds([])
+		setSelectedGroupId('')
 		setStudyYear('')
 		setCourse('')
-	}
-
-	const updateGroupSelection = (nextSelection: string[]) => {
-		const uniqueSelection = Array.from(new Set(nextSelection))
-		const orderedSelection = groupsData
-			.map((group) => group.keycloakId)
-			.filter((groupId) => uniqueSelection.includes(groupId))
-
-		setSelectedGroupIds(orderedSelection)
-	}
-
-	const toggleGroupSelection = (groupId: string) => {
-		const nextSelection = selectedGroupIds.includes(groupId)
-			? selectedGroupIds.filter((item) => item !== groupId)
-			: [...selectedGroupIds, groupId]
-
-		updateGroupSelection(nextSelection)
-	}
-
-	const toggleCourseSelection = (courseValue: number) => {
-		const courseGroupIds =
-			groupsByCourse.orderedSections
-				.find((section) => section.course === courseValue)
-				?.groups.map((group) => group.keycloakId) || []
-
-		if (!courseGroupIds.length) return
-
-		const courseSet = new Set(courseGroupIds)
-		const isCourseFullySelected = courseGroupIds.every((groupId) => selectedGroupSet.has(groupId))
-
-		const nextSelection = isCourseFullySelected
-			? selectedGroupIds.filter((groupId) => !courseSet.has(groupId))
-			: [...selectedGroupIds, ...courseGroupIds.filter((groupId) => !selectedGroupSet.has(groupId))]
-
-		updateGroupSelection(nextSelection)
-	}
-
-	const isAllGroupsSelected = groupsData.length > 0 && selectedGroupIds.length === groupsData.length
-
-	const toggleAllGroupsSelection = () => {
-		updateGroupSelection(isAllGroupsSelected ? [] : groupsData.map((group) => group.keycloakId))
 	}
 
 	const handleDrop = (acceptedFiles: File[]) => {
@@ -299,7 +214,7 @@ const Page: NextPage = () => {
 
 			return
 		}
-		if (!selectedGroupIds.length) {
+		if (!selectedGroupId) {
 			toast.error(t.missingGroup)
 
 			return
@@ -324,7 +239,7 @@ const Page: NextPage = () => {
 		confirmMutation.mutate(
 			{
 				importDraftId: parseResult.importDraftId,
-				groupIds: selectedGroupIds,
+				groupId: selectedGroupId,
 				studyYear: studyYear.trim(),
 				course: numericCourse,
 			},
@@ -498,16 +413,14 @@ const Page: NextPage = () => {
 									<Popover open={groupOpen} onOpenChange={setGroupOpen}>
 										<PopoverTrigger asChild>
 											<Button
-												className={cn('w-full justify-between', !selectedGroups.length && 'text-muted-foreground')}
+												className={cn('w-full justify-between', !selectedGroup && 'text-muted-foreground')}
 												disabled={isGroupsLoading || confirmMutation.isPending}
 												role='combobox'
 												type='button'
 												variant='outline'
 											>
-												{selectedGroups.length
-													? selectedGroups.length === 1
-														? selectedGroups[0]?.name
-														: interpolateUILocaleText(t.selectedGroupsCount, { count: selectedGroups.length })
+												{selectedGroup?.name
+													? selectedGroup.name
 													: isGroupsLoading
 														? t.groupsLoading
 														: t.groupPlaceholder}
@@ -519,93 +432,26 @@ const Page: NextPage = () => {
 												<CommandInput placeholder={t.groupSearch} />
 												<CommandList>
 													<CommandEmpty>{t.groupNotFound}</CommandEmpty>
-													<CommandGroup heading={t.allCourses}>
-														<CommandItem value={t.allCourses} onSelect={toggleAllGroupsSelection}>
-															<Check
-																className={cn(
-																	'mr-2 h-4 w-4',
-																	isAllGroupsSelected ? 'opacity-100' : 'opacity-0',
-																)}
-															/>
-															{t.allCourses}
-														</CommandItem>
-														{selectedGroupIds.length > 0 ? (
-															<CommandItem value={t.clearSelection} onSelect={() => updateGroupSelection([])}>
-																<X className='mr-2 h-4 w-4' />
-																{t.clearSelection}
-															</CommandItem>
-														) : null}
-													</CommandGroup>
-													{groupsByCourse.orderedSections.map(({ course: courseValue, groups }) => {
-														const courseGroupIds = groups.map((group) => group.keycloakId)
-														const isCourseFullySelected =
-															courseGroupIds.length > 0 &&
-															courseGroupIds.every((groupId) => selectedGroupSet.has(groupId))
-
-														return (
-															<CommandGroup
-																key={courseValue}
-																heading={interpolateUILocaleText(t.courseFull, { course: courseValue })}
+													<CommandGroup>
+														{groupsData.map((group) => (
+															<CommandItem
+																key={group.keycloakId}
+																value={`${group.name} ${getLocaleText(group.specialty, locale)} ${getLocaleText(group.qualification, locale)}`}
+																onSelect={() => {
+																	setSelectedGroupId(group.keycloakId)
+																	setGroupOpen(false)
+																}}
 															>
-																<CommandItem
-																	value={`${interpolateUILocaleText(t.courseFull, { course: courseValue })} ${t.allCourses}`}
-																	onSelect={() => toggleCourseSelection(courseValue)}
-																>
-																	<Check
-																		className={cn(
-																			'mr-2 h-4 w-4',
-																			isCourseFullySelected ? 'opacity-100' : 'opacity-0',
-																		)}
-																	/>
-																	{interpolateUILocaleText(t.courseFull, { course: courseValue })}
-																</CommandItem>
-																{groups.map((group) => (
-																	<CommandItem
-																		key={group.keycloakId}
-																		value={`${group.name} ${getLocaleText(group.specialty, locale)} ${getLocaleText(
-																			group.qualification,
-																			locale,
-																		)}`}
-																		onSelect={() => toggleGroupSelection(group.keycloakId)}
-																	>
-																		<Check
-																			className={cn(
-																				'mr-2 h-4 w-4',
-																				selectedGroupSet.has(group.keycloakId)
-																					? 'opacity-100'
-																					: 'opacity-0',
-																			)}
-																		/>
-																		<div className='flex w-full items-center justify-between gap-2'>
-																			<span>{group.name}</span>
-																			<span className='shrink-0 text-xs text-muted-foreground'>
-																				{interpolateUILocaleText(t.courseShort, { course: courseValue })}
-																			</span>
-																		</div>
-																	</CommandItem>
-																))}
-															</CommandGroup>
-														)
-													})}
-													{groupsByCourse.uncategorizedGroups.length > 0 ? (
-														<CommandGroup heading={t.noCourse}>
-															{groupsByCourse.uncategorizedGroups.map((group) => (
-																<CommandItem
-																	key={group.keycloakId}
-																	value={group.name}
-																	onSelect={() => toggleGroupSelection(group.keycloakId)}
-																>
-																	<Check
-																		className={cn(
-																			'mr-2 h-4 w-4',
-																			selectedGroupSet.has(group.keycloakId) ? 'opacity-100' : 'opacity-0',
-																		)}
-																	/>
-																	{group.name}
-																</CommandItem>
-															))}
-														</CommandGroup>
-													) : null}
+																<Check
+																	className={cn(
+																		'mr-2 h-4 w-4',
+																		group.keycloakId === selectedGroupId ? 'opacity-100' : 'opacity-0',
+																	)}
+																/>
+																{group.name}
+															</CommandItem>
+														))}
+													</CommandGroup>
 												</CommandList>
 											</Command>
 										</PopoverContent>
@@ -622,7 +468,7 @@ const Page: NextPage = () => {
 								<div className='space-y-2'>
 									<Label>{t.studyYearLabel}</Label>
 									<Select
-										disabled={!selectedGroups.length || !availableStudyYears.length || confirmMutation.isPending}
+										disabled={!selectedGroup || !availableStudyYears.length || confirmMutation.isPending}
 										value={studyYear}
 										onValueChange={setStudyYear}
 									>
@@ -689,23 +535,16 @@ const Page: NextPage = () => {
 									) : null}
 								</div>
 
-								{selectedGroups.length > 0 ? (
+								{selectedGroup ? (
 									<div className='rounded-lg border bg-muted/30 p-4'>
-										<p className='text-sm font-medium'>{t.selectedGroupsTitle}</p>
-										<div className='mt-3 flex flex-wrap gap-2 text-sm'>
-											{selectedGroups.map((group) => (
-												<Badge key={group.keycloakId} className='gap-1' variant='secondary'>
-													<span className='max-w-48 truncate'>{group.name}</span>
-													<button
-														aria-label={`${t.clearSelection}: ${group.name}`}
-														className='rounded-sm p-0.5 hover:bg-black/10'
-														type='button'
-														onClick={() => toggleGroupSelection(group.keycloakId)}
-													>
-														<X className='h-3 w-3' />
-													</button>
-												</Badge>
-											))}
+										<p className='text-sm font-medium'>{t.selectedGroupTitle}</p>
+										<div className='mt-3 space-y-2 text-sm'>
+											<p className='font-medium'>{selectedGroup.name}</p>
+											<div className='flex flex-wrap gap-2 text-xs text-muted-foreground'>
+												<span>{getLocaleText(selectedGroup.specialty, locale) || t.emptyValue}</span>
+												<span>•</span>
+												<span>{getLocaleText(selectedGroup.qualification, locale) || t.emptyValue}</span>
+											</div>
 										</div>
 									</div>
 								) : null}

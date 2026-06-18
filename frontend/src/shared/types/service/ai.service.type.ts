@@ -100,6 +100,7 @@ export interface IGenerateTopicsForDiscipline {
 	sourceLanguage?: 'ru' | 'kk'
 	rupName: string
 	rupType: RupTypeEnum
+	disciplineType: RupTypeEnum
 	goals: string
 	competencies: string
 	disciplineName: string
