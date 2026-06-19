@@ -28,6 +28,7 @@ export interface ICreateSemester {
 export interface ICreateTopic {
 	name: LocaleText
 	type: TopicTypeEnum
+	durationHours?: number
 	theoryHours: number
 	practiceHours: number
 	individualHours: number
@@ -133,4 +134,14 @@ export interface IGetAllRequest extends IPaginationRequest {
 	methodist?: string
 	teacher?: string
 	status?: StatusEnum[]
+	groupIds?: string[]
+	studyYear?: string
+}
+
+export interface IRupReviewTeacher {
+	keycloakId: string
+	firstName: string
+	lastName: string
+	username: string
+	reviewRupsCount: number
 }

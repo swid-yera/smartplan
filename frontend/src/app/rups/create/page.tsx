@@ -9,6 +9,7 @@ import { Loader, PageTitle, RupLanguageDialog, withPermission } from '@component
 import {
 	createLocaleText,
 	getLocaleText,
+	getTopicDurationHours,
 	getUILocaleSection,
 	interpolateUILocaleText,
 	isSiteLocale,
@@ -115,7 +116,6 @@ const normalizeStoredRupData = (raw: unknown): RUPFormData => {
 			const topics = Array.isArray(typedDiscipline.topics) ? typedDiscipline.topics : []
 
 			return {
-				...typedDiscipline,
 				name: toLocaleText(typedDiscipline.name as Parameters<typeof toLocaleText>[0]),
 				semesters: semesters.map((semester) => ({
 					semester: Number((semester as { semester?: number }).semester) || 0,
@@ -125,6 +125,14 @@ const normalizeStoredRupData = (raw: unknown): RUPFormData => {
 					...topic,
 					name: toLocaleText((topic as { name?: unknown }).name as Parameters<typeof toLocaleText>[0]),
 					type: (topic as { type?: string }).type ?? TopicTypeEnum.PRACTICAL,
+					durationHours: getTopicDurationHours({
+						type: ((topic as { type?: string }).type as TopicTypeEnum) ?? TopicTypeEnum.PRACTICAL,
+						durationHours: Number((topic as { durationHours?: number }).durationHours) || 0,
+						theoryHours: Number((topic as { theoryHours?: number }).theoryHours) || 0,
+						practiceHours: Number((topic as { practiceHours?: number }).practiceHours) || 0,
+						individualHours: Number((topic as { individualHours?: number }).individualHours) || 0,
+						srspHours: Number((topic as { srspHours?: number }).srspHours) || 0,
+					}),
 					theoryHours: Number((topic as { theoryHours?: number }).theoryHours) || 0,
 					practiceHours: Number((topic as { practiceHours?: number }).practiceHours) || 0,
 					individualHours: Number((topic as { individualHours?: number }).individualHours) || 0,
@@ -357,6 +365,7 @@ const Page: NextPage = () => {
 			topics: discipline.topics.map((topic) => ({
 				...topic,
 				name: mapLocaleTextForCreate(topic.name, creationLocale),
+				durationHours: topic.durationHours ?? getTopicDurationHours(topic),
 				individualHours: topic.individualHours ?? 0,
 				srspHours: topic.srspHours ?? 0,
 				srsHours: topic.srsHours ?? 0,

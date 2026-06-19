@@ -7,6 +7,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -75,7 +77,11 @@ func (c *DocumentRenderClient) PostMultipartFile(
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 
-	part, err := writer.CreateFormFile(fieldName, fileName)
+	if err := writer.WriteField("original_filename", fileName); err != nil {
+		return nil, err
+	}
+
+	part, err := writer.CreateFormFile(fieldName, sanitizeMultipartFilename(fileName))
 	if err != nil {
 		return nil, err
 	}
@@ -126,6 +132,28 @@ func (c *DocumentRenderClient) PostMultipartFile(
 	}
 
 	return nil, fmt.Errorf("document rendering redirect limit exceeded for %s", endpoint)
+}
+
+var nonASCIIFilenameChars = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
+
+func sanitizeMultipartFilename(fileName string) string {
+	ext := filepath.Ext(fileName)
+	base := strings.TrimSuffix(filepath.Base(fileName), ext)
+	safeBase := nonASCIIFilenameChars.ReplaceAllString(base, "_")
+	safeBase = strings.Trim(safeBase, "._-")
+	if safeBase == "" {
+		safeBase = "upload"
+	}
+
+	safeExt := nonASCIIFilenameChars.ReplaceAllString(ext, "")
+	if safeExt == "" {
+		safeExt = ".docx"
+	}
+	if !strings.HasPrefix(safeExt, ".") {
+		safeExt = "." + safeExt
+	}
+
+	return safeBase + safeExt
 }
 
 func (c *DocumentRenderClient) doWithoutAutoRedirect(req *http.Request) (*http.Response, error) {

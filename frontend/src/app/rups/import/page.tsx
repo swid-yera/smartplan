@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation'
 
 import { PageTitle, withPermission } from '@components'
 import {
+	formatCourseFromYearAndGroupName,
+	generateStudyYears,
+	getGroupYear,
 	getLocaleText,
 	getUILocaleSection,
 	interpolateUILocaleText,
@@ -35,7 +38,6 @@ import {
 	Dropzone,
 	DropzoneContent,
 	DropzoneEmptyState,
-	Input,
 	Label,
 	Popover,
 	PopoverContent,
@@ -51,7 +53,7 @@ import { useLocaleStore } from '@store'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type IParseRupImportResponse, PermissionCodeEnum } from '@types'
 import { isAxiosError } from 'axios'
-import { AlertTriangle, Check, ChevronsUpDown, FileText, Loader2, RefreshCw, Upload } from 'lucide-react'
+import { AlertTriangle, Check, ChevronsUpDown, FileText, Loader2, RefreshCw, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import localeDictionary from './locale.json'
@@ -97,6 +99,14 @@ const joinValues = (values: string[] | undefined, emptyValue: string) => {
 	return filtered.length ? filtered.join(', ') : emptyValue
 }
 
+const getCurrentAcademicYear = () => {
+	const now = new Date()
+	const currentYear = now.getFullYear()
+	const academicYearStart = now.getMonth() >= 8 ? currentYear : currentYear - 1
+
+	return `${academicYearStart}-${academicYearStart + 1}`
+}
+
 const Metric = ({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) => (
 	<div className='rounded-lg border bg-card p-3'>
 		<p className='text-xs text-muted-foreground'>{label}</p>
@@ -128,6 +138,38 @@ const Page: NextPage = () => {
 	const payload = parseResult?.payload
 	const warnings = parseResult?.warnings?.length ? parseResult.warnings : (payload?.warnings ?? [])
 	const selectedGroup = groupsData.find((group) => group.keycloakId === selectedGroupId)
+	const groupsByCourse = (() => {
+		const sections = new Map<number, typeof groupsData>()
+		const uncategorizedGroups: typeof groupsData = []
+
+		for (const group of groupsData) {
+			const courseValue = formatCourseFromYearAndGroupName(group.name, getCurrentAcademicYear())
+
+			if (typeof courseValue !== 'number') {
+				uncategorizedGroups.push(group)
+				continue
+			}
+
+			const courseGroups = sections.get(courseValue) || []
+
+			courseGroups.push(group)
+			sections.set(courseValue, courseGroups)
+		}
+
+		return {
+			orderedSections: Array.from(sections.entries())
+				.sort(([leftCourse], [rightCourse]) => leftCourse - rightCourse)
+				.map(([courseValue, sectionGroups]) => ({
+					course: courseValue,
+					groups: sectionGroups.sort((left, right) => left.name.localeCompare(right.name, locale)),
+				})),
+			uncategorizedGroups: uncategorizedGroups.sort((left, right) => left.name.localeCompare(right.name, locale)),
+		}
+	})()
+	const groupYear = selectedGroup ? getGroupYear(selectedGroup.name) : undefined
+	const availableStudyYears = Array.from(
+		new Set(typeof groupYear === 'number' ? generateStudyYears(groupYear) : []),
+	).sort()
 	const parsedName = payload ? getLocaleText(payload.name, locale) : ''
 	const topicCount = payload?.disciplines.reduce((count, discipline) => count + discipline.topics.length, 0) ?? 0
 	const canConfirm =
@@ -143,6 +185,32 @@ const Page: NextPage = () => {
 		setCourse(isCourseOption(courseSuggestion) ? String(courseSuggestion) : '')
 	}, [parseResult])
 
+	useEffect(() => {
+		if (!selectedGroup) {
+			setStudyYear('')
+
+			return
+		}
+
+		if (!availableStudyYears.length) {
+			setStudyYear('')
+
+			return
+		}
+
+		if (studyYear && availableStudyYears.includes(studyYear)) {
+			return
+		}
+
+		if (payload?.studyYearSuggestion && availableStudyYears.includes(payload.studyYearSuggestion)) {
+			setStudyYear(payload.studyYearSuggestion)
+
+			return
+		}
+
+		setStudyYear(availableStudyYears[0])
+	}, [availableStudyYears, payload?.studyYearSuggestion, selectedGroup, studyYear])
+
 	const resetParsedState = () => {
 		setParseResult(null)
 		setSelectedGroupId('')
@@ -150,10 +218,20 @@ const Page: NextPage = () => {
 		setCourse('')
 	}
 
+	const selectGroup = (groupId: string) => {
+		setSelectedGroupId(groupId)
+		setGroupOpen(false)
+	}
+
 	const handleDrop = (acceptedFiles: File[]) => {
 		const nextFile = acceptedFiles[0]
 
 		setFiles(nextFile ? [nextFile] : [])
+		resetParsedState()
+	}
+
+	const clearFile = () => {
+		setFiles([])
 		resetParsedState()
 	}
 
@@ -257,6 +335,7 @@ const Page: NextPage = () => {
 								disabled={parseMutation.isPending || confirmMutation.isPending}
 								maxFiles={1}
 								maxSize={MAX_FILE_BYTES}
+								multiple={false}
 								src={files.length ? files : undefined}
 								onDrop={handleDrop}
 								onError={(error) => toast.error(error.message || t.fileDropError)}
@@ -286,6 +365,19 @@ const Page: NextPage = () => {
 									</div>
 								</DropzoneContent>
 							</Dropzone>
+
+							{file ? (
+								<Button
+									className='w-full sm:w-auto'
+									disabled={parseMutation.isPending || confirmMutation.isPending}
+									type='button'
+									variant='ghost'
+									onClick={clearFile}
+								>
+									<X className='mr-2 h-4 w-4' />
+									{t.clearFile}
+								</Button>
+							) : null}
 
 							<Button
 								className='w-full sm:w-auto'
@@ -392,7 +484,11 @@ const Page: NextPage = () => {
 												type='button'
 												variant='outline'
 											>
-												{selectedGroup?.name || (isGroupsLoading ? t.groupsLoading : t.groupPlaceholder)}
+												{selectedGroup
+													? selectedGroup.name
+													: isGroupsLoading
+														? t.groupsLoading
+														: t.groupPlaceholder}
 												<ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
 											</Button>
 										</PopoverTrigger>
@@ -401,31 +497,63 @@ const Page: NextPage = () => {
 												<CommandInput placeholder={t.groupSearch} />
 												<CommandList>
 													<CommandEmpty>{t.groupNotFound}</CommandEmpty>
-													<CommandGroup>
-														{groupsData.map((group) => (
-															<CommandItem
-																key={group.keycloakId}
-																value={`${group.name} ${getLocaleText(group.specialty, locale)} ${getLocaleText(
-																	group.qualification,
-																	locale,
-																)}`}
-																onSelect={() => {
-																	setSelectedGroupId(group.keycloakId)
-																	setGroupOpen(false)
-																}}
+													{groupsByCourse.orderedSections.map(({ course: courseValue, groups }) => {
+														return (
+															<CommandGroup
+																key={courseValue}
+																heading={interpolateUILocaleText(t.courseFull, { course: courseValue })}
 															>
-																<Check
-																	className={cn(
-																		'mr-2 h-4 w-4',
-																		group.keycloakId === selectedGroupId
-																			? 'opacity-100'
-																			: 'opacity-0',
-																	)}
-																/>
-																<span>{group.name}</span>
-															</CommandItem>
-														))}
-													</CommandGroup>
+																{groups.map((group) => (
+																	<CommandItem
+																		key={group.keycloakId}
+																		value={`${group.name} ${getLocaleText(group.specialty, locale)} ${getLocaleText(
+																			group.qualification,
+																			locale,
+																		)}`}
+																		onSelect={() => selectGroup(group.keycloakId)}
+																	>
+																		<Check
+																			className={cn(
+																				'mr-2 h-4 w-4',
+																				selectedGroupId === group.keycloakId
+																					? 'opacity-100'
+																					: 'opacity-0',
+																			)}
+																		/>
+																		<div className='flex w-full items-center justify-between gap-2'>
+																			<span>{group.name}</span>
+																			<span className='shrink-0 text-xs text-muted-foreground'>
+																				{interpolateUILocaleText(t.courseShort, {
+																					course: courseValue,
+																				})}
+																			</span>
+																		</div>
+																	</CommandItem>
+																))}
+															</CommandGroup>
+														)
+													})}
+													{groupsByCourse.uncategorizedGroups.length > 0 ? (
+														<CommandGroup heading={t.noCourse}>
+															{groupsByCourse.uncategorizedGroups.map((group) => (
+																<CommandItem
+																	key={group.keycloakId}
+																	value={group.name}
+																	onSelect={() => selectGroup(group.keycloakId)}
+																>
+																	<Check
+																		className={cn(
+																			'mr-2 h-4 w-4',
+																			selectedGroupId === group.keycloakId
+																				? 'opacity-100'
+																				: 'opacity-0',
+																		)}
+																	/>
+																	{group.name}
+																</CommandItem>
+															))}
+														</CommandGroup>
+													) : null}
 												</CommandList>
 											</Command>
 										</PopoverContent>
@@ -440,27 +568,38 @@ const Page: NextPage = () => {
 								</div>
 
 								<div className='space-y-2'>
-									<Label htmlFor='rup-import-study-year'>{t.studyYearLabel}</Label>
-									<Input
-										disabled={confirmMutation.isPending}
-										id='rup-import-study-year'
-										placeholder={t.studyYearPlaceholder}
+									<Label>{t.studyYearLabel}</Label>
+									<Select
+										disabled={!selectedGroup || !availableStudyYears.length || confirmMutation.isPending}
 										value={studyYear}
-										onChange={(event) => setStudyYear(event.target.value)}
-									/>
+										onValueChange={setStudyYear}
+									>
+										<SelectTrigger className='w-full'>
+											<SelectValue placeholder={t.studyYearPlaceholder} />
+										</SelectTrigger>
+										<SelectContent>
+											{availableStudyYears.map((year) => (
+												<SelectItem key={year} value={year}>
+													{year}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 									{payload.studyYearSuggestion ? (
 										<div className='flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
 											<span>
 												{interpolateUILocaleText(t.suggestion, { value: payload.studyYearSuggestion })}
 											</span>
-											<Button
-												size='sm'
-												type='button'
-												variant='ghost'
-												onClick={() => setStudyYear(payload.studyYearSuggestion || '')}
-											>
-												{t.useSuggestion}
-											</Button>
+											{availableStudyYears.includes(payload.studyYearSuggestion) ? (
+												<Button
+													size='sm'
+													type='button'
+													variant='ghost'
+													onClick={() => setStudyYear(payload.studyYearSuggestion || '')}
+												>
+													{t.useSuggestion}
+												</Button>
+											) : null}
 										</div>
 									) : null}
 								</div>
@@ -497,26 +636,6 @@ const Page: NextPage = () => {
 										</div>
 									) : null}
 								</div>
-
-								{selectedGroup ? (
-									<div className='rounded-lg border bg-muted/30 p-4'>
-										<p className='text-sm font-medium'>{t.selectedGroupTitle}</p>
-										<div className='mt-3 space-y-3 text-sm'>
-											<div>
-												<p className='text-xs text-muted-foreground'>{t.groupLabel}</p>
-												<p className='font-medium'>{selectedGroup.name}</p>
-											</div>
-											<div>
-												<p className='text-xs text-muted-foreground'>{t.specialtyLabel}</p>
-												<p>{getLocaleText(selectedGroup.specialty, locale) || t.emptyValue}</p>
-											</div>
-											<div>
-												<p className='text-xs text-muted-foreground'>{t.qualificationLabel}</p>
-												<p>{getLocaleText(selectedGroup.qualification, locale) || t.emptyValue}</p>
-											</div>
-										</div>
-									</div>
-								) : null}
 
 								<Button
 									className='w-full'

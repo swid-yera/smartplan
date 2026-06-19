@@ -28,6 +28,14 @@ from app.post_process import apply_kazakh_template_localization, apply_vertical_
 
 TABLE_ANCHOR = "Заведующий отделением"
 QR_BLOCK_OFFSET = Inches(1.85)
+QR_NOTE_TEXT = {
+    "ru": "Проверить подлинность электронного документа Вы можете на kripto.aspc.kz",
+    "kz": "Электрондық құжаттың түпнұсқалығын kripto.aspc.kz сайтында тексере аласыз",
+}
+RUP_TITLE_TEXT = {
+    "ru": "Пояснительная записка",
+    "kz": "Түсіндірме жазба",
+}
 
 
 def insert_paragraph_after(paragraph: Paragraph) -> Paragraph:
@@ -46,6 +54,24 @@ def remove_paragraph(paragraph: Paragraph) -> None:
     parent = paragraph._p.getparent()
     if parent is not None:
         parent.remove(paragraph._p)
+
+
+def find_paragraph_index(doc: Document, candidates: tuple[str, ...]) -> int | None:
+    normalized_candidates = {candidate.strip() for candidate in candidates if candidate.strip()}
+    for index, paragraph in enumerate(doc.paragraphs):
+        if paragraph.text.strip() in normalized_candidates:
+            return index
+    return None
+
+
+def find_anchor_table(doc: Document, candidates: tuple[str, ...]):
+    normalized_candidates = {candidate.strip() for candidate in candidates if candidate.strip()}
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                if cell.text.strip() in normalized_candidates:
+                    return table
+    return None
 
 
 def collect_verification_urls(data: dict) -> list[str]:
@@ -79,8 +105,9 @@ def append_verification_qr(file_path: Path, data: dict, language: str) -> None:
     if not urls:
         return
 
+    selected_language = normalize_language(language)
     doc = Document(file_path)
-    anchor_table = next((table for table in doc.tables if any(TABLE_ANCHOR in cell.text for row in table.rows for cell in row.cells)), None)
+    anchor_table = find_anchor_table(doc, (TABLE_ANCHOR, "Бөлімше меңгерушісі"))
     cursor = insert_paragraph_after_table(anchor_table, doc) if anchor_table else doc.add_paragraph()
 
     for index, url in enumerate(urls):
@@ -120,20 +147,27 @@ def append_verification_qr(file_path: Path, data: dict, language: str) -> None:
 
         cursor = qr_paragraph
 
-    for paragraph in doc.paragraphs:
-        if paragraph.text.strip() == "Пояснительная записка":
-            paragraph.paragraph_format.page_break_before = True
-            paragraph.paragraph_format.space_before = Pt(0)
-            paragraph.paragraph_format.space_after = Pt(0)
-            break
+    title_index = find_paragraph_index(doc, (RUP_TITLE_TEXT["ru"], RUP_TITLE_TEXT["kz"]))
+    if title_index is not None:
+        paragraph = doc.paragraphs[title_index]
+        paragraph.paragraph_format.page_break_before = True
+        paragraph.paragraph_format.space_before = Pt(0)
+        paragraph.paragraph_format.space_after = Pt(0)
 
     try:
-        qr_index = next(i for i, paragraph in enumerate(doc.paragraphs) if paragraph.text.strip() and paragraph.text.strip().startswith("Проверить подлинность электронного документа"))
-        title_index = next(i for i, paragraph in enumerate(doc.paragraphs) if paragraph.text.strip() == "Пояснительная записка")
+        qr_note_prefix = QR_NOTE_TEXT[selected_language].split(" на ")[0]
+        qr_index = next(
+            i
+            for i, paragraph in enumerate(doc.paragraphs)
+            if paragraph.text.strip()
+            and paragraph.text.strip().startswith(qr_note_prefix)
+        )
+        if title_index is None:
+            raise ValueError("title paragraph was not found")
         for paragraph in list(doc.paragraphs[qr_index + 1:title_index]):
             if paragraph.text.strip() == "" and not paragraph._p.xpath('.//w:drawing'):
                 remove_paragraph(paragraph)
-    except ValueError:
+    except (StopIteration, ValueError):
         pass
 
     doc.save(file_path)

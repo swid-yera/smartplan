@@ -29,7 +29,10 @@ interface IProps {
 
 export const DisciplineView: FC<IProps> = ({ disciplines = [], rupName, activeLocale }) => {
 	const t = getUILocaleSection(localeDictionary, activeLocale)
-	const totalModuleHours = disciplines.reduce((acc, d) => acc + d.totalHours, 0)
+	const getDisciplineTotalHours = (discipline: IDiscipline) => {
+		return discipline.semesters.reduce((acc, semester) => acc + (semester.totalHours || 0), 0)
+	}
+	const totalModuleHours = disciplines.reduce((acc, discipline) => acc + getDisciplineTotalHours(discipline), 0)
 
 	const semesterTotals = Array(8).fill(0)
 
@@ -91,6 +94,7 @@ export const DisciplineView: FC<IProps> = ({ disciplines = [], rupName, activeLo
 											key={disciplineIndex}
 											activeLocale={activeLocale}
 											discipline={discipline}
+											totalHours={getDisciplineTotalHours(discipline)}
 										/>
 									))}
 								</>
@@ -147,14 +151,18 @@ const RupRow: FC<{ rupName: LocalizedText; activeLocale: Locale }> = ({ rupName,
 	)
 }
 
-const DisciplineRowView: FC<{ discipline: IDiscipline; activeLocale: Locale }> = ({ discipline, activeLocale }) => {
+const DisciplineRowView: FC<{ discipline: IDiscipline; activeLocale: Locale; totalHours: number }> = ({
+	discipline,
+	activeLocale,
+	totalHours,
+}) => {
 	return (
 		<TableRow className='*:border-border [&>:not(:last-child)]:border-r'>
 			<TableCell className='text-sm text-muted-foreground py-2 whitespace-break-spaces'>
 				{formatAsDash(getLocaleText(discipline.name, activeLocale))}
 			</TableCell>
 			<TableCell className='align-middle text-center w-24 font-medium'>
-				<p>{discipline.totalHours}</p>
+				<p>{formatAsDash(totalHours)}</p>
 			</TableCell>
 			{discipline.semesters.map((semester, semesterIndex) => (
 				<TableCell key={semesterIndex} className='align-middle text-center text-sm'>

@@ -20,11 +20,9 @@ export const TopicTypeBadge: FC<IProps> = ({ label, type, locale, ...props }) =>
 	const Icon = topicTypeIcons[type]
 
 	return (
-		<>
-			<Badge variant={topicTypeVariants[type] ?? 'outline'} {...props}>
-				<Icon data-icon='inline-start' />
-				{label ?? labels[type] ?? type}
-			</Badge>
-		</>
+		<Badge variant={topicTypeVariants[type] ?? 'outline'} {...props}>
+			<Icon data-icon='inline-start' />
+			{label ?? labels[type] ?? type}
+		</Badge>
 	)
 }

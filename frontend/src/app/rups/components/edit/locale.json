@@ -17,11 +17,7 @@
 			"prerequisitesLabel": "Пререквизиты",
 			"prerequisitesPlaceholder": "Пререквизиты",
 			"postrequisitesLabel": "Постреквизиты",
-			"postrequisitesPlaceholder": "Постреквизиты",
-			"rupTypeTips": {
-				"PRACTICE": "Для каждой темы будет считаться по 6 часов",
-				"THEORY": "Для каждой темы будет считаться по 2 часа"
-			}
+			"postrequisitesPlaceholder": "Постреквизиты"
 		},
 		"contacts": {
 			"teacherName": "ФИО преподавателя",
@@ -91,13 +87,15 @@
 			"addTopic": "Добавить тему",
 			"tableTopicTitle": "Темы занятий",
 			"tableType": "Тип",
+			"durationHours": "Часы",
 			"empty": "Критерии оценки и/или темы занятий не добавлены.",
 			"declared": "Заявлено",
 			"additionalMessage": "Дополнительное сообщение",
 			"additionalPlaceholder": "Уточните, что нужно учесть при генерации",
-			"practical": "практических",
-			"snz": "СНЗ",
+			"practical": "лабораторно-практических",
+			"snz": "индивидуальных",
 			"combined": "комбинированных",
+			"srspTopic": "СРСП",
 			"example": "например",
 			"topicsCount": "Тем",
 			"hourUnit": "ч",
@@ -134,11 +132,7 @@
 			"prerequisitesLabel": "Пререквизиттер",
 			"prerequisitesPlaceholder": "Пререквизиттер",
 			"postrequisitesLabel": "Постреквизиттер",
-			"postrequisitesPlaceholder": "Постреквизиттер",
-			"rupTypeTips": {
-				"PRACTICE": "Әр тақырып үшін 6 сағат есептеледі",
-				"THEORY": "Әр тақырып үшін 2 сағат есептеледі"
-			}
+			"postrequisitesPlaceholder": "Постреквизиттер"
 		},
 		"contacts": {
 			"teacherName": "Оқытушының аты-жөні",
@@ -208,13 +202,15 @@
 			"addTopic": "Тақырып қосу",
 			"tableTopicTitle": "Сабақ тақырыптары",
 			"tableType": "Сабақ түрі",
+			"durationHours": "Сағат",
 			"empty": "Бағалау критерийлері және/немесе сабақ тақырыптары қосылмаған.",
 			"declared": "Көрсетілген",
 			"additionalMessage": "Қосымша хабарлама",
 			"additionalPlaceholder": "Генерацияда ескерілетін талаптарды жазыңыз",
-			"practical": "практикалық",
+			"practical": "зертханалық-практикалық",
 			"snz": "СӨЖ",
 			"combined": "аралас",
+			"srspTopic": "СРСП",
 			"example": "мысалы",
 			"topicsCount": "Тақырып",
 			"hourUnit": "сағ",

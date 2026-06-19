@@ -16,6 +16,7 @@ import {
 import {
 	createLocaleText,
 	getLocaleText,
+	getTopicDurationHours,
 	getUILocaleSection,
 	hasAnyPermission,
 	hasPermission,
@@ -70,6 +71,35 @@ const defaultValues: RUPFormData = {
 
 	contacts: [], // default creator id :(
 	disciplines: [],
+}
+
+const hasLocaleContent = (value: unknown, localeKey: 'ru' | 'kz'): boolean => {
+	if (typeof value === 'string') return value.trim().length > 0
+
+	if (!value || typeof value !== 'object') return false
+
+	if ('ru' in value && 'kz' in value) {
+		const localized = value as Partial<Record<'ru' | 'kz', unknown>>
+
+		return typeof localized[localeKey] === 'string' && localized[localeKey]!.trim().length > 0
+	}
+
+	if (Array.isArray(value)) {
+		return value.some((item) => hasLocaleContent(item, localeKey))
+	}
+
+	return Object.values(value).some((nested) => hasLocaleContent(nested, localeKey))
+}
+
+const getPreferredEditLocale = (value: RUPFormData, requestedLocale: Locale): Locale => {
+	const localeKey = requestedLocale === 'kk' ? 'kz' : 'ru'
+	const fallbackLocale: Locale = requestedLocale === 'kk' ? 'ru' : 'kk'
+	const fallbackLocaleKey = fallbackLocale === 'kk' ? 'kz' : 'ru'
+
+	if (hasLocaleContent(value, localeKey)) return requestedLocale
+	if (hasLocaleContent(value, fallbackLocaleKey)) return fallbackLocale
+
+	return requestedLocale
 }
 
 const EditPage: FC = () => {
@@ -135,14 +165,20 @@ const EditPage: FC = () => {
 					link: r.link ?? '',
 				})) ?? [],
 			disciplines:
-				rupData.disciplines?.map((discipline) => ({
-					...discipline,
-					name: toLocaleText(discipline.name),
-					topics: discipline.topics.map((topic) => ({
-						...topic,
-						name: toLocaleText(topic.name),
-					})),
-				})) ?? [],
+				rupData.disciplines?.map((discipline) => {
+					return {
+						name: toLocaleText(discipline.name),
+						semesters: discipline.semesters.map((semester) => ({
+							semester: semester.semester,
+							totalHours: semester.totalHours,
+						})),
+						topics: discipline.topics.map((topic) => ({
+							...topic,
+							name: toLocaleText(topic.name),
+							durationHours: getTopicDurationHours(topic),
+						})),
+					}
+				}) ?? [],
 			groupId: rupData.groups[0]?.keycloakId,
 			contacts: rupData.contacts.map((c) => c.keycloakId),
 		}
@@ -153,7 +189,8 @@ const EditPage: FC = () => {
 		if (!mappedRupValues) return
 
 		methods.reset(mappedRupValues, { keepDirty: false, keepTouched: false })
-	}, [mappedRupValues, methods])
+		setActiveLocale(getPreferredEditLocale(mappedRupValues, locale))
+	}, [locale, mappedRupValues, methods])
 
 	const collectFieldMessages = (errors: FieldErrors<RUPFormData>): string[] => {
 		const messages: string[] = []
@@ -199,6 +236,7 @@ const EditPage: FC = () => {
 				...topic,
 				name: createLocaleText(topic.name.ru.trim(), topic.name.kz.trim()),
 				// Normalize optional numeric fields for backend payload.
+				durationHours: topic.durationHours ?? getTopicDurationHours(topic),
 				individualHours: topic.individualHours ?? 0,
 				srspHours: topic.srspHours ?? 0,
 				srsHours: topic.srsHours ?? 0,

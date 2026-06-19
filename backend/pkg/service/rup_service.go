@@ -38,13 +38,23 @@ type RupService interface {
 	UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupRequest) (*RupResponse, error)
 	DeleteRup(ctx context.Context, id uuid.UUID) error
 	GetRupDownloadURL(ctx context.Context, id uuid.UUID, language string) (string, error)
-	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, departments []uuid.UUID, groups []string) (*PaginatedRupsResponse, error)
+	GetRupPaginated(ctx context.Context, currentPage int, pageSize int, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, groupIDs []string, studyYear string) (*PaginatedRupsResponse, error)
+	GetRupStudyYears(ctx context.Context) ([]string, error)
+	GetRupReviewTeachers(ctx context.Context, search string) ([]RupReviewTeacherResponse, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 
 type PaginatedRupsResponse struct {
 	Data []*ListAllRupsResponse `json:"data"`
 	Meta PaginationMeta         `json:"meta"`
+}
+
+type RupReviewTeacherResponse struct {
+	KeycloakID      uuid.UUID `json:"keycloakId"`
+	FirstName       string    `json:"firstName"`
+	LastName        string    `json:"lastName"`
+	Username        string    `json:"username"`
+	ReviewRupsCount int       `json:"reviewRupsCount"`
 }
 
 const (
@@ -125,6 +135,7 @@ type SemesterRequest struct {
 type TopicRequest struct {
 	Name            localization.LocaleText `json:"name"`
 	Type            string                  `json:"type"`
+	DurationHours   int32                   `json:"durationHours"`
 	TheoryHours     int32                   `json:"theoryHours"`
 	PracticeHours   int32                   `json:"practiceHours"`
 	IndividualHours int32                   `json:"individualHours"`
@@ -401,18 +412,14 @@ func (s *rupService) CreateRup(ctx context.Context, req CreateRupRequest) (*RupR
 }
 
 func (s *rupService) createRup(ctx context.Context, req CreateRupRequest, startLanguageGeneration bool) (*RupResponse, error) {
+	req.Type = normalizeRupTypeValue(req.Type)
+
 	// Валидация (вне транзакции — только чтение)
 	if err := s.validateCreateRupRequest(ctx, req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Calculate total hours
-	var totalHours int32
-	for _, d := range req.Disciplines {
-		for _, sem := range d.Semesters {
-			totalHours += sem.TotalHours
-		}
-	}
+	totalHours := calculateRupTotalHours(req.Disciplines)
 
 	// Все мутирующие операции — внутри одной транзакции
 	var rup *storage.Rup
@@ -749,18 +756,14 @@ func (s *rupService) UpdateRup(ctx context.Context, id uuid.UUID, req CreateRupR
 		return nil, fmt.Errorf("rup not found: %w", err)
 	}
 
+	req.Type = normalizeRupTypeValue(req.Type)
+
 	// 2. Валидация (вне транзакции — только чтение)
 	if err := s.validateCreateRupRequest(ctx, req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Calculate total hours
-	var totalHours int32
-	for _, d := range req.Disciplines {
-		for _, sem := range d.Semesters {
-			totalHours += sem.TotalHours
-		}
-	}
+	totalHours := calculateRupTotalHours(req.Disciplines)
 
 	// 3. Все мутирующие операции — внутри одной транзакции
 	var updatedRup *storage.Rup
@@ -1036,6 +1039,8 @@ func (s *rupService) DeleteRup(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRupRequest) error {
+	normalizedRupType := normalizeRupTypeValue(req.Type)
+
 	if req.Name.Ru == "" && req.Name.Kz == "" {
 		return fmt.Errorf("name is required")
 	}
@@ -1045,7 +1050,7 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 	if req.Course < 1 || req.Course > 4 {
 		return fmt.Errorf("course must be between 1 and 4")
 	}
-	if req.Type != "PRACTICE" && req.Type != "THEORY" {
+	if normalizedRupType != "PRACTICE" && normalizedRupType != "THEORY" {
 		return fmt.Errorf("type must be PRACTICE or THEORY")
 	}
 	if req.StudyForm != "CORRESPONDENCE" && req.StudyForm != "FULL_TIME" {
@@ -1100,9 +1105,52 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 				return fmt.Errorf("semester number must be %d, got %d", i+1, sem.Semester)
 			}
 		}
+		for _, topic := range disc.Topics {
+			switch strings.ToUpper(strings.TrimSpace(topic.Type)) {
+			case "PRACTICAL":
+				if topic.DurationHours != 0 && topic.DurationHours != 2 && topic.DurationHours != 6 {
+					return fmt.Errorf("practical topic duration must be 2 or 6")
+				}
+			case "COMBINED", "SNZ", "SRSP":
+				if topic.DurationHours != 0 && topic.DurationHours != 2 {
+					return fmt.Errorf("%s topic duration must be 2", strings.ToLower(strings.TrimSpace(topic.Type)))
+				}
+			default:
+				return fmt.Errorf("invalid topic type %q", topic.Type)
+			}
+		}
 	}
 
 	return nil
+}
+
+func normalizeRupTypeValue(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+
+	normalizedUpper := strings.ToUpper(trimmed)
+	switch normalizedUpper {
+	case "PRACTICE", "PRACTICAL":
+		return "PRACTICE"
+	case "THEORY", "THEORETICAL", "COMBINED":
+		return "THEORY"
+	}
+
+	normalizedLower := strings.ToLower(trimmed)
+	switch {
+	case strings.Contains(normalizedLower, "практ"),
+		strings.Contains(normalizedLower, "производ"),
+		strings.Contains(normalizedLower, "өндір"),
+		strings.Contains(normalizedLower, "practice"):
+		return "PRACTICE"
+	case strings.Contains(normalizedLower, "теор"),
+		strings.Contains(normalizedLower, "theory"):
+		return "THEORY"
+	default:
+		return normalizedUpper
+	}
 }
 
 // createExplorationNoteInRepo — tx-safe версия createExplorationNote, использует переданный repo
@@ -1167,14 +1215,9 @@ func (s *rupService) createDisciplinesInRepo(ctx context.Context, repo repositor
 			return nil, err
 		}
 
-		var discTotalHours int32
-		for _, sem := range disc.Semesters {
-			discTotalHours += sem.TotalHours
-		}
-
 		params := storage.CreateRupDisciplineParams{
 			Name:       disc.Name.ToJSONB(),
-			TotalHours: discTotalHours,
+			TotalHours: calculateDisciplineTotalHours(disc),
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
 		}
@@ -1205,16 +1248,11 @@ func (s *rupService) createSemestersInRepo(ctx context.Context, repo repository.
 func (s *rupService) createTopicsInRepo(ctx context.Context, repo repository.RupRepository, topics []*TopicRequest) ([]uuid.UUID, error) {
 	var ids []uuid.UUID
 	for _, topic := range topics {
-		var topicType storage.DisciplineTopicType
-		switch topic.Type {
-		case "SNZ":
-			topicType = storage.DisciplineTopicTypeSNZ
-		case "PRACTICAL":
-			topicType = storage.DisciplineTopicTypePRACTICAL
-		case "COMBINED":
-			topicType = storage.DisciplineTopicTypeCOMBINED
+		topicType, err := parseRupTopicType(topic.Type)
+		if err != nil {
+			return nil, err
 		}
-		totalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
+		totalHours := calculateTopicTotalHours(topic)
 		t, err := repo.CreateTopic(ctx, storage.CreateDisciplineTopicParams{
 			Name:            topic.Name.ToJSONB(),
 			Type:            topicType,
@@ -1231,6 +1269,55 @@ func (s *rupService) createTopicsInRepo(ctx context.Context, repo repository.Rup
 		ids = append(ids, t.ID)
 	}
 	return ids, nil
+}
+
+func calculateRupTotalHours(disciplines []*DisciplineRequest) int32 {
+	var totalHours int32
+	for _, discipline := range disciplines {
+		totalHours += calculateDisciplineTotalHours(discipline)
+	}
+	return totalHours
+}
+
+func calculateDisciplineTotalHours(discipline *DisciplineRequest) int32 {
+	if discipline == nil {
+		return 0
+	}
+
+	var semesterHours int32
+	for _, semester := range discipline.Semesters {
+		semesterHours += semester.TotalHours
+	}
+
+	var srspHours int32
+	for _, topic := range discipline.Topics {
+		srspHours += topic.SrspHours
+	}
+
+	return semesterHours + srspHours
+}
+
+func calculateTopicTotalHours(topic *TopicRequest) int32 {
+	if topic == nil {
+		return 0
+	}
+
+	return topic.TheoryHours + topic.PracticeHours + topic.IndividualHours + topic.SrspHours
+}
+
+func parseRupTopicType(value string) (storage.DisciplineTopicType, error) {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "SNZ":
+		return storage.DisciplineTopicTypeSNZ, nil
+	case "PRACTICAL", "PRACTICE":
+		return storage.DisciplineTopicTypePRACTICAL, nil
+	case "COMBINED", "THEORY":
+		return storage.DisciplineTopicTypeCOMBINED, nil
+	case "SRSP":
+		return storage.DisciplineTopicTypeSRSP, nil
+	default:
+		return "", fmt.Errorf("unsupported topic type: %s", value)
+	}
 }
 
 func (s *rupService) convertToCreateParams(req CreateRupRequest, explorationNoteID *uuid.UUID, disciplineIDs []uuid.UUID, totalHours int32) storage.CreateRupsParams {
@@ -1423,15 +1510,9 @@ func (s *rupService) createDisciplines(ctx context.Context, disciplines []*Disci
 			return nil, err
 		}
 
-		// Calculate discipline total hours
-		var discTotalHours int32
-		for _, sem := range disc.Semesters {
-			discTotalHours += sem.TotalHours
-		}
-
 		params := storage.CreateRupDisciplineParams{
 			Name:       disc.Name.ToJSONB(),
-			TotalHours: discTotalHours,
+			TotalHours: calculateDisciplineTotalHours(disc),
 			Semesters:  semesterIDs,
 			Topics:     topicIDs,
 		}
@@ -1471,17 +1552,12 @@ func (s *rupService) createTopics(ctx context.Context, topics []*TopicRequest) (
 	var ids []uuid.UUID
 
 	for _, topic := range topics {
-		var topicType storage.DisciplineTopicType
-		switch topic.Type {
-		case "SNZ":
-			topicType = storage.DisciplineTopicTypeSNZ
-		case "PRACTICAL":
-			topicType = storage.DisciplineTopicTypePRACTICAL
-		case "COMBINED":
-			topicType = storage.DisciplineTopicTypeCOMBINED
+		topicType, err := parseRupTopicType(topic.Type)
+		if err != nil {
+			return nil, err
 		}
 
-		TotalHours := topic.TheoryHours + topic.PracticeHours + topic.IndividualHours
+		TotalHours := calculateTopicTotalHours(topic)
 
 		params := storage.CreateDisciplineTopicParams{
 			Name:            topic.Name.ToJSONB(),
@@ -1882,8 +1958,8 @@ func (s *rupService) GetRupPaginated(
 	teacher pgtype.UUID,
 	methodist pgtype.UUID,
 	status []string,
-	departments []uuid.UUID,
-	groups []string,
+	groupIDs []string,
+	studyYear string,
 ) (*PaginatedRupsResponse, error) {
 	if currentPage < 1 {
 		currentPage = 1
@@ -1895,11 +1971,9 @@ func (s *rupService) GetRupPaginated(
 	if len(status) == 0 {
 		status = nil
 	}
-	if len(departments) == 0 {
-		departments = nil
-	}
-	if len(groups) == 0 {
-		groups = nil
+	groupIDs = normalizeNonEmptyStrings(groupIDs)
+	if len(groupIDs) == 0 {
+		groupIDs = nil
 	}
 
 	offset := (currentPage - 1) * pageSize
@@ -1910,8 +1984,8 @@ func (s *rupService) GetRupPaginated(
 		teacher,
 		methodist,
 		status,
-		departments,
-		groups,
+		groupIDs,
+		studyYear,
 	)
 	if err != nil {
 		return nil, err
@@ -1926,8 +2000,8 @@ func (s *rupService) GetRupPaginated(
 		teacher,
 		methodist,
 		status,
-		departments,
-		groups,
+		groupIDs,
+		studyYear,
 	)
 	if err != nil {
 		return nil, err
@@ -1952,6 +2026,45 @@ func (s *rupService) GetRupPaginated(
 			PageSize:    pageSize,
 		},
 	}, nil
+}
+
+func (s *rupService) GetRupStudyYears(ctx context.Context) ([]string, error) {
+	studyYears, err := s.repo.GetRupStudyYears(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, 0, len(studyYears))
+	for _, studyYear := range studyYears {
+		trimmed := strings.TrimSpace(studyYear)
+		if trimmed == "" {
+			continue
+		}
+
+		result = append(result, trimmed)
+	}
+
+	return result, nil
+}
+
+func (s *rupService) GetRupReviewTeachers(ctx context.Context, search string) ([]RupReviewTeacherResponse, error) {
+	rows, err := s.repo.GetRupReviewTeachers(ctx, strings.TrimSpace(search))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]RupReviewTeacherResponse, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, RupReviewTeacherResponse{
+			KeycloakID:      row.KeycloakID,
+			FirstName:       strings.TrimSpace(row.FirstName),
+			LastName:        strings.TrimSpace(row.LastName),
+			Username:        strings.TrimSpace(row.Username),
+			ReviewRupsCount: int(row.ReviewRupsCount),
+		})
+	}
+
+	return result, nil
 }
 
 func normalizeBackendLanguage(value string) string {
@@ -2404,7 +2517,7 @@ func mapRupResponseToCreateRequest(rup *RupResponse) CreateRupRequest {
 
 	return CreateRupRequest{
 		Name:      rup.Name,
-		Type:      rup.Type,
+		Type:      normalizeRupTypeValue(rup.Type),
 		StudyYear: rup.StudyYear,
 		Course:    rup.Course,
 		StudyForm: rup.StudyForm,

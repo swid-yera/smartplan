@@ -295,39 +295,26 @@ WHERE
         OR methodist = $3::uuid
     )
     AND (
-        $4::uuid[] IS NULL
-        OR EXISTS (
-            SELECT 1
-            FROM departments d
-            WHERE d.keycloak_id = ANY($4::uuid[])
-              AND (
-                  (teacher IS NOT NULL AND teacher = ANY(d.users))
-                  OR (methodist IS NOT NULL AND methodist = ANY(d.users))
-                  OR EXISTS (
-                      SELECT 1
-                      FROM unnest(contacts) AS contact_id
-                      WHERE contact_id = ANY(d.users)
-                  )
-              )
-        )
+        $4::text[] IS NULL
+        OR status = ANY($4::text[]::rups_status[])
     )
     AND (
         $5::text[] IS NULL
         OR group_ids && $5::text[]
     )
     AND (
-        $6::text[] IS NULL
-        OR status = ANY($6::text[]::rups_status[])
+        $6 = ''
+        OR study_year = $6
     )
 `
 
 type CountRupsFilteredParams struct {
-	Search        interface{} `json:"search"`
-	Teacher       pgtype.UUID `json:"teacher"`
-	Methodist     pgtype.UUID `json:"methodist"`
-	DepartmentIDs []uuid.UUID `json:"department_ids"`
-	GroupIDs      []string    `json:"group_ids"`
-	Status        []string    `json:"status"`
+	Search    interface{} `json:"search"`
+	Teacher   pgtype.UUID `json:"teacher"`
+	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
+	GroupIds  []string    `json:"group_ids"`
+	StudyYear interface{} `json:"study_year"`
 }
 
 func (q *Queries) CountRupsFiltered(ctx context.Context, arg CountRupsFilteredParams) (int64, error) {
@@ -335,9 +322,9 @@ func (q *Queries) CountRupsFiltered(ctx context.Context, arg CountRupsFilteredPa
 		arg.Search,
 		arg.Teacher,
 		arg.Methodist,
-		arg.DepartmentIDs,
-		arg.GroupIDs,
 		arg.Status,
+		arg.GroupIds,
+		arg.StudyYear,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -2927,6 +2914,95 @@ func (q *Queries) GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupReso
 	return i, err
 }
 
+const getRupReviewTeachers = `-- name: GetRupReviewTeachers :many
+SELECT
+    u.keycloak_id,
+    COALESCE(u.first_name, '') AS first_name,
+    COALESCE(u.last_name, '') AS last_name,
+    u.username,
+    COUNT(r.id)::INT AS review_rups_count
+FROM rups r
+JOIN users u ON u.keycloak_id = r.teacher
+WHERE r.status = 'IN_REVIEW'::rups_status
+    AND (
+        $1 = ''
+        OR COALESCE(u.first_name, '') ILIKE '%' || $1 || '%'
+        OR COALESCE(u.last_name, '') ILIKE '%' || $1 || '%'
+        OR COALESCE(u.username, '') ILIKE '%' || $1 || '%'
+        OR (
+            $1 ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND u.keycloak_id = $1::uuid
+        )
+    )
+GROUP BY
+    u.keycloak_id,
+    u.first_name,
+    u.last_name,
+    u.username
+ORDER BY review_rups_count DESC, u.last_name, u.first_name, u.username, u.keycloak_id
+`
+
+type GetRupReviewTeachersRow struct {
+	KeycloakID      uuid.UUID `json:"keycloak_id"`
+	FirstName       string    `json:"first_name"`
+	LastName        string    `json:"last_name"`
+	Username        string    `json:"username"`
+	ReviewRupsCount int32     `json:"review_rups_count"`
+}
+
+func (q *Queries) GetRupReviewTeachers(ctx context.Context, search interface{}) ([]GetRupReviewTeachersRow, error) {
+	rows, err := q.db.Query(ctx, getRupReviewTeachers, search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRupReviewTeachersRow
+	for rows.Next() {
+		var i GetRupReviewTeachersRow
+		if err := rows.Scan(
+			&i.KeycloakID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Username,
+			&i.ReviewRupsCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRupStudyYears = `-- name: GetRupStudyYears :many
+SELECT DISTINCT study_year
+FROM rups
+WHERE COALESCE(study_year, '') <> ''
+ORDER BY study_year DESC
+`
+
+func (q *Queries) GetRupStudyYears(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, getRupStudyYears)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var study_year string
+		if err := rows.Scan(&study_year); err != nil {
+			return nil, err
+		}
+		items = append(items, study_year)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRupsByID = `-- name: GetRupsByID :one
 SELECT id, name, status, reason, course, study_form, study_year, type, total_hours, contacts, group_ids, methodist, teacher, exploration_note_id, disciplines, created_at, updated_at FROM rups WHERE id = $1
 `
@@ -3058,31 +3134,17 @@ FROM rups WHERE
     ) AND (
         $3::uuid IS NULL
         OR methodist = $3::uuid
-    )
-    AND (
-        $4::uuid[] IS NULL
-        OR EXISTS (
-            SELECT 1
-            FROM departments d
-            WHERE d.keycloak_id = ANY($4::uuid[])
-              AND (
-                  (teacher IS NOT NULL AND teacher = ANY(d.users))
-                  OR (methodist IS NOT NULL AND methodist = ANY(d.users))
-                  OR EXISTS (
-                      SELECT 1
-                      FROM unnest(contacts) AS contact_id
-                      WHERE contact_id = ANY(d.users)
-                  )
-              )
-        )
+    )AND (
+        $4::text[] IS NULL
+        OR status = ANY($4::text[]::rups_status[])
     )
     AND (
         $5::text[] IS NULL
         OR group_ids && $5::text[]
     )
     AND (
-        $6::text[] IS NULL
-        OR status = ANY($6::text[]::rups_status[])
+        $6 = ''
+        OR study_year = $6
     )
 ORDER BY
     CASE WHEN LOWER($7::text) = 'asc' THEN status::text END ASC,
@@ -3094,15 +3156,15 @@ LIMIT $9 OFFSET $8
 `
 
 type GetRupsPaginatedParams struct {
-	Search        interface{} `json:"search"`
-	Teacher       pgtype.UUID `json:"teacher"`
-	Methodist     pgtype.UUID `json:"methodist"`
-	DepartmentIDs []uuid.UUID `json:"department_ids"`
-	GroupIDs      []string    `json:"group_ids"`
-	Status        []string    `json:"status"`
-	Sort          string      `json:"sort"`
-	Offset        int32       `json:"offset"`
-	Limit         int32       `json:"limit"`
+	Search    interface{} `json:"search"`
+	Teacher   pgtype.UUID `json:"teacher"`
+	Methodist pgtype.UUID `json:"methodist"`
+	Status    []string    `json:"status"`
+	GroupIds  []string    `json:"group_ids"`
+	StudyYear interface{} `json:"study_year"`
+	Sort      string      `json:"sort"`
+	Offset    int32       `json:"offset"`
+	Limit     int32       `json:"limit"`
 }
 
 func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedParams) ([]Rup, error) {
@@ -3110,9 +3172,9 @@ func (q *Queries) GetRupsPaginated(ctx context.Context, arg GetRupsPaginatedPara
 		arg.Search,
 		arg.Teacher,
 		arg.Methodist,
-		arg.DepartmentIDs,
-		arg.GroupIDs,
 		arg.Status,
+		arg.GroupIds,
+		arg.StudyYear,
 		arg.Sort,
 		arg.Offset,
 		arg.Limit,

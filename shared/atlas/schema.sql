@@ -7,7 +7,7 @@ CREATE TYPE study_form_enum AS ENUM ('CORRESPONDENCE', 'FULL_TIME');
 
 CREATE TYPE rups_type_enum AS ENUM ('PRACTICE', 'THEORY');
 
-CREATE TYPE discipline_topic_type AS ENUM ('SNZ', 'PRACTICAL', 'COMBINED');
+CREATE TYPE discipline_topic_type AS ENUM ('SNZ', 'PRACTICAL', 'COMBINED', 'SRSP');
 
 CREATE TYPE awards_status AS ENUM ('DRAFT', 'IN_REVIEW', 'APPROVED', 'REJECTED');
 

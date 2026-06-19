@@ -79,8 +79,10 @@ type Rup interface {
 	UpdateTopic(ctx context.Context, params storage.UpdateDisciplineTopicParams) error
 	LinkLessonToTopic(ctx context.Context, topicID uuid.UUID, lessonID *uuid.UUID) error
 
-	CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, departments []uuid.UUID, groups []string) (int64, error)
-	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, departments []uuid.UUID, groups []string) ([]storage.Rup, error)
+	CountRupsFiltered(ctx context.Context, search string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, groupIDs []string, studyYear string) (int64, error)
+	GetRupsPaginated(ctx context.Context, limit int32, offset int32, search string, sort string, teacher pgtype.UUID, methodist pgtype.UUID, status []string, groupIDs []string, studyYear string) ([]storage.Rup, error)
+	GetRupStudyYears(ctx context.Context) ([]string, error)
+	GetRupReviewTeachers(ctx context.Context, search string) ([]storage.GetRupReviewTeachersRow, error)
 	CountRups(ctx context.Context) (int64, error)
 }
 

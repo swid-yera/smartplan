@@ -21,9 +21,12 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
 } from '@shadcn'
 import { useLocaleStore } from '@store'
-import { type IRup } from '@types'
+import { type IRup, type Locale } from '@types'
 import { BookOpen, ChevronLeft, ChevronRight, GraduationCap, User } from 'lucide-react'
 
 import { StatusBadge } from '../badges/status-badge'
@@ -57,7 +60,7 @@ export const RupsCard: FC<IRupsProps> = ({
 	showCreateOnEmpty = false,
 	showGroupsColumn = false,
 }) => {
-	const locale = useLocaleStore((state) => state.locale)
+	const locale = useLocaleStore((state) => state.locale) as Locale
 	const t = getUILocaleSection(localeDictionary, locale).rupsCard
 	const [selectedRup, setSelectedRup] = useState<IRup | null>(null)
 	const isExist = rups.length > 0 && !isLoading
@@ -73,14 +76,16 @@ export const RupsCard: FC<IRupsProps> = ({
 				</CardHeader>
 				<CardContent>
 					<div className='relative hidden min-w-0 overflow-x-auto md:block'>
-						<Table className='min-w-[200px]'>
+						<Table className='min-w-50'>
 							<TableHeader>
 								<TableRow>
 									<TableHead>{t.name}</TableHead>
 									<TableHead>{t.teacher}</TableHead>
 									{showGroupsColumn && <TableHead>{t.groups}</TableHead>}
-									<TableHead>{t.specialty}</TableHead>
-									<TableHead>{t.qualification}</TableHead>
+									<TableHead>
+										<p>{t.specialty}</p>
+										<p>{t.qualification}</p>
+									</TableHead>
 									<TableHead>{t.studyYear}</TableHead>
 									<TableHead className='text-right'>{t.status}</TableHead>
 								</TableRow>
@@ -153,7 +158,10 @@ export const RupsCard: FC<IRupsProps> = ({
 							{t.back}
 						</Button>
 						<div className='text-sm font-medium'>
-							{interpolateUILocaleText(t.page, { current: currentPage, total: totalPages })}
+							{interpolateUILocaleText(t.page, {
+								current: currentPage,
+								total: totalPages,
+							})}
 						</div>
 						<Button
 							disabled={currentPage >= totalPages}
@@ -179,14 +187,33 @@ interface IRupRow {
 	showGroupsColumn?: boolean
 }
 
+const getRupGroupsText = (rup: IRup) =>
+	formatAsDash(
+		rup?.groups
+			?.map((group) => group.name)
+			.filter(Boolean)
+			.join(', '),
+	)
+
+const getRupSpecialtyQualificationText = (rup: IRup, locale: Locale) => {
+	const specialty = getLocaleText(rup?.groups[0]?.specialty, locale)
+	const qualification = getLocaleText(rup?.groups[0]?.qualification, locale)
+
+	return {
+		specialty: formatAsDash(specialty),
+		qualification: formatAsDash(qualification),
+		combined: formatAsDash([specialty, qualification].filter(Boolean).join(' · ')),
+	}
+}
+
 const RupMobileCard: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false }) => {
-	const locale = useLocaleStore((state) => state.locale)
+	const locale = useLocaleStore((state) => state.locale) as Locale
 	const t = getUILocaleSection(localeDictionary, locale).rupsCard
 	const title = getLocaleText(rup?.name, locale) || t.untitled
 	const teacherName = `${rup?.teacher?.firstName || ''} ${rup?.teacher?.lastName || ''}`.trim() || t.unknownTeacher
-	const groups = formatAsDash(rup?.groups?.map((group) => group.name).filter(Boolean).join(', '))
-	const specialty = formatAsDash(getLocaleText(rup?.groups[0]?.specialty, locale))
-	const qualification = formatAsDash(getLocaleText(rup?.groups[0]?.qualification, locale))
+	const groups = getRupGroupsText(rup)
+	const specialtyQualification = getRupSpecialtyQualificationText(rup, locale)
+	const teacherHref = rup?.teacher?.keycloakId ? `/users/${rup.teacher.keycloakId}?tab=rups` : undefined
 
 	return (
 		<Card
@@ -219,7 +246,17 @@ const RupMobileCard: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false })
 							<User className='h-4 w-4 shrink-0' />
 							{t.teacher}
 						</span>
-						<span className='min-w-0 truncate text-right font-medium'>{teacherName}</span>
+						{teacherHref ? (
+							<Link
+								className='min-w-0 truncate text-right font-medium hover:text-primary hover:underline'
+								href={teacherHref}
+								onClick={(event) => event.stopPropagation()}
+							>
+								{teacherName}
+							</Link>
+						) : (
+							<span className='min-w-0 truncate text-right font-medium'>{teacherName}</span>
+						)}
 					</div>
 					{showGroupsColumn && (
 						<div className='flex items-center justify-between gap-3'>
@@ -230,20 +267,25 @@ const RupMobileCard: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false })
 							<span className='min-w-0 truncate text-right font-medium'>{groups}</span>
 						</div>
 					)}
-					<div className='flex items-center justify-between gap-3'>
-						<span className='inline-flex items-center gap-2 text-muted-foreground'>
-							<BookOpen className='h-4 w-4 shrink-0' />
-							{t.specialty}
-						</span>
-						<span className='min-w-0 truncate text-right font-medium'>{specialty}</span>
-					</div>
-					<div className='flex items-center justify-between gap-3'>
-						<span className='inline-flex items-center gap-2 text-muted-foreground'>
-							<GraduationCap className='h-4 w-4 shrink-0' />
-							{t.qualification}
-						</span>
-						<span className='min-w-0 truncate text-right font-medium'>{qualification}</span>
-					</div>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<div className='flex cursor-help items-center justify-between gap-3'>
+								<span className='inline-flex items-center gap-2 text-muted-foreground'>
+									<GraduationCap className='h-4 w-4 shrink-0' />
+									{`${t.specialty} / ${t.qualification}`}
+								</span>
+								<span className='min-w-0 max-w-[16rem] truncate text-right font-medium'>
+									{specialtyQualification.combined}
+								</span>
+							</div>
+						</TooltipTrigger>
+						<TooltipContent side='top' sideOffset={8}>
+							<div className='space-y-1'>
+								<p>{`${t.specialty}: ${specialtyQualification.specialty}`}</p>
+								<p>{`${t.qualification}: ${specialtyQualification.qualification}`}</p>
+							</div>
+						</TooltipContent>
+					</Tooltip>
 					<div className='flex items-center justify-between gap-3'>
 						<span className='text-muted-foreground'>{t.studyYear}</span>
 						<Badge variant='secondary'>{formatAsDash(rup?.studyYear)}</Badge>
@@ -257,7 +299,9 @@ const RupMobileCard: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false })
 const RupRow: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false }) => {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).rupsCard
-	const groups = formatAsDash(rup?.groups?.map((group) => group.name).filter(Boolean).join(', '))
+	const groups = getRupGroupsText(rup)
+	const specialtyQualification = getRupSpecialtyQualificationText(rup, locale)
+	const teacherHref = rup?.teacher?.keycloakId ? `/users/${rup.teacher.keycloakId}?tab=rups` : undefined
 
 	return (
 		<TableRow
@@ -271,25 +315,55 @@ const RupRow: FC<IRupRow> = ({ rup, onSelect, showGroupsColumn = false }) => {
 				onSelect(rup)
 			}}
 		>
-			<TableCell className='font-medium whitespace-break-spaces min-w-[300px] py-4'>
+			<TableCell className='align-top font-medium whitespace-normal py-4 w-[18rem] max-w-[18rem]'>
 				<Link
-					className='inline-flex max-w-full items-center rounded-sm hover:text-primary hover:underline'
+					className='block max-w-full rounded-sm hover:text-primary hover:underline'
 					href={`/rups/${rup.id}`}
 					title={getLocaleText(rup?.name, locale) || t.untitled}
 					onClick={(event) => event.stopPropagation()}
 				>
-					<span className='truncate'>{getLocaleText(rup?.name, locale) || t.untitled}</span>
+					<span className='block whitespace-normal wrap-break-word leading-6'>
+						{getLocaleText(rup?.name, locale) || t.untitled}
+					</span>
 				</Link>
 			</TableCell>
-			<TableCell className='whitespace-break-spaces min-w-[100px]'>
-				{rup?.teacher?.firstName || t.unknownTeacher}
+			<TableCell className='whitespace-normal min-w-40 max-w-[16rem] align-top py-4'>
+				{teacherHref ? (
+					<Link
+						className='block max-w-full rounded-sm font-medium hover:text-primary hover:underline'
+						href={teacherHref}
+						title={`${rup?.teacher?.firstName || ''} ${rup?.teacher?.lastName || ''}`.trim() || t.unknownTeacher}
+						onClick={(event) => event.stopPropagation()}
+					>
+						<span className='block whitespace-normal wrap-break-word leading-6'>
+							{`${rup?.teacher?.firstName || ''} ${rup?.teacher?.lastName || ''}`.trim() || t.unknownTeacher}
+						</span>
+					</Link>
+				) : (
+					<span>{t.unknownTeacher}</span>
+				)}
 			</TableCell>
-			{showGroupsColumn && <TableCell className='whitespace-break-spaces min-w-[200px]'>{groups}</TableCell>}
-			<TableCell className='whitespace-break-spaces min-w-[200px]'>
-				{formatAsDash(getLocaleText(rup?.groups[0]?.specialty, locale))}
-			</TableCell>
-			<TableCell className='whitespace-break-spaces min-w-[200px]'>
-				{formatAsDash(getLocaleText(rup?.groups[0]?.qualification, locale))}
+			{showGroupsColumn && (
+				<TableCell className='whitespace-normal min-w-50` max-w-[18rem] align-top py-4'>
+					<span className='block whitespace-normal wrap-break-word leading-6'>{groups}</span>
+				</TableCell>
+			)}
+			<TableCell className='whitespace-normal min-w-50` max-w-[18rem] align-top py-4'>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<div className='cursor-help'>
+							<p className='block whitespace-normal text-xs wrap-break-word leading-6'>
+								{specialtyQualification.combined}
+							</p>
+						</div>
+					</TooltipTrigger>
+					<TooltipContent side='top' sideOffset={8}>
+						<div className='space-y-1'>
+							<p>{`${t.specialty}: ${specialtyQualification.specialty}`}</p>
+							<p>{`${t.qualification}: ${specialtyQualification.qualification}`}</p>
+						</div>
+					</TooltipContent>
+				</Tooltip>
 			</TableCell>
 			<TableCell>{formatAsDash(rup?.studyYear)}</TableCell>
 			<TableCell className='text-right'>

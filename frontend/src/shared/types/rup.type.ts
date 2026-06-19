@@ -15,6 +15,7 @@ export enum TopicTypeEnum {
 	SNZ = 'SNZ',
 	PRACTICAL = 'PRACTICAL',
 	COMBINED = 'COMBINED',
+	SRSP = 'SRSP',
 }
 
 // rup
@@ -93,6 +94,7 @@ export interface ITopics {
 
 	name: LocalizedText
 	type: TopicTypeEnum
+	durationHours?: number
 
 	totalHours: number
 	theoryHours: number

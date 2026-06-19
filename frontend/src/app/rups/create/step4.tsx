@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 
 import { getLocaleText, getTotalDisciplineHours, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
@@ -13,6 +13,7 @@ import localeDictionary from './locale.json'
 type Topic = {
 	name: LocaleText
 	type: TopicTypeEnum
+	durationHours?: number
 	theoryHours: number
 	practiceHours: number
 	individualHours: number
@@ -39,105 +40,123 @@ type IProps = FieldValues & {
 
 export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
 	const locale = useLocaleStore((state) => state.locale)
-	const t = getUILocaleSection(localeDictionary, locale).step4
+	const step4Text = useMemo(() => getUILocaleSection(localeDictionary, locale).step4, [locale])
 	const { getValues, setValue } = useFormContext<T>()
 	// states
 	const [generatingDisciplineIndex, setGeneratingDisciplineIndex] = useState<number | null>(null)
-	const mapGeneratedText = (value: string): LocaleText =>
-		activeLocale === 'ru' ? { ru: getLocaleText(value, 'ru'), kz: '' } : { ru: '', kz: getLocaleText(value, 'kk') }
+	const generationLockRef = useRef<number | null>(null)
 
-	const buildMappedData = (
-		discipline: Discipline,
-		options?: TopicsDisciplineGenerateOptions,
-	): IGenerateTopicsForDiscipline => {
-		const values = getValues()
-		const includeCurrentContent = options?.includeCurrentContent ?? false
-		const additionalMessage = options?.additionalMessage?.trim()
+	const mapGeneratedText = useCallback(
+		(value: string): LocaleText =>
+			activeLocale === 'ru'
+				? { ru: getLocaleText(value, 'ru'), kz: '' }
+				: { ru: '', kz: getLocaleText(value, 'kk') },
+		[activeLocale],
+	)
 
-		return {
-			sourceLanguage: activeLocale,
-			rupName: getLocaleText(values.name, activeLocale),
-			rupType: values.type,
-			goals: getLocaleText(values.goals, activeLocale),
-			competencies: getLocaleText(values.competencies, activeLocale),
-
-			disciplineName: getLocaleText(discipline.name, activeLocale),
-			disciplineHours: getTotalDisciplineHours(discipline.semesters),
-
-			additionalMessage: additionalMessage ? additionalMessage : undefined,
-			includeCurrentContent,
-			currentValues: includeCurrentContent
-				? {
-						topics: discipline.topics.map((topic) => ({
-							...topic,
-							name: getLocaleText(topic.name, activeLocale),
-						})),
-					}
-				: undefined,
-			currentTopics: includeCurrentContent
+	const buildMappedData = useCallback(
+		(discipline: Discipline, options?: TopicsDisciplineGenerateOptions): IGenerateTopicsForDiscipline => {
+			const values = getValues()
+			const includeCurrentContent = options?.includeCurrentContent ?? false
+			const additionalMessage = options?.additionalMessage?.trim()
+			const currentTopics = includeCurrentContent
 				? discipline.topics.map((topic) => ({
 						...topic,
 						name: getLocaleText(topic.name, activeLocale),
 					}))
-				: undefined,
+				: undefined
 
-			preferredCombinedCount: options?.preferredCombinedCount,
-			preferredPracticalCount: options?.preferredPracticalCount,
-			preferredSnzCount: options?.preferredSnzCount,
-		}
-	}
+			return {
+				sourceLanguage: activeLocale,
+				rupName: getLocaleText(values.name, activeLocale),
+				rupType: values.type,
+				goals: getLocaleText(values.goals, activeLocale),
+				competencies: getLocaleText(values.competencies, activeLocale),
 
-	const generateOneDiscipline = async (disciplineIndex: number, options?: TopicsDisciplineGenerateOptions) => {
-		const values = getValues()
-		const discipline = values.disciplines?.[disciplineIndex]
+				disciplineName: getLocaleText(discipline.name, activeLocale),
+				disciplineHours: getTotalDisciplineHours(discipline.semesters),
 
-		if (!discipline) {
-			throw new Error(t.disciplineNotFound)
-		}
+				additionalMessage: additionalMessage ? additionalMessage : undefined,
+				includeCurrentContent,
+				currentTopics,
+				currentValues: currentTopics ? { topics: currentTopics } : undefined,
 
-		const mappedData = buildMappedData(discipline, options)
-		const result = await services.ai.generateTopicsForDiscipline(mappedData)
-		const localizedTopics = result.map((topic) => ({
-			...topic,
-			name: mapGeneratedText(topic.name),
-		}))
+				preferredCombinedCount: options?.preferredCombinedCount,
+				preferredPracticalCount: options?.preferredPracticalCount,
+				preferredSnzCount: options?.preferredSnzCount,
+				preferredSrspCount: options?.preferredSrspCount,
+			}
+		},
+		[activeLocale, getValues],
+	)
 
-		setValue(`disciplines.${disciplineIndex}.topics` as Path<T>, localizedTopics as PathValue<T, Path<T>>)
+	const generateOneDiscipline = useCallback(
+		async (disciplineIndex: number, options?: TopicsDisciplineGenerateOptions) => {
+			const values = getValues()
+			const discipline = values.disciplines?.[disciplineIndex]
 
-		return getLocaleText(discipline.name, activeLocale)
-	}
+			if (!discipline) {
+				throw new Error(step4Text.disciplineNotFound)
+			}
 
-	const handleGenerateDiscipline = async (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => {
-		if (generatingDisciplineIndex !== null) return
+			const mappedData = buildMappedData(discipline, options)
+			const result = await services.ai.generateTopicsForDiscipline(mappedData)
+			const localizedTopics = result.map((topic) => ({
+				...topic,
+				name: mapGeneratedText(topic.name),
+			}))
 
-		const discipline = getValues().disciplines?.[disciplineIndex]
+			setValue(`disciplines.${disciplineIndex}.topics` as Path<T>, localizedTopics as PathValue<T, Path<T>>)
 
-		if (!discipline) {
-			toast.error(t.disciplineNotFound)
+			return getLocaleText(discipline.name, activeLocale)
+		},
+		[activeLocale, buildMappedData, getValues, mapGeneratedText, setValue, step4Text.disciplineNotFound],
+	)
 
-			return
-		}
+	const handleGenerateDiscipline = useCallback(
+		async (disciplineIndex: number, options: TopicsDisciplineGenerateOptions) => {
+			if (generationLockRef.current !== null) return
 
-		const disciplineLabel = getLocaleText(discipline.name, activeLocale)
-		const toastId = `rup-topics-generate-${disciplineLabel}-${disciplineIndex}`
+			const discipline = getValues().disciplines?.[disciplineIndex]
 
-		try {
-			setGeneratingDisciplineIndex(disciplineIndex)
-			toast.loading(interpolateUILocaleText(t.topicsLoading, { name: disciplineLabel }), { id: toastId })
+			if (!discipline) {
+				toast.error(step4Text.disciplineNotFound)
 
-			const disciplineName = await generateOneDiscipline(disciplineIndex, options)
+				return
+			}
 
-			toast.success(interpolateUILocaleText(t.topicsSuccess, { name: disciplineName }), {
-				id: toastId,
-			})
-		} catch (err) {
-			toast.error(interpolateUILocaleText(t.topicsError, { error: String(err), name: disciplineLabel }), {
-				id: toastId,
-			})
-		} finally {
-			setGeneratingDisciplineIndex(null)
-		}
-	}
+			const disciplineLabel = getLocaleText(discipline.name, activeLocale)
+			const toastId = `rup-topics-generate-${disciplineLabel}-${disciplineIndex}`
+
+			try {
+				generationLockRef.current = disciplineIndex
+				setGeneratingDisciplineIndex(disciplineIndex)
+				toast.loading(interpolateUILocaleText(step4Text.topicsLoading, { name: disciplineLabel }), { id: toastId })
+
+				const disciplineName = await generateOneDiscipline(disciplineIndex, options)
+
+				toast.success(interpolateUILocaleText(step4Text.topicsSuccess, { name: disciplineName }), {
+					id: toastId,
+				})
+			} catch (err) {
+				toast.error(interpolateUILocaleText(step4Text.topicsError, { error: String(err), name: disciplineLabel }), {
+					id: toastId,
+				})
+			} finally {
+				generationLockRef.current = null
+				setGeneratingDisciplineIndex(null)
+			}
+		},
+		[
+			activeLocale,
+			generateOneDiscipline,
+			getValues,
+			step4Text.disciplineNotFound,
+			step4Text.topicsError,
+			step4Text.topicsLoading,
+			step4Text.topicsSuccess,
+		],
+	)
 
 	return (
 		<div className='w-full space-y-5'>

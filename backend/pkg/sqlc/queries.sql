@@ -617,6 +617,14 @@ FROM rups WHERE
         sqlc.narg('status')::text[] IS NULL
         OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
     )
+    AND (
+        sqlc.narg('group_ids')::text[] IS NULL
+        OR group_ids && sqlc.arg('group_ids')::text[]
+    )
+    AND (
+        sqlc.arg('study_year') = ''
+        OR study_year = sqlc.arg('study_year')
+    )
 ORDER BY
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN status::text END ASC,
     CASE WHEN LOWER(sqlc.arg('sort')::text) = 'asc' THEN created_at END ASC,
@@ -670,7 +678,48 @@ WHERE
     AND (
         sqlc.narg('status')::text[] IS NULL
         OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
+    )
+    AND (
+        sqlc.narg('group_ids')::text[] IS NULL
+        OR group_ids && sqlc.arg('group_ids')::text[]
+    )
+    AND (
+        sqlc.arg('study_year') = ''
+        OR study_year = sqlc.arg('study_year')
     );
+
+-- name: GetRupStudyYears :many
+SELECT DISTINCT study_year
+FROM rups
+WHERE COALESCE(study_year, '') <> ''
+ORDER BY study_year DESC;
+
+-- name: GetRupReviewTeachers :many
+SELECT
+    u.keycloak_id,
+    COALESCE(u.first_name, '') AS first_name,
+    COALESCE(u.last_name, '') AS last_name,
+    u.username,
+    COUNT(r.id)::INT AS review_rups_count
+FROM rups r
+JOIN users u ON u.keycloak_id = r.teacher
+WHERE r.status = 'IN_REVIEW'::rups_status
+    AND (
+        sqlc.arg('search') = ''
+        OR COALESCE(u.first_name, '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(u.last_name, '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR COALESCE(u.username, '') ILIKE '%' || sqlc.arg('search') || '%'
+        OR (
+            sqlc.arg('search') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            AND u.keycloak_id = sqlc.arg('search')::uuid
+        )
+    )
+GROUP BY
+    u.keycloak_id,
+    u.first_name,
+    u.last_name,
+    u.username
+ORDER BY review_rups_count DESC, u.last_name, u.first_name, u.username, u.keycloak_id;
 
 -- name: CountRups :one
 SELECT COUNT(*) FROM rups;

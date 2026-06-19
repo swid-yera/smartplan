@@ -62,6 +62,7 @@ const (
 	DisciplineTopicTypeSNZ       DisciplineTopicType = "SNZ"
 	DisciplineTopicTypePRACTICAL DisciplineTopicType = "PRACTICAL"
 	DisciplineTopicTypeCOMBINED  DisciplineTopicType = "COMBINED"
+	DisciplineTopicTypeSRSP      DisciplineTopicType = "SRSP"
 )
 
 func (e *DisciplineTopicType) Scan(src interface{}) error {
@@ -584,6 +585,13 @@ type Group struct {
 	Name          string    `json:"name"`
 	Qualification []byte    `json:"qualification"`
 	Specialty     []byte    `json:"specialty"`
+}
+
+type KpiUploadSetting struct {
+	ID               int16              `json:"id"`
+	BlockedAfterDate pgtype.Date        `json:"blocked_after_date"`
+	ExceptionUserIds []uuid.UUID        `json:"exception_user_ids"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Lesson struct {

@@ -100,6 +100,8 @@ type Querier interface {
 	GetRupDisciplineByTopicID(ctx context.Context, dollar_1 uuid.UUID) (RupDiscipline, error)
 	GetRupExplorationNoteByID(ctx context.Context, id uuid.UUID) (RupExplorationNote, error)
 	GetRupResourceByID(ctx context.Context, id uuid.UUID) (RupResource, error)
+	GetRupReviewTeachers(ctx context.Context, search interface{}) ([]GetRupReviewTeachersRow, error)
+	GetRupStudyYears(ctx context.Context) ([]string, error)
 	GetRupsByID(ctx context.Context, id uuid.UUID) (Rup, error)
 	GetRupsByMethodist(ctx context.Context, methodist pgtype.UUID) ([]Rup, error)
 	GetRupsByTeacher(ctx context.Context, dollar_1 uuid.UUID) ([]Rup, error)
