@@ -12,6 +12,14 @@ import { toast } from 'sonner'
 import { DisciplineEdit, GenerateCard } from '../components'
 import localeDictionary from './locale.json'
 
+const HOURS_STEP = 24
+
+const roundUpToStep = (value: number, step: number) => {
+	if (!Number.isFinite(value) || value <= 0 || step <= 0) return value
+
+	return Math.ceil(value / step) * step
+}
+
 type IProps = FieldValues & {
 	name: LocaleText
 	course: number
@@ -51,9 +59,14 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			return toast.error(t.validationError)
 		}
 
+		const normalizedWantsHours = roundUpToStep(wantsHours, HOURS_STEP)
+
 		try {
 			setIsLoading(true)
 			toast.loading(t.disciplinesLoading, { id: 'rup-disciplines-generate' })
+			if (normalizedWantsHours !== wantsHours) {
+				toast.info(t.hoursRounded.replace('{from}', String(wantsHours)).replace('{to}', String(normalizedWantsHours)))
+			}
 
 			const values = getValues()
 
@@ -64,7 +77,7 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 				goals: getLocaleText(values.goals, activeLocale),
 				competencies: getLocaleText(values.competencies, activeLocale),
 
-				wantsHours: wantsHours,
+				wantsHours: normalizedWantsHours,
 				disciplineCount: disciplineCount,
 				message: additionalMessage.trim() || undefined,
 				includeCurrentContent,

@@ -65,3 +65,110 @@ func TestGetGeminiModelsSkipsEmptyAndDuplicateEntries(t *testing.T) {
 		}
 	}
 }
+
+func TestRoundUpToMultiple(t *testing.T) {
+	if got := roundUpToMultiple(140, 24); got != 144 {
+		t.Fatalf("unexpected rounded value: got %d want %d", got, 144)
+	}
+
+	if got := roundUpToMultiple(144, 24); got != 144 {
+		t.Fatalf("unexpected rounded value for exact multiple: got %d want %d", got, 144)
+	}
+}
+
+func TestRebalanceGeneratedDisciplineHoursKeepsTotalsMultipleOf24(t *testing.T) {
+	disciplines := []rawGeneratedDiscipline{
+		{
+			Name:       "Основы сетей",
+			Code:       "РО5.1",
+			TotalHours: 70,
+			Semesters:  []int{0, 0, 0, 0, 35, 35, 0, 0},
+		},
+		{
+			Name:       "Администрирование",
+			Code:       "РО5.2",
+			TotalHours: 70,
+			Semesters:  []int{0, 0, 0, 0, 0, 70, 0, 0},
+		},
+	}
+
+	result := rebalanceGeneratedDisciplineHours(disciplines, 144, 3)
+	if len(result) != 2 {
+		t.Fatalf("unexpected discipline count: got %d want %d", len(result), 2)
+	}
+
+	total := 0
+	for i, discipline := range result {
+		if discipline.TotalHours%24 != 0 {
+			t.Fatalf("discipline %d total hours must be multiple of 24: got %d", i, discipline.TotalHours)
+		}
+
+		semesterTotal := sumHours(discipline.Semesters)
+		if semesterTotal != discipline.TotalHours {
+			t.Fatalf("discipline %d semester total mismatch: got %d want %d", i, semesterTotal, discipline.TotalHours)
+		}
+
+		total += discipline.TotalHours
+	}
+
+	if total != 144 {
+		t.Fatalf("unexpected overall total: got %d want %d", total, 144)
+	}
+}
+
+func TestSanitizeGeneratedDisciplineNameRemovesDuplicateCodePrefix(t *testing.T) {
+	got := sanitizeGeneratedDisciplineName("РО5.1", "Р.О5.1 Информационная безопасность")
+	want := "РО5.1 Информационная безопасность"
+
+	if got != want {
+		t.Fatalf("sanitizeGeneratedDisciplineName() = %q, want %q", got, want)
+	}
+}
+
+func TestNormalizeGeneratedTopicsReplacesPlaceholderNames(t *testing.T) {
+	req := GenerateTopicsForDisciplineRequest{
+		SourceLanguage:  "ru",
+		DisciplineName:  "Информационная безопасность",
+		DisciplineHours: 4,
+	}
+
+	topics := normalizeGeneratedTopics([]GeneratedTopic{
+		{Name: "Тема 67", Type: "COMBINED", DurationHours: 2},
+		{Name: "Тема 68", Type: "PRACTICAL", DurationHours: 2},
+	}, req, 2)
+
+	if len(topics) != 2 {
+		t.Fatalf("unexpected topic count: got %d want %d", len(topics), 2)
+	}
+
+	for i, topic := range topics {
+		if topicPlaceholderPattern.MatchString(topic.Name) {
+			t.Fatalf("topic %d still contains placeholder name: %q", i, topic.Name)
+		}
+		if topic.Name == "" {
+			t.Fatalf("topic %d name must not be empty", i)
+		}
+	}
+}
+
+func TestNormalizeGeneratedTopicsForcesPracticalDurationToTwoHours(t *testing.T) {
+	req := GenerateTopicsForDisciplineRequest{
+		SourceLanguage:  "ru",
+		DisciplineName:  "Администрирование серверов",
+		DisciplineHours: 2,
+	}
+
+	topics := normalizeGeneratedTopics([]GeneratedTopic{
+		{Name: "Настраивает серверные службы", Type: "PRACTICAL", DurationHours: 6},
+	}, req, 2)
+
+	if len(topics) != 1 {
+		t.Fatalf("unexpected topic count: got %d want %d", len(topics), 1)
+	}
+	if topics[0].DurationHours != 2 {
+		t.Fatalf("practical topic duration = %d, want 2", topics[0].DurationHours)
+	}
+	if topics[0].PracticeHours != 2 {
+		t.Fatalf("practical topic practice hours = %d, want 2", topics[0].PracticeHours)
+	}
+}
