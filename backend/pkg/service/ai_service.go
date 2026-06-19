@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -60,6 +62,18 @@ type geminiPart = helpers.GeminiPart
 type geminiGenerateContentResponse = helpers.GeminiGenerateContentResponse
 type geminiErrorResponse = helpers.GeminiErrorResponse
 type geminiRequestError = helpers.GeminiRequestError
+
+type rawGeneratedDiscipline struct {
+	Name       string `json:"name"`
+	Code       string `json:"code"`
+	TotalHours int    `json:"totalHours"`
+	Semesters  []int  `json:"semesters"`
+}
+
+var (
+	disciplineCodePrefixPattern = regexp.MustCompile(`(?i)^(?:р\s*\.?\s*о\s*\.?|ро|pm|пм)\s*\d+(?:\s*\.\s*\d+)*\s*[:.-]?\s*`)
+	topicPlaceholderPattern     = regexp.MustCompile(`(?i)^(?:тема|тақырып|theme)\s*\d+\b`)
+)
 
 func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequest) (*GenerateRupMetaResponse, error) {
 	currentValuesContext := helpers.BuildCurrentValuesContext(
@@ -154,19 +168,16 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 	}
 
 	var raw struct {
-		Disciplines []struct {
-			Name      string `json:"name"`
-			Code      string `json:"code"`
-			Semesters []int  `json:"semesters"`
-		} `json:"disciplines"`
+		Disciplines []rawGeneratedDiscipline `json:"disciplines"`
 	}
 
 	if err := decodeJSONObject(responseText, &raw); err != nil {
 		return nil, fmt.Errorf("decode disciplines response: %w", err)
 	}
 
+	targetHours := roundUpToMultiple(req.WantsHours, 24)
 	result := make([]GeneratedDiscipline, 0, len(raw.Disciplines))
-	for _, discipline := range raw.Disciplines {
+	for _, discipline := range rebalanceGeneratedDisciplineHours(raw.Disciplines, targetHours, req.Course) {
 		normalized := normalizeSemesterHours(discipline.Semesters)
 		semesters := make([]GeneratedSemester, 0, len(normalized))
 		for i, hours := range normalized {
@@ -176,11 +187,12 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 			})
 		}
 
-		name := strings.TrimSpace(strings.TrimSpace(discipline.Code) + " " + strings.TrimSpace(discipline.Name))
+		name := sanitizeGeneratedDisciplineName(discipline.Code, discipline.Name)
 		result = append(result, GeneratedDiscipline{
-			Name:      name,
-			Semesters: semesters,
-			Topics:    []GeneratedTopic{},
+			Name:       name,
+			TotalHours: sumHours(normalized),
+			Semesters:  semesters,
+			Topics:     []GeneratedTopic{},
 		})
 	}
 
@@ -655,6 +667,196 @@ func normalizeSemesterHours(hours []int) []int {
 	return result
 }
 
+func roundUpToMultiple(value int, step int) int {
+	if step <= 0 || value <= 0 {
+		return value
+	}
+
+	remainder := value % step
+	if remainder == 0 {
+		return value
+	}
+
+	return value + step - remainder
+}
+
+func sumHours(hours []int) int {
+	total := 0
+	for _, hour := range hours {
+		total += hour
+	}
+	return total
+}
+
+func courseSemesterIndexes(course int) []int {
+	start := (course - 1) * 2
+	if start < 0 {
+		start = 0
+	}
+	if start > 6 {
+		start = 6
+	}
+
+	return []int{start, start + 1}
+}
+
+type generatedDisciplineAllocation struct {
+	Name       string
+	Code       string
+	TotalHours int
+	Semesters  []int
+}
+
+func rebalanceGeneratedDisciplineHours(disciplines []rawGeneratedDiscipline, targetHours int, course int) []generatedDisciplineAllocation {
+	result := make([]generatedDisciplineAllocation, 0, len(disciplines))
+
+	if len(disciplines) == 0 {
+		return result
+	}
+
+	weights := make([]int, len(disciplines))
+	for i, discipline := range disciplines {
+		rawSemesters := normalizeSemesterHours(discipline.Semesters)
+		rawTotal := discipline.TotalHours
+		if rawTotal <= 0 {
+			rawTotal = sumHours(rawSemesters)
+		}
+		if rawTotal > 0 {
+			weights[i] = rawTotal
+		} else {
+			weights[i] = 1
+		}
+	}
+
+	allocatedTotals := allocateDisciplineTotals(weights, targetHours)
+	activeIndexes := courseSemesterIndexes(course)
+
+	for i, discipline := range disciplines {
+		normalizedSemesters := normalizeSemesterHours(discipline.Semesters)
+		rebalancedSemesters := spreadDisciplineHoursAcrossSemesters(normalizedSemesters, allocatedTotals[i], activeIndexes)
+		result = append(result, generatedDisciplineAllocation{
+			Name:       discipline.Name,
+			Code:       discipline.Code,
+			TotalHours: allocatedTotals[i],
+			Semesters:  rebalancedSemesters,
+		})
+	}
+
+	return result
+}
+
+func allocateDisciplineTotals(weights []int, targetHours int) []int {
+	result := make([]int, len(weights))
+	if len(weights) == 0 || targetHours <= 0 {
+		return result
+	}
+
+	units := targetHours / 24
+	if units <= 0 {
+		return result
+	}
+
+	totalWeight := 0
+	for _, weight := range weights {
+		if weight > 0 {
+			totalWeight += weight
+		}
+	}
+	if totalWeight == 0 {
+		totalWeight = len(weights)
+		for i := range weights {
+			weights[i] = 1
+		}
+	}
+
+	baseUnits := make([]int, len(weights))
+	if len(weights) <= units {
+		for i := range baseUnits {
+			baseUnits[i] = 1
+		}
+		units -= len(weights)
+	}
+
+	type remainderEntry struct {
+		index     int
+		remainder int
+	}
+
+	remainders := make([]remainderEntry, 0, len(weights))
+	assignedExtra := 0
+	for i, weight := range weights {
+		exactNumerator := units * weight
+		extraUnits := 0
+		remainder := 0
+		if totalWeight > 0 {
+			extraUnits = exactNumerator / totalWeight
+			remainder = exactNumerator % totalWeight
+		}
+		baseUnits[i] += extraUnits
+		assignedExtra += extraUnits
+		remainders = append(remainders, remainderEntry{index: i, remainder: remainder})
+	}
+
+	sort.SliceStable(remainders, func(i, j int) bool {
+		return remainders[i].remainder > remainders[j].remainder
+	})
+
+	for i := 0; i < units-assignedExtra && i < len(remainders); i++ {
+		baseUnits[remainders[i].index]++
+	}
+
+	for i, unitCount := range baseUnits {
+		result[i] = unitCount * 24
+	}
+
+	return result
+}
+
+func spreadDisciplineHoursAcrossSemesters(rawSemesters []int, totalHours int, activeIndexes []int) []int {
+	result := normalizeSemesterHours(rawSemesters)
+	for i := range result {
+		result[i] = 0
+	}
+
+	if totalHours <= 0 {
+		return result
+	}
+
+	if len(activeIndexes) == 0 {
+		result[0] = totalHours
+		return result
+	}
+
+	activeRawSum := 0
+	for _, index := range activeIndexes {
+		if index >= 0 && index < len(rawSemesters) {
+			activeRawSum += maxInt(rawSemesters[index], 0)
+		}
+	}
+
+	if activeRawSum == 0 {
+		result[activeIndexes[0]] = totalHours
+		return result
+	}
+
+	remaining := totalHours
+	for i, index := range activeIndexes {
+		if index < 0 || index >= len(result) {
+			continue
+		}
+		if i == len(activeIndexes)-1 {
+			result[index] = remaining
+			break
+		}
+
+		share := totalHours * maxInt(rawSemesters[index], 0) / activeRawSum
+		result[index] = share
+		remaining -= share
+	}
+
+	return result
+}
+
 func normalizeGeneratedTopics(rawTopics []GeneratedTopic, req GenerateTopicsForDisciplineRequest, topicHours int) []GeneratedTopic {
 	baseTopicCount := 0
 	if topicHours > 0 {
@@ -668,24 +870,20 @@ func normalizeGeneratedTopics(rawTopics []GeneratedTopic, req GenerateTopicsForD
 		return nil
 	}
 
-	names := buildOrderedTopicNames(rawTopics)
 	types := buildNormalizedTopicTypes(rawTopics, req, baseTopicCount, targetTopicCount)
 	result := make([]GeneratedTopic, 0, targetTopicCount)
-	namePrefix := "Тема"
-	if strings.EqualFold(req.SourceLanguage, "kk") {
-		namePrefix = "Тақырып"
-	}
 
 	for i := 0; i < targetTopicCount; i++ {
-		name := fmt.Sprintf("%s %d", namePrefix, i+1)
-		if i < len(names) {
-			name = names[i]
-		}
-
 		topicType := "COMBINED"
 		if i < len(types) {
 			topicType = types[i]
 		}
+
+		rawName := ""
+		if i < len(rawTopics) {
+			rawName = rawTopics[i].Name
+		}
+		name := normalizeGeneratedTopicName(rawName, req, topicType, i)
 
 		durationHours := topicHours
 		if i < len(rawTopics) && rawTopics[i].DurationHours > 0 {
@@ -800,9 +998,6 @@ func normalizeTopicType(value string) string {
 func normalizeTopicDurationHours(topicType string, durationHours int) int {
 	switch topicType {
 	case "PRACTICAL":
-		if durationHours == 6 {
-			return 6
-		}
 		return 2
 	case "COMBINED", "SNZ", "SRSP":
 		return 2
@@ -854,19 +1049,6 @@ func countTopicType(topics []GeneratedTopic, topicType string) int {
 	return count
 }
 
-func buildOrderedTopicNames(rawTopics []GeneratedTopic) []string {
-	names := make([]string, 0, len(rawTopics))
-	for _, topic := range rawTopics {
-		name := strings.TrimSpace(topic.Name)
-		if name == "" {
-			continue
-		}
-		names = append(names, name)
-	}
-
-	return names
-}
-
 func inferTopicType(topic GeneratedTopic) string {
 	if topicType := normalizeTopicType(topic.Type); topicType != "" {
 		return topicType
@@ -880,10 +1062,127 @@ func inferTopicType(topic GeneratedTopic) string {
 	if topic.PracticeHours > 0 && topic.TheoryHours == 0 && topic.IndividualHours == 0 {
 		return "PRACTICAL"
 	}
-	if topic.DurationHours >= 6 {
-		return "PRACTICAL"
-	}
 	return "COMBINED"
+}
+
+func sanitizeGeneratedDisciplineName(code string, name string) string {
+	trimmedCode := strings.TrimSpace(code)
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" {
+		return trimmedCode
+	}
+
+	withoutCodePrefix := disciplineCodePrefixPattern.ReplaceAllString(trimmedName, "")
+	withoutCodePrefix = strings.TrimSpace(strings.TrimLeft(withoutCodePrefix, ".:- "))
+	if withoutCodePrefix == "" {
+		withoutCodePrefix = trimmedName
+	}
+
+	if trimmedCode == "" {
+		return withoutCodePrefix
+	}
+
+	return strings.TrimSpace(trimmedCode + " " + withoutCodePrefix)
+}
+
+func normalizeGeneratedTopicName(name string, req GenerateTopicsForDisciplineRequest, topicType string, index int) string {
+	normalized := strings.TrimSpace(name)
+	if normalized != "" {
+		replacer := strings.NewReplacer(
+			"Лабораторно-практическое занятие:", "",
+			"Лабораторно-практическое занятие", "",
+			"Лабораторно-практическая работа:", "",
+			"Лабораторно-практическая работа", "",
+			"Теоретическое занятие:", "",
+			"Теоретическое занятие", "",
+			"Лекция:", "",
+			"Лекция.", "",
+			"Лекция", "",
+		)
+		normalized = strings.TrimSpace(replacer.Replace(normalized))
+		normalized = strings.TrimSpace(strings.TrimLeft(normalized, ".:- "))
+	}
+
+	if normalized == "" || topicPlaceholderPattern.MatchString(normalized) {
+		return buildFallbackTopicName(req.SourceLanguage, strings.TrimSpace(req.DisciplineName), topicType, index)
+	}
+
+	return normalized
+}
+
+func buildFallbackTopicName(sourceLanguage string, disciplineName string, topicType string, index int) string {
+	subject := disciplineName
+	if subject == "" {
+		if strings.EqualFold(sourceLanguage, "kk") {
+			subject = "пән мазмұны"
+		} else {
+			subject = "содержание дисциплины"
+		}
+	}
+
+	if strings.EqualFold(sourceLanguage, "kk") {
+		switch topicType {
+		case "PRACTICAL":
+			templates := []string{
+				"Орындайды \"%s\" пәні бойынша практикалық әрекеттерді",
+				"Қолданады \"%s\" пәнінің жұмыс тәсілдерін",
+				"Баптайды \"%s\" пәніне қатысты құралдарды",
+				"Тексереді \"%s\" пәні бойынша орындалған нәтижелерді",
+			}
+			return fmt.Sprintf(templates[index%len(templates)], subject)
+		case "SNZ":
+			templates := []string{
+				"Орындайды \"%s\" пәні бойынша жеке тапсырманы",
+				"Жүйелейді \"%s\" пәні бойынша өзіндік жұмысты",
+			}
+			return fmt.Sprintf(templates[index%len(templates)], subject)
+		case "SRSP":
+			templates := []string{
+				"Талдайды \"%s\" пәні бойынша кеңес беру сұрақтарын",
+				"Нақтылайды \"%s\" пәні бойынша бақылау тапсырмаларын",
+			}
+			return fmt.Sprintf(templates[index%len(templates)], subject)
+		default:
+			templates := []string{
+				"Түсіндіреді \"%s\" пәнінің негізгі ұғымдарын",
+				"Сипаттайды \"%s\" пәнінің құрылымы мен мазмұнын",
+				"Қолданады \"%s\" пәнінің негізгі әдістерін",
+				"Талдайды \"%s\" пәні бойынша оқу жағдайларын",
+			}
+			return fmt.Sprintf(templates[index%len(templates)], subject)
+		}
+	}
+
+	switch topicType {
+	case "PRACTICAL":
+		templates := []string{
+			"Выполняет практические действия по дисциплине \"%s\"",
+			"Применяет рабочие методы дисциплины \"%s\"",
+			"Настраивает инструменты по дисциплине \"%s\"",
+			"Проверяет результаты по дисциплине \"%s\"",
+		}
+		return fmt.Sprintf(templates[index%len(templates)], subject)
+	case "SNZ":
+		templates := []string{
+			"Выполняет индивидуальное задание по дисциплине \"%s\"",
+			"Систематизирует самостоятельную работу по дисциплине \"%s\"",
+		}
+		return fmt.Sprintf(templates[index%len(templates)], subject)
+	case "SRSP":
+		templates := []string{
+			"Разбирает вопросы консультации по дисциплине \"%s\"",
+			"Уточняет контрольные задания по дисциплине \"%s\"",
+		}
+		return fmt.Sprintf(templates[index%len(templates)], subject)
+	default:
+		templates := []string{
+			"Объясняет ключевые понятия дисциплины \"%s\"",
+			"Описывает структуру и содержание дисциплины \"%s\"",
+			"Применяет базовые методы дисциплины \"%s\"",
+			"Анализирует учебные ситуации по дисциплине \"%s\"",
+		}
+		return fmt.Sprintf(templates[index%len(templates)], subject)
+	}
 }
 
 func normalizeGeneratedResources(resources []GeneratedResource) []GeneratedResource {

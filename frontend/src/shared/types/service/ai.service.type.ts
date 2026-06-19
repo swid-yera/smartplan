@@ -93,6 +93,7 @@ export interface IGenerateDisciplines {
 
 export interface IGenerateDisciplinesResponse {
 	name: string
+	totalHours: number
 	semesters: { semester: number; totalHours: number }[]
 	topics: IAiDisciplineTopicInput[]
 }

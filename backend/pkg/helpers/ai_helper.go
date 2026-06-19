@@ -88,9 +88,10 @@ type GenerateTopicsForDisciplineRequest struct {
 }
 
 type GeneratedDiscipline struct {
-	Name      string              `json:"name"`
-	Semesters []GeneratedSemester `json:"semesters"`
-	Topics    []GeneratedTopic    `json:"topics"`
+	Name       string              `json:"name"`
+	TotalHours int                 `json:"totalHours"`
+	Semesters  []GeneratedSemester `json:"semesters"`
+	Topics     []GeneratedTopic    `json:"topics"`
 }
 
 type GeneratedSemester struct {
@@ -516,6 +517,7 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
     {
       "name": string,
       "code": string,  // уникальный код РО(Название, а именно номер).1, Например: РО6.1. РО6.2…
+      "totalHours": number,
       "semesters": [number, number, number, number, number, number, number, number]
     }
   ]
@@ -529,7 +531,9 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
   • курс 3 → семестры 5 и 6
   • курс 4 → семестры 7 и 8
 - семестры вне курса = 0
-- сумма чисел в семестрах курса = общему количеству часов дисциплины
+- totalHours каждой дисциплины должен быть кратен 24
+- сумма чисел в semesters курса = полю totalHours этой дисциплины
+- сумма totalHours всех дисциплин = %d
 - **последовательность дисциплин:** первая дисциплина начинает курс с самого начала семестра, следующая дисциплина начинается с того места, где закончилась предыдущая
 - часы можно распределять равномерно между двумя семестрами курса, но последовательность должна сохраняться
 
@@ -550,11 +554,13 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
     {
       "name": "Основы сетевых технологий",
       "code": "РО5.1",
+      "totalHours": 72,
       "semesters": [0, 0, 0, 0, 36, 36, 0, 0]
     },
     {
       "name": "Информационная безопасность ЛВС",
       "code": "РО5.2",
+      "totalHours": 72,
       "semesters": [0, 0, 0, 0, 0, 72, 0, 0]
     }
   ]
@@ -573,6 +579,7 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
 		in.CurrentValuesContext,
 		in.DisciplineCount,
 		responseLanguage,
+		in.WantsHours,
 		in.DisciplineCount,
 		in.Course,
 	)
@@ -607,7 +614,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 
 1. Количество и длительность тем:
 - Каждая обычная тема = 2 часа.
-- Темы типа "PRACTICAL" могут иметь durationHours = 2 или 6.
+- Темы типа "PRACTICAL" всегда имеют durationHours = 2.
 - Для "PRACTICAL": theoryHours = 0, practiceHours = durationHours.
 - Для "COMBINED": durationHours = 2, theoryHours + practiceHours = 2.
 - Для "SNZ": durationHours = 2, individualHours = 2.
@@ -664,7 +671,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 - Все часы суммируются строго в totalHours = %d
 - Количество тем = %d
 - Для каждой темы обязательно указывай durationHours
-- durationHours может быть только 2 или 6 для "PRACTICAL"
+- durationHours для "PRACTICAL" может быть только 2
 - Для "COMBINED", "SNZ" и "SRSP" durationHours всегда 2
 - Если переданы предпочтения по количеству типов тем, старайся их соблюдать без нарушения ограничений по сумме часов.
 
@@ -673,6 +680,7 @@ func BuildGenerateTopicsForDisciplinePrompt(in GenerateTopicsForDisciplinePrompt
 - Без комментариев, markdown, пояснений или дополнительного текста
 - В конце снова перепроверяй длительность всех тем чтобы они в точности совпали с totalHours
 7. Обязательно учти комментарий преподавателя. Если комментарий пустой, действуй по правилам выше.
+8. Никогда не используй заглушки и шаблонные названия вида "Тема 1", "Тема 2", "Тақырып 3", "Theme 4". Каждое название должно быть осмысленным и предметным.
 `,
 		escapePromptValue(in.DisciplineName),
 		escapePromptValue(in.RupName),

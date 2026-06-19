@@ -1108,8 +1108,8 @@ func (s *rupService) validateCreateRupRequest(ctx context.Context, req CreateRup
 		for _, topic := range disc.Topics {
 			switch strings.ToUpper(strings.TrimSpace(topic.Type)) {
 			case "PRACTICAL":
-				if topic.DurationHours != 0 && topic.DurationHours != 2 && topic.DurationHours != 6 {
-					return fmt.Errorf("practical topic duration must be 2 or 6")
+				if topic.DurationHours != 0 && topic.DurationHours != 2 {
+					return fmt.Errorf("practical topic duration must be 2")
 				}
 			case "COMBINED", "SNZ", "SRSP":
 				if topic.DurationHours != 0 && topic.DurationHours != 2 {
