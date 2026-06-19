@@ -51,6 +51,24 @@ func parseCommaSeparatedQuery(value string) []string {
 	return result
 }
 
+func parseUUIDListQuery(value string) ([]uuid.UUID, error) {
+	items := parseCommaSeparatedQuery(value)
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	ids := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		id, err := uuid.Parse(item)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+
+	return ids, nil
+}
+
 func parseLessonTypeFilter(value string) ([]string, error) {
 	values := parseCommaSeparatedQuery(value)
 	for index, item := range values {

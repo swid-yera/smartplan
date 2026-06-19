@@ -129,6 +129,8 @@ export type IGetRupSignatureArtifactResponse = IRupSignatureArtifact
 
 // get all
 export interface IGetAllRequest extends IPaginationRequest {
+	departments?: string[]
+	groups?: string[]
 	methodist?: string
 	teacher?: string
 	status?: StatusEnum[]

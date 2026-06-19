@@ -1289,12 +1289,7 @@ func calculateDisciplineTotalHours(discipline *DisciplineRequest) int32 {
 		semesterHours += semester.TotalHours
 	}
 
-	var srspHours int32
-	for _, topic := range discipline.Topics {
-		srspHours += topic.SrspHours
-	}
-
-	return semesterHours + srspHours
+	return semesterHours
 }
 
 func calculateTopicTotalHours(topic *TopicRequest) int32 {

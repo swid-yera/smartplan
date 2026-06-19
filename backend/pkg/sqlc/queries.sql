@@ -591,7 +591,29 @@ FROM rups WHERE
     ) AND (
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
-    )AND (
+    )
+    AND (
+        sqlc.narg('department_ids')::uuid[] IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM departments d
+            WHERE d.keycloak_id = ANY(sqlc.arg('department_ids')::uuid[])
+              AND (
+                  (teacher IS NOT NULL AND teacher = ANY(d.users))
+                  OR (methodist IS NOT NULL AND methodist = ANY(d.users))
+                  OR EXISTS (
+                      SELECT 1
+                      FROM unnest(contacts) AS contact_id
+                      WHERE contact_id = ANY(d.users)
+                  )
+              )
+        )
+    )
+    AND (
+        sqlc.narg('group_ids')::text[] IS NULL
+        OR group_ids && sqlc.arg('group_ids')::text[]
+    )
+    AND (
         sqlc.narg('status')::text[] IS NULL
         OR status = ANY(sqlc.arg(status)::text[]::rups_status[])
     )
@@ -631,6 +653,27 @@ WHERE
     AND (
         sqlc.narg('methodist')::uuid IS NULL
         OR methodist = sqlc.narg('methodist')::uuid
+    )
+    AND (
+        sqlc.narg('department_ids')::uuid[] IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM departments d
+            WHERE d.keycloak_id = ANY(sqlc.arg('department_ids')::uuid[])
+              AND (
+                  (teacher IS NOT NULL AND teacher = ANY(d.users))
+                  OR (methodist IS NOT NULL AND methodist = ANY(d.users))
+                  OR EXISTS (
+                      SELECT 1
+                      FROM unnest(contacts) AS contact_id
+                      WHERE contact_id = ANY(d.users)
+                  )
+              )
+        )
+    )
+    AND (
+        sqlc.narg('group_ids')::text[] IS NULL
+        OR group_ids && sqlc.arg('group_ids')::text[]
     )
     AND (
         sqlc.narg('status')::text[] IS NULL
