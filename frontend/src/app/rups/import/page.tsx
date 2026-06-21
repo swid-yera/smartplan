@@ -62,14 +62,7 @@ const MAX_FILE_BYTES = 15 * 1024 * 1024
 const DOCX_ACCEPT = {
 	'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
 }
-const COURSE_OPTIONS = [1, 2, 3, 4] as const
 const STUDY_YEAR_PATTERN = /^\d{4}-\d{4}$/
-
-type CourseOption = (typeof COURSE_OPTIONS)[number]
-
-const isCourseOption = (value: number): value is CourseOption => {
-	return COURSE_OPTIONS.includes(value as CourseOption)
-}
 
 const formatFileSize = (bytes: number) => {
 	if (bytes < 1024) return `${bytes} B`
@@ -124,7 +117,6 @@ const Page: NextPage = () => {
 	const [parseResult, setParseResult] = useState<IParseRupImportResponse | null>(null)
 	const [selectedGroupId, setSelectedGroupId] = useState('')
 	const [studyYear, setStudyYear] = useState('')
-	const [course, setCourse] = useState('')
 	const [groupOpen, setGroupOpen] = useState(false)
 
 	const parseMutation = useMutation(services.rup.parseImportOptions())
@@ -170,19 +162,19 @@ const Page: NextPage = () => {
 	const availableStudyYears = Array.from(
 		new Set(typeof groupYear === 'number' ? generateStudyYears(groupYear) : []),
 	).sort()
+	const selectedCourse =
+		selectedGroup && STUDY_YEAR_PATTERN.test(studyYear.trim())
+			? formatCourseFromYearAndGroupName(selectedGroup.name, studyYear.trim())
+			: ''
 	const parsedName = payload ? getLocaleText(payload.name, locale) : ''
 	const topicCount = payload?.disciplines.reduce((count, discipline) => count + discipline.topics.length, 0) ?? 0
-	const canConfirm =
-		!!parseResult && !!selectedGroupId && STUDY_YEAR_PATTERN.test(studyYear.trim()) && isCourseOption(Number(course))
+	const canConfirm = !!parseResult && !!selectedGroupId && !!studyYear.trim() && typeof selectedCourse === 'number'
 
 	useEffect(() => {
 		if (!parseResult) return
 
-		const courseSuggestion = Number(parseResult.payload.courseSuggestion)
-
 		setSelectedGroupId('')
 		setStudyYear(parseResult.payload.studyYearSuggestion || '')
-		setCourse(isCourseOption(courseSuggestion) ? String(courseSuggestion) : '')
 	}, [parseResult])
 
 	useEffect(() => {
@@ -215,7 +207,6 @@ const Page: NextPage = () => {
 		setParseResult(null)
 		setSelectedGroupId('')
 		setStudyYear('')
-		setCourse('')
 	}
 
 	const selectGroup = (groupId: string) => {
@@ -276,9 +267,7 @@ const Page: NextPage = () => {
 			return
 		}
 
-		const numericCourse = Number(course)
-
-		if (!isCourseOption(numericCourse)) {
+		if (typeof selectedCourse !== 'number') {
 			toast.error(t.invalidCourse)
 
 			return
@@ -292,7 +281,7 @@ const Page: NextPage = () => {
 				importDraftId: parseResult.importDraftId,
 				groupId: selectedGroupId,
 				studyYear: studyYear.trim(),
-				course: numericCourse,
+				course: selectedCourse,
 			},
 			{
 				onSuccess: (createdRup) => {
@@ -606,34 +595,15 @@ const Page: NextPage = () => {
 
 								<div className='space-y-2'>
 									<Label>{t.courseLabel}</Label>
-									<Select disabled={confirmMutation.isPending} value={course} onValueChange={setCourse}>
-										<SelectTrigger className='w-full'>
-											<SelectValue placeholder={t.coursePlaceholder} />
-										</SelectTrigger>
-										<SelectContent>
-											{COURSE_OPTIONS.map((courseOption) => (
-												<SelectItem key={courseOption} value={String(courseOption)}>
-													{courseOption} {t.courseSuffix}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
+									<div className='flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm'>
+										{typeof selectedCourse === 'number'
+											? `${selectedCourse} ${t.courseSuffix}`
+											: t.coursePlaceholder}
+									</div>
 									{payload.courseSuggestion ? (
-										<div className='flex flex-wrap items-center gap-2 text-xs text-muted-foreground'>
-											<span>
-												{interpolateUILocaleText(t.suggestion, { value: payload.courseSuggestion })}
-											</span>
-											{isCourseOption(Number(payload.courseSuggestion)) ? (
-												<Button
-													size='sm'
-													type='button'
-													variant='ghost'
-													onClick={() => setCourse(String(payload.courseSuggestion))}
-												>
-													{t.useSuggestion}
-												</Button>
-											) : null}
-										</div>
+										<p className='text-xs text-muted-foreground'>
+											{interpolateUILocaleText(t.suggestion, { value: payload.courseSuggestion })}
+										</p>
 									) : null}
 								</div>
 
