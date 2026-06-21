@@ -110,6 +110,7 @@ const EditPage: FC = () => {
 	const [currentStep, setCurrentStep] = useState('1')
 	const [stepTransitionDirection, setStepTransitionDirection] = useState<'forward' | 'backward'>('forward')
 	const [activeLocale, setActiveLocale] = useState<Locale>(locale)
+	const includeTranslation = true
 	// auth
 	const { user, authLoading } = useAuthStore()
 	// queries
@@ -416,9 +417,9 @@ const EditPage: FC = () => {
 								? 'data-[state=active]:slide-in-from-right-4'
 								: 'data-[state=active]:slide-in-from-left-4',
 						)}
-						value='1'
-					>
-						<Step1 activeLocale={activeLocale} />
+					value='1'
+				>
+						<Step1 activeLocale={activeLocale} includeTranslation={includeTranslation} />
 					</TabsContent>
 					<TabsContent
 						className={cn(
@@ -427,9 +428,9 @@ const EditPage: FC = () => {
 								? 'data-[state=active]:slide-in-from-right-4'
 								: 'data-[state=active]:slide-in-from-left-4',
 						)}
-						value='2'
-					>
-						<Step2 activeLocale={activeLocale} />
+					value='2'
+				>
+						<Step2 activeLocale={activeLocale} includeTranslation={includeTranslation} />
 					</TabsContent>
 					<TabsContent
 						className={cn(
@@ -438,9 +439,9 @@ const EditPage: FC = () => {
 								? 'data-[state=active]:slide-in-from-right-4'
 								: 'data-[state=active]:slide-in-from-left-4',
 						)}
-						value='3'
-					>
-						<Step3 activeLocale={activeLocale} />
+					value='3'
+				>
+						<Step3 activeLocale={activeLocale} includeTranslation={includeTranslation} />
 					</TabsContent>
 					<TabsContent
 						className={cn(
@@ -449,9 +450,9 @@ const EditPage: FC = () => {
 								? 'data-[state=active]:slide-in-from-right-4'
 								: 'data-[state=active]:slide-in-from-left-4',
 						)}
-						value='4'
-					>
-						<Step4 activeLocale={activeLocale} />
+					value='4'
+				>
+						<Step4 activeLocale={activeLocale} includeTranslation={includeTranslation} />
 					</TabsContent>
 				</Tabs>
 			</form>
