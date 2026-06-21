@@ -26,6 +26,23 @@ export const toLocaleText = (value: LocalizedText): LocaleText => {
 	}
 }
 
+export const fromAiLocalizedText = (value: LocalizedText, sourceLocale: Locale): LocaleText => {
+	if (!value) return { ...EMPTY_LOCALE_TEXT }
+
+	if (typeof value === 'string') {
+		const text = value.trim()
+
+		if (!text) return { ...EMPTY_LOCALE_TEXT }
+
+		return sourceLocale === 'kk' ? { ru: '', kz: text } : { ru: text, kz: '' }
+	}
+
+	return {
+		ru: typeof value.ru === 'string' ? value.ru.trim() : '',
+		kz: typeof value.kz === 'string' ? value.kz.trim() : '',
+	}
+}
+
 export const updateLocaleText = (value: LocalizedText, locale: Locale, next: string): LocaleText => {
 	const localized = toLocaleText(value)
 

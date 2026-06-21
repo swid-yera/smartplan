@@ -3,11 +3,19 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { getLocaleText, getTotalDisciplineHours, getUILocaleSection, interpolateUILocaleText } from '@helpers'
 import { services } from '@services'
 import { useLocaleStore } from '@store'
-import type { IGenerateTopicsForDiscipline, Locale, LocaleText, RupTypeEnum, TopicTypeEnum } from '@types'
+import type {
+	IGenerateTopicsForDiscipline,
+	Locale,
+	LocaleText,
+	LocalizedText,
+	RupTypeEnum,
+	TopicTypeEnum,
+} from '@types'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { type TopicsDisciplineGenerateOptions, TopicsEdit } from '../components'
+import { fromAiLocalizedText } from '../rup-localization'
 import localeDictionary from './locale.json'
 
 type Topic = {
@@ -30,6 +38,7 @@ type Discipline = {
 }
 
 type IProps = FieldValues & {
+	includeTranslation?: boolean
 	name: LocaleText
 	type: RupTypeEnum
 	goals: LocaleText
@@ -38,7 +47,13 @@ type IProps = FieldValues & {
 	disciplines: Discipline[]
 }
 
-export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
+export function Step4<T extends IProps>({
+	activeLocale,
+	includeTranslation = false,
+}: {
+	activeLocale: Locale
+	includeTranslation?: boolean
+}) {
 	const locale = useLocaleStore((state) => state.locale)
 	const step4Text = useMemo(() => getUILocaleSection(localeDictionary, locale).step4, [locale])
 	const { getValues, setValue } = useFormContext<T>()
@@ -47,10 +62,7 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 	const generationLockRef = useRef<number | null>(null)
 
 	const mapGeneratedText = useCallback(
-		(value: string): LocaleText =>
-			activeLocale === 'ru'
-				? { ru: getLocaleText(value, 'ru'), kz: '' }
-				: { ru: '', kz: getLocaleText(value, 'kk') },
+		(value: LocalizedText): LocaleText => fromAiLocalizedText(value, activeLocale),
 		[activeLocale],
 	)
 
@@ -68,6 +80,7 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 
 			return {
 				sourceLanguage: activeLocale,
+				includeTranslation,
 				rupName: getLocaleText(values.name, activeLocale),
 				rupType: values.type,
 				goals: getLocaleText(values.goals, activeLocale),
@@ -87,7 +100,7 @@ export function Step4<T extends IProps>({ activeLocale }: { activeLocale: Locale
 				preferredSrspCount: options?.preferredSrspCount,
 			}
 		},
-		[activeLocale, getValues],
+		[activeLocale, getValues, includeTranslation],
 	)
 
 	const generateOneDiscipline = useCallback(

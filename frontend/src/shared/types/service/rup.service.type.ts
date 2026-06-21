@@ -123,6 +123,7 @@ export interface IRupLanguageGenerationStatus {
 export interface IRegenerateLanguageGenerationRequest {
 	id: string
 	sourceLanguage?: BackendLocale
+	includeTranslation?: boolean
 }
 
 export type IGetRupSignatureArtifactResponse = IRupSignatureArtifact

@@ -1,10 +1,66 @@
 package service
 
 import (
+	"context"
+	"errors"
+	"reflect"
 	"testing"
 
 	"eduplan/backend/config"
+	"eduplan/backend/pkg/localization"
 )
+
+func TestBuildBilingualLocaleTextsUsesTranslationBatch(t *testing.T) {
+	translation := &fakeTranslationService{}
+	svc := &aiService{translation: translation}
+
+	result, err := svc.buildBilingualLocaleTexts(context.Background(), "ru", true, []string{"Название", "", "Цели"})
+	if err != nil {
+		t.Fatalf("build bilingual locale texts: %v", err)
+	}
+
+	if len(result) != 3 {
+		t.Fatalf("unexpected result length: got %d want %d", len(result), 3)
+	}
+	if result[0].Ru != "Название" || result[0].Kz != "kz:Название" {
+		t.Fatalf("unexpected first localized text: %#v", result[0])
+	}
+	if result[1] != (localization.LocaleText{}) {
+		t.Fatalf("empty text should stay empty: %#v", result[1])
+	}
+	if result[2].Ru != "Цели" || result[2].Kz != "kz:Цели" {
+		t.Fatalf("unexpected third localized text: %#v", result[2])
+	}
+	if len(translation.batches) != 1 {
+		t.Fatalf("unexpected translation batch count: got %d want %d", len(translation.batches), 1)
+	}
+	if !reflect.DeepEqual(translation.batches[0].Texts, []string{"Название", "Цели"}) {
+		t.Fatalf("unexpected translation batch texts: %#v", translation.batches[0].Texts)
+	}
+	if translation.batches[0].Domain != "rup" {
+		t.Fatalf("unexpected translation batch domain: %q", translation.batches[0].Domain)
+	}
+}
+
+func TestBuildBilingualLocaleTextsSkipsTranslationWhenDisabled(t *testing.T) {
+	translation := &fakeTranslationService{err: errors.New("translation should not be called")}
+	svc := &aiService{translation: translation}
+
+	result, err := svc.buildBilingualLocaleTexts(context.Background(), "kk", false, []string{"Бағдарлама"})
+	if err != nil {
+		t.Fatalf("build bilingual locale texts: %v", err)
+	}
+
+	if len(result) != 1 {
+		t.Fatalf("unexpected result length: got %d want %d", len(result), 1)
+	}
+	if result[0].Ru != "" || result[0].Kz != "Бағдарлама" {
+		t.Fatalf("unexpected source-only localized text: %#v", result[0])
+	}
+	if len(translation.batches) != 0 {
+		t.Fatalf("translation must not be called in single-language mode, got %d batches", len(translation.batches))
+	}
+}
 
 func TestGetGeminiModels(t *testing.T) {
 	svc := &aiService{

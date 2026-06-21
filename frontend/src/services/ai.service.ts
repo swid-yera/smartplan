@@ -67,6 +67,7 @@ export class AiService {
 			goals: baseData.goals,
 			competencies: baseData.competencies,
 			sourceLanguage: baseData.sourceLanguage,
+			includeTranslation: baseData.includeTranslation,
 			disciplineName: baseData.disciplineName,
 			disciplineHours: baseData.disciplineHours,
 			message: baseData.additionalMessage ?? '',

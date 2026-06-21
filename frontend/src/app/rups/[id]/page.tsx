@@ -110,7 +110,7 @@ const hasRupContentForLocale = (rup: IRup, locale: Locale): boolean => {
 }
 
 const Page: FC = () => {
-	const { push, replace, back } = useRouter()
+	const { replace, back } = useRouter()
 	const params = useParams<{ id: string }>()
 	const rupId = params.id ?? ''
 
@@ -278,12 +278,14 @@ const Page: FC = () => {
 			setIsRegenerateDialogOpen(false)
 
 			const toastId = `rup-${rupData.id}-regenerate-language`
+			const includeTranslation = hasRupContentForLocale(rupData, sourceLanguage)
 
 			toast.loading(t.toasts.regenerateLoading, { id: toastId })
 			regenerateLanguageMutation.mutate(
 				{
 					id: rupData.id,
 					sourceLanguage: toBackendLocale(sourceLanguage),
+					includeTranslation,
 				},
 				{
 					onSuccess: () => {

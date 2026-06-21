@@ -177,6 +177,7 @@ const Page: NextPage = () => {
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 	const currentStepRef = useRef(currentStep)
 	const activeLocale: Locale = creationLocale ?? 'ru'
+	const includeTranslation = Boolean(creationLocale)
 
 	const tabs: ITab[] = [
 		{
@@ -184,28 +185,28 @@ const Page: NextPage = () => {
 			title: pageT.step1Title,
 			fullTitle: pageT.step1FullTitle,
 			description: pageT.step1Description,
-			content: <Step1 activeLocale={activeLocale} />,
+			content: <Step1 activeLocale={activeLocale} includeTranslation={includeTranslation} />,
 		},
 		{
 			id: '2',
 			title: pageT.step2Title,
 			fullTitle: pageT.step2FullTitle,
 			description: pageT.step2Description,
-			content: <Step2 activeLocale={activeLocale} />,
+			content: <Step2 activeLocale={activeLocale} includeTranslation={includeTranslation} />,
 		},
 		{
 			id: '3',
 			title: pageT.step3Title,
 			fullTitle: pageT.step3FullTitle,
 			description: pageT.step3Description,
-			content: <Step3 activeLocale={activeLocale} />,
+			content: <Step3 activeLocale={activeLocale} includeTranslation={includeTranslation} />,
 		},
 		{
 			id: '4',
 			title: pageT.step4Title,
 			fullTitle: pageT.step4FullTitle,
 			description: pageT.step4Description,
-			content: <Step4 activeLocale={activeLocale} />,
+			content: <Step4 activeLocale={activeLocale} includeTranslation={includeTranslation} />,
 		},
 	]
 

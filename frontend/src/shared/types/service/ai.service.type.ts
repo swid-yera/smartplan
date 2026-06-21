@@ -1,12 +1,13 @@
+import type { LocalizedText } from '../locale.type'
 import type { RupTypeEnum, StudyFormEnum, TopicTypeEnum } from '../rup.type'
 
 export interface IAiResourceInput {
-	name: string
+	name: LocalizedText
 	link?: string
 }
 
 export interface IAiDisciplineTopicInput {
-	name: string
+	name: LocalizedText
 	type: TopicTypeEnum
 	durationHours?: number
 	theoryHours: number
@@ -17,7 +18,7 @@ export interface IAiDisciplineTopicInput {
 }
 
 export interface IAiDisciplineInput {
-	name: string
+	name: LocalizedText
 	semesters?: { semester: number; totalHours: number }[]
 	topics?: IAiDisciplineTopicInput[]
 }
@@ -30,6 +31,7 @@ export interface IAiRupGroupInput {
 
 export interface IGenerateRupMeta {
 	sourceLanguage?: 'ru' | 'kk'
+	includeTranslation?: boolean
 	name: string
 	type: RupTypeEnum
 	studyForm: StudyFormEnum
@@ -50,13 +52,14 @@ export interface IGenerateRupMeta {
 }
 
 export interface IGenerateRupMetaResponse {
-	basis: string
-	goals: string
-	competencies: string
+	basis: LocalizedText
+	goals: LocalizedText
+	competencies: LocalizedText
 }
 
 export interface IGenerateResources {
 	sourceLanguage?: 'ru' | 'kk'
+	includeTranslation?: boolean
 	name: string
 	prerequisites: string
 	postrequisites: string
@@ -78,6 +81,7 @@ export interface IGenerateResourcesResponse {
 
 export interface IGenerateDisciplines {
 	sourceLanguage?: 'ru' | 'kk'
+	includeTranslation?: boolean
 	name: string
 	course: number
 	goals: string
@@ -92,7 +96,7 @@ export interface IGenerateDisciplines {
 }
 
 export interface IGenerateDisciplinesResponse {
-	name: string
+	name: LocalizedText
 	totalHours: number
 	semesters: { semester: number; totalHours: number }[]
 	topics: IAiDisciplineTopicInput[]
@@ -100,6 +104,7 @@ export interface IGenerateDisciplinesResponse {
 
 export interface IGenerateTopicsForDiscipline {
 	sourceLanguage?: 'ru' | 'kk'
+	includeTranslation?: boolean
 	rupName: string
 	rupType: RupTypeEnum
 	goals: string

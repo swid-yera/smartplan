@@ -19,6 +19,7 @@ type GenerateRupMetaRequest struct {
 	Postrequisites        string           `json:"postrequisites"`
 	Message               string           `json:"message"`
 	IncludeCurrentContent bool             `json:"includeCurrentContent"`
+	IncludeTranslation    bool             `json:"includeTranslation"`
 	CurrentValues         json.RawMessage  `json:"currentValues"`
 }
 
@@ -44,6 +45,7 @@ type GenerateResourcesRequest struct {
 	Competencies          string          `json:"competencies"`
 	Message               string          `json:"message"`
 	IncludeCurrentContent bool            `json:"includeCurrentContent"`
+	IncludeTranslation    bool            `json:"includeTranslation"`
 	CurrentValues         json.RawMessage `json:"currentValues"`
 }
 
@@ -67,6 +69,7 @@ type GenerateDisciplinesRequest struct {
 	DisciplineCount       int             `json:"disciplineCount"`
 	Message               string          `json:"message"`
 	IncludeCurrentContent bool            `json:"includeCurrentContent"`
+	IncludeTranslation    bool            `json:"includeTranslation"`
 	CurrentValues         json.RawMessage `json:"currentValues"`
 }
 
@@ -80,6 +83,7 @@ type GenerateTopicsForDisciplineRequest struct {
 	DisciplineHours         int             `json:"disciplineHours"`
 	Message                 string          `json:"message"`
 	IncludeCurrentContent   bool            `json:"includeCurrentContent"`
+	IncludeTranslation      bool            `json:"includeTranslation"`
 	CurrentValues           json.RawMessage `json:"currentValues"`
 	PreferredPracticalCount int             `json:"preferredPracticalCount"`
 	PreferredSnzCount       int             `json:"preferredSnzCount"`
@@ -577,9 +581,9 @@ func BuildGenerateDisciplinesPrompt(in GenerateDisciplinesPromptInput) string {
 		escapePromptValue(in.Competencies),
 		escapePromptValue(in.Message),
 		in.CurrentValuesContext,
+		in.WantsHours,
 		in.DisciplineCount,
 		responseLanguage,
-		in.WantsHours,
 		in.DisciplineCount,
 		in.Course,
 	)

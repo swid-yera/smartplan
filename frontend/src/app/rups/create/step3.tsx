@@ -5,11 +5,12 @@ import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
 import { useLocaleStore } from '@store'
-import type { IGenerateDisciplines, Locale, LocaleText, TopicTypeEnum } from '@types'
+import type { IGenerateDisciplines, Locale, LocaleText, LocalizedText, TopicTypeEnum } from '@types'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { DisciplineEdit, GenerateCard } from '../components'
+import { fromAiLocalizedText } from '../rup-localization'
 import localeDictionary from './locale.json'
 
 const HOURS_STEP = 24
@@ -21,6 +22,7 @@ const roundUpToStep = (value: number, step: number) => {
 }
 
 type IProps = FieldValues & {
+	includeTranslation?: boolean
 	name: LocaleText
 	course: number
 	goals: LocaleText
@@ -40,7 +42,13 @@ type IProps = FieldValues & {
 	}[]
 }
 
-export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
+export function Step3<T extends IProps>({
+	activeLocale,
+	includeTranslation = false,
+}: {
+	activeLocale: Locale
+	includeTranslation?: boolean
+}) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).step3
 	const { getValues, setValue } = useFormContext<T>()
@@ -50,8 +58,7 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 	const [disciplineCount, setDisciplineCount] = useState<number | undefined>(undefined)
 	const [additionalMessage, setAdditionalMessage] = useState('')
 	const [includeCurrentContent, setIncludeCurrentContent] = useState(true)
-	const mapGeneratedText = (value: string): LocaleText =>
-		activeLocale === 'ru' ? { ru: getLocaleText(value, 'ru'), kz: '' } : { ru: '', kz: getLocaleText(value, 'kk') }
+	const mapGeneratedText = (value: LocalizedText): LocaleText => fromAiLocalizedText(value, activeLocale)
 
 	const handleGenerate = async () => {
 		if (isLoading) return
@@ -74,6 +81,7 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 
 			const mappedData: IGenerateDisciplines = {
 				sourceLanguage: activeLocale,
+				includeTranslation,
 				name: getLocaleText(values.name, activeLocale),
 				course: values.course,
 				goals: getLocaleText(values.goals, activeLocale),

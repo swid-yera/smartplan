@@ -5,11 +5,12 @@ import { getLocaleText, getUILocaleSection } from '@helpers'
 import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
 import { useAuthStore, useLocaleStore } from '@store'
-import type { IGenerateResources, Locale, LocaleText } from '@types'
+import type { IGenerateResources, Locale, LocaleText, LocalizedText } from '@types'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { ContactsEdit, GenerateCard, ResourceEdit } from '../components'
+import { fromAiLocalizedText } from '../rup-localization'
 import localeDictionary from './locale.json'
 
 type ResourcesType = {
@@ -18,6 +19,7 @@ type ResourcesType = {
 }
 
 type IProps = FieldValues & {
+	includeTranslation?: boolean
 	name: LocaleText
 	prerequisites: LocaleText
 	postrequisites: LocaleText
@@ -30,7 +32,13 @@ type IProps = FieldValues & {
 	technicalResources: ResourcesType[]
 }
 
-export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
+export function Step2<T extends IProps>({
+	activeLocale,
+	includeTranslation = false,
+}: {
+	activeLocale: Locale
+	includeTranslation?: boolean
+}) {
 	// store, form
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).step2
@@ -40,8 +48,7 @@ export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale
 	const [isLoading, setIsLoading] = useState(false)
 	const [additionalMessage, setAdditionalMessage] = useState('')
 	const [includeCurrentContent, setIncludeCurrentContent] = useState(true)
-	const mapGeneratedText = (value: string): LocaleText =>
-		activeLocale === 'ru' ? { ru: getLocaleText(value, 'ru'), kz: '' } : { ru: '', kz: getLocaleText(value, 'kk') }
+	const mapGeneratedText = (value: LocalizedText): LocaleText => fromAiLocalizedText(value, activeLocale)
 
 	const handleGenerate = async () => {
 		if (isLoading) return
@@ -54,6 +61,7 @@ export function Step2<T extends IProps>({ activeLocale }: { activeLocale: Locale
 
 			const mappedData: IGenerateResources = {
 				sourceLanguage: activeLocale,
+				includeTranslation,
 				name: getLocaleText(values.name, activeLocale),
 				prerequisites: getLocaleText(values.prerequisites, activeLocale),
 				postrequisites: getLocaleText(values.postrequisites, activeLocale),

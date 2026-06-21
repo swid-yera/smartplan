@@ -16,6 +16,7 @@ import (
 
 	"eduplan/backend/config"
 	"eduplan/backend/pkg/helpers"
+	"eduplan/backend/pkg/localization"
 
 	"github.com/sirupsen/logrus"
 )
@@ -23,36 +24,67 @@ import (
 type AIService interface {
 	GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequest) (*GenerateRupMetaResponse, error)
 	GenerateResources(ctx context.Context, req GenerateResourcesRequest) (*GenerateResourcesResponse, error)
-	GenerateDisciplines(ctx context.Context, req GenerateDisciplinesRequest) ([]GeneratedDiscipline, error)
-	GenerateTopicsForDiscipline(ctx context.Context, req GenerateTopicsForDisciplineRequest) ([]GeneratedTopic, error)
+	GenerateDisciplines(ctx context.Context, req GenerateDisciplinesRequest) ([]LocalizedGeneratedDiscipline, error)
+	GenerateTopicsForDiscipline(ctx context.Context, req GenerateTopicsForDisciplineRequest) ([]LocalizedGeneratedTopic, error)
 	GenerateLesson(ctx context.Context, req GenerateLessonRequest) (*GenerateLessonResponse, error)
 }
 
 type aiService struct {
-	httpClient *http.Client
-	cfg        *config.GeminiConfig
-	log        *logrus.Logger
+	httpClient  *http.Client
+	cfg         *config.GeminiConfig
+	translation TranslationService
+	log         *logrus.Logger
 }
 
-func NewAIService(httpClient *http.Client, cfg *config.GeminiConfig, log *logrus.Logger) AIService {
+func NewAIService(httpClient *http.Client, cfg *config.GeminiConfig, translation TranslationService, log *logrus.Logger) AIService {
 	return &aiService{
-		httpClient: httpClient,
-		cfg:        cfg,
-		log:        log,
+		httpClient:  httpClient,
+		cfg:         cfg,
+		translation: translation,
+		log:         log,
 	}
 }
 
 type GenerateRupMetaRequest = helpers.GenerateRupMetaRequest
 type GenerateRupGroup = helpers.GenerateRupGroup
-type GenerateRupMetaResponse = helpers.GenerateRupMetaResponse
+type GenerateRupMetaResponse struct {
+	Basis        localization.LocaleText `json:"basis"`
+	Goals        localization.LocaleText `json:"goals"`
+	Competencies localization.LocaleText `json:"competencies"`
+}
 type GenerateResourcesRequest = helpers.GenerateResourcesRequest
-type GenerateResourcesResponse = helpers.GenerateResourcesResponse
+type GenerateResourcesResponse struct {
+	InternetResources  []LocalizedGeneratedResource `json:"internetResources"`
+	TechnicalResources []LocalizedGeneratedResource `json:"technicalResources"`
+}
 type GeneratedResource = helpers.GeneratedResource
 type GenerateDisciplinesRequest = helpers.GenerateDisciplinesRequest
 type GenerateTopicsForDisciplineRequest = helpers.GenerateTopicsForDisciplineRequest
 type GeneratedDiscipline = helpers.GeneratedDiscipline
 type GeneratedSemester = helpers.GeneratedSemester
 type GeneratedTopic = helpers.GeneratedTopic
+type LocalizedGeneratedResource struct {
+	Name localization.LocaleText `json:"name"`
+	Link string                  `json:"link,omitempty"`
+}
+type LocalizedGeneratedDiscipline struct {
+	Name       localization.LocaleText   `json:"name"`
+	TotalHours int                       `json:"totalHours"`
+	Semesters  []GeneratedSemester       `json:"semesters"`
+	Topics     []LocalizedGeneratedTopic `json:"topics"`
+}
+type LocalizedGeneratedTopic struct {
+	Name            localization.LocaleText `json:"name"`
+	Type            string                  `json:"type"`
+	DurationHours   int                     `json:"durationHours"`
+	TheoryHours     int                     `json:"theoryHours"`
+	PracticeHours   int                     `json:"practiceHours"`
+	IndividualHours int                     `json:"individualHours"`
+	SrspHours       int                     `json:"srspHours"`
+	SrsHours        int                     `json:"srsHours"`
+}
+type rawGenerateRupMetaResponse = helpers.GenerateRupMetaResponse
+type rawGenerateResourcesResponse = helpers.GenerateResourcesResponse
 type GenerateLessonRequest = helpers.GenerateLessonRequest
 type GenerateLessonResponse = helpers.GenerateLessonResponse
 type GeneratedLessonProgressStep = helpers.GeneratedLessonProgressStep
@@ -103,12 +135,26 @@ func (s *aiService) GenerateRupMeta(ctx context.Context, req GenerateRupMetaRequ
 		return nil, fmt.Errorf("generate rup meta: %w", err)
 	}
 
-	var out GenerateRupMetaResponse
-	if err := decodeJSONObject(responseText, &out); err != nil {
+	var rawOut rawGenerateRupMetaResponse
+	if err := decodeJSONObject(responseText, &rawOut); err != nil {
 		return nil, fmt.Errorf("decode rup meta response: %w", err)
 	}
 
-	return &out, nil
+	localized, err := s.buildBilingualLocaleTexts(
+		ctx,
+		req.SourceLanguage,
+		req.IncludeTranslation,
+		[]string{rawOut.Basis, rawOut.Goals, rawOut.Competencies},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("translate rup meta response: %w", err)
+	}
+
+	return &GenerateRupMetaResponse{
+		Basis:        localized[0],
+		Goals:        localized[1],
+		Competencies: localized[2],
+	}, nil
 }
 
 func (s *aiService) GenerateResources(ctx context.Context, req GenerateResourcesRequest) (*GenerateResourcesResponse, error) {
@@ -135,15 +181,27 @@ func (s *aiService) GenerateResources(ctx context.Context, req GenerateResources
 		return nil, fmt.Errorf("generate resources: %w", err)
 	}
 
-	var out GenerateResourcesResponse
-	if err := decodeJSONObject(responseText, &out); err != nil {
+	var rawOut rawGenerateResourcesResponse
+	if err := decodeJSONObject(responseText, &rawOut); err != nil {
 		return nil, fmt.Errorf("decode resources response: %w", err)
 	}
 
-	return &out, nil
+	internetResources, err := s.localizeGeneratedResources(ctx, req.SourceLanguage, req.IncludeTranslation, rawOut.InternetResources)
+	if err != nil {
+		return nil, fmt.Errorf("translate internet resources: %w", err)
+	}
+	technicalResources, err := s.localizeGeneratedResources(ctx, req.SourceLanguage, req.IncludeTranslation, rawOut.TechnicalResources)
+	if err != nil {
+		return nil, fmt.Errorf("translate technical resources: %w", err)
+	}
+
+	return &GenerateResourcesResponse{
+		InternetResources:  internetResources,
+		TechnicalResources: technicalResources,
+	}, nil
 }
 
-func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDisciplinesRequest) ([]GeneratedDiscipline, error) {
+func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDisciplinesRequest) ([]LocalizedGeneratedDiscipline, error) {
 	currentValuesContext := helpers.BuildCurrentValuesContext(
 		req.IncludeCurrentContent,
 		req.CurrentValues,
@@ -176,30 +234,16 @@ func (s *aiService) GenerateDisciplines(ctx context.Context, req GenerateDiscipl
 	}
 
 	targetHours := roundUpToMultiple(req.WantsHours, 24)
-	result := make([]GeneratedDiscipline, 0, len(raw.Disciplines))
-	for _, discipline := range rebalanceGeneratedDisciplineHours(raw.Disciplines, targetHours, req.Course) {
-		normalized := normalizeSemesterHours(discipline.Semesters)
-		semesters := make([]GeneratedSemester, 0, len(normalized))
-		for i, hours := range normalized {
-			semesters = append(semesters, GeneratedSemester{
-				Semester:   i + 1,
-				TotalHours: hours,
-			})
-		}
-
-		name := sanitizeGeneratedDisciplineName(discipline.Code, discipline.Name)
-		result = append(result, GeneratedDiscipline{
-			Name:       name,
-			TotalHours: sumHours(normalized),
-			Semesters:  semesters,
-			Topics:     []GeneratedTopic{},
-		})
+	allocations := rebalanceGeneratedDisciplineHours(raw.Disciplines, targetHours, req.Course)
+	result, err := s.localizeGeneratedDisciplines(ctx, req.SourceLanguage, req.IncludeTranslation, allocations)
+	if err != nil {
+		return nil, fmt.Errorf("translate disciplines response: %w", err)
 	}
 
 	return result, nil
 }
 
-func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req GenerateTopicsForDisciplineRequest) ([]GeneratedTopic, error) {
+func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req GenerateTopicsForDisciplineRequest) ([]LocalizedGeneratedTopic, error) {
 	topicHours := 2
 	baseTopicCount := req.DisciplineHours / topicHours
 	if baseTopicCount <= 0 && req.DisciplineHours > 0 {
@@ -222,7 +266,13 @@ func (s *aiService) GenerateTopicsForDiscipline(ctx context.Context, req Generat
 		return nil, fmt.Errorf("generate topics for discipline: %w", err)
 	}
 
-	return normalizeGeneratedTopics(partTopics, req, topicHours), nil
+	normalizedTopics := normalizeGeneratedTopics(partTopics, req, topicHours)
+	result, err := s.localizeGeneratedTopics(ctx, req.SourceLanguage, req.IncludeTranslation, normalizedTopics)
+	if err != nil {
+		return nil, fmt.Errorf("translate topics response: %w", err)
+	}
+
+	return result, nil
 }
 
 func (s *aiService) generateTopicsChunk(
@@ -296,6 +346,164 @@ func (s *aiService) generateTopicsChunk(
 	}
 
 	return result, nil
+}
+
+func (s *aiService) localizeGeneratedResources(ctx context.Context, sourceLanguage string, includeTranslation bool, resources []GeneratedResource) ([]LocalizedGeneratedResource, error) {
+	if len(resources) == 0 {
+		return nil, nil
+	}
+
+	texts := make([]string, len(resources))
+	for i, resource := range resources {
+		texts[i] = resource.Name
+	}
+
+	localizedTexts, err := s.buildBilingualLocaleTexts(ctx, sourceLanguage, includeTranslation, texts)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]LocalizedGeneratedResource, len(resources))
+	for i, resource := range resources {
+		result[i] = LocalizedGeneratedResource{
+			Name: localizedTexts[i],
+			Link: resource.Link,
+		}
+	}
+
+	return result, nil
+}
+
+func (s *aiService) localizeGeneratedDisciplines(ctx context.Context, sourceLanguage string, includeTranslation bool, disciplines []generatedDisciplineAllocation) ([]LocalizedGeneratedDiscipline, error) {
+	if len(disciplines) == 0 {
+		return nil, nil
+	}
+
+	texts := make([]string, len(disciplines))
+	for i, discipline := range disciplines {
+		texts[i] = sanitizeGeneratedDisciplineName(discipline.Code, discipline.Name)
+	}
+
+	localizedTexts, err := s.buildBilingualLocaleTexts(ctx, sourceLanguage, includeTranslation, texts)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]LocalizedGeneratedDiscipline, len(disciplines))
+	for i, discipline := range disciplines {
+		semesters := convertSemesters(discipline.Semesters)
+		result[i] = LocalizedGeneratedDiscipline{
+			Name:       localizedTexts[i],
+			TotalHours: discipline.TotalHours,
+			Semesters:  semesters,
+			Topics:     []LocalizedGeneratedTopic{},
+		}
+	}
+
+	return result, nil
+}
+
+func (s *aiService) localizeGeneratedTopics(ctx context.Context, sourceLanguage string, includeTranslation bool, topics []GeneratedTopic) ([]LocalizedGeneratedTopic, error) {
+	if len(topics) == 0 {
+		return nil, nil
+	}
+
+	texts := make([]string, len(topics))
+	for i, topic := range topics {
+		texts[i] = topic.Name
+	}
+
+	localizedTexts, err := s.buildBilingualLocaleTexts(ctx, sourceLanguage, includeTranslation, texts)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]LocalizedGeneratedTopic, len(topics))
+	for i, topic := range topics {
+		result[i] = LocalizedGeneratedTopic{
+			Name:            localizedTexts[i],
+			Type:            topic.Type,
+			DurationHours:   topic.DurationHours,
+			TheoryHours:     topic.TheoryHours,
+			PracticeHours:   topic.PracticeHours,
+			IndividualHours: topic.IndividualHours,
+			SrspHours:       topic.SrspHours,
+			SrsHours:        topic.SrsHours,
+		}
+	}
+
+	return result, nil
+}
+
+func (s *aiService) buildBilingualLocaleTexts(ctx context.Context, sourceLanguage string, includeTranslation bool, texts []string) ([]localization.LocaleText, error) {
+	normalizedSource := normalizeBackendLanguage(sourceLanguage)
+	if normalizedSource == "" {
+		normalizedSource = "ru"
+	}
+
+	result := make([]localization.LocaleText, len(texts))
+	if len(texts) == 0 {
+		return result, nil
+	}
+
+	pendingTexts := make([]string, 0, len(texts))
+	pendingIndexes := make([]int, 0, len(texts))
+	for i, text := range texts {
+		trimmed := strings.TrimSpace(text)
+		if trimmed == "" {
+			continue
+		}
+
+		result[i] = setLocaleValueByLanguage(result[i], normalizedSource, trimmed)
+		if includeTranslation {
+			pendingTexts = append(pendingTexts, trimmed)
+			pendingIndexes = append(pendingIndexes, i)
+		}
+	}
+
+	if !includeTranslation || len(pendingTexts) == 0 {
+		return result, nil
+	}
+	if s.translation == nil {
+		return nil, fmt.Errorf("translation service is not configured")
+	}
+
+	targetLanguage := oppositeBackendLanguage(normalizedSource)
+	if targetLanguage == "" {
+		return nil, fmt.Errorf("unsupported source language %q", sourceLanguage)
+	}
+
+	translatedTexts, err := s.translation.TranslateBatch(ctx, TranslateBatchRequest{
+		Texts:          pendingTexts,
+		SourceLanguage: normalizedSource,
+		TargetLanguage: targetLanguage,
+		Domain:         "rup",
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(translatedTexts) != len(pendingTexts) {
+		return nil, fmt.Errorf("translation response count mismatch: got %d, want %d", len(translatedTexts), len(pendingTexts))
+	}
+
+	for i, translatedText := range translatedTexts {
+		idx := pendingIndexes[i]
+		result[idx] = setLocaleValueByLanguage(result[idx], targetLanguage, translatedText)
+	}
+
+	return result, nil
+}
+
+func convertSemesters(semesters []int) []GeneratedSemester {
+	result := make([]GeneratedSemester, 0, len(semesters))
+	for i, hours := range semesters {
+		result = append(result, GeneratedSemester{
+			Semester:   i + 1,
+			TotalHours: hours,
+		})
+	}
+
+	return result
 }
 
 func splitTopicCountInHalf(topicCount int) []int {

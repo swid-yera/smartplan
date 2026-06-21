@@ -92,11 +92,11 @@ func main() {
 
 	// ---------- AI SERVICE ----------
 	log.Infof("Using Gemini API provider with model %s", aiCfg.Gemini.PrimaryModel)
-	aiService := service.NewAIService(httpClient, aiCfg.Gemini, log)
 	translationService := service.NewTranslationService(httpClient, translationCfg, log)
 	if translationService == nil {
 		log.Warn("Translation service is not configured; ru/kz translation jobs will be unavailable")
 	}
+	aiService := service.NewAIService(httpClient, aiCfg.Gemini, translationService, log)
 	rupService := service.NewRupService(rupRepo, docCfg, httpClient, aiService, translationService, minioRepo, cryptoClient, rdb, log)
 	lessonService := service.NewLessonService(lessonRepo, rupRepo, aiService, translationService, docCfg, httpClient, minioRepo, log)
 

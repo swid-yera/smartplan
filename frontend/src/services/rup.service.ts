@@ -124,10 +124,11 @@ export class RupService {
 		const queryClient = useQueryClient()
 
 		return mutationOptions({
-			mutationFn: ({ id, sourceLanguage }: IRegenerateLanguageGenerationRequest) =>
+			mutationFn: ({ id, sourceLanguage, includeTranslation }: IRegenerateLanguageGenerationRequest) =>
 				api
 					.post<IRupLanguageGenerationStatus>(`/rups/${id}/language-generation/regenerate`, {
 						sourceLanguage,
+						includeTranslation,
 					})
 					.then((r) => r.data),
 			onSuccess: (status, { id }) => {

@@ -5,14 +5,23 @@ import { services } from '@services'
 import { Checkbox, Label, Textarea } from '@shadcn'
 import { useLocaleStore } from '@store'
 import { useQuery } from '@tanstack/react-query'
-import { type IGenerateRupMeta, type Locale, type LocaleText, RupTypeEnum, StudyFormEnum } from '@types'
+import {
+	type IGenerateRupMeta,
+	type Locale,
+	type LocaleText,
+	type LocalizedText,
+	RupTypeEnum,
+	StudyFormEnum,
+} from '@types'
 import { type FieldValues, type Path, type PathValue, useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { BasicEdit, GenerateCard, GroupEdit, NoteEdit } from '../components'
+import { fromAiLocalizedText } from '../rup-localization'
 import localeDictionary from './locale.json'
 
 type IProps = FieldValues & {
+	includeTranslation?: boolean
 	name: LocaleText
 	type: RupTypeEnum
 	studyForm: StudyFormEnum
@@ -27,7 +36,13 @@ type IProps = FieldValues & {
 	competencies: LocaleText
 }
 
-export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale }) {
+export function Step1<T extends IProps>({
+	activeLocale,
+	includeTranslation = false,
+}: {
+	activeLocale: Locale
+	includeTranslation?: boolean
+}) {
 	const locale = useLocaleStore((state) => state.locale)
 	const t = getUILocaleSection(localeDictionary, locale).step1
 	const { getValues, setValue } = useFormContext<T>()
@@ -40,8 +55,7 @@ export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale
 		...services.group.getAllOptions(),
 		enabled: true,
 	})
-	const mapGeneratedText = (value: string): LocaleText =>
-		activeLocale === 'ru' ? { ru: getLocaleText(value, 'ru'), kz: '' } : { ru: '', kz: getLocaleText(value, 'kk') }
+	const mapGeneratedText = (value: LocalizedText): LocaleText => fromAiLocalizedText(value, activeLocale)
 
 	const handleGenerate = async () => {
 		if (isLoading || groupLoading) return
@@ -57,6 +71,7 @@ export function Step1<T extends IProps>({ activeLocale }: { activeLocale: Locale
 
 			const mappedData: IGenerateRupMeta = {
 				sourceLanguage: activeLocale,
+				includeTranslation,
 				name: getLocaleText(values.name, activeLocale),
 				course: values.course,
 				group: {
