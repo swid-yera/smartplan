@@ -216,8 +216,8 @@ function DisciplineBlockView({
 					isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100',
 				)}
 			>
-				<div className='min-h-0 overflow-hidden'>
-					<Table className='table-fixed w-full'>
+				<div className='min-h-0 overflow-x-auto overflow-y-hidden'>
+					<Table className='table-fixed min-w-[1000px] w-full'>
 						<colgroup>
 							<col className='w-10' />
 							<col />
