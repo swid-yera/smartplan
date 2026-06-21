@@ -217,7 +217,7 @@ function DisciplineBlockView({
 				)}
 			>
 				<div className='min-h-0 overflow-x-auto overflow-y-hidden'>
-					<Table className='table-fixed min-w-[1000px] w-full'>
+					<Table className='table-fixed min-w-[1280px] w-full'>
 						<colgroup>
 							<col className='w-10' />
 							<col />

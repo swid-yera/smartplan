@@ -229,7 +229,7 @@ function TopicsSummary<T extends IProps>({
 	return (
 		<div className='mt-10 rounded-xl border p-1'>
 			<div className='px-4 py-2 font-semibold italic uppercase tracking-wider text-xs'>{text.summaryTitle}</div>
-			<Table className='min-w-[1000px]'>
+			<Table className='min-w-[1280px]'>
 				<TableHeader>
 					<TableRow>
 						<TableHead className='text-right font-medium text-muted-foreground' colSpan={2}>
@@ -751,7 +751,7 @@ function DisciplineBlockComponent<T extends IProps>({
 							}
 						}}
 					>
-						<Table className='table-fixed min-w-[1000px] w-full'>
+					<Table className='table-fixed min-w-[1280px] w-full'>
 							<colgroup>
 								<col className='w-12' />
 								<col className='w-12' />
