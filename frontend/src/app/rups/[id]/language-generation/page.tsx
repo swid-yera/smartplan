@@ -143,4 +143,8 @@ const LanguageGenerationPage = () => {
 	)
 }
 
-export default withPermission(LanguageGenerationPage, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])
+export default withPermission(LanguageGenerationPage, [
+	PermissionCodeEnum.RUP_FULL,
+	PermissionCodeEnum.RUP_VIEW,
+	PermissionCodeEnum.RUP_MANAGE,
+])

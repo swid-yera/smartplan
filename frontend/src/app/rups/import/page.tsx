@@ -662,8 +662,4 @@ const Page: NextPage = () => {
 	)
 }
 
-export default withPermission(Page, [
-	PermissionCodeEnum.RUP_FULL,
-	PermissionCodeEnum.RUP_VIEW,
-	PermissionCodeEnum.RUP_MANAGE,
-])
+export default withPermission(Page, [PermissionCodeEnum.RUP_FULL, PermissionCodeEnum.RUP_VIEW])

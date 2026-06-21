@@ -5,7 +5,6 @@ import {
 	BookOpen,
 	CalendarClock,
 	ChartBar,
-	ClipboardClock,
 	FilePlus,
 	Film,
 	Group,
@@ -47,11 +46,7 @@ export const navMain: INav[] = [
 		titleKey: 'rups',
 		url: '/rups',
 		icon: PenIcon,
-		permissions: [
-			// PermissionCodeEnum.RUP_VIEW,
-			PermissionCodeEnum.RUP_FULL,
-			PermissionCodeEnum.RUP_MANAGE,
-		],
+		permissions: [PermissionCodeEnum.RUP_VIEW, PermissionCodeEnum.RUP_MANAGE, PermissionCodeEnum.RUP_FULL],
 		items: [
 			{
 				id: 'rups-my',
@@ -82,13 +77,13 @@ export const navMain: INav[] = [
 				url: '/rups/all',
 				permissions: [PermissionCodeEnum.RUP_MANAGE, PermissionCodeEnum.RUP_FULL],
 			},
-			{
-				id: 'rups-review',
-				icon: ClipboardClock,
-				titleKey: 'rupsReview',
-				url: '/rups/review',
-				permissions: [PermissionCodeEnum.RUP_MANAGE, PermissionCodeEnum.RUP_FULL],
-			},
+			// {
+			// 	id: 'rups-review',
+			// 	icon: ClipboardClock,
+			// 	titleKey: 'rupsReview',
+			// 	url: '/rups/review',
+			// 	permissions: [PermissionCodeEnum.RUP_MANAGE, PermissionCodeEnum.RUP_FULL],
+			// },
 			{
 				id: 'rups-guides',
 				icon: Film,
