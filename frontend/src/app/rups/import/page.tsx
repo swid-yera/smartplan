@@ -62,7 +62,14 @@ const MAX_FILE_BYTES = 15 * 1024 * 1024
 const DOCX_ACCEPT = {
 	'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
 }
+const COURSE_OPTIONS = [1, 2, 3, 4] as const
 const STUDY_YEAR_PATTERN = /^\d{4}-\d{4}$/
+
+type CourseOption = (typeof COURSE_OPTIONS)[number]
+
+const isCourseOption = (value: number): value is CourseOption => {
+	return COURSE_OPTIONS.includes(value as CourseOption)
+}
 
 const formatFileSize = (bytes: number) => {
 	if (bytes < 1024) return `${bytes} B`
@@ -166,9 +173,10 @@ const Page: NextPage = () => {
 		selectedGroup && STUDY_YEAR_PATTERN.test(studyYear.trim())
 			? formatCourseFromYearAndGroupName(selectedGroup.name, studyYear.trim())
 			: ''
+	const resolvedCourse = typeof selectedCourse === 'number' && isCourseOption(selectedCourse) ? selectedCourse : ''
 	const parsedName = payload ? getLocaleText(payload.name, locale) : ''
 	const topicCount = payload?.disciplines.reduce((count, discipline) => count + discipline.topics.length, 0) ?? 0
-	const canConfirm = !!parseResult && !!selectedGroupId && !!studyYear.trim() && typeof selectedCourse === 'number'
+	const canConfirm = !!parseResult && !!selectedGroupId && !!studyYear.trim() && typeof resolvedCourse === 'number'
 
 	useEffect(() => {
 		if (!parseResult) return
@@ -267,7 +275,7 @@ const Page: NextPage = () => {
 			return
 		}
 
-		if (typeof selectedCourse !== 'number') {
+		if (typeof resolvedCourse !== 'number') {
 			toast.error(t.invalidCourse)
 
 			return
@@ -281,7 +289,7 @@ const Page: NextPage = () => {
 				importDraftId: parseResult.importDraftId,
 				groupId: selectedGroupId,
 				studyYear: studyYear.trim(),
-				course: selectedCourse,
+				course: resolvedCourse,
 			},
 			{
 				onSuccess: (createdRup) => {
@@ -596,8 +604,8 @@ const Page: NextPage = () => {
 								<div className='space-y-2'>
 									<Label>{t.courseLabel}</Label>
 									<div className='flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm'>
-										{typeof selectedCourse === 'number'
-											? `${selectedCourse} ${t.courseSuffix}`
+										{typeof resolvedCourse === 'number'
+											? `${resolvedCourse} ${t.courseSuffix}`
 											: t.coursePlaceholder}
 									</div>
 									{payload.courseSuggestion ? (
