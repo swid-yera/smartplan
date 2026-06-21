@@ -28,7 +28,17 @@ import { useAuthStore, useLocaleStore } from '@store'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { IKpiUploadExceptionUser, IUser } from '@types'
 import { format, isValid, parseISO } from 'date-fns'
-import { CalendarDays, ChevronDown, Loader2, Mail, ShieldAlert, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react'
+import {
+	CalendarDays,
+	ChevronDown,
+	Loader2,
+	Mail,
+	ShieldAlert,
+	ShieldCheck,
+	Trash2,
+	UserPlus,
+	Users,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import localeDictionary from './locale.json'
@@ -139,7 +149,12 @@ const Page = () => {
 						<Label>{t.dateLabel}</Label>
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button className='w-full justify-between font-normal' disabled={isLoading || isPending} type='button' variant='outline'>
+								<Button
+									className='w-full justify-between font-normal'
+									disabled={isLoading || isPending}
+									type='button'
+									variant='outline'
+								>
 									<CalendarDays data-icon='inline-start' />
 									<span className='truncate'>
 										{hasSelectedDate ? format(selectedDate as Date, 'dd.MM.yyyy') : t.dateUnset}
@@ -181,7 +196,10 @@ const Page = () => {
 							{selectedUsers.length ? (
 								<div className='divide-y'>
 									{selectedUsers.map((selectedUser) => (
-										<div key={selectedUser.keycloakId} className='flex items-center justify-between gap-3 p-4'>
+										<div
+											key={selectedUser.keycloakId}
+											className='flex items-center justify-between gap-3 p-4'
+										>
 											<div className='min-w-0'>
 												<p className='truncate font-medium'>{formatUserName(selectedUser)}</p>
 												<p className='truncate text-sm text-muted-foreground'>
@@ -216,7 +234,9 @@ const Page = () => {
 							<ShieldCheck className='mt-0.5 h-4 w-4 shrink-0 text-primary' />
 							<p>
 								{dateValue
-									? t.preview.replace('{date}', formattedDate || dateValue).replace('{count}', String(exceptionUserIds.length))
+									? t.preview
+											.replace('{date}', formattedDate || dateValue)
+											.replace('{count}', String(exceptionUserIds.length))
 									: t.dateUnset}
 							</p>
 						</div>
@@ -227,7 +247,11 @@ const Page = () => {
 							{isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
 							{t.save}
 						</Button>
-						<Button disabled={isLoading || isPending || (!dateValue && exceptionUserIds.length === 0)} variant='outline' onClick={handleClear}>
+						<Button
+							disabled={isLoading || isPending || (!dateValue && exceptionUserIds.length === 0)}
+							variant='outline'
+							onClick={handleClear}
+						>
 							{t.clear}
 						</Button>
 					</div>
@@ -247,7 +271,15 @@ type UserSelectorProps = {
 	users: IUser[]
 }
 
-const UserSelector = ({ isLoading, onSearchValueChange, onSelect, searchValue, selectedUserIds, text, users }: UserSelectorProps) => {
+const UserSelector = ({
+	isLoading,
+	onSearchValueChange,
+	onSelect,
+	searchValue,
+	selectedUserIds,
+	text,
+	users,
+}: UserSelectorProps) => {
 	const [open, setOpen] = useState(false)
 
 	return (
@@ -261,7 +293,11 @@ const UserSelector = ({ isLoading, onSearchValueChange, onSelect, searchValue, s
 			</PopoverTrigger>
 			<PopoverContent align='end' className='w-[360px] p-0'>
 				<Command shouldFilter={false}>
-					<CommandInput placeholder={text.searchPlaceholder} value={searchValue} onValueChange={onSearchValueChange} />
+					<CommandInput
+						placeholder={text.searchPlaceholder}
+						value={searchValue}
+						onValueChange={onSearchValueChange}
+					/>
 					<CommandList className='max-h-[300px]'>
 						{!isLoading && users.length === 0 ? <CommandEmpty>{text.usersNotFound}</CommandEmpty> : null}
 						<CommandGroup heading={text.availableUsers}>

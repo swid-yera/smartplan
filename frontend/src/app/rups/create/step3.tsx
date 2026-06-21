@@ -65,7 +65,9 @@ export function Step3<T extends IProps>({ activeLocale }: { activeLocale: Locale
 			setIsLoading(true)
 			toast.loading(t.disciplinesLoading, { id: 'rup-disciplines-generate' })
 			if (normalizedWantsHours !== wantsHours) {
-				toast.info(t.hoursRounded.replace('{from}', String(wantsHours)).replace('{to}', String(normalizedWantsHours)))
+				toast.info(
+					t.hoursRounded.replace('{from}', String(wantsHours)).replace('{to}', String(normalizedWantsHours)),
+				)
 			}
 
 			const values = getValues()
