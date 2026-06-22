@@ -3,7 +3,10 @@ package service
 import (
 	"strings"
 	"testing"
+	"time"
 	"unicode/utf8"
+
+	storage "eduplan/backend/pkg/sqlc/generated"
 
 	"github.com/google/uuid"
 )
@@ -37,4 +40,53 @@ func TestSanitizeLessonFileNameReplacesInvalidUTF8(t *testing.T) {
 	if name == "" {
 		t.Fatal("sanitized file name must not be empty")
 	}
+}
+
+func TestBuildLessonDocumentPayloadIncludesSignatureArtifact(t *testing.T) {
+	artifact := &RupSignatureArtifactResponse{
+		ID:              uuid.New(),
+		RupID:           uuid.New(),
+		DocumentID:      "document-id",
+		SignatureID:     "signature-id",
+		VerificationURL: "https://example.com/verify/123",
+		QRSvg:           "<svg />",
+	}
+
+	payload := buildLessonDocumentPayload(
+		"ru",
+		"RUP",
+		"Discipline",
+		"Topic",
+		47,
+		"Teacher",
+		lessonTestTime(),
+		1,
+		"Group",
+		&generatedLessonPlan{
+			LessonType: storage.EnumLessonTypeTHEORY,
+			Goals:      "Goals",
+			Tasks:      "Tasks",
+			Expected:   "Expected",
+			Progress:   []GeneratedLessonProgressStep{},
+		},
+		[]string{"Internet resource"},
+		[]string{"Technical resource"},
+		artifact,
+	)
+
+	if payload.SignatureArtifact == nil {
+		t.Fatal("expected signature artifact to be preserved in lesson payload")
+	}
+
+	if payload.SignatureArtifact.VerificationURL != artifact.VerificationURL {
+		t.Fatalf("unexpected verification url: got %q want %q", payload.SignatureArtifact.VerificationURL, artifact.VerificationURL)
+	}
+
+	if payload.SignatureArtifact.SignatureID != artifact.SignatureID {
+		t.Fatalf("unexpected signature id: got %q want %q", payload.SignatureArtifact.SignatureID, artifact.SignatureID)
+	}
+}
+
+func lessonTestTime() time.Time {
+	return time.Unix(0, 0).UTC()
 }

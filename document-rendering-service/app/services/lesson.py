@@ -11,6 +11,7 @@ from app.post_process import (
     apply_kazakh_lesson_template_localization,
     apply_lesson_template_formatting,
 )
+from app.services.rup import append_verification_qr
 
 
 def to_text_list(value, language: str = "ru") -> list[str]:
@@ -122,6 +123,8 @@ def generate_lesson_docx(data: dict) -> Path:
     progress_rows = map_progress_rows(
         [{**row, "_language": language} for row in data.get("lesson_progress", [])]
     )
+    signature_artifact = data.get("signatureArtifact") or {}
+    verification_url = str(signature_artifact.get("verificationUrl") or "").strip()
 
     context = {
         "college": "КГКП «ALMATY POLYTECHNIC COLLEGE»",
@@ -140,6 +143,8 @@ def generate_lesson_docx(data: dict) -> Path:
         "internet_resources": to_multiline_text(data.get("internet_resources"), language),
         "technical_resources": to_multiline_text(data.get("technical_resources"), language),
         "lesson_progress": progress_rows,
+        "signature_artifact": signature_artifact,
+        "verification_url": verification_url,
     }
     for index, row in enumerate(progress_rows, start=1):
         context[f"lesson_stage_{index}"] = row["content"]
@@ -158,5 +163,7 @@ def generate_lesson_docx(data: dict) -> Path:
     doc.save(output_path)
     apply_kazakh_lesson_template_localization(output_path, language)
     apply_lesson_template_formatting(output_path)
+    if verification_url:
+        append_verification_qr(output_path, {"verificationUrl": verification_url}, language)
 
     return output_path

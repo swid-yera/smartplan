@@ -44,30 +44,31 @@ type LessonParams struct {
 }
 
 type LessonResponse struct {
-	ID                 uuid.UUID                 `json:"id"`
-	RupID              *uuid.UUID                `json:"rupId,omitempty"`
-	DisciplineID       *uuid.UUID                `json:"disciplineId,omitempty"`
-	TopicID            *uuid.UUID                `json:"topicId,omitempty"`
-	RupName            localization.LocaleText   `json:"rup_name"`
-	DisciplineName     *localization.LocaleText  `json:"discipline_name"`
-	TopicName          *localization.LocaleText  `json:"topic_name"`
-	PlanNumber         int32                     `json:"plan_number"`
-	Topic              *TopicResponse            `json:"topic,omitempty"`
-	Teacher            *helpers.UserResponse     `json:"teacher"`
-	EventDate          string                    `json:"event_date"`
-	Group              *GroupResponse            `json:"group"`
-	Type               string                    `json:"type"`
-	Goals              *localization.LocaleText  `json:"goals"`
-	Tasks              *localization.LocaleText  `json:"tasks"`
-	Expected           *localization.LocaleText  `json:"expected"`
-	InternetResources  []*ResourceResponse       `json:"internet_resources"`
-	TechnicalResources []*ResourceResponse       `json:"technical_resources"`
-	LessonProgress     []LessonProgressData      `json:"lesson_progress"`
-	FileURL            *string                   `json:"file_url"`
-	CreatedAt          string                    `json:"created_at"`
-	UpdatedAt          string                    `json:"updated_at"`
-	PreviousLesson     *LessonNavigationResponse `json:"previous_lesson,omitempty"`
-	NextLesson         *LessonNavigationResponse `json:"next_lesson,omitempty"`
+	ID                 uuid.UUID                     `json:"id"`
+	RupID              *uuid.UUID                    `json:"rupId,omitempty"`
+	DisciplineID       *uuid.UUID                    `json:"disciplineId,omitempty"`
+	TopicID            *uuid.UUID                    `json:"topicId,omitempty"`
+	RupName            localization.LocaleText       `json:"rup_name"`
+	DisciplineName     *localization.LocaleText      `json:"discipline_name"`
+	TopicName          *localization.LocaleText      `json:"topic_name"`
+	PlanNumber         int32                         `json:"plan_number"`
+	Topic              *TopicResponse                `json:"topic,omitempty"`
+	Teacher            *helpers.UserResponse         `json:"teacher"`
+	EventDate          string                        `json:"event_date"`
+	Group              *GroupResponse                `json:"group"`
+	Type               string                        `json:"type"`
+	Goals              *localization.LocaleText      `json:"goals"`
+	Tasks              *localization.LocaleText      `json:"tasks"`
+	Expected           *localization.LocaleText      `json:"expected"`
+	InternetResources  []*ResourceResponse           `json:"internet_resources"`
+	TechnicalResources []*ResourceResponse           `json:"technical_resources"`
+	LessonProgress     []LessonProgressData          `json:"lesson_progress"`
+	FileURL            *string                       `json:"file_url"`
+	SignatureArtifact  *RupSignatureArtifactResponse `json:"signatureArtifact,omitempty"`
+	CreatedAt          string                        `json:"created_at"`
+	UpdatedAt          string                        `json:"updated_at"`
+	PreviousLesson     *LessonNavigationResponse     `json:"previous_lesson,omitempty"`
+	NextLesson         *LessonNavigationResponse     `json:"next_lesson,omitempty"`
 }
 
 type LessonNavigationResponse struct {
@@ -196,22 +197,23 @@ type lessonDocumentProgressRow struct {
 }
 
 type lessonDocumentPayload struct {
-	Language           string                      `json:"language,omitempty"`
-	RupName            string                      `json:"rup_name"`
-	DisciplineName     string                      `json:"discipline_name"`
-	TopicName          string                      `json:"topic_name"`
-	PlanNum            int32                       `json:"plan_num"`
-	TeacherName        string                      `json:"teacher_name"`
-	EventDate          string                      `json:"event_date"`
-	Course             int32                       `json:"course"`
-	GroupName          string                      `json:"group_name"`
-	Type               string                      `json:"type"`
-	Goals              string                      `json:"goals"`
-	Tasks              string                      `json:"tasks"`
-	Expected           string                      `json:"expected"`
-	InternetResources  string                      `json:"internet_resources"`
-	TechnicalResources string                      `json:"technical_resources"`
-	LessonProgress     []lessonDocumentProgressRow `json:"lesson_progress"`
+	Language           string                        `json:"language,omitempty"`
+	RupName            string                        `json:"rup_name"`
+	DisciplineName     string                        `json:"discipline_name"`
+	TopicName          string                        `json:"topic_name"`
+	PlanNum            int32                         `json:"plan_num"`
+	TeacherName        string                        `json:"teacher_name"`
+	EventDate          string                        `json:"event_date"`
+	Course             int32                         `json:"course"`
+	GroupName          string                        `json:"group_name"`
+	Type               string                        `json:"type"`
+	Goals              string                        `json:"goals"`
+	Tasks              string                        `json:"tasks"`
+	Expected           string                        `json:"expected"`
+	InternetResources  string                        `json:"internet_resources"`
+	TechnicalResources string                        `json:"technical_resources"`
+	LessonProgress     []lessonDocumentProgressRow   `json:"lesson_progress"`
+	SignatureArtifact  *RupSignatureArtifactResponse `json:"signatureArtifact,omitempty"`
 }
 
 type generatedLessonDocument struct {
@@ -644,6 +646,8 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		teacherName = localizedTeacherFallback(selectedLanguage)
 	}
 
+	signatureArtifact := s.resolveLessonSignatureArtifact(ctx, &rup.ID)
+
 	documentPayload := buildLessonDocumentPayload(
 		selectedLanguage,
 		localeTextByLanguage(localization.LocaleTextFromJSONB(rup.Name), selectedLanguage),
@@ -657,6 +661,7 @@ func (s *LessonService) GenerateLesson(ctx context.Context, teacherID uuid.UUID,
 		generatedPlan,
 		resourceStringsForDocument(internetResources),
 		resourceStringsForDocument(technicalResources),
+		signatureArtifact,
 	)
 
 	document, err := s.generateLessonViaPython(ctx, documentPayload)
@@ -1198,6 +1203,7 @@ func (s *LessonService) GetLessonByID(ctx context.Context, id uuid.UUID) (*Lesso
 	if err != nil {
 		return nil, err
 	}
+	response.SignatureArtifact = s.resolveLessonSignatureArtifact(ctx, response.RupID)
 
 	if previousLesson, err := s.repo.GetPreviousLessonByCreatedAt(ctx, lesson.CreatedAt, lesson.ID); err == nil {
 		response.PreviousLesson = buildLessonNavigationResponse(previousLesson)
@@ -1321,6 +1327,7 @@ func (s *LessonService) GetLessonDownloadURL(ctx context.Context, id uuid.UUID, 
 		},
 		internetResources,
 		technicalResources,
+		s.resolveLessonSignatureArtifact(ctx, rupID),
 	)
 
 	document, err := s.generateLessonViaPython(ctx, documentPayload)
@@ -1414,6 +1421,7 @@ func (s *LessonService) regenerateStoredLessonDocument(
 		},
 		s.resourceStringsFromIDs(ctx, lesson.InternetResources, selectedLanguage),
 		s.resourceStringsFromIDs(ctx, lesson.TechnicalResources, selectedLanguage),
+		s.resolveLessonSignatureArtifact(ctx, rupID),
 	)
 
 	document, err := s.generateLessonViaPython(ctx, documentPayload)
@@ -2134,6 +2142,7 @@ func buildLessonDocumentPayload(
 	plan *generatedLessonPlan,
 	internetResources []string,
 	technicalResources []string,
+	signatureArtifact *RupSignatureArtifactResponse,
 ) lessonDocumentPayload {
 	rows := make([]lessonDocumentProgressRow, 0, len(plan.Progress))
 	for i, step := range plan.Progress {
@@ -2161,6 +2170,7 @@ func buildLessonDocumentPayload(
 		InternetResources:  joinResourceList(internetResources),
 		TechnicalResources: joinResourceList(technicalResources),
 		LessonProgress:     rows,
+		SignatureArtifact:  signatureArtifact,
 	}
 }
 
@@ -2710,4 +2720,17 @@ func (s *LessonService) resolveLessonLinks(
 	rupID := rup.ID
 
 	return &rupID, &disciplineID, &topicID, topic
+}
+
+func (s *LessonService) resolveLessonSignatureArtifact(ctx context.Context, rupID *uuid.UUID) *RupSignatureArtifactResponse {
+	if rupID == nil || *rupID == uuid.Nil {
+		return nil
+	}
+
+	artifact, err := s.rupRepo.GetLatestRupSignatureArtifact(ctx, *rupID)
+	if err != nil {
+		return nil
+	}
+
+	return toRupSignatureArtifactResponse(artifact)
 }

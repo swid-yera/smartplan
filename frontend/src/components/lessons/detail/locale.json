@@ -25,6 +25,7 @@
 		"teacherName": "ФИО",
 		"phone": "Телефон",
 		"group": "Группа",
+		"signatureKey": "Ключ ЭЦП",
 		"qualification": "Квалификация",
 		"specialty": "Специальность",
 		"createdAt": "Создано",
@@ -64,7 +65,14 @@
 		"downloadingLessonFile": "Подготовка файла урока...",
 		"lessonFileDownloaded": "Файл урока готов",
 		"lessonFileDownloadError": "Ошибка при скачивании файла урока",
-		"lessonFileLinkError": "Не удалось получить ссылку на файл урока"
+		"lessonFileLinkError": "Не удалось получить ссылку на файл урока",
+		"signatureTitle": "Kripto QR",
+		"signatureDescription": "Этот QR-код ведет на страницу публичной проверки утвержденного РУП, из которого создан урок.",
+		"signatureSignedBadge": "Подписано",
+		"signedAtLabel": "Дата подписи",
+		"signatureIdLabel": "Signature ID",
+		"verificationUrlLabel": "Verification URL",
+		"openVerification": "Открыть проверку"
 	},
 	"kk": {
 		"pageDescription": "Сабақ бойынша толық ақпарат",
@@ -92,6 +100,7 @@
 		"teacherName": "Аты-жөні",
 		"phone": "Телефон",
 		"group": "Топ",
+		"signatureKey": "ЭЦҚ кілті",
 		"qualification": "Біліктілік",
 		"specialty": "Мамандық",
 		"createdAt": "Жасалған",
@@ -131,6 +140,13 @@
 		"downloadingLessonFile": "Сабақ файлы дайындалуда...",
 		"lessonFileDownloaded": "Сабақ файлы дайын",
 		"lessonFileDownloadError": "Сабақ файлын жүктеу кезінде қате",
-		"lessonFileLinkError": "Сабақ файлына сілтемені алу мүмкін болмады"
+		"lessonFileLinkError": "Сабақ файлына сілтемені алу мүмкін болмады",
+		"signatureTitle": "Kripto QR",
+		"signatureDescription": "Бұл QR-код сабақ алынған бекітілген РУП-ты жария тексеру бетіне апарады.",
+		"signatureSignedBadge": "Қол қойылған",
+		"signedAtLabel": "Қол қою күні",
+		"signatureIdLabel": "Signature ID",
+		"verificationUrlLabel": "Verification URL",
+		"openVerification": "Тексеруді ашу"
 	}
 }

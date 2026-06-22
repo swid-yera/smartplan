@@ -135,6 +135,11 @@ export function LessonOverviewGrid({
 							label={t.specialty}
 							value={getLocaleText(lesson.group?.specialty, lessonLocale) || t.empty}
 						/>
+						<Row
+							empty={t.empty}
+							label={t.signatureKey}
+							value={lesson.signatureArtifact?.keyId || t.empty}
+						/>
 					</div>
 
 					<div className='grid gap-5'>

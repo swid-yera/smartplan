@@ -1,5 +1,6 @@
 import type { IGroup, RoleEnum } from './global.type'
 import type { LocalizedText } from './locale.type'
+import type { IRupSignatureArtifact } from './rup.type'
 
 export enum LessonTypeEnum {
 	PRACTICE = 'PRACTICE',
@@ -70,6 +71,7 @@ export interface ILesson {
 	internet_resources: ILessonResource[]
 	technical_resources: ILessonResource[]
 	file_url: string | null
+	signatureArtifact?: IRupSignatureArtifact
 	previous_lesson?: ILessonNavigation
 	next_lesson?: ILessonNavigation
 	previousLesson?: ILessonNavigation

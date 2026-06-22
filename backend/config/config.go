@@ -16,8 +16,16 @@ var envLoadOnce sync.Once
 
 func ensureEnvLoaded() {
 	envLoadOnce.Do(func() {
+		if _, err := os.Stat(".env"); err != nil {
+			if os.IsNotExist(err) {
+				return
+			}
+			log.Printf("Warning: unable to stat .env: %v", err)
+			return
+		}
+
 		if err := godotenv.Load(); err != nil {
-			log.Println("Warning: .env not found, using OS environment only")
+			log.Printf("Warning: failed to load .env: %v", err)
 		}
 	})
 }

@@ -21,6 +21,7 @@ import { type ILessonContext, type IRegenerateFormData } from './lesson-page.typ
 import { normalizeLessonProgress } from './lesson-page.utils'
 import { LessonProgressCard } from './lesson-progress-card'
 import { LessonResourcesGrid } from './lesson-resources-grid'
+import { LessonSignatureCard } from './lesson-signature-card'
 import localeDictionary from './locale.json'
 
 type IProps = {
@@ -283,6 +284,8 @@ export function LessonDetailsContent({
 				teacherId={teacherId}
 				teacherName={teacherName}
 			/>
+
+			<LessonSignatureCard activeLocale={activeLocale} artifact={lesson.signatureArtifact} />
 
 			<LessonGoalsGrid cardClassName={cardClassName} lesson={lesson} lessonLocale={activeLocale} />
 
